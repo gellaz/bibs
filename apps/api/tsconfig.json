@@ -1,0 +1,15 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES2021",
+		"module": "ES2022",
+		"moduleResolution": "node",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"types": ["bun-types"],
+		"noImplicitReturns": true
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules"]
+}

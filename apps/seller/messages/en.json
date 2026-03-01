@@ -1,0 +1,6 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"welcome_message": "Welcome to BIBS Seller",
+	"language_label": "Language",
+	"current_locale": "Current locale: {locale}"
+}

@@ -1,0 +1,6 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"welcome_message": "Benvenuto su BIBS Customer",
+	"language_label": "Lingua",
+	"current_locale": "Lingua corrente: {locale}"
+}

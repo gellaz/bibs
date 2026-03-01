@@ -1,0 +1,48 @@
+{
+	"name": "@bibs/seller",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"imports": {
+		"@/*": "./src/*"
+	},
+	"scripts": {
+		"dev": "vite dev --port 3002",
+		"build": "vite build",
+		"preview": "vite preview",
+		"typecheck": "tsc --noEmit",
+		"format": "biome format",
+		"lint": "biome lint",
+		"check": "biome check"
+	},
+	"dependencies": {
+		"@bibs/api": "workspace:*",
+		"@bibs/ui": "workspace:*",
+		"@elysiajs/eden": "catalog:",
+		"@t3-oss/env-core": "catalog:",
+		"@tailwindcss/vite": "catalog:",
+		"@tanstack/react-devtools": "catalog:",
+		"@tanstack/react-query": "catalog:",
+		"@tanstack/react-query-devtools": "catalog:",
+		"@tanstack/react-router": "catalog:",
+		"@tanstack/react-router-devtools": "catalog:",
+		"@tanstack/react-router-ssr-query": "catalog:",
+		"@tanstack/react-start": "catalog:",
+		"@tanstack/router-plugin": "catalog:",
+		"better-auth": "catalog:",
+		"react": "catalog:",
+		"react-dom": "catalog:",
+		"tailwindcss": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@inlang/paraglide-js": "catalog:",
+		"@tanstack/devtools-vite": "catalog:",
+		"@types/node": "catalog:",
+		"@types/react": "catalog:",
+		"@types/react-dom": "catalog:",
+		"@vitejs/plugin-react": "catalog:",
+		"vite": "catalog:",
+		"vite-tsconfig-paths": "catalog:"
+	}
+}

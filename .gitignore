@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# testing
+coverage/
+
+# misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# IDEs
+.idea/
+.fleet/
+
+# Editor temporaries
+*.swp
+*.swo
+*~
+.*.swp
+
+# logs
+logs/
+**/*.log
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# archives & traces
+**/*.trace
+**/*.zip
+**/*.tar.gz
+**/*.tgz
+
+# bun
+**/*.bun
