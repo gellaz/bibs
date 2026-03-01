@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
+import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
+import { Route as AuthenticatedOnboardingPendingRouteImport } from './routes/_authenticated/onboarding/pending'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -27,27 +30,59 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
+  id: '/stores',
+  path: '/stores',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOnboardingPendingRoute =
+  AuthenticatedOnboardingPendingRouteImport.update({
+    id: '/onboarding/pending',
+    path: '/onboarding/pending',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/products': typeof AuthenticatedProductsRoute
+  '/stores': typeof AuthenticatedStoresRoute
+  '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/products': typeof AuthenticatedProductsRoute
+  '/stores': typeof AuthenticatedStoresRoute
   '/': typeof AuthenticatedIndexRoute
+  '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/products': typeof AuthenticatedProductsRoute
+  '/_authenticated/stores': typeof AuthenticatedStoresRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths: '/' | '/login' | '/products' | '/stores' | '/onboarding/pending'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/'
-  id: '__root__' | '/_authenticated' | '/login' | '/_authenticated/'
+  to: '/login' | '/products' | '/stores' | '/' | '/onboarding/pending'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/login'
+    | '/_authenticated/products'
+    | '/_authenticated/stores'
+    | '/_authenticated/'
+    | '/_authenticated/onboarding/pending'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -78,15 +113,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/stores': {
+      id: '/_authenticated/stores'
+      path: '/stores'
+      fullPath: '/stores'
+      preLoaderRoute: typeof AuthenticatedStoresRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/products': {
+      id: '/_authenticated/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/onboarding/pending': {
+      id: '/_authenticated/onboarding/pending'
+      path: '/onboarding/pending'
+      fullPath: '/onboarding/pending'
+      preLoaderRoute: typeof AuthenticatedOnboardingPendingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
+  AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedOnboardingPendingRoute: typeof AuthenticatedOnboardingPendingRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedProductsRoute: AuthenticatedProductsRoute,
+  AuthenticatedStoresRoute: AuthenticatedStoresRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedOnboardingPendingRoute: AuthenticatedOnboardingPendingRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
