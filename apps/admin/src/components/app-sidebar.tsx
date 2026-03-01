@@ -11,15 +11,20 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
-import { Link } from "@tanstack/react-router";
-import { HomeIcon } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { HomeIcon, TagsIcon } from "lucide-react";
 import ParaglideLocaleSwitcher from "@/components/locale-switcher";
 import ThemeToggle from "@/components/theme-toggle";
 import BetterAuthHeader from "@/integrations/better-auth/header-user";
 
-const navItems = [{ title: "Home", to: "/" as const, icon: HomeIcon }];
+const navItems = [
+	{ title: "Home", to: "/" as const, icon: HomeIcon },
+	{ title: "Categorie", to: "/categories" as const, icon: TagsIcon },
+];
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+	const pathname = useRouterState({ select: (s) => s.location.pathname });
+
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
@@ -47,21 +52,23 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					<SidebarGroupLabel>Navigazione</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{navItems.map((item) => (
-								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton asChild tooltip={item.title}>
-										<Link
-											to={item.to}
-											activeProps={
-												{ "data-active": true } as Record<string, unknown>
-											}
+							{navItems.map((item) => {
+								const isActive = pathname === item.to;
+								return (
+									<SidebarMenuItem key={item.title}>
+										<SidebarMenuButton
+											asChild
+											tooltip={item.title}
+											isActive={isActive}
 										>
-											<item.icon />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
-							))}
+											<Link to={item.to}>
+												<item.icon />
+												<span>{item.title}</span>
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
+								);
+							})}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
