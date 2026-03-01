@@ -10,11 +10,30 @@ import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
 import { ordersRoutes } from "./routes/orders";
 import { productsRoutes } from "./routes/products";
+import { profileRoutes } from "./routes/profile";
 import { stockRoutes } from "./routes/stock";
 import { storesRoutes } from "./routes/stores";
 
 export const sellerModule = new Elysia({ prefix: "/seller" })
 	.use(betterAuth)
+	// Profile routes: accessible to sellers without VAT verification
+	.guard(
+		{
+			auth: true,
+			detail: {
+				security: [{ bearerAuth: [] }],
+			},
+		},
+		(app) =>
+			app
+				.resolve(({ user: u }) => {
+					if (u.role !== "seller") {
+						throw new ServiceError(403, "Only sellers can access profile");
+					}
+				})
+				.use(profileRoutes),
+	)
+	// Other routes: require verified VAT
 	.guard(
 		{
 			auth: true,

@@ -71,3 +71,22 @@ export function requireOwner(isOwner: boolean) {
 	if (!isOwner)
 		throw new ServiceError(403, "Only store owners can perform this action");
 }
+
+/**
+ * Context injected by the auth macro for profile routes.
+ * Used for routes that need authentication but not VAT verification.
+ */
+export interface SellerAuthContext {
+	user: {
+		id: string;
+		name: string;
+		email: string;
+		role: string | null;
+		[key: string]: unknown;
+	};
+}
+
+/** Type-safe context helper for profile routes (no VAT verification). */
+export function withSellerAuth<T>(ctx: T) {
+	return ctx as T & SellerAuthContext;
+}
