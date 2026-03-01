@@ -67,7 +67,7 @@ function CategoriesPage() {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["categories", page, limit],
 		queryFn: async () => {
-			const response = await api().admin.categories.get({
+			const response = await api().categories.get({
 				query: { page, limit },
 			});
 

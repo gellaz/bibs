@@ -1,40 +1,15 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
-import { ok, okMessage, okPage } from "@/lib/responses";
-import {
-	CategorySchema,
-	OkMessage,
-	okPageRes,
-	okRes,
-	withErrors,
-} from "@/lib/schemas";
+import { ok, okMessage } from "@/lib/responses";
+import { CategorySchema, OkMessage, okRes, withErrors } from "@/lib/schemas";
 import { withAdmin } from "../context";
 import {
 	createCategory,
 	deleteCategory,
-	listCategories,
 	updateCategory,
 } from "../services/categories";
 
-export const categoriesRoutes = new Elysia()
-	.get(
-		"/categories",
-		async ({ query }) => {
-			const result = await listCategories(query);
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: PaginationQuery,
-			response: withErrors({ 200: okPageRes(CategorySchema) }),
-			detail: {
-				summary: "Lista categorie prodotto",
-				description:
-					"Restituisce la lista paginata di tutte le categorie prodotto.",
-				tags: ["Admin"],
-			},
-		},
-	)
+export const categoriesWriteRoutes = new Elysia()
 	.post(
 		"/categories",
 		async (ctx) => {

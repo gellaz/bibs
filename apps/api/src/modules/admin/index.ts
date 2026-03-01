@@ -1,7 +1,7 @@
 import { Elysia } from "elysia";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
-import { categoriesRoutes } from "./routes/categories";
+import { categoriesWriteRoutes } from "./routes/categories";
 import { sellersRoutes } from "./routes/sellers";
 
 export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
@@ -20,6 +20,6 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 						throw new ServiceError(403, "Admin access required");
 					return {};
 				})
-				.use(categoriesRoutes)
+				.use(categoriesWriteRoutes)
 				.use(sellersRoutes),
 	);

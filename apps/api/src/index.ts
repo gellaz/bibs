@@ -11,6 +11,7 @@ import { pinoOptions } from "@/lib/logger";
 import { ok } from "@/lib/responses";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
+import { categoriesModule } from "@/modules/categories";
 import { customerModule } from "@/modules/customer";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
@@ -74,6 +75,10 @@ const app = new Elysia()
 						description: "Registrazione clienti e venditori",
 					},
 					{
+						name: "Categories",
+						description: "Categorie prodotto (lettura pubblica)",
+					},
+					{
 						name: "Admin",
 						description: "Gestione categorie e verifica venditori",
 					},
@@ -100,6 +105,10 @@ const app = new Elysia()
 					{
 						name: "Seller - Employees",
 						description: "Gestione dipendenti del venditore",
+					},
+					{
+						name: "Seller - Profile",
+						description: "Profilo venditore e gestione partita IVA",
 					},
 					{
 						name: "Customer - Search",
@@ -133,6 +142,7 @@ const app = new Elysia()
 	.use(betterAuth)
 	.use(registration)
 	.use(adminModule)
+	.use(categoriesModule)
 	.use(sellerModule)
 	.use(customerModule)
 	.use(cronJobs)
