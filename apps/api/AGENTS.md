@@ -184,10 +184,10 @@ same structure: `context.ts` (guard context + type helpers), `routes/` (route de
 logic).
 
 - `registration/` — custom authentication endpoints:
-    - `POST /register/customer` — sign-up + create customer profile
-    - `POST /register/seller` — sign-up + create seller profile (VAT pending)
-    - `POST /register/sign-in` — login returning user + both profiles
-    - All responses include both `customerProfile` and `sellerProfile` when present
+  - `POST /register/customer` — sign-up + create customer profile
+  - `POST /register/seller` — sign-up + create seller profile (VAT pending)
+  - `POST /register/sign-in` — login returning user + both profiles
+  - All responses include both `customerProfile` and `sellerProfile` when present
 - `admin/` — 7 endpoints for category management and seller verification. Guarded by `.resolve()` that enforces
   `user.role === "admin"`. All have full OpenAPI schemas with error responses.
 - `seller/` — 17 endpoints for stores, products, images, stock, orders, employees. Access resolved from seller (owner)
@@ -198,9 +198,53 @@ logic).
   direct, reserve_pickup, pay_pickup, pay_deliver), loyalty points. Search is public, others require auth.
 
 **Module context pattern**: Each module has a `context.ts` that defines the resolved context interface (e.g.
-`SellerResolvedContext`) and a `withSeller(ctx)` / `withCustomer(ctx)` / `withAdmin(ctx)` helper for type-safe context
-access in route handlers. In the seller module, `getStoreIds` is a lazy cached getter (returns `Promise<string[]>`) —
-call `await getStoreIds()` only when you need the seller's store IDs.
+`SellerResolvedContext`) and a `withX(ctx)` helper for type-safe context access in route handlers.
+
+#### Context Management Best Practices
+
+1. **Define context interfaces** in `context.ts`:
+
+   ```ts
+   export interface MyModuleResolvedContext {
+     user: { id: string; name: string; email: string; role: string | null; };
+     // ... other resolved properties
+   }
+   ```
+
+2. **Create type-safe helpers** for route handlers:
+
+   ```ts
+   export function withMyModule<T>(ctx: T) {
+     return ctx as T & MyModuleResolvedContext;
+   }
+   ```
+
+3. **Use helpers in route files** instead of type assertions:
+
+   ```ts
+   // Good
+   import { withMyModule } from "../context";
+   async (ctx) => {
+     const { user, myProperty } = withMyModule(ctx);
+   }
+   
+   // Bad - don't define context types inline
+   async (ctx) => {
+     const { user } = ctx as { user: { ... } };
+   }
+   ```
+
+4. **Multiple guard levels**: Some modules may have multiple guards with different requirements:
+   - Example: `seller/` module has `withSeller()` (requires verified VAT) and `withSellerAuth()` (only requires
+     authentication)
+   - Define separate interfaces and helpers for each guard level in the same `context.ts` file
+
+5. **Lazy evaluation**: For expensive operations (like querying store IDs), use lazy cached getters:
+
+   ```ts
+   let cached: Promise<string[]> | null = null;
+   const getStoreIds = () => (cached ??= fetchStoreIds());
+   ```
 
 Complex business logic (order creation/pickup/cancel, product creation with categories, employee creation, product
 search) is extracted into `services/` sub-folders under each module. Services use `db.transaction()` for multi-step
@@ -214,18 +258,18 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
 - `src/db/index.ts` — exports a singleton Drizzle client using `DATABASE_URL`.
 - `src/db/seed.ts` — seeds test users/profiles/store when `SEED_DB=true`.
 - `src/db/schemas/` — Drizzle table definitions and relations:
-    - `auth.ts` — user, session, account, verification (better-auth tables)
-    - `customer.ts` — customer_profiles (points balance)
-    - `seller.ts` — seller_profiles (VAT number, verification status: pending/verified/rejected)
-    - `store.ts` — stores (address + PostGIS point location with GiST index)
-    - `category.ts` — product_categories
-    - `product.ts` — products (with Italian full-text GIN index), product_classifications (many-to-many with
+  - `auth.ts` — user, session, account, verification (better-auth tables)
+  - `customer.ts` — customer_profiles (points balance)
+  - `seller.ts` — seller_profiles (VAT number, verification status: pending/verified/rejected)
+  - `store.ts` — stores (address + PostGIS point location with GiST index)
+  - `category.ts` — product_categories
+  - `product.ts` — products (with Italian full-text GIN index), product_classifications (many-to-many with
       categories), store_products (stock per store)
-    - `address.ts` — customer_addresses (PostGIS point location)
-    - `employee.ts` — store_employees (status: active/banned/removed)
-    - `order.ts` — orders (type, status, points, reservation expiry), order_items
-    - `points.ts` — point_transactions (earned/redeemed)
-    - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
+  - `address.ts` — customer_addresses (PostGIS point location)
+  - `employee.ts` — store_employees (status: active/banned/removed)
+  - `order.ts` — orders (type, status, points, reservation expiry), order_items
+  - `points.ts` — point_transactions (earned/redeemed)
+  - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
 - Migrations output to `src/db/migrations/` (configured in `drizzle.config.ts`).
 
 ### S3/MinIO — `src/lib/s3.ts`
@@ -296,7 +340,7 @@ import {ok, okPage, okMessage} from "@/lib/responses";
 import {getLogger} from "@/lib/logger";
 import {PaginationQuery} from "@/lib/pagination";
 import {okRes, okPageRes, OkMessage, withErrors, MyEntitySchema} from "@/lib/schemas";
-import {withAdmin} from "../context";
+import {withAdmin} from "../context";  // Import context helper
 import {listMyEntities, createMyEntity} from "../services/my-entities";
 
 export const myEntitiesRoutes = new Elysia()
@@ -315,16 +359,39 @@ export const myEntitiesRoutes = new Elysia()
                 tags: ["Admin"],
             },
         },
+    )
+    .post(
+        "/my-entities",
+        async (ctx) => {
+            // Use context helper for type-safe access to resolved context
+            const {user, body, store} = withAdmin(ctx);
+            const pino = getLogger(store);
+            
+            const data = await createMyEntity(body);
+            
+            pino.info({userId: user.id, entityId: data.id}, "Entity created");
+            return ok(data);
+        },
+        {
+            body: t.Object({name: t.String()}),
+            response: withErrors({200: okRes(MyEntitySchema)}),
+            detail: {
+                summary: "Crea entità",
+                description: "Crea una nuova entità.",
+                tags: ["Admin"],
+            },
+        },
     );
 ```
 
 Key patterns:
 
+- **Always use context helpers**: Import `withAdmin(ctx)` / `withSeller(ctx)` / `withSellerAuth(ctx)` / `withCustomer(ctx)`
+  from `../context` for type-safe access to resolved context. Never define context types inline in route files.
 - Use `withErrors()` (or `withConflictErrors()` if 409 is possible) to wrap the response schema
 - Use `okRes()` for single item, `okPageRes()` for paginated lists, `OkMessage` for delete/action confirmations
 - Use `PaginationQuery` for list endpoints
 - Access the logger via `getLogger(store)` and log important actions
-- Use `withAdmin(ctx)` / `withSeller(ctx)` / `withCustomer(ctx)` for type-safe context access
 - Always include `detail` with `summary`, `description`, and `tags` for OpenAPI docs
 
 ### 4. Register the route in the module index
@@ -352,6 +419,7 @@ In `src/index.ts`, import and `.use()` the module. If it introduces a new OpenAP
 
 - Service function in `services/` with proper error handling (`ServiceError`)
 - Route file in `routes/` with TypeBox schemas, `withErrors()`, and `detail` for OpenAPI
+- Context helper imported and used (e.g. `withAdmin(ctx)`, `withSeller(ctx)`) instead of inline type assertions
 - Route registered in module `index.ts`
 - Module registered in `src/index.ts` (if new module)
 - Run `bun run typecheck` to verify
