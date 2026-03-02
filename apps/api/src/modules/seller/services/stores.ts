@@ -1,6 +1,9 @@
 import { and, count, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { store as storeTable } from "@/db/schemas/store";
+import {
+	storePhoneNumber as storePhoneNumberTable,
+	store as storeTable,
+} from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 
@@ -20,7 +23,12 @@ export async function listStores(params: ListStoresParams) {
 	);
 
 	const [data, [{ total }]] = await Promise.all([
-		db.query.store.findMany({ where, limit, offset }),
+		db.query.store.findMany({
+			where,
+			limit,
+			offset,
+			with: { phoneNumbers: true },
+		}),
 		db.select({ total: count() }).from(storeTable).where(where),
 	]);
 
@@ -38,12 +46,35 @@ interface CreateStoreParams {
 	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
+	websiteUrl?: string;
+	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }
 
 export async function createStore(params: CreateStoreParams) {
-	const [created] = await db.insert(storeTable).values(params).returning();
+	const { phoneNumbers, ...storeData } = params;
 
-	return created;
+	return db.transaction(async (tx) => {
+		const [created] = await tx.insert(storeTable).values(storeData).returning();
+
+		if (phoneNumbers && phoneNumbers.length > 0) {
+			const phoneValues = phoneNumbers.map((p, idx) => ({
+				storeId: created.id,
+				label: p.label,
+				number: p.number,
+				position: p.position ?? idx,
+			}));
+
+			await tx.insert(storePhoneNumberTable).values(phoneValues);
+		}
+
+		const store = await tx.query.store.findFirst({
+			where: eq(storeTable.id, created.id),
+			with: { phoneNumbers: true },
+		});
+
+		if (!store) throw new ServiceError(500, "Failed to retrieve created store");
+		return store;
+	});
 }
 
 interface UpdateStoreParams {
@@ -58,25 +89,53 @@ interface UpdateStoreParams {
 	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
+	websiteUrl?: string;
+	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }
 
 export async function updateStore(params: UpdateStoreParams) {
-	const { storeId, sellerProfileId, ...data } = params;
+	const { storeId, sellerProfileId, phoneNumbers, ...data } = params;
 
-	const [updated] = await db
-		.update(storeTable)
-		.set(data)
-		.where(
-			and(
-				eq(storeTable.id, storeId),
-				eq(storeTable.sellerProfileId, sellerProfileId),
-				isNull(storeTable.deletedAt),
-			),
-		)
-		.returning();
+	return db.transaction(async (tx) => {
+		const [updated] = await tx
+			.update(storeTable)
+			.set(data)
+			.where(
+				and(
+					eq(storeTable.id, storeId),
+					eq(storeTable.sellerProfileId, sellerProfileId),
+					isNull(storeTable.deletedAt),
+				),
+			)
+			.returning();
 
-	if (!updated) throw new ServiceError(404, "Store not found");
-	return updated;
+		if (!updated) throw new ServiceError(404, "Store not found");
+
+		if (phoneNumbers !== undefined) {
+			await tx
+				.delete(storePhoneNumberTable)
+				.where(eq(storePhoneNumberTable.storeId, storeId));
+
+			if (phoneNumbers.length > 0) {
+				const phoneValues = phoneNumbers.map((p, idx) => ({
+					storeId,
+					label: p.label,
+					number: p.number,
+					position: p.position ?? idx,
+				}));
+
+				await tx.insert(storePhoneNumberTable).values(phoneValues);
+			}
+		}
+
+		const store = await tx.query.store.findFirst({
+			where: eq(storeTable.id, storeId),
+			with: { phoneNumbers: true },
+		});
+
+		if (!store) throw new ServiceError(500, "Failed to retrieve updated store");
+		return store;
+	});
 }
 
 interface DeleteStoreParams {

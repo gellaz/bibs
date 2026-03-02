@@ -8,7 +8,7 @@ import {
 	OkMessage,
 	okPageRes,
 	okRes,
-	StoreSchema,
+	StoreWithPhonesSchema,
 	withErrors,
 } from "@/lib/schemas";
 import { requireOwner, withSeller } from "../context";
@@ -29,7 +29,7 @@ export const storesRoutes = new Elysia()
 		},
 		{
 			query: PaginationQuery,
-			response: withErrors({ 200: okPageRes(StoreSchema) }),
+			response: withErrors({ 200: okPageRes(StoreWithPhonesSchema) }),
 			detail: {
 				summary: "Lista negozi",
 				description: "Restituisce la lista paginata dei negozi del venditore.",
@@ -66,8 +66,26 @@ export const storesRoutes = new Elysia()
 					t.String({ description: "Descrizione del negozio" }),
 				),
 				...AddressFieldsRequired,
+				websiteUrl: t.Optional(t.String({ description: "URL del sito web" })),
+				phoneNumbers: t.Optional(
+					t.Array(
+						t.Object({
+							label: t.Optional(
+								t.String({ description: "Etichetta (es. 'Principale')" }),
+							),
+							number: t.String({ description: "Numero di telefono" }),
+							position: t.Optional(
+								t.Number({
+									minimum: 0,
+									description: "Posizione di ordinamento",
+								}),
+							),
+						}),
+						{ description: "Numeri di telefono del negozio" },
+					),
+				),
 			}),
-			response: withErrors({ 200: okRes(StoreSchema) }),
+			response: withErrors({ 200: okRes(StoreWithPhonesSchema) }),
 			detail: {
 				summary: "Crea negozio",
 				description:
@@ -97,8 +115,26 @@ export const storesRoutes = new Elysia()
 				name: t.Optional(t.String({ description: "Nome del negozio" })),
 				description: t.Optional(t.String({ description: "Descrizione" })),
 				...AddressFieldsOptional,
+				websiteUrl: t.Optional(t.String({ description: "URL del sito web" })),
+				phoneNumbers: t.Optional(
+					t.Array(
+						t.Object({
+							label: t.Optional(
+								t.String({ description: "Etichetta (es. 'Principale')" }),
+							),
+							number: t.String({ description: "Numero di telefono" }),
+							position: t.Optional(
+								t.Number({
+									minimum: 0,
+									description: "Posizione di ordinamento",
+								}),
+							),
+						}),
+						{ description: "Numeri di telefono del negozio" },
+					),
+				),
 			}),
-			response: withErrors({ 200: okRes(StoreSchema) }),
+			response: withErrors({ 200: okRes(StoreWithPhonesSchema) }),
 			detail: {
 				summary: "Aggiorna negozio",
 				description:
