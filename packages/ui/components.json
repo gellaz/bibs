@@ -13,8 +13,11 @@
 	"aliases": {
 		"components": "@/components",
 		"utils": "@/lib/utils",
-		"hooks": "@/hooks",
+		"ui": "@/components",
 		"lib": "@/lib",
-		"ui": "@/components"
+		"hooks": "@/hooks"
+	},
+	"registries": {
+		"@kibo-ui": "https://www.kibo-ui.com/r/{name}.json"
 	}
 }
