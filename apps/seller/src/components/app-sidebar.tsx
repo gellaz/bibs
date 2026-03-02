@@ -53,25 +53,25 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					<SidebarGroupLabel>Navigazione</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-						{navItems.map((item) => {
-							const isActive =
-								item.to === "/"
-									? pathname === "/"
-									: pathname.startsWith(item.to);
-							return (
-								<SidebarMenuItem key={item.title}>
-									<SidebarMenuButton
-										asChild
-										tooltip={item.title}
-										isActive={isActive}
-										className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
-									>
-										<Link to={item.to}>
-											<item.icon />
-											<span>{item.title}</span>
-										</Link>
-									</SidebarMenuButton>
-								</SidebarMenuItem>
+							{navItems.map((item) => {
+								const isActive =
+									item.to === "/"
+										? pathname === "/"
+										: pathname.startsWith(item.to);
+								return (
+									<SidebarMenuItem key={item.title}>
+										<SidebarMenuButton
+											asChild
+											tooltip={item.title}
+											isActive={isActive}
+											className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+										>
+											<Link to={item.to}>
+												<item.icon />
+												<span>{item.title}</span>
+											</Link>
+										</SidebarMenuButton>
+									</SidebarMenuItem>
 								);
 							})}
 						</SidebarMenu>
