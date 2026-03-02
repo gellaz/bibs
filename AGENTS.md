@@ -100,9 +100,11 @@ Shared dependencies are defined in the `catalog` field of the root `package.json
 
 #### 1. Check for outdated dependencies
 
+> **Note:** `bun outdated` at the root only checks the root `package.json` direct dependencies — it does **not** inspect catalog versions. To find outdated catalog/workspace dependencies, use `--filter`.
+
 ```bash
-# Check all workspaces
-bun outdated
+# Check all workspaces (including catalog dependencies)
+bun outdated --filter '*'
 
 # Check specific workspace
 bun outdated --filter @bibs/api
