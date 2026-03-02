@@ -33,6 +33,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PencilIcon, PlusIcon, TagsIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
+import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/categories")({
@@ -184,18 +185,15 @@ function CategoriesPage() {
 
 	return (
 		<div className="space-y-4">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold">Categorie Prodotto</h1>
-					<p className="text-muted-foreground text-sm">
-						Gestisci le categorie dei prodotti
-					</p>
-				</div>
+			<PageHeader
+				title="Categorie Prodotto"
+				description="Gestisci le categorie dei prodotti"
+			>
 				<Button onClick={() => setCreateOpen(true)}>
 					<PlusIcon />
 					<span>Nuova Categoria</span>
 				</Button>
-			</div>
+			</PageHeader>
 
 			{error && (
 				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
