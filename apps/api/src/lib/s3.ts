@@ -2,6 +2,7 @@ import {
 	S3Client as AwsS3Client,
 	CreateBucketCommand,
 	HeadBucketCommand,
+	PutBucketPolicyCommand,
 } from "@aws-sdk/client-s3";
 import { S3Client } from "bun";
 import { env } from "@/lib/env";
@@ -31,17 +32,37 @@ const awsS3 = new AwsS3Client({
  * Called once at application startup.
  */
 export async function ensureBucket() {
+	let created = false;
+
 	try {
 		await awsS3.send(new HeadBucketCommand({ Bucket: bucket }));
-		return; // bucket exists
 	} catch (err: any) {
 		if (err.name !== "NotFound" && err.$metadata?.httpStatusCode !== 404) {
 			throw err;
 		}
+		await awsS3.send(new CreateBucketCommand({ Bucket: bucket }));
+		created = true;
 	}
 
-	await awsS3.send(new CreateBucketCommand({ Bucket: bucket }));
-	console.log(`🪣 Bucket "${bucket}" created`);
+	// Ensure anonymous read access so images are served directly via URL
+	const policy = JSON.stringify({
+		Version: "2012-10-17",
+		Statement: [
+			{
+				Effect: "Allow",
+				Principal: "*",
+				Action: ["s3:GetObject"],
+				Resource: [`arn:aws:s3:::${bucket}/*`],
+			},
+		],
+	});
+	await awsS3.send(
+		new PutBucketPolicyCommand({ Bucket: bucket, Policy: policy }),
+	);
+
+	if (created) {
+		console.log(`🪣 Bucket "${bucket}" created (public-read)`);
+	}
 }
 
 /** Returns the public URL for a given S3 object key. */
