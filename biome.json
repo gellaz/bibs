@@ -34,6 +34,16 @@
 			"linter": {
 				"enabled": false
 			}
+		},
+		{
+			"includes": ["**/src/routes/**"],
+			"linter": {
+				"rules": {
+					"style": {
+						"useFilenamingConvention": "off"
+					}
+				}
+			}
 		}
 	],
 	"formatter": {
