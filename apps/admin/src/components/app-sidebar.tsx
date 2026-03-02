@@ -12,14 +12,33 @@ import {
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { HomeIcon, TagsIcon } from "lucide-react";
+import {
+	CreditCardIcon,
+	HomeIcon,
+	PackageIcon,
+	SettingsIcon,
+	StoreIcon,
+	TagsIcon,
+	UsersIcon,
+	WalletIcon,
+} from "lucide-react";
 import ParaglideLocaleSwitcher from "@/components/locale-switcher";
 import ThemeToggle from "@/components/theme-toggle";
 import BetterAuthHeader from "@/integrations/better-auth/header-user";
 
 const navItems = [
 	{ title: "Home", to: "/" as const, icon: HomeIcon },
+	{ title: "Utenti", to: "/users" as const, icon: UsersIcon },
+	{ title: "Negozi", to: "/stores" as const, icon: StoreIcon },
+	{ title: "Articoli", to: "/products" as const, icon: PackageIcon },
 	{ title: "Categorie", to: "/categories" as const, icon: TagsIcon },
+	{ title: "Incassi", to: "/collections" as const, icon: WalletIcon },
+	{ title: "Pagamenti", to: "/payments" as const, icon: CreditCardIcon },
+	{
+		title: "Configurazioni",
+		to: "/configurations" as const,
+		icon: SettingsIcon,
+	},
 ];
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
