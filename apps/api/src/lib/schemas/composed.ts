@@ -9,6 +9,7 @@ import {
 	ProductImageSchema,
 	ProductSchema,
 	SellerProfileSchema,
+	StorePhoneNumberSchema,
 	StoreProductSchema,
 	StoreSchema,
 	UserSchema,
@@ -17,6 +18,12 @@ import {
 // ────────────────────────────────────────────
 // Composed schemas (nested relations)
 // ────────────────────────────────────────────
+
+// Store + phone numbers
+export const StoreWithPhonesSchema = t.Object({
+	...StoreSchema.properties,
+	phoneNumbers: t.Array(StorePhoneNumberSchema),
+});
 
 // Seller profile + user (admin pending list)
 export const SellerProfileWithUserSchema = t.Object({

@@ -97,6 +97,7 @@ export const StoreSchema = t.Object({
 	province: t.Nullable(t.String({ description: "Provincia (sigla)" })),
 	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
 	location: t.Nullable(PointXY),
+	websiteUrl: t.Nullable(t.String({ description: "URL del sito web" })),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
 });
@@ -117,6 +118,17 @@ export const ProductImageSchema = t.Object({
 	productId: t.String(),
 	url: t.String({ description: "URL pubblico dell'immagine" }),
 	key: t.String({ description: "Chiave S3/MinIO" }),
+	position: t.Number({ minimum: 0, description: "Posizione di ordinamento" }),
+	createdAt: t.Date(),
+});
+
+export const StorePhoneNumberSchema = t.Object({
+	id: t.String(),
+	storeId: t.String(),
+	label: t.Nullable(
+		t.String({ description: "Etichetta (es. 'Principale', 'WhatsApp')" }),
+	),
+	number: t.String({ description: "Numero di telefono" }),
 	position: t.Number({ minimum: 0, description: "Posizione di ordinamento" }),
 	createdAt: t.Date(),
 });
