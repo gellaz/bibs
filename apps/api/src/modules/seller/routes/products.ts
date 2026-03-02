@@ -15,6 +15,7 @@ import { withSeller } from "../context";
 import {
 	createProduct,
 	deleteProduct,
+	getProduct,
 	listProducts,
 	updateProduct,
 } from "../services/products";
@@ -34,6 +35,29 @@ export const productsRoutes = new Elysia()
 				summary: "Lista prodotti",
 				description:
 					"Restituisce la lista paginata dei prodotti del venditore con categorie, disponibilità per negozio e immagini.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.get(
+		"/products/:productId",
+		async (ctx) => {
+			const { sellerProfile: sp, params } = withSeller(ctx);
+			const data = await getProduct({
+				productId: params.productId,
+				sellerProfileId: sp.id,
+			});
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				productId: t.String({ description: "ID del prodotto" }),
+			}),
+			response: withErrors({ 200: okRes(ProductWithRelationsSchema) }),
+			detail: {
+				summary: "Dettaglio prodotto",
+				description:
+					"Restituisce un singolo prodotto con categorie, disponibilità per negozio e immagini.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -115,6 +139,12 @@ export const productsRoutes = new Elysia()
 					t.String({
 						pattern: "^\\d+\\.\\d{2}$",
 						description: "Prezzo (formato decimale, es. '9.99')",
+					}),
+				),
+				imageOrder: t.Optional(
+					t.Array(t.String(), {
+						description:
+							"IDs delle immagini esistenti nell'ordine desiderato. La prima diventa l'immagine di default.",
 					}),
 				),
 			}),

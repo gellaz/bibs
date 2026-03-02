@@ -36,6 +36,30 @@ export async function listProducts(params: ListProductsParams) {
 	return { data, pagination: { page, limit, total } };
 }
 
+interface GetProductParams {
+	productId: string;
+	sellerProfileId: string;
+}
+
+export async function getProduct(params: GetProductParams) {
+	const { productId, sellerProfileId } = params;
+
+	const found = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: {
+			productClassifications: { with: { category: true } },
+			storeProducts: { with: { store: true } },
+			images: { orderBy: (img, { asc }) => [asc(img.position)] },
+		},
+	});
+
+	if (!found) throw new ServiceError(404, "Product not found");
+	return found;
+}
+
 interface CreateProductParams {
 	sellerProfileId: string;
 	name: string;
@@ -70,13 +94,20 @@ interface UpdateProductParams {
 	productId: string;
 	sellerProfileId: string;
 	categoryIds?: string[];
+	imageOrder?: string[];
 	name?: string;
 	description?: string;
 	price?: string;
 }
 
 export async function updateProduct(params: UpdateProductParams) {
-	const { productId, sellerProfileId, categoryIds, ...productData } = params;
+	const {
+		productId,
+		sellerProfileId,
+		categoryIds,
+		imageOrder,
+		...productData
+	} = params;
 
 	return db.transaction(async (tx) => {
 		const [updated] = await tx
@@ -104,6 +135,20 @@ export async function updateProduct(params: UpdateProductParams) {
 						productCategoryId: categoryId,
 					})),
 				);
+			}
+		}
+
+		if (imageOrder) {
+			for (let i = 0; i < imageOrder.length; i++) {
+				await tx
+					.update(productImage)
+					.set({ position: i })
+					.where(
+						and(
+							eq(productImage.id, imageOrder[i]),
+							eq(productImage.productId, updated.id),
+						),
+					);
 			}
 		}
 
