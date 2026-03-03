@@ -7,7 +7,6 @@ import { OpenAPI } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { clearAllTimers, restoreTimers } from "@/lib/jobs/reservation-timer";
 import { pinoOptions } from "@/lib/logger";
-import { ok } from "@/lib/responses";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { categoriesModule } from "@/modules/categories";
@@ -152,17 +151,7 @@ const app = new Elysia()
 	.use(sellerModule)
 	.use(customerModule)
 	.use(cronJobs)
-	.use(health)
-	.get("/user", ({ user }) => ok(user), {
-		auth: true,
-		detail: {
-			summary: "Utente corrente",
-			description:
-				"Restituisce i dati dell'utente autenticato tramite la sessione corrente.",
-			tags: ["Auth"],
-			security: [{ bearerAuth: [] }],
-		},
-	});
+	.use(health);
 
 // ── Startup sequence ────────────────────────────────
 await ensureBucket();

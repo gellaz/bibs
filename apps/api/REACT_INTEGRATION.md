@@ -337,10 +337,12 @@ await fetch(`${API_URL}/auth/api/sign-out`, {
 
 ### Utente corrente
 
-```typescript
-const {data: user, error} = await api().user.get()
+Usare il client better-auth per ottenere la sessione corrente:
 
-if (error?.status === 401) {
+```typescript
+const { data: session } = await authClient.getSession()
+
+if (!session) {
     // Non autenticato → redirect al login
 }
 ```
