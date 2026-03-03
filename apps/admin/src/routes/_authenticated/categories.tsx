@@ -13,12 +13,9 @@ import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
-import { Input } from "@bibs/ui/components/input";
-import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -34,6 +31,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { PencilIcon, PlusIcon, TagsIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { CategoryForm } from "@/features/categories/components/category-form";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/categories")({
@@ -159,25 +157,6 @@ function CategoriesPage() {
 		},
 	});
 
-	const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		const formData = new FormData(e.currentTarget);
-		const name = formData.get("name") as string;
-		if (name.trim()) {
-			createMutation.mutate(name.trim());
-		}
-	};
-
-	const handleEdit = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		if (!selectedCategory) return;
-		const formData = new FormData(e.currentTarget);
-		const name = formData.get("name") as string;
-		if (name.trim()) {
-			updateMutation.mutate({ id: selectedCategory.id, name: name.trim() });
-		}
-	};
-
 	const handleDelete = () => {
 		if (!selectedCategory) return;
 		deleteMutation.mutate(selectedCategory.id);
@@ -301,83 +280,51 @@ function CategoriesPage() {
 			{/* Create Dialog */}
 			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
 				<DialogContent>
-					<form onSubmit={handleCreate}>
-						<DialogHeader>
-							<DialogTitle>Nuova Categoria</DialogTitle>
-							<DialogDescription>
-								Inserisci il nome della nuova categoria prodotto.
-							</DialogDescription>
-						</DialogHeader>
-
-						<div className="space-y-4 py-4">
-							<div className="space-y-2">
-								<Label htmlFor="create-name">Nome</Label>
-								<Input
-									id="create-name"
-									name="name"
-									placeholder="Es. Elettronica"
-									required
-									autoFocus
-								/>
-							</div>
-						</div>
-
-						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setCreateOpen(false)}
-							>
-								Annulla
-							</Button>
-							<Button type="submit" disabled={createMutation.isPending}>
-								{createMutation.isPending ? "Creazione..." : "Crea"}
-							</Button>
-						</DialogFooter>
-					</form>
+					<DialogHeader>
+						<DialogTitle>Nuova Categoria</DialogTitle>
+						<DialogDescription>
+							Inserisci il nome della nuova categoria prodotto.
+						</DialogDescription>
+					</DialogHeader>
+					<CategoryForm
+						onSubmit={(data) => createMutation.mutate(data.name)}
+						onCancel={() => setCreateOpen(false)}
+						isPending={createMutation.isPending}
+						submitLabel="Crea"
+						pendingLabel="Creazione..."
+					/>
 				</DialogContent>
 			</Dialog>
 
 			{/* Edit Dialog */}
 			<Dialog open={editOpen} onOpenChange={setEditOpen}>
 				<DialogContent>
-					<form onSubmit={handleEdit}>
-						<DialogHeader>
-							<DialogTitle>Modifica Categoria</DialogTitle>
-							<DialogDescription>
-								Modifica il nome della categoria selezionata.
-							</DialogDescription>
-						</DialogHeader>
-
-						<div className="space-y-4 py-4">
-							<div className="space-y-2">
-								<Label htmlFor="edit-name">Nome</Label>
-								<Input
-									id="edit-name"
-									name="name"
-									defaultValue={selectedCategory?.name || ""}
-									required
-									autoFocus
-								/>
-							</div>
-						</div>
-
-						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => {
-									setEditOpen(false);
-									setSelectedCategory(null);
-								}}
-							>
-								Annulla
-							</Button>
-							<Button type="submit" disabled={updateMutation.isPending}>
-								{updateMutation.isPending ? "Salvataggio..." : "Salva"}
-							</Button>
-						</DialogFooter>
-					</form>
+					<DialogHeader>
+						<DialogTitle>Modifica Categoria</DialogTitle>
+						<DialogDescription>
+							Modifica il nome della categoria selezionata.
+						</DialogDescription>
+					</DialogHeader>
+					<CategoryForm
+						defaultValues={
+							selectedCategory ? { name: selectedCategory.name } : undefined
+						}
+						onSubmit={(data) => {
+							if (selectedCategory) {
+								updateMutation.mutate({
+									id: selectedCategory.id,
+									name: data.name,
+								});
+							}
+						}}
+						onCancel={() => {
+							setEditOpen(false);
+							setSelectedCategory(null);
+						}}
+						isPending={updateMutation.isPending}
+						submitLabel="Salva"
+						pendingLabel="Salvataggio..."
+					/>
 				</DialogContent>
 			</Dialog>
 
