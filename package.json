@@ -57,7 +57,9 @@
 		"jsdom": "^27.0.0",
 		"vitest": "^3.0.5",
 		"@testing-library/dom": "^10.4.0",
-		"@testing-library/react": "^16.2.0"
+		"@testing-library/react": "^16.2.0",
+		"react-hook-form": "^7.55.0",
+		"@hookform/resolvers": "^5.2.0"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.4",
