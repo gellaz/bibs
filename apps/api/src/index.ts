@@ -13,6 +13,7 @@ import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { categoriesModule } from "@/modules/categories";
 import { customerModule } from "@/modules/customer";
+import { locationsModule } from "@/modules/locations";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
 import { betterAuth } from "@/plugins/better-auth";
@@ -123,6 +124,10 @@ const app = new Elysia()
 						description: "Programma fedeltà e punti",
 					},
 					{ name: "Customer - Orders", description: "Ordini del cliente" },
+					{
+						name: "Locations",
+						description: "Regioni, province e comuni italiani",
+					},
 					{ name: "System", description: "Health check e stato del servizio" },
 				],
 				components: {
@@ -143,6 +148,7 @@ const app = new Elysia()
 	.use(registration)
 	.use(adminModule)
 	.use(categoriesModule)
+	.use(locationsModule)
 	.use(sellerModule)
 	.use(customerModule)
 	.use(cronJobs)

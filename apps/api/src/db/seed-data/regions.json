@@ -1,0 +1,82 @@
+[
+	{
+		"name": "Piemonte",
+		"istatCode": "01"
+	},
+	{
+		"name": "Valle d'Aosta/Vallée d'Aoste",
+		"istatCode": "02"
+	},
+	{
+		"name": "Lombardia",
+		"istatCode": "03"
+	},
+	{
+		"name": "Trentino-Alto Adige/Südtirol",
+		"istatCode": "04"
+	},
+	{
+		"name": "Veneto",
+		"istatCode": "05"
+	},
+	{
+		"name": "Friuli-Venezia Giulia",
+		"istatCode": "06"
+	},
+	{
+		"name": "Liguria",
+		"istatCode": "07"
+	},
+	{
+		"name": "Emilia-Romagna",
+		"istatCode": "08"
+	},
+	{
+		"name": "Toscana",
+		"istatCode": "09"
+	},
+	{
+		"name": "Umbria",
+		"istatCode": "10"
+	},
+	{
+		"name": "Marche",
+		"istatCode": "11"
+	},
+	{
+		"name": "Lazio",
+		"istatCode": "12"
+	},
+	{
+		"name": "Abruzzo",
+		"istatCode": "13"
+	},
+	{
+		"name": "Molise",
+		"istatCode": "14"
+	},
+	{
+		"name": "Campania",
+		"istatCode": "15"
+	},
+	{
+		"name": "Puglia",
+		"istatCode": "16"
+	},
+	{
+		"name": "Basilicata",
+		"istatCode": "17"
+	},
+	{
+		"name": "Calabria",
+		"istatCode": "18"
+	},
+	{
+		"name": "Sicilia",
+		"istatCode": "19"
+	},
+	{
+		"name": "Sardegna",
+		"istatCode": "20"
+	}
+]

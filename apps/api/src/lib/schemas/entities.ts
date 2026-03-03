@@ -258,6 +258,37 @@ export const PointTransactionSchema = t.Object({
 	createdAt: t.Date(),
 });
 
+// ────────────────────────────────────────────
+// Location schemas
+// ────────────────────────────────────────────
+
+export const RegionSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della regione" }),
+	istatCode: t.String({ description: "Codice ISTAT della regione" }),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
+export const ProvinceSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della provincia" }),
+	acronym: t.String({ description: "Sigla della provincia" }),
+	istatCode: t.String({ description: "Codice ISTAT della provincia" }),
+	regionId: t.String(),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
+export const MunicipalitySchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome del comune" }),
+	istatCode: t.String({ description: "Codice ISTAT del comune" }),
+	provinceId: t.String(),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
 // Search result
 export const SearchResultSchema = t.Object({
 	id: t.String(),

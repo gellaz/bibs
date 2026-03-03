@@ -1,0 +1,644 @@
+[
+	{
+		"name": "Torino",
+		"acronym": "TO",
+		"istatCode": "001",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Vercelli",
+		"acronym": "VC",
+		"istatCode": "002",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Novara",
+		"acronym": "NO",
+		"istatCode": "003",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Cuneo",
+		"acronym": "CN",
+		"istatCode": "004",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Asti",
+		"acronym": "AT",
+		"istatCode": "005",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Alessandria",
+		"acronym": "AL",
+		"istatCode": "006",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Valle d'Aosta/Vallée d'Aoste",
+		"acronym": "AO",
+		"istatCode": "007",
+		"regionIstatCode": "02"
+	},
+	{
+		"name": "Imperia",
+		"acronym": "IM",
+		"istatCode": "008",
+		"regionIstatCode": "07"
+	},
+	{
+		"name": "Savona",
+		"acronym": "SV",
+		"istatCode": "009",
+		"regionIstatCode": "07"
+	},
+	{
+		"name": "Genova",
+		"acronym": "GE",
+		"istatCode": "010",
+		"regionIstatCode": "07"
+	},
+	{
+		"name": "La Spezia",
+		"acronym": "SP",
+		"istatCode": "011",
+		"regionIstatCode": "07"
+	},
+	{
+		"name": "Varese",
+		"acronym": "VA",
+		"istatCode": "012",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Como",
+		"acronym": "CO",
+		"istatCode": "013",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Sondrio",
+		"acronym": "SO",
+		"istatCode": "014",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Milano",
+		"acronym": "MI",
+		"istatCode": "015",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Bergamo",
+		"acronym": "BG",
+		"istatCode": "016",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Brescia",
+		"acronym": "BS",
+		"istatCode": "017",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Pavia",
+		"acronym": "PV",
+		"istatCode": "018",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Cremona",
+		"acronym": "CR",
+		"istatCode": "019",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Mantova",
+		"acronym": "MN",
+		"istatCode": "020",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Bolzano/Bozen",
+		"acronym": "BZ",
+		"istatCode": "021",
+		"regionIstatCode": "04"
+	},
+	{
+		"name": "Trento",
+		"acronym": "TN",
+		"istatCode": "022",
+		"regionIstatCode": "04"
+	},
+	{
+		"name": "Verona",
+		"acronym": "VR",
+		"istatCode": "023",
+		"regionIstatCode": "05"
+	},
+	{
+		"name": "Vicenza",
+		"acronym": "VI",
+		"istatCode": "024",
+		"regionIstatCode": "05"
+	},
+	{
+		"name": "Belluno",
+		"acronym": "BL",
+		"istatCode": "025",
+		"regionIstatCode": "05"
+	},
+	{
+		"name": "Treviso",
+		"acronym": "TV",
+		"istatCode": "026",
+		"regionIstatCode": "05"
+	},
+	{
+		"name": "Venezia",
+		"acronym": "VE",
+		"istatCode": "027",
+		"regionIstatCode": "05"
+	},
+	{
+		"name": "Padova",
+		"acronym": "PD",
+		"istatCode": "028",
+		"regionIstatCode": "05"
+	},
+	{
+		"name": "Rovigo",
+		"acronym": "RO",
+		"istatCode": "029",
+		"regionIstatCode": "05"
+	},
+	{
+		"name": "Udine",
+		"acronym": "UD",
+		"istatCode": "030",
+		"regionIstatCode": "06"
+	},
+	{
+		"name": "Gorizia",
+		"acronym": "GO",
+		"istatCode": "031",
+		"regionIstatCode": "06"
+	},
+	{
+		"name": "Trieste",
+		"acronym": "TS",
+		"istatCode": "032",
+		"regionIstatCode": "06"
+	},
+	{
+		"name": "Piacenza",
+		"acronym": "PC",
+		"istatCode": "033",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Parma",
+		"acronym": "PR",
+		"istatCode": "034",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Reggio nell'Emilia",
+		"acronym": "RE",
+		"istatCode": "035",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Modena",
+		"acronym": "MO",
+		"istatCode": "036",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Bologna",
+		"acronym": "BO",
+		"istatCode": "037",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Ferrara",
+		"acronym": "FE",
+		"istatCode": "038",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Ravenna",
+		"acronym": "RA",
+		"istatCode": "039",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Forlì-Cesena",
+		"acronym": "FC",
+		"istatCode": "040",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Pesaro e Urbino",
+		"acronym": "PU",
+		"istatCode": "041",
+		"regionIstatCode": "11"
+	},
+	{
+		"name": "Ancona",
+		"acronym": "AN",
+		"istatCode": "042",
+		"regionIstatCode": "11"
+	},
+	{
+		"name": "Macerata",
+		"acronym": "MC",
+		"istatCode": "043",
+		"regionIstatCode": "11"
+	},
+	{
+		"name": "Ascoli Piceno",
+		"acronym": "AP",
+		"istatCode": "044",
+		"regionIstatCode": "11"
+	},
+	{
+		"name": "Massa-Carrara",
+		"acronym": "MS",
+		"istatCode": "045",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Lucca",
+		"acronym": "LU",
+		"istatCode": "046",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Pistoia",
+		"acronym": "PT",
+		"istatCode": "047",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Firenze",
+		"acronym": "FI",
+		"istatCode": "048",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Livorno",
+		"acronym": "LI",
+		"istatCode": "049",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Pisa",
+		"acronym": "PI",
+		"istatCode": "050",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Arezzo",
+		"acronym": "AR",
+		"istatCode": "051",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Siena",
+		"acronym": "SI",
+		"istatCode": "052",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Grosseto",
+		"acronym": "GR",
+		"istatCode": "053",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Perugia",
+		"acronym": "PG",
+		"istatCode": "054",
+		"regionIstatCode": "10"
+	},
+	{
+		"name": "Terni",
+		"acronym": "TR",
+		"istatCode": "055",
+		"regionIstatCode": "10"
+	},
+	{
+		"name": "Viterbo",
+		"acronym": "VT",
+		"istatCode": "056",
+		"regionIstatCode": "12"
+	},
+	{
+		"name": "Rieti",
+		"acronym": "RI",
+		"istatCode": "057",
+		"regionIstatCode": "12"
+	},
+	{
+		"name": "Roma",
+		"acronym": "RM",
+		"istatCode": "058",
+		"regionIstatCode": "12"
+	},
+	{
+		"name": "Latina",
+		"acronym": "LT",
+		"istatCode": "059",
+		"regionIstatCode": "12"
+	},
+	{
+		"name": "Frosinone",
+		"acronym": "FR",
+		"istatCode": "060",
+		"regionIstatCode": "12"
+	},
+	{
+		"name": "Caserta",
+		"acronym": "CE",
+		"istatCode": "061",
+		"regionIstatCode": "15"
+	},
+	{
+		"name": "Benevento",
+		"acronym": "BN",
+		"istatCode": "062",
+		"regionIstatCode": "15"
+	},
+	{
+		"name": "Napoli",
+		"acronym": "NA",
+		"istatCode": "063",
+		"regionIstatCode": "15"
+	},
+	{
+		"name": "Avellino",
+		"acronym": "AV",
+		"istatCode": "064",
+		"regionIstatCode": "15"
+	},
+	{
+		"name": "Salerno",
+		"acronym": "SA",
+		"istatCode": "065",
+		"regionIstatCode": "15"
+	},
+	{
+		"name": "L'Aquila",
+		"acronym": "AQ",
+		"istatCode": "066",
+		"regionIstatCode": "13"
+	},
+	{
+		"name": "Teramo",
+		"acronym": "TE",
+		"istatCode": "067",
+		"regionIstatCode": "13"
+	},
+	{
+		"name": "Pescara",
+		"acronym": "PE",
+		"istatCode": "068",
+		"regionIstatCode": "13"
+	},
+	{
+		"name": "Chieti",
+		"acronym": "CH",
+		"istatCode": "069",
+		"regionIstatCode": "13"
+	},
+	{
+		"name": "Campobasso",
+		"acronym": "CB",
+		"istatCode": "070",
+		"regionIstatCode": "14"
+	},
+	{
+		"name": "Foggia",
+		"acronym": "FG",
+		"istatCode": "071",
+		"regionIstatCode": "16"
+	},
+	{
+		"name": "Bari",
+		"acronym": "BA",
+		"istatCode": "072",
+		"regionIstatCode": "16"
+	},
+	{
+		"name": "Taranto",
+		"acronym": "TA",
+		"istatCode": "073",
+		"regionIstatCode": "16"
+	},
+	{
+		"name": "Brindisi",
+		"acronym": "BR",
+		"istatCode": "074",
+		"regionIstatCode": "16"
+	},
+	{
+		"name": "Lecce",
+		"acronym": "LE",
+		"istatCode": "075",
+		"regionIstatCode": "16"
+	},
+	{
+		"name": "Potenza",
+		"acronym": "PZ",
+		"istatCode": "076",
+		"regionIstatCode": "17"
+	},
+	{
+		"name": "Matera",
+		"acronym": "MT",
+		"istatCode": "077",
+		"regionIstatCode": "17"
+	},
+	{
+		"name": "Cosenza",
+		"acronym": "CS",
+		"istatCode": "078",
+		"regionIstatCode": "18"
+	},
+	{
+		"name": "Catanzaro",
+		"acronym": "CZ",
+		"istatCode": "079",
+		"regionIstatCode": "18"
+	},
+	{
+		"name": "Reggio Calabria",
+		"acronym": "RC",
+		"istatCode": "080",
+		"regionIstatCode": "18"
+	},
+	{
+		"name": "Trapani",
+		"acronym": "TP",
+		"istatCode": "081",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Palermo",
+		"acronym": "PA",
+		"istatCode": "082",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Messina",
+		"acronym": "ME",
+		"istatCode": "083",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Agrigento",
+		"acronym": "AG",
+		"istatCode": "084",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Caltanissetta",
+		"acronym": "CL",
+		"istatCode": "085",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Enna",
+		"acronym": "EN",
+		"istatCode": "086",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Catania",
+		"acronym": "CT",
+		"istatCode": "087",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Ragusa",
+		"acronym": "RG",
+		"istatCode": "088",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Siracusa",
+		"acronym": "SR",
+		"istatCode": "089",
+		"regionIstatCode": "19"
+	},
+	{
+		"name": "Sassari",
+		"acronym": "SS",
+		"istatCode": "090",
+		"regionIstatCode": "20"
+	},
+	{
+		"name": "Nuoro",
+		"acronym": "NU",
+		"istatCode": "091",
+		"regionIstatCode": "20"
+	},
+	{
+		"name": "Cagliari",
+		"acronym": "CA",
+		"istatCode": "092",
+		"regionIstatCode": "20"
+	},
+	{
+		"name": "Pordenone",
+		"acronym": "PN",
+		"istatCode": "093",
+		"regionIstatCode": "06"
+	},
+	{
+		"name": "Isernia",
+		"acronym": "IS",
+		"istatCode": "094",
+		"regionIstatCode": "14"
+	},
+	{
+		"name": "Oristano",
+		"acronym": "OR",
+		"istatCode": "095",
+		"regionIstatCode": "20"
+	},
+	{
+		"name": "Biella",
+		"acronym": "BI",
+		"istatCode": "096",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Lecco",
+		"acronym": "LC",
+		"istatCode": "097",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Lodi",
+		"acronym": "LO",
+		"istatCode": "098",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Rimini",
+		"acronym": "RN",
+		"istatCode": "099",
+		"regionIstatCode": "08"
+	},
+	{
+		"name": "Prato",
+		"acronym": "PO",
+		"istatCode": "100",
+		"regionIstatCode": "09"
+	},
+	{
+		"name": "Crotone",
+		"acronym": "KR",
+		"istatCode": "101",
+		"regionIstatCode": "18"
+	},
+	{
+		"name": "Vibo Valentia",
+		"acronym": "VV",
+		"istatCode": "102",
+		"regionIstatCode": "18"
+	},
+	{
+		"name": "Verbano-Cusio-Ossola",
+		"acronym": "VB",
+		"istatCode": "103",
+		"regionIstatCode": "01"
+	},
+	{
+		"name": "Monza e della Brianza",
+		"acronym": "MB",
+		"istatCode": "108",
+		"regionIstatCode": "03"
+	},
+	{
+		"name": "Fermo",
+		"acronym": "FM",
+		"istatCode": "109",
+		"regionIstatCode": "11"
+	},
+	{
+		"name": "Barletta-Andria-Trani",
+		"acronym": "BT",
+		"istatCode": "110",
+		"regionIstatCode": "16"
+	},
+	{
+		"name": "Sud Sardegna",
+		"acronym": "SU",
+		"istatCode": "111",
+		"regionIstatCode": "20"
+	}
+]

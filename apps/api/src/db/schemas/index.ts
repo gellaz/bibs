@@ -3,6 +3,7 @@ export * from "./auth";
 export * from "./category";
 export * from "./customer";
 export * from "./employee";
+export * from "./location";
 export * from "./order";
 export * from "./points";
 export * from "./product";
