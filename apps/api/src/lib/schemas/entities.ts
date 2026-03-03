@@ -133,6 +133,17 @@ export const StorePhoneNumberSchema = t.Object({
 	createdAt: t.Date(),
 });
 
+export const CsvImportResultSchema = t.Object({
+	created: t.Number({ description: "Numero di prodotti creati con successo" }),
+	failed: t.Number({ description: "Numero di righe con errori" }),
+	errors: t.Array(
+		t.Object({
+			row: t.Number({ description: "Numero di riga nel CSV (partendo da 2)" }),
+			message: t.String({ description: "Descrizione dell'errore" }),
+		}),
+	),
+});
+
 export const StoreProductSchema = t.Object({
 	id: t.String(),
 	productId: t.String(),

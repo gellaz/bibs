@@ -4,6 +4,7 @@ import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
+	CsvImportResultSchema,
 	OkMessage,
 	okPageRes,
 	okRes,
@@ -12,6 +13,7 @@ import {
 	withErrors,
 } from "@/lib/schemas";
 import { withSeller } from "../context";
+import { importProductsFromCsv } from "../services/product-import";
 import {
 	createProduct,
 	deleteProduct,
@@ -153,6 +155,46 @@ export const productsRoutes = new Elysia()
 				summary: "Aggiorna prodotto",
 				description:
 					"Aggiorna i dati di un prodotto. Se vengono fornite categoryIds, le classificazioni vengono sostituite.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.post(
+		"/products/import",
+		async (ctx) => {
+			const { sellerProfile: sp, body, user, store } = withSeller(ctx);
+			const pino = getLogger(store);
+			const csvText = await body.file.text();
+			const result = await importProductsFromCsv({
+				sellerProfileId: sp.id,
+				csvText,
+			});
+
+			pino.info(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					created: result.created,
+					failed: result.failed,
+					action: "products_imported",
+				},
+				"Importazione prodotti da CSV completata",
+			);
+
+			return ok(result);
+		},
+		{
+			body: t.Object({
+				file: t.File({
+					type: "text/csv",
+					description: "File CSV con i prodotti da importare",
+				}),
+			}),
+			response: withErrors({ 200: okRes(CsvImportResultSchema) }),
+			detail: {
+				summary: "Importa prodotti da CSV",
+				description:
+					"Importa prodotti in blocco da un file CSV. Colonne attese: name, description, price, categories (nomi separati da ';'). Restituisce il numero di prodotti creati e gli eventuali errori per riga.",
 				tags: ["Seller - Products"],
 			},
 		},
