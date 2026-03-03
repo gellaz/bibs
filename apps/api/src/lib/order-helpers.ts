@@ -3,6 +3,7 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 import { customerProfile } from "@/db/schemas/customer";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
+import { config } from "@/lib/config";
 
 /**
  * Refunds stock and loyalty points for a cancelled/expired order.
@@ -42,4 +43,46 @@ export async function refundStockAndPoints(
 			description: `Refunded ${order.pointsSpent} points`,
 		});
 	}
+}
+
+/**
+ * Awards loyalty points for a completed order.
+ * Calculates points from totalCents, updates the customer balance,
+ * and inserts a point_transaction record.
+ * Must be called within an existing transaction.
+ * Returns the number of points awarded.
+ */
+export async function awardPoints(
+	tx: PgTransaction<any, any, any>,
+	params: {
+		customerProfileId: string;
+		orderId: string;
+		totalCents: number;
+		description?: string;
+	},
+): Promise<number> {
+	const pointsEarned = Math.floor(
+		(params.totalCents / 100) * config.pointsPerEuro,
+	);
+
+	if (pointsEarned > 0) {
+		await tx
+			.update(customerProfile)
+			.set({
+				points: sql`${customerProfile.points} + ${pointsEarned}`,
+			})
+			.where(eq(customerProfile.id, params.customerProfileId));
+
+		await tx.insert(pointTransaction).values({
+			customerProfileId: params.customerProfileId,
+			orderId: params.orderId,
+			amount: pointsEarned,
+			type: "earned",
+			description:
+				params.description ??
+				`Earned ${pointsEarned} points from completed order`,
+		});
+	}
+
+	return pointsEarned;
 }

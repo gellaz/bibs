@@ -1,13 +1,11 @@
-import { count, eq, inArray, sql } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { customerProfile } from "@/db/schemas/customer";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order } from "@/db/schemas/order";
-import { pointTransaction } from "@/db/schemas/points";
-import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { clearExpiry } from "@/lib/jobs/reservation-timer";
 import { toCents } from "@/lib/money";
+import { awardPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 
@@ -48,33 +46,18 @@ export async function transitionOrder(
 
 	// Completion requires awarding loyalty points in a transaction
 	if (toStatus === "completed") {
-		const pointsEarned = Math.floor(
-			(toCents(existing.total) / 100) * config.pointsPerEuro,
-		);
-
 		const [updated] = await db.transaction(async (tx) => {
+			const pointsEarned = await awardPoints(tx, {
+				customerProfileId: existing.customerProfileId,
+				orderId,
+				totalCents: toCents(existing.total),
+			});
+
 			const [upd] = await tx
 				.update(order)
 				.set({ status: "completed", pointsEarned })
 				.where(eq(order.id, orderId))
 				.returning();
-
-			if (pointsEarned > 0) {
-				await tx
-					.update(customerProfile)
-					.set({
-						points: sql`${customerProfile.points} + ${pointsEarned}`,
-					})
-					.where(eq(customerProfile.id, existing.customerProfileId));
-
-				await tx.insert(pointTransaction).values({
-					customerProfileId: existing.customerProfileId,
-					orderId,
-					amount: pointsEarned,
-					type: "earned",
-					description: `Earned ${pointsEarned} points from completed order`,
-				});
-			}
 
 			return [upd];
 		});
@@ -98,20 +81,28 @@ export async function transitionOrder(
 
 interface ListSellerOrdersParams {
 	storeIds: string[];
+	status?: string;
+	type?: string;
 	page?: number;
 	limit?: number;
 }
 
 export async function listSellerOrders(params: ListSellerOrdersParams) {
-	const { storeIds } = params;
+	const { storeIds, status, type } = params;
 	const { page, limit, offset } = parsePagination(params);
 
 	if (storeIds.length === 0)
 		return { data: [], pagination: { page, limit, total: 0 } };
 
+	const conditions = [inArray(order.storeId, storeIds)];
+	if (status) conditions.push(eq(order.status, status as OrderStatus));
+	if (type) conditions.push(eq(order.type, type as OrderType));
+
+	const where = and(...conditions);
+
 	const [data, [{ total }]] = await Promise.all([
 		db.query.order.findMany({
-			where: inArray(order.storeId, storeIds),
+			where,
 			with: {
 				items: { with: { storeProduct: { with: { product: true } } } },
 				customerProfile: { with: { user: true } },
@@ -121,10 +112,7 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 			limit,
 			offset,
 		}),
-		db
-			.select({ total: count() })
-			.from(order)
-			.where(inArray(order.storeId, storeIds)),
+		db.select({ total: count() }).from(order).where(where),
 	]);
 
 	return { data, pagination: { page, limit, total } };

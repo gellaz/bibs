@@ -9,23 +9,31 @@ import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { clearExpiry, scheduleExpiry } from "@/lib/jobs/reservation-timer";
 import { fromCents, toCents } from "@/lib/money";
-import { refundStockAndPoints } from "@/lib/order-helpers";
+import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 
 interface ListCustomerOrdersParams {
 	customerProfileId: string;
+	status?: string;
+	type?: string;
 	page?: number;
 	limit?: number;
 }
 
 export async function listCustomerOrders(params: ListCustomerOrdersParams) {
-	const { customerProfileId } = params;
+	const { customerProfileId, status, type } = params;
 	const { page, limit, offset } = parsePagination(params);
+
+	const conditions = [eq(order.customerProfileId, customerProfileId)];
+	if (status) conditions.push(eq(order.status, status as OrderStatus));
+	if (type) conditions.push(eq(order.type, type as OrderType));
+
+	const where = and(...conditions);
 
 	const [data, [{ total }]] = await Promise.all([
 		db.query.order.findMany({
-			where: eq(order.customerProfileId, customerProfileId),
+			where,
 			with: {
 				items: { with: { storeProduct: { with: { product: true } } } },
 				store: true,
@@ -35,10 +43,7 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 			limit,
 			offset,
 		}),
-		db
-			.select({ total: count() })
-			.from(order)
-			.where(eq(order.customerProfileId, customerProfileId)),
+		db.select({ total: count() }).from(order).where(where),
 	]);
 
 	return { data, pagination: { page, limit, total } };
@@ -152,9 +157,6 @@ export async function createOrder(params: CreateOrderParams) {
 		const finalTotalCents = totalCents - discountCents;
 
 		const initialStatus = type === "direct" ? "completed" : "confirmed";
-		const pointsEarned = Math.floor(
-			(finalTotalCents / 100) * config.pointsPerEuro,
-		);
 
 		const reservationExpiresAt =
 			type === "reserve_pickup"
@@ -173,7 +175,7 @@ export async function createOrder(params: CreateOrderParams) {
 				shippingAddressId: type === "pay_deliver" ? shippingAddressId : null,
 				shippingCost,
 				reservationExpiresAt,
-				pointsEarned: type === "direct" ? pointsEarned : 0,
+				pointsEarned: 0,
 				pointsSpent: actualPointsSpent,
 			})
 			.returning();
@@ -224,21 +226,19 @@ export async function createOrder(params: CreateOrderParams) {
 		}
 
 		// Award points immediately for direct purchase
-		if (type === "direct" && pointsEarned > 0) {
-			await tx
-				.update(customerProfile)
-				.set({
-					points: sql`${customerProfile.points} + ${pointsEarned}`,
-				})
-				.where(eq(customerProfile.id, customerProfileId));
-
-			await tx.insert(pointTransaction).values({
+		if (type === "direct") {
+			const pointsEarned = await awardPoints(tx, {
 				customerProfileId,
 				orderId: newOrder.id,
-				amount: pointsEarned,
-				type: "earned",
-				description: `Earned ${pointsEarned} points from direct purchase`,
+				totalCents: finalTotalCents,
+				description: "Earned points from direct purchase",
 			});
+			if (pointsEarned > 0) {
+				await tx
+					.update(order)
+					.set({ pointsEarned })
+					.where(eq(order.id, newOrder.id));
+			}
 		}
 
 		// Schedule exact-time expiry for reserve_pickup
@@ -290,36 +290,22 @@ export async function pickupOrder(params: {
 			throw new ServiceError(400, "Reservation has expired");
 		}
 
-		// Award points
-		const pointsEarned = Math.floor(
-			(toCents(existing.total) / 100) * config.pointsPerEuro,
-		);
-
 		// Clear the expiry timer — order is being completed
 		clearExpiry(existing.id);
+
+		// Award points
+		const pointsEarned = await awardPoints(tx, {
+			customerProfileId,
+			orderId: existing.id,
+			totalCents: toCents(existing.total),
+			description: "Earned points from order pickup",
+		});
 
 		const [updated] = await tx
 			.update(order)
 			.set({ status: "completed", pointsEarned })
 			.where(eq(order.id, existing.id))
 			.returning();
-
-		if (pointsEarned > 0) {
-			await tx
-				.update(customerProfile)
-				.set({
-					points: sql`${customerProfile.points} + ${pointsEarned}`,
-				})
-				.where(eq(customerProfile.id, customerProfileId));
-
-			await tx.insert(pointTransaction).values({
-				customerProfileId,
-				orderId: existing.id,
-				amount: pointsEarned,
-				type: "earned",
-				description: `Earned ${pointsEarned} points from order pickup`,
-			});
-		}
 
 		return updated;
 	});
