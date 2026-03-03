@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { OrderListQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
 import {
 	CustomerOrderWithRelationsSchema,
@@ -103,14 +103,14 @@ export const ordersRoutes = new Elysia()
 			return okPage(result.data, result.pagination);
 		},
 		{
-			query: PaginationQuery,
+			query: OrderListQuery,
 			response: withErrors({
 				200: okPageRes(CustomerOrderWithRelationsSchema),
 			}),
 			detail: {
 				summary: "Lista ordini cliente",
 				description:
-					"Restituisce gli ordini del cliente ordinati per data decrescente, con articoli, negozio e indirizzo di spedizione.",
+					"Restituisce gli ordini del cliente ordinati per data decrescente, con articoli, negozio e indirizzo di spedizione. Filtrabile per stato e tipo.",
 				tags: ["Customer - Orders"],
 			},
 		},
