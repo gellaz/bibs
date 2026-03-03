@@ -1,6 +1,5 @@
 import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
-import { sql } from "drizzle-orm";
 import { Elysia } from "elysia";
 import logixlysia from "logixlysia";
 import { db } from "@/db";
@@ -9,7 +8,7 @@ import { env } from "@/lib/env";
 import { clearAllTimers, restoreTimers } from "@/lib/jobs/reservation-timer";
 import { pinoOptions } from "@/lib/logger";
 import { ok } from "@/lib/responses";
-import { checkBucket, ensureBucket } from "@/lib/s3";
+import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { categoriesModule } from "@/modules/categories";
 import { customerModule } from "@/modules/customer";
@@ -19,6 +18,7 @@ import { sellerModule } from "@/modules/seller";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
 import { errorHandler } from "@/plugins/error-handler";
+import { health } from "@/plugins/health";
 import { requestId } from "@/plugins/request-id";
 
 const app = new Elysia()
@@ -152,50 +152,7 @@ const app = new Elysia()
 	.use(sellerModule)
 	.use(customerModule)
 	.use(cronJobs)
-	.get(
-		"/health",
-		() => ({ status: "ok" }),
-		{
-			detail: {
-				summary: "Liveness check",
-				description:
-					"Verifica che il processo sia attivo. Sempre 200 se il server risponde. Usato come liveness probe (Docker, K8s).",
-				tags: ["System"],
-			},
-		},
-	)
-	.get(
-		"/ready",
-		async ({ set }) => {
-			const checks = await Promise.allSettled([
-				db.execute(sql`SELECT 1`).then(() => true),
-				checkBucket(),
-			]);
-
-			const [dbCheck, s3Check] = checks.map((r) =>
-				r.status === "fulfilled" ? r.value : false,
-			);
-
-			const healthy = dbCheck && s3Check;
-			if (!healthy) set.status = 503;
-
-			return {
-				status: healthy ? "ok" : "unhealthy",
-				services: {
-					database: dbCheck ? "ok" : "unreachable",
-					s3: s3Check ? "ok" : "unreachable",
-				},
-			};
-		},
-		{
-			detail: {
-				summary: "Readiness check",
-				description:
-					"Verifica la connettività a database e S3/MinIO. Restituisce 503 se uno dei servizi non è raggiungibile. Usato come readiness probe (Docker, K8s).",
-				tags: ["System"],
-			},
-		},
-	)
+	.use(health)
 	.get("/user", ({ user }) => ok(user), {
 		auth: true,
 		detail: {
