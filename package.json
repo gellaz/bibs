@@ -62,7 +62,7 @@
 		"@hookform/resolvers": "^5.2.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.4.4",
+		"@biomejs/biome": "^2.4.5",
 		"concurrently": "^9.2.1",
 		"typescript": "^5.9.3"
 	}
