@@ -65,6 +65,19 @@ export async function ensureBucket() {
 	}
 }
 
+/**
+ * Checks S3/MinIO connectivity by sending a HeadBucket request.
+ * Returns true if the bucket is reachable, false otherwise.
+ */
+export async function checkBucket(): Promise<boolean> {
+	try {
+		await awsS3.send(new HeadBucketCommand({ Bucket: bucket }));
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 /** Returns the public URL for a given S3 object key. */
 export function publicUrl(key: string) {
 	return `${endpoint}/${bucket}/${key}`;
