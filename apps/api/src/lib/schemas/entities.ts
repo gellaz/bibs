@@ -301,6 +301,11 @@ export const SearchResultSchema = t.Object({
 		minimum: 0,
 		description: "Distanza in metri dal punto di ricerca",
 	}),
+	rank: t.Number({
+		minimum: 0,
+		description:
+			"Punteggio di rilevanza full-text (0 se nessuna query testuale)",
+	}),
 	images: t.Array(
 		t.Object({
 			id: t.String(),

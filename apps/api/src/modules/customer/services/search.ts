@@ -69,9 +69,10 @@ export async function searchProducts(params: SearchParams) {
 
 	const whereClause = sql.join(conditions, sql` AND `);
 
-	const distanceExpr =
-		lat !== undefined && lng !== undefined
-			? sql`(
+	const hasGeo = lat !== undefined && lng !== undefined;
+
+	const distanceExpr = hasGeo
+		? sql`(
           SELECT MIN(ST_Distance(
             ${store.location}::geography,
             ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
@@ -81,7 +82,18 @@ export async function searchProducts(params: SearchParams) {
           WHERE ${storeProduct.productId} = ${product.id}
           AND ${storeProduct.stock} > 0
         )`
-			: sql`0`;
+		: sql`0`;
+
+	const rankExpr = q
+		? sql`ts_rank_cd(
+          setweight(to_tsvector('italian', ${product.name}), 'A') ||
+          setweight(to_tsvector('italian', coalesce(${product.description}, '')), 'B'),
+          websearch_to_tsquery('italian', ${q})
+        )`
+		: sql`0`;
+
+	// Order by: text relevance first (desc), then distance (asc)
+	const orderExpr = q ? sql`rank DESC, distance ASC` : sql`distance ASC`;
 
 	const [data, [{ total }]] = await Promise.all([
 		db
@@ -91,6 +103,7 @@ export async function searchProducts(params: SearchParams) {
 				description: product.description,
 				price: product.price,
 				distance: sql<number>`${distanceExpr}`.as("distance"),
+				rank: sql<number>`${rankExpr}`.as("rank"),
 				images: sql<{ id: string; url: string; position: number }[]>`(
           SELECT coalesce(json_agg(json_build_object(
             'id', ${productImage.id},
@@ -103,7 +116,7 @@ export async function searchProducts(params: SearchParams) {
 			})
 			.from(product)
 			.where(whereClause)
-			.orderBy(sql`distance`)
+			.orderBy(orderExpr)
 			.limit(limit)
 			.offset(offset),
 		db
