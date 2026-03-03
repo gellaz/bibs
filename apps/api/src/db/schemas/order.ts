@@ -6,6 +6,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
 import { customerAddress } from "./address";
@@ -57,6 +58,7 @@ export const order = pgTable(
 		}),
 		pointsEarned: integer("points_earned").default(0).notNull(),
 		pointsSpent: integer("points_spent").default(0).notNull(),
+		idempotencyKey: text("idempotency_key"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -75,6 +77,9 @@ export const order = pgTable(
 			.where(
 				sql`${table.type} = 'reserve_pickup' AND ${table.status} IN ('confirmed', 'ready_for_pickup') AND ${table.reservationExpiresAt} IS NOT NULL`,
 			),
+		uniqueIndex("order_idempotency_key_idx")
+			.on(table.idempotencyKey)
+			.where(sql`${table.idempotencyKey} IS NOT NULL`),
 	],
 );
 

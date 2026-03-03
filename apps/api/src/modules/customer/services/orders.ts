@@ -81,6 +81,7 @@ interface CreateOrderParams {
 	items: { storeProductId: string; quantity: number }[];
 	shippingAddressId?: string;
 	pointsToSpend?: number;
+	idempotencyKey?: string;
 }
 
 export async function createOrder(params: CreateOrderParams) {
@@ -92,7 +93,16 @@ export async function createOrder(params: CreateOrderParams) {
 		items,
 		shippingAddressId,
 		pointsToSpend = 0,
+		idempotencyKey,
 	} = params;
+
+	// Idempotency: return existing order if key was already used
+	if (idempotencyKey) {
+		const existing = await db.query.order.findFirst({
+			where: eq(order.idempotencyKey, idempotencyKey),
+		});
+		if (existing) return existing;
+	}
 
 	// Shipping cost is determined server-side
 	const shippingCost = type === "pay_deliver" ? config.shippingCost : null;
@@ -177,6 +187,7 @@ export async function createOrder(params: CreateOrderParams) {
 				reservationExpiresAt,
 				pointsEarned: 0,
 				pointsSpent: actualPointsSpent,
+				idempotencyKey: idempotencyKey ?? null,
 			})
 			.returning();
 

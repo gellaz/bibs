@@ -82,12 +82,19 @@ export const ordersRoutes = new Elysia()
 						description: "Punti fedeltà da utilizzare come sconto",
 					}),
 				),
+				idempotencyKey: t.Optional(
+					t.String({
+						format: "uuid",
+						description:
+							"UUID di idempotenza. Se fornito, richieste duplicate con la stessa key restituiscono l'ordine già creato.",
+					}),
+				),
 			}),
 			response: withErrors({ 200: okRes(OrderSchema) }),
 			detail: {
 				summary: "Crea ordine",
 				description:
-					"Crea un nuovo ordine. Lo stock viene decrementato atomicamente. I punti fedeltà vengono accreditati/addebitati in base alla configurazione.",
+					"Crea un nuovo ordine. Lo stock viene decrementato atomicamente. I punti fedeltà vengono accreditati/addebitati in base alla configurazione. Supporta idempotenza tramite il campo idempotencyKey.",
 				tags: ["Customer - Orders"],
 			},
 		},
