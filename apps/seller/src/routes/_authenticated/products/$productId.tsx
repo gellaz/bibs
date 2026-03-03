@@ -9,7 +9,7 @@ import {
 	type ExistingImage,
 	ProductForm,
 	type ProductFormValues,
-} from "@/components/product-form";
+} from "@/features/products/components/product-form";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/$productId")({

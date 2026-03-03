@@ -1,4 +1,3 @@
-import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
 	CardContent,
@@ -6,10 +5,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
-import { Input } from "@bibs/ui/components/input";
-import { Label } from "@bibs/ui/components/label";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { LoginForm } from "@/features/auth/components/login-form";
+import type { LoginFormData } from "@/features/auth/schemas/login";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/login")({
@@ -18,10 +17,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
 	const navigate = useNavigate();
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
-	const [loading, setLoading] = useState(false);
 
 	const { data: session } = authClient.useSession();
 
@@ -30,15 +26,13 @@ function LoginPage() {
 		return null;
 	}
 
-	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
+	async function handleSubmit(data: LoginFormData) {
 		setError("");
-		setLoading(true);
 
 		try {
 			const { error: signInError } = await authClient.signIn.email({
-				email,
-				password,
+				email: data.email,
+				password: data.password,
 			});
 
 			if (signInError) {
@@ -49,8 +43,6 @@ function LoginPage() {
 			void navigate({ to: "/" });
 		} catch {
 			setError("Errore durante il login. Riprova.");
-		} finally {
-			setLoading(false);
 		}
 	}
 
@@ -67,50 +59,13 @@ function LoginPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit} className="flex flex-col gap-4">
-						{error && (
-							<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-								{error}
-							</div>
-						)}
-
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="email">Email</Label>
-							<Input
-								id="email"
-								type="email"
-								placeholder="venditore@esempio.it"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								required
-								autoComplete="email"
-								autoFocus
-							/>
-						</div>
-
-						<div className="flex flex-col gap-2">
-							<Label htmlFor="password">Password</Label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								required
-								autoComplete="current-password"
-							/>
-						</div>
-
-						<Button type="submit" disabled={loading} className="w-full">
-							{loading ? "Accesso in corso..." : "Accedi"}
-						</Button>
-
-						<p className="text-center text-sm text-muted-foreground">
-							Non hai un account?{" "}
-							<Link to="/register" className="text-primary underline">
-								Registrati
-							</Link>
-						</p>
-					</form>
+					<LoginForm onSubmit={handleSubmit} apiError={error} />
+					<p className="mt-4 text-center text-sm text-muted-foreground">
+						Non hai un account?{" "}
+						<Link to="/register" className="text-primary underline">
+							Registrati
+						</Link>
+					</p>
 				</CardContent>
 			</Card>
 		</div>

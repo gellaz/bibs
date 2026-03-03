@@ -3,7 +3,10 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeftIcon } from "lucide-react";
-import { ProductForm, type ProductFormValues } from "@/components/product-form";
+import {
+	ProductForm,
+	type ProductFormValues,
+} from "@/features/products/components/product-form";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/new")({

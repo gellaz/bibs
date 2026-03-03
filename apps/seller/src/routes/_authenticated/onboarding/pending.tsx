@@ -6,11 +6,22 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
+import {
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldLabel,
+} from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { Label } from "@bibs/ui/components/label";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import {
+	type VatFormData,
+	vatFormSchema,
+} from "@/features/onboarding/schemas/vat";
 import { useSellerProfile, useUpdateVat } from "@/hooks/use-seller-profile";
 import { authClient } from "@/lib/auth-client";
 
@@ -22,29 +33,31 @@ function PendingVerificationPage() {
 	const navigate = useNavigate();
 	const { data: profile, isLoading } = useSellerProfile();
 	const updateVat = useUpdateVat();
-	const [vatNumber, setVatNumber] = useState("");
-	const [error, setError] = useState("");
+	const [apiError, setApiError] = useState("");
+
+	const {
+		register,
+		handleSubmit,
+		reset,
+		formState: { errors },
+	} = useForm<VatFormData>({
+		resolver: zodResolver(vatFormSchema),
+		defaultValues: { vatNumber: "" },
+	});
 
 	const handleLogout = async () => {
 		await authClient.signOut();
 		void navigate({ to: "/login" });
 	};
 
-	const handleResubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError("");
-
-		// Validate VAT format (11 digits)
-		if (!/^\d{11}$/.test(vatNumber)) {
-			setError("La partita IVA deve essere di 11 cifre numeriche");
-			return;
-		}
+	const handleResubmit: SubmitHandler<VatFormData> = async (data) => {
+		setApiError("");
 
 		try {
-			await updateVat.mutateAsync(vatNumber);
-			setVatNumber("");
+			await updateVat.mutateAsync(data.vatNumber);
+			reset();
 		} catch (err) {
-			setError(
+			setApiError(
 				err instanceof Error
 					? err.message
 					: "Errore durante l'aggiornamento della partita IVA",
@@ -113,30 +126,31 @@ function PendingVerificationPage() {
 					)}
 
 					{isRejected && (
-						<form onSubmit={handleResubmit} className="flex flex-col gap-4">
-							{error && (
+						<form
+							onSubmit={handleSubmit(handleResubmit)}
+							className="flex flex-col gap-4"
+						>
+							{apiError && (
 								<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-									{error}
+									{apiError}
 								</div>
 							)}
 
-							<div className="flex flex-col gap-2">
-								<Label htmlFor="vatNumber">Nuova Partita IVA</Label>
+							<Field data-invalid={!!errors.vatNumber}>
+								<FieldLabel htmlFor="vatNumber">Nuova Partita IVA</FieldLabel>
 								<Input
 									id="vatNumber"
 									type="text"
 									placeholder="12345678901"
-									value={vatNumber}
-									onChange={(e) => setVatNumber(e.target.value)}
 									maxLength={11}
-									pattern="\d{11}"
-									required
 									autoFocus
+									{...register("vatNumber")}
 								/>
-								<p className="text-xs text-muted-foreground">
+								<FieldDescription>
 									Inserisci la tua partita IVA italiana (11 cifre)
-								</p>
-							</div>
+								</FieldDescription>
+								<FieldError errors={[errors.vatNumber]} />
+							</Field>
 
 							<Button
 								type="submit"

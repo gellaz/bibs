@@ -1,22 +1,24 @@
 import { Button } from "@bibs/ui/components/button";
+import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { Label } from "@bibs/ui/components/label";
 import { Separator } from "@bibs/ui/components/separator";
 import { Textarea } from "@bibs/ui/components/textarea";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useState } from "react";
-import { CategoryPicker } from "@/components/category-picker";
+import { type SubmitHandler, useForm } from "react-hook-form";
+import {
+	type ProductFormData,
+	productFormSchema,
+} from "@/features/products/schemas/product";
+import { CategoryPicker } from "./category-picker";
 import {
 	type ExistingImage,
 	ProductImageDropzone,
-} from "@/components/product-image-dropzone";
+} from "./product-image-dropzone";
 
 export type { ExistingImage };
 
-export interface ProductFormValues {
-	name: string;
-	description?: string;
-	price: string;
-	categoryIds: string[];
+export interface ProductFormValues extends ProductFormData {
 	files: File[];
 	imageOrder?: string[];
 }
@@ -51,9 +53,25 @@ export function ProductForm({
 	submitLabel,
 	pendingLabel,
 }: ProductFormProps) {
-	const [selectedCategories, setSelectedCategories] = useState<string[]>(
-		defaultValues?.categoryIds ?? [],
-	);
+	const {
+		register,
+		handleSubmit,
+		setValue,
+		watch,
+		formState: { errors },
+	} = useForm<ProductFormData>({
+		resolver: zodResolver(productFormSchema),
+		defaultValues: {
+			name: defaultValues?.name ?? "",
+			description: defaultValues?.description ?? "",
+			price: defaultValues?.price ?? "",
+			categoryIds: defaultValues?.categoryIds ?? [],
+		},
+	});
+
+	const selectedCategories = watch("categoryIds");
+
+	// Files and imageOrder are outside RHF (non-serializable File objects)
 	const [files, setFiles] = useState<File[]>([]);
 	const [imageOrder, setImageOrder] = useState<string[] | undefined>();
 
@@ -76,89 +94,72 @@ export function ProductForm({
 	};
 
 	const toggleCategory = (categoryId: string) => {
-		setSelectedCategories((prev) =>
-			prev.includes(categoryId)
-				? prev.filter((id) => id !== categoryId)
-				: [...prev, categoryId],
-		);
+		const current = selectedCategories;
+		const next = current.includes(categoryId)
+			? current.filter((id) => id !== categoryId)
+			: [...current, categoryId];
+		setValue("categoryIds", next, { shouldValidate: true });
 	};
 
-	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		const fd = new FormData(e.currentTarget);
-		const name = (fd.get("name") as string).trim();
-		const description = (fd.get("description") as string).trim() || undefined;
-		const priceRaw = (fd.get("price") as string).trim();
-
-		if (!name || !priceRaw || selectedCategories.length === 0) return;
-
-		const price = priceRaw.includes(".")
-			? priceRaw
-					.replace(/^(\d+\.\d{0,2}).*$/, "$1")
-					.padEnd(priceRaw.indexOf(".") + 3, "0")
-			: `${priceRaw}.00`;
-
+	const onFormSubmit: SubmitHandler<ProductFormData> = (data) => {
 		onSubmit({
-			name,
-			description,
-			price,
-			categoryIds: selectedCategories,
+			...data,
 			files,
 			imageOrder,
 		});
 	};
 
 	return (
-		<form onSubmit={handleSubmit} className="space-y-5">
+		<form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
 			<div className="grid gap-4 sm:grid-cols-2">
-				<div className="space-y-1.5 sm:col-span-2">
-					<Label htmlFor="product-name">Nome *</Label>
+				<Field data-invalid={!!errors.name} className="sm:col-span-2">
+					<FieldLabel htmlFor="product-name">Nome *</FieldLabel>
 					<Input
 						id="product-name"
-						name="name"
-						defaultValue={defaultValues?.name}
 						placeholder={defaultValues ? undefined : "Es. Pizza Margherita"}
-						required
 						autoFocus={!defaultValues}
+						{...register("name")}
 					/>
-				</div>
+					<FieldError errors={[errors.name]} />
+				</Field>
 
-				<div className="space-y-1.5 sm:col-span-2">
-					<Label htmlFor="product-description">Descrizione</Label>
+				<Field className="sm:col-span-2">
+					<FieldLabel htmlFor="product-description">Descrizione</FieldLabel>
 					<Textarea
 						id="product-description"
-						name="description"
-						defaultValue={defaultValues?.description ?? ""}
 						placeholder={
 							defaultValues ? undefined : "Descrizione del prodotto (opzionale)"
 						}
 						rows={2}
+						{...register("description")}
 					/>
-				</div>
+				</Field>
 
-				<div className="space-y-1.5">
-					<Label htmlFor="product-price">Prezzo (€) *</Label>
+				<Field data-invalid={!!errors.price}>
+					<FieldLabel htmlFor="product-price">Prezzo (€) *</FieldLabel>
 					<Input
 						id="product-price"
-						name="price"
 						type="number"
 						step="0.01"
 						min="0.01"
-						defaultValue={defaultValues?.price}
 						placeholder={defaultValues ? undefined : "9.99"}
-						required
+						{...register("price")}
 					/>
-				</div>
+					<FieldError errors={[errors.price]} />
+				</Field>
 			</div>
 
 			<Separator />
 
-			<CategoryPicker
-				categories={categories}
-				selected={selectedCategories}
-				onToggle={toggleCategory}
-				required
-			/>
+			<Field data-invalid={!!errors.categoryIds}>
+				<CategoryPicker
+					categories={categories}
+					selected={selectedCategories}
+					onToggle={toggleCategory}
+					required
+				/>
+				<FieldError errors={[errors.categoryIds]} />
+			</Field>
 
 			<Separator />
 
@@ -176,10 +177,7 @@ export function ProductForm({
 				<Button type="button" variant="outline" onClick={onCancel}>
 					Annulla
 				</Button>
-				<Button
-					type="submit"
-					disabled={isPending || selectedCategories.length === 0}
-				>
+				<Button type="submit" disabled={isPending}>
 					{isPending ? pendingLabel : submitLabel}
 				</Button>
 			</div>

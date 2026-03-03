@@ -4,12 +4,9 @@ import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
-	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
-import { Input } from "@bibs/ui/components/input";
-import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -20,17 +17,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
-import { Textarea } from "@bibs/ui/components/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	GlobeIcon,
-	PhoneIcon,
-	PlusIcon,
-	StoreIcon,
-	Trash2Icon,
-} from "lucide-react";
+import { GlobeIcon, PhoneIcon, PlusIcon, StoreIcon } from "lucide-react";
 import { useState } from "react";
+import { StoreForm } from "@/features/stores/components/store-form";
+import type { StoreFormData } from "@/features/stores/schemas/store";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/stores")({
@@ -43,13 +35,10 @@ export const Route = createFileRoute("/_authenticated/stores")({
 	},
 });
 
-type PhoneNumber = { label: string; number: string };
-
 function StoresPage() {
 	const { page, limit } = Route.useSearch();
 	const queryClient = useQueryClient();
 	const [createOpen, setCreateOpen] = useState(false);
-	const [phones, setPhones] = useState<PhoneNumber[]>([]);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["stores", page, limit],
@@ -69,22 +58,7 @@ function StoresPage() {
 	});
 
 	const createMutation = useMutation({
-		mutationFn: async (formData: {
-			name: string;
-			description?: string;
-			addressLine1: string;
-			addressLine2?: string;
-			city: string;
-			zipCode: string;
-			province?: string;
-			country?: string;
-			websiteUrl?: string;
-			phoneNumbers?: Array<{
-				label?: string;
-				number: string;
-				position?: number;
-			}>;
-		}) => {
+		mutationFn: async (formData: StoreFormData) => {
 			const response = await api().seller.stores.post(formData);
 
 			if (response.error) {
@@ -98,48 +72,12 @@ function StoresPage() {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });
 			setCreateOpen(false);
-			setPhones([]);
 			toast.success("Negozio creato con successo");
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Errore durante la creazione");
 		},
 	});
-
-	const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		const fd = new FormData(e.currentTarget);
-		const name = (fd.get("name") as string).trim();
-		const description = (fd.get("description") as string).trim() || undefined;
-		const addressLine1 = (fd.get("addressLine1") as string).trim();
-		const addressLine2 = (fd.get("addressLine2") as string).trim() || undefined;
-		const city = (fd.get("city") as string).trim();
-		const zipCode = (fd.get("zipCode") as string).trim();
-		const province = (fd.get("province") as string).trim() || undefined;
-		const websiteUrl = (fd.get("websiteUrl") as string).trim() || undefined;
-
-		if (!name || !addressLine1 || !city || !zipCode) return;
-
-		const phoneNumbers = phones
-			.filter((p) => p.number.trim())
-			.map((p, idx) => ({
-				label: p.label.trim() || undefined,
-				number: p.number.trim(),
-				position: idx,
-			}));
-
-		createMutation.mutate({
-			name,
-			description,
-			addressLine1,
-			addressLine2,
-			city,
-			zipCode,
-			province,
-			websiteUrl,
-			phoneNumbers: phoneNumbers.length > 0 ? phoneNumbers : undefined,
-		});
-	};
 
 	return (
 		<div className="space-y-4">
@@ -256,162 +194,17 @@ function StoresPage() {
 			{/* Create Store Dialog */}
 			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
 				<DialogContent className="sm:max-w-lg">
-					<form onSubmit={handleCreate}>
-						<DialogHeader>
-							<DialogTitle>Nuovo Negozio</DialogTitle>
-							<DialogDescription>
-								Inserisci i dati del nuovo punto vendita.
-							</DialogDescription>
-						</DialogHeader>
-
-						<div className="space-y-4 py-4">
-							<div className="space-y-2">
-								<Label htmlFor="store-name">Nome *</Label>
-								<Input
-									id="store-name"
-									name="name"
-									placeholder="Es. Bottega del Gusto"
-									required
-									autoFocus
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="store-description">Descrizione</Label>
-								<Textarea
-									id="store-description"
-									name="description"
-									placeholder="Descrizione del negozio (opzionale)"
-									rows={2}
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="store-address1">Indirizzo *</Label>
-								<Input
-									id="store-address1"
-									name="addressLine1"
-									placeholder="Via Roma 1"
-									required
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="store-address2">Indirizzo (riga 2)</Label>
-								<Input
-									id="store-address2"
-									name="addressLine2"
-									placeholder="Interno, piano, scala (opzionale)"
-								/>
-							</div>
-
-							<div className="grid grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="store-city">Città *</Label>
-									<Input
-										id="store-city"
-										name="city"
-										placeholder="Milano"
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="store-zip">CAP *</Label>
-									<Input
-										id="store-zip"
-										name="zipCode"
-										placeholder="20100"
-										required
-									/>
-								</div>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="store-province">Provincia</Label>
-								<Input
-									id="store-province"
-									name="province"
-									placeholder="MI (opzionale)"
-									maxLength={2}
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="store-website">Sito web</Label>
-								<Input
-									id="store-website"
-									name="websiteUrl"
-									type="url"
-									placeholder="https://esempio.it (opzionale)"
-								/>
-							</div>
-
-							<div className="space-y-2">
-								<div className="flex items-center justify-between">
-									<Label>Numeri di telefono</Label>
-									<Button
-										type="button"
-										variant="outline"
-										size="sm"
-										onClick={() =>
-											setPhones([...phones, { label: "", number: "" }])
-										}
-									>
-										<PlusIcon className="size-3" />
-										<span>Aggiungi</span>
-									</Button>
-								</div>
-								{phones.map((phone, idx) => (
-									<div key={idx} className="flex gap-2">
-										<Input
-											placeholder="Etichetta (es. Principale)"
-											value={phone.label}
-											onChange={(e) => {
-												const newPhones = [...phones];
-												newPhones[idx].label = e.target.value;
-												setPhones(newPhones);
-											}}
-											className="w-1/3"
-										/>
-										<Input
-											placeholder="Numero di telefono"
-											type="tel"
-											value={phone.number}
-											onChange={(e) => {
-												const newPhones = [...phones];
-												newPhones[idx].number = e.target.value;
-												setPhones(newPhones);
-											}}
-											className="flex-1"
-										/>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											onClick={() =>
-												setPhones(phones.filter((_, i) => i !== idx))
-											}
-										>
-											<Trash2Icon className="size-4" />
-										</Button>
-									</div>
-								))}
-							</div>
-						</div>
-
-						<DialogFooter>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setCreateOpen(false)}
-							>
-								Annulla
-							</Button>
-							<Button type="submit" disabled={createMutation.isPending}>
-								{createMutation.isPending ? "Creazione..." : "Crea Negozio"}
-							</Button>
-						</DialogFooter>
-					</form>
+					<DialogHeader>
+						<DialogTitle>Nuovo Negozio</DialogTitle>
+						<DialogDescription>
+							Inserisci i dati del nuovo punto vendita.
+						</DialogDescription>
+					</DialogHeader>
+					<StoreForm
+						onSubmit={(data) => createMutation.mutate(data)}
+						onCancel={() => setCreateOpen(false)}
+						isPending={createMutation.isPending}
+					/>
 				</DialogContent>
 			</Dialog>
 		</div>
