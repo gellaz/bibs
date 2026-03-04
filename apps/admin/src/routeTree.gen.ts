@@ -14,6 +14,8 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
+import { Route as AuthenticatedSellersRouteImport } from './routes/_authenticated/sellers'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedConfigurationsRouteImport } from './routes/_authenticated/configurations'
@@ -42,6 +44,16 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
 const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
   id: '/stores',
   path: '/stores',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSellersRoute = AuthenticatedSellersRouteImport.update({
+  id: '/sellers',
+  path: '/sellers',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
@@ -80,6 +92,8 @@ export interface FileRoutesByFullPath {
   '/configurations': typeof AuthenticatedConfigurationsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/products': typeof AuthenticatedProductsRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/sellers': typeof AuthenticatedSellersRoute
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
 }
@@ -90,6 +104,8 @@ export interface FileRoutesByTo {
   '/configurations': typeof AuthenticatedConfigurationsRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/products': typeof AuthenticatedProductsRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/sellers': typeof AuthenticatedSellersRoute
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
   '/': typeof AuthenticatedIndexRoute
@@ -103,6 +119,8 @@ export interface FileRoutesById {
   '/_authenticated/configurations': typeof AuthenticatedConfigurationsRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/products': typeof AuthenticatedProductsRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/sellers': typeof AuthenticatedSellersRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -117,6 +135,8 @@ export interface FileRouteTypes {
     | '/configurations'
     | '/payments'
     | '/products'
+    | '/profile'
+    | '/sellers'
     | '/stores'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
@@ -127,6 +147,8 @@ export interface FileRouteTypes {
     | '/configurations'
     | '/payments'
     | '/products'
+    | '/profile'
+    | '/sellers'
     | '/stores'
     | '/users'
     | '/'
@@ -139,6 +161,8 @@ export interface FileRouteTypes {
     | '/_authenticated/configurations'
     | '/_authenticated/payments'
     | '/_authenticated/products'
+    | '/_authenticated/profile'
+    | '/_authenticated/sellers'
     | '/_authenticated/stores'
     | '/_authenticated/users'
     | '/_authenticated/'
@@ -186,6 +210,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoresRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sellers': {
+      id: '/_authenticated/sellers'
+      path: '/sellers'
+      fullPath: '/sellers'
+      preLoaderRoute: typeof AuthenticatedSellersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/products': {
       id: '/_authenticated/products'
       path: '/products'
@@ -230,6 +268,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedConfigurationsRoute: typeof AuthenticatedConfigurationsRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedSellersRoute: typeof AuthenticatedSellersRoute
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -241,6 +281,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedConfigurationsRoute: AuthenticatedConfigurationsRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedSellersRoute: AuthenticatedSellersRoute,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

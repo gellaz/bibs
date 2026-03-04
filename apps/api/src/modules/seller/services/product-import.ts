@@ -196,8 +196,7 @@ export async function importProductsFromCsv(
 			});
 			created++;
 		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Errore sconosciuto";
+			const message = err instanceof Error ? err.message : "Errore sconosciuto";
 			errors.push({ row: rowNum, message });
 		}
 	}

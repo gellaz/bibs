@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: Home,
@@ -12,6 +12,12 @@ function Home() {
 				<p className="mt-4 text-muted-foreground">
 					Welcome to the customer app
 				</p>
+				<Link
+					to="/profile"
+					className="mt-4 inline-block text-primary underline"
+				>
+					Il mio profilo
+				</Link>
 			</div>
 		</div>
 	);

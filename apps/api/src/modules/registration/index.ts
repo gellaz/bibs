@@ -50,10 +50,9 @@ export const registration = new Elysia({
 				{
 					userId: data.user.id,
 					email: data.user.email,
-					vatNumber: body.vatNumber,
 					action: "seller_registration",
 				},
-				"Nuovo venditore registrato (in attesa di verifica)",
+				"Nuovo venditore registrato (onboarding in corso)",
 			);
 
 			return ok(data);
@@ -66,15 +65,11 @@ export const registration = new Elysia({
 					minLength: 8,
 					description: "Password (minimo 8 caratteri)",
 				}),
-				vatNumber: t.String({
-					pattern: "^[0-9]{11}$",
-					description: "Partita IVA italiana (11 cifre)",
-				}),
 			}),
 			detail: {
 				summary: "Registrazione venditore",
 				description:
-					"Crea un nuovo account venditore con profilo e partita IVA in stato 'pending'. Richiede verifica da parte di un admin.",
+					"Crea un nuovo account venditore. Dopo la verifica email, il venditore dovrà completare l'onboarding (dati personali, documento, azienda, negozio, pagamento).",
 			},
 		},
 	)

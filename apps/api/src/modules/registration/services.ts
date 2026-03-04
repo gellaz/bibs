@@ -2,8 +2,10 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
+import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { auth } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 
 interface RegisterCustomerParams {
@@ -14,6 +16,13 @@ interface RegisterCustomerParams {
 
 export async function registerCustomer(params: RegisterCustomerParams) {
 	const { name, email, password } = params;
+
+	const existing = await db.query.user.findFirst({
+		where: eq(user.email, email),
+	});
+	if (existing) {
+		throw new ServiceError(409, "Email già registrata");
+	}
 
 	const { user: newUser, token } = await auth.api.signUpEmail({
 		body: { name, email, password },
@@ -31,6 +40,13 @@ export async function registerCustomer(params: RegisterCustomerParams) {
 			.returning();
 	});
 
+	await auth.api.sendVerificationEmail({
+		body: {
+			email,
+			callbackURL: `${env.CUSTOMER_APP_URL}/login`,
+		},
+	});
+
 	return {
 		user: { ...newUser, role: "customer" },
 		profile,
@@ -42,11 +58,17 @@ interface RegisterSellerParams {
 	name: string;
 	email: string;
 	password: string;
-	vatNumber: string;
 }
 
 export async function registerSeller(params: RegisterSellerParams) {
-	const { name, email, password, vatNumber } = params;
+	const { name, email, password } = params;
+
+	const existing = await db.query.user.findFirst({
+		where: eq(user.email, email),
+	});
+	if (existing) {
+		throw new ServiceError(409, "Email già registrata");
+	}
 
 	const { user: newUser, token } = await auth.api.signUpEmail({
 		body: { name, email, password },
@@ -58,10 +80,14 @@ export async function registerSeller(params: RegisterSellerParams) {
 			.set({ role: "seller" })
 			.where(eq(user.id, newUser.id));
 
-		return tx
-			.insert(sellerProfile)
-			.values({ userId: newUser.id, vatNumber })
-			.returning();
+		return tx.insert(sellerProfile).values({ userId: newUser.id }).returning();
+	});
+
+	await auth.api.sendVerificationEmail({
+		body: {
+			email,
+			callbackURL: `${env.SELLER_APP_URL}/login`,
+		},
 	});
 
 	return {
@@ -104,12 +130,22 @@ export async function signIn(params: SignInParams) {
 		}),
 	]);
 
+	// If seller, also fetch organization
+	let org = null;
+	if (sellerProf) {
+		org =
+			(await db.query.organization.findFirst({
+				where: eq(organization.sellerProfileId, sellerProf.id),
+			})) ?? null;
+	}
+
 	return {
 		user: userRecord,
 		profiles: {
 			customer: customerProf || null,
 			seller: sellerProf || null,
 		},
+		organization: org,
 		token: result.token,
 	};
 }

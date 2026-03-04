@@ -13,6 +13,10 @@ const EnvSchema = t.Object({
 	SEED_DB: t.Optional(t.String()),
 	ALLOWED_ORIGINS: t.Optional(t.String()),
 	NODE_ENV: t.Optional(t.String()),
+	RESEND_API_KEY: t.Optional(t.String()),
+	EMAIL_FROM: t.Optional(t.String()),
+	CUSTOMER_APP_URL: t.Optional(t.String()),
+	SELLER_APP_URL: t.Optional(t.String()),
 });
 
 if (!Value.Check(EnvSchema, process.env)) {
@@ -35,4 +39,8 @@ export const env = {
 	SEED_DB: process.env.SEED_DB ?? "false",
 	ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
 	NODE_ENV: process.env.NODE_ENV ?? "development",
+	RESEND_API_KEY: process.env.RESEND_API_KEY,
+	EMAIL_FROM: process.env.EMAIL_FROM,
+	CUSTOMER_APP_URL: process.env.CUSTOMER_APP_URL ?? "http://localhost:3001",
+	SELLER_APP_URL: process.env.SELLER_APP_URL ?? "http://localhost:3002",
 } as const;

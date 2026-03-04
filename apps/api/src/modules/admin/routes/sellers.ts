@@ -46,7 +46,6 @@ export const sellersRoutes = new Elysia()
 					adminId: user.id,
 					sellerId: data.id,
 					userId: data.userId,
-					vatNumber: data.vatNumber,
 					action: "seller_verified",
 				},
 				"Venditore verificato",
@@ -62,7 +61,7 @@ export const sellersRoutes = new Elysia()
 			detail: {
 				summary: "Verifica venditore",
 				description:
-					"Imposta lo stato della partita IVA del venditore a 'verified'. Abilita il venditore a creare negozi e prodotti.",
+					"Approva il venditore e imposta l'onboarding come completato. Abilita il venditore a operare sulla piattaforma.",
 				tags: ["Admin"],
 			},
 		},
@@ -79,7 +78,6 @@ export const sellersRoutes = new Elysia()
 					adminId: user.id,
 					sellerId: data.id,
 					userId: data.userId,
-					vatNumber: data.vatNumber,
 					action: "seller_rejected",
 				},
 				"Venditore rifiutato",
@@ -95,7 +93,7 @@ export const sellersRoutes = new Elysia()
 			detail: {
 				summary: "Rifiuta venditore",
 				description:
-					"Imposta lo stato della partita IVA del venditore a 'rejected'. Il venditore non potrà operare sulla piattaforma.",
+					"Rifiuta il venditore. Il venditore dovrà aggiornare i dati e ripresentare la richiesta.",
 				tags: ["Admin"],
 			},
 		},

@@ -35,7 +35,6 @@ function RegisterPage() {
 				name: data.name,
 				email: data.email,
 				password: data.password,
-				vatNumber: data.vatNumber,
 			});
 
 			if (regError) {
@@ -43,19 +42,8 @@ function RegisterPage() {
 				return;
 			}
 
-			// Sign in automatically after registration
-			const { error: signInError } = await authClient.signIn.email({
-				email: data.email,
-				password: data.password,
-			});
-
-			if (signInError) {
-				// Registration succeeded but auto-login failed, redirect to login
-				void navigate({ to: "/login" });
-				return;
-			}
-
-			void navigate({ to: "/" });
+			// Redirect to verify-email page (email verification required before login)
+			void navigate({ to: "/verify-email", search: { email: data.email } });
 		} catch {
 			setError("Errore durante la registrazione. Riprova.");
 		}

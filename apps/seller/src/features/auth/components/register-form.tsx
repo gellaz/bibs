@@ -30,7 +30,6 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 			email: "",
 			password: "",
 			confirmPassword: "",
-			vatNumber: "",
 		},
 	});
 
@@ -92,22 +91,6 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 					{...register("confirmPassword")}
 				/>
 				<FieldError errors={[errors.confirmPassword]} />
-			</Field>
-
-			<Field data-invalid={!!errors.vatNumber}>
-				<FieldLabel htmlFor="vatNumber">Partita IVA</FieldLabel>
-				<Input
-					id="vatNumber"
-					type="text"
-					inputMode="numeric"
-					placeholder="12345678901"
-					maxLength={11}
-					{...register("vatNumber")}
-				/>
-				<FieldDescription>
-					11 cifre — sarà verificata da un amministratore
-				</FieldDescription>
-				<FieldError errors={[errors.vatNumber]} />
 			</Field>
 
 			<Button type="submit" disabled={isSubmitting} className="w-full">

@@ -3,6 +3,7 @@ import {
 	geometry,
 	index,
 	integer,
+	jsonb,
 	pgTable,
 	text,
 	timestamp,
@@ -10,6 +11,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { storeProduct } from "./product";
 import { sellerProfile } from "./seller";
+import { storeCategory } from "./store-category";
+import { storeImage } from "./store-image";
 
 export const store = pgTable(
 	"stores",
@@ -29,6 +32,10 @@ export const store = pgTable(
 		province: text("province"),
 		country: varchar("country", { length: 2 }).notNull().default("IT"),
 		location: geometry("location", { type: "point", mode: "xy", srid: 4326 }),
+		categoryId: text("category_id").references(() => storeCategory.id, {
+			onDelete: "set null",
+		}),
+		openingHours: jsonb("opening_hours"),
 		websiteUrl: text("website_url"),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true })
@@ -72,8 +79,13 @@ export const storeRelations = relations(store, ({ one, many }) => ({
 		fields: [store.sellerProfileId],
 		references: [sellerProfile.id],
 	}),
+	category: one(storeCategory, {
+		fields: [store.categoryId],
+		references: [storeCategory.id],
+	}),
 	storeProducts: many(storeProduct),
 	phoneNumbers: many(storePhoneNumber),
+	images: many(storeImage),
 }));
 
 export const storePhoneNumberRelations = relations(

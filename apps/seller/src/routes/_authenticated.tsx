@@ -21,8 +21,20 @@ import { useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { StoreSwitcher } from "@/components/store-switcher";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
-import { useSellerProfile } from "@/hooks/use-seller-profile";
+import { useOnboardingStatus } from "@/hooks/use-onboarding";
 import { authClient } from "@/lib/auth-client";
+
+/** Map onboarding status → route the user should be on */
+const ONBOARDING_ROUTES: Record<string, string> = {
+	pending_email: "/onboarding/pending",
+	pending_personal: "/onboarding/personal-info",
+	pending_document: "/onboarding/document",
+	pending_company: "/onboarding/company",
+	pending_store: "/onboarding/store",
+	pending_payment: "/onboarding/payment",
+	pending_review: "/onboarding/pending",
+	rejected: "/onboarding/pending",
+};
 
 export const Route = createFileRoute("/_authenticated")({
 	component: AuthenticatedLayout,
@@ -31,10 +43,10 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
 	const { data: session, isPending: sessionPending } = authClient.useSession();
 	const {
-		data: sellerProfile,
-		isPending: profilePending,
-		isError: profileError,
-	} = useSellerProfile();
+		data: onboarding,
+		isPending: onboardingPending,
+		isError: onboardingError,
+	} = useOnboardingStatus();
 	const navigate = useNavigate();
 	const location = useLocation();
 
@@ -44,36 +56,45 @@ function AuthenticatedLayout() {
 		}
 	}, [sessionPending, session, navigate]);
 
-	// Check VAT verification status for sellers
+	// Redirect sellers to the correct onboarding step
 	useEffect(() => {
 		if (
 			!sessionPending &&
-			!profilePending &&
+			!onboardingPending &&
 			session?.user.role === "seller" &&
-			sellerProfile
+			onboarding
 		) {
-			const isOnOnboardingPage = location.pathname === "/onboarding/pending";
+			const status = onboarding.onboardingStatus;
+			const targetRoute = ONBOARDING_ROUTES[status];
 
-			// Redirect to onboarding if VAT is not verified (and not already there)
-			if (
-				!isOnOnboardingPage &&
-				(sellerProfile.vatStatus === "pending" ||
-					sellerProfile.vatStatus === "rejected")
+			if (targetRoute) {
+				// Seller is not yet active — redirect to the correct step
+				const isOnOnboardingPage = location.pathname.startsWith("/onboarding");
+				if (!isOnOnboardingPage || location.pathname !== targetRoute) {
+					void navigate({ to: targetRoute });
+				}
+			} else if (
+				status === "active" &&
+				location.pathname.startsWith("/onboarding")
 			) {
-				void navigate({ to: "/onboarding/pending" });
+				// Seller completed onboarding but is still on an onboarding page
+				void navigate({ to: "/" });
 			}
 		}
 	}, [
 		sessionPending,
-		profilePending,
+		onboardingPending,
 		session,
-		sellerProfile,
+		onboarding,
 		navigate,
 		location.pathname,
 	]);
 
-	// Show loading while checking session or seller profile (for sellers only)
-	if (sessionPending || (session?.user.role === "seller" && profilePending)) {
+	// Show loading while checking session or onboarding status (for sellers only)
+	if (
+		sessionPending ||
+		(session?.user.role === "seller" && onboardingPending)
+	) {
 		return (
 			<div className="flex h-screen items-center justify-center">
 				<Spinner className="size-8" />
@@ -85,8 +106,8 @@ function AuthenticatedLayout() {
 		return null;
 	}
 
-	// Handle seller profile error
-	if (session.user.role === "seller" && profileError) {
+	// Handle onboarding error
+	if (session.user.role === "seller" && onboardingError) {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4">
 				<h1 className="text-2xl font-bold">Errore</h1>
@@ -125,6 +146,15 @@ function AuthenticatedLayout() {
 				</button>
 			</div>
 		);
+	}
+
+	// If seller is still onboarding, render outlet without sidebar
+	if (
+		role === "seller" &&
+		onboarding &&
+		onboarding.onboardingStatus !== "active"
+	) {
+		return <Outlet />;
 	}
 
 	return (

@@ -3,8 +3,10 @@ import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
 import { municipality, province, region } from "@/db/schemas/location";
+import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
+import { storeCategory } from "@/db/schemas/store-category";
 import { auth } from "@/lib/auth";
 
 interface RegionData {
@@ -45,24 +47,27 @@ const testUsers = [
 		email: "seller@test.com",
 		password: "password123",
 		role: "seller",
-		vatStatus: "verified",
-		vatNumber: "IT12345678901",
+		onboardingStatus: "active" as const,
+		vatNumber: "12345678901",
+		vatStatus: "verified" as const,
 	},
 	{
 		name: "Seller Pending",
 		email: "seller-pending@test.com",
 		password: "password123",
 		role: "seller",
-		vatStatus: "pending",
-		vatNumber: "IT12345678902",
+		onboardingStatus: "pending_review" as const,
+		vatNumber: "12345678902",
+		vatStatus: "pending" as const,
 	},
 	{
 		name: "Seller Rejected",
 		email: "seller-rejected@test.com",
 		password: "password123",
 		role: "seller",
-		vatStatus: "rejected",
-		vatNumber: "IT12345678903",
+		onboardingStatus: "rejected" as const,
+		vatNumber: "12345678903",
+		vatStatus: "rejected" as const,
 	},
 ] as const;
 
@@ -89,7 +94,7 @@ export async function seed() {
 
 		await db
 			.update(user)
-			.set({ role: testUser.role })
+			.set({ role: testUser.role, emailVerified: true })
 			.where(eq(user.id, created.id));
 
 		if (testUser.role === "customer") {
@@ -97,20 +102,36 @@ export async function seed() {
 		}
 
 		if (testUser.role === "seller") {
-			const vatStatus =
-				"vatStatus" in testUser ? testUser.vatStatus : "pending";
+			const onboardingStatus =
+				"onboardingStatus" in testUser
+					? testUser.onboardingStatus
+					: ("pending_email" as const);
 			const vatNumber =
-				"vatNumber" in testUser ? testUser.vatNumber : "IT00000000000";
+				"vatNumber" in testUser ? testUser.vatNumber : "00000000000";
+			const vatStatus =
+				"vatStatus" in testUser ? testUser.vatStatus : ("pending" as const);
+
 			const [sp] = await db
 				.insert(sellerProfile)
 				.values({
 					userId: created.id,
-					vatNumber,
-					vatStatus,
+					onboardingStatus,
 				})
 				.returning();
 
-			if (vatStatus === "verified") {
+			await db.insert(organization).values({
+				sellerProfileId: sp.id,
+				businessName: `${testUser.name} SRL`,
+				vatNumber,
+				legalForm: "SRL",
+				addressLine1: "Via Roma 1",
+				city: "Milano",
+				zipCode: "20121",
+				province: "MI",
+				vatStatus,
+			});
+
+			if (onboardingStatus === "active") {
 				await db.insert(store).values({
 					sellerProfileId: sp.id,
 					name: "Test Store",
@@ -127,8 +148,37 @@ export async function seed() {
 	}
 
 	await seedLocations();
+	await seedStoreCategories();
 
 	console.log("🌱 Seed complete");
+}
+
+const defaultStoreCategories = [
+	"Alimentari",
+	"Abbigliamento",
+	"Elettronica",
+	"Casa e arredamento",
+	"Sport e tempo libero",
+	"Salute e bellezza",
+	"Libreria e cartoleria",
+	"Gioielleria e accessori",
+	"Ristorazione",
+	"Servizi",
+	"Altro",
+];
+
+async function seedStoreCategories() {
+	const [{ total }] = await db.select({ total: count() }).from(storeCategory);
+	if (total > 0) {
+		console.log("  ⏭ Store categories already seeded, skipping");
+		return;
+	}
+
+	console.log("  🏷️ Seeding store categories...");
+	await db
+		.insert(storeCategory)
+		.values(defaultStoreCategories.map((name) => ({ name })));
+	console.log(`     ✓ ${defaultStoreCategories.length} store categories`);
 }
 
 async function seedLocations() {

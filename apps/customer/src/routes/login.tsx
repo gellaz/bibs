@@ -8,7 +8,7 @@ import {
 } from "@bibs/ui/components/card";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
@@ -21,6 +21,7 @@ function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
+	const [emailNotVerified, setEmailNotVerified] = useState("");
 	const [loading, setLoading] = useState(false);
 
 	const { data: session } = authClient.useSession();
@@ -33,6 +34,7 @@ function LoginPage() {
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		setError("");
+		setEmailNotVerified("");
 		setLoading(true);
 
 		try {
@@ -42,6 +44,10 @@ function LoginPage() {
 			});
 
 			if (signInError) {
+				if (signInError.status === 403) {
+					setEmailNotVerified(email);
+					return;
+				}
 				setError(signInError.message ?? "Credenziali non valide");
 				return;
 			}
@@ -65,6 +71,18 @@ function LoginPage() {
 					<CardDescription>Accedi con le tue credenziali</CardDescription>
 				</CardHeader>
 				<CardContent>
+					{emailNotVerified && (
+						<div className="mb-4 rounded-md bg-amber-50 dark:bg-amber-950 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+							<p>Devi verificare la tua email prima di accedere.</p>
+							<Link
+								to="/verify-email"
+								search={{ email: emailNotVerified }}
+								className="font-medium underline"
+							>
+								Reinvia email di verifica
+							</Link>
+						</div>
+					)}
 					<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 						{error && (
 							<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -102,6 +120,13 @@ function LoginPage() {
 							{loading ? "Accesso in corso..." : "Accedi"}
 						</Button>
 					</form>
+
+					<p className="mt-4 text-center text-sm text-muted-foreground">
+						Non hai un account?{" "}
+						<Link to="/register" className="text-primary underline">
+							Registrati
+						</Link>
+					</p>
 				</CardContent>
 			</Card>
 		</div>

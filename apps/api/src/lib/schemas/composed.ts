@@ -6,6 +6,7 @@ import {
 	EmployeeSchema,
 	OrderItemSchema,
 	OrderSchema,
+	OrganizationSchema,
 	ProductImageSchema,
 	ProductSchema,
 	SellerProfileSchema,
@@ -25,10 +26,11 @@ export const StoreWithPhonesSchema = t.Object({
 	phoneNumbers: t.Array(StorePhoneNumberSchema),
 });
 
-// Seller profile + user (admin pending list)
+// Seller profile + user + organization (admin pending list)
 export const SellerProfileWithUserSchema = t.Object({
 	...SellerProfileSchema.properties,
 	user: UserSchema,
+	organization: t.Nullable(OrganizationSchema),
 });
 
 // Employee + user

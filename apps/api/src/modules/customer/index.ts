@@ -7,6 +7,7 @@ import { betterAuth } from "@/plugins/better-auth";
 import { addressesRoutes } from "./routes/addresses";
 import { ordersRoutes } from "./routes/orders";
 import { pointsRoutes } from "./routes/points";
+import { profileRoutes } from "./routes/profile";
 import { searchRoutes } from "./routes/search";
 
 export const customerModule = new Elysia({ prefix: "/customer" })
@@ -32,6 +33,7 @@ export const customerModule = new Elysia({ prefix: "/customer" })
 						throw new ServiceError(403, "Customer profile not found");
 					return { customerProfile: profile };
 				})
+				.use(profileRoutes)
 				.use(addressesRoutes)
 				.use(pointsRoutes)
 				.use(ordersRoutes),

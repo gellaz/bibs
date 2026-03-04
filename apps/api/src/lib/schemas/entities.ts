@@ -75,13 +75,82 @@ export const CategorySchema = t.Object({
 export const SellerProfileSchema = t.Object({
 	id: t.String(),
 	userId: t.String(),
-	vatNumber: t.String(),
+	onboardingStatus: t.Union(
+		[
+			t.Literal("pending_email"),
+			t.Literal("pending_personal"),
+			t.Literal("pending_document"),
+			t.Literal("pending_company"),
+			t.Literal("pending_store"),
+			t.Literal("pending_payment"),
+			t.Literal("pending_review"),
+			t.Literal("active"),
+			t.Literal("rejected"),
+		],
+		{ description: "Stato dell'onboarding del venditore" },
+	),
+	firstName: t.Nullable(t.String()),
+	lastName: t.Nullable(t.String()),
+	citizenship: t.Nullable(t.String()),
+	birthCountry: t.Nullable(t.String()),
+	birthDate: t.Nullable(
+		t.String({ description: "Data di nascita (YYYY-MM-DD)" }),
+	),
+	residenceCountry: t.Nullable(t.String()),
+	residenceCity: t.Nullable(t.String()),
+	residenceAddress: t.Nullable(t.String()),
+	residenceZipCode: t.Nullable(t.String()),
+	documentNumber: t.Nullable(t.String()),
+	documentExpiry: t.Nullable(
+		t.String({ description: "Scadenza documento (YYYY-MM-DD)" }),
+	),
+	documentIssuedMunicipality: t.Nullable(t.String()),
+	documentImageUrl: t.Nullable(t.String()),
+	createdAt: t.Date(),
+});
+
+export const OrganizationSchema = t.Object({
+	id: t.String(),
+	sellerProfileId: t.String(),
+	businessName: t.String({ description: "Ragione sociale" }),
+	vatNumber: t.String({ description: "Partita IVA" }),
+	legalForm: t.String({ description: "Forma giuridica" }),
+	addressLine1: t.String({ description: "Indirizzo sede legale" }),
+	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
+	province: t.Nullable(t.String({ description: "Provincia" })),
+	city: t.String({ description: "Città" }),
+	zipCode: t.String({ description: "CAP" }),
 	vatStatus: t.Union(
 		[t.Literal("pending"), t.Literal("verified"), t.Literal("rejected")],
-		{
-			description: "Stato di verifica della partita IVA",
-		},
+		{ description: "Stato di verifica della partita IVA" },
 	),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
+export const StoreCategorySchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della categoria negozio" }),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
+export const StoreImageSchema = t.Object({
+	id: t.String(),
+	storeId: t.String(),
+	url: t.String({ description: "URL pubblico dell'immagine" }),
+	key: t.String({ description: "Chiave S3/MinIO" }),
+	position: t.Number({ minimum: 0, description: "Posizione di ordinamento" }),
+	createdAt: t.Date(),
+});
+
+export const PaymentMethodSchema = t.Object({
+	id: t.String(),
+	sellerProfileId: t.String(),
+	stripeAccountId: t.Nullable(
+		t.String({ description: "ID account Stripe Connect" }),
+	),
+	isDefault: t.Boolean(),
 	createdAt: t.Date(),
 });
 
@@ -97,6 +166,10 @@ export const StoreSchema = t.Object({
 	province: t.Nullable(t.String({ description: "Provincia (sigla)" })),
 	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
 	location: t.Nullable(PointXY),
+	categoryId: t.Nullable(t.String({ description: "ID categoria negozio" })),
+	openingHours: t.Nullable(
+		t.Unknown({ description: "Orari di apertura (JSON)" }),
+	),
 	websiteUrl: t.Nullable(t.String({ description: "URL del sito web" })),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),

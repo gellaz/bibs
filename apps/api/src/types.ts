@@ -1,7 +1,8 @@
 /**
- * Re-export del tipo App per Eden Treaty.
- * Questo file esporta solo il tipo senza importare dipendenze,
+ * Re-export dei tipi per Eden Treaty e better-auth.
+ * Questo file esporta solo tipi senza importare dipendenze,
  * per evitare problemi di risoluzione dei path alias quando
- * il tipo viene importato da altri workspace.
+ * i tipi vengono importati da altri workspace.
  */
 export type { App } from "./index";
+export type { auth } from "./lib/auth";

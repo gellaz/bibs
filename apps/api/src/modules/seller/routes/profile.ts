@@ -16,7 +16,7 @@ export const profileRoutes = new Elysia()
 			pino.info(
 				{
 					userId: user.id,
-					vatStatus: profile.vatStatus,
+					onboardingStatus: profile.onboardingStatus,
 					action: "get_seller_profile",
 				},
 				"Seller profile retrieved",

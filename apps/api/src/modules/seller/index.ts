@@ -8,6 +8,7 @@ import { betterAuth } from "@/plugins/better-auth";
 import { getSellerStoreIds } from "./context";
 import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
+import { onboardingRoutes } from "./routes/onboarding";
 import { ordersRoutes } from "./routes/orders";
 import { productsRoutes } from "./routes/products";
 import { profileRoutes } from "./routes/profile";
@@ -31,7 +32,8 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 						throw new ServiceError(403, "Only sellers can access profile");
 					}
 				})
-				.use(profileRoutes),
+				.use(profileRoutes)
+				.use(onboardingRoutes),
 	)
 	// Other routes: require verified VAT
 	.guard(
@@ -44,7 +46,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 		(app) =>
 			app
 				.resolve(async ({ user: u }) => {
-					// Owner path: user is a seller with verified VAT
+					// Owner path: user is a seller with completed onboarding
 					if (u.role === "seller") {
 						const profile = await db.query.sellerProfile.findFirst({
 							where: eq(sellerProfile.userId, u.id),
@@ -52,8 +54,8 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 
 						if (!profile)
 							throw new ServiceError(403, "Seller profile not found");
-						if (profile.vatStatus !== "verified")
-							throw new ServiceError(403, "VAT number not yet verified");
+						if (profile.onboardingStatus !== "active")
+							throw new ServiceError(403, "Seller onboarding not completed");
 
 						let cached: Promise<string[]> | null = null;
 						const getStoreIds = () =>

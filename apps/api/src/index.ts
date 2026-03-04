@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { OpenAPI } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { clearAllTimers, restoreTimers } from "@/lib/jobs/reservation-timer";
-import { pinoOptions } from "@/lib/logger";
+import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { categoriesModule } from "@/modules/categories";
@@ -27,14 +27,9 @@ const app = new Elysia()
 				showStartupMessage: true,
 				startupMessageFormat: "banner",
 				customLogFormat:
-					"{now} {level} {duration}ms {method} {pathname} {status} {ip}",
-				logFilePath: "./logs/app.log",
-				logRotation: {
-					maxSize: "100m",
-					interval: "1d",
-					maxFiles: "30d",
-					compress: true,
-				},
+					"{now} {level} {duration} {method} {pathname} {status} {ip}",
+				disableFileLogging: true,
+				transports: [fileTransport],
 				pino: pinoOptions,
 			},
 		}),

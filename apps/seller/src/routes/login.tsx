@@ -18,6 +18,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
 	const navigate = useNavigate();
 	const [error, setError] = useState("");
+	const [emailNotVerified, setEmailNotVerified] = useState("");
 
 	const { data: session } = authClient.useSession();
 
@@ -28,6 +29,7 @@ function LoginPage() {
 
 	async function handleSubmit(data: LoginFormData) {
 		setError("");
+		setEmailNotVerified("");
 
 		try {
 			const { error: signInError } = await authClient.signIn.email({
@@ -36,6 +38,11 @@ function LoginPage() {
 			});
 
 			if (signInError) {
+				// 403 = email not verified
+				if (signInError.status === 403) {
+					setEmailNotVerified(data.email);
+					return;
+				}
 				setError(signInError.message ?? "Credenziali non valide");
 				return;
 			}
@@ -59,6 +66,18 @@ function LoginPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
+					{emailNotVerified && (
+						<div className="mb-4 rounded-md bg-amber-50 dark:bg-amber-950 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+							<p>Devi verificare la tua email prima di accedere.</p>
+							<Link
+								to="/verify-email"
+								search={{ email: emailNotVerified }}
+								className="font-medium underline"
+							>
+								Reinvia email di verifica
+							</Link>
+						</div>
+					)}
 					<LoginForm onSubmit={handleSubmit} apiError={error} />
 					<p className="mt-4 text-center text-sm text-muted-foreground">
 						Non hai un account?{" "}

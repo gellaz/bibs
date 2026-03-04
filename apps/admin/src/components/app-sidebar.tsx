@@ -17,8 +17,10 @@ import {
 	HomeIcon,
 	PackageIcon,
 	SettingsIcon,
+	ShieldCheckIcon,
 	StoreIcon,
 	TagsIcon,
+	UserIcon,
 	UsersIcon,
 	WalletIcon,
 } from "lucide-react";
@@ -29,6 +31,7 @@ import BetterAuthHeader from "@/integrations/better-auth/header-user";
 const navItems = [
 	{ title: "Home", to: "/" as const, icon: HomeIcon },
 	{ title: "Utenti", to: "/users" as const, icon: UsersIcon },
+	{ title: "Venditori", to: "/sellers" as const, icon: ShieldCheckIcon },
 	{ title: "Negozi", to: "/stores" as const, icon: StoreIcon },
 	{ title: "Articoli", to: "/products" as const, icon: PackageIcon },
 	{ title: "Categorie", to: "/categories" as const, icon: TagsIcon },
@@ -39,6 +42,7 @@ const navItems = [
 		to: "/configurations" as const,
 		icon: SettingsIcon,
 	},
+	{ title: "Profilo", to: "/profile" as const, icon: UserIcon },
 ];
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {

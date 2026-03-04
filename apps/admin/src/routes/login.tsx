@@ -37,6 +37,10 @@ function LoginPage() {
 			});
 
 			if (signInError) {
+				if (signInError.status === 403) {
+					setError("Email non verificata. Controlla la tua casella di posta.");
+					return;
+				}
 				setError(signInError.message ?? "Credenziali non valide");
 				return;
 			}

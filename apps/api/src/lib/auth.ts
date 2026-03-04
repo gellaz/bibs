@@ -1,7 +1,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, openAPI } from "better-auth/plugins";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
+import { user as userTable } from "@/db/schemas/auth";
+import { sellerProfile } from "@/db/schemas/seller";
+import { sendEmail } from "@/lib/email";
 import {
 	ac,
 	adminRole,
@@ -15,6 +19,22 @@ export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: "pg",
 	}),
+	user: {
+		additionalFields: {
+			firstName: {
+				type: "string",
+				required: false,
+			},
+			lastName: {
+				type: "string",
+				required: false,
+			},
+			birthDate: {
+				type: "string",
+				required: false,
+			},
+		},
+	},
 	plugins: [
 		openAPI(),
 		admin({
@@ -29,6 +49,36 @@ export const auth = betterAuth({
 	],
 	emailAndPassword: {
 		enabled: true,
+		requireEmailVerification: true,
+	},
+	emailVerification: {
+		sendOnSignUp: false,
+		sendVerificationEmail: async ({ user, url }) => {
+			// better-auth generates URLs using basePath "/api", but the handler
+			// is mounted at "/auth" in Elysia, so the public path is "/auth/api/..."
+			const fixed = new URL(url);
+			fixed.pathname = `/auth${fixed.pathname}`;
+			const verifyUrl = fixed.toString();
+
+			await sendEmail({
+				to: user.email,
+				subject: "Verifica il tuo indirizzo email — Bibs",
+				html: `<p>Ciao ${user.name},</p><p>Clicca sul link per verificare il tuo indirizzo email:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
+			});
+		},
+		afterEmailVerification: async (user) => {
+			// For sellers: advance onboarding from pending_email → pending_personal
+			const userRecord = await db.query.user.findFirst({
+				where: eq(userTable.id, user.id),
+				columns: { role: true },
+			});
+			if (userRecord?.role === "seller") {
+				await db
+					.update(sellerProfile)
+					.set({ onboardingStatus: "pending_personal" })
+					.where(eq(sellerProfile.userId, user.id));
+			}
+		},
 	},
 	trustedOrigins: [
 		"http://localhost:3001", // customer
