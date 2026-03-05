@@ -27,6 +27,27 @@ This file provides guidance when working with the **bibs** monorepo.
 - `bun run infra:up` / `infra:down` / `infra:reset` — manage Docker services (PostGIS + MinIO)
 - `bun run db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle database commands
 
+## Git Hooks (Lefthook)
+
+[Lefthook](https://github.com/evilmartians/lefthook) manages Git hooks. Hooks are installed automatically via the `postinstall` script when running `bun install`.
+
+Hooks configured in `lefthook.yml`:
+
+- **pre-commit** — runs `biome check --fix` on staged files only; fixed files are re-staged automatically
+- **commit-msg** — validates that the commit message follows [Conventional Commits](https://www.conventionalcommits.org/) format
+
+To reinstall hooks manually (e.g. after cloning without running `bun install`):
+
+```bash
+bunx lefthook install
+```
+
+To skip hooks in exceptional cases:
+
+```bash
+git commit --no-verify -m "..."
+```
+
 ## Workspace Structure
 
 Each app under `apps/` is a Bun workspace with its own `package.json`. Shared code goes in `packages/` (e.g. `@bibs/ui`).

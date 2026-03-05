@@ -6,6 +6,7 @@
 		"packages/*"
 	],
 	"scripts": {
+		"postinstall": "lefthook install",
 		"dev": "concurrently -n api,admin,customer,seller -c blue,green,cyan,magenta \"bun run dev:api\" \"bun run dev:admin\" \"bun run dev:customer\" \"bun run dev:seller\"",
 		"dev:api": "bun run --filter @bibs/api dev",
 		"dev:customer": "bun run --filter @bibs/customer dev",
@@ -65,6 +66,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.5",
 		"concurrently": "^9.2.1",
+		"lefthook": "^1.11.13",
 		"typescript": "^5.9.3"
 	}
 }

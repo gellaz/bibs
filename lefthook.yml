@@ -1,0 +1,18 @@
+pre-commit:
+  commands:
+    biome:
+      glob: "*.{ts,tsx,js,jsx,json}"
+      run: bunx biome check --fix --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    conventional-commits:
+      run: |
+        MSG=$(cat {1})
+        echo "$MSG" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore)(\(.+\))?(!)?: .{1,}" || {
+          echo "❌ Commit message must follow Conventional Commits format."
+          echo "   Example: feat(api): add bulk product import endpoint"
+          echo "   Types: feat|fix|docs|style|refactor|perf|test|build|ci|chore"
+          exit 1
+        }
