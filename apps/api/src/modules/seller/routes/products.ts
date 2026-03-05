@@ -91,9 +91,9 @@ export const productsRoutes = new Elysia()
 					minItems: 1,
 					description: "Almeno una categoria obbligatoria",
 				}),
-				name: t.String({ description: "Nome del prodotto" }),
+				name: t.String({ minLength: 1, maxLength: 200, description: "Nome del prodotto" }),
 				description: t.Optional(
-					t.String({ description: "Descrizione del prodotto" }),
+					t.String({ maxLength: 2000, description: "Descrizione del prodotto" }),
 				),
 				price: t.String({
 					pattern: "^\\d+\\.\\d{2}$",
@@ -133,9 +133,9 @@ export const productsRoutes = new Elysia()
 						description: "Nuove categorie (sostituisce le precedenti)",
 					}),
 				),
-				name: t.Optional(t.String({ description: "Nome del prodotto" })),
+				name: t.Optional(t.String({ minLength: 1, maxLength: 200, description: "Nome del prodotto" })),
 				description: t.Optional(
-					t.String({ description: "Descrizione del prodotto" }),
+					t.String({ maxLength: 2000, description: "Descrizione del prodotto" }),
 				),
 				price: t.Optional(
 					t.String({

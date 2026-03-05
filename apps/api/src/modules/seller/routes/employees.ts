@@ -49,14 +49,15 @@ export const employeesRoutes = new Elysia()
 		},
 		{
 			body: t.Object({
-				name: t.String({ description: "Nome completo del dipendente" }),
+				name: t.String({ minLength: 1, maxLength: 100, description: "Nome completo del dipendente" }),
 				email: t.String({
 					format: "email",
 					description: "Email del dipendente",
 				}),
 				password: t.String({
 					minLength: 8,
-					description: "Password (minimo 8 caratteri)",
+					maxLength: 128,
+					description: "Password (minimo 8, massimo 128 caratteri)",
 				}),
 			}),
 			response: withErrors({ 200: okRes(EmployeeSchema) }),

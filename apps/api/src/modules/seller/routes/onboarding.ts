@@ -52,22 +52,26 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 		},
 		{
 			body: t.Object({
-				firstName: t.String({ description: "Nome" }),
-				lastName: t.String({ description: "Cognome" }),
-				citizenship: t.String({ description: "Cittadinanza" }),
-				birthCountry: t.String({ description: "Paese di nascita" }),
+				firstName: t.String({ minLength: 1, maxLength: 100, description: "Nome" }),
+				lastName: t.String({ minLength: 1, maxLength: 100, description: "Cognome" }),
+				citizenship: t.String({ minLength: 2, maxLength: 2, description: "Cittadinanza (codice ISO alpha-2)" }),
+				birthCountry: t.String({ minLength: 2, maxLength: 2, description: "Paese di nascita (codice ISO alpha-2)" }),
 				birthDate: t.String({
 					pattern: "^\\d{4}-\\d{2}-\\d{2}$",
 					description: "Data di nascita (YYYY-MM-DD)",
 				}),
 				residenceCountry: t.String({
-					description: "Paese di residenza",
+					minLength: 2,
+					maxLength: 2,
+					description: "Paese di residenza (codice ISO alpha-2)",
 				}),
-				residenceCity: t.String({ description: "Città di residenza" }),
+				residenceCity: t.String({ minLength: 1, maxLength: 100, description: "Città di residenza" }),
 				residenceAddress: t.String({
+					minLength: 1,
+					maxLength: 200,
 					description: "Indirizzo di residenza",
 				}),
-				residenceZipCode: t.String({ description: "CAP residenza" }),
+				residenceZipCode: t.String({ pattern: "^\\d{5}$", description: "CAP residenza (5 cifre)" }),
 			}),
 			response: withErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
@@ -101,6 +105,8 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 		{
 			body: t.Object({
 				documentNumber: t.String({
+					minLength: 5,
+					maxLength: 20,
 					description: "Numero carta d'identità",
 				}),
 				documentExpiry: t.String({
@@ -108,6 +114,8 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 					description: "Scadenza documento (YYYY-MM-DD)",
 				}),
 				documentIssuedMunicipality: t.String({
+					minLength: 1,
+					maxLength: 100,
 					description: "Comune di rilascio",
 				}),
 				documentImage: t.File({
@@ -144,25 +152,31 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 		},
 		{
 			body: t.Object({
-				businessName: t.String({ description: "Ragione sociale" }),
+				businessName: t.String({ minLength: 1, maxLength: 200, description: "Ragione sociale" }),
 				vatNumber: t.String({
 					pattern: "^[0-9]{11}$",
 					description: "Partita IVA italiana (11 cifre)",
 				}),
 				legalForm: t.String({
+					minLength: 1,
+					maxLength: 100,
 					description: "Forma giuridica (es. SRL, SAS, Ditta individuale)",
 				}),
 				addressLine1: t.String({
+					minLength: 1,
+					maxLength: 200,
 					description: "Indirizzo sede legale",
 				}),
 				country: t.Optional(
 					t.String({
-						description: "Codice paese (default: IT)",
+						minLength: 2,
+						maxLength: 2,
+						description: "Codice paese ISO alpha-2 (default: IT)",
 					}),
 				),
-				province: t.Optional(t.String({ description: "Provincia (sigla)" })),
-				city: t.String({ description: "Città" }),
-				zipCode: t.String({ description: "CAP" }),
+				province: t.Optional(t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" })),
+				city: t.String({ minLength: 1, maxLength: 100, description: "Città" }),
+				zipCode: t.String({ pattern: "^\\d{5}$", description: "CAP (5 cifre)" }),
 			}),
 			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
@@ -197,14 +211,14 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 		},
 		{
 			body: t.Object({
-				name: t.String({ description: "Nome del negozio" }),
+				name: t.String({ minLength: 1, maxLength: 100, description: "Nome del negozio" }),
 				description: t.Optional(
-					t.String({ description: "Descrizione del negozio" }),
+					t.String({ maxLength: 1000, description: "Descrizione del negozio" }),
 				),
-				addressLine1: t.String({ description: "Indirizzo negozio" }),
-				province: t.Optional(t.String({ description: "Provincia (sigla)" })),
-				city: t.String({ description: "Città" }),
-				zipCode: t.String({ description: "CAP" }),
+				addressLine1: t.String({ minLength: 1, maxLength: 200, description: "Indirizzo negozio" }),
+				province: t.Optional(t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" })),
+				city: t.String({ minLength: 1, maxLength: 100, description: "Città" }),
+				zipCode: t.String({ pattern: "^\\d{5}$", description: "CAP (5 cifre)" }),
 				categoryId: t.Optional(
 					t.String({ description: "ID categoria negozio" }),
 				),
@@ -254,6 +268,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			body: t.Object({
 				stripeAccountId: t.Optional(
 					t.String({
+						pattern: "^acct_[a-zA-Z0-9]+$",
 						description: "ID dell'account Stripe Connect",
 					}),
 				),

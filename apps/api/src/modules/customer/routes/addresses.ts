@@ -66,12 +66,12 @@ export const addressesRoutes = new Elysia()
 		{
 			body: t.Object({
 				label: t.Optional(
-					t.String({ description: "Etichetta (es. 'Casa', 'Ufficio')" }),
+					t.String({ maxLength: 50, description: "Etichetta (es. 'Casa', 'Ufficio')" }),
 				),
 				recipientName: t.Optional(
-					t.String({ description: "Nome del destinatario" }),
+					t.String({ maxLength: 100, description: "Nome del destinatario" }),
 				),
-				phone: t.Optional(t.String({ description: "Numero di telefono" })),
+				phone: t.Optional(t.String({ minLength: 5, maxLength: 30, description: "Numero di telefono" })),
 				...AddressFieldsRequired,
 				isDefault: t.Optional(
 					t.Boolean({ description: "Imposta come indirizzo predefinito" }),
@@ -102,11 +102,11 @@ export const addressesRoutes = new Elysia()
 				addressId: t.String({ description: "ID dell'indirizzo" }),
 			}),
 			body: t.Object({
-				label: t.Optional(t.String({ description: "Etichetta" })),
+				label: t.Optional(t.String({ maxLength: 50, description: "Etichetta" })),
 				recipientName: t.Optional(
-					t.String({ description: "Nome del destinatario" }),
+					t.String({ maxLength: 100, description: "Nome del destinatario" }),
 				),
-				phone: t.Optional(t.String({ description: "Numero di telefono" })),
+				phone: t.Optional(t.String({ minLength: 5, maxLength: 30, description: "Numero di telefono" })),
 				...AddressFieldsOptional,
 				isDefault: t.Optional(
 					t.Boolean({ description: "Imposta come predefinito" }),

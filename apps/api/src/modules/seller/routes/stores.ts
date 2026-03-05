@@ -61,19 +61,19 @@ export const storesRoutes = new Elysia()
 		},
 		{
 			body: t.Object({
-				name: t.String({ description: "Nome del negozio" }),
+				name: t.String({ minLength: 1, maxLength: 100, description: "Nome del negozio" }),
 				description: t.Optional(
-					t.String({ description: "Descrizione del negozio" }),
+					t.String({ maxLength: 1000, description: "Descrizione del negozio" }),
 				),
 				...AddressFieldsRequired,
-				websiteUrl: t.Optional(t.String({ description: "URL del sito web" })),
+				websiteUrl: t.Optional(t.String({ maxLength: 500, description: "URL del sito web" })),
 				phoneNumbers: t.Optional(
 					t.Array(
 						t.Object({
 							label: t.Optional(
-								t.String({ description: "Etichetta (es. 'Principale')" }),
+								t.String({ maxLength: 50, description: "Etichetta (es. 'Principale')" }),
 							),
-							number: t.String({ description: "Numero di telefono" }),
+							number: t.String({ minLength: 5, maxLength: 30, description: "Numero di telefono" }),
 							position: t.Optional(
 								t.Number({
 									minimum: 0,
@@ -112,17 +112,17 @@ export const storesRoutes = new Elysia()
 				storeId: t.String({ description: "ID del negozio" }),
 			}),
 			body: t.Object({
-				name: t.Optional(t.String({ description: "Nome del negozio" })),
-				description: t.Optional(t.String({ description: "Descrizione" })),
+				name: t.Optional(t.String({ minLength: 1, maxLength: 100, description: "Nome del negozio" })),
+				description: t.Optional(t.String({ maxLength: 1000, description: "Descrizione" })),
 				...AddressFieldsOptional,
-				websiteUrl: t.Optional(t.String({ description: "URL del sito web" })),
+				websiteUrl: t.Optional(t.String({ maxLength: 500, description: "URL del sito web" })),
 				phoneNumbers: t.Optional(
 					t.Array(
 						t.Object({
 							label: t.Optional(
-								t.String({ description: "Etichetta (es. 'Principale')" }),
+								t.String({ maxLength: 50, description: "Etichetta (es. 'Principale')" }),
 							),
-							number: t.String({ description: "Numero di telefono" }),
+							number: t.String({ minLength: 5, maxLength: 30, description: "Numero di telefono" }),
 							position: t.Optional(
 								t.Number({
 									minimum: 0,

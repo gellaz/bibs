@@ -25,25 +25,25 @@ export const LocationField = t.Optional(
 
 /** Required address fields for create operations. */
 export const AddressFieldsRequired = {
-	addressLine1: t.String({ description: "Indirizzo (riga 1)" }),
-	addressLine2: t.Optional(t.String({ description: "Indirizzo (riga 2)" })),
-	city: t.String({ description: "Città" }),
-	zipCode: t.String({ description: "CAP" }),
-	province: t.Optional(t.String({ description: "Provincia (sigla)" })),
+	addressLine1: t.String({ minLength: 1, maxLength: 200, description: "Indirizzo (riga 1)" }),
+	addressLine2: t.Optional(t.String({ maxLength: 200, description: "Indirizzo (riga 2)" })),
+	city: t.String({ minLength: 1, maxLength: 100, description: "Città" }),
+	zipCode: t.String({ pattern: "^\\d{5}$", description: "CAP italiano (5 cifre)" }),
+	province: t.Optional(t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" })),
 	country: t.Optional(
-		t.String({ description: "Codice paese ISO 3166-1 alpha-2 (default: IT)" }),
+		t.String({ minLength: 2, maxLength: 2, description: "Codice paese ISO 3166-1 alpha-2 (default: IT)" }),
 	),
 	location: LocationField,
 } as const;
 
 /** Optional address fields for update/patch operations. */
 export const AddressFieldsOptional = {
-	addressLine1: t.Optional(t.String({ description: "Indirizzo (riga 1)" })),
-	addressLine2: t.Optional(t.String({ description: "Indirizzo (riga 2)" })),
-	city: t.Optional(t.String({ description: "Città" })),
-	zipCode: t.Optional(t.String({ description: "CAP" })),
-	province: t.Optional(t.String({ description: "Provincia (sigla)" })),
-	country: t.Optional(t.String({ description: "Codice paese" })),
+	addressLine1: t.Optional(t.String({ minLength: 1, maxLength: 200, description: "Indirizzo (riga 1)" })),
+	addressLine2: t.Optional(t.String({ maxLength: 200, description: "Indirizzo (riga 2)" })),
+	city: t.Optional(t.String({ minLength: 1, maxLength: 100, description: "Città" })),
+	zipCode: t.Optional(t.String({ pattern: "^\\d{5}$", description: "CAP italiano (5 cifre)" })),
+	province: t.Optional(t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" })),
+	country: t.Optional(t.String({ minLength: 2, maxLength: 2, description: "Codice paese" })),
 	location: LocationField,
 } as const;
 
