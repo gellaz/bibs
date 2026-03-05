@@ -10,7 +10,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CreditCardIcon } from "lucide-react";
 import { useState } from "react";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import { useUpdatePayment } from "@/hooks/use-onboarding";
+import { useGoBack, useUpdatePayment } from "@/hooks/use-onboarding";
 
 export const Route = createFileRoute("/_authenticated/onboarding/payment")({
 	component: PaymentPage,
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/onboarding/payment")({
 function PaymentPage() {
 	const navigate = useNavigate();
 	const mutation = useUpdatePayment();
+	const goBackMutation = useGoBack();
 	const [apiError, setApiError] = useState("");
 
 	async function handleSubmit() {
@@ -71,10 +72,26 @@ function PaymentPage() {
 
 				<Button
 					onClick={handleSubmit}
-					disabled={mutation.isPending}
+					disabled={mutation.isPending || goBackMutation.isPending}
 					className="w-full"
 				>
 					{mutation.isPending ? "Invio in corso..." : "Completa registrazione"}
+				</Button>
+
+				<Button
+					variant="outline"
+					disabled={mutation.isPending || goBackMutation.isPending}
+					className="w-full"
+					onClick={async () => {
+						try {
+							await goBackMutation.mutateAsync(undefined);
+							void navigate({ to: "/onboarding/store" });
+						} catch (err) {
+							setApiError(err instanceof Error ? err.message : "Errore");
+						}
+					}}
+				>
+					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
 				</Button>
 			</div>
 		</OnboardingLayout>

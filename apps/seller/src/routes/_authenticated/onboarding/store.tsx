@@ -10,7 +10,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import { useCreateStore, useSkipStore } from "@/hooks/use-onboarding";
+import {
+	useCreateStore,
+	useGoBack,
+	useSkipStore,
+} from "@/hooks/use-onboarding";
 
 type StoreFormData = Static<typeof OnboardingStoreBody>;
 const compiledSchema = TypeCompiler.Compile(OnboardingStoreBody);
@@ -23,6 +27,7 @@ function StorePage() {
 	const navigate = useNavigate();
 	const mutation = useCreateStore();
 	const skipMutation = useSkipStore();
+	const goBackMutation = useGoBack();
 	const [apiError, setApiError] = useState("");
 
 	const {
@@ -156,7 +161,9 @@ function StorePage() {
 				<Button
 					type="button"
 					variant="ghost"
-					disabled={isSubmitting || skipMutation.isPending}
+					disabled={
+						isSubmitting || skipMutation.isPending || goBackMutation.isPending
+					}
 					className="w-full"
 					onClick={async () => {
 						setApiError("");
@@ -173,6 +180,25 @@ function StorePage() {
 					}}
 				>
 					{skipMutation.isPending ? "Salto in corso..." : "Salta, lo farò dopo"}
+				</Button>
+
+				<Button
+					type="button"
+					variant="outline"
+					disabled={
+						isSubmitting || skipMutation.isPending || goBackMutation.isPending
+					}
+					className="w-full"
+					onClick={async () => {
+						try {
+							await goBackMutation.mutateAsync(undefined);
+							void navigate({ to: "/onboarding/company" });
+						} catch (err) {
+							setApiError(err instanceof Error ? err.message : "Errore");
+						}
+					}}
+				>
+					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
 				</Button>
 			</form>
 		</OnboardingLayout>

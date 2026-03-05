@@ -171,6 +171,23 @@ export function useSkipStore() {
 }
 
 /**
+ * Hook to go back to the previous onboarding step.
+ */
+export function useGoBack() {
+	return useOnboardingMutation(async () => {
+		const response = await api().seller.onboarding["go-back"].post();
+		if (response.error) {
+			const errorMsg =
+				typeof response.error.value === "string"
+					? response.error.value
+					: "Errore durante il ritorno allo step precedente";
+			throw new Error(errorMsg);
+		}
+		return response.data;
+	});
+}
+
+/**
  * Hook for Step 5: Payment
  */
 export function useUpdatePayment() {

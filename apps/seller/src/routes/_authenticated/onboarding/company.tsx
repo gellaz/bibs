@@ -18,7 +18,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import { useUpdateCompany } from "@/hooks/use-onboarding";
+import { useGoBack, useUpdateCompany } from "@/hooks/use-onboarding";
 
 type CompanyFormData = Static<typeof CompanyBody>;
 const compiledSchema = TypeCompiler.Compile(CompanyBody);
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/_authenticated/onboarding/company")({
 function CompanyPage() {
 	const navigate = useNavigate();
 	const mutation = useUpdateCompany();
+	const goBackMutation = useGoBack();
 	const [apiError, setApiError] = useState("");
 
 	const {
@@ -157,8 +158,29 @@ function CompanyPage() {
 					<FieldError errors={[errors.zipCode]} />
 				</Field>
 
-				<Button type="submit" disabled={isSubmitting} className="w-full mt-2">
+				<Button
+					type="submit"
+					disabled={isSubmitting || goBackMutation.isPending}
+					className="w-full mt-2"
+				>
 					{isSubmitting ? "Salvataggio..." : "Continua"}
+				</Button>
+
+				<Button
+					type="button"
+					variant="outline"
+					disabled={isSubmitting || goBackMutation.isPending}
+					className="w-full"
+					onClick={async () => {
+						try {
+							await goBackMutation.mutateAsync(undefined);
+							void navigate({ to: "/onboarding/document" });
+						} catch (err) {
+							setApiError(err instanceof Error ? err.message : "Errore");
+						}
+					}}
+				>
+					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
 				</Button>
 			</form>
 		</OnboardingLayout>

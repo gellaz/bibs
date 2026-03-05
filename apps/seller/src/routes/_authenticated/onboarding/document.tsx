@@ -19,7 +19,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import { useUpdateDocument } from "@/hooks/use-onboarding";
+import { useGoBack, useUpdateDocument } from "@/hooks/use-onboarding";
 
 type DocumentFormData = Static<typeof DocumentBody>;
 const compiledSchema = TypeCompiler.Compile(DocumentBody);
@@ -31,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/onboarding/document")({
 function DocumentPage() {
 	const navigate = useNavigate();
 	const mutation = useUpdateDocument();
+	const goBackMutation = useGoBack();
 	const [apiError, setApiError] = useState("");
 	const [documentImage, setDocumentImage] = useState<File | null>(null);
 	const [fileError, setFileError] = useState("");
@@ -128,8 +129,29 @@ function DocumentPage() {
 					{fileError && <p className="text-sm text-destructive">{fileError}</p>}
 				</Field>
 
-				<Button type="submit" disabled={isSubmitting} className="w-full mt-2">
+				<Button
+					type="submit"
+					disabled={isSubmitting || goBackMutation.isPending}
+					className="w-full mt-2"
+				>
 					{isSubmitting ? "Caricamento..." : "Continua"}
+				</Button>
+
+				<Button
+					type="button"
+					variant="outline"
+					disabled={isSubmitting || goBackMutation.isPending}
+					className="w-full"
+					onClick={async () => {
+						try {
+							await goBackMutation.mutateAsync(undefined);
+							void navigate({ to: "/onboarding/personal-info" });
+						} catch (err) {
+							setApiError(err instanceof Error ? err.message : "Errore");
+						}
+					}}
+				>
+					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
 				</Button>
 			</form>
 		</OnboardingLayout>
