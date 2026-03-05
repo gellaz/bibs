@@ -235,6 +235,25 @@ export async function createOnboardingStore(params: StoreParams) {
 	});
 }
 
+// ── Step 4b: Skip store ─────────────────────
+
+export async function skipOnboardingStore(userId: string) {
+	const profile = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.userId, userId),
+	});
+
+	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	assertStatus(profile.onboardingStatus, "pending_store");
+
+	const [updated] = await db
+		.update(sellerProfile)
+		.set({ onboardingStatus: "pending_payment" })
+		.where(eq(sellerProfile.userId, userId))
+		.returning();
+
+	return updated;
+}
+
 // ── Step 5: Payment ─────────────────────────
 
 interface PaymentParams {

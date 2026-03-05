@@ -154,6 +154,23 @@ export function useCreateStore() {
 }
 
 /**
+ * Hook for Step 4b: Skip store creation
+ */
+export function useSkipStore() {
+	return useOnboardingMutation(async () => {
+		const response = await api().seller.onboarding["skip-store"].post();
+		if (response.error) {
+			const errorMsg =
+				typeof response.error.value === "string"
+					? response.error.value
+					: "Errore durante il salto del negozio";
+			throw new Error(errorMsg);
+		}
+		return response.data;
+	});
+}
+
+/**
  * Hook for Step 5: Payment
  */
 export function useUpdatePayment() {
