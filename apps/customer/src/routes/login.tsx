@@ -8,6 +8,7 @@ import {
 } from "@bibs/ui/components/card";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
+import { PasswordInput } from "@bibs/ui/components/password-input";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -106,9 +107,8 @@ function LoginPage() {
 
 						<div className="flex flex-col gap-2">
 							<Label htmlFor="password">Password</Label>
-							<Input
+							<PasswordInput
 								id="password"
-								type="password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
 								required

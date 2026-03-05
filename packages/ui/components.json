@@ -18,6 +18,7 @@
 		"hooks": "@/hooks"
 	},
 	"registries": {
-		"@kibo-ui": "https://www.kibo-ui.com/r/{name}.json"
+		"@kibo-ui": "https://www.kibo-ui.com/r/{name}.json",
+		"@shadcnblocks": "https://shadcnblocks.com/r/{name}.json"
 	}
 }

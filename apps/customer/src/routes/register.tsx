@@ -13,6 +13,7 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { PasswordInput } from "@bibs/ui/components/password-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -129,9 +130,8 @@ function RegisterPage() {
 
 						<Field data-invalid={!!errors.password}>
 							<FieldLabel htmlFor="password">Password</FieldLabel>
-							<Input
+							<PasswordInput
 								id="password"
-								type="password"
 								autoComplete="new-password"
 								{...register("password")}
 							/>
@@ -143,9 +143,8 @@ function RegisterPage() {
 							<FieldLabel htmlFor="confirmPassword">
 								Conferma password
 							</FieldLabel>
-							<Input
+							<PasswordInput
 								id="confirmPassword"
-								type="password"
 								autoComplete="new-password"
 								{...register("confirmPassword")}
 							/>

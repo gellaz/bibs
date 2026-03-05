@@ -6,6 +6,7 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { PasswordInput } from "@bibs/ui/components/password-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
@@ -72,9 +73,8 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 
 			<Field data-invalid={!!errors.password}>
 				<FieldLabel htmlFor="password">Password</FieldLabel>
-				<Input
+				<PasswordInput
 					id="password"
-					type="password"
 					autoComplete="new-password"
 					{...register("password")}
 				/>
@@ -84,9 +84,8 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 
 			<Field data-invalid={!!errors.confirmPassword}>
 				<FieldLabel htmlFor="confirmPassword">Conferma password</FieldLabel>
-				<Input
+				<PasswordInput
 					id="confirmPassword"
-					type="password"
 					autoComplete="new-password"
 					{...register("confirmPassword")}
 				/>
