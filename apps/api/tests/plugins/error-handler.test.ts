@@ -12,7 +12,6 @@ const noopPino = {
 	error: () => {},
 	fatal: () => {},
 	trace: () => {},
-// biome-ignore lint/suspicious/noExplicitAny: test-only stub
 } as any;
 
 const app = new Elysia()
@@ -35,7 +34,10 @@ const app = new Elysia()
 		throw new Error("Unexpected crash");
 	})
 	.get("/unique-violation", () => {
-		const err = Object.assign(new Error("duplicate key value"), { code: "23505", constraint: "users_email_unique" });
+		const err = Object.assign(new Error("duplicate key value"), {
+			code: "23505",
+			constraint: "users_email_unique",
+		});
 		throw err;
 	})
 	.get("/ok", () => ({ success: true, data: "ok" }));
@@ -46,7 +48,9 @@ async function json(res: Response) {
 
 describe("errorHandler — ServiceError", () => {
 	it("returns 404 for ServiceError(404)", async () => {
-		const res = await app.handle(new Request("http://localhost/service-error-404"));
+		const res = await app.handle(
+			new Request("http://localhost/service-error-404"),
+		);
 		expect(res.status).toBe(404);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -55,7 +59,9 @@ describe("errorHandler — ServiceError", () => {
 	});
 
 	it("returns 403 for ServiceError(403)", async () => {
-		const res = await app.handle(new Request("http://localhost/service-error-403"));
+		const res = await app.handle(
+			new Request("http://localhost/service-error-403"),
+		);
 		expect(res.status).toBe(403);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -64,14 +70,18 @@ describe("errorHandler — ServiceError", () => {
 	});
 
 	it("returns 400 for ServiceError(400)", async () => {
-		const res = await app.handle(new Request("http://localhost/service-error-400"));
+		const res = await app.handle(
+			new Request("http://localhost/service-error-400"),
+		);
 		expect(res.status).toBe(400);
 		const body = await json(res);
 		expect(body.error).toBe("BAD_REQUEST");
 	});
 
 	it("returns 500 for ServiceError(500)", async () => {
-		const res = await app.handle(new Request("http://localhost/service-error-500"));
+		const res = await app.handle(
+			new Request("http://localhost/service-error-500"),
+		);
 		expect(res.status).toBe(500);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -90,7 +100,9 @@ describe("errorHandler — unhandled errors", () => {
 	});
 
 	it("returns 409 for a PostgreSQL unique violation (code 23505)", async () => {
-		const res = await app.handle(new Request("http://localhost/unique-violation"));
+		const res = await app.handle(
+			new Request("http://localhost/unique-violation"),
+		);
 		expect(res.status).toBe(409);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -100,7 +112,9 @@ describe("errorHandler — unhandled errors", () => {
 
 describe("errorHandler — route not found", () => {
 	it("returns 404 with NOT_FOUND for an unknown route", async () => {
-		const res = await app.handle(new Request("http://localhost/does-not-exist"));
+		const res = await app.handle(
+			new Request("http://localhost/does-not-exist"),
+		);
 		expect(res.status).toBe(404);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -110,7 +124,9 @@ describe("errorHandler — route not found", () => {
 
 describe("errorHandler — response structure", () => {
 	it("error responses have success, error, and message fields", async () => {
-		const res = await app.handle(new Request("http://localhost/service-error-404"));
+		const res = await app.handle(
+			new Request("http://localhost/service-error-404"),
+		);
 		const body = await json(res);
 		expect(body).toHaveProperty("success", false);
 		expect(body).toHaveProperty("error");
@@ -125,7 +141,9 @@ describe("errorHandler — response structure", () => {
 	});
 
 	it("sets X-Request-Id header on error responses", async () => {
-		const res = await app.handle(new Request("http://localhost/service-error-404"));
+		const res = await app.handle(
+			new Request("http://localhost/service-error-404"),
+		);
 		expect(res.headers.get("x-request-id")).toBeString();
 	});
 });

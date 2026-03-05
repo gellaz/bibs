@@ -33,22 +33,41 @@ const mockSellerUser = {
 	banExpires: null,
 };
 
-const mockRegisterCustomer = mock(async (_body: { name: string; email: string; password: string }) => ({
-	user: mockCustomerUser,
-	profile: { id: "prof-1", userId: mockCustomerUser.id, points: 0, createdAt: now },
-	token: "mock-token-customer",
-}));
+const mockRegisterCustomer = mock(
+	async (_body: { name: string; email: string; password: string }) => ({
+		user: mockCustomerUser,
+		profile: {
+			id: "prof-1",
+			userId: mockCustomerUser.id,
+			points: 0,
+			createdAt: now,
+		},
+		token: "mock-token-customer",
+	}),
+);
 
-const mockRegisterSeller = mock(async (_body: { name: string; email: string; password: string }) => ({
-	user: mockSellerUser,
-	profile: { id: "prof-2", userId: mockSellerUser.id, onboardingStatus: "pending_email", createdAt: now },
-	token: "mock-token-seller",
-}));
+const mockRegisterSeller = mock(
+	async (_body: { name: string; email: string; password: string }) => ({
+		user: mockSellerUser,
+		profile: {
+			id: "prof-2",
+			userId: mockSellerUser.id,
+			onboardingStatus: "pending_email",
+			createdAt: now,
+		},
+		token: "mock-token-seller",
+	}),
+);
 
 const mockSignIn = mock(async (_body: { email: string; password: string }) => ({
 	user: mockCustomerUser,
 	profiles: {
-		customer: { id: "prof-1", userId: mockCustomerUser.id, points: 0, createdAt: now },
+		customer: {
+			id: "prof-1",
+			userId: mockCustomerUser.id,
+			points: 0,
+			createdAt: now,
+		},
 		seller: null,
 	},
 	organization: null,
@@ -76,10 +95,13 @@ const noopPino = {
 	error: () => {},
 	fatal: () => {},
 	trace: () => {},
-// biome-ignore lint/suspicious/noExplicitAny: test-only stub
 } as any;
 
-const app = new Elysia().state("pino", noopPino).use(errorHandler).use(requestId).use(registration);
+const app = new Elysia()
+	.state("pino", noopPino)
+	.use(errorHandler)
+	.use(requestId)
+	.use(registration);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -101,7 +123,11 @@ async function json(res: Response) {
 
 describe("POST /register/customer — validation", () => {
 	it("rejects empty name → 422", async () => {
-		const res = await post("/register/customer", { name: "", email: "mario@example.it", password: "password123" });
+		const res = await post("/register/customer", {
+			name: "",
+			email: "mario@example.it",
+			password: "password123",
+		});
 		expect(res.status).toBe(422);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -118,12 +144,20 @@ describe("POST /register/customer — validation", () => {
 	});
 
 	it("rejects invalid email format → 422", async () => {
-		const res = await post("/register/customer", { name: "Mario", email: "not-an-email", password: "password123" });
+		const res = await post("/register/customer", {
+			name: "Mario",
+			email: "not-an-email",
+			password: "password123",
+		});
 		expect(res.status).toBe(422);
 	});
 
 	it("rejects password shorter than 8 chars → 422", async () => {
-		const res = await post("/register/customer", { name: "Mario", email: "mario@example.it", password: "short" });
+		const res = await post("/register/customer", {
+			name: "Mario",
+			email: "mario@example.it",
+			password: "short",
+		});
 		expect(res.status).toBe(422);
 	});
 
@@ -158,7 +192,11 @@ describe("POST /register/customer — success", () => {
 
 	it("calls registerCustomer service once with the request body", async () => {
 		mockRegisterCustomer.mockClear();
-		await post("/register/customer", { name: "Mario", email: "mario@example.it", password: "password123" });
+		await post("/register/customer", {
+			name: "Mario",
+			email: "mario@example.it",
+			password: "password123",
+		});
 		expect(mockRegisterCustomer).toHaveBeenCalledTimes(1);
 	});
 
@@ -170,7 +208,9 @@ describe("POST /register/customer — success", () => {
 		});
 		const body = await json(res);
 		const data = body.data as Record<string, unknown>;
-		expect((data.user as Record<string, unknown>).email).toBe("mario@example.it");
+		expect((data.user as Record<string, unknown>).email).toBe(
+			"mario@example.it",
+		);
 		expect(data.token).toBe("mock-token-customer");
 	});
 });
@@ -210,17 +250,29 @@ describe("POST /register/customer — service errors", () => {
 
 describe("POST /register/seller — validation", () => {
 	it("rejects empty name → 422", async () => {
-		const res = await post("/register/seller", { name: "", email: "luca@example.it", password: "password123" });
+		const res = await post("/register/seller", {
+			name: "",
+			email: "luca@example.it",
+			password: "password123",
+		});
 		expect(res.status).toBe(422);
 	});
 
 	it("rejects invalid email format → 422", async () => {
-		const res = await post("/register/seller", { name: "Luca", email: "not-email", password: "password123" });
+		const res = await post("/register/seller", {
+			name: "Luca",
+			email: "not-email",
+			password: "password123",
+		});
 		expect(res.status).toBe(422);
 	});
 
 	it("rejects password shorter than 8 chars → 422", async () => {
-		const res = await post("/register/seller", { name: "Luca", email: "luca@example.it", password: "123" });
+		const res = await post("/register/seller", {
+			name: "Luca",
+			email: "luca@example.it",
+			password: "123",
+		});
 		expect(res.status).toBe(422);
 	});
 });
@@ -256,7 +308,10 @@ describe("POST /register/seller — success", () => {
 
 describe("POST /register/sign-in — validation", () => {
 	it("rejects invalid email format → 422", async () => {
-		const res = await post("/register/sign-in", { email: "not-an-email", password: "password123" });
+		const res = await post("/register/sign-in", {
+			email: "not-an-email",
+			password: "password123",
+		});
 		expect(res.status).toBe(422);
 	});
 
@@ -268,7 +323,10 @@ describe("POST /register/sign-in — validation", () => {
 
 describe("POST /register/sign-in — success", () => {
 	it("returns 200 with user and profiles on valid credentials", async () => {
-		const res = await post("/register/sign-in", { email: "mario@example.it", password: "password123" });
+		const res = await post("/register/sign-in", {
+			email: "mario@example.it",
+			password: "password123",
+		});
 		expect(res.status).toBe(200);
 		const body = await json(res);
 		expect(body.success).toBe(true);
@@ -281,7 +339,10 @@ describe("POST /register/sign-in — success", () => {
 		mockSignIn.mockImplementationOnce(async () => {
 			throw new ServiceError(401, "Invalid credentials");
 		});
-		const res = await post("/register/sign-in", { email: "mario@example.it", password: "wrong" });
+		const res = await post("/register/sign-in", {
+			email: "mario@example.it",
+			password: "wrong",
+		});
 		expect(res.status).toBe(401);
 		const body = await json(res);
 		expect(body.error).toBe("UNAUTHORIZED");
