@@ -93,11 +93,21 @@ describe("assertTransition — invalid transitions", () => {
 	});
 
 	it("error has status 400", () => {
+		expect.assertions(2);
 		try {
 			assertTransition("pending", "shipped", "pay_deliver");
 		} catch (e) {
 			expect(e).toBeInstanceOf(ServiceError);
 			expect((e as ServiceError).status).toBe(400);
+		}
+	});
+
+	it("error message describes the invalid transition", () => {
+		expect.assertions(1);
+		try {
+			assertTransition("pending", "shipped", "pay_deliver");
+		} catch (e) {
+			expect((e as ServiceError).message).toContain("pending");
 		}
 	});
 });

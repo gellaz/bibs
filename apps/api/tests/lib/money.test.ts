@@ -29,6 +29,12 @@ describe("toCents", () => {
 	it("converts without decimal part", () => {
 		expect(toCents("5")).toBe(500);
 	});
+
+	it("truncates extra decimal digits (3rd digit ignored)", () => {
+		// API schema enforces exactly 2 decimals; toCents silently truncates
+		expect(toCents("9.999")).toBe(999);
+		expect(toCents("0.019")).toBe(1);
+	});
 });
 
 describe("fromCents", () => {
