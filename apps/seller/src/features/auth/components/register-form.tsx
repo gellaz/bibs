@@ -27,7 +27,6 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 	} = useForm<RegisterFormData>({
 		resolver: zodResolver(registerFormSchema),
 		defaultValues: {
-			name: "",
 			email: "",
 			password: "",
 			confirmPassword: "",
@@ -46,19 +45,6 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 				</div>
 			)}
 
-			<Field data-invalid={!!errors.name}>
-				<FieldLabel htmlFor="name">Nome completo</FieldLabel>
-				<Input
-					id="name"
-					type="text"
-					placeholder="Mario Rossi"
-					autoComplete="name"
-					autoFocus
-					{...register("name")}
-				/>
-				<FieldError errors={[errors.name]} />
-			</Field>
-
 			<Field data-invalid={!!errors.email}>
 				<FieldLabel htmlFor="email">Email</FieldLabel>
 				<Input
@@ -66,6 +52,7 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 					type="email"
 					placeholder="venditore@esempio.it"
 					autoComplete="email"
+					autoFocus
 					{...register("email")}
 				/>
 				<FieldError errors={[errors.email]} />

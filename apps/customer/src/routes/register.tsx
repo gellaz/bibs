@@ -24,7 +24,6 @@ import { authClient } from "@/lib/auth-client";
 
 const registerSchema = z
 	.object({
-		name: z.string().min(1, "Il nome è obbligatorio"),
 		email: z
 			.string()
 			.min(1, "L'email è obbligatoria")
@@ -65,7 +64,6 @@ function RegisterPage() {
 		setError("");
 		try {
 			const { error: regError } = await api().register.customer.post({
-				name: data.name,
 				email: data.email,
 				password: data.password,
 			});
@@ -104,18 +102,6 @@ function RegisterPage() {
 							</div>
 						)}
 
-						<Field data-invalid={!!errors.name}>
-							<FieldLabel htmlFor="name">Nome completo</FieldLabel>
-							<Input
-								id="name"
-								placeholder="Mario Rossi"
-								autoComplete="name"
-								autoFocus
-								{...register("name")}
-							/>
-							<FieldError errors={[errors.name]} />
-						</Field>
-
 						<Field data-invalid={!!errors.email}>
 							<FieldLabel htmlFor="email">Email</FieldLabel>
 							<Input
@@ -123,6 +109,7 @@ function RegisterPage() {
 								type="email"
 								placeholder="email@esempio.it"
 								autoComplete="email"
+								autoFocus
 								{...register("email")}
 							/>
 							<FieldError errors={[errors.email]} />

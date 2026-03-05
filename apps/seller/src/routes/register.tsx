@@ -32,7 +32,6 @@ function RegisterPage() {
 
 		try {
 			const { error: regError } = await api().register.seller.post({
-				name: data.name,
 				email: data.email,
 				password: data.password,
 			});
