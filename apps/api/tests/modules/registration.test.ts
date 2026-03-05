@@ -34,7 +34,7 @@ const mockSellerUser = {
 };
 
 const mockRegisterCustomer = mock(
-	async (_body: { name: string; email: string; password: string }) => ({
+	async (_body: { email: string; password: string }) => ({
 		user: mockCustomerUser,
 		profile: {
 			id: "prof-1",
@@ -47,7 +47,7 @@ const mockRegisterCustomer = mock(
 );
 
 const mockRegisterSeller = mock(
-	async (_body: { name: string; email: string; password: string }) => ({
+	async (_body: { email: string; password: string }) => ({
 		user: mockSellerUser,
 		profile: {
 			id: "prof-2",
@@ -122,30 +122,8 @@ async function json(res: Response) {
 // ── Tests: POST /register/customer ───────────────────────────────────────────
 
 describe("POST /register/customer — validation", () => {
-	it("rejects empty name → 422", async () => {
-		const res = await post("/register/customer", {
-			name: "",
-			email: "mario@example.it",
-			password: "password123",
-		});
-		expect(res.status).toBe(422);
-		const body = await json(res);
-		expect(body.success).toBe(false);
-		expect(body.error).toBe("VALIDATION_ERROR");
-	});
-
-	it("rejects name that is too long → 422", async () => {
-		const res = await post("/register/customer", {
-			name: "A".repeat(101),
-			email: "mario@example.it",
-			password: "password123",
-		});
-		expect(res.status).toBe(422);
-	});
-
 	it("rejects invalid email format → 422", async () => {
 		const res = await post("/register/customer", {
-			name: "Mario",
 			email: "not-an-email",
 			password: "password123",
 		});
@@ -154,7 +132,6 @@ describe("POST /register/customer — validation", () => {
 
 	it("rejects password shorter than 8 chars → 422", async () => {
 		const res = await post("/register/customer", {
-			name: "Mario",
 			email: "mario@example.it",
 			password: "short",
 		});
@@ -163,7 +140,6 @@ describe("POST /register/customer — validation", () => {
 
 	it("rejects password longer than 128 chars → 422", async () => {
 		const res = await post("/register/customer", {
-			name: "Mario",
 			email: "mario@example.it",
 			password: "x".repeat(129),
 		});
@@ -180,7 +156,6 @@ describe("POST /register/customer — success", () => {
 	it("returns 200 with success:true on valid input", async () => {
 		mockRegisterCustomer.mockClear();
 		const res = await post("/register/customer", {
-			name: "Mario Rossi",
 			email: "mario@example.it",
 			password: "password123",
 		});
@@ -193,7 +168,6 @@ describe("POST /register/customer — success", () => {
 	it("calls registerCustomer service once with the request body", async () => {
 		mockRegisterCustomer.mockClear();
 		await post("/register/customer", {
-			name: "Mario",
 			email: "mario@example.it",
 			password: "password123",
 		});
@@ -202,7 +176,6 @@ describe("POST /register/customer — success", () => {
 
 	it("response contains user email and token", async () => {
 		const res = await post("/register/customer", {
-			name: "Mario Rossi",
 			email: "mario@example.it",
 			password: "password123",
 		});
@@ -221,7 +194,6 @@ describe("POST /register/customer — service errors", () => {
 			throw new ServiceError(409, "Email già registrata");
 		});
 		const res = await post("/register/customer", {
-			name: "Mario",
 			email: "mario@example.it",
 			password: "password123",
 		});
@@ -236,7 +208,6 @@ describe("POST /register/customer — service errors", () => {
 			throw new Error("Database connection lost");
 		});
 		const res = await post("/register/customer", {
-			name: "Mario",
 			email: "mario@example.it",
 			password: "password123",
 		});
@@ -249,18 +220,8 @@ describe("POST /register/customer — service errors", () => {
 // ── Tests: POST /register/seller ─────────────────────────────────────────────
 
 describe("POST /register/seller — validation", () => {
-	it("rejects empty name → 422", async () => {
-		const res = await post("/register/seller", {
-			name: "",
-			email: "luca@example.it",
-			password: "password123",
-		});
-		expect(res.status).toBe(422);
-	});
-
 	it("rejects invalid email format → 422", async () => {
 		const res = await post("/register/seller", {
-			name: "Luca",
 			email: "not-email",
 			password: "password123",
 		});
@@ -269,7 +230,6 @@ describe("POST /register/seller — validation", () => {
 
 	it("rejects password shorter than 8 chars → 422", async () => {
 		const res = await post("/register/seller", {
-			name: "Luca",
 			email: "luca@example.it",
 			password: "123",
 		});
@@ -280,7 +240,6 @@ describe("POST /register/seller — validation", () => {
 describe("POST /register/seller — success", () => {
 	it("returns 200 with success:true on valid input", async () => {
 		const res = await post("/register/seller", {
-			name: "Luca Venditore",
 			email: "luca@example.it",
 			password: "password123",
 		});
@@ -296,7 +255,6 @@ describe("POST /register/seller — success", () => {
 			throw new ServiceError(409, "Email già registrata");
 		});
 		const res = await post("/register/seller", {
-			name: "Luca",
 			email: "luca@example.it",
 			password: "password123",
 		});
