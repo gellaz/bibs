@@ -31,7 +31,11 @@ export const categoriesWriteRoutes = new Elysia()
 		},
 		{
 			body: t.Object({
-				name: t.String({ minLength: 1, maxLength: 100, description: "Nome della categoria" }),
+				name: t.String({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nome della categoria",
+				}),
 			}),
 			response: withErrors({ 200: okRes(CategorySchema) }),
 			detail: {
@@ -69,7 +73,11 @@ export const categoriesWriteRoutes = new Elysia()
 				categoryId: t.String({ description: "ID della categoria" }),
 			}),
 			body: t.Object({
-				name: t.String({ minLength: 1, maxLength: 100, description: "Nuovo nome della categoria" }),
+				name: t.String({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nuovo nome della categoria",
+				}),
 			}),
 			response: withErrors({ 200: okRes(CategorySchema) }),
 			detail: {

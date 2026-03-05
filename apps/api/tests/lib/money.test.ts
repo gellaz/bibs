@@ -68,10 +68,14 @@ describe("fromCents", () => {
 });
 
 describe("toCents / fromCents round-trip", () => {
-	it.each(["0.00", "0.01", "1.00", "9.99", "100.00", "999.99"])(
-		"round-trips %s",
-		(price) => {
-			expect(fromCents(toCents(price))).toBe(price);
-		},
-	);
+	it.each([
+		"0.00",
+		"0.01",
+		"1.00",
+		"9.99",
+		"100.00",
+		"999.99",
+	])("round-trips %s", (price) => {
+		expect(fromCents(toCents(price))).toBe(price);
+	});
 });
