@@ -15,6 +15,9 @@ authentication (email/password, RBAC via admin plugin). An OpenAPI spec is auto-
 - `bun run dev` — start dev server with watch mode (port 3000)
 - `bun run build` — bundle the project into `dist/` (target Bun)
 - `bun run typecheck` — run TypeScript type checking (`tsc --noEmit`)
+- `bun test` — run all tests (unit + integration)
+- `bun run test:unit` — run unit tests only (`tests/unit/`)
+- `bun run test:integration` — run integration tests only (`tests/integration/`, 180s timeout)
 - `bun run infra:up` — start PostGIS (5432) and MinIO (9000/9001) containers
 - `bun run infra:down` — stop and remove containers
 - `bun run infra:reset` — stop containers and delete volumes (full reset)
@@ -23,8 +26,6 @@ authentication (email/password, RBAC via admin plugin). An OpenAPI spec is auto-
 - `bun run db:push` — push schema directly to the database (no migration files)
 - `bun run db:studio` — open Drizzle Studio to browse the database
 - `bun run db:clean` — delete all migration files (`src/db/migrations/`)
-
-There is no test runner configured yet (`bun test` is not set up).
 
 After making code changes, always run `bun run typecheck` to verify there are no type errors.
 
@@ -36,28 +37,30 @@ Creates the Elysia app with plugins and modules:
 
 1. **logixlysia** — structured request logging with Pino (method, path, status, duration, IP). Writes to stdout +
    `logs/app.log` with daily rotation.
-2. **cors** — CORS configuration for React/Vue/Angular frontends. Auto-accepts localhost in dev, uses `ALLOWED_ORIGINS`
+2. **cors** — CORS configuration for React frontends. Auto-accepts localhost in dev, uses `ALLOWED_ORIGINS`
    in production.
 3. **errorHandler** — global error handler that catches `ServiceError`, validation errors, pg unique constraint
    violations (`23505 → 409`), and unhandled exceptions. Logs errors via Pino with appropriate severity.
 4. **requestId** — derives a `X-Request-Id` (`crypto.randomUUID()`) and sets it on `set.headers` in the `derive` hook so
    the header is present in both success and error responses.
 5. **openapi** — serves the OpenAPI/Swagger spec at `/openapi`, merging better-auth's generated paths and components.
-   Full documentation with ~40 endpoints, request/response schemas, and error responses.
+   Full documentation with ~60 endpoints, request/response schemas, and error responses.
 6. **betterAuth** — mounts better-auth's handler at `/auth/api` and defines an `auth` macro that resolves the current
    user/session from request headers. Routes opt in to authentication by setting `{ auth: true }` in their config.
 7. **registration** — `/register/*` — custom authentication endpoints:
     - `POST /register/customer` — register + create customer profile
-    - `POST /register/seller` — register + create seller profile (VAT pending)
+    - `POST /register/seller` — register + create seller profile (starts onboarding)
     - `POST /register/sign-in` — login, returns user + both profiles (customer & seller if they exist)
-8. **adminModule** — `/admin/*` — category CRUD, seller VAT verification. All routes documented with OpenAPI schemas.
-9. **sellerModule** — `/seller/*` — stores, products, stock, orders, employees. Accessible by sellers (owner) and their
-   employees. 17 endpoints with full schemas.
-10. **customerModule** — `/customer/*` — product search (public, with full-text + geo), addresses, orders, loyalty
-    points. 11 endpoints with response documentation.
-11. **cronJobs** — scheduled tasks via `@elysiajs/cron`. Currently runs reservation expiry every 10 minutes.
-12. **GET /health** — database connectivity check (liveness/readiness probe). Returns `200` or `503`.
-13. **GET /user** — returns the authenticated user (requires `{ auth: true }`).
+8. **adminModule** — `/admin/*` — category CRUD, seller verification. All routes documented with OpenAPI schemas.
+9. **categoriesModule** — `GET /categories` — public paginated category listing (read-only, no auth required).
+10. **locationsModule** — `/locations/*` — Italian geographic data (regions, provinces, municipalities). Public, no auth.
+11. **sellerModule** — `/seller/*` — onboarding, profile, stores, products, images, stock, orders, employees. Accessible
+    by sellers (owner) and their employees. 33 endpoints with full schemas.
+12. **customerModule** — `/customer/*` — product search (public, with full-text relevance ranking + geo-filter),
+    profile, addresses, orders, loyalty points. 12 endpoints with response documentation.
+13. **cronJobs** — scheduled tasks via `@elysiajs/cron`. Currently runs reservation expiry every 10 minutes.
+14. **health** plugin — `GET /health` (liveness probe, always 200) + `GET /ready` (readiness probe, checks DB + S3
+    connectivity, returns 503 if unhealthy).
 
 **Startup sequence**: ensures S3 bucket exists → restores in-memory reservation timers → optionally seeds test data.
 
@@ -88,10 +91,18 @@ Required: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `S3_ENDPOINT`
 `S3_BUCKET`.
 Optional: `PORT` (default `3000`), `SEED_DB` (default `false`), `ALLOWED_ORIGINS`, `NODE_ENV` (default `development`).
 
+### Email — `src/lib/email.ts`
+
+Email sending via **Resend** in production, logging-only in development:
+
+- In dev: logs the email content to Pino (no external service needed)
+- In production: sends via Resend API using `RESEND_API_KEY`
+- Used for email verification during seller onboarding
+
 ### Config & Errors — `src/lib/config.ts`, `src/lib/errors.ts`, `src/lib/responses.ts`
 
 `config.ts` centralises business constants: `pointsPerEuro` (1), `pointsPerEuroDiscount` (100), `reservationHours` (48),
-`maxImagesPerProduct` (10), `shippingCost` (€5.00), and pagination defaults (20/100). `errors.ts` exports
+`maxImagesPerProduct` (10), `maxProductsPerImport` (500), `shippingCost` (€5.00), and pagination defaults (20/100). `errors.ts` exports
 `ServiceError`, a typed error class with `ErrorStatus` (a strict union of valid HTTP status codes: 400, 401, 403, 404,
 409, 422, 500, 503) and derived `ErrorCode` strings. `responses.ts` provides runtime response helpers (`ok()`,
 `okPage()`, `okMessage()`, `errorBody()`) that match the schemas.
@@ -179,23 +190,33 @@ under `/auth/api` and tag them as "Better Auth". These are merged into the main 
 
 ### Modules — `src/modules/`
 
-Each module is a self-contained Elysia plugin mounted with a prefix. Every module (except `registration/`) follows the
-same structure: `context.ts` (guard context + type helpers), `routes/` (route definitions), `services/` (business
-logic).
+Each module is a self-contained Elysia plugin mounted with a prefix. Every module (except `registration/` and
+`categories.ts`) follows the same structure: `context.ts` (guard context + type helpers), `routes/` (route definitions),
+`services/` (business logic).
 
 - `registration/` — custom authentication endpoints:
   - `POST /register/customer` — sign-up + create customer profile
-  - `POST /register/seller` — sign-up + create seller profile (VAT pending)
+  - `POST /register/seller` — sign-up + create seller profile (starts onboarding at `pending_email`)
   - `POST /register/sign-in` — login returning user + both profiles
   - All responses include both `customerProfile` and `sellerProfile` when present
-- `admin/` — 7 endpoints for category management and seller verification. Guarded by `.resolve()` that enforces
+- `categories.ts` — single-file module, `GET /categories` — public paginated category listing (no auth). Uses the same
+  service as admin category routes.
+- `locations/` — 3 public endpoints for Italian geographic data. No auth required:
+  - `GET /locations/regions` — all Italian regions
+  - `GET /locations/provinces` — provinces (optional `regionId` filter)
+  - `GET /locations/municipalities` — paginated municipalities (optional `provinceId` filter)
+- `admin/` — 6 endpoints for category CRUD and seller verification. Guarded by `.resolve()` that enforces
   `user.role === "admin"`. All have full OpenAPI schemas with error responses.
-- `seller/` — 17 endpoints for stores, products, images, stock, orders, employees. Access resolved from seller (owner)
-  or employee role. Ownership checks in `context.ts` (`ensureProductOwnership`, `requireOwner`). Store IDs are
-  lazy-loaded via `getStoreIds()` (only queries DB when an endpoint actually needs them, e.g. order listing). All
-  documented with TypeBox schemas.
-- `customer/` — 11 endpoints for product search (full-text Italian + PostGIS geo-filter), addresses, orders (4 types:
-  direct, reserve_pickup, pay_pickup, pay_deliver), loyalty points. Search is public, others require auth.
+- `seller/` — 33 endpoints across 8 route groups. Two guard levels:
+  - **Auth-only guard** (`withSellerAuth`): profile (2 endpoints) + onboarding (6 endpoints) — accessible to any
+    authenticated seller regardless of onboarding status.
+  - **Full guard** (`withSeller`): stores (4), products (6, including CSV bulk import), images (2), stock (3),
+    orders (5, with status/type filters and idempotency keys), employees (5) — requires `onboardingStatus === "active"`.
+  - Access resolved from seller (owner) or employee role. Ownership checks in `context.ts`
+    (`ensureProductOwnership`, `requireOwner`). Store IDs are lazy-loaded via `getStoreIds()`.
+- `customer/` — 12 endpoints: product search (full-text Italian with relevance ranking + PostGIS geo-filter), profile,
+  addresses, orders (4 types: direct, reserve_pickup, pay_pickup, pay_deliver), loyalty points. Search is public,
+  others require auth.
 
 **Module context pattern**: Each module has a `context.ts` that defines the resolved context interface (e.g.
 `SellerResolvedContext`) and a `withX(ctx)` helper for type-safe context access in route handlers.
@@ -260,16 +281,24 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
 - `src/db/schemas/` — Drizzle table definitions and relations:
   - `auth.ts` — user, session, account, verification (better-auth tables)
   - `customer.ts` — customer_profiles (points balance)
-  - `seller.ts` — seller_profiles (VAT number, verification status: pending/verified/rejected)
-  - `store.ts` — stores (address + PostGIS point location with GiST index)
+  - `seller.ts` — seller_profiles (multi-step onboarding status: `pending_email` → `pending_personal` →
+    `pending_document` → `pending_company` → `pending_store` → `pending_payment` → `pending_review` → `active` /
+    `rejected`)
+  - `organization.ts` — organizations (business name, VAT number, legal form, address; VAT status:
+    pending/verified/rejected)
+  - `store.ts` — stores (address + PostGIS point location with GiST index, website URL, phone numbers)
+  - `store-category.ts` — store_categories
+  - `store-image.ts` — store_images (S3/MinIO keys, position ordering)
   - `category.ts` — product_categories
   - `product.ts` — products (with Italian full-text GIN index), product_classifications (many-to-many with
       categories), store_products (stock per store)
   - `address.ts` — customer_addresses (PostGIS point location)
   - `employee.ts` — store_employees (status: active/banned/removed)
-  - `order.ts` — orders (type, status, points, reservation expiry), order_items
+  - `order.ts` — orders (type, status, points, reservation expiry, idempotency key), order_items
   - `points.ts` — point_transactions (earned/redeemed)
   - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
+  - `location.ts` — regions, provinces, municipalities (Italian geographic hierarchy with ISTAT codes)
+  - `payment-method.ts` — payment_methods (Stripe Connect accounts per seller)
 - Migrations output to `src/db/migrations/` (configured in `drizzle.config.ts`).
 
 ### S3/MinIO — `src/lib/s3.ts`
@@ -532,14 +561,39 @@ Optional:
 - `SEED_DB` — if `"true"`, seeds test users on startup
 - `ALLOWED_ORIGINS` — comma-separated list of allowed CORS origins (production only; localhost auto-allowed in dev)
 - `NODE_ENV` — `development` (default) or `production` (affects log level)
+- `RESEND_API_KEY` — Resend API key for sending emails (production only; in dev emails are logged)
+- `EMAIL_FROM` — sender address for emails (default `Bibs <noreply@bibs.it>`)
+- `CUSTOMER_APP_URL` — customer frontend URL (default `http://localhost:3001`)
+- `SELLER_APP_URL` — seller frontend URL (default `http://localhost:3002`)
+
+## Testing
+
+Tests use **Bun's built-in test runner** with two levels:
+
+- **Unit tests** (`tests/unit/`) — test core lib modules (errors, money, order state machine, pagination)
+- **Route-level tests** (`tests/modules/`, `tests/plugins/`) — test registration, error handler via Elysia's test
+  client
+- **Integration tests** (`tests/integration/`) — full end-to-end tests using **testcontainers** (spins up a real
+  PostgreSQL container). Tests orders, product search, etc.
+
+Test helpers in `tests/helpers/`: `test-db.ts` (testcontainers setup), `fixtures.ts` (test data), `cleanup.ts` (DB
+cleanup between tests). A `tests/preload.ts` file configures the test environment.
+
+Run tests:
+
+```bash
+bun test            # all tests
+bun run test:unit   # unit only
+bun run test:integration  # integration only (requires Docker)
+```
 
 ## API Documentation
 
 Full OpenAPI 3.0 spec available at `/openapi` with:
 
-- ~40 documented endpoints across 5 modules
-- Request/response schemas with TypeBox (runtime validation + types)
-- Error responses (400, 401, 403, 404, 422, 500) for all endpoints
+- ~60 documented endpoints across 7 modules
+- Request/response schemas with TypeBox (runtime validation + types + restrictive input validation)
+- Error responses (400, 401, 403, 404, 409, 422, 500) for all endpoints
 - Better-auth endpoints merged under "Better Auth" tag
 - Scalar UI for interactive documentation
 

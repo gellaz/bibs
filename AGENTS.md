@@ -20,6 +20,7 @@ This file provides guidance when working with the **bibs** monorepo.
 - `bun run dev:customer` — start customer app
 - `bun run dev:seller` — start seller app
 - `bun run dev:admin` — start admin app
+- `bun run test` — run API tests (unit + integration)
 - `bun run typecheck` — typecheck all workspaces
 - `bun run lint` — lint all workspaces (Biome)
 - `bun run lint:fix` — lint and auto-fix (Biome)
@@ -67,6 +68,7 @@ All three frontend apps (`admin`, `customer`, `seller`) share the same tech stac
 - **TanStack Query** — data fetching with cache, pagination, refetch
 - **Eden Treaty** (`@elysiajs/eden`) — type-safe API client from the Elysia backend
 - **better-auth client** — `src/lib/auth-client.ts` uses `createAuthClient` pointing to the API's `/auth/api` endpoint
+- **React Hook Form** + `@hookform/resolvers` — form state management with schema validation
 - **Paraglide JS** — i18n with localized routing (messages in `messages/`, output in `src/paraglide/`)
 - **Tailwind CSS v4** — via `@tailwindcss/vite` plugin
 - **@bibs/ui** — shared UI components from `packages/ui`, aliased as `~/` in imports
@@ -269,7 +271,7 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 **Scopes** (optional, use the workspace or module name):
 
 - `api`, `customer`, `seller`, `admin`, `ui` — workspace scopes
-- `db`, `auth`, `orders`, `products`, `categories`, `stores`, `images`, `employees`, `search`, `points` — module/feature scopes
+- `db`, `auth`, `orders`, `products`, `categories`, `stores`, `images`, `employees`, `search`, `points`, `locations`, `onboarding` — module/feature scopes
 - `infra` — Docker, CI/CD, deployment
 - `deps` — dependency updates
 
