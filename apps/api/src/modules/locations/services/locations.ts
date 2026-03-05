@@ -1,7 +1,12 @@
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { municipality, province } from "@/db/schemas/location";
+import { COUNTRIES } from "@/lib/countries";
 import { parsePagination } from "@/lib/pagination";
+
+export function listCountries() {
+	return COUNTRIES;
+}
 
 export async function listRegions() {
 	return db.query.region.findMany();

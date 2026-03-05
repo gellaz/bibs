@@ -377,6 +377,15 @@ export const PointTransactionSchema = t.Object({
 // Location schemas
 // ────────────────────────────────────────────
 
+export const CountrySchema = t.Object({
+	code: t.String({
+		minLength: 2,
+		maxLength: 2,
+		description: "Codice ISO 3166-1 alpha-2",
+	}),
+	label: t.String({ description: "Nome del paese in italiano" }),
+});
+
 export const RegionSchema = t.Object({
 	id: t.String(),
 	name: t.String({ description: "Nome della regione" }),

@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
 import {
+	CountrySchema,
 	MunicipalitySchema,
 	okPageRes,
 	okRes,
@@ -10,12 +11,29 @@ import {
 	withErrors,
 } from "@/lib/schemas";
 import {
+	listCountries,
 	listMunicipalities,
 	listProvinces,
 	listRegions,
 } from "../services/locations";
 
 export const locationsRoutes = new Elysia()
+	.get(
+		"/countries",
+		() => {
+			const data = [...listCountries()];
+			return ok(data);
+		},
+		{
+			response: withErrors({ 200: okRes(t.Array(CountrySchema)) }),
+			detail: {
+				summary: "Lista paesi",
+				description:
+					"Restituisce la lista completa dei paesi (ISO 3166-1 alpha-2) con nome in italiano.",
+				tags: ["Locations"],
+			},
+		},
+	)
 	.get(
 		"/regions",
 		async () => {
