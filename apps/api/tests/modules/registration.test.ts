@@ -1,18 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
 import { Elysia } from "elysia";
 
-// Hoisted by Bun — prevents @/lib/env from being imported at all
-mock.module("@/lib/logger", () => {
-	const noop = () => {};
-	const noopLogger = { debug: noop, info: noop, warn: noop, error: noop, fatal: noop, trace: noop };
-	return {
-		getLogger: () => noopLogger,
-		logger: noopLogger,
-		fileTransport: { log: noop },
-		pinoOptions: {},
-	};
-});
-
 // ── Mock service layer ────────────────────────────────────────────────────────
 
 const now = new Date("2025-01-01T00:00:00.000Z");
@@ -80,7 +68,18 @@ import { registration } from "@/modules/registration";
 import { errorHandler } from "@/plugins/error-handler";
 import { requestId } from "@/plugins/request-id";
 
-const app = new Elysia().use(errorHandler).use(requestId).use(registration);
+// Provides store.pino, which logixlysia normally injects in production.
+const noopPino = {
+	debug: () => {},
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	fatal: () => {},
+	trace: () => {},
+// biome-ignore lint/suspicious/noExplicitAny: test-only stub
+} as any;
+
+const app = new Elysia().state("pino", noopPino).use(errorHandler).use(requestId).use(registration);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
