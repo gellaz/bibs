@@ -49,11 +49,6 @@ export const employeesRoutes = new Elysia()
 		},
 		{
 			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome completo del dipendente",
-				}),
 				email: t.String({
 					format: "email",
 					description: "Email del dipendente",

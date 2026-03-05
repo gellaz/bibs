@@ -31,19 +31,16 @@ const SEED_DATA_DIR = `${import.meta.dirname}/seed-data`;
 
 const testUsers = [
 	{
-		name: "Admin User",
 		email: "admin@test.com",
 		password: "password123",
 		role: "admin",
 	},
 	{
-		name: "Customer User",
 		email: "customer@test.com",
 		password: "password123",
 		role: "customer",
 	},
 	{
-		name: "Seller User",
 		email: "seller@test.com",
 		password: "password123",
 		role: "seller",
@@ -52,7 +49,6 @@ const testUsers = [
 		vatStatus: "verified" as const,
 	},
 	{
-		name: "Seller Pending",
 		email: "seller-pending@test.com",
 		password: "password123",
 		role: "seller",
@@ -61,7 +57,6 @@ const testUsers = [
 		vatStatus: "pending" as const,
 	},
 	{
-		name: "Seller Rejected",
 		email: "seller-rejected@test.com",
 		password: "password123",
 		role: "seller",
@@ -84,9 +79,10 @@ export async function seed() {
 			continue;
 		}
 
+		const name = testUser.email.split("@")[0];
 		const { user: created } = await auth.api.signUpEmail({
 			body: {
-				name: testUser.name,
+				name,
 				email: testUser.email,
 				password: testUser.password,
 			},
@@ -121,7 +117,7 @@ export async function seed() {
 
 			await db.insert(organization).values({
 				sellerProfileId: sp.id,
-				businessName: `${testUser.name} SRL`,
+				businessName: `${name} SRL`,
 				vatNumber,
 				legalForm: "SRL",
 				addressLine1: "Via Roma 1",

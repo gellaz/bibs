@@ -34,13 +34,13 @@ export async function listEmployees(params: ListEmployeesParams) {
 
 interface CreateEmployeeParams {
 	sellerProfileId: string;
-	name: string;
 	email: string;
 	password: string;
 }
 
 export async function createEmployee(params: CreateEmployeeParams) {
-	const { sellerProfileId, name, email, password } = params;
+	const { sellerProfileId, email, password } = params;
+	const name = email.split("@")[0];
 
 	// Sign-up happens outside transaction (better-auth manages its own writes)
 	const { user: newUser } = await auth.api.signUpEmail({

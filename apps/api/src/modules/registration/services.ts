@@ -9,13 +9,13 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 
 interface RegisterCustomerParams {
-	name: string;
 	email: string;
 	password: string;
 }
 
 export async function registerCustomer(params: RegisterCustomerParams) {
-	const { name, email, password } = params;
+	const { email, password } = params;
+	const name = email.split("@")[0];
 
 	const existing = await db.query.user.findFirst({
 		where: eq(user.email, email),
@@ -55,13 +55,13 @@ export async function registerCustomer(params: RegisterCustomerParams) {
 }
 
 interface RegisterSellerParams {
-	name: string;
 	email: string;
 	password: string;
 }
 
 export async function registerSeller(params: RegisterSellerParams) {
-	const { name, email, password } = params;
+	const { email, password } = params;
+	const name = email.split("@")[0];
 
 	const existing = await db.query.user.findFirst({
 		where: eq(user.email, email),

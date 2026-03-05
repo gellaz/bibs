@@ -26,11 +26,6 @@ export const registration = new Elysia({
 		},
 		{
 			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome completo dell'utente",
-				}),
 				email: t.String({ format: "email", description: "Indirizzo email" }),
 				password: t.String({
 					minLength: 8,
@@ -64,11 +59,6 @@ export const registration = new Elysia({
 		},
 		{
 			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome completo dell'utente",
-				}),
 				email: t.String({ format: "email", description: "Indirizzo email" }),
 				password: t.String({
 					minLength: 8,
