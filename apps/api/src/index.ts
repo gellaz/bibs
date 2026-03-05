@@ -18,6 +18,7 @@ import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
 import { errorHandler } from "@/plugins/error-handler";
 import { health } from "@/plugins/health";
+import { normalize } from "@/plugins/normalize";
 import { requestId } from "@/plugins/request-id";
 
 const app = new Elysia()
@@ -55,6 +56,7 @@ const app = new Elysia()
 	)
 	.use(errorHandler)
 	.use(requestId)
+	.use(normalize)
 	.use(
 		openapi({
 			documentation: {

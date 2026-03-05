@@ -69,7 +69,11 @@ export const CreateStoreBody = Type.Object({
 		}),
 	),
 	websiteUrl: Type.Optional(
-		Type.String({ maxLength: 500, description: "URL del sito web" }),
+		Type.String({
+			format: "uri",
+			maxLength: 500,
+			description: "URL del sito web",
+		}),
 	),
 	phoneNumbers: Type.Optional(
 		Type.Array(PhoneNumber, {

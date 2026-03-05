@@ -100,7 +100,11 @@ export const storesRoutes = new Elysia()
 				),
 				...AddressFieldsOptional,
 				websiteUrl: t.Optional(
-					t.String({ maxLength: 500, description: "URL del sito web" }),
+					t.String({
+						format: "uri",
+						maxLength: 500,
+						description: "URL del sito web",
+					}),
 				),
 				phoneNumbers: t.Optional(
 					t.Array(
