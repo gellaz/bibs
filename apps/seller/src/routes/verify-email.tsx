@@ -7,6 +7,7 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Mail } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
@@ -45,8 +46,8 @@ function VerifyEmailPage() {
 		<div className="flex min-h-screen items-center justify-center px-4">
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
-					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg font-bold">
-						✉
+					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+						<Mail className="size-6" />
 					</div>
 					<CardTitle className="text-xl">Controlla la tua email</CardTitle>
 					<CardDescription>
