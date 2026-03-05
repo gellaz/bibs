@@ -20,6 +20,13 @@ function assertStatus(current: OnboardingStatus, expected: OnboardingStatus) {
 	}
 }
 
+const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
+	pending_document: "pending_personal",
+	pending_company: "pending_document",
+	pending_store: "pending_company",
+	pending_payment: "pending_store",
+};
+
 // ── GET status ──────────────────────────────
 
 export async function getOnboardingStatus(userId: string) {
@@ -252,6 +259,44 @@ export async function skipOnboardingStore(userId: string) {
 		.returning();
 
 	return updated;
+}
+
+// ── Go back ─────────────────────────────────
+
+export async function goBack(userId: string) {
+	const profile = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.userId, userId),
+	});
+
+	if (!profile) throw new ServiceError(404, "Seller profile not found");
+
+	const previousStatus = PREVIOUS_STATUS[profile.onboardingStatus];
+	if (!previousStatus) {
+		throw new ServiceError(
+			400,
+			`Cannot go back from '${profile.onboardingStatus}'`,
+		);
+	}
+
+	return db.transaction(async (tx) => {
+		// Clean up rows inserted by the step we're reverting from
+		if (profile.onboardingStatus === "pending_store") {
+			await tx
+				.delete(organization)
+				.where(eq(organization.sellerProfileId, profile.id));
+		}
+		if (profile.onboardingStatus === "pending_payment") {
+			await tx.delete(store).where(eq(store.sellerProfileId, profile.id));
+		}
+
+		const [updated] = await tx
+			.update(sellerProfile)
+			.set({ onboardingStatus: previousStatus })
+			.where(eq(sellerProfile.userId, userId))
+			.returning();
+
+		return updated;
+	});
 }
 
 // ── Step 5: Payment ─────────────────────────

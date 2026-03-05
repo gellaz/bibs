@@ -19,6 +19,7 @@ import { withSellerAuth } from "../context";
 import {
 	createOnboardingStore,
 	getOnboardingStatus,
+	goBack,
 	skipOnboardingStore,
 	updateCompany,
 	updateDocument,
@@ -197,6 +198,34 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 				summary: "Step 4b: Salta negozio",
 				description:
 					"Salta la creazione del negozio durante l'onboarding. Il venditore potrà creare un negozio in un secondo momento. Richiede onboardingStatus = 'pending_store'.",
+				tags: ["Seller - Onboarding"],
+			},
+		},
+	)
+	.post(
+		"/go-back",
+		async (ctx) => {
+			const { user, store } = withSellerAuth(ctx);
+			const pino = getLogger(store);
+			const data = await goBack(user.id);
+
+			pino.info(
+				{
+					userId: user.id,
+					newStatus: data.onboardingStatus,
+					action: "onboarding_go_back",
+				},
+				"Seller went back in onboarding",
+			);
+
+			return ok(data);
+		},
+		{
+			response: withErrors({ 200: okRes(SellerProfileSchema) }),
+			detail: {
+				summary: "Torna indietro",
+				description:
+					"Riporta l'onboarding allo step precedente. Eventuali dati inseriti nello step corrente vengono rimossi.",
 				tags: ["Seller - Onboarding"],
 			},
 		},
