@@ -4,13 +4,13 @@ import { PaginationQuery } from "@/lib/pagination";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
 	AddressFieldsOptional,
-	AddressFieldsRequired,
 	OkMessage,
 	okPageRes,
 	okRes,
 	StoreWithPhonesSchema,
 	withErrors,
 } from "@/lib/schemas";
+import { CreateStoreBody } from "@/lib/schemas/forms";
 import { requireOwner, withSeller } from "../context";
 import {
 	createStore,
@@ -60,44 +60,7 @@ export const storesRoutes = new Elysia()
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome del negozio",
-				}),
-				description: t.Optional(
-					t.String({ maxLength: 1000, description: "Descrizione del negozio" }),
-				),
-				...AddressFieldsRequired,
-				websiteUrl: t.Optional(
-					t.String({ maxLength: 500, description: "URL del sito web" }),
-				),
-				phoneNumbers: t.Optional(
-					t.Array(
-						t.Object({
-							label: t.Optional(
-								t.String({
-									maxLength: 50,
-									description: "Etichetta (es. 'Principale')",
-								}),
-							),
-							number: t.String({
-								minLength: 5,
-								maxLength: 30,
-								description: "Numero di telefono",
-							}),
-							position: t.Optional(
-								t.Number({
-									minimum: 0,
-									description: "Posizione di ordinamento",
-								}),
-							),
-						}),
-						{ description: "Numeri di telefono del negozio" },
-					),
-				),
-			}),
+			body: CreateStoreBody,
 			response: withErrors({ 200: okRes(StoreWithPhonesSchema) }),
 			detail: {
 				summary: "Crea negozio",

@@ -1,3 +1,4 @@
+import { CompanyBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Field,
@@ -10,16 +11,17 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { typeboxResolver } from "@hookform/resolvers/typebox";
+import type { Static } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import {
-	type CompanyFormData,
-	companySchema,
-} from "@/features/onboarding/schemas";
 import { useUpdateCompany } from "@/hooks/use-onboarding";
+
+type CompanyFormData = Static<typeof CompanyBody>;
+const compiledSchema = TypeCompiler.Compile(CompanyBody);
 
 const LEGAL_FORMS = [
 	"Ditta individuale",
@@ -47,7 +49,7 @@ function CompanyPage() {
 		handleSubmit,
 		formState: { errors, isSubmitting },
 	} = useForm<CompanyFormData>({
-		resolver: zodResolver(companySchema),
+		resolver: typeboxResolver(compiledSchema),
 		defaultValues: { country: "IT" },
 	});
 

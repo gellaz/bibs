@@ -1,3 +1,4 @@
+import { DocumentBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Dropzone,
@@ -11,16 +12,17 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { typeboxResolver } from "@hookform/resolvers/typebox";
+import type { Static } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import {
-	type DocumentFormData,
-	documentSchema,
-} from "@/features/onboarding/schemas";
 import { useUpdateDocument } from "@/hooks/use-onboarding";
+
+type DocumentFormData = Static<typeof DocumentBody>;
+const compiledSchema = TypeCompiler.Compile(DocumentBody);
 
 export const Route = createFileRoute("/_authenticated/onboarding/document")({
 	component: DocumentPage,
@@ -38,7 +40,7 @@ function DocumentPage() {
 		handleSubmit,
 		formState: { errors, isSubmitting },
 	} = useForm<DocumentFormData>({
-		resolver: zodResolver(documentSchema),
+		resolver: typeboxResolver(compiledSchema),
 	});
 
 	const onSubmit: SubmitHandler<DocumentFormData> = async (data) => {

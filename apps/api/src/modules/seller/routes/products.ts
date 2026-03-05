@@ -12,6 +12,7 @@ import {
 	ProductWithRelationsSchema,
 	withErrors,
 } from "@/lib/schemas";
+import { CreateProductBody } from "@/lib/schemas/forms";
 import { withSeller } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
@@ -86,27 +87,7 @@ export const productsRoutes = new Elysia()
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				categoryIds: t.Array(t.String({ description: "ID categoria" }), {
-					minItems: 1,
-					description: "Almeno una categoria obbligatoria",
-				}),
-				name: t.String({
-					minLength: 1,
-					maxLength: 200,
-					description: "Nome del prodotto",
-				}),
-				description: t.Optional(
-					t.String({
-						maxLength: 2000,
-						description: "Descrizione del prodotto",
-					}),
-				),
-				price: t.String({
-					pattern: "^\\d+\\.\\d{2}$",
-					description: "Prezzo (formato decimale, es. '9.99')",
-				}),
-			}),
+			body: CreateProductBody,
 			response: withErrors({ 200: okRes(ProductSchema) }),
 			detail: {
 				summary: "Crea prodotto",

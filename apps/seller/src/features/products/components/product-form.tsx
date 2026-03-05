@@ -1,15 +1,18 @@
+import { CreateProductBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { Separator } from "@bibs/ui/components/separator";
 import { Textarea } from "@bibs/ui/components/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { typeboxResolver } from "@hookform/resolvers/typebox";
+import type { Static } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { useCallback, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
-import {
-	type ProductFormData,
-	productFormSchema,
-} from "@/features/products/schemas/product";
+
+type ProductFormData = Static<typeof CreateProductBody>;
+const compiledSchema = TypeCompiler.Compile(CreateProductBody);
+
 import { CategoryPicker } from "./category-picker";
 import {
 	type ExistingImage,
@@ -60,7 +63,7 @@ export function ProductForm({
 		watch,
 		formState: { errors },
 	} = useForm<ProductFormData>({
-		resolver: zodResolver(productFormSchema),
+		resolver: typeboxResolver(compiledSchema),
 		defaultValues: {
 			name: defaultValues?.name ?? "",
 			description: defaultValues?.description ?? "",
@@ -102,8 +105,15 @@ export function ProductForm({
 	};
 
 	const onFormSubmit: SubmitHandler<ProductFormData> = (data) => {
+		// Normalize price to 2 decimal places (was previously a Zod .transform())
+		const price = data.price.includes(".")
+			? data.price
+					.replace(/^(\d+\.\d{0,2}).*$/, "$1")
+					.padEnd(data.price.indexOf(".") + 3, "0")
+			: `${data.price}.00`;
 		onSubmit({
 			...data,
+			price,
 			files,
 			imageOrder,
 		});

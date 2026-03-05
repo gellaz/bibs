@@ -39,6 +39,9 @@
 		".": {
 			"types": "./src/types.ts",
 			"default": "./src/index.ts"
+		},
+		"./schemas": {
+			"default": "./src/lib/schemas/forms/index.ts"
 		}
 	}
 }

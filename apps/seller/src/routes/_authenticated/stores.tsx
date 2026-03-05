@@ -21,8 +21,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { GlobeIcon, PhoneIcon, PlusIcon, StoreIcon } from "lucide-react";
 import { useState } from "react";
-import { StoreForm } from "@/features/stores/components/store-form";
-import type { StoreFormData } from "@/features/stores/schemas/store";
+import {
+	StoreForm,
+	type StoreFormData,
+} from "@/features/stores/components/store-form";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/stores")({

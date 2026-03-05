@@ -1,16 +1,26 @@
+import { PersonalInfoBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { zodResolver } from "@hookform/resolvers/zod";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@bibs/ui/components/select";
+import { typeboxResolver } from "@hookform/resolvers/typebox";
+import type { Static } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { type SubmitHandler, useForm } from "react-hook-form";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import {
-	type PersonalInfoFormData,
-	personalInfoSchema,
-} from "@/features/onboarding/schemas";
+import { useCountries } from "@/hooks/use-countries";
 import { useUpdatePersonalInfo } from "@/hooks/use-onboarding";
+
+type PersonalInfoFormData = Static<typeof PersonalInfoBody>;
+const compiledSchema = TypeCompiler.Compile(PersonalInfoBody);
 
 export const Route = createFileRoute(
 	"/_authenticated/onboarding/personal-info",
@@ -21,14 +31,16 @@ export const Route = createFileRoute(
 function PersonalInfoPage() {
 	const navigate = useNavigate();
 	const mutation = useUpdatePersonalInfo();
+	const { data: countries = [] } = useCountries();
 	const [apiError, setApiError] = useState("");
 
 	const {
 		register,
 		handleSubmit,
+		control,
 		formState: { errors, isSubmitting },
 	} = useForm<PersonalInfoFormData>({
-		resolver: zodResolver(personalInfoSchema),
+		resolver: typeboxResolver(compiledSchema),
 	});
 
 	const onSubmit: SubmitHandler<PersonalInfoFormData> = async (data) => {
@@ -81,21 +93,47 @@ function PersonalInfoPage() {
 
 				<div className="grid grid-cols-2 gap-4">
 					<Field data-invalid={!!errors.citizenship}>
-						<FieldLabel htmlFor="citizenship">Cittadinanza</FieldLabel>
-						<Input
-							id="citizenship"
-							placeholder="Italiana"
-							{...register("citizenship")}
+						<FieldLabel>Cittadinanza</FieldLabel>
+						<Controller
+							control={control}
+							name="citizenship"
+							render={({ field }) => (
+								<Select value={field.value} onValueChange={field.onChange}>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Seleziona" />
+									</SelectTrigger>
+									<SelectContent>
+										{countries.map((c) => (
+											<SelectItem key={c.code} value={c.code}>
+												{c.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							)}
 						/>
 						<FieldError errors={[errors.citizenship]} />
 					</Field>
 
 					<Field data-invalid={!!errors.birthCountry}>
-						<FieldLabel htmlFor="birthCountry">Paese di nascita</FieldLabel>
-						<Input
-							id="birthCountry"
-							placeholder="Italia"
-							{...register("birthCountry")}
+						<FieldLabel>Paese di nascita</FieldLabel>
+						<Controller
+							control={control}
+							name="birthCountry"
+							render={({ field }) => (
+								<Select value={field.value} onValueChange={field.onChange}>
+									<SelectTrigger className="w-full">
+										<SelectValue placeholder="Seleziona" />
+									</SelectTrigger>
+									<SelectContent>
+										{countries.map((c) => (
+											<SelectItem key={c.code} value={c.code}>
+												{c.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							)}
 						/>
 						<FieldError errors={[errors.birthCountry]} />
 					</Field>
@@ -108,11 +146,24 @@ function PersonalInfoPage() {
 				</Field>
 
 				<Field data-invalid={!!errors.residenceCountry}>
-					<FieldLabel htmlFor="residenceCountry">Paese di residenza</FieldLabel>
-					<Input
-						id="residenceCountry"
-						placeholder="Italia"
-						{...register("residenceCountry")}
+					<FieldLabel>Paese di residenza</FieldLabel>
+					<Controller
+						control={control}
+						name="residenceCountry"
+						render={({ field }) => (
+							<Select value={field.value} onValueChange={field.onChange}>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Seleziona" />
+								</SelectTrigger>
+								<SelectContent>
+									{countries.map((c) => (
+										<SelectItem key={c.code} value={c.code}>
+											{c.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
 					/>
 					<FieldError errors={[errors.residenceCountry]} />
 				</Field>

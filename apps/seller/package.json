@@ -37,6 +37,7 @@
 		"react-dom": "catalog:",
 		"react-hook-form": "catalog:",
 		"@hookform/resolvers": "catalog:",
+		"@sinclair/typebox": "catalog:",
 		"tailwindcss": "catalog:",
 		"zod": "catalog:"
 	},

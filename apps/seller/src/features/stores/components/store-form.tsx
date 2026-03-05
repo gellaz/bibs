@@ -1,15 +1,17 @@
+import { CreateStoreBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { Textarea } from "@bibs/ui/components/textarea";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { typeboxResolver } from "@hookform/resolvers/typebox";
+import type { Static } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { type SubmitHandler, useFieldArray, useForm } from "react-hook-form";
-import {
-	type StoreFormData,
-	storeFormSchema,
-} from "@/features/stores/schemas/store";
+
+export type StoreFormData = Static<typeof CreateStoreBody>;
+const compiledSchema = TypeCompiler.Compile(CreateStoreBody);
 
 interface StoreFormProps {
 	onSubmit: (data: StoreFormData) => void;
@@ -24,7 +26,7 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 		control,
 		formState: { errors },
 	} = useForm<StoreFormData>({
-		resolver: zodResolver(storeFormSchema),
+		resolver: typeboxResolver(compiledSchema),
 		defaultValues: {
 			name: "",
 			description: "",

@@ -1,14 +1,19 @@
+import { OnboardingStoreBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { typeboxResolver } from "@hookform/resolvers/typebox";
+import type { Static } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
-import { type StoreFormData, storeSchema } from "@/features/onboarding/schemas";
-import { useCreateStore } from "@/hooks/use-onboarding";
+import { useCreateStore, useSkipStore } from "@/hooks/use-onboarding";
+
+type StoreFormData = Static<typeof OnboardingStoreBody>;
+const compiledSchema = TypeCompiler.Compile(OnboardingStoreBody);
 
 export const Route = createFileRoute("/_authenticated/onboarding/store")({
 	component: StorePage,
@@ -17,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/onboarding/store")({
 function StorePage() {
 	const navigate = useNavigate();
 	const mutation = useCreateStore();
+	const skipMutation = useSkipStore();
 	const [apiError, setApiError] = useState("");
 
 	const {
@@ -26,7 +32,7 @@ function StorePage() {
 		watch,
 		formState: { errors, isSubmitting },
 	} = useForm<StoreFormData>({
-		resolver: zodResolver(storeSchema),
+		resolver: typeboxResolver(compiledSchema),
 		defaultValues: { useCompanyAddress: false },
 	});
 
@@ -139,8 +145,34 @@ function StorePage() {
 					</>
 				)}
 
-				<Button type="submit" disabled={isSubmitting} className="w-full mt-2">
+				<Button
+					type="submit"
+					disabled={isSubmitting || skipMutation.isPending}
+					className="w-full mt-2"
+				>
 					{isSubmitting ? "Creazione negozio..." : "Continua"}
+				</Button>
+
+				<Button
+					type="button"
+					variant="ghost"
+					disabled={isSubmitting || skipMutation.isPending}
+					className="w-full"
+					onClick={async () => {
+						setApiError("");
+						try {
+							await skipMutation.mutateAsync(undefined);
+							void navigate({ to: "/onboarding/payment" });
+						} catch (err) {
+							setApiError(
+								err instanceof Error
+									? err.message
+									: "Errore durante il salvataggio",
+							);
+						}
+					}}
+				>
+					{skipMutation.isPending ? "Salto in corso..." : "Salta, lo farò dopo"}
 				</Button>
 			</form>
 		</OnboardingLayout>

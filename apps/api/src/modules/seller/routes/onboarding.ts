@@ -8,10 +8,18 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
+import {
+	CompanyBody,
+	DocumentBody,
+	OnboardingStoreBody,
+	PaymentBody,
+	PersonalInfoBody,
+} from "@/lib/schemas/forms";
 import { withSellerAuth } from "../context";
 import {
 	createOnboardingStore,
 	getOnboardingStatus,
+	skipOnboardingStore,
 	updateCompany,
 	updateDocument,
 	updatePayment,
@@ -51,51 +59,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				firstName: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome",
-				}),
-				lastName: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Cognome",
-				}),
-				citizenship: t.String({
-					minLength: 2,
-					maxLength: 2,
-					description: "Cittadinanza (codice ISO alpha-2)",
-				}),
-				birthCountry: t.String({
-					minLength: 2,
-					maxLength: 2,
-					description: "Paese di nascita (codice ISO alpha-2)",
-				}),
-				birthDate: t.String({
-					pattern: "^\\d{4}-\\d{2}-\\d{2}$",
-					description: "Data di nascita (YYYY-MM-DD)",
-				}),
-				residenceCountry: t.String({
-					minLength: 2,
-					maxLength: 2,
-					description: "Paese di residenza (codice ISO alpha-2)",
-				}),
-				residenceCity: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Città di residenza",
-				}),
-				residenceAddress: t.String({
-					minLength: 1,
-					maxLength: 200,
-					description: "Indirizzo di residenza",
-				}),
-				residenceZipCode: t.String({
-					pattern: "^\\d{5}$",
-					description: "CAP residenza (5 cifre)",
-				}),
-			}),
+			body: PersonalInfoBody,
 			response: withErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Step 1: Dati anagrafici",
@@ -126,26 +90,15 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				documentNumber: t.String({
-					minLength: 5,
-					maxLength: 20,
-					description: "Numero carta d'identità",
+			body: t.Intersect([
+				DocumentBody,
+				t.Object({
+					documentImage: t.File({
+						type: "image",
+						description: "Foto della carta d'identità",
+					}),
 				}),
-				documentExpiry: t.String({
-					pattern: "^\\d{4}-\\d{2}-\\d{2}$",
-					description: "Scadenza documento (YYYY-MM-DD)",
-				}),
-				documentIssuedMunicipality: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Comune di rilascio",
-				}),
-				documentImage: t.File({
-					type: "image",
-					description: "Foto della carta d'identità",
-				}),
-			}),
+			]),
 			response: withErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Step 2: Documento identità",
@@ -174,46 +127,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				businessName: t.String({
-					minLength: 1,
-					maxLength: 200,
-					description: "Ragione sociale",
-				}),
-				vatNumber: t.String({
-					pattern: "^[0-9]{11}$",
-					description: "Partita IVA italiana (11 cifre)",
-				}),
-				legalForm: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Forma giuridica (es. SRL, SAS, Ditta individuale)",
-				}),
-				addressLine1: t.String({
-					minLength: 1,
-					maxLength: 200,
-					description: "Indirizzo sede legale",
-				}),
-				country: t.Optional(
-					t.String({
-						minLength: 2,
-						maxLength: 2,
-						description: "Codice paese ISO alpha-2 (default: IT)",
-					}),
-				),
-				province: t.Optional(
-					t.String({
-						minLength: 2,
-						maxLength: 5,
-						description: "Provincia (sigla)",
-					}),
-				),
-				city: t.String({ minLength: 1, maxLength: 100, description: "Città" }),
-				zipCode: t.String({
-					pattern: "^\\d{5}$",
-					description: "CAP (5 cifre)",
-				}),
-			}),
+			body: CompanyBody,
 			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Step 3: Dati aziendali",
@@ -246,44 +160,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome del negozio",
-				}),
-				description: t.Optional(
-					t.String({ maxLength: 1000, description: "Descrizione del negozio" }),
-				),
-				addressLine1: t.String({
-					minLength: 1,
-					maxLength: 200,
-					description: "Indirizzo negozio",
-				}),
-				province: t.Optional(
-					t.String({
-						minLength: 2,
-						maxLength: 5,
-						description: "Provincia (sigla)",
-					}),
-				),
-				city: t.String({ minLength: 1, maxLength: 100, description: "Città" }),
-				zipCode: t.String({
-					pattern: "^\\d{5}$",
-					description: "CAP (5 cifre)",
-				}),
-				categoryId: t.Optional(
-					t.String({ description: "ID categoria negozio" }),
-				),
-				openingHours: t.Optional(
-					t.Unknown({ description: "Orari di apertura (JSON)" }),
-				),
-				useCompanyAddress: t.Optional(
-					t.Boolean({
-						description: "Se true, copia l'indirizzo dall'azienda registrata",
-					}),
-				),
-			}),
+			body: OnboardingStoreBody,
 			response: withErrors({
 				200: okRes(
 					t.Object({
@@ -296,6 +173,30 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 				summary: "Step 4: Primo negozio",
 				description:
 					"Crea il primo negozio del venditore. Richiede onboardingStatus = 'pending_store'. Se useCompanyAddress=true, l'indirizzo viene copiato dall'azienda.",
+				tags: ["Seller - Onboarding"],
+			},
+		},
+	)
+	.post(
+		"/skip-store",
+		async (ctx) => {
+			const { user, store } = withSellerAuth(ctx);
+			const pino = getLogger(store);
+			const data = await skipOnboardingStore(user.id);
+
+			pino.info(
+				{ userId: user.id, action: "onboarding_skip_store" },
+				"Seller skipped store creation during onboarding",
+			);
+
+			return ok(data);
+		},
+		{
+			response: withErrors({ 200: okRes(SellerProfileSchema) }),
+			detail: {
+				summary: "Step 4b: Salta negozio",
+				description:
+					"Salta la creazione del negozio durante l'onboarding. Il venditore potrà creare un negozio in un secondo momento. Richiede onboardingStatus = 'pending_store'.",
 				tags: ["Seller - Onboarding"],
 			},
 		},
@@ -318,14 +219,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				stripeAccountId: t.Optional(
-					t.String({
-						pattern: "^acct_[a-zA-Z0-9]+$",
-						description: "ID dell'account Stripe Connect",
-					}),
-				),
-			}),
+			body: PaymentBody,
 			response: withErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Step 5: Metodo di pagamento",
