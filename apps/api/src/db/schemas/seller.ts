@@ -1,8 +1,16 @@
 import { relations } from "drizzle-orm";
-import { date, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import {
+	boolean,
+	date,
+	pgTable,
+	text,
+	timestamp,
+	varchar,
+} from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { storeEmployee } from "./employee";
 import { organization } from "./organization";
+import { sellerProfileChange } from "./seller-profile-change";
 
 export const onboardingStatuses = [
 	"pending_email",
@@ -49,6 +57,8 @@ export const sellerProfile = pgTable("seller_profiles", {
 	documentImageKey: text("document_image_key"),
 	documentImageUrl: text("document_image_url"),
 
+	vatChangeBlocked: boolean("vat_change_blocked").default(false).notNull(),
+
 	createdAt: timestamp("created_at", { withTimezone: true })
 		.defaultNow()
 		.notNull(),
@@ -63,5 +73,6 @@ export const sellerProfileRelations = relations(
 		}),
 		organization: one(organization),
 		employees: many(storeEmployee),
+		changes: many(sellerProfileChange),
 	}),
 );

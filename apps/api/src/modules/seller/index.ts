@@ -12,6 +12,7 @@ import { onboardingRoutes } from "./routes/onboarding";
 import { ordersRoutes } from "./routes/orders";
 import { productsRoutes } from "./routes/products";
 import { profileRoutes } from "./routes/profile";
+import { settingsRoutes } from "./routes/settings";
 import { stockRoutes } from "./routes/stock";
 import { storesRoutes } from "./routes/stores";
 
@@ -96,5 +97,6 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 				.use(imagesRoutes)
 				.use(stockRoutes)
 				.use(ordersRoutes)
-				.use(employeesRoutes),
+				.use(employeesRoutes)
+				.use(settingsRoutes),
 	);

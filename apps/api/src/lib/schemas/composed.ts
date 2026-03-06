@@ -7,8 +7,10 @@ import {
 	OrderItemSchema,
 	OrderSchema,
 	OrganizationSchema,
+	PaymentMethodSchema,
 	ProductImageSchema,
 	ProductSchema,
+	SellerProfileChangeSchema,
 	SellerProfileSchema,
 	StorePhoneNumberSchema,
 	StoreProductSchema,
@@ -92,4 +94,22 @@ export const CustomerOrderWithRelationsSchema = t.Object({
 	items: t.Array(OrderItemWithProduct),
 	store: StoreSchema,
 	shippingAddress: t.Nullable(CustomerAddressSchema),
+});
+
+// Seller settings (profile + org + payment + pending changes)
+export const SellerSettingsSchema = t.Object({
+	profile: SellerProfileSchema,
+	organization: t.Nullable(OrganizationSchema),
+	paymentMethod: t.Nullable(PaymentMethodSchema),
+	pendingChanges: t.Array(SellerProfileChangeSchema),
+});
+
+// Change request with seller profile + user (admin view)
+export const SellerProfileChangeWithSellerSchema = t.Object({
+	...SellerProfileChangeSchema.properties,
+	sellerProfile: t.Object({
+		...SellerProfileSchema.properties,
+		user: UserSchema,
+		organization: t.Nullable(OrganizationSchema),
+	}),
 });

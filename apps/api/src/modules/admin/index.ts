@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
 import { categoriesWriteRoutes } from "./routes/categories";
+import { sellerChangesRoutes } from "./routes/seller-changes";
 import { sellersRoutes } from "./routes/sellers";
 
 export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
@@ -21,5 +22,6 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 					return {};
 				})
 				.use(categoriesWriteRoutes)
-				.use(sellersRoutes),
+				.use(sellersRoutes)
+				.use(sellerChangesRoutes),
 	);

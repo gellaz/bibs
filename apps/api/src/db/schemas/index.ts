@@ -11,6 +11,7 @@ export * from "./points";
 export * from "./product";
 export * from "./product-image";
 export * from "./seller";
+export * from "./seller-profile-change";
 export * from "./store";
 export * from "./store-category";
 export * from "./store-image";

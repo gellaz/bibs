@@ -137,6 +137,10 @@ export const SellerProfileSchema = t.Object({
 	),
 	documentIssuedMunicipality: t.Nullable(t.String()),
 	documentImageUrl: t.Nullable(t.String()),
+	vatChangeBlocked: t.Boolean({
+		description:
+			"Se true, il seller ha una richiesta di cambio P.IVA in attesa e non può ricevere nuovi ordini",
+	}),
 	createdAt: t.Date(),
 });
 
@@ -411,6 +415,24 @@ export const MunicipalitySchema = t.Object({
 	provinceId: t.String(),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
+});
+
+export const SellerProfileChangeSchema = t.Object({
+	id: t.String(),
+	sellerProfileId: t.String(),
+	changeType: t.Union(
+		[t.Literal("vat"), t.Literal("document"), t.Literal("payment")],
+		{ description: "Tipo di modifica richiesta" },
+	),
+	changeData: t.Unknown({ description: "Dati della modifica (JSON)" }),
+	status: t.Union(
+		[t.Literal("pending"), t.Literal("approved"), t.Literal("rejected")],
+		{ description: "Stato della richiesta" },
+	),
+	reviewedBy: t.Nullable(t.String()),
+	reviewedAt: t.Nullable(t.Date()),
+	rejectionReason: t.Nullable(t.String()),
+	createdAt: t.Date(),
 });
 
 // Search result

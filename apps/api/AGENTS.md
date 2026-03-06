@@ -205,13 +205,24 @@ Each module is a self-contained Elysia plugin mounted with a prefix. Every modul
   - `GET /locations/regions` — all Italian regions
   - `GET /locations/provinces` — provinces (optional `regionId` filter)
   - `GET /locations/municipalities` — paginated municipalities (optional `provinceId` filter)
-- `admin/` — 6 endpoints for category CRUD and seller verification. Guarded by `.resolve()` that enforces
-  `user.role === "admin"`. All have full OpenAPI schemas with error responses.
-- `seller/` — 33 endpoints across 8 route groups. Two guard levels:
+- `admin/` — 9 endpoints for category CRUD, seller verification, and change request review. Guarded by `.resolve()`
+  that enforces `user.role === "admin"`. All have full OpenAPI schemas with error responses.
+  - Change request review: `GET /admin/sellers/changes/pending` (paginated list),
+    `PATCH /admin/sellers/changes/:changeId/approve`, `PATCH /admin/sellers/changes/:changeId/reject` (with optional
+    reason).
+- `seller/` — 39 endpoints across 9 route groups. Two guard levels:
   - **Auth-only guard** (`withSellerAuth`): profile (2 endpoints) + onboarding (6 endpoints) — accessible to any
     authenticated seller regardless of onboarding status.
   - **Full guard** (`withSeller`): stores (4), products (6, including CSV bulk import), images (2), stock (3),
-    orders (5, with status/type filters and idempotency keys), employees (5) — requires `onboardingStatus === "active"`.
+    orders (5, with status/type filters and idempotency keys), employees (5), settings (6) — requires
+    `onboardingStatus === "active"`.
+  - **Settings** (`/seller/settings/*`): post-onboarding profile modification. Two levels:
+    - *Level 1 — Free edit*: `PATCH /settings/personal` (personal info), `PATCH /settings/company` (company data
+      excluding VAT). Applied immediately.
+    - *Level 2 — Admin review*: `PATCH /settings/vat` (VAT change — blocks new orders during review),
+      `PATCH /settings/document` (ID document update), `PATCH /settings/payment` (Stripe account change). Creates a
+      `seller_profile_changes` record; current data stays active until admin approves.
+    - `GET /settings` returns profile + organization + payment method + pending change requests.
   - Access resolved from seller (owner) or employee role. Ownership checks in `context.ts`
     (`ensureProductOwnership`, `requireOwner`). Store IDs are lazy-loaded via `getStoreIds()`.
 - `customer/` — 12 endpoints: product search (full-text Italian with relevance ranking + PostGIS geo-filter), profile,
@@ -299,6 +310,10 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
   - `location.ts` — regions, provinces, municipalities (Italian geographic hierarchy with ISTAT codes)
   - `payment-method.ts` — payment_methods (Stripe Connect accounts per seller)
+  - `seller-profile-change.ts` — seller_profile_changes (pending change requests for VAT, document, payment;
+    status: pending/approved/rejected; JSONB change data; admin review tracking)
+- `seller_profiles` has a `vatChangeBlocked` boolean flag set to `true` when a VAT change request is pending,
+  preventing the seller from receiving new orders until the admin approves or rejects.
 - Migrations output to `src/db/migrations/` (configured in `drizzle.config.ts`).
 
 ### S3/MinIO — `src/lib/s3.ts`
