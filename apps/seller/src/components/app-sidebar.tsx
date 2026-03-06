@@ -13,7 +13,7 @@ import {
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { HomeIcon, PackageIcon, StoreIcon, UserIcon } from "lucide-react";
-import ParaglideLocaleSwitcher from "@/components/locale-switcher";
+import LocaleSwitcher from "@/components/locale-switcher";
 import ThemeToggle from "@/components/theme-toggle";
 import BetterAuthHeader from "@/integrations/better-auth/header-user";
 
@@ -84,7 +84,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 				<div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
 					<div className="flex items-center gap-2">
 						<ThemeToggle />
-						<ParaglideLocaleSwitcher />
+						<LocaleSwitcher />
 					</div>
 					<BetterAuthHeader />
 				</div>
