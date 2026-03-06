@@ -7,7 +7,7 @@ import { Textarea } from "@bibs/ui/components/textarea";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 
 type ProductFormData = Static<typeof CreateProductBody>;
@@ -43,6 +43,7 @@ interface ProductFormProps {
 	isPending: boolean;
 	submitLabel: string;
 	pendingLabel: string;
+	onNameChange?: (name: string) => void;
 }
 
 export function ProductForm({
@@ -55,6 +56,7 @@ export function ProductForm({
 	isPending,
 	submitLabel,
 	pendingLabel,
+	onNameChange,
 }: ProductFormProps) {
 	const {
 		register,
@@ -73,6 +75,10 @@ export function ProductForm({
 	});
 
 	const selectedCategories = watch("categoryIds");
+	const nameValue = watch("name");
+	useEffect(() => {
+		onNameChange?.(nameValue);
+	}, [nameValue, onNameChange]);
 
 	// Files and imageOrder are outside RHF (non-serializable File objects)
 	const [files, setFiles] = useState<File[]>([]);

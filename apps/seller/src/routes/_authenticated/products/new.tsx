@@ -1,8 +1,8 @@
-import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeftIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 import {
 	ProductForm,
 	type ProductFormValues,
@@ -16,6 +16,8 @@ export const Route = createFileRoute("/_authenticated/products/new")({
 function NewProductPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const [name, setName] = useState("");
+	const handleNameChange = useCallback((value: string) => setName(value), []);
 
 	const goBack = () =>
 		void navigate({ to: "/products", search: { page: 1, limit: 20 } });
@@ -75,16 +77,20 @@ function NewProductPage() {
 	});
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center gap-4">
-				<Button variant="ghost" size="icon" onClick={goBack}>
-					<ArrowLeftIcon />
-				</Button>
+		<div className="mx-auto max-w-2xl space-y-6">
+			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold">Nuovo Prodotto</h1>
+					<h1 className="text-2xl font-bold">
+						{name || (
+							<span className="text-muted-foreground">Nuovo Prodotto</span>
+						)}
+					</h1>
 					<p className="text-muted-foreground text-sm">
 						Inserisci i dati del nuovo prodotto
 					</p>
+				</div>
+				<div className="bg-primary flex size-10 items-center justify-center rounded-lg">
+					<PlusIcon className="text-primary-foreground size-5" />
 				</div>
 			</div>
 
@@ -95,6 +101,7 @@ function NewProductPage() {
 				isPending={createMutation.isPending}
 				submitLabel="Crea Prodotto"
 				pendingLabel="Creazione..."
+				onNameChange={handleNameChange}
 			/>
 		</div>
 	);

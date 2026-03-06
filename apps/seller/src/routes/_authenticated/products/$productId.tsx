@@ -1,10 +1,9 @@
-import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeftIcon } from "lucide-react";
-import { useState } from "react";
+import { PencilIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 import {
 	type ExistingImage,
 	ProductForm,
@@ -22,6 +21,8 @@ function EditProductPage() {
 	const queryClient = useQueryClient();
 	const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
 	const [initialized, setInitialized] = useState(false);
+	const [name, setName] = useState("");
+	const handleNameChange = useCallback((value: string) => setName(value), []);
 
 	const goBack = () =>
 		void navigate({ to: "/products", search: { page: 1, limit: 20 } });
@@ -139,28 +140,27 @@ function EditProductPage() {
 
 	if (error || !product) {
 		return (
-			<div className="space-y-4">
-				<Button variant="ghost" size="icon" onClick={goBack}>
-					<ArrowLeftIcon />
-				</Button>
-				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
-					<p className="text-sm">
-						{(error as Error)?.message || "Prodotto non trovato"}
-					</p>
-				</div>
+			<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+				<p className="text-sm">
+					{(error as Error)?.message || "Prodotto non trovato"}
+				</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center gap-4">
-				<Button variant="ghost" size="icon" onClick={goBack}>
-					<ArrowLeftIcon />
-				</Button>
+		<div className="mx-auto max-w-2xl space-y-6">
+			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold">Modifica Prodotto</h1>
-					<p className="text-muted-foreground text-sm">{product.name}</p>
+					<h1 className="text-2xl font-bold">
+						{name || (
+							<span className="text-muted-foreground">Modifica Prodotto</span>
+						)}
+					</h1>
+					<p className="text-muted-foreground text-sm">Modifica prodotto</p>
+				</div>
+				<div className="bg-primary flex size-10 items-center justify-center rounded-lg">
+					<PencilIcon className="text-primary-foreground size-5" />
 				</div>
 			</div>
 
@@ -181,6 +181,7 @@ function EditProductPage() {
 				isPending={updateMutation.isPending}
 				submitLabel="Salva Modifiche"
 				pendingLabel="Salvataggio..."
+				onNameChange={handleNameChange}
 			/>
 		</div>
 	);
