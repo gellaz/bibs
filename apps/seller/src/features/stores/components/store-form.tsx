@@ -7,7 +7,9 @@ import { Textarea } from "@bibs/ui/components/textarea";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
+import "@/lib/typebox-formats";
 import { PlusIcon, Trash2Icon } from "lucide-react";
+import { useEffect } from "react";
 import { type SubmitHandler, useFieldArray, useForm } from "react-hook-form";
 
 export type StoreFormData = Static<typeof CreateStoreBody>;
@@ -17,13 +19,26 @@ interface StoreFormProps {
 	onSubmit: (data: StoreFormData) => void;
 	onCancel: () => void;
 	isPending: boolean;
+	defaultValues?: Partial<StoreFormData>;
+	submitLabel?: string;
+	pendingLabel?: string;
+	onNameChange?: (name: string) => void;
 }
 
-export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
+export function StoreForm({
+	onSubmit,
+	onCancel,
+	isPending,
+	defaultValues,
+	submitLabel = "Crea Negozio",
+	pendingLabel = "Creazione...",
+	onNameChange,
+}: StoreFormProps) {
 	const {
 		register,
 		handleSubmit,
 		control,
+		watch,
 		formState: { errors },
 	} = useForm<StoreFormData>({
 		resolver: typeboxResolver(compiledSchema),
@@ -37,8 +52,14 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 			province: "",
 			websiteUrl: "",
 			phoneNumbers: [],
+			...defaultValues,
 		},
 	});
+
+	const nameValue = watch("name");
+	useEffect(() => {
+		onNameChange?.(nameValue);
+	}, [nameValue, onNameChange]);
 
 	const { fields, append, remove } = useFieldArray({
 		control,
@@ -127,6 +148,8 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 						<Input
 							id="store-zip"
 							placeholder="20100"
+							inputMode="numeric"
+							maxLength={5}
 							{...register("zipCode")}
 						/>
 						<FieldError errors={[errors.zipCode]} />
@@ -139,7 +162,9 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 						id="store-province"
 						placeholder="MI (opzionale)"
 						maxLength={2}
-						{...register("province")}
+						{...register("province", {
+							setValueAs: (v: string) => v || undefined,
+						})}
 					/>
 					<FieldError errors={[errors.province]} />
 				</Field>
@@ -150,7 +175,9 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 						id="store-website"
 						type="url"
 						placeholder="https://esempio.it (opzionale)"
-						{...register("websiteUrl")}
+						{...register("websiteUrl", {
+							setValueAs: (v: string) => v || undefined,
+						})}
 					/>
 					<FieldError errors={[errors.websiteUrl]} />
 				</Field>
@@ -204,7 +231,7 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 					Annulla
 				</Button>
 				<Button type="submit" disabled={isPending}>
-					{isPending ? "Creazione..." : "Crea Negozio"}
+					{isPending ? pendingLabel : submitLabel}
 				</Button>
 			</div>
 		</form>
