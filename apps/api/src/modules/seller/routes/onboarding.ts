@@ -91,15 +91,13 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			body: t.Intersect([
-				DocumentBody,
-				t.Object({
-					documentImage: t.File({
-						type: "image",
-						description: "Foto della carta d'identità",
-					}),
+			body: t.Object({
+				...DocumentBody.properties,
+				documentImage: t.File({
+					type: "image",
+					description: "Foto della carta d'identità",
 				}),
-			]),
+			}),
 			response: withErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Step 2: Documento identità",
