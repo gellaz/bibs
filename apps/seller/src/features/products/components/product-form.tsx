@@ -123,7 +123,9 @@ export function ProductForm({
 		<form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
 			<div className="grid gap-4 sm:grid-cols-2">
 				<Field data-invalid={!!errors.name} className="sm:col-span-2">
-					<FieldLabel htmlFor="product-name">Nome *</FieldLabel>
+					<FieldLabel htmlFor="product-name" required>
+						Nome
+					</FieldLabel>
 					<Input
 						id="product-name"
 						placeholder={defaultValues ? undefined : "Es. Pizza Margherita"}
@@ -146,7 +148,9 @@ export function ProductForm({
 				</Field>
 
 				<Field data-invalid={!!errors.price}>
-					<FieldLabel htmlFor="product-price">Prezzo (€) *</FieldLabel>
+					<FieldLabel htmlFor="product-price" required>
+						Prezzo (€)
+					</FieldLabel>
 					<Input
 						id="product-price"
 						type="number"

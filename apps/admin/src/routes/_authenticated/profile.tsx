@@ -94,7 +94,9 @@ function ProfilePage() {
 
 					<div className="grid grid-cols-2 gap-4">
 						<Field data-invalid={!!errors.firstName}>
-							<FieldLabel htmlFor="firstName">Nome</FieldLabel>
+							<FieldLabel htmlFor="firstName" required>
+								Nome
+							</FieldLabel>
 							<Input
 								id="firstName"
 								placeholder="Mario"
@@ -105,7 +107,9 @@ function ProfilePage() {
 						</Field>
 
 						<Field data-invalid={!!errors.lastName}>
-							<FieldLabel htmlFor="lastName">Cognome</FieldLabel>
+							<FieldLabel htmlFor="lastName" required>
+								Cognome
+							</FieldLabel>
 							<Input
 								id="lastName"
 								placeholder="Rossi"

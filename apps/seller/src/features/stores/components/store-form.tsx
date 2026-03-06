@@ -69,7 +69,9 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 		<form onSubmit={handleSubmit(onFormSubmit)}>
 			<div className="space-y-4 py-4">
 				<Field data-invalid={!!errors.name}>
-					<FieldLabel htmlFor="store-name">Nome *</FieldLabel>
+					<FieldLabel htmlFor="store-name" required>
+						Nome
+					</FieldLabel>
 					<Input
 						id="store-name"
 						placeholder="Es. Bottega del Gusto"
@@ -90,7 +92,9 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 				</Field>
 
 				<Field data-invalid={!!errors.addressLine1}>
-					<FieldLabel htmlFor="store-address1">Indirizzo *</FieldLabel>
+					<FieldLabel htmlFor="store-address1" required>
+						Indirizzo
+					</FieldLabel>
 					<Input
 						id="store-address1"
 						placeholder="Via Roma 1"
@@ -110,12 +114,16 @@ export function StoreForm({ onSubmit, onCancel, isPending }: StoreFormProps) {
 
 				<div className="grid grid-cols-2 gap-4">
 					<Field data-invalid={!!errors.city}>
-						<FieldLabel htmlFor="store-city">Città *</FieldLabel>
+						<FieldLabel htmlFor="store-city" required>
+							Città
+						</FieldLabel>
 						<Input id="store-city" placeholder="Milano" {...register("city")} />
 						<FieldError errors={[errors.city]} />
 					</Field>
 					<Field data-invalid={!!errors.zipCode}>
-						<FieldLabel htmlFor="store-zip">CAP *</FieldLabel>
+						<FieldLabel htmlFor="store-zip" required>
+							CAP
+						</FieldLabel>
 						<Input
 							id="store-zip"
 							placeholder="20100"

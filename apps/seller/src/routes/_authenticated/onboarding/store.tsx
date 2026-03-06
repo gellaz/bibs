@@ -69,7 +69,9 @@ function StorePage() {
 				)}
 
 				<Field data-invalid={!!errors.name}>
-					<FieldLabel htmlFor="name">Nome del negozio</FieldLabel>
+					<FieldLabel htmlFor="name" required>
+						Nome del negozio
+					</FieldLabel>
 					<Input
 						id="name"
 						placeholder="La Bottega di Mario"
@@ -109,7 +111,9 @@ function StorePage() {
 				{!useCompanyAddress && (
 					<>
 						<Field data-invalid={!!errors.addressLine1}>
-							<FieldLabel htmlFor="addressLine1">Indirizzo negozio</FieldLabel>
+							<FieldLabel htmlFor="addressLine1" required>
+								Indirizzo negozio
+							</FieldLabel>
 							<Input
 								id="addressLine1"
 								placeholder="Via Roma 1"
@@ -120,13 +124,17 @@ function StorePage() {
 
 						<div className="grid grid-cols-2 gap-4">
 							<Field data-invalid={!!errors.city}>
-								<FieldLabel htmlFor="city">Città</FieldLabel>
+								<FieldLabel htmlFor="city" required>
+									Città
+								</FieldLabel>
 								<Input id="city" placeholder="Roma" {...register("city")} />
 								<FieldError errors={[errors.city]} />
 							</Field>
 
 							<Field data-invalid={!!errors.province}>
-								<FieldLabel htmlFor="province">Provincia</FieldLabel>
+								<FieldLabel htmlFor="province" required>
+									Provincia
+								</FieldLabel>
 								<Input
 									id="province"
 									placeholder="RM"
@@ -138,7 +146,9 @@ function StorePage() {
 						</div>
 
 						<Field data-invalid={!!errors.zipCode}>
-							<FieldLabel htmlFor="zipCode">CAP</FieldLabel>
+							<FieldLabel htmlFor="zipCode" required>
+								CAP
+							</FieldLabel>
 							<Input
 								id="zipCode"
 								placeholder="00100"
