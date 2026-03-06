@@ -1,16 +1,21 @@
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuItem,
 	DropdownMenuLabel,
-	DropdownMenuRadioGroup,
-	DropdownMenuRadioItem,
-	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
+import {
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	useSidebar,
+} from "@bibs/ui/components/sidebar";
 import { ChevronsUpDownIcon, StoreIcon } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
 
 export function StoreSwitcher() {
+	const { isMobile } = useSidebar();
 	const { activeStore, stores, isLoading, setActiveStoreId } = useActiveStore();
 
 	if (isLoading || stores.length === 0) {
@@ -20,54 +25,79 @@ export function StoreSwitcher() {
 	// Single store: just show name, no dropdown
 	if (stores.length === 1) {
 		return (
-			<div className="flex items-center gap-2 rounded-lg border px-3 py-1.5">
-				<div className="flex size-5 items-center justify-center rounded-md bg-primary text-primary-foreground">
-					<StoreIcon className="size-3" />
-				</div>
-				<span className="max-w-[140px] truncate text-sm font-medium">
-					{stores[0].name}
-				</span>
-			</div>
+			<SidebarMenu>
+				<SidebarMenuItem>
+					<SidebarMenuButton size="lg">
+						<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+							<StoreIcon className="size-4" />
+						</div>
+						<div className="grid flex-1 text-left text-sm leading-tight">
+							<span className="truncate font-medium">{stores[0].name}</span>
+							<span className="truncate text-xs">
+								{stores[0].city}
+								{stores[0].province ? ` (${stores[0].province})` : ""}
+							</span>
+						</div>
+					</SidebarMenuButton>
+				</SidebarMenuItem>
+			</SidebarMenu>
 		);
 	}
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<button
-					type="button"
-					aria-label="Seleziona negozio"
-					className="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<div className="flex size-5 items-center justify-center rounded-md bg-primary text-primary-foreground">
-						<StoreIcon className="size-3" />
-					</div>
-					<span className="max-w-[140px] truncate font-medium">
-						{activeStore?.name ?? "Seleziona negozio"}
-					</span>
-					<ChevronsUpDownIcon className="ml-1 size-3.5 shrink-0 text-muted-foreground" />
-				</button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align="end" className="w-56">
-				<DropdownMenuLabel>Negozio attivo</DropdownMenuLabel>
-				<DropdownMenuSeparator />
-				<DropdownMenuRadioGroup
-					value={activeStore?.id ?? ""}
-					onValueChange={setActiveStoreId}
-				>
-					{stores.map((store) => (
-						<DropdownMenuRadioItem key={store.id} value={store.id}>
-							<div className="flex flex-col">
-								<span>{store.name}</span>
-								<span className="text-xs text-muted-foreground">
-									{store.addressLine1}, {store.city}
-									{store.province ? ` (${store.province})` : ""}
+		<SidebarMenu>
+			<SidebarMenuItem>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<SidebarMenuButton
+							size="lg"
+							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+						>
+							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+								<StoreIcon className="size-4" />
+							</div>
+							<div className="grid flex-1 text-left text-sm leading-tight">
+								<span className="truncate font-medium">
+									{activeStore?.name ?? "Seleziona negozio"}
+								</span>
+								<span className="truncate text-xs">
+									{activeStore?.city}
+									{activeStore?.province ? ` (${activeStore.province})` : ""}
 								</span>
 							</div>
-						</DropdownMenuRadioItem>
-					))}
-				</DropdownMenuRadioGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+							<ChevronsUpDownIcon className="ml-auto" />
+						</SidebarMenuButton>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent
+						className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+						align="start"
+						side={isMobile ? "bottom" : "right"}
+						sideOffset={4}
+					>
+						<DropdownMenuLabel className="text-xs text-muted-foreground">
+							Negozi
+						</DropdownMenuLabel>
+						{stores.map((store) => (
+							<DropdownMenuItem
+								key={store.id}
+								onClick={() => setActiveStoreId(store.id)}
+								className="gap-2 p-2"
+							>
+								<div className="flex size-6 items-center justify-center rounded-md border">
+									<StoreIcon className="size-3.5 shrink-0" />
+								</div>
+								<div className="flex flex-col">
+									<span>{store.name}</span>
+									<span className="text-xs text-muted-foreground">
+										{store.addressLine1}, {store.city}
+										{store.province ? ` (${store.province})` : ""}
+									</span>
+								</div>
+							</DropdownMenuItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</SidebarMenuItem>
+		</SidebarMenu>
 	);
 }

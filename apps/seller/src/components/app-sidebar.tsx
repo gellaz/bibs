@@ -13,9 +13,8 @@ import {
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { HomeIcon, PackageIcon, StoreIcon, UserIcon } from "lucide-react";
-import LocaleSwitcher from "@/components/locale-switcher";
-import ThemeToggle from "@/components/theme-toggle";
-import BetterAuthHeader from "@/integrations/better-auth/header-user";
+import { NavUser } from "@/components/nav-user";
+import { StoreSwitcher } from "@/components/store-switcher";
 
 const navItems = [
 	{ title: "Home", to: "/" as const, icon: HomeIcon },
@@ -30,23 +29,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" asChild>
-							<Link to="/">
-								<div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-sm font-bold">
-									B
-								</div>
-								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="truncate font-semibold">Bibs</span>
-									<span className="truncate text-xs text-muted-foreground">
-										Seller
-									</span>
-								</div>
-							</Link>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
+				<StoreSwitcher />
 			</SidebarHeader>
 
 			<SidebarContent>
@@ -81,13 +64,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 			</SidebarContent>
 
 			<SidebarFooter>
-				<div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
-					<div className="flex items-center gap-2">
-						<ThemeToggle />
-						<LocaleSwitcher />
-					</div>
-					<BetterAuthHeader />
-				</div>
+				<NavUser />
 			</SidebarFooter>
 
 			<SidebarRail />

@@ -19,7 +19,6 @@ import {
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
-import { StoreSwitcher } from "@/components/store-switcher";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
 import { authClient } from "@/lib/auth-client";
@@ -172,9 +171,6 @@ function AuthenticatedLayout() {
 								</BreadcrumbItem>
 							</BreadcrumbList>
 						</Breadcrumb>
-						<div className="ml-auto">
-							<StoreSwitcher />
-						</div>
 					</header>
 					<div className="flex-1 p-4">
 						<Outlet />
