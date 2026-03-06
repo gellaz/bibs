@@ -22,6 +22,8 @@
 		"@dnd-kit/sortable": "^10.0.0",
 		"@dnd-kit/utilities": "^3.2.2",
 		"@elysiajs/eden": "catalog:",
+		"@hookform/resolvers": "catalog:",
+		"@sinclair/typebox": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"@tailwindcss/vite": "catalog:",
 		"@tanstack/react-devtools": "catalog:",
@@ -36,8 +38,6 @@
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"react-hook-form": "catalog:",
-		"@hookform/resolvers": "catalog:",
-		"@sinclair/typebox": "catalog:",
 		"tailwindcss": "catalog:",
 		"zod": "catalog:"
 	},

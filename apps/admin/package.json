@@ -19,6 +19,7 @@
 		"@bibs/api": "workspace:*",
 		"@bibs/ui": "workspace:*",
 		"@elysiajs/eden": "catalog:",
+		"@hookform/resolvers": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"@tailwindcss/vite": "catalog:",
 		"@tanstack/match-sorter-utils": "catalog:",
@@ -36,7 +37,6 @@
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"react-hook-form": "catalog:",
-		"@hookform/resolvers": "catalog:",
 		"tailwindcss": "catalog:",
 		"zod": "catalog:"
 	},
