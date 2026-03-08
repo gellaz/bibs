@@ -1,5 +1,6 @@
 import { t } from "elysia";
 import { orderStatuses, orderTypes } from "@/db/schemas/order";
+import { onboardingStatuses } from "@/db/schemas/seller";
 import { config } from "@/lib/config";
 
 const { defaultLimit, maxLimit } = config.pagination;
@@ -50,6 +51,32 @@ export const OrderListQuery = t.Object({
 			orderTypes.map((s) => t.Literal(s)),
 			{
 				description: "Filtra per tipo di ordine",
+			},
+		),
+	),
+});
+
+/**
+ * Pagination + optional onboarding status filter for seller list endpoints.
+ */
+export const SellerListQuery = t.Object({
+	page: t.Optional(
+		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
+	),
+	limit: t.Optional(
+		t.Number({
+			minimum: 1,
+			maximum: maxLimit,
+			default: defaultLimit,
+			description: "Elementi per pagina",
+		}),
+	),
+	status: t.Optional(
+		t.Union(
+			onboardingStatuses.map((s) => t.Literal(s)),
+			{
+				description:
+					"Filtra per stato di onboarding. Se omesso, restituisce solo i venditori con candidatura sottomessa (pending_review, active, rejected).",
 			},
 		),
 	),

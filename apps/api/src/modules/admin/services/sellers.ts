@@ -1,31 +1,41 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { organization } from "@/db/schemas/organization";
 import { paymentMethod } from "@/db/schemas/payment-method";
-import { sellerProfile } from "@/db/schemas/seller";
+import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 
-interface ListPendingSellersParams {
+/** Statuses visible to admins (past onboarding steps). */
+const REVIEWABLE_STATUSES: OnboardingStatus[] = [
+	"pending_review",
+	"active",
+	"rejected",
+];
+
+interface ListSellersParams {
 	page?: number;
 	limit?: number;
+	status?: OnboardingStatus;
 }
 
-export async function listPendingSellers(params: ListPendingSellersParams) {
+export async function listSellers(params: ListSellersParams) {
 	const { page, limit, offset } = parsePagination(params);
+
+	const where = params.status
+		? eq(sellerProfile.onboardingStatus, params.status)
+		: inArray(sellerProfile.onboardingStatus, REVIEWABLE_STATUSES);
 
 	const [data, [{ total }]] = await Promise.all([
 		db.query.sellerProfile.findMany({
-			where: eq(sellerProfile.onboardingStatus, "pending_review"),
+			where,
 			with: { user: true, organization: true },
 			limit,
 			offset,
+			orderBy: (t, { desc }) => [desc(t.createdAt)],
 		}),
-		db
-			.select({ total: count() })
-			.from(sellerProfile)
-			.where(eq(sellerProfile.onboardingStatus, "pending_review")),
+		db.select({ total: count() }).from(sellerProfile).where(where),
 	]);
 
 	return { data, pagination: { page, limit, total } };
@@ -65,6 +75,49 @@ export async function rejectSeller(sellerId: string) {
 
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
+}
+
+interface SellerStatusCounts {
+	pending_review: number;
+	active: number;
+	rejected: number;
+}
+
+export async function countSellersByStatus(): Promise<SellerStatusCounts> {
+	const rows = await db
+		.select({
+			status: sellerProfile.onboardingStatus,
+			count: count(),
+		})
+		.from(sellerProfile)
+		.where(inArray(sellerProfile.onboardingStatus, REVIEWABLE_STATUSES))
+		.groupBy(sellerProfile.onboardingStatus);
+
+	const counts: SellerStatusCounts = {
+		pending_review: 0,
+		active: 0,
+		rejected: 0,
+	};
+
+	for (const row of rows) {
+		if (row.status in counts) {
+			counts[row.status as keyof SellerStatusCounts] = row.count;
+		}
+	}
+
+	return counts;
+}
+
+// ── Seller detail ───────────────────────────
+
+export async function getSellerDetail(sellerId: string) {
+	const data = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.id, sellerId),
+		with: { user: true, organization: true },
+	});
+
+	if (!data) throw new ServiceError(404, "Seller profile not found");
+	return data;
 }
 
 // ── Change requests ─────────────────────────

@@ -21,6 +21,8 @@ import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedConfigurationsRouteImport } from './routes/_authenticated/configurations'
 import { Route as AuthenticatedCollectionsRouteImport } from './routes/_authenticated/collections'
 import { Route as AuthenticatedCategoriesRouteImport } from './routes/_authenticated/categories'
+import { Route as AuthenticatedSellersIndexRouteImport } from './routes/_authenticated/sellers/index'
+import { Route as AuthenticatedSellersSellerIdRouteImport } from './routes/_authenticated/sellers/$sellerId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -83,6 +85,18 @@ const AuthenticatedCategoriesRoute = AuthenticatedCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSellersIndexRoute =
+  AuthenticatedSellersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSellersRoute,
+  } as any)
+const AuthenticatedSellersSellerIdRoute =
+  AuthenticatedSellersSellerIdRouteImport.update({
+    id: '/$sellerId',
+    path: '/$sellerId',
+    getParentRoute: () => AuthenticatedSellersRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -93,9 +107,11 @@ export interface FileRoutesByFullPath {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/products': typeof AuthenticatedProductsRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/sellers': typeof AuthenticatedSellersRoute
+  '/sellers': typeof AuthenticatedSellersRouteWithChildren
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
+  '/sellers/': typeof AuthenticatedSellersIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -105,10 +121,11 @@ export interface FileRoutesByTo {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/products': typeof AuthenticatedProductsRoute
   '/profile': typeof AuthenticatedProfileRoute
-  '/sellers': typeof AuthenticatedSellersRoute
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
   '/': typeof AuthenticatedIndexRoute
+  '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
+  '/sellers': typeof AuthenticatedSellersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -120,10 +137,12 @@ export interface FileRoutesById {
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
-  '/_authenticated/sellers': typeof AuthenticatedSellersRoute
+  '/_authenticated/sellers': typeof AuthenticatedSellersRouteWithChildren
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
+  '/_authenticated/sellers/': typeof AuthenticatedSellersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,6 +158,8 @@ export interface FileRouteTypes {
     | '/sellers'
     | '/stores'
     | '/users'
+    | '/sellers/$sellerId'
+    | '/sellers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -148,10 +169,11 @@ export interface FileRouteTypes {
     | '/payments'
     | '/products'
     | '/profile'
-    | '/sellers'
     | '/stores'
     | '/users'
     | '/'
+    | '/sellers/$sellerId'
+    | '/sellers'
   id:
     | '__root__'
     | '/_authenticated'
@@ -166,6 +188,8 @@ export interface FileRouteTypes {
     | '/_authenticated/stores'
     | '/_authenticated/users'
     | '/_authenticated/'
+    | '/_authenticated/sellers/$sellerId'
+    | '/_authenticated/sellers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -259,8 +283,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCategoriesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sellers/': {
+      id: '/_authenticated/sellers/'
+      path: '/'
+      fullPath: '/sellers/'
+      preLoaderRoute: typeof AuthenticatedSellersIndexRouteImport
+      parentRoute: typeof AuthenticatedSellersRoute
+    }
+    '/_authenticated/sellers/$sellerId': {
+      id: '/_authenticated/sellers/$sellerId'
+      path: '/$sellerId'
+      fullPath: '/sellers/$sellerId'
+      preLoaderRoute: typeof AuthenticatedSellersSellerIdRouteImport
+      parentRoute: typeof AuthenticatedSellersRoute
+    }
   }
 }
+
+interface AuthenticatedSellersRouteChildren {
+  AuthenticatedSellersSellerIdRoute: typeof AuthenticatedSellersSellerIdRoute
+  AuthenticatedSellersIndexRoute: typeof AuthenticatedSellersIndexRoute
+}
+
+const AuthenticatedSellersRouteChildren: AuthenticatedSellersRouteChildren = {
+  AuthenticatedSellersSellerIdRoute: AuthenticatedSellersSellerIdRoute,
+  AuthenticatedSellersIndexRoute: AuthenticatedSellersIndexRoute,
+}
+
+const AuthenticatedSellersRouteWithChildren =
+  AuthenticatedSellersRoute._addFileChildren(AuthenticatedSellersRouteChildren)
 
 interface AuthenticatedRouteChildren {
   AuthenticatedCategoriesRoute: typeof AuthenticatedCategoriesRoute
@@ -269,7 +320,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
-  AuthenticatedSellersRoute: typeof AuthenticatedSellersRoute
+  AuthenticatedSellersRoute: typeof AuthenticatedSellersRouteWithChildren
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -282,7 +333,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-  AuthenticatedSellersRoute: AuthenticatedSellersRoute,
+  AuthenticatedSellersRoute: AuthenticatedSellersRouteWithChildren,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

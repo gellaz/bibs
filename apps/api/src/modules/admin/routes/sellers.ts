@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { SellerListQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
 import {
 	okPageRes,
@@ -11,25 +11,70 @@ import {
 } from "@/lib/schemas";
 import { withAdmin } from "../context";
 import {
-	listPendingSellers,
+	countSellersByStatus,
+	getSellerDetail,
+	listSellers,
 	rejectSeller,
 	verifySeller,
 } from "../services/sellers";
 
 export const sellersRoutes = new Elysia()
 	.get(
-		"/sellers/pending",
+		"/sellers/counts",
+		async () => {
+			const data = await countSellersByStatus();
+			return ok(data);
+		},
+		{
+			response: withErrors({
+				200: okRes(
+					t.Object({
+						pending_review: t.Number(),
+						active: t.Number(),
+						rejected: t.Number(),
+					}),
+				),
+			}),
+			detail: {
+				summary: "Contatori venditori per stato",
+				description:
+					"Restituisce il numero di venditori per ogni stato di onboarding rilevante (pending_review, active, rejected).",
+				tags: ["Admin"],
+			},
+		},
+	)
+	.get(
+		"/sellers/:sellerId",
+		async ({ params }) => {
+			const data = await getSellerDetail(params.sellerId);
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				sellerId: t.String({ description: "ID del profilo venditore" }),
+			}),
+			response: withErrors({ 200: okRes(SellerProfileWithUserSchema) }),
+			detail: {
+				summary: "Dettaglio venditore",
+				description:
+					"Restituisce tutti i dati del venditore inclusi utente e organizzazione.",
+				tags: ["Admin"],
+			},
+		},
+	)
+	.get(
+		"/sellers",
 		async ({ query }) => {
-			const result = await listPendingSellers(query);
+			const result = await listSellers(query);
 			return okPage(result.data, result.pagination);
 		},
 		{
-			query: PaginationQuery,
+			query: SellerListQuery,
 			response: withErrors({ 200: okPageRes(SellerProfileWithUserSchema) }),
 			detail: {
-				summary: "Venditori in attesa di verifica",
+				summary: "Lista venditori",
 				description:
-					"Restituisce la lista paginata dei venditori con partita IVA in stato 'pending', inclusi i dati utente.",
+					"Restituisce la lista paginata dei venditori. Filtrabile per stato di onboarding. Senza filtro, restituisce solo le candidature sottoposte a revisione (pending_review, active, rejected).",
 				tags: ["Admin"],
 			},
 		},
