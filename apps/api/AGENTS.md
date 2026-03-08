@@ -67,7 +67,7 @@ Creates the Elysia app with plugins and modules:
 **Graceful shutdown**: on `SIGTERM`/`SIGINT`, stops the server, clears all reservation timers, and closes the database
 connection pool.
 
-When `SEED_DB=true`, test users are seeded on startup (see `src/db/seed.ts`).
+When `SEED_DB=true`, test data is seeded on startup (see `src/db/seed/`).
 
 ### Schemas — `src/lib/schemas/`
 
@@ -288,7 +288,15 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
 ### Database — `src/db/`
 
 - `src/db/index.ts` — exports a singleton Drizzle client using `DATABASE_URL`.
-- `src/db/seed.ts` — seeds test users/profiles/store when `SEED_DB=true`.
+- `src/db/seed/` — modular seed data, orchestrated by `index.ts` when `SEED_DB=true`:
+  - `index.ts` — orchestrator, calls each seeder in order
+  - `admins.ts` — admin test users and `seedAdmins()`
+  - `customers.ts` — bulk customer generation (~300) and `seedCustomers()`
+  - `sellers.ts` — bulk seller generation (~150) and `seedSellers()`
+  - `categories.ts` — store/product category arrays and seeding functions
+  - `locations.ts` — Italian locations seeding (regions, provinces, municipalities)
+  - `utils.ts` — shared data (Italian names, cities, streets) and `pick()` helper
+  - `fetch-locations.ts` — standalone script to fetch location JSON from GitHub
 - `src/db/schemas/` — Drizzle table definitions and relations:
   - `auth.ts` — user, session, account, verification (better-auth tables)
   - `customer.ts` — customer_profiles (points balance)

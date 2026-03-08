@@ -141,7 +141,15 @@ src/
 │       └── services/          # Business logic
 └── db/
     ├── index.ts              # Singleton Drizzle client
-    ├── seed.ts               # Test data seeder (SEED_DB=true)
+    ├── seed/                 # Modular test data seeder (SEED_DB=true)
+    │   ├── index.ts          # Orchestrator — calls seeders in order
+    │   ├── admins.ts         # Admin test users
+    │   ├── customers.ts      # Bulk customer generation (~300)
+    │   ├── sellers.ts        # Bulk seller generation (~150)
+    │   ├── categories.ts     # Store & product category seeding
+    │   ├── locations.ts      # Italian locations seeding
+    │   ├── utils.ts          # Shared data (names, cities, streets)
+    │   └── fetch-locations.ts # Fetches location JSON from GitHub
     ├── schemas/              # Drizzle table definitions & relations
     │   ├── index.ts          # Barrel export
     │   ├── auth.ts           # user, session, account, verification

@@ -1,464 +1,14 @@
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { user } from "@/db/schemas/auth";
 import type { VatStatus } from "@/db/schemas/organization";
+import { organization } from "@/db/schemas/organization";
+import { paymentMethod } from "@/db/schemas/payment-method";
 import type { OnboardingStatus } from "@/db/schemas/seller";
-
-// ── Helpers ───────────────────────────────────────────────
-
-function pick<T>(arr: readonly T[], idx: number, stride = 1, offset = 0): T {
-	return arr[(idx * stride + offset) % arr.length];
-}
-
-// ── Italian first names ───────────────────────────────────
-
-const firstNames = [
-	"Marco",
-	"Luca",
-	"Giuseppe",
-	"Francesco",
-	"Alessandro",
-	"Andrea",
-	"Matteo",
-	"Lorenzo",
-	"Davide",
-	"Simone",
-	"Fabio",
-	"Paolo",
-	"Roberto",
-	"Massimo",
-	"Stefano",
-	"Giovanni",
-	"Antonio",
-	"Riccardo",
-	"Daniele",
-	"Nicola",
-	"Maria",
-	"Anna",
-	"Sara",
-	"Laura",
-	"Giulia",
-	"Francesca",
-	"Chiara",
-	"Valentina",
-	"Alessia",
-	"Federica",
-	"Silvia",
-	"Elisa",
-	"Martina",
-	"Roberta",
-	"Monica",
-	"Paola",
-	"Elena",
-	"Simona",
-	"Angela",
-	"Cristina",
-];
-
-// ── Italian last names ────────────────────────────────────
-
-const lastNames = [
-	"Rossi",
-	"Russo",
-	"Ferrari",
-	"Esposito",
-	"Bianchi",
-	"Romano",
-	"Colombo",
-	"Ricci",
-	"Marino",
-	"Greco",
-	"Bruno",
-	"Gallo",
-	"Conti",
-	"De Luca",
-	"Mancini",
-	"Costa",
-	"Giordano",
-	"Rizzo",
-	"Lombardi",
-	"Moretti",
-	"Barbieri",
-	"Fontana",
-	"Santoro",
-	"Mariani",
-	"Rinaldi",
-	"Caruso",
-	"Ferrara",
-	"Galli",
-	"Martini",
-	"Leone",
-	"Longo",
-	"Gentile",
-	"Martinelli",
-	"Vitale",
-	"Villa",
-	"Marchetti",
-	"Serra",
-	"Bianco",
-	"Sala",
-	"Barone",
-	"Pellegrini",
-	"De Santis",
-	"Monti",
-	"Fabbri",
-	"Grasso",
-];
-
-// ── Italian cities with real coordinates ──────────────────
-
-interface CityData {
-	name: string;
-	province: string;
-	zip: string;
-	lat: number;
-	lng: number;
-}
-
-const cities: readonly CityData[] = [
-	{ name: "Milano", province: "MI", zip: "20121", lat: 45.4642, lng: 9.19 },
-	{ name: "Roma", province: "RM", zip: "00185", lat: 41.9028, lng: 12.4964 },
-	{
-		name: "Napoli",
-		province: "NA",
-		zip: "80121",
-		lat: 40.8518,
-		lng: 14.2681,
-	},
-	{
-		name: "Torino",
-		province: "TO",
-		zip: "10121",
-		lat: 45.0703,
-		lng: 7.6869,
-	},
-	{
-		name: "Firenze",
-		province: "FI",
-		zip: "50121",
-		lat: 43.7696,
-		lng: 11.2558,
-	},
-	{
-		name: "Bologna",
-		province: "BO",
-		zip: "40121",
-		lat: 44.4949,
-		lng: 11.3426,
-	},
-	{
-		name: "Palermo",
-		province: "PA",
-		zip: "90121",
-		lat: 38.1157,
-		lng: 13.3615,
-	},
-	{
-		name: "Genova",
-		province: "GE",
-		zip: "16121",
-		lat: 44.4056,
-		lng: 8.9463,
-	},
-	{
-		name: "Catania",
-		province: "CT",
-		zip: "95121",
-		lat: 37.5079,
-		lng: 15.083,
-	},
-	{
-		name: "Bari",
-		province: "BA",
-		zip: "70121",
-		lat: 41.1171,
-		lng: 16.8719,
-	},
-	{
-		name: "Venezia",
-		province: "VE",
-		zip: "30121",
-		lat: 45.4408,
-		lng: 12.3155,
-	},
-	{
-		name: "Verona",
-		province: "VR",
-		zip: "37121",
-		lat: 45.4384,
-		lng: 10.9916,
-	},
-	{
-		name: "Padova",
-		province: "PD",
-		zip: "35121",
-		lat: 45.4064,
-		lng: 11.8768,
-	},
-	{
-		name: "Bergamo",
-		province: "BG",
-		zip: "24121",
-		lat: 45.6983,
-		lng: 9.6773,
-	},
-	{
-		name: "Brescia",
-		province: "BS",
-		zip: "25121",
-		lat: 45.5416,
-		lng: 10.2118,
-	},
-	{
-		name: "Modena",
-		province: "MO",
-		zip: "41121",
-		lat: 44.6471,
-		lng: 10.9252,
-	},
-	{
-		name: "Parma",
-		province: "PR",
-		zip: "43121",
-		lat: 44.8015,
-		lng: 11.3271,
-	},
-	{
-		name: "Perugia",
-		province: "PG",
-		zip: "06121",
-		lat: 43.1107,
-		lng: 12.3908,
-	},
-	{
-		name: "Trieste",
-		province: "TS",
-		zip: "34121",
-		lat: 45.6495,
-		lng: 13.7768,
-	},
-	{
-		name: "Reggio Emilia",
-		province: "RE",
-		zip: "42121",
-		lat: 44.6989,
-		lng: 10.6297,
-	},
-	{
-		name: "Livorno",
-		province: "LI",
-		zip: "57121",
-		lat: 43.5485,
-		lng: 10.3106,
-	},
-	{
-		name: "Ravenna",
-		province: "RA",
-		zip: "48121",
-		lat: 44.4184,
-		lng: 12.2035,
-	},
-	{
-		name: "Cagliari",
-		province: "CA",
-		zip: "09121",
-		lat: 39.2238,
-		lng: 9.1217,
-	},
-	{
-		name: "Foggia",
-		province: "FG",
-		zip: "71121",
-		lat: 41.4622,
-		lng: 15.5446,
-	},
-	{
-		name: "Rimini",
-		province: "RN",
-		zip: "47921",
-		lat: 44.0678,
-		lng: 12.5695,
-	},
-	{
-		name: "Salerno",
-		province: "SA",
-		zip: "84121",
-		lat: 40.6824,
-		lng: 14.7681,
-	},
-	{
-		name: "Ferrara",
-		province: "FE",
-		zip: "44121",
-		lat: 44.8381,
-		lng: 11.6198,
-	},
-	{
-		name: "Lecce",
-		province: "LE",
-		zip: "73100",
-		lat: 40.3516,
-		lng: 18.175,
-	},
-	{
-		name: "Trento",
-		province: "TN",
-		zip: "38121",
-		lat: 46.0748,
-		lng: 11.1217,
-	},
-	{
-		name: "Udine",
-		province: "UD",
-		zip: "33100",
-		lat: 46.0711,
-		lng: 13.2346,
-	},
-	{
-		name: "Ancona",
-		province: "AN",
-		zip: "60121",
-		lat: 43.6158,
-		lng: 13.5189,
-	},
-	{
-		name: "Pisa",
-		province: "PI",
-		zip: "56121",
-		lat: 43.7228,
-		lng: 10.4017,
-	},
-	{
-		name: "Lucca",
-		province: "LU",
-		zip: "55100",
-		lat: 43.8429,
-		lng: 10.5027,
-	},
-	{
-		name: "Arezzo",
-		province: "AR",
-		zip: "52100",
-		lat: 43.4631,
-		lng: 11.8783,
-	},
-	{
-		name: "Vicenza",
-		province: "VI",
-		zip: "36100",
-		lat: 45.5455,
-		lng: 11.5354,
-	},
-	{
-		name: "Monza",
-		province: "MB",
-		zip: "20900",
-		lat: 45.5845,
-		lng: 9.2744,
-	},
-	{
-		name: "Como",
-		province: "CO",
-		zip: "22100",
-		lat: 45.81,
-		lng: 9.0852,
-	},
-	{
-		name: "Pavia",
-		province: "PV",
-		zip: "27100",
-		lat: 45.1847,
-		lng: 9.1582,
-	},
-	{
-		name: "Cremona",
-		province: "CR",
-		zip: "26100",
-		lat: 45.1332,
-		lng: 10.0227,
-	},
-	{
-		name: "Treviso",
-		province: "TV",
-		zip: "31100",
-		lat: 45.6669,
-		lng: 12.245,
-	},
-	{
-		name: "Siracusa",
-		province: "SR",
-		zip: "96100",
-		lat: 37.0755,
-		lng: 15.2866,
-	},
-	{
-		name: "Mantova",
-		province: "MN",
-		zip: "46100",
-		lat: 45.1564,
-		lng: 10.7914,
-	},
-	{
-		name: "Piacenza",
-		province: "PC",
-		zip: "29121",
-		lat: 45.0526,
-		lng: 9.6929,
-	},
-	{
-		name: "Novara",
-		province: "NO",
-		zip: "28100",
-		lat: 45.4449,
-		lng: 8.62,
-	},
-	{
-		name: "Alessandria",
-		province: "AL",
-		zip: "15121",
-		lat: 44.9118,
-		lng: 8.6153,
-	},
-	{
-		name: "Savona",
-		province: "SV",
-		zip: "17100",
-		lat: 44.3091,
-		lng: 8.4772,
-	},
-];
-
-// ── Street names ──────────────────────────────────────────
-
-const streets = [
-	"Via Roma",
-	"Via Garibaldi",
-	"Via Dante",
-	"Corso Italia",
-	"Via Mazzini",
-	"Via Verdi",
-	"Via XX Settembre",
-	"Via Cavour",
-	"Via Marconi",
-	"Via Matteotti",
-	"Corso Vittorio Emanuele",
-	"Via Nazionale",
-	"Via della Libertà",
-	"Via Don Minzoni",
-	"Via Galilei",
-	"Via Leonardo da Vinci",
-	"Via Colombo",
-	"Via Carducci",
-	"Via San Marco",
-	"Via Leopardi",
-	"Via Pascoli",
-	"Via Manzoni",
-	"Via Petrarca",
-	"Via della Stazione",
-	"Corso Buenos Aires",
-	"Via del Corso",
-	"Via Gramsci",
-	"Via Torino",
-	"Piazza della Repubblica",
-	"Piazza del Popolo",
-];
+import { sellerProfile } from "@/db/schemas/seller";
+import { store } from "@/db/schemas/store";
+import { auth } from "@/lib/auth";
+import { cities, firstNames, lastNames, pick, streets } from "./utils";
 
 // ── Legal forms ───────────────────────────────────────────
 
@@ -616,7 +166,7 @@ const statusDistribution: readonly StatusConfig[] = [
 
 // ── Generator ─────────────────────────────────────────────
 
-export function generateSellersSeedData(): SellerSeedData[] {
+function generateSellersSeedData(): SellerSeedData[] {
 	const sellers: SellerSeedData[] = [];
 	let idx = 0;
 
@@ -710,4 +260,109 @@ export function generateSellersSeedData(): SellerSeedData[] {
 	}
 
 	return sellers;
+}
+
+// ── Seeding function ──────────────────────────────────────
+
+export async function seedSellers() {
+	const existing = await db.query.user.findFirst({
+		where: eq(user.email, "seller1@test.com"),
+	});
+	if (existing) {
+		console.log("  ⏭ Bulk sellers already seeded, skipping");
+		return;
+	}
+
+	const sellersData = generateSellersSeedData();
+	console.log(`  👥 Seeding ${sellersData.length} sellers...`);
+
+	// Phase 1: Create users via auth (sequential — password hashing)
+	const created: Array<{ userId: string; data: SellerSeedData }> = [];
+	for (let i = 0; i < sellersData.length; i++) {
+		const s = sellersData[i];
+		try {
+			const { user: u } = await auth.api.signUpEmail({
+				body: { name: s.name, email: s.email, password: "password123" },
+			});
+			await db
+				.update(user)
+				.set({ role: "seller", emailVerified: true })
+				.where(eq(user.id, u.id));
+			created.push({ userId: u.id, data: s });
+		} catch {
+			console.error(`     ✗ Failed: ${s.email}`);
+		}
+		if ((i + 1) % 25 === 0) {
+			console.log(`     ... ${i + 1}/${sellersData.length} users`);
+		}
+	}
+
+	if (created.length === 0) return;
+
+	// Phase 2: Batch insert seller profiles
+	const profiles = await db
+		.insert(sellerProfile)
+		.values(
+			created.map(({ userId, data }) => ({
+				userId,
+				onboardingStatus: data.onboardingStatus,
+				...data.profileFields,
+			})),
+		)
+		.returning({ id: sellerProfile.id });
+
+	// Phase 3: Batch insert organizations
+	await db.insert(organization).values(
+		created.map(({ data }, i) => ({
+			sellerProfileId: profiles[i].id,
+			businessName: data.org.businessName,
+			vatNumber: data.vatNumber,
+			legalForm: data.org.legalForm,
+			addressLine1: data.org.addressLine1,
+			city: data.org.city,
+			zipCode: data.org.zipCode,
+			province: data.org.province,
+			vatStatus: data.vatStatus,
+		})),
+	);
+
+	// Phase 4: Batch insert stores (for sellers at pending_payment+)
+	const storeEntries = created
+		.map(({ data }, i) =>
+			data.store
+				? {
+						sellerProfileId: profiles[i].id,
+						name: data.store.name,
+						description: data.store.description,
+						addressLine1: data.store.addressLine1,
+						city: data.store.city,
+						zipCode: data.store.zipCode,
+						province: data.store.province,
+						location: { x: data.store.lng, y: data.store.lat },
+					}
+				: null,
+		)
+		.filter((e): e is NonNullable<typeof e> => e !== null);
+
+	if (storeEntries.length > 0) {
+		await db.insert(store).values(storeEntries);
+	}
+
+	// Phase 5: Batch insert payment methods (for sellers at pending_review+)
+	const paymentEntries = created
+		.map(({ data }, i) =>
+			data.hasPayment
+				? {
+						sellerProfileId: profiles[i].id,
+						stripeAccountId: `acct_test_${profiles[i].id.slice(0, 8)}`,
+					}
+				: null,
+		)
+		.filter((e): e is NonNullable<typeof e> => e !== null);
+
+	if (paymentEntries.length > 0) {
+		await db.insert(paymentMethod).values(paymentEntries);
+	}
+
+	console.log(`  ✓ ${created.length} sellers seeded`);
 }
