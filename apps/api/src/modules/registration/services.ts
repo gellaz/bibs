@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
@@ -8,93 +9,86 @@ import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 
-interface RegisterCustomerParams {
+// ── Shared registration helper ──────────────
+
+interface RegisterUserParams<T> {
 	email: string;
 	password: string;
+	role: string;
+	callbackURL: string;
+	createProfile: (
+		tx: PgTransaction<any, any, any>,
+		userId: string,
+	) => Promise<T>;
 }
 
-export async function registerCustomer(params: RegisterCustomerParams) {
-	const { email, password } = params;
+async function registerUser<T>(params: RegisterUserParams<T>) {
+	const { email, password, role, callbackURL, createProfile } = params;
 	const name = email.split("@")[0];
 
 	const existing = await db.query.user.findFirst({
 		where: eq(user.email, email),
 	});
 	if (existing) {
-		throw new ServiceError(409, "Email già registrata");
+		throw new ServiceError(409, "Email already registered");
 	}
 
 	const { user: newUser, token } = await auth.api.signUpEmail({
 		body: { name, email, password },
 	});
 
-	const [profile] = await db.transaction(async (tx) => {
-		await tx
-			.update(user)
-			.set({ role: "customer" })
-			.where(eq(user.id, newUser.id));
+	const profile = await db.transaction(async (tx) => {
+		await tx.update(user).set({ role }).where(eq(user.id, newUser.id));
 
-		return tx
-			.insert(customerProfile)
-			.values({ userId: newUser.id })
-			.returning();
+		return createProfile(tx, newUser.id);
 	});
 
 	await auth.api.sendVerificationEmail({
-		body: {
-			email,
-			callbackURL: `${env.CUSTOMER_APP_URL}/login`,
-		},
+		body: { email, callbackURL },
 	});
 
 	return {
-		user: { ...newUser, role: "customer" },
+		user: { ...newUser, role },
 		profile,
 		token,
 	};
 }
 
-interface RegisterSellerParams {
+// ── Public registration functions ───────────
+
+interface RegisterParams {
 	email: string;
 	password: string;
 }
 
-export async function registerSeller(params: RegisterSellerParams) {
-	const { email, password } = params;
-	const name = email.split("@")[0];
-
-	const existing = await db.query.user.findFirst({
-		where: eq(user.email, email),
-	});
-	if (existing) {
-		throw new ServiceError(409, "Email già registrata");
-	}
-
-	const { user: newUser, token } = await auth.api.signUpEmail({
-		body: { name, email, password },
-	});
-
-	const [profile] = await db.transaction(async (tx) => {
-		await tx
-			.update(user)
-			.set({ role: "seller" })
-			.where(eq(user.id, newUser.id));
-
-		return tx.insert(sellerProfile).values({ userId: newUser.id }).returning();
-	});
-
-	await auth.api.sendVerificationEmail({
-		body: {
-			email,
-			callbackURL: `${env.SELLER_APP_URL}/login`,
+export async function registerCustomer(params: RegisterParams) {
+	return registerUser({
+		...params,
+		role: "customer",
+		callbackURL: `${env.CUSTOMER_APP_URL}/login`,
+		async createProfile(tx, userId) {
+			const [profile] = await tx
+				.insert(customerProfile)
+				.values({ userId })
+				.returning();
+			return profile;
 		},
 	});
+}
 
-	return {
-		user: { ...newUser, role: "seller" },
-		profile,
-		token,
-	};
+export async function registerSeller(params: RegisterParams) {
+	return registerUser({
+		...params,
+		role: "seller",
+		callbackURL: `${env.SELLER_APP_URL}/login`,
+		async createProfile(tx, userId) {
+			const [profile] = await tx
+				.insert(sellerProfile)
+				.values({ userId })
+				.returning();
+			return profile;
+		},
+	});
 }
 
 interface SignInParams {

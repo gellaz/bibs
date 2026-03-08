@@ -18,6 +18,13 @@ interface ImportResult {
 	errors: ImportError[];
 }
 
+interface ValidProduct {
+	name: string;
+	description: string | undefined;
+	price: string;
+	categoryIds: string[];
+}
+
 // ────────────────────────────────────────────
 // CSV parsing
 // ────────────────────────────────────────────
@@ -61,7 +68,7 @@ function parseCsv(text: string): { headers: string[]; rows: string[][] } {
 		.filter((l) => l.trim() !== "");
 
 	if (lines.length === 0) {
-		throw new ServiceError(400, "Il file CSV è vuoto");
+		throw new ServiceError(400, "CSV file is empty");
 	}
 
 	const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
@@ -90,19 +97,19 @@ export async function importProductsFromCsv(
 		if (!headers.includes(expected)) {
 			throw new ServiceError(
 				400,
-				`Intestazione CSV mancante: "${expected}". Intestazioni attese: ${EXPECTED_HEADERS.join(", ")}`,
+				`Missing CSV header: "${expected}". Expected headers: ${EXPECTED_HEADERS.join(", ")}`,
 			);
 		}
 	}
 
 	if (rows.length === 0) {
-		throw new ServiceError(400, "Il file CSV non contiene righe di dati");
+		throw new ServiceError(400, "CSV file contains no data rows");
 	}
 
 	if (rows.length > config.maxProductsPerImport) {
 		throw new ServiceError(
 			400,
-			`Troppi prodotti: ${rows.length}. Massimo consentito: ${config.maxProductsPerImport}`,
+			`Too many products: ${rows.length}. Maximum allowed: ${config.maxProductsPerImport}`,
 		);
 	}
 
@@ -120,8 +127,9 @@ export async function importProductsFromCsv(
 	);
 
 	const errors: ImportError[] = [];
-	let created = 0;
+	const validProducts: ValidProduct[] = [];
 
+	// ── Phase 1: validate all rows ─────────────
 	for (let i = 0; i < rows.length; i++) {
 		const row = rows[i];
 		const rowNum = i + 2; // 1-indexed, +1 for header
@@ -129,7 +137,7 @@ export async function importProductsFromCsv(
 		// Validate name
 		const name = row[nameIdx];
 		if (!name) {
-			errors.push({ row: rowNum, message: "Nome prodotto mancante" });
+			errors.push({ row: rowNum, message: "Missing product name" });
 			continue;
 		}
 
@@ -138,7 +146,7 @@ export async function importProductsFromCsv(
 		if (!price || !PRICE_REGEX.test(price)) {
 			errors.push({
 				row: rowNum,
-				message: `Prezzo non valido: "${price ?? ""}". Formato atteso: "9.99"`,
+				message: `Invalid price: "${price ?? ""}". Expected format: "9.99"`,
 			});
 			continue;
 		}
@@ -153,7 +161,7 @@ export async function importProductsFromCsv(
 		if (categoryNames.length === 0) {
 			errors.push({
 				row: rowNum,
-				message: "Almeno una categoria obbligatoria",
+				message: "At least one category is required",
 			});
 			continue;
 		}
@@ -172,33 +180,45 @@ export async function importProductsFromCsv(
 		if (unknownCategories.length > 0) {
 			errors.push({
 				row: rowNum,
-				message: `Categorie non trovate: ${unknownCategories.join(", ")}`,
+				message: `Categories not found: ${unknownCategories.join(", ")}`,
 			});
 			continue;
 		}
 
 		const description = row[descIdx] || undefined;
+		validProducts.push({ name, description, price, categoryIds });
+	}
 
-		// Create product + classifications in a transaction
-		try {
-			await db.transaction(async (tx) => {
-				const [inserted] = await tx
-					.insert(product)
-					.values({ sellerProfileId, name, description, price })
-					.returning();
+	// ── Phase 2: batch insert in a single transaction ──
+	let created = 0;
 
-				await tx.insert(productClassification).values(
-					categoryIds.map((categoryId) => ({
-						productId: inserted.id,
-						productCategoryId: categoryId,
+	if (validProducts.length > 0) {
+		await db.transaction(async (tx) => {
+			const inserted = await tx
+				.insert(product)
+				.values(
+					validProducts.map((p) => ({
+						sellerProfileId,
+						name: p.name,
+						description: p.description,
+						price: p.price,
 					})),
-				);
-			});
-			created++;
-		} catch (err) {
-			const message = err instanceof Error ? err.message : "Errore sconosciuto";
-			errors.push({ row: rowNum, message });
-		}
+				)
+				.returning({ id: product.id });
+
+			const classifications = inserted.flatMap((row, idx) =>
+				validProducts[idx].categoryIds.map((categoryId) => ({
+					productId: row.id,
+					productCategoryId: categoryId,
+				})),
+			);
+
+			if (classifications.length > 0) {
+				await tx.insert(productClassification).values(classifications);
+			}
+
+			created = inserted.length;
+		});
 	}
 
 	return { created, failed: errors.length, errors };

@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
-import { SellerListQuery } from "@/lib/pagination";
+import { SellerListQuery } from "@/lib/queries";
 import { ok, okPage } from "@/lib/responses";
 import {
 	okPageRes,

@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { OrderListQuery } from "@/lib/pagination";
+import { OrderListQuery } from "@/lib/queries";
 import { ok, okPage } from "@/lib/responses";
 import {
 	OrderSchema,

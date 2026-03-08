@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { CategoryListQuery } from "@/lib/pagination";
+import { CategoryListQuery } from "@/lib/queries";
 import { okPage } from "@/lib/responses";
 import { okPageRes, ProductCategorySchema, withErrors } from "@/lib/schemas";
 import { listProductCategories } from "./admin/services/product-categories";
