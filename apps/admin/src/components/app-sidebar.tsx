@@ -19,13 +19,10 @@ import {
 	SettingsIcon,
 	ShieldCheckIcon,
 	StoreIcon,
-	UserIcon,
 	UsersIcon,
 	WalletIcon,
 } from "lucide-react";
-import LocaleSwitcher from "@/components/locale-switcher";
-import ThemeToggle from "@/components/theme-toggle";
-import BetterAuthHeader from "@/integrations/better-auth/header-user";
+import { NavUser } from "@/components/nav-user";
 
 const navItems = [
 	{ title: "Home", to: "/" as const, icon: HomeIcon },
@@ -40,7 +37,6 @@ const navItems = [
 		to: "/configurations" as const,
 		icon: SettingsIcon,
 	},
-	{ title: "Profilo", to: "/profile" as const, icon: UserIcon },
 ];
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
@@ -74,13 +70,17 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{navItems.map((item) => {
-								const isActive = pathname === item.to;
+								const isActive =
+									item.to === "/"
+										? pathname === "/"
+										: pathname.startsWith(item.to);
 								return (
 									<SidebarMenuItem key={item.title}>
 										<SidebarMenuButton
 											asChild
 											tooltip={item.title}
 											isActive={isActive}
+											className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
 										>
 											<Link to={item.to}>
 												<item.icon />
@@ -96,13 +96,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 			</SidebarContent>
 
 			<SidebarFooter>
-				<div className="flex flex-col gap-2 group-data-[collapsible=icon]:hidden">
-					<div className="flex items-center gap-2">
-						<ThemeToggle />
-						<LocaleSwitcher />
-					</div>
-					<BetterAuthHeader />
-				</div>
+				<NavUser />
 			</SidebarFooter>
 
 			<SidebarRail />
