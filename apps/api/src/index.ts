@@ -14,6 +14,7 @@ import { customerModule } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
+import { storeCategoriesModule } from "@/modules/store-categories";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
 import { errorHandler } from "@/plugins/error-handler";
@@ -74,6 +75,10 @@ const app = new Elysia()
 					{
 						name: "Categories",
 						description: "Categorie prodotto (lettura pubblica)",
+					},
+					{
+						name: "Store Categories",
+						description: "Categorie negozio (lettura pubblica)",
 					},
 					{
 						name: "Admin",
@@ -144,6 +149,7 @@ const app = new Elysia()
 	.use(registration)
 	.use(adminModule)
 	.use(categoriesModule)
+	.use(storeCategoriesModule)
 	.use(locationsModule)
 	.use(sellerModule)
 	.use(customerModule)

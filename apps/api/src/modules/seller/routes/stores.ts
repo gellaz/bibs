@@ -99,6 +99,9 @@ export const storesRoutes = new Elysia()
 					t.String({ maxLength: 1000, description: "Descrizione" }),
 				),
 				...AddressFieldsOptional,
+				categoryId: t.Optional(
+					t.Nullable(t.String({ description: "ID categoria negozio" })),
+				),
 				websiteUrl: t.Optional(
 					t.String({
 						format: "uri",

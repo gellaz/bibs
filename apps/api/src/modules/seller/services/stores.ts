@@ -27,7 +27,7 @@ export async function listStores(params: ListStoresParams) {
 			where,
 			limit,
 			offset,
-			with: { phoneNumbers: true },
+			with: { phoneNumbers: true, category: true },
 		}),
 		db.select({ total: count() }).from(storeTable).where(where),
 	]);
@@ -46,6 +46,7 @@ interface CreateStoreParams {
 	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
+	categoryId?: string;
 	websiteUrl?: string;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }
@@ -69,7 +70,7 @@ export async function createStore(params: CreateStoreParams) {
 
 		const store = await tx.query.store.findFirst({
 			where: eq(storeTable.id, created.id),
-			with: { phoneNumbers: true },
+			with: { phoneNumbers: true, category: true },
 		});
 
 		if (!store) throw new ServiceError(500, "Failed to retrieve created store");
@@ -89,6 +90,7 @@ interface UpdateStoreParams {
 	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
+	categoryId?: string | null;
 	websiteUrl?: string;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }
@@ -130,7 +132,7 @@ export async function updateStore(params: UpdateStoreParams) {
 
 		const store = await tx.query.store.findFirst({
 			where: eq(storeTable.id, storeId),
-			with: { phoneNumbers: true },
+			with: { phoneNumbers: true, category: true },
 		});
 
 		if (!store) throw new ServiceError(500, "Failed to retrieve updated store");

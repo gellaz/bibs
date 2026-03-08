@@ -68,6 +68,9 @@ export const CreateStoreBody = Type.Object({
 			description: "Codice paese ISO 3166-1 alpha-2 (default: IT)",
 		}),
 	),
+	categoryId: Type.Optional(
+		Type.String({ description: "ID categoria negozio" }),
+	),
 	websiteUrl: Type.Optional(
 		Type.String({
 			format: "uri",

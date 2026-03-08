@@ -1,0 +1,367 @@
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@bibs/ui/components/alert-dialog";
+import { Button } from "@bibs/ui/components/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "@bibs/ui/components/dialog";
+import { toast } from "@bibs/ui/components/sonner";
+import { Spinner } from "@bibs/ui/components/spinner";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@bibs/ui/components/table";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { PencilIcon, PlusIcon, StoreIcon, Trash2Icon } from "lucide-react";
+import { useState } from "react";
+import { PageHeader } from "@/components/page-header";
+import { StoreCategoryForm } from "@/features/store-categories/components/store-category-form";
+import { api } from "@/lib/api";
+
+export const Route = createFileRoute("/_authenticated/store-categories")({
+	component: StoreCategoriesPage,
+	validateSearch: (search: Record<string, unknown>) => {
+		return {
+			page: Number(search.page ?? 1),
+			limit: Number(search.limit ?? 20),
+		};
+	},
+});
+
+interface StoreCategory {
+	id: string;
+	name: string;
+	createdAt: Date | string;
+	updatedAt: Date | string;
+}
+
+function StoreCategoriesPage() {
+	const { page, limit } = Route.useSearch();
+	const queryClient = useQueryClient();
+
+	const [createOpen, setCreateOpen] = useState(false);
+	const [editOpen, setEditOpen] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [selectedCategory, setSelectedCategory] =
+		useState<StoreCategory | null>(null);
+
+	// Fetch store categories
+	const { data, isLoading, error } = useQuery({
+		queryKey: ["store-categories", page, limit],
+		queryFn: async () => {
+			const response = await api()["store-categories"].get({
+				query: { page, limit },
+			});
+
+			if (response.error) {
+				throw new Error(
+					response.error.value?.message || "Failed to fetch store categories",
+				);
+			}
+
+			return response.data;
+		},
+	});
+
+	// Create mutation
+	const createMutation = useMutation({
+		mutationFn: async (name: string) => {
+			const response = await api().admin["store-categories"].post({
+				name,
+			});
+
+			if (response.error) {
+				throw new Error(
+					response.error.value?.message || "Failed to create store category",
+				);
+			}
+
+			return response.data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: ["store-categories"],
+			});
+			setCreateOpen(false);
+			toast.success("Categoria negozio creata con successo");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || "Errore durante la creazione");
+		},
+	});
+
+	// Update mutation
+	const updateMutation = useMutation({
+		mutationFn: async ({ id, name }: { id: string; name: string }) => {
+			const response = await api()
+				.admin["store-categories"]({ categoryId: id })
+				.patch({ name });
+
+			if (response.error) {
+				throw new Error(
+					response.error.value?.message || "Failed to update store category",
+				);
+			}
+
+			return response.data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: ["store-categories"],
+			});
+			setEditOpen(false);
+			setSelectedCategory(null);
+			toast.success("Categoria negozio aggiornata con successo");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || "Errore durante l'aggiornamento");
+		},
+	});
+
+	// Delete mutation
+	const deleteMutation = useMutation({
+		mutationFn: async (id: string) => {
+			const response = await api()
+				.admin["store-categories"]({ categoryId: id })
+				.delete();
+
+			if (response.error) {
+				throw new Error(
+					response.error.value?.message || "Failed to delete store category",
+				);
+			}
+
+			return response.data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: ["store-categories"],
+			});
+			setDeleteOpen(false);
+			setSelectedCategory(null);
+			toast.success("Categoria negozio eliminata con successo");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message || "Errore durante l'eliminazione");
+		},
+	});
+
+	const handleDelete = () => {
+		if (!selectedCategory) return;
+		deleteMutation.mutate(selectedCategory.id);
+	};
+
+	return (
+		<div className="space-y-4">
+			<PageHeader
+				title="Categorie Negozio"
+				description="Gestisci le categorie dei negozi"
+			>
+				<Button onClick={() => setCreateOpen(true)}>
+					<PlusIcon />
+					<span>Nuova Categoria</span>
+				</Button>
+			</PageHeader>
+
+			{error && (
+				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+					<p className="text-sm">
+						Errore nel caricamento: {(error as Error).message}
+					</p>
+				</div>
+			)}
+
+			{isLoading ? (
+				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
+					<Spinner className="size-8" />
+				</div>
+			) : (
+				<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
+					<Table>
+						<TableHeader>
+							<TableRow className="bg-muted/50 hover:bg-muted/50">
+								<TableHead className="w-[40%] pl-6">Nome</TableHead>
+								<TableHead className="w-[40%]">Data Creazione</TableHead>
+								<TableHead className="w-[20%] pr-6 text-right">
+									Azioni
+								</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{data?.data && data.data.length > 0 ? (
+								data.data.map((category: StoreCategory) => (
+									<TableRow key={category.id} className="group">
+										<TableCell className="pl-6 font-semibold">
+											{category.name}
+										</TableCell>
+										<TableCell className="text-muted-foreground text-sm">
+											{new Date(category.createdAt).toLocaleDateString(
+												"it-IT",
+												{
+													year: "numeric",
+													month: "long",
+													day: "numeric",
+												},
+											)}
+										</TableCell>
+										<TableCell className="pr-6 text-right">
+											<div className="flex items-center justify-end gap-1">
+												<Button
+													variant="ghost"
+													size="icon-sm"
+													onClick={() => {
+														setSelectedCategory(category);
+														setEditOpen(true);
+													}}
+													aria-label="Modifica categoria"
+												>
+													<PencilIcon className="size-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon-sm"
+													onClick={() => {
+														setSelectedCategory(category);
+														setDeleteOpen(true);
+													}}
+													aria-label="Elimina categoria"
+												>
+													<Trash2Icon className="size-4" />
+												</Button>
+											</div>
+										</TableCell>
+									</TableRow>
+								))
+							) : (
+								<TableRow className="hover:bg-transparent">
+									<TableCell colSpan={3} className="h-32 text-center">
+										<div className="flex flex-col items-center gap-2">
+											<StoreIcon className="text-muted-foreground/40 size-8" />
+											<div>
+												<p className="text-muted-foreground font-medium">
+													Nessuna categoria negozio trovata
+												</p>
+												<p className="text-muted-foreground/60 text-sm">
+													Crea la prima categoria per iniziare
+												</p>
+											</div>
+										</div>
+									</TableCell>
+								</TableRow>
+							)}
+						</TableBody>
+					</Table>
+				</div>
+			)}
+
+			{data?.pagination && data.pagination.total > 0 && (
+				<div className="text-muted-foreground flex items-center justify-between text-sm">
+					<div>
+						Pagina {page} di {Math.ceil(data.pagination.total / limit)}
+					</div>
+					<div>
+						Totale: {data.pagination.total} categori
+						{data.pagination.total === 1 ? "a" : "e"}
+					</div>
+				</div>
+			)}
+
+			{/* Create Dialog */}
+			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Nuova Categoria Negozio</DialogTitle>
+						<DialogDescription>
+							Inserisci il nome della nuova categoria negozio.
+						</DialogDescription>
+					</DialogHeader>
+					<StoreCategoryForm
+						onSubmit={(data) => createMutation.mutate(data.name)}
+						onCancel={() => setCreateOpen(false)}
+						isPending={createMutation.isPending}
+						submitLabel="Crea"
+						pendingLabel="Creazione..."
+					/>
+				</DialogContent>
+			</Dialog>
+
+			{/* Edit Dialog */}
+			<Dialog open={editOpen} onOpenChange={setEditOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Modifica Categoria Negozio</DialogTitle>
+						<DialogDescription>
+							Modifica il nome della categoria selezionata.
+						</DialogDescription>
+					</DialogHeader>
+					<StoreCategoryForm
+						defaultValues={
+							selectedCategory ? { name: selectedCategory.name } : undefined
+						}
+						onSubmit={(data) => {
+							if (selectedCategory) {
+								updateMutation.mutate({
+									id: selectedCategory.id,
+									name: data.name,
+								});
+							}
+						}}
+						onCancel={() => {
+							setEditOpen(false);
+							setSelectedCategory(null);
+						}}
+						isPending={updateMutation.isPending}
+						submitLabel="Salva"
+						pendingLabel="Salvataggio..."
+					/>
+				</DialogContent>
+			</Dialog>
+
+			{/* Delete Confirmation */}
+			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+						<AlertDialogDescription>
+							Sei sicuro di voler eliminare la categoria "
+							{selectedCategory?.name}"? Questa azione non può essere annullata.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel
+							onClick={() => {
+								setDeleteOpen(false);
+								setSelectedCategory(null);
+							}}
+						>
+							Annulla
+						</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={handleDelete}
+							disabled={deleteMutation.isPending}
+						>
+							{deleteMutation.isPending ? "Eliminazione..." : "Elimina"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</div>
+	);
+}

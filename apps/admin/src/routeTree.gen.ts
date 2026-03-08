@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
 import { Route as AuthenticatedStoresRouteImport } from './routes/_authenticated/stores'
+import { Route as AuthenticatedStoreCategoriesRouteImport } from './routes/_authenticated/store-categories'
 import { Route as AuthenticatedSellersRouteImport } from './routes/_authenticated/sellers'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
@@ -48,6 +49,12 @@ const AuthenticatedStoresRoute = AuthenticatedStoresRouteImport.update({
   path: '/stores',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStoreCategoriesRoute =
+  AuthenticatedStoreCategoriesRouteImport.update({
+    id: '/store-categories',
+    path: '/store-categories',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSellersRoute = AuthenticatedSellersRouteImport.update({
   id: '/sellers',
   path: '/sellers',
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/products': typeof AuthenticatedProductsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/sellers': typeof AuthenticatedSellersRouteWithChildren
+  '/store-categories': typeof AuthenticatedStoreCategoriesRoute
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
   '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
@@ -121,6 +129,7 @@ export interface FileRoutesByTo {
   '/payments': typeof AuthenticatedPaymentsRoute
   '/products': typeof AuthenticatedProductsRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/store-categories': typeof AuthenticatedStoreCategoriesRoute
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
   '/': typeof AuthenticatedIndexRoute
@@ -138,6 +147,7 @@ export interface FileRoutesById {
   '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/sellers': typeof AuthenticatedSellersRouteWithChildren
+  '/_authenticated/store-categories': typeof AuthenticatedStoreCategoriesRoute
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/profile'
     | '/sellers'
+    | '/store-categories'
     | '/stores'
     | '/users'
     | '/sellers/$sellerId'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/payments'
     | '/products'
     | '/profile'
+    | '/store-categories'
     | '/stores'
     | '/users'
     | '/'
@@ -185,6 +197,7 @@ export interface FileRouteTypes {
     | '/_authenticated/products'
     | '/_authenticated/profile'
     | '/_authenticated/sellers'
+    | '/_authenticated/store-categories'
     | '/_authenticated/stores'
     | '/_authenticated/users'
     | '/_authenticated/'
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       path: '/stores'
       fullPath: '/stores'
       preLoaderRoute: typeof AuthenticatedStoresRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/store-categories': {
+      id: '/_authenticated/store-categories'
+      path: '/store-categories'
+      fullPath: '/store-categories'
+      preLoaderRoute: typeof AuthenticatedStoreCategoriesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sellers': {
@@ -321,6 +341,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSellersRoute: typeof AuthenticatedSellersRouteWithChildren
+  AuthenticatedStoreCategoriesRoute: typeof AuthenticatedStoreCategoriesRoute
   AuthenticatedStoresRoute: typeof AuthenticatedStoresRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -334,6 +355,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSellersRoute: AuthenticatedSellersRouteWithChildren,
+  AuthenticatedStoreCategoriesRoute: AuthenticatedStoreCategoriesRoute,
   AuthenticatedStoresRoute: AuthenticatedStoresRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

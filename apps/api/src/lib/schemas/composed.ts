@@ -12,6 +12,7 @@ import {
 	ProductSchema,
 	SellerProfileChangeSchema,
 	SellerProfileSchema,
+	StoreCategorySchema,
 	StorePhoneNumberSchema,
 	StoreProductSchema,
 	StoreSchema,
@@ -22,10 +23,11 @@ import {
 // Composed schemas (nested relations)
 // ────────────────────────────────────────────
 
-// Store + phone numbers
+// Store + phone numbers + category
 export const StoreWithPhonesSchema = t.Object({
 	...StoreSchema.properties,
 	phoneNumbers: t.Array(StorePhoneNumberSchema),
+	category: t.Nullable(StoreCategorySchema),
 });
 
 // Seller profile + user + organization (admin pending list)
