@@ -34,27 +34,27 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PencilIcon, SearchIcon, TagsIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { CategoryForm } from "@/features/categories/components/category-form";
+import { ProductCategoryForm } from "@/features/product-categories/components/product-category-form";
 import { api } from "@/lib/api";
 
-interface Category {
+interface ProductCategory {
 	id: string;
 	name: string;
 	createdAt: Date | string;
 	updatedAt: Date | string;
 }
 
-interface CategoriesPanelProps {
+interface ProductCategoriesPanelProps {
 	createOpen: boolean;
 	onCreateOpenChange: (open: boolean) => void;
 }
 
 type SortByField = "name" | "createdAt";
 
-export function CategoriesPanel({
+export function ProductCategoriesPanel({
 	createOpen,
 	onCreateOpenChange,
-}: CategoriesPanelProps) {
+}: ProductCategoriesPanelProps) {
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 	const [search, setSearch] = useState("");
@@ -64,9 +64,8 @@ export function CategoriesPanel({
 	const queryClient = useQueryClient();
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-		null,
-	);
+	const [selectedCategory, setSelectedCategory] =
+		useState<ProductCategory | null>(null);
 
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	useEffect(() => {
@@ -90,9 +89,16 @@ export function CategoriesPanel({
 	};
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["categories", page, limit, debouncedSearch, sortBy, sortOrder],
+		queryKey: [
+			"product-categories",
+			page,
+			limit,
+			debouncedSearch,
+			sortBy,
+			sortOrder,
+		],
 		queryFn: async () => {
-			const response = await api().categories.get({
+			const response = await api()["product-categories"].get({
 				query: {
 					page,
 					limit,
@@ -104,7 +110,7 @@ export function CategoriesPanel({
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to fetch categories",
+					response.error.value?.message || "Failed to fetch product categories",
 				);
 			}
 
@@ -113,7 +119,9 @@ export function CategoriesPanel({
 	});
 
 	const invalidateAll = () => {
-		void queryClient.invalidateQueries({ queryKey: ["categories"] });
+		void queryClient.invalidateQueries({
+			queryKey: ["product-categories"],
+		});
 		void queryClient.invalidateQueries({
 			queryKey: ["admin-configurations-counts"],
 		});
@@ -121,11 +129,13 @@ export function CategoriesPanel({
 
 	const createMutation = useMutation({
 		mutationFn: async (name: string) => {
-			const response = await api().admin.categories.post({ name });
+			const response = await api().admin["product-categories"].post({
+				name,
+			});
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to create category",
+					response.error.value?.message || "Failed to create product category",
 				);
 			}
 
@@ -134,7 +144,7 @@ export function CategoriesPanel({
 		onSuccess: () => {
 			invalidateAll();
 			onCreateOpenChange(false);
-			toast.success("Categoria creata con successo");
+			toast.success("Categoria prodotto creata con successo");
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Errore durante la creazione");
@@ -144,12 +154,12 @@ export function CategoriesPanel({
 	const updateMutation = useMutation({
 		mutationFn: async ({ id, name }: { id: string; name: string }) => {
 			const response = await api()
-				.admin.categories({ categoryId: id })
+				.admin["product-categories"]({ productCategoryId: id })
 				.patch({ name });
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to update category",
+					response.error.value?.message || "Failed to update product category",
 				);
 			}
 
@@ -159,7 +169,7 @@ export function CategoriesPanel({
 			invalidateAll();
 			setEditOpen(false);
 			setSelectedCategory(null);
-			toast.success("Categoria aggiornata con successo");
+			toast.success("Categoria prodotto aggiornata con successo");
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Errore durante l'aggiornamento");
@@ -169,12 +179,12 @@ export function CategoriesPanel({
 	const deleteMutation = useMutation({
 		mutationFn: async (id: string) => {
 			const response = await api()
-				.admin.categories({ categoryId: id })
+				.admin["product-categories"]({ productCategoryId: id })
 				.delete();
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to delete category",
+					response.error.value?.message || "Failed to delete product category",
 				);
 			}
 
@@ -184,7 +194,7 @@ export function CategoriesPanel({
 			invalidateAll();
 			setDeleteOpen(false);
 			setSelectedCategory(null);
-			toast.success("Categoria eliminata con successo");
+			toast.success("Categoria prodotto eliminata con successo");
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Errore durante l'eliminazione");
@@ -209,7 +219,7 @@ export function CategoriesPanel({
 			<div className="relative">
 				<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
 				<Input
-					placeholder="Cerca categoria..."
+					placeholder="Cerca categoria prodotto..."
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 					className="pl-9"
@@ -248,7 +258,7 @@ export function CategoriesPanel({
 						</TableHeader>
 						<TableBody>
 							{data?.data && data.data.length > 0 ? (
-								data.data.map((category: Category) => (
+								data.data.map((category: ProductCategory) => (
 									<TableRow key={category.id} className="group">
 										<TableCell className="pl-6 font-semibold">
 											{category.name}
@@ -272,7 +282,7 @@ export function CategoriesPanel({
 														setSelectedCategory(category);
 														setEditOpen(true);
 													}}
-													aria-label="Modifica categoria"
+													aria-label="Modifica categoria prodotto"
 												>
 													<PencilIcon className="size-4" />
 												</Button>
@@ -283,7 +293,7 @@ export function CategoriesPanel({
 														setSelectedCategory(category);
 														setDeleteOpen(true);
 													}}
-													aria-label="Elimina categoria"
+													aria-label="Elimina categoria prodotto"
 												>
 													<Trash2Icon className="size-4" />
 												</Button>
@@ -298,10 +308,10 @@ export function CategoriesPanel({
 											<TagsIcon className="text-muted-foreground/40 size-8" />
 											<div>
 												<p className="text-muted-foreground font-medium">
-													Nessuna categoria trovata
+													Nessuna categoria prodotto trovata
 												</p>
 												<p className="text-muted-foreground/60 text-sm">
-													Crea la prima categoria per iniziare
+													Crea la prima categoria prodotto per iniziare
 												</p>
 											</div>
 										</div>
@@ -321,7 +331,7 @@ export function CategoriesPanel({
 						<div className="flex items-center justify-between">
 							<div className="text-muted-foreground text-sm">
 								Totale: {data.pagination.total} categori
-								{data.pagination.total === 1 ? "a" : "e"}
+								{data.pagination.total === 1 ? "a" : "e"} prodotto
 							</div>
 							<div className="flex items-center gap-4">
 								<PageSizeSelector
@@ -345,12 +355,12 @@ export function CategoriesPanel({
 			<Dialog open={createOpen} onOpenChange={onCreateOpenChange}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Nuova Categoria</DialogTitle>
+						<DialogTitle>Nuova Categoria Prodotto</DialogTitle>
 						<DialogDescription>
 							Inserisci il nome della nuova categoria prodotto.
 						</DialogDescription>
 					</DialogHeader>
-					<CategoryForm
+					<ProductCategoryForm
 						onSubmit={(data) => createMutation.mutate(data.name)}
 						onCancel={() => onCreateOpenChange(false)}
 						isPending={createMutation.isPending}
@@ -364,12 +374,12 @@ export function CategoriesPanel({
 			<Dialog open={editOpen} onOpenChange={setEditOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Modifica Categoria</DialogTitle>
+						<DialogTitle>Modifica Categoria Prodotto</DialogTitle>
 						<DialogDescription>
-							Modifica il nome della categoria selezionata.
+							Modifica il nome della categoria prodotto selezionata.
 						</DialogDescription>
 					</DialogHeader>
-					<CategoryForm
+					<ProductCategoryForm
 						defaultValues={
 							selectedCategory ? { name: selectedCategory.name } : undefined
 						}
@@ -398,7 +408,7 @@ export function CategoriesPanel({
 					<AlertDialogHeader>
 						<AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
 						<AlertDialogDescription>
-							Sei sicuro di voler eliminare la categoria "
+							Sei sicuro di voler eliminare la categoria prodotto "
 							{selectedCategory?.name}"? Questa azione non può essere annullata.
 						</AlertDialogDescription>
 					</AlertDialogHeader>

@@ -5,34 +5,34 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
-	type CategoryFormData,
-	categoryFormSchema,
-} from "@/features/categories/schemas/category";
+	type ProductCategoryFormData,
+	productCategoryFormSchema,
+} from "@/features/product-categories/schemas/product-category";
 
-interface CategoryFormProps {
-	defaultValues?: CategoryFormData;
-	onSubmit: (data: CategoryFormData) => void;
+interface ProductCategoryFormProps {
+	defaultValues?: ProductCategoryFormData;
+	onSubmit: (data: ProductCategoryFormData) => void;
 	onCancel: () => void;
 	isPending: boolean;
 	submitLabel: string;
 	pendingLabel: string;
 }
 
-export function CategoryForm({
+export function ProductCategoryForm({
 	defaultValues,
 	onSubmit,
 	onCancel,
 	isPending,
 	submitLabel,
 	pendingLabel,
-}: CategoryFormProps) {
+}: ProductCategoryFormProps) {
 	const {
 		register,
 		handleSubmit,
 		reset,
 		formState: { errors },
-	} = useForm<CategoryFormData>({
-		resolver: zodResolver(categoryFormSchema),
+	} = useForm<ProductCategoryFormData>({
+		resolver: zodResolver(productCategoryFormSchema),
 		defaultValues: defaultValues ?? { name: "" },
 	});
 
@@ -43,7 +43,7 @@ export function CategoryForm({
 		}
 	}, [defaultValues, reset]);
 
-	const onFormSubmit: SubmitHandler<CategoryFormData> = (data) => {
+	const onFormSubmit: SubmitHandler<ProductCategoryFormData> = (data) => {
 		onSubmit(data);
 	};
 
@@ -51,9 +51,9 @@ export function CategoryForm({
 		<form onSubmit={handleSubmit(onFormSubmit)}>
 			<div className="space-y-4 py-4">
 				<Field data-invalid={!!errors.name}>
-					<FieldLabel htmlFor="category-name">Nome</FieldLabel>
+					<FieldLabel htmlFor="product-category-name">Nome</FieldLabel>
 					<Input
-						id="category-name"
+						id="product-category-name"
 						placeholder="Es. Elettronica"
 						autoFocus
 						{...register("name")}

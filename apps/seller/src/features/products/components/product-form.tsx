@@ -13,7 +13,7 @@ import { type SubmitHandler, useForm } from "react-hook-form";
 type ProductFormData = Static<typeof CreateProductBody>;
 const compiledSchema = TypeCompiler.Compile(CreateProductBody);
 
-import { CategoryPicker } from "./category-picker";
+import { ProductCategoryPicker } from "./product-category-picker";
 import {
 	type ExistingImage,
 	ProductImageDropzone,
@@ -172,7 +172,7 @@ export function ProductForm({
 			<Separator />
 
 			<Field data-invalid={!!errors.categoryIds}>
-				<CategoryPicker
+				<ProductCategoryPicker
 					categories={categories}
 					selected={selectedCategories}
 					onToggle={toggleCategory}

@@ -23,9 +23,9 @@ function NewProductPage() {
 		void navigate({ to: "/products", search: { page: 1, limit: 20 } });
 
 	const { data: categories } = useQuery({
-		queryKey: ["categories"],
+		queryKey: ["product-categories"],
 		queryFn: async () => {
-			const response = await api().categories.get({
+			const response = await api()["product-categories"].get({
 				query: { page: 1, limit: 100 },
 			});
 

@@ -1,28 +1,33 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { CategorySchema, OkMessage, okRes, withErrors } from "@/lib/schemas";
+import {
+	OkMessage,
+	okRes,
+	ProductCategorySchema,
+	withErrors,
+} from "@/lib/schemas";
 import { withAdmin } from "../context";
 import {
-	createCategory,
-	deleteCategory,
-	updateCategory,
-} from "../services/categories";
+	createProductCategory,
+	deleteProductCategory,
+	updateProductCategory,
+} from "../services/product-categories";
 
-export const categoriesWriteRoutes = new Elysia()
+export const productCategoriesWriteRoutes = new Elysia()
 	.post(
-		"/categories",
+		"/product-categories",
 		async (ctx) => {
 			const { body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await createCategory(body.name);
+			const data = await createProductCategory(body.name);
 
 			pino.info(
 				{
 					adminId: user.id,
 					categoryId: data.id,
 					categoryName: data.name,
-					action: "category_created",
+					action: "product_category_created",
 				},
 				"Categoria prodotto creata",
 			);
@@ -37,9 +42,9 @@ export const categoriesWriteRoutes = new Elysia()
 					description: "Nome della categoria",
 				}),
 			}),
-			response: withErrors({ 200: okRes(CategorySchema) }),
+			response: withErrors({ 200: okRes(ProductCategorySchema) }),
 			detail: {
-				summary: "Crea categoria",
+				summary: "Crea categoria prodotto",
 				description:
 					"Crea una nuova categoria prodotto. Il nome deve essere univoco.",
 				tags: ["Admin"],
@@ -47,12 +52,12 @@ export const categoriesWriteRoutes = new Elysia()
 		},
 	)
 	.patch(
-		"/categories/:categoryId",
+		"/product-categories/:productCategoryId",
 		async (ctx) => {
 			const { params, body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await updateCategory({
-				categoryId: params.categoryId,
+			const data = await updateProductCategory({
+				productCategoryId: params.productCategoryId,
 				name: body.name,
 			});
 
@@ -61,7 +66,7 @@ export const categoriesWriteRoutes = new Elysia()
 					adminId: user.id,
 					categoryId: data.id,
 					newName: data.name,
-					action: "category_updated",
+					action: "product_category_updated",
 				},
 				"Categoria prodotto aggiornata",
 			);
@@ -70,7 +75,9 @@ export const categoriesWriteRoutes = new Elysia()
 		},
 		{
 			params: t.Object({
-				categoryId: t.String({ description: "ID della categoria" }),
+				productCategoryId: t.String({
+					description: "ID della categoria prodotto",
+				}),
 			}),
 			body: t.Object({
 				name: t.String({
@@ -79,40 +86,42 @@ export const categoriesWriteRoutes = new Elysia()
 					description: "Nuovo nome della categoria",
 				}),
 			}),
-			response: withErrors({ 200: okRes(CategorySchema) }),
+			response: withErrors({ 200: okRes(ProductCategorySchema) }),
 			detail: {
-				summary: "Aggiorna categoria",
+				summary: "Aggiorna categoria prodotto",
 				description: "Aggiorna il nome di una categoria prodotto esistente.",
 				tags: ["Admin"],
 			},
 		},
 	)
 	.delete(
-		"/categories/:categoryId",
+		"/product-categories/:productCategoryId",
 		async (ctx) => {
 			const { params, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const deleted = await deleteCategory(params.categoryId);
+			const deleted = await deleteProductCategory(params.productCategoryId);
 
 			pino.info(
 				{
 					adminId: user.id,
 					categoryId: deleted.id,
 					categoryName: deleted.name,
-					action: "category_deleted",
+					action: "product_category_deleted",
 				},
 				"Categoria prodotto eliminata",
 			);
 
-			return okMessage("Category deleted");
+			return okMessage("Product category deleted");
 		},
 		{
 			params: t.Object({
-				categoryId: t.String({ description: "ID della categoria" }),
+				productCategoryId: t.String({
+					description: "ID della categoria prodotto",
+				}),
 			}),
 			response: withErrors({ 200: OkMessage }),
 			detail: {
-				summary: "Elimina categoria",
+				summary: "Elimina categoria prodotto",
 				description:
 					"Elimina una categoria prodotto. Fallisce se la categoria non esiste.",
 				tags: ["Admin"],

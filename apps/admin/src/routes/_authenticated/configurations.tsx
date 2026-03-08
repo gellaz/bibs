@@ -5,14 +5,14 @@ import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { type TabItem, TabNav } from "@/components/tab-nav";
-import { CategoriesPanel } from "@/features/categories/components/categories-panel";
+import { ProductCategoriesPanel } from "@/features/product-categories/components/product-categories-panel";
 import { StoreCategoriesPanel } from "@/features/store-categories/components/store-categories-panel";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/configurations")({
 	component: ConfigurationsPage,
 	validateSearch: (search: Record<string, unknown>) => ({
-		tab: (search.tab as string) || "categories",
+		tab: (search.tab as string) || "product-categories",
 	}),
 });
 
@@ -32,9 +32,9 @@ function ConfigurationsPage() {
 
 	const tabs: TabItem[] = [
 		{
-			value: "categories",
+			value: "product-categories",
 			label: "Categorie Prodotto",
-			count: countsData?.categories ?? null,
+			count: countsData?.productCategories ?? null,
 		},
 		{
 			value: "store-categories",
@@ -62,8 +62,8 @@ function ConfigurationsPage() {
 				</Button>
 			</TabNav>
 
-			{tab === "categories" && (
-				<CategoriesPanel
+			{tab === "product-categories" && (
+				<ProductCategoriesPanel
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>

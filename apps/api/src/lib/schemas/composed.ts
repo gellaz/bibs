@@ -1,6 +1,5 @@
 import { t } from "elysia";
 import {
-	CategorySchema,
 	CustomerAddressSchema,
 	CustomerProfileSchema,
 	EmployeeSchema,
@@ -8,6 +7,7 @@ import {
 	OrderSchema,
 	OrganizationSchema,
 	PaymentMethodSchema,
+	ProductCategorySchema,
 	ProductImageSchema,
 	ProductSchema,
 	SellerProfileChangeSchema,
@@ -47,7 +47,7 @@ export const EmployeeWithUserSchema = t.Object({
 const ProductClassificationWithCategory = t.Object({
 	productId: t.String(),
 	productCategoryId: t.String(),
-	category: CategorySchema,
+	category: ProductCategorySchema,
 });
 
 // StoreProduct + store

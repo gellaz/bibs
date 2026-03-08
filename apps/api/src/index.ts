@@ -9,9 +9,9 @@ import { clearAllTimers, restoreTimers } from "@/lib/jobs/reservation-timer";
 import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
-import { categoriesModule } from "@/modules/categories";
 import { customerModule } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
+import { productCategoriesModule } from "@/modules/product-categories";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
 import { storeCategoriesModule } from "@/modules/store-categories";
@@ -73,7 +73,7 @@ const app = new Elysia()
 						description: "Registrazione clienti e venditori",
 					},
 					{
-						name: "Categories",
+						name: "Product Categories",
 						description: "Categorie prodotto (lettura pubblica)",
 					},
 					{
@@ -148,7 +148,7 @@ const app = new Elysia()
 	.use(betterAuth)
 	.use(registration)
 	.use(adminModule)
-	.use(categoriesModule)
+	.use(productCategoriesModule)
 	.use(storeCategoriesModule)
 	.use(locationsModule)
 	.use(sellerModule)

@@ -13,7 +13,7 @@ export const configurationsRoutes = new Elysia().get(
 		response: withErrors({
 			200: okRes(
 				t.Object({
-					categories: t.Number({
+					productCategories: t.Number({
 						description: "Numero totale di categorie prodotto",
 					}),
 					storeCategories: t.Number({

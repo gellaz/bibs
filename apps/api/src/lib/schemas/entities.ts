@@ -96,7 +96,7 @@ export const UserSchema = t.Object({
 	banExpires: t.Nullable(t.Date()),
 });
 
-export const CategorySchema = t.Object({
+export const ProductCategorySchema = t.Object({
 	id: t.String(),
 	name: t.String({ description: "Nome della categoria prodotto" }),
 	createdAt: t.Date(),

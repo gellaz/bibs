@@ -1,24 +1,24 @@
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { Label } from "@bibs/ui/components/label";
 
-interface Category {
+interface ProductCategory {
 	id: string;
 	name: string;
 }
 
-interface CategoryPickerProps {
-	categories: Category[];
+interface ProductCategoryPickerProps {
+	categories: ProductCategory[];
 	selected: string[];
 	onToggle: (categoryId: string) => void;
 	required?: boolean;
 }
 
-export function CategoryPicker({
+export function ProductCategoryPicker({
 	categories,
 	selected,
 	onToggle,
 	required = false,
-}: CategoryPickerProps) {
+}: ProductCategoryPickerProps) {
 	return (
 		<div className="space-y-2">
 			<Label>

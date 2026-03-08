@@ -4,10 +4,10 @@ import { productCategory } from "@/db/schemas/category";
 import { storeCategory } from "@/db/schemas/store-category";
 
 export async function countConfigurations() {
-	const [[{ categories }], [{ storeCategories }]] = await Promise.all([
-		db.select({ categories: count() }).from(productCategory),
+	const [[{ productCategories }], [{ storeCategories }]] = await Promise.all([
+		db.select({ productCategories: count() }).from(productCategory),
 		db.select({ storeCategories: count() }).from(storeCategory),
 	]);
 
-	return { categories, storeCategories };
+	return { productCategories, storeCategories };
 }
