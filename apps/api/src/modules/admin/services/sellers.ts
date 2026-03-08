@@ -1,5 +1,6 @@
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
+import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
@@ -18,14 +19,54 @@ interface ListSellersParams {
 	page?: number;
 	limit?: number;
 	status?: OnboardingStatus;
+	search?: string;
+	sortBy?: "name" | "createdAt";
+	sortOrder?: "asc" | "desc";
 }
 
 export async function listSellers(params: ListSellersParams) {
 	const { page, limit, offset } = parsePagination(params);
 
-	const where = params.status
+	const statusCondition = params.status
 		? eq(sellerProfile.onboardingStatus, params.status)
 		: inArray(sellerProfile.onboardingStatus, REVIEWABLE_STATUSES);
+
+	const searchCondition = params.search
+		? (() => {
+				const term = `%${params.search}%`;
+				return inArray(
+					sellerProfile.id,
+					db
+						.selectDistinct({ id: sellerProfile.id })
+						.from(sellerProfile)
+						.leftJoin(user, eq(user.id, sellerProfile.userId))
+						.leftJoin(
+							organization,
+							eq(organization.sellerProfileId, sellerProfile.id),
+						)
+						.where(
+							or(
+								ilike(sellerProfile.firstName, term),
+								ilike(sellerProfile.lastName, term),
+								ilike(user.name, term),
+								ilike(user.email, term),
+								ilike(organization.businessName, term),
+								ilike(organization.vatNumber, term),
+							),
+						),
+				);
+			})()
+		: undefined;
+
+	const where = searchCondition
+		? and(statusCondition, searchCondition)
+		: statusCondition;
+
+	const sortDir = params.sortOrder === "asc" ? asc : desc;
+	const sortCol =
+		params.sortBy === "name"
+			? sellerProfile.firstName
+			: sellerProfile.createdAt;
 
 	const [data, [{ total }]] = await Promise.all([
 		db.query.sellerProfile.findMany({
@@ -33,7 +74,7 @@ export async function listSellers(params: ListSellersParams) {
 			with: { user: true, organization: true },
 			limit,
 			offset,
-			orderBy: (t, { desc }) => [desc(t.createdAt)],
+			orderBy: sortDir(sortCol),
 		}),
 		db.select({ total: count() }).from(sellerProfile).where(where),
 	]);

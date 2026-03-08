@@ -128,7 +128,7 @@ function SellerDetailPage() {
 			<div className="space-y-4">
 				<Link
 					to="/sellers"
-					search={{ page: 1, limit: 20, status: undefined }}
+					search={{ status: undefined }}
 					className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
 				>
 					<ArrowLeftIcon className="size-4" />
@@ -152,7 +152,7 @@ function SellerDetailPage() {
 				<div className="flex items-center gap-2">
 					<Link
 						to="/sellers"
-						search={{ page: 1, limit: 20, status: undefined }}
+						search={{ status: undefined }}
 						className="text-muted-foreground hover:text-foreground -ml-1 inline-flex items-center gap-1 text-sm"
 					>
 						<ArrowLeftIcon className="size-4" />

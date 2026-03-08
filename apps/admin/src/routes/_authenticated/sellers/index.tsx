@@ -9,7 +9,12 @@ import {
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
+import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { Input } from "@bibs/ui/components/input";
+import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
+import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
+import { SortableTableHead } from "@bibs/ui/components/sortable-table-head";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
 	Table,
@@ -21,14 +26,20 @@ import {
 } from "@bibs/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CheckCircle2Icon, ShieldCheckIcon, XCircleIcon } from "lucide-react";
-import { useState } from "react";
+import {
+	CheckCircle2Icon,
+	SearchIcon,
+	ShieldCheckIcon,
+	XCircleIcon,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
 import { PageHeader } from "@/components/page-header";
 import { type TabItem, TabNav } from "@/components/tab-nav";
 import { api } from "@/lib/api";
 
 type SellerStatus = "pending_review" | "active" | "rejected";
+type SortByField = "name" | "createdAt";
 
 const STATUS_TABS = [
 	{ value: "all", label: "Tutte", badgeColor: "default" },
@@ -40,8 +51,6 @@ const STATUS_TABS = [
 export const Route = createFileRoute("/_authenticated/sellers/")({
 	component: SellersPage,
 	validateSearch: (search: Record<string, unknown>) => ({
-		page: Number(search.page ?? 1),
-		limit: Number(search.limit ?? 20),
 		status: (search.status as string) || undefined,
 	}),
 });
@@ -67,9 +76,16 @@ interface Seller {
 }
 
 function SellersPage() {
-	const { page, limit, status } = Route.useSearch();
+	const { status } = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
 	const queryClient = useQueryClient();
+
+	const [page, setPage] = useState(1);
+	const [limit, setLimit] = useState(20);
+	const [search, setSearch] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const [sortBy, setSortBy] = useState<SortByField>("createdAt");
+	const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
 	const [confirmAction, setConfirmAction] = useState<{
 		type: "verify" | "reject";
@@ -77,6 +93,35 @@ function SellersPage() {
 	} | null>(null);
 
 	const activeTab = status ?? "all";
+
+	// Reset page & search on tab change
+	useEffect(() => {
+		setPage(1);
+		setSearch("");
+		setDebouncedSearch("");
+	}, [status]);
+
+	// Debounce search
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	useEffect(() => {
+		debounceRef.current = setTimeout(() => {
+			setDebouncedSearch(search);
+			setPage(1);
+		}, 300);
+		return () => {
+			if (debounceRef.current) clearTimeout(debounceRef.current);
+		};
+	}, [search]);
+
+	const handleSort = (field: SortByField) => {
+		if (sortBy === field) {
+			setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+		} else {
+			setSortBy(field);
+			setSortOrder("asc");
+		}
+		setPage(1);
+	};
 
 	const { data: countsData } = useQuery({
 		queryKey: ["admin-sellers-counts"],
@@ -88,13 +133,24 @@ function SellersPage() {
 	});
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["admin-sellers", status, page, limit],
+		queryKey: [
+			"admin-sellers",
+			status,
+			page,
+			limit,
+			debouncedSearch,
+			sortBy,
+			sortOrder,
+		],
 		queryFn: async () => {
 			const response = await api().admin.sellers.get({
 				query: {
 					page,
 					limit,
 					...(status ? { status: status as SellerStatus } : {}),
+					...(debouncedSearch ? { search: debouncedSearch } : {}),
+					sortBy,
+					sortOrder,
 				},
 			});
 
@@ -172,15 +228,12 @@ function SellersPage() {
 	const handleTabChange = (value: string) => {
 		void navigate({
 			search: {
-				page: 1,
-				limit,
 				status: value === "all" ? undefined : value,
 			},
 		});
 	};
 
 	const isMutating = verifyMutation.isPending || rejectMutation.isPending;
-	const total = data?.pagination?.total ?? 0;
 
 	// Show actions column when viewing all statuses or specifically pending_review
 	const showActions = !status || status === "pending_review";
@@ -214,6 +267,16 @@ function SellersPage() {
 				onTabChange={handleTabChange}
 			/>
 
+			<div className="relative">
+				<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+				<Input
+					placeholder="Cerca per nome, email, azienda o P.IVA..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className="pl-9"
+				/>
+			</div>
+
 			{error && (
 				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
 					<p className="text-sm">
@@ -231,12 +294,25 @@ function SellersPage() {
 					<Table>
 						<TableHeader>
 							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<TableHead className="pl-6">Venditore</TableHead>
+								<SortableTableHead
+									className="pl-4"
+									active={sortBy === "name"}
+									sortOrder={sortOrder}
+									onSort={() => handleSort("name")}
+								>
+									Venditore
+								</SortableTableHead>
 								<TableHead>Email</TableHead>
 								<TableHead>Azienda</TableHead>
 								<TableHead>P.IVA</TableHead>
 								{!status && <TableHead>Stato</TableHead>}
-								<TableHead>Registrato il</TableHead>
+								<SortableTableHead
+									active={sortBy === "createdAt"}
+									sortOrder={sortOrder}
+									onSort={() => handleSort("createdAt")}
+								>
+									Registrato il
+								</SortableTableHead>
 								{showActions && (
 									<TableHead className="pr-6 text-right">Azioni</TableHead>
 								)}
@@ -337,13 +413,15 @@ function SellersPage() {
 													Nessun venditore trovato
 												</p>
 												<p className="text-muted-foreground/60 text-sm">
-													{status === "pending_review"
-														? "Nessuna candidatura in attesa di revisione"
-														: status === "rejected"
-															? "Nessuna candidatura rifiutata"
-															: status === "active"
-																? "Nessun venditore attivo"
-																: "Le nuove candidature appariranno qui"}
+													{debouncedSearch
+														? `Nessun risultato per "${debouncedSearch}"`
+														: status === "pending_review"
+															? "Nessuna candidatura in attesa di revisione"
+															: status === "rejected"
+																? "Nessuna candidatura rifiutata"
+																: status === "active"
+																	? "Nessun venditore attivo"
+																	: "Le nuove candidature appariranno qui"}
 												</p>
 											</div>
 										</div>
@@ -355,16 +433,33 @@ function SellersPage() {
 				</div>
 			)}
 
-			{total > 0 && (
-				<div className="text-muted-foreground flex items-center justify-between text-sm">
-					<div>
-						Pagina {page} di {Math.ceil(total / limit)}
-					</div>
-					<div>
-						Totale: {total} venditor{total === 1 ? "e" : "i"}
-					</div>
-				</div>
-			)}
+			{data?.pagination &&
+				data.pagination.total > 0 &&
+				(() => {
+					const totalPages = Math.ceil(data.pagination.total / limit);
+					return (
+						<div className="flex items-center justify-between">
+							<div className="text-muted-foreground text-sm">
+								Totale: {data.pagination.total} venditor
+								{data.pagination.total === 1 ? "e" : "i"}
+							</div>
+							<div className="flex items-center gap-4">
+								<PageSizeSelector
+									pageSize={limit}
+									onPageSizeChange={(size) => {
+										setLimit(size);
+										setPage(1);
+									}}
+								/>
+								<DataPagination
+									page={page}
+									totalPages={totalPages}
+									onPageChange={setPage}
+								/>
+							</div>
+						</div>
+					);
+				})()}
 
 			{/* Confirm Action Dialog */}
 			<AlertDialog

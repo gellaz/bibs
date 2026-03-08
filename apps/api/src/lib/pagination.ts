@@ -57,7 +57,7 @@ export const OrderListQuery = t.Object({
 });
 
 /**
- * Pagination + optional onboarding status filter for seller list endpoints.
+ * Pagination + optional status/search/sort for seller list endpoints.
  */
 export const SellerListQuery = t.Object({
 	page: t.Optional(
@@ -79,6 +79,24 @@ export const SellerListQuery = t.Object({
 					"Filtra per stato di onboarding. Se omesso, restituisce solo i venditori con candidatura sottomessa (pending_review, active, rejected).",
 			},
 		),
+	),
+	search: t.Optional(
+		t.String({
+			maxLength: 100,
+			description: "Ricerca testuale su nome, email, ragione sociale o P.IVA",
+		}),
+	),
+	sortBy: t.Optional(
+		t.Union([t.Literal("name"), t.Literal("createdAt")], {
+			default: "createdAt",
+			description: "Campo di ordinamento",
+		}),
+	),
+	sortOrder: t.Optional(
+		t.Union([t.Literal("asc"), t.Literal("desc")], {
+			default: "desc",
+			description: "Direzione di ordinamento",
+		}),
 	),
 });
 
