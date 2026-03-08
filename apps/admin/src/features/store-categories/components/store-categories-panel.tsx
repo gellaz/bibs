@@ -17,8 +17,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
+import { Input } from "@bibs/ui/components/input";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
+import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
+import { SortableTableHead } from "@bibs/ui/components/sortable-table-head";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
 	Table,
@@ -29,8 +32,8 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PencilIcon, StoreIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
+import { PencilIcon, SearchIcon, StoreIcon, Trash2Icon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { StoreCategoryForm } from "@/features/store-categories/components/store-category-form";
 import { api } from "@/lib/api";
 
@@ -46,23 +49,63 @@ interface StoreCategoriesPanelProps {
 	onCreateOpenChange: (open: boolean) => void;
 }
 
+type SortByField = "name" | "createdAt";
+
 export function StoreCategoriesPanel({
 	createOpen,
 	onCreateOpenChange,
 }: StoreCategoriesPanelProps) {
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
+	const [search, setSearch] = useState("");
+	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const [sortBy, setSortBy] = useState<SortByField>("name");
+	const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 	const queryClient = useQueryClient();
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedCategory, setSelectedCategory] =
 		useState<StoreCategory | null>(null);
 
+	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	useEffect(() => {
+		debounceRef.current = setTimeout(() => {
+			setDebouncedSearch(search);
+			setPage(1);
+		}, 300);
+		return () => {
+			if (debounceRef.current) clearTimeout(debounceRef.current);
+		};
+	}, [search]);
+
+	const handleSort = (field: SortByField) => {
+		if (sortBy === field) {
+			setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+		} else {
+			setSortBy(field);
+			setSortOrder("asc");
+		}
+		setPage(1);
+	};
+
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["store-categories", page, limit],
+		queryKey: [
+			"store-categories",
+			page,
+			limit,
+			debouncedSearch,
+			sortBy,
+			sortOrder,
+		],
 		queryFn: async () => {
 			const response = await api()["store-categories"].get({
-				query: { page, limit },
+				query: {
+					page,
+					limit,
+					...(debouncedSearch ? { search: debouncedSearch } : {}),
+					sortBy,
+					sortOrder,
+				},
 			});
 
 			if (response.error) {
@@ -169,6 +212,16 @@ export function StoreCategoriesPanel({
 				</div>
 			)}
 
+			<div className="relative">
+				<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+				<Input
+					placeholder="Cerca categoria negozio..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className="pl-9"
+				/>
+			</div>
+
 			{isLoading ? (
 				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
 					<Spinner className="size-8" />
@@ -178,8 +231,22 @@ export function StoreCategoriesPanel({
 					<Table>
 						<TableHeader>
 							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<TableHead className="w-[40%] pl-6">Nome</TableHead>
-								<TableHead className="w-[40%]">Data Creazione</TableHead>
+								<SortableTableHead
+									className="w-[40%] pl-4"
+									active={sortBy === "name"}
+									sortOrder={sortOrder}
+									onSort={() => handleSort("name")}
+								>
+									Nome
+								</SortableTableHead>
+								<SortableTableHead
+									className="w-[40%]"
+									active={sortBy === "createdAt"}
+									sortOrder={sortOrder}
+									onSort={() => handleSort("createdAt")}
+								>
+									Data Creazione
+								</SortableTableHead>
 								<TableHead className="w-[20%] pr-6 text-right">
 									Azioni
 								</TableHead>

@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { asc, count, desc, eq, ilike } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import { ServiceError } from "@/lib/errors";
@@ -7,14 +7,31 @@ import { parsePagination } from "@/lib/pagination";
 interface ListCategoriesParams {
 	page?: number;
 	limit?: number;
+	search?: string;
+	sortBy?: "name" | "createdAt";
+	sortOrder?: "asc" | "desc";
 }
 
 export async function listCategories(params: ListCategoriesParams) {
 	const { page, limit, offset } = parsePagination(params);
+	const where = params.search
+		? ilike(productCategory.name, `%${params.search}%`)
+		: undefined;
+
+	const sortCol =
+		params.sortBy === "createdAt"
+			? productCategory.createdAt
+			: productCategory.name;
+	const sortDir = params.sortOrder === "desc" ? desc : asc;
 
 	const [data, [{ total }]] = await Promise.all([
-		db.query.productCategory.findMany({ limit, offset }),
-		db.select({ total: count() }).from(productCategory),
+		db.query.productCategory.findMany({
+			where,
+			orderBy: sortDir(sortCol),
+			limit,
+			offset,
+		}),
+		db.select({ total: count() }).from(productCategory).where(where),
 	]);
 
 	return { data, pagination: { page, limit, total } };

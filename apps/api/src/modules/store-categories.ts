@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { PaginationQuery } from "@/lib/pagination";
+import { CategoryListQuery } from "@/lib/pagination";
 import { okPage } from "@/lib/responses";
 import { okPageRes, StoreCategorySchema, withErrors } from "@/lib/schemas";
 import { listStoreCategories } from "./admin/services/store-categories";
@@ -11,7 +11,7 @@ export const storeCategoriesModule = new Elysia().get(
 		return okPage(result.data, result.pagination);
 	},
 	{
-		query: PaginationQuery,
+		query: CategoryListQuery,
 		response: withErrors({ 200: okPageRes(StoreCategorySchema) }),
 		detail: {
 			summary: "Lista categorie negozio",
