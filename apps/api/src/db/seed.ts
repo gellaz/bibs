@@ -5,10 +5,15 @@ import { productCategory } from "@/db/schemas/category";
 import { customerProfile } from "@/db/schemas/customer";
 import { municipality, province, region } from "@/db/schemas/location";
 import { organization } from "@/db/schemas/organization";
+import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { auth } from "@/lib/auth";
+import {
+	generateSellersSeedData,
+	type SellerSeedData,
+} from "./seed-data/sellers";
 
 interface RegionData {
 	name: string;
@@ -147,6 +152,7 @@ export async function seed() {
 	await seedLocations();
 	await seedStoreCategories();
 	await seedProductCategories();
+	await seedSellers();
 
 	console.log("🌱 Seed complete");
 }
@@ -244,6 +250,107 @@ async function seedProductCategories() {
 		.insert(productCategory)
 		.values(defaultProductCategories.map((name) => ({ name })));
 	console.log(`     ✓ ${defaultProductCategories.length} product categories`);
+}
+
+async function seedSellers() {
+	const existing = await db.query.user.findFirst({
+		where: eq(user.email, "seller1@test.com"),
+	});
+	if (existing) {
+		console.log("  ⏭ Bulk sellers already seeded, skipping");
+		return;
+	}
+
+	const sellersData = generateSellersSeedData();
+	console.log(`  👥 Seeding ${sellersData.length} sellers...`);
+
+	// Phase 1: Create users via auth (sequential — password hashing)
+	const created: Array<{ userId: string; data: SellerSeedData }> = [];
+	for (let i = 0; i < sellersData.length; i++) {
+		const s = sellersData[i];
+		try {
+			const { user: u } = await auth.api.signUpEmail({
+				body: { name: s.name, email: s.email, password: "password123" },
+			});
+			await db
+				.update(user)
+				.set({ role: "seller", emailVerified: true })
+				.where(eq(user.id, u.id));
+			created.push({ userId: u.id, data: s });
+		} catch {
+			console.error(`     ✗ Failed: ${s.email}`);
+		}
+		if ((i + 1) % 25 === 0) {
+			console.log(`     ... ${i + 1}/${sellersData.length} users`);
+		}
+	}
+
+	// Phase 2: Batch insert seller profiles
+	const profiles = await db
+		.insert(sellerProfile)
+		.values(
+			created.map(({ userId, data }) => ({
+				userId,
+				onboardingStatus: data.onboardingStatus,
+				...data.profileFields,
+			})),
+		)
+		.returning({ id: sellerProfile.id });
+
+	// Phase 3: Batch insert organizations
+	await db.insert(organization).values(
+		created.map(({ data }, i) => ({
+			sellerProfileId: profiles[i].id,
+			businessName: data.org.businessName,
+			vatNumber: data.vatNumber,
+			legalForm: data.org.legalForm,
+			addressLine1: data.org.addressLine1,
+			city: data.org.city,
+			zipCode: data.org.zipCode,
+			province: data.org.province,
+			vatStatus: data.vatStatus,
+		})),
+	);
+
+	// Phase 4: Batch insert stores (for sellers at pending_payment+)
+	const storeEntries = created
+		.map(({ data }, i) =>
+			data.store
+				? {
+						sellerProfileId: profiles[i].id,
+						name: data.store.name,
+						description: data.store.description,
+						addressLine1: data.store.addressLine1,
+						city: data.store.city,
+						zipCode: data.store.zipCode,
+						province: data.store.province,
+						location: { x: data.store.lng, y: data.store.lat },
+					}
+				: null,
+		)
+		.filter((e): e is NonNullable<typeof e> => e !== null);
+
+	if (storeEntries.length > 0) {
+		await db.insert(store).values(storeEntries);
+	}
+
+	// Phase 5: Batch insert payment methods (for sellers at pending_review+)
+	const paymentEntries = created
+		.map(({ data }, i) =>
+			data.hasPayment
+				? {
+						sellerProfileId: profiles[i].id,
+						stripeAccountId: `acct_test_${profiles[i].id.slice(0, 8)}`,
+					}
+				: null,
+		)
+		.filter((e): e is NonNullable<typeof e> => e !== null);
+
+	if (paymentEntries.length > 0) {
+		await db.insert(paymentMethod).values(paymentEntries);
+	}
+
+	console.log(`  ✓ ${created.length} sellers seeded`);
 }
 
 async function seedLocations() {
