@@ -19,13 +19,13 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
-import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2Icon, ShieldCheckIcon, XCircleIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
 import { PageHeader } from "@/components/page-header";
+import { type TabItem, TabNav } from "@/components/tab-nav";
 import { api } from "@/lib/api";
 
 type SellerStatus = "pending_review" | "active" | "rejected";
@@ -36,15 +36,6 @@ const STATUS_TABS = [
 	{ value: "active", label: "Approvate", badgeColor: "emerald" },
 	{ value: "rejected", label: "Rifiutate", badgeColor: "red" },
 ] as const;
-
-const BADGE_COLORS: Record<string, string> = {
-	default: "bg-foreground/5 text-foreground/70 border border-foreground/15",
-	amber:
-		"bg-amber-50 text-amber-700 border border-amber-300/50 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30",
-	emerald:
-		"bg-emerald-50 text-emerald-700 border border-emerald-300/50 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30",
-	red: "bg-red-50 text-red-700 border border-red-300/50 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30",
-};
 
 export const Route = createFileRoute("/_authenticated/sellers/")({
 	component: SellersPage,
@@ -87,10 +78,6 @@ function SellersPage() {
 
 	const activeTab = status ?? "all";
 
-	// ── Sliding underline indicator ──────────────
-	const tabsRef = useRef<HTMLDivElement>(null);
-	const [indicator, setIndicator] = useState({ left: 0, width: 0 });
-
 	const { data: countsData } = useQuery({
 		queryKey: ["admin-sellers-counts"],
 		queryFn: async () => {
@@ -99,24 +86,6 @@ function SellersPage() {
 			return response.data?.data ?? null;
 		},
 	});
-
-	useEffect(() => {
-		const measure = () => {
-			const container = tabsRef.current;
-			if (!container) return;
-			const activeEl = container.querySelector<HTMLButtonElement>(
-				'[aria-selected="true"]',
-			);
-			if (!activeEl) return;
-			setIndicator({
-				left: activeEl.offsetLeft,
-				width: activeEl.offsetWidth,
-			});
-		};
-		measure();
-		window.addEventListener("resize", measure);
-		return () => window.removeEventListener("resize", measure);
-	}, [activeTab, countsData]);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin-sellers", status, page, limit],
@@ -216,6 +185,22 @@ function SellersPage() {
 	// Show actions column when viewing all statuses or specifically pending_review
 	const showActions = !status || status === "pending_review";
 
+	const sellerTabs: TabItem[] = STATUS_TABS.map((tab) => ({
+		value: tab.value,
+		label: tab.label,
+		badgeColor: tab.badgeColor,
+		count:
+			tab.value === "all"
+				? countsData
+					? (countsData.pending_review ?? 0) +
+						(countsData.active ?? 0) +
+						(countsData.rejected ?? 0)
+					: null
+				: countsData
+					? (countsData[tab.value as keyof typeof countsData] ?? 0)
+					: null,
+	}));
+
 	return (
 		<div className="space-y-4">
 			<PageHeader
@@ -223,60 +208,11 @@ function SellersPage() {
 				description="Gestisci le candidature dei venditori"
 			/>
 
-			<div className="relative border-b border-border" ref={tabsRef}>
-				<div role="tablist" className="flex gap-1">
-					{STATUS_TABS.map((tab) => {
-						const isActive = activeTab === tab.value;
-						const count =
-							tab.value === "all"
-								? countsData
-									? (countsData.pending_review ?? 0) +
-										(countsData.active ?? 0) +
-										(countsData.rejected ?? 0)
-									: null
-								: countsData
-									? (countsData[tab.value as keyof typeof countsData] ?? 0)
-									: null;
-
-						return (
-							<button
-								key={tab.value}
-								type="button"
-								role="tab"
-								aria-selected={isActive}
-								onClick={() => handleTabChange(tab.value)}
-								className={cn(
-									"relative inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-									isActive
-										? "text-foreground"
-										: "text-muted-foreground hover:text-foreground",
-								)}
-							>
-								{tab.label}
-								{count !== null && (
-									<span
-										className={cn(
-											"inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold",
-											BADGE_COLORS[tab.badgeColor],
-										)}
-									>
-										{count}
-									</span>
-								)}
-							</button>
-						);
-					})}
-				</div>
-				{/* Animated sliding underline */}
-				<div
-					className="absolute bottom-0 h-0.5 rounded-full bg-primary transition-all duration-300 ease-in-out"
-					style={{
-						left: indicator.left,
-						width: indicator.width,
-						opacity: indicator.width > 0 ? 1 : 0,
-					}}
-				/>
-			</div>
+			<TabNav
+				tabs={sellerTabs}
+				activeTab={activeTab}
+				onTabChange={handleTabChange}
+			/>
 
 			{error && (
 				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">

@@ -19,8 +19,6 @@ import {
 	SettingsIcon,
 	ShieldCheckIcon,
 	StoreIcon,
-	TagIcon,
-	TagsIcon,
 	UserIcon,
 	UsersIcon,
 	WalletIcon,
@@ -35,12 +33,6 @@ const navItems = [
 	{ title: "Venditori", to: "/sellers" as const, icon: ShieldCheckIcon },
 	{ title: "Negozi", to: "/stores" as const, icon: StoreIcon },
 	{ title: "Articoli", to: "/products" as const, icon: PackageIcon },
-	{ title: "Categorie", to: "/categories" as const, icon: TagsIcon },
-	{
-		title: "Categorie Negozio",
-		to: "/store-categories" as const,
-		icon: TagIcon,
-	},
 	{ title: "Incassi", to: "/collections" as const, icon: WalletIcon },
 	{ title: "Pagamenti", to: "/payments" as const, icon: CreditCardIcon },
 	{

@@ -9,6 +9,7 @@ import {
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
+import { DataPagination } from "@bibs/ui/components/data-pagination";
 import {
 	Dialog,
 	DialogContent,
@@ -16,6 +17,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
+import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -27,52 +29,45 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { PencilIcon, PlusIcon, TagsIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, StoreIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
-import { PageHeader } from "@/components/page-header";
-import { CategoryForm } from "@/features/categories/components/category-form";
+import { StoreCategoryForm } from "@/features/store-categories/components/store-category-form";
 import { api } from "@/lib/api";
 
-export const Route = createFileRoute("/_authenticated/categories")({
-	component: CategoriesPage,
-	validateSearch: (search: Record<string, unknown>) => {
-		return {
-			page: Number(search.page ?? 1),
-			limit: Number(search.limit ?? 20),
-		};
-	},
-});
-
-interface Category {
+interface StoreCategory {
 	id: string;
 	name: string;
 	createdAt: Date | string;
 	updatedAt: Date | string;
 }
 
-function CategoriesPage() {
-	const { page, limit } = Route.useSearch();
-	const queryClient = useQueryClient();
+interface StoreCategoriesPanelProps {
+	createOpen: boolean;
+	onCreateOpenChange: (open: boolean) => void;
+}
 
-	const [createOpen, setCreateOpen] = useState(false);
+export function StoreCategoriesPanel({
+	createOpen,
+	onCreateOpenChange,
+}: StoreCategoriesPanelProps) {
+	const [page, setPage] = useState(1);
+	const [limit, setLimit] = useState(20);
+	const queryClient = useQueryClient();
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const [selectedCategory, setSelectedCategory] = useState<Category | null>(
-		null,
-	);
+	const [selectedCategory, setSelectedCategory] =
+		useState<StoreCategory | null>(null);
 
-	// Fetch categories
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["categories", page, limit],
+		queryKey: ["store-categories", page, limit],
 		queryFn: async () => {
-			const response = await api().categories.get({
+			const response = await api()["store-categories"].get({
 				query: { page, limit },
 			});
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to fetch categories",
+					response.error.value?.message || "Failed to fetch store categories",
 				);
 			}
 
@@ -80,77 +75,79 @@ function CategoriesPage() {
 		},
 	});
 
-	// Create mutation
+	const invalidateAll = () => {
+		void queryClient.invalidateQueries({ queryKey: ["store-categories"] });
+		void queryClient.invalidateQueries({
+			queryKey: ["admin-configurations-counts"],
+		});
+	};
+
 	const createMutation = useMutation({
 		mutationFn: async (name: string) => {
-			const response = await api().admin.categories.post({
-				name,
-			});
+			const response = await api().admin["store-categories"].post({ name });
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to create category",
+					response.error.value?.message || "Failed to create store category",
 				);
 			}
 
 			return response.data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["categories"] });
-			setCreateOpen(false);
-			toast.success("Categoria creata con successo");
+			invalidateAll();
+			onCreateOpenChange(false);
+			toast.success("Categoria negozio creata con successo");
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Errore durante la creazione");
 		},
 	});
 
-	// Update mutation
 	const updateMutation = useMutation({
 		mutationFn: async ({ id, name }: { id: string; name: string }) => {
-			const response = await api().admin.categories({ categoryId: id }).patch({
-				name,
-			});
+			const response = await api()
+				.admin["store-categories"]({ categoryId: id })
+				.patch({ name });
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to update category",
+					response.error.value?.message || "Failed to update store category",
 				);
 			}
 
 			return response.data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["categories"] });
+			invalidateAll();
 			setEditOpen(false);
 			setSelectedCategory(null);
-			toast.success("Categoria aggiornata con successo");
+			toast.success("Categoria negozio aggiornata con successo");
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Errore durante l'aggiornamento");
 		},
 	});
 
-	// Delete mutation
 	const deleteMutation = useMutation({
 		mutationFn: async (id: string) => {
 			const response = await api()
-				.admin.categories({ categoryId: id })
+				.admin["store-categories"]({ categoryId: id })
 				.delete();
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Failed to delete category",
+					response.error.value?.message || "Failed to delete store category",
 				);
 			}
 
 			return response.data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: ["categories"] });
+			invalidateAll();
 			setDeleteOpen(false);
 			setSelectedCategory(null);
-			toast.success("Categoria eliminata con successo");
+			toast.success("Categoria negozio eliminata con successo");
 		},
 		onError: (error: Error) => {
 			toast.error(error.message || "Errore durante l'eliminazione");
@@ -164,16 +161,6 @@ function CategoriesPage() {
 
 	return (
 		<div className="space-y-4">
-			<PageHeader
-				title="Categorie Prodotto"
-				description="Gestisci le categorie dei prodotti"
-			>
-				<Button onClick={() => setCreateOpen(true)}>
-					<PlusIcon />
-					<span>Nuova Categoria</span>
-				</Button>
-			</PageHeader>
-
 			{error && (
 				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
 					<p className="text-sm">
@@ -200,7 +187,7 @@ function CategoriesPage() {
 						</TableHeader>
 						<TableBody>
 							{data?.data && data.data.length > 0 ? (
-								data.data.map((category: Category) => (
+								data.data.map((category: StoreCategory) => (
 									<TableRow key={category.id} className="group">
 										<TableCell className="pl-6 font-semibold">
 											{category.name}
@@ -247,10 +234,10 @@ function CategoriesPage() {
 								<TableRow className="hover:bg-transparent">
 									<TableCell colSpan={3} className="h-32 text-center">
 										<div className="flex flex-col items-center gap-2">
-											<TagsIcon className="text-muted-foreground/40 size-8" />
+											<StoreIcon className="text-muted-foreground/40 size-8" />
 											<div>
 												<p className="text-muted-foreground font-medium">
-													Nessuna categoria trovata
+													Nessuna categoria negozio trovata
 												</p>
 												<p className="text-muted-foreground/60 text-sm">
 													Crea la prima categoria per iniziare
@@ -265,30 +252,46 @@ function CategoriesPage() {
 				</div>
 			)}
 
-			{data?.pagination && data.pagination.total > 0 && (
-				<div className="text-muted-foreground flex items-center justify-between text-sm">
-					<div>
-						Pagina {page} di {Math.ceil(data.pagination.total / limit)}
-					</div>
-					<div>
-						Totale: {data.pagination.total} categori
-						{data.pagination.total === 1 ? "a" : "e"}
-					</div>
-				</div>
-			)}
+			{data?.pagination &&
+				data.pagination.total > 0 &&
+				(() => {
+					const totalPages = Math.ceil(data.pagination.total / limit);
+					return (
+						<div className="flex items-center justify-between">
+							<div className="text-muted-foreground text-sm">
+								Totale: {data.pagination.total} categori
+								{data.pagination.total === 1 ? "a" : "e"}
+							</div>
+							<div className="flex items-center gap-4">
+								<PageSizeSelector
+									pageSize={limit}
+									onPageSizeChange={(size) => {
+										setLimit(size);
+										setPage(1);
+									}}
+								/>
+								<DataPagination
+									page={page}
+									totalPages={totalPages}
+									onPageChange={setPage}
+								/>
+							</div>
+						</div>
+					);
+				})()}
 
 			{/* Create Dialog */}
-			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
+			<Dialog open={createOpen} onOpenChange={onCreateOpenChange}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Nuova Categoria</DialogTitle>
+						<DialogTitle>Nuova Categoria Negozio</DialogTitle>
 						<DialogDescription>
-							Inserisci il nome della nuova categoria prodotto.
+							Inserisci il nome della nuova categoria negozio.
 						</DialogDescription>
 					</DialogHeader>
-					<CategoryForm
+					<StoreCategoryForm
 						onSubmit={(data) => createMutation.mutate(data.name)}
-						onCancel={() => setCreateOpen(false)}
+						onCancel={() => onCreateOpenChange(false)}
 						isPending={createMutation.isPending}
 						submitLabel="Crea"
 						pendingLabel="Creazione..."
@@ -300,12 +303,12 @@ function CategoriesPage() {
 			<Dialog open={editOpen} onOpenChange={setEditOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Modifica Categoria</DialogTitle>
+						<DialogTitle>Modifica Categoria Negozio</DialogTitle>
 						<DialogDescription>
 							Modifica il nome della categoria selezionata.
 						</DialogDescription>
 					</DialogHeader>
-					<CategoryForm
+					<StoreCategoryForm
 						defaultValues={
 							selectedCategory ? { name: selectedCategory.name } : undefined
 						}
