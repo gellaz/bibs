@@ -64,7 +64,11 @@ function RootDocument(_props: { children: React.ReactNode }) {
 						<Outlet />
 					</TooltipProvider>
 					<TanStackDevtools
-						config={{ position: "bottom-right" }}
+						config={{
+							position: "bottom-right",
+							triggerHidden: true,
+							openHotkey: ["Control", "Shift", "d"],
+						}}
 						plugins={[
 							{
 								name: "Tanstack Router",
