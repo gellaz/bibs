@@ -49,7 +49,6 @@ earn loyalty points.
    BETTER_AUTH_SECRET=<random-secret>
    BETTER_AUTH_URL=http://localhost:3000
    PORT=3000              # optional — defaults to 3000
-   SEED_DB=true           # optional — seeds test users on startup
    S3_ENDPOINT=http://localhost:9000
    S3_ACCESS_KEY=minioadmin
    S3_SECRET_KEY=P4ssword!
@@ -92,6 +91,7 @@ earn loyalty points.
 | `bun run db:migrate`  | Apply pending migrations                             |
 | `bun run db:push`     | Push schema directly to DB (skip migration files)    |
 | `bun run db:studio`   | Open Drizzle Studio to browse the database           |
+| `bun run db:seed`     | Seed the database with test data                     |
 | `bun run db:clean`    | Delete all migration files (`src/db/migrations/`)    |
 
 ## Project Structure
@@ -141,7 +141,7 @@ src/
 │       └── services/          # Business logic
 └── db/
     ├── index.ts              # Singleton Drizzle client
-    ├── seed/                 # Modular test data seeder (SEED_DB=true)
+    ├── seed/                 # Modular test data seeder (bun run db:seed)
     │   ├── index.ts          # Orchestrator — calls seeders in order
     │   ├── admins.ts         # Admin test users
     │   ├── customers.ts      # Bulk customer generation (~300)
@@ -313,28 +313,34 @@ On **pickup/completion**: loyalty points are calculated on the final total and a
 
 ## Seed Data
 
-When `SEED_DB=true`, the server seeds the following test users on startup:
+Run `bun run db:seed` to populate the database with test data. The following test users are created:
 
-| Email                      | Password    | Role     | Notes                          |
-|----------------------------|-------------|----------|--------------------------------|
-| <admin@test.com>           | password123 | admin    |                                |
-| <customer@test.com>        | password123 | customer |                                |
-| <seller@test.com>          | password123 | seller   | VAT verified, has a test store |
-| <seller-pending@test.com>  | password123 | seller   | VAT pending                    |
-| <seller-rejected@test.com> | password123 | seller   | VAT rejected                   |
+|| Email                       | Password    | Role     | Notes                          |
+||--------------------------- |-------------|----------|--------------------------------|
+|| admin1–3@test.com          | password123 | admin    |                                |
+|| customer1–300@test.com     | password123 | customer |                                |
+|| seller1–55@test.com        | password123 | seller   | active, VAT verified, has store |
+|| seller56–80@test.com       | password123 | seller   | pending_review                 |
+|| seller81–95@test.com       | password123 | seller   | pending_payment                |
+|| seller96–107@test.com      | password123 | seller   | pending_store                  |
+|| seller108–117@test.com     | password123 | seller   | pending_company                |
+|| seller118–127@test.com     | password123 | seller   | pending_document               |
+|| seller128–135@test.com     | password123 | seller   | pending_personal               |
+|| seller136–143@test.com     | password123 | seller   | pending_email                  |
+|| seller144–150@test.com     | password123 | seller   | rejected                       |
 
 ## API Quickstart
 
-After completing the setup with `SEED_DB=true`, verify everything works:
+After completing the setup and running `bun run db:seed`, verify everything works:
 
 ```bash
 # Health check
 curl http://localhost:3000/health
 
-# Sign in as the test customer (returns session token)
+# Sign in as a test customer (returns session token)
 curl -X POST http://localhost:3000/register/sign-in \
   -H "Content-Type: application/json" \
-  -d '{"email": "customer@test.com", "password": "password123"}'
+  -d '{"email": "customer1@test.com", "password": "password123"}'
 
 # Search products (public endpoint, no auth needed)
 curl "http://localhost:3000/customer/search?q=pizza&page=1&limit=10"

@@ -3,7 +3,11 @@ import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { auth } from "@/lib/auth";
 
-const testAdmins = [{ email: "admin@test.com", password: "password123" }];
+const testAdmins = [
+	{ email: "admin1@test.com", password: "password123" },
+	{ email: "admin2@test.com", password: "password123" },
+	{ email: "admin3@test.com", password: "password123" },
+];
 
 export async function seedAdmins() {
 	for (const admin of testAdmins) {

@@ -62,12 +62,12 @@ Creates the Elysia app with plugins and modules:
 14. **health** plugin — `GET /health` (liveness probe, always 200) + `GET /ready` (readiness probe, checks DB + S3
     connectivity, returns 503 if unhealthy).
 
-**Startup sequence**: ensures S3 bucket exists → restores in-memory reservation timers → optionally seeds test data.
+**Startup sequence**: ensures S3 bucket exists → restores in-memory reservation timers.
 
 **Graceful shutdown**: on `SIGTERM`/`SIGINT`, stops the server, clears all reservation timers, and closes the database
 connection pool.
 
-When `SEED_DB=true`, test data is seeded on startup (see `src/db/seed/`).
+Test data can be seeded separately via `bun run db:seed` (see `src/db/seed/`).
 
 ### Schemas — `src/lib/schemas/`
 
@@ -89,7 +89,7 @@ immediately with a clear error listing the missing variables. Always import `env
 
 Required: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`,
 `S3_BUCKET`.
-Optional: `PORT` (default `3000`), `SEED_DB` (default `false`), `ALLOWED_ORIGINS`, `NODE_ENV` (default `development`).
+Optional: `PORT` (default `3000`), `ALLOWED_ORIGINS`, `NODE_ENV` (default `development`).
 
 ### Email — `src/lib/email.ts`
 
@@ -288,7 +288,7 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
 ### Database — `src/db/`
 
 - `src/db/index.ts` — exports a singleton Drizzle client using `DATABASE_URL`.
-- `src/db/seed/` — modular seed data, orchestrated by `index.ts` when `SEED_DB=true`:
+- `src/db/seed/` — modular seed data, orchestrated by `index.ts` (run via `bun run db:seed`):
   - `index.ts` — orchestrator, calls each seeder in order
   - `admins.ts` — admin test users and `seedAdmins()`
   - `customers.ts` — bulk customer generation (~300) and `seedCustomers()`
@@ -581,7 +581,7 @@ Required:
 Optional:
 
 - `PORT` — server port (default `3000`)
-- `SEED_DB` — if `"true"`, seeds test users on startup
+- Seed test data separately with `bun run db:seed`
 - `ALLOWED_ORIGINS` — comma-separated list of allowed CORS origins (production only; localhost auto-allowed in dev)
 - `NODE_ENV` — `development` (default) or `production` (affects log level)
 - `RESEND_API_KEY` — Resend API key for sending emails (production only; in dev emails are logged)

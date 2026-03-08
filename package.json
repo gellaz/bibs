@@ -23,7 +23,8 @@
 		"db:generate": "bun run --cwd apps/api db:generate",
 		"db:migrate": "bun run --cwd apps/api db:migrate",
 		"db:push": "bun run --cwd apps/api db:push",
-		"db:studio": "bun run --cwd apps/api db:studio"
+		"db:studio": "bun run --cwd apps/api db:studio",
+		"db:seed": "bun run --cwd apps/api db:seed"
 	},
 	"catalog": {
 		"@aws-sdk/client-s3": "^3.1004.0",

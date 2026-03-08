@@ -160,11 +160,6 @@ const app = new Elysia()
 await ensureBucket();
 await restoreTimers();
 
-if (env.SEED_DB === "true") {
-	const { seed } = await import("@/db/seed");
-	await seed();
-}
-
 const port = parseInt(env.PORT, 10);
 app.listen(port);
 
