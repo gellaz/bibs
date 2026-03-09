@@ -186,6 +186,36 @@ export const OnboardingStoreBody = Type.Object({
 	),
 });
 
+// ── Step 6: Team ────────────────────────────
+
+export const TeamInviteBody = Type.Object({
+	email: Type.String({
+		format: "email",
+		description: "Email del collaboratore da invitare",
+		error: "Inserisci un indirizzo email valido",
+	}),
+});
+
+export const AcceptInviteBody = Type.Object({
+	token: Type.String({
+		minLength: 1,
+		description: "Token dell'invito",
+		error: "Token mancante",
+	}),
+	password: Type.String({
+		minLength: 8,
+		maxLength: 128,
+		description: "Password (minimo 8, massimo 128 caratteri)",
+		error: "La password deve avere almeno 8 caratteri",
+	}),
+	confirmPassword: Type.String({
+		minLength: 8,
+		maxLength: 128,
+		description: "Conferma password",
+		error: "La conferma password deve avere almeno 8 caratteri",
+	}),
+});
+
 // ── Step 5: Payment ─────────────────────────
 
 export const PaymentBody = Type.Object({

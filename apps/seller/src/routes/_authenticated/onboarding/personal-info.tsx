@@ -68,7 +68,7 @@ function PersonalInfoPage() {
 					</div>
 				)}
 
-				<div className="grid grid-cols-2 gap-4">
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Field data-invalid={!!errors.firstName}>
 						<FieldLabel htmlFor="firstName">Nome</FieldLabel>
 						<Input
@@ -91,7 +91,7 @@ function PersonalInfoPage() {
 					</Field>
 				</div>
 
-				<div className="grid grid-cols-2 gap-4">
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Field data-invalid={!!errors.citizenship}>
 						<FieldLabel>Cittadinanza</FieldLabel>
 						<Controller
@@ -180,7 +180,7 @@ function PersonalInfoPage() {
 					<FieldError errors={[errors.residenceAddress]} />
 				</Field>
 
-				<div className="grid grid-cols-2 gap-4">
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Field data-invalid={!!errors.residenceCity}>
 						<FieldLabel htmlFor="residenceCity">Città</FieldLabel>
 						<Input

@@ -1,11 +1,14 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
+import { employeeInvitation } from "@/db/schemas/employee-invitation";
 import { organization } from "@/db/schemas/organization";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
+import { sendEmail } from "@/lib/email";
+import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
 
@@ -24,8 +27,12 @@ const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
 	pending_document: "pending_personal",
 	pending_company: "pending_document",
 	pending_store: "pending_company",
-	pending_payment: "pending_store",
+	pending_team: "pending_store",
+	pending_payment: "pending_team",
 };
+
+/** Invitation token validity: 7 days */
+const INVITATION_EXPIRY_DAYS = 7;
 
 // ── GET status ──────────────────────────────
 
@@ -234,7 +241,7 @@ export async function createOnboardingStore(params: StoreParams) {
 
 		const [updated] = await tx
 			.update(sellerProfile)
-			.set({ onboardingStatus: "pending_payment" })
+			.set({ onboardingStatus: "pending_team" })
 			.where(eq(sellerProfile.userId, userId))
 			.returning();
 
@@ -254,7 +261,7 @@ export async function skipOnboardingStore(userId: string) {
 
 	const [updated] = await db
 		.update(sellerProfile)
-		.set({ onboardingStatus: "pending_payment" })
+		.set({ onboardingStatus: "pending_team" })
 		.where(eq(sellerProfile.userId, userId))
 		.returning();
 
@@ -285,8 +292,13 @@ export async function goBack(userId: string) {
 				.delete(organization)
 				.where(eq(organization.sellerProfileId, profile.id));
 		}
-		if (profile.onboardingStatus === "pending_payment") {
+		if (profile.onboardingStatus === "pending_team") {
 			await tx.delete(store).where(eq(store.sellerProfileId, profile.id));
+		}
+		if (profile.onboardingStatus === "pending_payment") {
+			await tx
+				.delete(paymentMethod)
+				.where(eq(paymentMethod.sellerProfileId, profile.id));
 		}
 
 		const [updated] = await tx
@@ -330,4 +342,100 @@ export async function updatePayment(params: PaymentParams) {
 
 		return updated;
 	});
+}
+
+// ── Step 5: Team
+
+export async function inviteTeamMember(userId: string, email: string) {
+	const profile = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.userId, userId),
+		with: { organization: true },
+	});
+
+	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	assertStatus(profile.onboardingStatus, "pending_team");
+
+	// Check if this email was already invited for this seller
+	const existing = await db.query.employeeInvitation.findFirst({
+		where: and(
+			eq(employeeInvitation.sellerProfileId, profile.id),
+			eq(employeeInvitation.email, email),
+			eq(employeeInvitation.status, "pending"),
+		),
+	});
+	if (existing) {
+		throw new ServiceError(409, "Questo indirizzo email è già stato invitato");
+	}
+
+	// Check if email is already registered as a user
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.email, email),
+	});
+	if (existingUser) {
+		throw new ServiceError(
+			409,
+			"Questo indirizzo email è già registrato nella piattaforma",
+		);
+	}
+
+	const expiresAt = new Date();
+	expiresAt.setDate(expiresAt.getDate() + INVITATION_EXPIRY_DAYS);
+
+	const [invitation] = await db
+		.insert(employeeInvitation)
+		.values({
+			sellerProfileId: profile.id,
+			email,
+			expiresAt,
+		})
+		.returning();
+
+	// Send invitation email
+	const businessName = profile.organization?.businessName ?? "Bibs";
+	const inviteUrl = `${env.SELLER_APP_URL}/invite/${invitation.invitationToken}`;
+
+	await sendEmail({
+		to: email,
+		subject: `Sei stato invitato a collaborare con ${businessName} — Bibs`,
+		html: [
+			`<p>Ciao,</p>`,
+			`<p><strong>${businessName}</strong> ti ha invitato a collaborare come membro del team su Bibs.</p>`,
+			`<p>Clicca sul link seguente per creare la tua password e accedere:</p>`,
+			`<p><a href="${inviteUrl}">${inviteUrl}</a></p>`,
+			`<p>Il link scade tra ${INVITATION_EXPIRY_DAYS} giorni.</p>`,
+			`<p>Se non conosci ${businessName} o non ti aspettavi questo invito, puoi ignorare questa email.</p>`,
+		].join(""),
+	});
+
+	return invitation;
+}
+
+export async function listOnboardingInvitations(userId: string) {
+	const profile = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.userId, userId),
+	});
+
+	if (!profile) throw new ServiceError(404, "Seller profile not found");
+
+	return db.query.employeeInvitation.findMany({
+		where: eq(employeeInvitation.sellerProfileId, profile.id),
+		orderBy: (inv, { desc }) => [desc(inv.createdAt)],
+	});
+}
+
+export async function completeTeam(userId: string) {
+	const profile = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.userId, userId),
+	});
+
+	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	assertStatus(profile.onboardingStatus, "pending_team");
+
+	const [updated] = await db
+		.update(sellerProfile)
+		.set({ onboardingStatus: "pending_payment" })
+		.where(eq(sellerProfile.userId, userId))
+		.returning();
+
+	return updated;
 }

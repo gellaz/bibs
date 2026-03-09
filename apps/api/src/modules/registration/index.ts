@@ -1,7 +1,15 @@
 import { Elysia, t } from "elysia";
+import { ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
-import { ok } from "@/lib/responses";
-import { registerCustomer, registerSeller, signIn } from "./services";
+import { ok, okMessage } from "@/lib/responses";
+import { OkMessage, withConflictErrors } from "@/lib/schemas";
+import { AcceptInviteBody } from "@/lib/schemas/forms";
+import {
+	acceptInvite,
+	registerCustomer,
+	registerSeller,
+	signIn,
+} from "./services";
 
 export const registration = new Elysia({
 	prefix: "/register",
@@ -70,6 +78,37 @@ export const registration = new Elysia({
 				summary: "Registrazione venditore",
 				description:
 					"Crea un nuovo account venditore. Dopo la verifica email, il venditore dovrà completare l'onboarding (dati personali, documento, azienda, negozio, pagamento).",
+			},
+		},
+	)
+	.post(
+		"/accept-invite",
+		async ({ body, store }) => {
+			const pino = getLogger(store);
+
+			if (body.password !== body.confirmPassword) {
+				throw new ServiceError(400, "Le password non coincidono");
+			}
+
+			const result = await acceptInvite({
+				token: body.token,
+				password: body.password,
+			});
+
+			pino.info(
+				{ token: body.token, action: "employee_invite_accepted" },
+				"Employee accepted invitation",
+			);
+
+			return okMessage(result.message);
+		},
+		{
+			body: AcceptInviteBody,
+			response: withConflictErrors({ 200: OkMessage }),
+			detail: {
+				summary: "Accetta invito dipendente",
+				description:
+					"Accetta un invito di collaborazione. Crea l'account dipendente con la password fornita. Non richiede autenticazione.",
 			},
 		},
 	)

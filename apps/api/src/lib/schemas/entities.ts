@@ -113,6 +113,7 @@ export const SellerProfileSchema = t.Object({
 			t.Literal("pending_document"),
 			t.Literal("pending_company"),
 			t.Literal("pending_store"),
+			t.Literal("pending_team"),
 			t.Literal("pending_payment"),
 			t.Literal("pending_review"),
 			t.Literal("active"),
@@ -353,6 +354,18 @@ export const CustomerAddressSchema = t.Object({
 	customerProfileId: t.String(),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
+});
+
+export const EmployeeInvitationSchema = t.Object({
+	id: t.String(),
+	sellerProfileId: t.String(),
+	email: t.String({ description: "Email del collaboratore invitato" }),
+	status: t.Union(
+		[t.Literal("pending"), t.Literal("accepted"), t.Literal("expired")],
+		{ description: "Stato dell'invito" },
+	),
+	expiresAt: t.Date({ description: "Scadenza dell'invito" }),
+	createdAt: t.Date(),
 });
 
 export const PointTransactionSchema = t.Object({

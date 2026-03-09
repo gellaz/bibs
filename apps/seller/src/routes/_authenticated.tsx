@@ -31,6 +31,7 @@ const ONBOARDING_ROUTES: Record<string, string> = {
 	pending_company: "/onboarding/company",
 	pending_store: "/onboarding/store",
 	pending_payment: "/onboarding/payment",
+	pending_team: "/onboarding/team",
 	pending_review: "/onboarding/pending",
 	rejected: "/onboarding/pending",
 };

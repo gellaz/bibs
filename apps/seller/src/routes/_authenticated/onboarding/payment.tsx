@@ -1,3 +1,14 @@
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -70,29 +81,51 @@ function PaymentPage() {
 					</CardContent>
 				</Card>
 
-				<Button
-					onClick={handleSubmit}
-					disabled={mutation.isPending || goBackMutation.isPending}
-					className="w-full"
-				>
-					{mutation.isPending ? "Invio in corso..." : "Completa registrazione"}
-				</Button>
-
-				<Button
-					variant="outline"
-					disabled={mutation.isPending || goBackMutation.isPending}
-					className="w-full"
-					onClick={async () => {
-						try {
-							await goBackMutation.mutateAsync(undefined);
-							void navigate({ to: "/onboarding/store" });
-						} catch (err) {
-							setApiError(err instanceof Error ? err.message : "Errore");
-						}
-					}}
-				>
-					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
-				</Button>
+				<div className="mt-2 flex flex-col gap-2 sm:flex-row-reverse">
+					<Button
+						onClick={handleSubmit}
+						disabled={mutation.isPending || goBackMutation.isPending}
+						className="flex-1"
+					>
+						{mutation.isPending ? "Invio in corso..." : "Invia registrazione"}
+					</Button>
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<Button
+								variant="outline"
+								disabled={mutation.isPending || goBackMutation.isPending}
+								className="flex-1"
+							>
+								{goBackMutation.isPending ? "Attendere..." : "Indietro"}
+							</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Tornare indietro?</AlertDialogTitle>
+								<AlertDialogDescription>
+									Il metodo di pagamento configurato verrà eliminato.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Annulla</AlertDialogCancel>
+								<AlertDialogAction
+									onClick={async () => {
+										try {
+											await goBackMutation.mutateAsync(undefined);
+											void navigate({ to: "/onboarding/team" });
+										} catch (err) {
+											setApiError(
+												err instanceof Error ? err.message : "Errore",
+											);
+										}
+									}}
+								>
+									Conferma
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				</div>
 			</div>
 		</OnboardingLayout>
 	);

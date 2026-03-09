@@ -129,30 +129,31 @@ function DocumentPage() {
 					{fileError && <p className="text-sm text-destructive">{fileError}</p>}
 				</Field>
 
-				<Button
-					type="submit"
-					disabled={isSubmitting || goBackMutation.isPending}
-					className="w-full mt-2"
-				>
-					{isSubmitting ? "Caricamento..." : "Continua"}
-				</Button>
-
-				<Button
-					type="button"
-					variant="outline"
-					disabled={isSubmitting || goBackMutation.isPending}
-					className="w-full"
-					onClick={async () => {
-						try {
-							await goBackMutation.mutateAsync(undefined);
-							void navigate({ to: "/onboarding/personal-info" });
-						} catch (err) {
-							setApiError(err instanceof Error ? err.message : "Errore");
-						}
-					}}
-				>
-					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
-				</Button>
+				<div className="mt-2 flex flex-col gap-2 sm:flex-row-reverse">
+					<Button
+						type="submit"
+						disabled={isSubmitting || goBackMutation.isPending}
+						className="flex-1"
+					>
+						{isSubmitting ? "Caricamento..." : "Continua"}
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						disabled={isSubmitting || goBackMutation.isPending}
+						className="flex-1"
+						onClick={async () => {
+							try {
+								await goBackMutation.mutateAsync(undefined);
+								void navigate({ to: "/onboarding/personal-info" });
+							} catch (err) {
+								setApiError(err instanceof Error ? err.message : "Errore");
+							}
+						}}
+					>
+						{goBackMutation.isPending ? "Attendere..." : "Indietro"}
+					</Button>
+				</div>
 			</form>
 		</OnboardingLayout>
 	);

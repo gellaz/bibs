@@ -42,11 +42,12 @@ export function OnboardingLayout({
 					</CardHeader>
 					<CardContent>
 						{children}
-						<div className="border-t pt-4 mt-4">
+						<div className="mt-4 border-t pt-4">
 							<Button
 								type="button"
-								variant="outline"
-								className="w-full"
+								variant="ghost"
+								size="sm"
+								className="w-full text-muted-foreground"
 								onClick={handleLogout}
 							>
 								Esci

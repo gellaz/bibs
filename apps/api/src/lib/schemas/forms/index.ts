@@ -1,9 +1,11 @@
 export {
+	AcceptInviteBody,
 	CompanyBody,
 	DocumentBody,
 	OnboardingStoreBody,
 	PaymentBody,
 	PersonalInfoBody,
+	TeamInviteBody,
 } from "./onboarding";
 
 export { CreateProductBody } from "./products";

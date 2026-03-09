@@ -128,7 +128,7 @@ function CompanyPage() {
 					<FieldError errors={[errors.addressLine1]} />
 				</Field>
 
-				<div className="grid grid-cols-2 gap-4">
+				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Field data-invalid={!!errors.city}>
 						<FieldLabel htmlFor="city">Città</FieldLabel>
 						<Input id="city" placeholder="Roma" {...register("city")} />
@@ -158,30 +158,31 @@ function CompanyPage() {
 					<FieldError errors={[errors.zipCode]} />
 				</Field>
 
-				<Button
-					type="submit"
-					disabled={isSubmitting || goBackMutation.isPending}
-					className="w-full mt-2"
-				>
-					{isSubmitting ? "Salvataggio..." : "Continua"}
-				</Button>
-
-				<Button
-					type="button"
-					variant="outline"
-					disabled={isSubmitting || goBackMutation.isPending}
-					className="w-full"
-					onClick={async () => {
-						try {
-							await goBackMutation.mutateAsync(undefined);
-							void navigate({ to: "/onboarding/document" });
-						} catch (err) {
-							setApiError(err instanceof Error ? err.message : "Errore");
-						}
-					}}
-				>
-					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
-				</Button>
+				<div className="mt-2 flex flex-col gap-2 sm:flex-row-reverse">
+					<Button
+						type="submit"
+						disabled={isSubmitting || goBackMutation.isPending}
+						className="flex-1"
+					>
+						{isSubmitting ? "Salvataggio..." : "Continua"}
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						disabled={isSubmitting || goBackMutation.isPending}
+						className="flex-1"
+						onClick={async () => {
+							try {
+								await goBackMutation.mutateAsync(undefined);
+								void navigate({ to: "/onboarding/document" });
+							} catch (err) {
+								setApiError(err instanceof Error ? err.message : "Errore");
+							}
+						}}
+					>
+						{goBackMutation.isPending ? "Attendere..." : "Indietro"}
+					</Button>
+				</div>
 			</form>
 		</OnboardingLayout>
 	);

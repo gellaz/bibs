@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { storeEmployee } from "./employee";
+import { employeeInvitation } from "./employee-invitation";
 import { organization } from "./organization";
 import { sellerProfileChange } from "./seller-profile-change";
 
@@ -18,6 +19,7 @@ export const onboardingStatuses = [
 	"pending_document",
 	"pending_company",
 	"pending_store",
+	"pending_team",
 	"pending_payment",
 	"pending_review",
 	"active",
@@ -73,6 +75,7 @@ export const sellerProfileRelations = relations(
 		}),
 		organization: one(organization),
 		employees: many(storeEmployee),
+		invitations: many(employeeInvitation),
 		changes: many(sellerProfileChange),
 	}),
 );

@@ -1,4 +1,15 @@
 import { OnboardingStoreBody } from "@bibs/api/schemas";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
@@ -47,7 +58,7 @@ function StorePage() {
 		setApiError("");
 		try {
 			await mutation.mutateAsync(data);
-			void navigate({ to: "/onboarding/payment" });
+			void navigate({ to: "/onboarding/team" });
 		} catch (err) {
 			setApiError(
 				err instanceof Error ? err.message : "Errore durante il salvataggio",
@@ -122,7 +133,7 @@ function StorePage() {
 							<FieldError errors={[errors.addressLine1]} />
 						</Field>
 
-						<div className="grid grid-cols-2 gap-4">
+						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 							<Field data-invalid={!!errors.city}>
 								<FieldLabel htmlFor="city" required>
 									Città
@@ -160,13 +171,57 @@ function StorePage() {
 					</>
 				)}
 
-				<Button
-					type="submit"
-					disabled={isSubmitting || skipMutation.isPending}
-					className="w-full mt-2"
-				>
-					{isSubmitting ? "Creazione negozio..." : "Continua"}
-				</Button>
+				<div className="mt-2 flex flex-col gap-2 sm:flex-row-reverse">
+					<Button
+						type="submit"
+						disabled={isSubmitting || skipMutation.isPending}
+						className="flex-1"
+					>
+						{isSubmitting ? "Creazione negozio..." : "Continua"}
+					</Button>
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<Button
+								type="button"
+								variant="outline"
+								disabled={
+									isSubmitting ||
+									skipMutation.isPending ||
+									goBackMutation.isPending
+								}
+								className="flex-1"
+							>
+								{goBackMutation.isPending ? "Attendere..." : "Indietro"}
+							</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Tornare indietro?</AlertDialogTitle>
+								<AlertDialogDescription>
+									I dati aziendali inseriti verranno eliminati e dovrai
+									reinserirli.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Annulla</AlertDialogCancel>
+								<AlertDialogAction
+									onClick={async () => {
+										try {
+											await goBackMutation.mutateAsync(undefined);
+											void navigate({ to: "/onboarding/company" });
+										} catch (err) {
+											setApiError(
+												err instanceof Error ? err.message : "Errore",
+											);
+										}
+									}}
+								>
+									Conferma
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				</div>
 
 				<Button
 					type="button"
@@ -179,7 +234,7 @@ function StorePage() {
 						setApiError("");
 						try {
 							await skipMutation.mutateAsync(undefined);
-							void navigate({ to: "/onboarding/payment" });
+							void navigate({ to: "/onboarding/team" });
 						} catch (err) {
 							setApiError(
 								err instanceof Error
@@ -190,25 +245,6 @@ function StorePage() {
 					}}
 				>
 					{skipMutation.isPending ? "Salto in corso..." : "Salta, lo farò dopo"}
-				</Button>
-
-				<Button
-					type="button"
-					variant="outline"
-					disabled={
-						isSubmitting || skipMutation.isPending || goBackMutation.isPending
-					}
-					className="w-full"
-					onClick={async () => {
-						try {
-							await goBackMutation.mutateAsync(undefined);
-							void navigate({ to: "/onboarding/company" });
-						} catch (err) {
-							setApiError(err instanceof Error ? err.message : "Errore");
-						}
-					}}
-				>
-					{goBackMutation.isPending ? "Attendere..." : "Indietro"}
 				</Button>
 			</form>
 		</OnboardingLayout>

@@ -188,6 +188,71 @@ export function useGoBack() {
 }
 
 /**
+ * Hook to fetch onboarding team invitations.
+ */
+export function useOnboardingInvitations() {
+	return useQuery({
+		queryKey: ["seller", "onboarding", "team"],
+		queryFn: async () => {
+			const response = await api().seller.onboarding.team.get();
+
+			if (response.error) {
+				const errorMsg =
+					typeof response.error.value === "string"
+						? response.error.value
+						: "Errore durante il caricamento degli inviti";
+				throw new Error(errorMsg);
+			}
+
+			return response.data.data;
+		},
+	});
+}
+
+/**
+ * Hook for Step 6: Invite team member
+ */
+export function useInviteTeamMember() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (params: { email: string }) => {
+			const response = await api().seller.onboarding.team.invite.post(params);
+			if (response.error) {
+				const errorMsg =
+					typeof response.error.value === "string"
+						? response.error.value
+						: "Errore durante l'invio dell'invito";
+				throw new Error(errorMsg);
+			}
+			return response.data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: ["seller", "onboarding", "team"],
+			});
+		},
+	});
+}
+
+/**
+ * Hook for Step 6: Complete team step
+ */
+export function useCompleteTeam() {
+	return useOnboardingMutation(async () => {
+		const response = await api().seller.onboarding.team.complete.post();
+		if (response.error) {
+			const errorMsg =
+				typeof response.error.value === "string"
+					? response.error.value
+					: "Errore durante il completamento dello step team";
+			throw new Error(errorMsg);
+		}
+		return response.data;
+	});
+}
+
+/**
  * Hook for Step 5: Payment
  */
 export function useUpdatePayment() {

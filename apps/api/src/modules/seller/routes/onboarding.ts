@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
 import {
+	EmployeeInvitationSchema,
 	okRes,
 	SellerProfileSchema,
 	StoreSchema,
@@ -14,12 +15,16 @@ import {
 	OnboardingStoreBody,
 	PaymentBody,
 	PersonalInfoBody,
+	TeamInviteBody,
 } from "@/lib/schemas/forms";
 import { withSellerAuth } from "../context";
 import {
+	completeTeam,
 	createOnboardingStore,
 	getOnboardingStatus,
 	goBack,
+	inviteTeamMember,
+	listOnboardingInvitations,
 	skipOnboardingStore,
 	updateCompany,
 	updateDocument,
@@ -224,6 +229,80 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 				summary: "Torna indietro",
 				description:
 					"Riporta l'onboarding allo step precedente. Eventuali dati inseriti nello step corrente vengono rimossi.",
+				tags: ["Seller - Onboarding"],
+			},
+		},
+	)
+	.get(
+		"/team",
+		async (ctx) => {
+			const { user } = withSellerAuth(ctx);
+			const data = await listOnboardingInvitations(user.id);
+			return ok(data);
+		},
+		{
+			response: withErrors({
+				200: okRes(t.Array(EmployeeInvitationSchema)),
+			}),
+			detail: {
+				summary: "Lista inviti team",
+				description:
+					"Restituisce la lista degli inviti inviati durante l'onboarding.",
+				tags: ["Seller - Onboarding"],
+			},
+		},
+	)
+	.post(
+		"/team/invite",
+		async (ctx) => {
+			const { user, body, store } = withSellerAuth(ctx);
+			const pino = getLogger(store);
+			const data = await inviteTeamMember(user.id, body.email);
+
+			pino.info(
+				{
+					userId: user.id,
+					invitedEmail: body.email,
+					action: "onboarding_team_invite",
+				},
+				"Employee invitation sent during onboarding",
+			);
+
+			return ok(data);
+		},
+		{
+			body: TeamInviteBody,
+			response: withConflictErrors({
+				200: okRes(EmployeeInvitationSchema),
+			}),
+			detail: {
+				summary: "Step 6: Invita collaboratore",
+				description:
+					"Invia un invito email a un collaboratore. Richiede onboardingStatus = 'pending_team'. L'invitato riceverà un link per creare la password.",
+				tags: ["Seller - Onboarding"],
+			},
+		},
+	)
+	.post(
+		"/team/complete",
+		async (ctx) => {
+			const { user, store } = withSellerAuth(ctx);
+			const pino = getLogger(store);
+			const data = await completeTeam(user.id);
+
+			pino.info(
+				{ userId: user.id, action: "onboarding_team_complete" },
+				"Seller completed team step",
+			);
+
+			return ok(data);
+		},
+		{
+			response: withErrors({ 200: okRes(SellerProfileSchema) }),
+			detail: {
+				summary: "Step 6: Completa team",
+				description:
+					"Completa lo step team e avanza a pending_review. Richiede onboardingStatus = 'pending_team'. Può essere chiamato anche senza aver invitato nessuno (skip).",
 				tags: ["Seller - Onboarding"],
 			},
 		},

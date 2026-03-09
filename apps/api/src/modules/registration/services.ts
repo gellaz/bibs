@@ -1,8 +1,10 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
+import { storeEmployee } from "@/db/schemas/employee";
+import { employeeInvitation } from "@/db/schemas/employee-invitation";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { auth } from "@/lib/auth";
@@ -89,6 +91,72 @@ export async function registerSeller(params: RegisterParams) {
 			return profile;
 		},
 	});
+}
+
+// ── Accept employee invitation ──────────────
+
+interface AcceptInviteParams {
+	token: string;
+	password: string;
+}
+
+export async function acceptInvite(params: AcceptInviteParams) {
+	const { token, password } = params;
+
+	// Find the invitation by token
+	const invitation = await db.query.employeeInvitation.findFirst({
+		where: and(
+			eq(employeeInvitation.invitationToken, token),
+			eq(employeeInvitation.status, "pending"),
+		),
+	});
+
+	if (!invitation) {
+		throw new ServiceError(404, "Invito non trovato o già utilizzato");
+	}
+
+	if (new Date() > invitation.expiresAt) {
+		// Mark as expired
+		await db
+			.update(employeeInvitation)
+			.set({ status: "expired" })
+			.where(eq(employeeInvitation.id, invitation.id));
+		throw new ServiceError(400, "L'invito è scaduto");
+	}
+
+	// Check if email is already registered
+	const existingUser = await db.query.user.findFirst({
+		where: eq(user.email, invitation.email),
+	});
+	if (existingUser) {
+		throw new ServiceError(409, "Questo indirizzo email è già registrato");
+	}
+
+	// Create the user account via better-auth
+	const name = invitation.email.split("@")[0];
+	const { user: newUser } = await auth.api.signUpEmail({
+		body: { name, email: invitation.email, password },
+	});
+
+	// Set role, verify email, create employee record, mark invitation
+	await db.transaction(async (tx) => {
+		await tx
+			.update(user)
+			.set({ role: "employee", emailVerified: true })
+			.where(eq(user.id, newUser.id));
+
+		await tx.insert(storeEmployee).values({
+			sellerProfileId: invitation.sellerProfileId,
+			userId: newUser.id,
+		});
+
+		await tx
+			.update(employeeInvitation)
+			.set({ status: "accepted" })
+			.where(eq(employeeInvitation.id, invitation.id));
+	});
+
+	return { message: "Account creato con successo. Ora puoi accedere." };
 }
 
 interface SignInParams {
