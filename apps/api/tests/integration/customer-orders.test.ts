@@ -21,9 +21,11 @@ import {
 } from "../helpers/test-db";
 
 mock.module("@/db", () => ({
-	get db() {
-		return getTestDb();
-	},
+	db: new Proxy({} as any, {
+		get(_, prop) {
+			return (getTestDb() as any)[prop];
+		},
+	}),
 }));
 
 // Prevent actual in-memory timers from firing during tests

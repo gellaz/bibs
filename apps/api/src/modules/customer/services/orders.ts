@@ -230,7 +230,7 @@ export async function createOrder(params: CreateOrderParams) {
 			await tx.insert(pointTransaction).values({
 				customerProfileId,
 				orderId: newOrder.id,
-				amount: -actualPointsSpent,
+				amount: actualPointsSpent,
 				type: "redeemed",
 				description: `Redeemed ${actualPointsSpent} points for order`,
 			});
@@ -245,10 +245,12 @@ export async function createOrder(params: CreateOrderParams) {
 				description: "Earned points from direct purchase",
 			});
 			if (pointsEarned > 0) {
-				await tx
+				const [updated] = await tx
 					.update(order)
 					.set({ pointsEarned })
-					.where(eq(order.id, newOrder.id));
+					.where(eq(order.id, newOrder.id))
+					.returning();
+				return updated;
 			}
 		}
 

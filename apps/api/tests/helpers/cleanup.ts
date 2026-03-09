@@ -14,6 +14,7 @@ export async function truncateAll(db: DrizzleTestDb): Promise<void> {
       FOR r IN (
         SELECT tablename FROM pg_tables
         WHERE schemaname = 'public'
+        AND tablename NOT IN ('spatial_ref_sys', 'geometry_columns', 'geography_columns', 'raster_columns', 'raster_overviews')
       )
       LOOP
         EXECUTE format('TRUNCATE TABLE %I RESTART IDENTITY CASCADE', r.tablename);
