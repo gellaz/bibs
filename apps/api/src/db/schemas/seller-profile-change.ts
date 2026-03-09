@@ -1,10 +1,11 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	index,
 	jsonb,
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
@@ -42,6 +43,9 @@ export const sellerProfileChange = pgTable(
 	(t) => [
 		index("seller_profile_change_seller_id_idx").on(t.sellerProfileId),
 		index("seller_profile_change_status_idx").on(t.status),
+		uniqueIndex("seller_profile_change_pending_unique_idx")
+			.on(t.sellerProfileId, t.changeType)
+			.where(sql`${t.status} = 'pending'`),
 	],
 );
 

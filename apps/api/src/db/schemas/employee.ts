@@ -31,6 +31,10 @@ export const storeEmployee = pgTable(
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [
 		index("store_employee_seller_profile_id_idx").on(table.sellerProfileId),

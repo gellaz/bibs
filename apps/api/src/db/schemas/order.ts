@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+	check,
 	index,
 	integer,
 	numeric,
@@ -51,6 +52,7 @@ export const order = pgTable(
 		total: numeric("total", { precision: 10, scale: 2 }).notNull(),
 		shippingAddressId: text("shipping_address_id").references(
 			() => customerAddress.id,
+			{ onDelete: "set null" },
 		),
 		shippingCost: numeric("shipping_cost", { precision: 10, scale: 2 }),
 		reservationExpiresAt: timestamp("reservation_expires_at", {
@@ -68,8 +70,11 @@ export const order = pgTable(
 			.notNull(),
 	},
 	(table) => [
-		index("order_customer_profile_id_idx").on(table.customerProfileId),
-		index("order_store_id_idx").on(table.storeId),
+		index("order_customer_created_at_idx").on(
+			table.customerProfileId,
+			table.createdAt,
+		),
+		index("order_store_id_created_at_idx").on(table.storeId, table.createdAt),
 		index("order_status_idx").on(table.status),
 		index("order_type_status_idx").on(table.type, table.status),
 		index("order_active_reservation_idx")
@@ -80,6 +85,10 @@ export const order = pgTable(
 		uniqueIndex("order_idempotency_key_idx")
 			.on(table.idempotencyKey)
 			.where(sql`${table.idempotencyKey} IS NOT NULL`),
+		check("order_total_non_negative", sql`${table.total} >= 0`),
+		check("order_shipping_cost_non_negative", sql`${table.shippingCost} >= 0`),
+		check("order_points_earned_non_negative", sql`${table.pointsEarned} >= 0`),
+		check("order_points_spent_non_negative", sql`${table.pointsSpent} >= 0`),
 	],
 );
 
@@ -117,6 +126,8 @@ export const orderItem = pgTable(
 	(table) => [
 		index("order_item_order_id_idx").on(table.orderId),
 		index("order_item_store_product_id_idx").on(table.storeProductId),
+		check("order_item_quantity_positive", sql`${table.quantity} > 0`),
+		check("order_item_unit_price_non_negative", sql`${table.unitPrice} >= 0`),
 	],
 );
 

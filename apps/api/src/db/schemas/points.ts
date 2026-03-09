@@ -1,5 +1,6 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+	check,
 	index,
 	integer,
 	pgTable,
@@ -40,6 +41,8 @@ export const pointTransaction = pgTable(
 		index("point_transaction_customer_profile_id_idx").on(
 			table.customerProfileId,
 		),
+		index("point_transaction_order_id_idx").on(table.orderId),
+		check("point_transaction_amount_positive", sql`${table.amount} > 0`),
 	],
 );
 

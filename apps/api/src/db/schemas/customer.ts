@@ -17,6 +17,10 @@ export const customerProfile = pgTable(
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
 	},
 	(table) => [check("customer_points_non_negative", sql`${table.points} >= 0`)],
 );

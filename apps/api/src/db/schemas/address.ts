@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
 	geometry,
@@ -6,6 +6,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
+	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
 import { customerProfile } from "./customer";
@@ -41,6 +42,9 @@ export const customerAddress = pgTable(
 	(t) => [
 		index("customer_address_location_idx").using("gist", t.location),
 		index("customer_address_profile_id_idx").on(t.customerProfileId),
+		uniqueIndex("customer_address_single_default_idx")
+			.on(t.customerProfileId)
+			.where(sql`${t.isDefault} = true`),
 	],
 );
 

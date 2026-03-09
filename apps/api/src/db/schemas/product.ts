@@ -38,6 +38,7 @@ export const product = pgTable(
 			.notNull(),
 	},
 	(table) => [
+		index("product_seller_profile_id_idx").on(table.sellerProfileId),
 		index("product_search_idx").using(
 			"gin",
 			sql`(
@@ -45,6 +46,7 @@ export const product = pgTable(
         setweight(to_tsvector('italian', coalesce(${table.description}, '')), 'B')
       )`,
 		),
+		check("product_price_non_negative", sql`${table.price} >= 0`),
 	],
 );
 
