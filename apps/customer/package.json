@@ -31,6 +31,7 @@
 		"@tanstack/react-start": "catalog:",
 		"@tanstack/router-plugin": "catalog:",
 		"better-auth": "catalog:",
+		"lucide-react": "catalog:",
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"react-hook-form": "catalog:",
