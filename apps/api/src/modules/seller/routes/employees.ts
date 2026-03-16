@@ -2,68 +2,126 @@ import { Elysia, t } from "elysia";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
+	EmployeeInvitationSchema,
 	EmployeeSchema,
 	EmployeeWithUserSchema,
 	OkMessage,
-	okPageRes,
 	okRes,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
+import { TeamInviteBody } from "@/lib/schemas/forms";
 import { requireOwner, withSeller } from "../context";
 import {
 	banEmployee,
-	createEmployee,
+	cancelInvitation,
+	inviteEmployee,
+	listEmployeeInvitations,
 	listEmployees,
 	removeEmployee,
 	unbanEmployee,
 } from "../services/employees";
 
+const EmployeesListResponse = t.Object({
+	success: t.Literal(true),
+	data: t.Array(EmployeeWithUserSchema),
+	pagination: t.Object({
+		page: t.Number(),
+		limit: t.Number(),
+		total: t.Number(),
+	}),
+	owner: t.Nullable(
+		t.Object({
+			id: t.String(),
+			name: t.String(),
+			email: t.String(),
+		}),
+	),
+});
+
 export const employeesRoutes = new Elysia()
 	.get(
 		"/employees",
 		async (ctx) => {
-			const { sellerProfile: sp, isOwner, query } = withSeller(ctx);
-			requireOwner(isOwner);
+			const { sellerProfile: sp, query } = withSeller(ctx);
 			const result = await listEmployees({ sellerProfileId: sp.id, ...query });
-			return okPage(result.data, result.pagination);
+			return {
+				...okPage(result.data, result.pagination),
+				owner: result.owner,
+			};
 		},
 		{
 			query: PaginationQuery,
-			response: withErrors({ 200: okPageRes(EmployeeWithUserSchema) }),
+			response: withErrors({ 200: EmployeesListResponse }),
 			detail: {
 				summary: "Lista dipendenti",
 				description:
-					"Restituisce la lista paginata dei dipendenti del venditore con i dati utente. Solo il proprietario può accedere.",
+					"Restituisce la lista paginata dei dipendenti del venditore con i dati utente e le informazioni del titolare.",
 				tags: ["Seller - Employees"],
 			},
 		},
 	)
 	.post(
-		"/employees",
+		"/employees/invite",
 		async (ctx) => {
 			const { sellerProfile: sp, isOwner, body } = withSeller(ctx);
 			requireOwner(isOwner);
 
-			const data = await createEmployee({ sellerProfileId: sp.id, ...body });
+			const data = await inviteEmployee(sp.id, body.email);
 			return ok(data);
 		},
 		{
-			body: t.Object({
-				email: t.String({
-					format: "email",
-					description: "Email del dipendente",
-				}),
-				password: t.String({
-					minLength: 8,
-					maxLength: 128,
-					description: "Password (minimo 8, massimo 128 caratteri)",
-				}),
+			body: TeamInviteBody,
+			response: withConflictErrors({
+				200: okRes(EmployeeInvitationSchema),
 			}),
-			response: withErrors({ 200: okRes(EmployeeSchema) }),
 			detail: {
-				summary: "Crea dipendente",
+				summary: "Invita collaboratore",
 				description:
-					"Crea un nuovo account dipendente associato al venditore. Il dipendente potrà accedere alle funzioni del pannello seller.",
+					"Invia un invito email a un collaboratore. L'invitato riceverà un link per creare la password e accedere al pannello seller.",
+				tags: ["Seller - Employees"],
+			},
+		},
+	)
+	.get(
+		"/employees/invitations",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
+
+			const data = await listEmployeeInvitations(sp.id);
+			return ok(data);
+		},
+		{
+			response: withErrors({
+				200: okRes(t.Array(EmployeeInvitationSchema)),
+			}),
+			detail: {
+				summary: "Lista inviti",
+				description:
+					"Restituisce la lista degli inviti inviati ai collaboratori.",
+				tags: ["Seller - Employees"],
+			},
+		},
+	)
+	.delete(
+		"/employees/invitations/:invitationId",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+			requireOwner(isOwner);
+
+			const data = await cancelInvitation(sp.id, params.invitationId);
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				invitationId: t.String({ description: "ID dell'invito" }),
+			}),
+			response: withErrors({ 200: okRes(EmployeeInvitationSchema) }),
+			detail: {
+				summary: "Annulla invito",
+				description:
+					"Annulla un invito in stato 'pending'. L'invito viene impostato come 'expired'.",
 				tags: ["Seller - Employees"],
 			},
 		},
