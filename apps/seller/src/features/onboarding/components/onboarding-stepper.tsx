@@ -49,4 +49,4 @@ export function OnboardingStepper({ currentStatus }: OnboardingStepperProps) {
 	);
 }
 
-export { STEPS, type OnboardingStatus };
+export { type OnboardingStatus, STEPS };

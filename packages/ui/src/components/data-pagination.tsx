@@ -136,5 +136,5 @@ function DataPagination({
 	);
 }
 
-export { DataPagination };
 export type { DataPaginationProps };
+export { DataPagination };

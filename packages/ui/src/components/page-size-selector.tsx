@@ -53,5 +53,5 @@ function PageSizeSelector({
 	);
 }
 
-export { PageSizeSelector };
 export type { PageSizeSelectorProps };
+export { PageSizeSelector };

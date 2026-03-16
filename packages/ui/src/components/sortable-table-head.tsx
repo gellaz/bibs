@@ -53,5 +53,5 @@ function SortableTableHead({
 	);
 }
 
-export { SortableTableHead };
 export type { SortableTableHeadProps, SortOrder };
+export { SortableTableHead };
