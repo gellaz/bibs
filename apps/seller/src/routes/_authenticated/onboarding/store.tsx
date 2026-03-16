@@ -29,6 +29,10 @@ import { useCallback, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import {
+	DEFAULT_OPENING_HOURS,
+	OpeningHoursEditor,
+} from "@/features/stores/components/opening-hours-editor";
+import {
 	useCreateStore,
 	useGoBack,
 	useSkipStore,
@@ -36,6 +40,11 @@ import {
 
 type StoreFormData = Static<typeof OnboardingStoreBody>;
 const compiledSchema = TypeCompiler.Compile(OnboardingStoreBody);
+
+interface DaySchedule {
+	dayOfWeek: number;
+	slots: { open: string; close: string }[];
+}
 
 const MAX_STORE_IMAGES = 8;
 
@@ -50,6 +59,12 @@ function StorePage() {
 	const goBackMutation = useGoBack();
 	const [apiError, setApiError] = useState("");
 	const [images, setImages] = useState<File[]>([]);
+	const [openingHours, setOpeningHours] = useState<DaySchedule[]>(() =>
+		DEFAULT_OPENING_HOURS.map((d) => ({
+			...d,
+			slots: d.slots.map((s) => ({ ...s })),
+		})),
+	);
 
 	const {
 		register,
@@ -81,6 +96,7 @@ function StorePage() {
 		try {
 			await mutation.mutateAsync({
 				...data,
+				openingHours: openingHours.length > 0 ? openingHours : undefined,
 				images: images.length > 0 ? images : undefined,
 			});
 			void navigate({ to: "/onboarding/team" });
@@ -195,6 +211,8 @@ function StorePage() {
 						</Field>
 					</>
 				)}
+
+				<OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
 
 				<div className="space-y-2">
 					<Label>

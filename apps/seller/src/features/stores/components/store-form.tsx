@@ -9,11 +9,20 @@ import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import "@/lib/typebox-formats";
 import { PlusIcon, Trash2Icon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { type SubmitHandler, useFieldArray, useForm } from "react-hook-form";
+import {
+	DEFAULT_OPENING_HOURS,
+	OpeningHoursEditor,
+} from "./opening-hours-editor";
 
 export type StoreFormData = Static<typeof CreateStoreBody>;
 const compiledSchema = TypeCompiler.Compile(CreateStoreBody);
+
+interface DaySchedule {
+	dayOfWeek: number;
+	slots: { open: string; close: string }[];
+}
 
 interface StoreFormProps {
 	onSubmit: (data: StoreFormData) => void;
@@ -34,6 +43,15 @@ export function StoreForm({
 	pendingLabel = "Creazione...",
 	onNameChange,
 }: StoreFormProps) {
+	const [openingHours, setOpeningHours] = useState<DaySchedule[]>(
+		() =>
+			(defaultValues?.openingHours as DaySchedule[] | undefined) ??
+			DEFAULT_OPENING_HOURS.map((d) => ({
+				...d,
+				slots: d.slots.map((s) => ({ ...s })),
+			})),
+	);
+
 	const {
 		register,
 		handleSubmit,
@@ -74,6 +92,7 @@ export function StoreForm({
 			addressLine2: data.addressLine2 || undefined,
 			province: data.province || undefined,
 			websiteUrl: data.websiteUrl || undefined,
+			openingHours: openingHours.length > 0 ? openingHours : undefined,
 			phoneNumbers:
 				data.phoneNumbers && data.phoneNumbers.length > 0
 					? data.phoneNumbers.map((p, idx) => ({
@@ -181,6 +200,8 @@ export function StoreForm({
 					/>
 					<FieldError errors={[errors.websiteUrl]} />
 				</Field>
+
+				<OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
 
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">

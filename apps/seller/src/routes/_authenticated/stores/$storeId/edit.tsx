@@ -195,6 +195,7 @@ function EditStorePage() {
 					zipCode: store.zipCode,
 					province: store.province ?? "",
 					websiteUrl: store.websiteUrl ?? "",
+					openingHours: (store.openingHours as any) ?? undefined,
 					phoneNumbers: store.phoneNumbers.map((p) => ({
 						label: p.label ?? "",
 						number: p.number,
