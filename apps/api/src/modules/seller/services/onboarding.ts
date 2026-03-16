@@ -7,6 +7,8 @@ import { paymentMethod } from "@/db/schemas/payment-method";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
+import { storeImage } from "@/db/schemas/store-image";
+import { config } from "@/lib/config";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
@@ -196,10 +198,11 @@ interface StoreParams {
 	categoryId?: string;
 	openingHours?: unknown;
 	useCompanyAddress?: boolean;
+	images?: File[];
 }
 
 export async function createOnboardingStore(params: StoreParams) {
-	const { userId, useCompanyAddress, ...data } = params;
+	const { userId, useCompanyAddress, images, ...data } = params;
 
 	const profile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.userId, userId),
@@ -208,6 +211,14 @@ export async function createOnboardingStore(params: StoreParams) {
 
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 	assertStatus(profile.onboardingStatus, "pending_store");
+
+	// Validate image count
+	if (images && images.length > config.maxImagesPerStore) {
+		throw new ServiceError(
+			400,
+			`Maximum ${config.maxImagesPerStore} images per store (uploading: ${images.length})`,
+		);
+	}
 
 	let storeAddress = {
 		addressLine1: data.addressLine1,
@@ -226,27 +237,70 @@ export async function createOnboardingStore(params: StoreParams) {
 		};
 	}
 
-	return db.transaction(async (tx) => {
-		const [newStore] = await tx
-			.insert(store)
-			.values({
-				sellerProfileId: profile.id,
-				name: data.name,
-				description: data.description,
-				...storeAddress,
-				categoryId: data.categoryId,
-				openingHours: data.openingHours,
-			})
-			.returning();
+	// Upload images to S3 (before the transaction, so we can clean up on failure)
+	const uploaded: { key: string; url: string; position: number }[] = [];
+	if (images && images.length > 0) {
+		try {
+			await Promise.all(
+				images.map(async (file, i) => {
+					const ext = file.name?.split(".").pop() ?? "jpg";
+					// Use a temporary prefix; we don't have storeId yet
+					const tempKey = `stores/pending-${profile.id}/${crypto.randomUUID()}.${ext}`;
+					await s3.write(tempKey, file);
+					uploaded.push({ key: tempKey, url: publicUrl(tempKey), position: i });
+				}),
+			);
+		} catch (err) {
+			await Promise.allSettled(uploaded.map((u) => s3.delete(u.key)));
+			throw err;
+		}
+	}
 
-		const [updated] = await tx
-			.update(sellerProfile)
-			.set({ onboardingStatus: "pending_team" })
-			.where(eq(sellerProfile.userId, userId))
-			.returning();
+	try {
+		return await db.transaction(async (tx) => {
+			const [newStore] = await tx
+				.insert(store)
+				.values({
+					sellerProfileId: profile.id,
+					name: data.name,
+					description: data.description,
+					...storeAddress,
+					categoryId: data.categoryId,
+					openingHours: data.openingHours,
+				})
+				.returning();
 
-		return { profile: updated, store: newStore };
-	});
+			// Insert image records if any were uploaded
+			if (uploaded.length > 0) {
+				await tx.insert(storeImage).values(
+					uploaded.map((u) => ({
+						storeId: newStore.id,
+						...u,
+					})),
+				);
+			}
+
+			const [updated] = await tx
+				.update(sellerProfile)
+				.set({ onboardingStatus: "pending_team" })
+				.where(eq(sellerProfile.userId, userId))
+				.returning();
+
+			// Re-fetch store with images for response
+			const storeWithImages = await tx.query.store.findFirst({
+				where: eq(store.id, newStore.id),
+				with: { images: true },
+			});
+
+			return { profile: updated, store: storeWithImages ?? newStore };
+		});
+	} catch (err) {
+		// Transaction failed — cleanup S3 files (best-effort)
+		if (uploaded.length > 0) {
+			await Promise.allSettled(uploaded.map((u) => s3.delete(u.key)));
+		}
+		throw err;
+	}
 }
 
 // ── Step 4b: Skip store ─────────────────────

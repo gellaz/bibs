@@ -12,13 +12,20 @@ import {
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
+import {
+	Dropzone,
+	DropzoneContent,
+	DropzoneEmptyState,
+} from "@bibs/ui/components/dropzone";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { Label } from "@bibs/ui/components/label";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { XIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import {
@@ -30,6 +37,8 @@ import {
 type StoreFormData = Static<typeof OnboardingStoreBody>;
 const compiledSchema = TypeCompiler.Compile(OnboardingStoreBody);
 
+const MAX_STORE_IMAGES = 8;
+
 export const Route = createFileRoute("/_authenticated/onboarding/store")({
 	component: StorePage,
 });
@@ -40,6 +49,7 @@ function StorePage() {
 	const skipMutation = useSkipStore();
 	const goBackMutation = useGoBack();
 	const [apiError, setApiError] = useState("");
+	const [images, setImages] = useState<File[]>([]);
 
 	const {
 		register,
@@ -54,10 +64,25 @@ function StorePage() {
 
 	const useCompanyAddress = watch("useCompanyAddress");
 
+	const handleDrop = useCallback(
+		(acceptedFiles: File[]) => {
+			const remaining = MAX_STORE_IMAGES - images.length;
+			setImages((prev) => [...prev, ...acceptedFiles.slice(0, remaining)]);
+		},
+		[images.length],
+	);
+
+	const handleRemoveImage = useCallback((index: number) => {
+		setImages((prev) => prev.filter((_, i) => i !== index));
+	}, []);
+
 	const onSubmit: SubmitHandler<StoreFormData> = async (data) => {
 		setApiError("");
 		try {
-			await mutation.mutateAsync(data);
+			await mutation.mutateAsync({
+				...data,
+				images: images.length > 0 ? images : undefined,
+			});
 			void navigate({ to: "/onboarding/team" });
 		} catch (err) {
 			setApiError(
@@ -170,6 +195,47 @@ function StorePage() {
 						</Field>
 					</>
 				)}
+
+				<div className="space-y-2">
+					<Label>
+						Foto del negozio
+						{images.length > 0 && (
+							<span className="ml-1 text-xs font-normal text-muted-foreground">
+								({images.length}/{MAX_STORE_IMAGES})
+							</span>
+						)}
+					</Label>
+					<Dropzone
+						src={images.length > 0 ? images : undefined}
+						onDrop={handleDrop}
+						maxFiles={MAX_STORE_IMAGES}
+						maxSize={5 * 1024 * 1024}
+						accept={{ "image/*": [".png", ".jpg", ".jpeg", ".webp"] }}
+					>
+						<DropzoneContent />
+						<DropzoneEmptyState />
+					</Dropzone>
+					{images.length > 0 && (
+						<div className="flex flex-wrap gap-2">
+							{images.map((file, index) => (
+								<div key={file.name + index} className="group relative">
+									<img
+										src={URL.createObjectURL(file)}
+										alt=""
+										className="size-20 rounded-md border object-cover"
+									/>
+									<button
+										type="button"
+										onClick={() => handleRemoveImage(index)}
+										className="absolute -top-1.5 -right-1.5 hidden size-5 items-center justify-center rounded-full bg-destructive text-white shadow-sm ring-2 ring-background group-hover:flex"
+									>
+										<XIcon className="size-3" />
+									</button>
+								</div>
+							))}
+						</div>
+					)}
+				</div>
 
 				<div className="mt-2 flex flex-col gap-2 sm:flex-row-reverse">
 					<Button

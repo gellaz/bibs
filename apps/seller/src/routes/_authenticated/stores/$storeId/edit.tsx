@@ -5,6 +5,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PencilIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
+	type ExistingImage,
+	ProductImageDropzone,
+} from "@/features/products/components/product-image-dropzone";
+import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
@@ -14,6 +18,8 @@ import { authClient } from "@/lib/auth-client";
 export const Route = createFileRoute("/_authenticated/stores/$storeId/edit")({
 	component: EditStorePage,
 });
+
+const MAX_STORE_IMAGES = 8;
 
 function EditStorePage() {
 	const { storeId } = Route.useParams();
@@ -29,6 +35,9 @@ function EditStorePage() {
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
+	const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
+	const [newFiles, setNewFiles] = useState<File[]>([]);
+	const [imagesInitialized, setImagesInitialized] = useState(false);
 
 	const goBack = () =>
 		void navigate({ to: "/stores", search: { page: 1, limit: 20 } });
@@ -56,6 +65,34 @@ function EditStorePage() {
 		},
 	});
 
+	// Initialize existing images from loaded store (once)
+	if (store && !imagesInitialized) {
+		setExistingImages(
+			(store.images ?? []).map((img) => ({ id: img.id, url: img.url })),
+		);
+		setImagesInitialized(true);
+	}
+
+	const deleteImageMutation = useMutation({
+		mutationFn: async (imageId: string) => {
+			const response = await api()
+				.seller.stores({ storeId })
+				.images({ imageId })
+				.delete();
+
+			if (response.error) {
+				throw new Error("Errore nell'eliminazione immagine");
+			}
+		},
+		onSuccess: (_data, imageId) => {
+			setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+			toast.success("Immagine eliminata");
+		},
+		onError: (error: Error) => {
+			toast.error(error.message);
+		},
+	});
+
 	const updateMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
 			const response = await api().seller.stores({ storeId }).patch(formData);
@@ -64,6 +101,19 @@ function EditStorePage() {
 				throw new Error(
 					response.error.value?.message || "Errore nell'aggiornamento",
 				);
+			}
+
+			// Upload new images if any
+			if (newFiles.length > 0) {
+				const imgResponse = await api()
+					.seller.stores({ storeId })
+					.images.post({ files: newFiles });
+
+				if (imgResponse.error) {
+					toast.warning(
+						"Negozio aggiornato ma errore nel caricamento immagini",
+					);
+				}
 			}
 
 			return response.data;
@@ -114,6 +164,26 @@ function EditStorePage() {
 					<PencilIcon className="text-primary-foreground size-5" />
 				</div>
 			</div>
+
+			<ProductImageDropzone
+				files={newFiles}
+				onDrop={(accepted) =>
+					setNewFiles((prev) => [
+						...prev,
+						...accepted.slice(
+							0,
+							MAX_STORE_IMAGES - existingImages.length - prev.length,
+						),
+					])
+				}
+				onRemoveFile={(index) =>
+					setNewFiles((prev) => prev.filter((_, i) => i !== index))
+				}
+				onReorderFiles={setNewFiles}
+				existingImages={existingImages}
+				onDeleteExisting={(imageId) => deleteImageMutation.mutate(imageId)}
+				maxFiles={MAX_STORE_IMAGES}
+			/>
 
 			<StoreForm
 				defaultValues={{

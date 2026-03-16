@@ -5,6 +5,7 @@ import {
 	EmployeeInvitationSchema,
 	okRes,
 	SellerProfileSchema,
+	StoreImageSchema,
 	StoreSchema,
 	withConflictErrors,
 	withErrors,
@@ -146,9 +147,17 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 		async (ctx) => {
 			const { user, body, store: ctxStore } = withSellerAuth(ctx);
 			const pino = getLogger(ctxStore);
+
+			const images = body.images
+				? Array.isArray(body.images)
+					? body.images
+					: [body.images]
+				: undefined;
+
 			const data = await createOnboardingStore({
 				userId: user.id,
 				...body,
+				images,
 			});
 
 			pino.info(
@@ -156,6 +165,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 					userId: user.id,
 					storeId: data.store.id,
 					storeName: data.store.name,
+					imageCount: images?.length ?? 0,
 					action: "onboarding_store",
 				},
 				"Seller first store created",
@@ -164,19 +174,31 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			body: OnboardingStoreBody,
+			body: t.Object({
+				...OnboardingStoreBody.properties,
+				images: t.Optional(
+					t.Files({
+						type: "image",
+						maxSize: "5m",
+						description: "Foto del negozio (max 5MB ciascuna, opzionale)",
+					}),
+				),
+			}),
 			response: withErrors({
 				200: okRes(
 					t.Object({
 						profile: SellerProfileSchema,
-						store: StoreSchema,
+						store: t.Object({
+							...StoreSchema.properties,
+							images: t.Optional(t.Array(StoreImageSchema)),
+						}),
 					}),
 				),
 			}),
 			detail: {
 				summary: "Step 4: Primo negozio",
 				description:
-					"Crea il primo negozio del venditore. Richiede onboardingStatus = 'pending_store'. Se useCompanyAddress=true, l'indirizzo viene copiato dall'azienda.",
+					"Crea il primo negozio del venditore con eventuali foto. Richiede onboardingStatus = 'pending_store'. Se useCompanyAddress=true, l'indirizzo viene copiato dall'azienda.",
 				tags: ["Seller - Onboarding"],
 			},
 		},

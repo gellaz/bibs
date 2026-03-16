@@ -125,7 +125,7 @@ export function useUpdateCompany() {
 }
 
 /**
- * Hook for Step 4: Store creation
+ * Hook for Step 4: Store creation (with optional images)
  */
 export function useCreateStore() {
 	return useOnboardingMutation(
@@ -139,6 +139,7 @@ export function useCreateStore() {
 			categoryId?: string;
 			openingHours?: unknown;
 			useCompanyAddress?: boolean;
+			images?: File[];
 		}) => {
 			const response = await api().seller.onboarding.store.post(params);
 			if (response.error) {

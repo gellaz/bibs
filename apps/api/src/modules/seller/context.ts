@@ -64,6 +64,25 @@ export async function ensureProductOwnership(
 }
 
 /**
+ * Verifies that a store belongs to the given seller profile.
+ * Throws 404 if not found.
+ */
+export async function ensureStoreOwnership(
+	storeId: string,
+	sellerProfileId: string,
+) {
+	const s = await db.query.store.findFirst({
+		where: and(
+			eq(storeTable.id, storeId),
+			eq(storeTable.sellerProfileId, sellerProfileId),
+			isNull(storeTable.deletedAt),
+		),
+	});
+	if (!s) throw new ServiceError(404, "Store not found");
+	return s;
+}
+
+/**
  * Asserts the caller is the owner (not an employee).
  * Throws 403 if not.
  */

@@ -7,6 +7,8 @@ export const config = {
 	reservationHours: 48,
 	/** Maximum number of images per product */
 	maxImagesPerProduct: 10,
+	/** Maximum number of images per store */
+	maxImagesPerStore: 8,
 	/** Maximum number of products per CSV import */
 	maxProductsPerImport: 500,
 	/** Fixed shipping cost in euros for pay_deliver orders */
