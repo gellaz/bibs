@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { GlobeIcon, PhoneIcon, PlusIcon, StoreIcon } from "lucide-react";
 import { api } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/stores/")({
 	component: StoresListPage,
@@ -26,6 +27,8 @@ export const Route = createFileRoute("/_authenticated/stores/")({
 
 function StoresListPage() {
 	const { page, limit } = Route.useSearch();
+	const { data: session } = authClient.useSession();
+	const isOwner = session?.user.role === "seller";
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["stores", page, limit],
@@ -53,12 +56,14 @@ function StoresListPage() {
 						Gestisci i tuoi punti vendita
 					</p>
 				</div>
-				<Button asChild>
-					<Link to="/stores/new">
-						<PlusIcon />
-						<span>Nuovo Negozio</span>
-					</Link>
-				</Button>
+				{isOwner && (
+					<Button asChild>
+						<Link to="/stores/new">
+							<PlusIcon />
+							<span>Nuovo Negozio</span>
+						</Link>
+					</Button>
+				)}
 			</div>
 
 			{error && (
@@ -91,13 +96,17 @@ function StoresListPage() {
 								data.data.map((store) => (
 									<TableRow key={store.id} className="group">
 										<TableCell className="pl-6 font-semibold">
-											<Link
-												to="/stores/$storeId/edit"
-												params={{ storeId: store.id }}
-												className="hover:underline"
-											>
-												{store.name}
-											</Link>
+											{isOwner ? (
+												<Link
+													to="/stores/$storeId/edit"
+													params={{ storeId: store.id }}
+													className="hover:underline"
+												>
+													{store.name}
+												</Link>
+											) : (
+												store.name
+											)}
 										</TableCell>
 										<TableCell className="text-muted-foreground text-sm">
 											{[store.addressLine1, store.city]

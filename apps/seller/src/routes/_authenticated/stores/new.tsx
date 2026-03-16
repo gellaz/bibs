@@ -2,12 +2,13 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PlusIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
 import { api } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/stores/new")({
 	component: NewStorePage,
@@ -15,6 +16,14 @@ export const Route = createFileRoute("/_authenticated/stores/new")({
 
 function NewStorePage() {
 	const navigate = useNavigate();
+	const { data: session } = authClient.useSession();
+
+	// Employees cannot create stores
+	useEffect(() => {
+		if (session && session.user.role !== "seller") {
+			void navigate({ to: "/stores", search: { page: 1, limit: 20 } });
+		}
+	}, [session, navigate]);
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);

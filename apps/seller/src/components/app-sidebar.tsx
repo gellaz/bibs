@@ -12,7 +12,13 @@ import {
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { HomeIcon, PackageIcon, StoreIcon, UserIcon } from "lucide-react";
+import {
+	HomeIcon,
+	PackageIcon,
+	StoreIcon,
+	UserIcon,
+	UsersIcon,
+} from "lucide-react";
 import { NavUser } from "@/components/nav-user";
 import { StoreSwitcher } from "@/components/store-switcher";
 
@@ -20,6 +26,7 @@ const navItems = [
 	{ title: "Home", to: "/" as const, icon: HomeIcon },
 	{ title: "Negozi", to: "/stores" as const, icon: StoreIcon },
 	{ title: "Prodotti", to: "/products" as const, icon: PackageIcon },
+	{ title: "Team", to: "/team" as const, icon: UsersIcon },
 	{ title: "Profilo", to: "/profile" as const, icon: UserIcon },
 ];
 

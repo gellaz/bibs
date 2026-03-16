@@ -3,12 +3,13 @@ import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PencilIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
 import { api } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/stores/$storeId/edit")({
 	component: EditStorePage,
@@ -17,6 +18,14 @@ export const Route = createFileRoute("/_authenticated/stores/$storeId/edit")({
 function EditStorePage() {
 	const { storeId } = Route.useParams();
 	const navigate = useNavigate();
+	const { data: session } = authClient.useSession();
+
+	// Employees cannot edit stores
+	useEffect(() => {
+		if (session && session.user.role !== "seller") {
+			void navigate({ to: "/stores", search: { page: 1, limit: 20 } });
+		}
+	}, [session, navigate]);
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
