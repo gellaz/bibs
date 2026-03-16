@@ -7,7 +7,7 @@ export {
 	PersonalInfoBody,
 	TeamInviteBody,
 } from "./onboarding";
-
+export { OpeningHoursSchema } from "./opening-hours";
 export { CreateProductBody } from "./products";
 export {
 	CompanySettingsBody,

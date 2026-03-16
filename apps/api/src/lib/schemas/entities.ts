@@ -204,7 +204,22 @@ export const StoreSchema = t.Object({
 	location: t.Nullable(PointXY),
 	categoryId: t.Nullable(t.String({ description: "ID categoria negozio" })),
 	openingHours: t.Nullable(
-		t.Unknown({ description: "Orari di apertura (JSON)" }),
+		t.Array(
+			t.Object({
+				dayOfWeek: t.Integer({
+					minimum: 0,
+					maximum: 6,
+					description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
+				}),
+				slots: t.Array(
+					t.Object({
+						open: t.String({ description: "Orario apertura (HH:mm)" }),
+						close: t.String({ description: "Orario chiusura (HH:mm)" }),
+					}),
+				),
+			}),
+			{ description: "Orari di apertura del negozio" },
+		),
 	),
 	websiteUrl: t.Nullable(t.String({ description: "URL del sito web" })),
 	createdAt: t.Date(),

@@ -47,6 +47,7 @@ interface CreateStoreParams {
 	country?: string;
 	location?: { x: number; y: number };
 	categoryId?: string;
+	openingHours?: unknown;
 	websiteUrl?: string;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }
@@ -91,6 +92,7 @@ interface UpdateStoreParams {
 	country?: string;
 	location?: { x: number; y: number };
 	categoryId?: string | null;
+	openingHours?: unknown;
 	websiteUrl?: string;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }

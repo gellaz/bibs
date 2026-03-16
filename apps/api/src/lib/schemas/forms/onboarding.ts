@@ -1,4 +1,5 @@
 import { Type } from "@sinclair/typebox";
+import { OpeningHoursSchema } from "./opening-hours";
 
 // ── Step 1: Personal Info ───────────────────
 
@@ -176,9 +177,7 @@ export const OnboardingStoreBody = Type.Object({
 	categoryId: Type.Optional(
 		Type.String({ description: "ID categoria negozio" }),
 	),
-	openingHours: Type.Optional(
-		Type.Unknown({ description: "Orari di apertura (JSON)" }),
-	),
+	openingHours: Type.Optional(OpeningHoursSchema),
 	useCompanyAddress: Type.Optional(
 		Type.Boolean({
 			description: "Se true, copia l'indirizzo dall'azienda registrata",

@@ -1,4 +1,5 @@
 import { Type } from "@sinclair/typebox";
+import { OpeningHoursSchema } from "./opening-hours";
 
 const PhoneNumber = Type.Object({
 	label: Type.Optional(
@@ -78,6 +79,7 @@ export const CreateStoreBody = Type.Object({
 			description: "URL del sito web",
 		}),
 	),
+	openingHours: Type.Optional(OpeningHoursSchema),
 	phoneNumbers: Type.Optional(
 		Type.Array(PhoneNumber, {
 			description: "Numeri di telefono del negozio",
