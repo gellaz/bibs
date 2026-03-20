@@ -16,6 +16,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
 import { SortableTableHead } from "@bibs/ui/components/sortable-table-head";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import {
 	Table,
 	TableBody,
@@ -35,7 +36,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
 import { PageHeader } from "@/components/page-header";
-import { type TabItem, TabNav } from "@/components/tab-nav";
 import { api } from "@/lib/api";
 
 type SellerStatus = "pending_review" | "active" | "rejected";
@@ -238,7 +238,7 @@ function SellersPage() {
 	// Show actions column when viewing all statuses or specifically pending_review
 	const showActions = !status || status === "pending_review";
 
-	const sellerTabs: TabItem[] = STATUS_TABS.map((tab) => ({
+	const sellerTabs: TabNavItem[] = STATUS_TABS.map((tab) => ({
 		value: tab.value,
 		label: tab.label,
 		badgeColor: tab.badgeColor,

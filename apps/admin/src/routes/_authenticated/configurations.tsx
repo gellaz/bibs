@@ -1,10 +1,10 @@
 import { Button } from "@bibs/ui/components/button";
+import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
-import { type TabItem, TabNav } from "@/components/tab-nav";
 import { ProductCategoriesPanel } from "@/features/product-categories/components/product-categories-panel";
 import { StoreCategoriesPanel } from "@/features/store-categories/components/store-categories-panel";
 import { api } from "@/lib/api";
@@ -30,7 +30,7 @@ function ConfigurationsPage() {
 		},
 	});
 
-	const tabs: TabItem[] = [
+	const tabs: TabNavItem[] = [
 		{
 			value: "product-categories",
 			label: "Categorie Prodotto",
