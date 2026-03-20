@@ -1,8 +1,9 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { TabNav } from "@bibs/ui/components/tab-nav";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PencilIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
 	type ExistingImage,
@@ -12,6 +13,7 @@ import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
+import { StoreInventory } from "@/features/stores/components/store-inventory";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
@@ -21,10 +23,16 @@ export const Route = createFileRoute("/_authenticated/stores/$storeId/edit")({
 
 const MAX_STORE_IMAGES = 8;
 
+const TABS = [
+	{ value: "dettagli", label: "Dettagli" },
+	{ value: "inventario", label: "Inventario" },
+];
+
 function EditStorePage() {
 	const { storeId } = Route.useParams();
 	const navigate = useNavigate();
 	const { data: session } = authClient.useSession();
+	const [activeTab, setActiveTab] = useState("dettagli");
 
 	// Employees cannot edit stores
 	useEffect(() => {
@@ -149,66 +157,75 @@ function EditStorePage() {
 
 	return (
 		<div className="mx-auto max-w-2xl space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold">
-						{name || (
-							<span className="text-muted-foreground">Modifica Negozio</span>
-						)}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						Modifica punto vendita
-					</p>
-				</div>
-				<div className="bg-primary flex size-10 items-center justify-center rounded-lg">
-					<PencilIcon className="text-primary-foreground size-5" />
-				</div>
+			<div>
+				<button
+					type="button"
+					onClick={goBack}
+					className="text-muted-foreground hover:text-foreground mb-3 flex items-center gap-1.5 text-sm transition-colors"
+				>
+					<ArrowLeftIcon className="size-3.5" />
+					Negozi
+				</button>
+				<h1 className="text-2xl font-bold">
+					{name || store.name || (
+						<span className="text-muted-foreground">Modifica Negozio</span>
+					)}
+				</h1>
+				<p className="text-muted-foreground text-sm">Modifica punto vendita</p>
 			</div>
 
-			<ProductImageDropzone
-				files={newFiles}
-				onDrop={(accepted) =>
-					setNewFiles((prev) => [
-						...prev,
-						...accepted.slice(
-							0,
-							MAX_STORE_IMAGES - existingImages.length - prev.length,
-						),
-					])
-				}
-				onRemoveFile={(index) =>
-					setNewFiles((prev) => prev.filter((_, i) => i !== index))
-				}
-				onReorderFiles={setNewFiles}
-				existingImages={existingImages}
-				onDeleteExisting={(imageId) => deleteImageMutation.mutate(imageId)}
-				maxFiles={MAX_STORE_IMAGES}
-			/>
+			<TabNav tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
-			<StoreForm
-				defaultValues={{
-					name: store.name,
-					description: store.description ?? "",
-					addressLine1: store.addressLine1,
-					addressLine2: store.addressLine2 ?? "",
-					city: store.city,
-					zipCode: store.zipCode,
-					province: store.province ?? "",
-					websiteUrl: store.websiteUrl ?? "",
-					openingHours: (store.openingHours as any) ?? undefined,
-					phoneNumbers: store.phoneNumbers.map((p) => ({
-						label: p.label ?? "",
-						number: p.number,
-						position: p.position,
-					})),
-				}}
-				onSubmit={(data) => updateMutation.mutate(data)}
-				onCancel={goBack}
-				isPending={updateMutation.isPending}
-				submitLabel="Salva Modifiche"
-				pendingLabel="Salvataggio..."
-				onNameChange={handleNameChange}
-			/>
+			{activeTab === "dettagli" && (
+				<div className="space-y-6">
+					<ProductImageDropzone
+						files={newFiles}
+						onDrop={(accepted) =>
+							setNewFiles((prev) => [
+								...prev,
+								...accepted.slice(
+									0,
+									MAX_STORE_IMAGES - existingImages.length - prev.length,
+								),
+							])
+						}
+						onRemoveFile={(index) =>
+							setNewFiles((prev) => prev.filter((_, i) => i !== index))
+						}
+						onReorderFiles={setNewFiles}
+						existingImages={existingImages}
+						onDeleteExisting={(imageId) => deleteImageMutation.mutate(imageId)}
+						maxFiles={MAX_STORE_IMAGES}
+					/>
+
+					<StoreForm
+						defaultValues={{
+							name: store.name,
+							description: store.description ?? "",
+							addressLine1: store.addressLine1,
+							addressLine2: store.addressLine2 ?? "",
+							city: store.city,
+							zipCode: store.zipCode,
+							province: store.province ?? "",
+							websiteUrl: store.websiteUrl ?? "",
+							openingHours: (store.openingHours as any) ?? undefined,
+							phoneNumbers: store.phoneNumbers.map((p) => ({
+								label: p.label ?? "",
+								number: p.number,
+								position: p.position,
+							})),
+						}}
+						onSubmit={(data) => updateMutation.mutate(data)}
+						onCancel={goBack}
+						isPending={updateMutation.isPending}
+						submitLabel="Salva Modifiche"
+						pendingLabel="Salvataggio..."
+						onNameChange={handleNameChange}
+					/>
+				</div>
+			)}
+
+			{activeTab === "inventario" && <StoreInventory storeId={storeId} />}
 		</div>
 	);
 }
