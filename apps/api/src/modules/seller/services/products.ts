@@ -21,7 +21,7 @@ export async function listProducts(params: ListProductsParams) {
 			where: eq(product.sellerProfileId, sellerProfileId),
 			with: {
 				productClassifications: { with: { category: true } },
-				storeProducts: { with: { store: true } },
+				storeProducts: { with: { store: { columns: { location: false } } } },
 				images: { orderBy: (img, { asc }) => [asc(img.position)] },
 			},
 			limit,
@@ -51,7 +51,7 @@ export async function getProduct(params: GetProductParams) {
 		),
 		with: {
 			productClassifications: { with: { category: true } },
-			storeProducts: { with: { store: true } },
+			storeProducts: { with: { store: { columns: { location: false } } } },
 			images: { orderBy: (img, { asc }) => [asc(img.position)] },
 		},
 	});

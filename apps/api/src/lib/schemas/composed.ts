@@ -52,10 +52,10 @@ const ProductClassificationWithCategory = t.Object({
 	category: ProductCategorySchema,
 });
 
-// StoreProduct + store
+// StoreProduct + store (location excluded — PostGIS EWKB fails in nested relational queries)
 const StoreProductWithStore = t.Object({
 	...StoreProductSchema.properties,
-	store: StoreSchema,
+	store: t.Omit(StoreSchema, ["location"]),
 });
 
 // Product with full relations (seller product list)
