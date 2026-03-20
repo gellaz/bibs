@@ -1,3 +1,4 @@
+import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import {
 	ProductForm,
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
+import { ProductStockManager } from "@/features/products/components/product-stock-manager";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/$productId")({
@@ -182,6 +184,13 @@ function EditProductPage() {
 				submitLabel="Salva Modifiche"
 				pendingLabel="Salvataggio..."
 				onNameChange={handleNameChange}
+			/>
+
+			<Separator />
+
+			<ProductStockManager
+				productId={productId}
+				storeProducts={product.storeProducts}
 			/>
 		</div>
 	);
