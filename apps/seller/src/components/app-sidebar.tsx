@@ -19,8 +19,8 @@ import {
 	UserIcon,
 	UsersIcon,
 } from "lucide-react";
+import { CompanyHeader } from "@/components/company-header";
 import { NavUser } from "@/components/nav-user";
-import { StoreSwitcher } from "@/components/store-switcher";
 
 const navItems = [
 	{ title: "Home", to: "/" as const, icon: HomeIcon },
@@ -36,7 +36,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
-				<StoreSwitcher />
+				<CompanyHeader />
 			</SidebarHeader>
 
 			<SidebarContent>
