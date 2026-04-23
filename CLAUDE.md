@@ -48,15 +48,17 @@ For one-shot commits, prefer `/commit-commands:commit` (respects this repo's Con
 
 ## Universal skills (skills.sh)
 
-Checked-in skills under each workspace's `.agents/skills/` (symlinked into `.claude/skills/` for Claude Code, plus other agent directories). Managed via `bunx skills` — the `skills-lock.json` in each workspace is the source of truth.
+Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.claude/skills/` for Claude Code, plus other agent directories). Managed via `bunx skills` — the root [skills-lock.json](skills-lock.json) is the single source of truth. Agent harnesses discover skills from the directory the session is started in; keeping everything at root ensures they're available in every session regardless of which workspace you're editing.
 
-| Location | Skill | Purpose |
-|---|---|---|
-| [skills-lock.json](skills-lock.json) (root) | `tanstack-start-best-practices`, `tanstack-router-best-practices`, `tanstack-query-best-practices`, `tanstack-integration-best-practices` | TanStack Start/Router/Query patterns — SSR, type-safe routes, data loading, cache coordination. Shared across `apps/{admin,customer,seller}` |
-| [apps/api/skills-lock.json](apps/api/skills-lock.json) | `elysiajs` | Canonical Elysia patterns, schemas, integrations |
-| [packages/ui/skills-lock.json](packages/ui/skills-lock.json) | `shadcn` | shadcn/ui CLI reference, theming, registries, composition rules — activates whenever you work with `components.json` |
+| Skill | Purpose |
+|---|---|
+| `tanstack-start-best-practices`, `tanstack-router-best-practices`, `tanstack-query-best-practices`, `tanstack-integration-best-practices` | TanStack Start/Router/Query patterns — SSR, type-safe routes, data loading, cache coordination. Activates in `apps/{admin,customer,seller}` |
+| `elysiajs` | Canonical Elysia patterns, schemas, integrations. Activates in `apps/api` |
+| `shadcn` | shadcn/ui CLI reference, theming, registries, composition rules. Activates when touching `packages/ui/components.json` or component files |
+| `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices` | Better Auth core config, security hardening, email/password flows — matches the current auth stack |
+| `organization-best-practices`, `two-factor-authentication-best-practices` | Installed ahead of need — self-gate on mentions of the Better Auth `organization`/`twoFactor` plugins. Activate only when those plugins are enabled |
 
-To add more: `cd <workspace> && bunx skills add <source>` (use repo root for skills that apply across workspaces). To restore after clone: run `bunx skills experimental_install` at the root **and** in each workspace that has its own `skills-lock.json`.
+To add more: `bunx skills add <source>` from repo root. To restore after clone: `bunx skills experimental_install` at the root.
 
 ---
 

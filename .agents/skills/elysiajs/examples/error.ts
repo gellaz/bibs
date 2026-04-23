@@ -1,38 +1,38 @@
-import { Elysia, t } from "elysia";
+import { Elysia, t } from 'elysia'
 
 class CustomError extends Error {
 	constructor(public name: string) {
-		super(name);
+		super(name)
 	}
 }
 
 new Elysia()
 	.error({
-		CUSTOM_ERROR: CustomError,
+		CUSTOM_ERROR: CustomError
 	})
 	// global handler
 	.onError(({ code, error, status }) => {
 		switch (code) {
 			case "CUSTOM_ERROR":
-				return status(401, { message: error.message });
+				return status(401, { message: error.message })
 
 			case "NOT_FOUND":
-				return "Not found :(";
+				return "Not found :("
 		}
 	})
-	.post("/", ({ body }) => body, {
+	.post('/', ({ body }) => body, {
 		body: t.Object({
 			username: t.String(),
 			password: t.String(),
 			nested: t.Optional(
 				t.Object({
-					hi: t.String(),
-				}),
-			),
+					hi: t.String()
+				})
+			)
 		}),
 		// local handler
 		error({ error }) {
-			console.log(error);
-		},
+			console.log(error)
+		}
 	})
-	.listen(3000);
+	.listen(3000)
