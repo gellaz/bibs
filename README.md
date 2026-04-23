@@ -1,5 +1,7 @@
 # bibs
 
+[![CI](https://github.com/gellaz/bibs/actions/workflows/ci.yml/badge.svg)](https://github.com/gellaz/bibs/actions/workflows/ci.yml)
+
 Monorepo for the **bibs** local-commerce marketplace.
 
 ## Structure
@@ -45,6 +47,7 @@ bun run dev
 | `bun run dev:seller`   | Start seller app (port 3002)           |
 | `bun run dev:admin`    | Start admin app (port 3003)            |
 | `bun run typecheck`    | TypeScript check across all workspaces |
+| `bun run test`         | Run API tests (unit + integration)     |
 | `bun run lint`         | Lint all files (Biome)                 |
 | `bun run lint:fix`     | Lint and auto-fix (Biome)              |
 | `bun run format`       | Format all files (Biome)               |

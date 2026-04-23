@@ -49,6 +49,16 @@ To skip hooks in exceptional cases:
 git commit --no-verify -m "..."
 ```
 
+## Continuous Integration
+
+GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and every push to `main`. Three jobs run in parallel:
+
+- **Lint (Biome)** — `bun run lint`
+- **Typecheck** — `bun run typecheck` across all workspaces (the `pretypecheck` hook in each frontend compiles Paraglide messages first, so a fresh clone typechecks without running `vite dev`)
+- **API tests (unit + integration)** — `bun run test`; integration tests spin up Postgres/PostGIS via testcontainers, no GitHub Actions `services:` needed
+
+Concurrent runs on the same PR cancel each other; runs on `main` all complete. After the first green run, enable GitHub branch protection on `main` and mark the three checks as required to gate merges.
+
 ## Workspace Structure
 
 Each app under `apps/` is a Bun workspace with its own `package.json`. Shared code goes in `packages/` (e.g. `@bibs/ui`).
