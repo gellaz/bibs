@@ -35,7 +35,13 @@ export const store = pgTable(
 		categoryId: text("category_id").references(() => storeCategory.id, {
 			onDelete: "set null",
 		}),
-		openingHours: jsonb("opening_hours"),
+		openingHours:
+			jsonb("opening_hours").$type<
+				Array<{
+					dayOfWeek: number;
+					slots: Array<{ open: string; close: string }>;
+				}>
+			>(),
 		websiteUrl: text("website_url"),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true })
