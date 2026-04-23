@@ -9,6 +9,8 @@
 		"dev": "vite dev --port 3003",
 		"build": "vite build",
 		"preview": "vite preview",
+		"paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
+		"pretypecheck": "bun run paraglide:compile",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"format": "biome format",
