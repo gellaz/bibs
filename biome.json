@@ -30,6 +30,18 @@
 			}
 		},
 		{
+			"includes": ["**/project.inlang/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			},
+			"assist": {
+				"enabled": false
+			}
+		},
+		{
 			"includes": ["packages/ui/**"],
 			"linter": {
 				"enabled": false
