@@ -1,0 +1,14 @@
+{
+	"mcpServers": {
+		"context7": {
+			"type": "stdio",
+			"command": "bunx",
+			"args": ["-y", "@upstash/context7-mcp@latest"]
+		},
+		"shadcn": {
+			"type": "stdio",
+			"command": "bunx",
+			"args": ["shadcn@latest", "mcp", "--cwd", "./packages/ui"]
+		}
+	}
+}
