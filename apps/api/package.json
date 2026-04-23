@@ -23,17 +23,17 @@
 		"@elysiajs/openapi": "^1.4.14",
 		"@sinclair/typebox": "catalog:",
 		"better-auth": "catalog:",
-		"drizzle-orm": "^0.45.1",
+		"drizzle-orm": "^0.45.2",
 		"elysia": "catalog:",
-		"logixlysia": "^6.2.2",
+		"logixlysia": "^6.3.1",
 		"pg": "catalog:",
 		"pino": "^10.3.1"
 	},
 	"devDependencies": {
 		"@types/pg": "catalog:",
-		"bun-types": "^1.3.10",
-		"drizzle-kit": "^0.31.9",
-		"testcontainers": "^11.12.0"
+		"bun-types": "^1.3.13",
+		"drizzle-kit": "^0.31.10",
+		"testcontainers": "^11.14.0"
 	},
 	"module": "src/index.ts",
 	"types": "src/types.ts",
