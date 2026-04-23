@@ -1,0 +1,33 @@
+**/node_modules
+**/dist
+**/.tanstack
+**/.output
+**/.vinxi
+**/.nitro
+**/.wrangler
+**/.cache
+
+# Logs
+**/logs
+**/*.log
+
+# Env files (must never end up in an image)
+**/.env
+**/.env.*
+!**/.env.example
+
+# VCS / IDE
+.git
+.gitignore
+.github
+.idea
+.vscode
+**/.DS_Store
+
+# Agent tooling — not needed in any production image
+.claude
+.agents
+.mcp.json
+AGENTS.md
+CLAUDE.md
+skills-lock.json
