@@ -1,0 +1,73 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"enabledPlugins": {
+		"superpowers@claude-plugins-official": true,
+		"commit-commands@claude-plugins-official": true,
+		"frontend-design@claude-plugins-official": true,
+		"chrome-devtools-mcp@claude-plugins-official": true,
+		"claude-md-management@claude-plugins-official": true
+	},
+	"permissions": {
+		"allow": [
+			"Bash(bun install)",
+			"Bash(bun add:*)",
+			"Bash(bun outdated:*)",
+			"Bash(bun run typecheck)",
+			"Bash(bun run typecheck:*)",
+			"Bash(bun run lint)",
+			"Bash(bun run lint:fix)",
+			"Bash(bun run format)",
+			"Bash(bun run test)",
+			"Bash(bun run test:*)",
+			"Bash(bun test)",
+			"Bash(bun test:*)",
+			"Bash(bun run build)",
+			"Bash(bun run build:*)",
+			"Bash(bun run db:generate)",
+			"Bash(bun run db:studio)",
+			"Bash(bun run infra:up)",
+			"Bash(bun run infra:down)",
+			"Bash(bunx biome:*)",
+			"Bash(bunx lefthook install)",
+			"Bash(git status:*)",
+			"Bash(git diff:*)",
+			"Bash(git log:*)",
+			"Bash(git show:*)",
+			"Bash(git branch:*)",
+			"Bash(git fetch:*)",
+			"Bash(git stash:*)"
+		],
+		"deny": [
+			"Read(**/.env)",
+			"Read(**/.env.local)",
+			"Read(**/.env.*.local)",
+			"Edit(**/.env)",
+			"Edit(**/.env.local)",
+			"Edit(**/.env.*.local)",
+			"Write(**/.env)",
+			"Write(**/.env.local)",
+			"Write(**/.env.*.local)",
+			"Edit(bun.lock)",
+			"Write(bun.lock)",
+			"Bash(git commit --no-verify:*)",
+			"Bash(git push --force:*)",
+			"Bash(git push -f:*)",
+			"Bash(bun run db:push)",
+			"Bash(bun run db:seed)",
+			"Bash(bun run infra:reset)"
+		]
+	},
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write|MultiEdit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "F=$(jq -r '.tool_input.file_path // empty'); [ -z \"$F\" ] && exit 0; case \"$F\" in *.ts|*.tsx|*.js|*.jsx|*.json) bunx biome check --fix --no-errors-on-unmatched \"$F\" >/dev/null 2>&1 || true;; esac; exit 0"
+					}
+				]
+			}
+		]
+	}
+}
