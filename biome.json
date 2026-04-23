@@ -42,6 +42,18 @@
 			}
 		},
 		{
+			"includes": ["apps/api/src/db/migrations/**"],
+			"linter": {
+				"enabled": false
+			},
+			"formatter": {
+				"enabled": false
+			},
+			"assist": {
+				"enabled": false
+			}
+		},
+		{
 			"includes": ["packages/ui/**"],
 			"linter": {
 				"enabled": false
