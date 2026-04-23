@@ -1,5 +1,9 @@
+import type { OpeningHoursSchema } from "@bibs/api/schemas";
+import type { Static } from "@sinclair/typebox";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+
+type OpeningHours = Static<typeof OpeningHoursSchema>;
 
 /**
  * Hook to fetch the current onboarding status and data.
@@ -137,7 +141,7 @@ export function useCreateStore() {
 			city: string;
 			zipCode: string;
 			categoryId?: string;
-			openingHours?: unknown;
+			openingHours?: OpeningHours;
 			useCompanyAddress?: boolean;
 			images?: File[];
 		}) => {

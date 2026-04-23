@@ -1,3 +1,4 @@
+/// <reference types="bun-types" />
 import {
 	S3Client as AwsS3Client,
 	CreateBucketCommand,

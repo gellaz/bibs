@@ -1,3 +1,4 @@
+import type { Static } from "@sinclair/typebox";
 import { and, count, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -6,6 +7,9 @@ import {
 } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
+import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
+
+type OpeningHours = Static<typeof OpeningHoursSchema>;
 
 interface ListStoresParams {
 	sellerProfileId: string;
@@ -47,7 +51,7 @@ interface CreateStoreParams {
 	country?: string;
 	location?: { x: number; y: number };
 	categoryId?: string;
-	openingHours?: unknown;
+	openingHours?: OpeningHours | null;
 	websiteUrl?: string;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }
@@ -92,7 +96,7 @@ interface UpdateStoreParams {
 	country?: string;
 	location?: { x: number; y: number };
 	categoryId?: string | null;
-	openingHours?: unknown;
+	openingHours?: OpeningHours | null;
 	websiteUrl?: string;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }

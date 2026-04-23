@@ -1,3 +1,4 @@
+import type { Static } from "@sinclair/typebox";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
@@ -13,6 +14,9 @@ import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
+import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
+
+type OpeningHours = Static<typeof OpeningHoursSchema>;
 
 // ── Helpers ─────────────────────────────────
 
@@ -196,7 +200,7 @@ interface StoreParams {
 	city: string;
 	zipCode: string;
 	categoryId?: string;
-	openingHours?: unknown;
+	openingHours?: OpeningHours;
 	useCompanyAddress?: boolean;
 	images?: File[];
 }

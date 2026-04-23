@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { expireSingleReservation } from "./expire-reservations";
 
 /** In-memory map of orderId → timer handle. */
-const timers = new Map<string, Timer>();
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
  * Schedules a setTimeout that fires exactly at `expiresAt` to expire a
