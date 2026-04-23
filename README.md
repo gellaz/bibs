@@ -58,6 +58,8 @@ bun run dev
 | `bun run db:migrate`   | Apply migrations                       |
 | `bun run db:push`      | Push schema to DB (no migrations)      |
 | `bun run db:studio`    | Open Drizzle Studio                    |
+| `bun run db:seed`      | Seed test data into a fresh DB         |
+| `bun run db:reset`     | Wipe volumes, re-migrate, re-seed      |
 
 ## Apps
 
