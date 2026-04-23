@@ -9,6 +9,14 @@ services:
       - POSTGRES_PASSWORD=P4ssword!
     ports:
       - "5432:5432"
+    volumes:
+      - bibs-postgis-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pgadmin -d bibs-db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   bibs-minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
@@ -24,3 +32,13 @@ services:
       - server
       - --console-address=:9001
       - /data
+    volumes:
+      - bibs-minio-data:/data
+    # Note: no healthcheck — the minio/minio image ships without curl/wget/nc/mc,
+    # so there's no simple in-container probe. `docker compose up --wait` treats
+    # this service as ready when it reaches the "running" state, which is good
+    # enough for local dev (the API retries S3 on startup).
+
+volumes:
+  bibs-postgis-data:
+  bibs-minio-data:
