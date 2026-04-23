@@ -9,6 +9,10 @@
 			"type": "stdio",
 			"command": "bunx",
 			"args": ["shadcn@latest", "mcp", "--cwd", "./packages/ui"]
+		},
+		"better-auth": {
+			"type": "http",
+			"url": "https://mcp.better-auth.com/mcp"
 		}
 	}
 }
