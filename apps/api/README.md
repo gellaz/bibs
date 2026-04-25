@@ -123,8 +123,7 @@ src/
 │   ├── order-helpers.ts      # Shared helpers: refundStockAndPoints()
 │   ├── pagination.ts         # Reusable pagination query schema & parser
 │   └── jobs/
-│       ├── reservation-timer.ts    # In-memory setTimeout timers for reservation expiry
-│       └── expire-reservations.ts  # Single + bulk reservation expiry with stock refund
+│       └── expire-reservations.ts  # Single + bulk reservation expiry with stock refund (driven by cron)
 ├── modules/
 │   ├── registration/         # POST /register/customer, /seller, /sign-in
 │   ├── admin/                # /admin/* — category CRUD, seller verification
@@ -141,15 +140,20 @@ src/
 │       └── services/          # Business logic
 └── db/
     ├── index.ts              # Singleton Drizzle client
-    ├── seed/                 # Modular test data seeder (bun run db:seed)
-    │   ├── index.ts          # Orchestrator — calls seeders in order
-    │   ├── admins.ts         # Admin test users
-    │   ├── customers.ts      # Bulk customer generation (~300)
-    │   ├── sellers.ts        # Bulk seller generation (~150)
-    │   ├── categories.ts     # Store & product category seeding
-    │   ├── locations.ts      # Italian locations seeding
-    │   ├── utils.ts          # Shared data (names, cities, streets)
-    │   └── fetch-locations.ts # Fetches location JSON from GitHub
+    ├── seed/                 # Database seed (bun run db:seed)
+    │   ├── index.ts          # Composes seedBase() then seedFixtures()
+    │   ├── base/             # Reference data — idempotent, prod-safe, no auth dependency
+    │   │   ├── index.ts      # seedBase() — locations + categories
+    │   │   ├── locations.ts  # Italian regions, provinces, municipalities
+    │   │   ├── categories.ts # Store & product category seeding
+    │   │   ├── fetch-locations.ts # Standalone: refresh location JSON from GitHub
+    │   │   └── *.json        # Generated location data committed to repo
+    │   └── fixtures/         # Test users — depend on better-auth, dev/staging only
+    │       ├── index.ts      # seedFixtures() — admins + customers + sellers
+    │       ├── admins.ts     # Admin test users
+    │       ├── customers.ts  # Bulk customer generation (~300)
+    │       ├── sellers.ts    # Bulk seller generation (~150)
+    │       └── utils.ts      # Shared fixture data (names, cities, streets)
     ├── schemas/              # Drizzle table definitions & relations
     │   ├── index.ts          # Barrel export
     │   ├── auth.ts           # user, session, account, verification
@@ -284,10 +288,9 @@ Not all transitions are valid for all order types — the state machine validate
 
 ### Reservation Expiry
 
-`reserve_pickup` orders expire automatically after 48 hours via a dual mechanism:
-
-1. **Per-order timer** — an in-memory `setTimeout` fires at the exact expiry time
-2. **Cron safety net** — a cron job runs every 10 minutes to catch any missed expirations (e.g. after server restart)
+`reserve_pickup` orders expire automatically after 48 hours. A cron job (`src/plugins/cron.ts`) runs every minute and
+calls `expireReservations()` — single source of truth, resilient to restarts and horizontal scaling. Worst-case
+latency between the configured expiry and the status flip is ~60 s.
 
 On expiry, stock is refunded and any loyalty points spent are returned to the customer.
 
