@@ -18,9 +18,9 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "catalog:",
-		"@elysiajs/cors": "^1.4.1",
-		"@elysiajs/cron": "^1.4.1",
-		"@elysiajs/openapi": "^1.4.14",
+		"@elysiajs/cors": "^1.4.2",
+		"@elysiajs/cron": "^1.4.2",
+		"@elysiajs/openapi": "^1.4.15",
 		"@sinclair/typebox": "catalog:",
 		"better-auth": "catalog:",
 		"drizzle-orm": "^0.45.2",
