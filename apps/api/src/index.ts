@@ -5,7 +5,6 @@ import logixlysia from "logixlysia";
 import { db } from "@/db";
 import { OpenAPI } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { clearAllTimers, restoreTimers } from "@/lib/jobs/reservation-timer";
 import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
@@ -158,7 +157,6 @@ const app = new Elysia()
 
 // ── Startup sequence ────────────────────────────────
 await ensureBucket();
-await restoreTimers();
 
 const port = parseInt(env.PORT, 10);
 app.listen(port);
@@ -167,7 +165,6 @@ app.listen(port);
 const shutdown = async () => {
 	console.log("\n🛑 Shutting down...");
 	app.stop();
-	clearAllTimers();
 	await db.$client.end();
 	process.exit(0);
 };

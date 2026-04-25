@@ -28,14 +28,6 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-// Prevent actual in-memory timers from firing during tests
-mock.module("@/lib/jobs/reservation-timer", () => ({
-	scheduleExpiry: mock(() => {}),
-	clearExpiry: mock(() => {}),
-	clearAllTimers: mock(() => {}),
-	restoreTimers: mock(async () => {}),
-}));
-
 // ── Imports (resolved after mocks are registered) ─────────────────────────────
 
 import { eq } from "drizzle-orm";
