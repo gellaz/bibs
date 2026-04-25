@@ -105,17 +105,33 @@ export async function updateStore(params: UpdateStoreParams) {
 	const { storeId, sellerProfileId, phoneNumbers, ...data } = params;
 
 	return db.transaction(async (tx) => {
-		const [updated] = await tx
-			.update(storeTable)
-			.set(data)
-			.where(
-				and(
-					eq(storeTable.id, storeId),
-					eq(storeTable.sellerProfileId, sellerProfileId),
-					isNull(storeTable.deletedAt),
-				),
-			)
-			.returning();
+		// Only issue the UPDATE if there are plain store columns to change.
+		// With only phoneNumbers we'd call .set({}) and Drizzle throws
+		// "No values to set" — fetch the row instead so ownership is still enforced.
+		const hasStoreData = Object.keys(data).length > 0;
+
+		const [updated] = hasStoreData
+			? await tx
+					.update(storeTable)
+					.set(data)
+					.where(
+						and(
+							eq(storeTable.id, storeId),
+							eq(storeTable.sellerProfileId, sellerProfileId),
+							isNull(storeTable.deletedAt),
+						),
+					)
+					.returning()
+			: await tx
+					.select()
+					.from(storeTable)
+					.where(
+						and(
+							eq(storeTable.id, storeId),
+							eq(storeTable.sellerProfileId, sellerProfileId),
+							isNull(storeTable.deletedAt),
+						),
+					);
 
 		if (!updated) throw new ServiceError(404, "Store not found");
 
