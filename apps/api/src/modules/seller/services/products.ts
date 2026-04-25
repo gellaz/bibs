@@ -110,16 +110,31 @@ export async function updateProduct(params: UpdateProductParams) {
 	} = params;
 
 	return db.transaction(async (tx) => {
-		const [updated] = await tx
-			.update(product)
-			.set(productData)
-			.where(
-				and(
-					eq(product.id, productId),
-					eq(product.sellerProfileId, sellerProfileId),
-				),
-			)
-			.returning();
+		// Only issue the UPDATE if there are plain product columns to change.
+		// With only categoryIds/imageOrder we'd call .set({}) and Drizzle throws
+		// "No values to set" — fetch the row instead so the caller still gets it.
+		const hasProductData = Object.keys(productData).length > 0;
+
+		const [updated] = hasProductData
+			? await tx
+					.update(product)
+					.set(productData)
+					.where(
+						and(
+							eq(product.id, productId),
+							eq(product.sellerProfileId, sellerProfileId),
+						),
+					)
+					.returning()
+			: await tx
+					.select()
+					.from(product)
+					.where(
+						and(
+							eq(product.id, productId),
+							eq(product.sellerProfileId, sellerProfileId),
+						),
+					);
 
 		if (!updated) return null;
 
