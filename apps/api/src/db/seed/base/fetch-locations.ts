@@ -2,7 +2,7 @@
  * Fetches Italian administrative divisions from the comuni-json GitHub repo
  * and generates regions.json, provinces.json, municipalities.json.
  *
- * Usage: bun run src/db/seed/fetch-locations.ts
+ * Usage: bun run src/db/seed/base/fetch-locations.ts
  */
 
 const COMUNI_JSON_URL =
