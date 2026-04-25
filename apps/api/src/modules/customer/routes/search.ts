@@ -1,6 +1,6 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { ProductSearchQuery } from "@/lib/queries";
 import { okPage } from "@/lib/responses";
 import { okPageRes, SearchResultSchema, withErrors } from "@/lib/schemas";
 import { searchProducts } from "../services/search";
@@ -25,27 +25,7 @@ export const searchRoutes = new Elysia().get(
 		return okPage(result.data, result.pagination);
 	},
 	{
-		query: t.Object({
-			q: t.Optional(
-				t.String({ description: "Testo di ricerca (full-text italiano)" }),
-			),
-			categoryId: t.Optional(
-				t.String({ description: "Filtra per ID categoria" }),
-			),
-			lat: t.Optional(
-				t.Number({ description: "Latitudine del punto di ricerca" }),
-			),
-			lng: t.Optional(
-				t.Number({ description: "Longitudine del punto di ricerca" }),
-			),
-			radius: t.Optional(
-				t.Number({
-					default: 50,
-					description: "Raggio di ricerca in km (default: 50)",
-				}),
-			),
-			...PaginationQuery.properties,
-		}),
+		query: ProductSearchQuery,
 		response: withErrors({ 200: okPageRes(SearchResultSchema) }),
 		detail: {
 			summary: "Ricerca prodotti",
