@@ -58,14 +58,13 @@ Creates the Elysia app with plugins and modules:
     by sellers (owner) and their employees. 33 endpoints with full schemas.
 12. **customerModule** — `/customer/*` — product search (public, with full-text relevance ranking + geo-filter),
     profile, addresses, orders, loyalty points. 12 endpoints with response documentation.
-13. **cronJobs** — scheduled tasks via `@elysiajs/cron`. Currently runs reservation expiry every 10 minutes.
+13. **cronJobs** — scheduled tasks via `@elysiajs/cron`. Runs reservation expiry every minute (single source of truth).
 14. **health** plugin — `GET /health` (liveness probe, always 200) + `GET /ready` (readiness probe, checks DB + S3
     connectivity, returns 503 if unhealthy).
 
-**Startup sequence**: ensures S3 bucket exists → restores in-memory reservation timers.
+**Startup sequence**: ensures the S3 bucket exists, then `app.listen(env.PORT)`. The cron plugin starts itself.
 
-**Graceful shutdown**: on `SIGTERM`/`SIGINT`, stops the server, clears all reservation timers, and closes the database
-connection pool.
+**Graceful shutdown**: on `SIGTERM`/`SIGINT`, stops the server and closes the database connection pool.
 
 Test data can be seeded separately via `bun run db:seed` (see `src/db/seed/`).
 
@@ -146,17 +145,16 @@ Defines valid status transitions per order type using typed keys (
 Shared helper `refundStockAndPoints(tx, order)` for restocking items and refunding loyalty points within an existing DB
 transaction. Used by cancellation, expiry, and pickup-expired flows to avoid code duplication.
 
-### Reservation Expiry — `src/lib/jobs/`
+### Reservation Expiry — `src/lib/jobs/expire-reservations.ts`
 
-Dual mechanism to expire `reserve_pickup` orders after 48 hours:
-
-1. **Per-order timer** (`reservation-timer.ts`) — `scheduleExpiry(orderId, expiresAt)` sets an in-memory `setTimeout`
-   that fires at the exact expiry time. Timers are restored on startup via `restoreTimers()`.
-2. **Cron safety net** (`expire-reservations.ts`) — `expireReservations()` runs every 10 minutes (via
-   `src/plugins/cron.ts`) to catch orders missed by timers (e.g. after restart).
+`reserve_pickup` orders expire after 48 hours. The cron job in `src/plugins/cron.ts` runs `expireReservations()` every
+minute (`Patterns.EVERY_MINUTE`) and is the single source of truth — no in-memory timers, no per-order scheduling.
+Worst-case latency from the configured expiry to the status flip is ~60 s, negligible against a 48 h reservation
+window.
 
 On expiry, the order status is set to `expired`, stock and points are refunded via the shared `refundStockAndPoints()`
-helper.
+helper. `expireSingleReservation(orderId)` is also exported for one-off use; both paths transactionally re-check the
+status, so concurrent runs are idempotent.
 
 ### Pagination — `src/lib/pagination.ts`
 
@@ -287,16 +285,22 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
 
 ### Database — `src/db/`
 
-- `src/db/index.ts` — exports a singleton Drizzle client using `DATABASE_URL`.
-- `src/db/seed/` — modular seed data, orchestrated by `index.ts` (run via `bun run db:seed`):
-  - `index.ts` — orchestrator, calls each seeder in order
-  - `admins.ts` — admin test users and `seedAdmins()`
-  - `customers.ts` — bulk customer generation (~300) and `seedCustomers()`
-  - `sellers.ts` — bulk seller generation (~150) and `seedSellers()`
-  - `categories.ts` — store/product category arrays and seeding functions
-  - `locations.ts` — Italian locations seeding (regions, provinces, municipalities)
-  - `utils.ts` — shared data (Italian names, cities, streets) and `pick()` helper
-  - `fetch-locations.ts` — standalone script to fetch location JSON from GitHub
+- `src/db/index.ts` — exports a singleton Drizzle client backed by an explicit `pg.Pool`. Pool sizing is env-driven
+  (`DATABASE_POOL_MAX`, `DATABASE_IDLE_TIMEOUT_MS`, `DATABASE_CONNECTION_TIMEOUT_MS`; defaults 20/30s/5s).
+- `src/db/seed/` — split between idempotent reference data and dev/staging fixtures (run via `bun run db:seed`):
+  - `index.ts` — top-level `seed()` composes `seedBase()` then `seedFixtures()`
+  - `base/` — idempotent reference data, no auth dependency, safe in any environment:
+    - `index.ts` — `seedBase()` runs locations + categories in order
+    - `locations.ts` — `seedLocations()` for regions, provinces, municipalities (skip-if-present)
+    - `categories.ts` — `seedStoreCategories()`, `seedProductCategories()` (skip-if-present)
+    - `fetch-locations.ts` — standalone script to refresh the location JSON from GitHub
+    - `regions.json`, `provinces.json`, `municipalities.json` — generated and committed
+  - `fixtures/` — test users for dev/staging only, depend on `better-auth`'s `signUpEmail`:
+    - `index.ts` — `seedFixtures()` runs admins + customers + sellers in order
+    - `admins.ts` — `seedAdmins()` (3 admin users)
+    - `customers.ts` — `seedCustomers()` (~300 customers)
+    - `sellers.ts` — `seedSellers()` (~150 sellers across the onboarding state machine)
+    - `utils.ts` — shared fixture data (Italian names, cities, streets) and `pick()` helper
 - `src/db/schemas/` — Drizzle table definitions and relations:
   - `auth.ts` — user, session, account, verification (better-auth tables)
   - `customer.ts` — customer_profiles (points balance)
