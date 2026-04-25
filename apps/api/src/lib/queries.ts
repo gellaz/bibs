@@ -83,6 +83,37 @@ export const SellerListQuery = t.Object({
 });
 
 /**
+ * Pagination + optional full-text + category + geo filters for product search.
+ */
+export const ProductSearchQuery = t.Object({
+	page: t.Optional(
+		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
+	),
+	limit: t.Optional(
+		t.Number({
+			minimum: 1,
+			maximum: maxLimit,
+			default: defaultLimit,
+			description: "Elementi per pagina",
+		}),
+	),
+	q: t.Optional(
+		t.String({ description: "Testo di ricerca (full-text italiano)" }),
+	),
+	categoryId: t.Optional(t.String({ description: "Filtra per ID categoria" })),
+	lat: t.Optional(t.Number({ description: "Latitudine del punto di ricerca" })),
+	lng: t.Optional(
+		t.Number({ description: "Longitudine del punto di ricerca" }),
+	),
+	radius: t.Optional(
+		t.Number({
+			default: 50,
+			description: "Raggio di ricerca in km (default: 50)",
+		}),
+	),
+});
+
+/**
  * Pagination + optional search/sort for category list endpoints.
  */
 export const CategoryListQuery = t.Object({

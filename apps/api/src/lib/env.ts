@@ -3,6 +3,9 @@ import { Value } from "@sinclair/typebox/value";
 
 const EnvSchema = t.Object({
 	DATABASE_URL: t.String(),
+	DATABASE_POOL_MAX: t.Optional(t.String()),
+	DATABASE_IDLE_TIMEOUT_MS: t.Optional(t.String()),
+	DATABASE_CONNECTION_TIMEOUT_MS: t.Optional(t.String()),
 	BETTER_AUTH_SECRET: t.String(),
 	BETTER_AUTH_URL: t.String(),
 	S3_ENDPOINT: t.String(),
@@ -28,6 +31,10 @@ if (!Value.Check(EnvSchema, process.env)) {
 /** Validated environment variables — import this instead of using process.env directly. */
 export const env = {
 	DATABASE_URL: process.env.DATABASE_URL!,
+	DATABASE_POOL_MAX: process.env.DATABASE_POOL_MAX ?? "20",
+	DATABASE_IDLE_TIMEOUT_MS: process.env.DATABASE_IDLE_TIMEOUT_MS ?? "30000",
+	DATABASE_CONNECTION_TIMEOUT_MS:
+		process.env.DATABASE_CONNECTION_TIMEOUT_MS ?? "5000",
 	BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET!,
 	BETTER_AUTH_URL: process.env.BETTER_AUTH_URL!,
 	S3_ENDPOINT: process.env.S3_ENDPOINT!,
