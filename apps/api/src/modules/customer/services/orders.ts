@@ -7,7 +7,6 @@ import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
-import { clearExpiry, scheduleExpiry } from "@/lib/jobs/reservation-timer";
 import { fromCents, toCents } from "@/lib/money";
 import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
@@ -254,11 +253,6 @@ export async function createOrder(params: CreateOrderParams) {
 			}
 		}
 
-		// Schedule exact-time expiry for reserve_pickup
-		if (type === "reserve_pickup" && reservationExpiresAt) {
-			scheduleExpiry(newOrder.id, reservationExpiresAt);
-		}
-
 		return newOrder;
 	});
 }
@@ -299,12 +293,8 @@ export async function pickupOrder(params: {
 
 			await refundStockAndPoints(tx, existing);
 
-			clearExpiry(existing.id);
 			throw new ServiceError(400, "Reservation has expired");
 		}
-
-		// Clear the expiry timer — order is being completed
-		clearExpiry(existing.id);
 
 		// Award points
 		const pointsEarned = await awardPoints(tx, {
@@ -348,9 +338,6 @@ export async function cancelOrder(params: {
 		);
 
 		await refundStockAndPoints(tx, existing);
-
-		// Clear the expiry timer if this was a reserve_pickup
-		clearExpiry(existing.id);
 
 		const [updated] = await tx
 			.update(order)

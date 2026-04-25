@@ -3,7 +3,6 @@ import { db } from "@/db";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order } from "@/db/schemas/order";
 import { ServiceError } from "@/lib/errors";
-import { clearExpiry } from "@/lib/jobs/reservation-timer";
 import { toCents } from "@/lib/money";
 import { awardPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
@@ -61,11 +60,6 @@ export async function transitionOrder(
 
 			return [upd];
 		});
-
-		// Clear reservation timer if applicable
-		if (existing.type === "reserve_pickup") {
-			clearExpiry(orderId);
-		}
 
 		return updated;
 	}

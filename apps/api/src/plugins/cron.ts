@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 export const cronJobs = new Elysia({ name: "cron-jobs" }).use(
 	cron({
 		name: "expireReservations",
-		pattern: Patterns.everyMinutes(10),
+		pattern: Patterns.EVERY_MINUTE,
 		async run() {
 			try {
 				const count = await expireReservations();
