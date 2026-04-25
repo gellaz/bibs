@@ -10,7 +10,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - bibs-postgis-data:/var/lib/postgresql/data
+      # PostgreSQL 18+ images (postgres:18-trixie) place data under
+      # /var/lib/postgresql/<major>/<cluster> and reject the legacy
+      # /var/lib/postgresql/data mount. Mount one level up so the image
+      # owns the layout. After upgrading from <18, run `bun infra:reset`
+      # to recreate the volume.
+      - bibs-postgis-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pgadmin -d bibs-db"]
       interval: 5s
