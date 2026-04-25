@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
+import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
 import { productCategory } from "@/db/schemas/category";
 import { customerProfile } from "@/db/schemas/customer";
+import { organization } from "@/db/schemas/organization";
 import {
 	product,
 	productClassification,
@@ -157,4 +159,66 @@ export async function createTestProductClassification(
 	await db
 		.insert(productClassification)
 		.values({ productId, productCategoryId });
+}
+
+// ── Organization ──────────────────────────────────────────────────────────────
+
+export async function createTestOrganization(
+	db: DrizzleTestDb,
+	sellerProfileId: string,
+	params: {
+		businessName?: string;
+		vatNumber?: string;
+		legalForm?: string;
+		vatStatus?: "pending" | "verified" | "rejected";
+	} = {},
+) {
+	const unique = crypto.randomUUID().slice(0, 8);
+	const [org] = await db
+		.insert(organization)
+		.values({
+			sellerProfileId,
+			businessName: params.businessName ?? `Test Org ${unique}`,
+			vatNumber:
+				params.vatNumber ??
+				`IT${unique.replace(/\D/g, "").padEnd(11, "0").slice(0, 11)}`,
+			legalForm: params.legalForm ?? "SRL",
+			addressLine1: "Via Roma 1",
+			city: "Roma",
+			zipCode: "00100",
+			province: "RM",
+			vatStatus: params.vatStatus ?? "pending",
+		})
+		.returning();
+
+	return org;
+}
+
+// ── Customer address ──────────────────────────────────────────────────────────
+
+export async function createTestCustomerAddress(
+	db: DrizzleTestDb,
+	customerProfileId: string,
+	params: {
+		label?: string;
+		addressLine1?: string;
+		city?: string;
+		zipCode?: string;
+		isDefault?: boolean;
+	} = {},
+) {
+	const [addr] = await db
+		.insert(customerAddress)
+		.values({
+			customerProfileId,
+			label: params.label ?? "Casa",
+			addressLine1: params.addressLine1 ?? "Via Roma 1",
+			city: params.city ?? "Roma",
+			zipCode: params.zipCode ?? "00100",
+			country: "IT",
+			isDefault: params.isDefault ?? false,
+		})
+		.returning();
+
+	return addr;
 }
