@@ -18,6 +18,10 @@ import {
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
 import { Input } from "@bibs/ui/components/input";
+import {
+	NativeSelect,
+	NativeSelectOption,
+} from "@bibs/ui/components/native-select";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
@@ -32,14 +36,31 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PencilIcon, SearchIcon, TagsIcon, Trash2Icon } from "lucide-react";
+import {
+	PencilIcon,
+	SearchIcon,
+	TagsIcon,
+	Trash2Icon,
+	UploadIcon,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import {
+	CsvImportDialog,
+	type CsvImportResult,
+} from "@/features/csv-import/components/csv-import-dialog";
 import { ProductCategoryForm } from "@/features/product-categories/components/product-category-form";
 import { api } from "@/lib/api";
+
+interface MacroCategory {
+	id: string;
+	name: string;
+}
 
 interface ProductCategory {
 	id: string;
 	name: string;
+	macroCategoryId: string;
+	macroCategory: MacroCategory;
 	createdAt: Date | string;
 	updatedAt: Date | string;
 }
@@ -59,11 +80,13 @@ export function ProductCategoriesPanel({
 	const [limit, setLimit] = useState(20);
 	const [search, setSearch] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const [macroFilter, setMacroFilter] = useState("");
 	const [sortBy, setSortBy] = useState<SortByField>("name");
 	const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 	const queryClient = useQueryClient();
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 	const [selectedCategory, setSelectedCategory] =
 		useState<ProductCategory | null>(null);
 
@@ -94,6 +117,7 @@ export function ProductCategoriesPanel({
 			page,
 			limit,
 			debouncedSearch,
+			macroFilter,
 			sortBy,
 			sortOrder,
 		],
@@ -103,6 +127,7 @@ export function ProductCategoriesPanel({
 					page,
 					limit,
 					...(debouncedSearch ? { search: debouncedSearch } : {}),
+					...(macroFilter ? { macroCategoryId: macroFilter } : {}),
 					sortBy,
 					sortOrder,
 				},
@@ -118,20 +143,33 @@ export function ProductCategoriesPanel({
 		},
 	});
 
+	const { data: macrosData, isLoading: macrosLoading } = useQuery({
+		queryKey: ["product-macro-categories", "all"],
+		queryFn: async () => {
+			const response = await api()["product-macro-categories"].get({
+				query: { limit: 100, sortBy: "name", sortOrder: "asc" },
+			});
+			if (response.error) {
+				throw new Error(
+					response.error.value?.message || "Failed to fetch macro categories",
+				);
+			}
+			return response.data;
+		},
+	});
+
+	const macros: MacroCategory[] = macrosData?.data ?? [];
+
 	const invalidateAll = () => {
-		void queryClient.invalidateQueries({
-			queryKey: ["product-categories"],
-		});
+		void queryClient.invalidateQueries({ queryKey: ["product-categories"] });
 		void queryClient.invalidateQueries({
 			queryKey: ["admin-configurations-counts"],
 		});
 	};
 
 	const createMutation = useMutation({
-		mutationFn: async (name: string) => {
-			const response = await api().admin["product-categories"].post({
-				name,
-			});
+		mutationFn: async (input: { name: string; macroCategoryId: string }) => {
+			const response = await api().admin["product-categories"].post(input);
 
 			if (response.error) {
 				throw new Error(
@@ -152,10 +190,14 @@ export function ProductCategoriesPanel({
 	});
 
 	const updateMutation = useMutation({
-		mutationFn: async ({ id, name }: { id: string; name: string }) => {
+		mutationFn: async (input: {
+			id: string;
+			name: string;
+			macroCategoryId: string;
+		}) => {
 			const response = await api()
-				.admin["product-categories"]({ productCategoryId: id })
-				.patch({ name });
+				.admin["product-categories"]({ productCategoryId: input.id })
+				.patch({ name: input.name, macroCategoryId: input.macroCategoryId });
 
 			if (response.error) {
 				throw new Error(
@@ -206,6 +248,20 @@ export function ProductCategoriesPanel({
 		deleteMutation.mutate(selectedCategory.id);
 	};
 
+	const handleImport = async (file: File): Promise<CsvImportResult> => {
+		const response = await api().admin["product-categories"].import.post({
+			file,
+		});
+		if (response.error) {
+			throw new Error(
+				response.error.value?.message || "Errore durante l'import",
+			);
+		}
+		const data = response.data?.data;
+		if (!data) throw new Error("Risposta non valida dal server");
+		return data;
+	};
+
 	return (
 		<div className="space-y-4">
 			{error && (
@@ -216,14 +272,39 @@ export function ProductCategoriesPanel({
 				</div>
 			)}
 
-			<div className="relative">
-				<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-				<Input
-					placeholder="Cerca categoria prodotto..."
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="pl-9"
-				/>
+			<div className="flex items-center gap-2">
+				<div className="relative flex-1">
+					<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+					<Input
+						placeholder="Cerca categoria prodotto..."
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						className="pl-9"
+					/>
+				</div>
+				<NativeSelect
+					className="w-56"
+					value={macroFilter}
+					onChange={(e) => {
+						setMacroFilter(e.target.value);
+						setPage(1);
+					}}
+					disabled={macrosLoading}
+					aria-label="Filtra per macro categoria"
+				>
+					<NativeSelectOption value="">
+						Tutte le macro categorie
+					</NativeSelectOption>
+					{macros.map((m) => (
+						<NativeSelectOption key={m.id} value={m.id}>
+							{m.name}
+						</NativeSelectOption>
+					))}
+				</NativeSelect>
+				<Button variant="outline" onClick={() => setImportOpen(true)}>
+					<UploadIcon />
+					<span>Importa CSV</span>
+				</Button>
 			</div>
 
 			{isLoading ? (
@@ -236,22 +317,23 @@ export function ProductCategoriesPanel({
 						<TableHeader>
 							<TableRow className="bg-muted/50 hover:bg-muted/50">
 								<SortableTableHead
-									className="w-[40%] pl-4"
+									className="w-[30%] pl-4"
 									active={sortBy === "name"}
 									sortOrder={sortOrder}
 									onSort={() => handleSort("name")}
 								>
 									Nome
 								</SortableTableHead>
+								<TableHead className="w-[30%]">Macro Categoria</TableHead>
 								<SortableTableHead
-									className="w-[40%]"
+									className="w-[25%]"
 									active={sortBy === "createdAt"}
 									sortOrder={sortOrder}
 									onSort={() => handleSort("createdAt")}
 								>
 									Data Creazione
 								</SortableTableHead>
-								<TableHead className="w-[20%] pr-6 text-right">
+								<TableHead className="w-[15%] pr-6 text-right">
 									Azioni
 								</TableHead>
 							</TableRow>
@@ -262,6 +344,9 @@ export function ProductCategoriesPanel({
 									<TableRow key={category.id} className="group">
 										<TableCell className="pl-6 font-semibold">
 											{category.name}
+										</TableCell>
+										<TableCell className="text-muted-foreground">
+											{category.macroCategory?.name ?? "—"}
 										</TableCell>
 										<TableCell className="text-muted-foreground text-sm">
 											{new Date(category.createdAt).toLocaleDateString(
@@ -303,7 +388,7 @@ export function ProductCategoriesPanel({
 								))
 							) : (
 								<TableRow className="hover:bg-transparent">
-									<TableCell colSpan={3} className="h-32 text-center">
+									<TableCell colSpan={4} className="h-32 text-center">
 										<div className="flex flex-col items-center gap-2">
 											<TagsIcon className="text-muted-foreground/40 size-8" />
 											<div>
@@ -351,17 +436,18 @@ export function ProductCategoriesPanel({
 					);
 				})()}
 
-			{/* Create Dialog */}
 			<Dialog open={createOpen} onOpenChange={onCreateOpenChange}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Nuova Categoria Prodotto</DialogTitle>
 						<DialogDescription>
-							Inserisci il nome della nuova categoria prodotto.
+							Inserisci macro categoria e nome della nuova sotto-categoria.
 						</DialogDescription>
 					</DialogHeader>
 					<ProductCategoryForm
-						onSubmit={(data) => createMutation.mutate(data.name)}
+						macros={macros}
+						macrosLoading={macrosLoading}
+						onSubmit={(formData) => createMutation.mutate(formData)}
 						onCancel={() => onCreateOpenChange(false)}
 						isPending={createMutation.isPending}
 						submitLabel="Crea"
@@ -370,24 +456,31 @@ export function ProductCategoriesPanel({
 				</DialogContent>
 			</Dialog>
 
-			{/* Edit Dialog */}
 			<Dialog open={editOpen} onOpenChange={setEditOpen}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Modifica Categoria Prodotto</DialogTitle>
 						<DialogDescription>
-							Modifica il nome della categoria prodotto selezionata.
+							Modifica nome e macro della sotto-categoria selezionata.
 						</DialogDescription>
 					</DialogHeader>
 					<ProductCategoryForm
+						macros={macros}
+						macrosLoading={macrosLoading}
 						defaultValues={
-							selectedCategory ? { name: selectedCategory.name } : undefined
+							selectedCategory
+								? {
+										name: selectedCategory.name,
+										macroCategoryId: selectedCategory.macroCategoryId,
+									}
+								: undefined
 						}
-						onSubmit={(data) => {
+						onSubmit={(formData) => {
 							if (selectedCategory) {
 								updateMutation.mutate({
 									id: selectedCategory.id,
-									name: data.name,
+									name: formData.name,
+									macroCategoryId: formData.macroCategoryId,
 								});
 							}
 						}}
@@ -402,7 +495,6 @@ export function ProductCategoriesPanel({
 				</DialogContent>
 			</Dialog>
 
-			{/* Delete Confirmation */}
 			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
@@ -431,6 +523,16 @@ export function ProductCategoriesPanel({
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
+
+			<CsvImportDialog
+				open={importOpen}
+				onOpenChange={setImportOpen}
+				title="Importa Categorie Prodotto"
+				description="Carica un file CSV per popolare in blocco macro categorie e sotto-categorie."
+				formatHint="Header attesi: macro_category, subcategory. L'import è idempotente: le categorie già presenti vengono saltate."
+				onImport={handleImport}
+				onSuccess={invalidateAll}
+			/>
 		</div>
 	);
 }

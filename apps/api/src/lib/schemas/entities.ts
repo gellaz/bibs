@@ -96,11 +96,30 @@ export const UserSchema = t.Object({
 	banExpires: t.Nullable(t.Date()),
 });
 
-export const ProductCategorySchema = t.Object({
+export const ProductMacroCategorySchema = t.Object({
 	id: t.String(),
-	name: t.String({ description: "Nome della categoria prodotto" }),
+	name: t.String({ description: "Nome della macro categoria prodotto" }),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
+});
+
+export const ProductCategorySchema = t.Object({
+	id: t.String(),
+	macroCategoryId: t.String({
+		description: "ID della macro categoria di appartenenza",
+	}),
+	name: t.String({ description: "Nome della sotto-categoria prodotto" }),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
+export const ProductCategoryWithMacroSchema = t.Object({
+	id: t.String(),
+	macroCategoryId: t.String(),
+	name: t.String({ description: "Nome della sotto-categoria prodotto" }),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+	macroCategory: ProductMacroCategorySchema,
 });
 
 export const SellerProfileSchema = t.Object({
@@ -258,7 +277,10 @@ export const StorePhoneNumberSchema = t.Object({
 });
 
 export const CsvImportResultSchema = t.Object({
-	created: t.Number({ description: "Numero di prodotti creati con successo" }),
+	created: t.Number({ description: "Numero di righe create con successo" }),
+	skipped: t.Number({
+		description: "Numero di righe saltate perché già presenti",
+	}),
 	failed: t.Number({ description: "Numero di righe con errori" }),
 	errors: t.Array(
 		t.Object({

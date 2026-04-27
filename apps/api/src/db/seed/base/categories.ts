@@ -1,80 +1,19 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { count } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
+import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { storeCategory } from "@/db/schemas/store-category";
+import {
+	importProductCategoriesFromCsv,
+	importStoreCategoriesFromCsv,
+} from "@/modules/admin/services/category-import";
 
-// ── Store categories ────────────────────────
-
-const storeCategories = [
-	"Alimentari",
-	"Abbigliamento",
-	"Elettronica",
-	"Casa e arredamento",
-	"Sport e tempo libero",
-	"Salute e bellezza",
-	"Libreria e cartoleria",
-	"Gioielleria e accessori",
-	"Ristorazione",
-	"Servizi",
-	"Altro",
-];
-
-// ── Product categories ──────────────────────
-
-const productCategories = [
-	"Frutta e verdura",
-	"Pane e prodotti da forno",
-	"Pasta e riso",
-	"Carne e salumi",
-	"Pesce e frutti di mare",
-	"Latticini e formaggi",
-	"Uova",
-	"Olio e condimenti",
-	"Conserve e sottoli",
-	"Farine e cereali",
-	"Legumi",
-	"Spezie e aromi",
-	"Dolci e pasticceria",
-	"Cioccolato e confetti",
-	"Gelati e sorbetti",
-	"Bevande analcoliche",
-	"Vino",
-	"Birra artigianale",
-	"Liquori e distillati",
-	"Caffè e tè",
-	"Miele e confetture",
-	"Snack e frutta secca",
-	"Prodotti biologici",
-	"Prodotti senza glutine",
-	"Prodotti vegani",
-	"Cosmetici naturali",
-	"Saponi e detergenti",
-	"Candele e profumi",
-	"Ceramiche e terracotta",
-	"Tessuti e stoffe",
-	"Abbigliamento artigianale",
-	"Borse e pelletteria",
-	"Gioielli artigianali",
-	"Bigiotteria",
-	"Oggettistica e souvenir",
-	"Giocattoli in legno",
-	"Articoli per la casa",
-	"Piante e fiori",
-	"Sementi e giardinaggio",
-	"Prodotti per animali",
-	"Libri e riviste",
-	"Cartoleria e cancelleria",
-	"Articoli per feste",
-	"Fotografia e stampe",
-	"Musica e vinili",
-	"Antiquariato e vintage",
-	"Elettronica e accessori",
-	"Attrezzatura sportiva",
-	"Articoli per bambini",
-	"Prodotti per la salute",
-];
-
-// ── Seeding functions ───────────────────────
+// CSV files live at the repo root and are committed alongside the code.
+const REPO_ROOT = resolve(import.meta.dir, "../../../../../..");
+const PRODUCT_CATEGORIES_CSV = resolve(REPO_ROOT, "product_categories.csv");
+const STORE_CATEGORIES_CSV = resolve(REPO_ROOT, "store_categories.csv");
 
 export async function seedStoreCategories() {
 	const [{ total }] = await db.select({ total: count() }).from(storeCategory);
@@ -83,23 +22,28 @@ export async function seedStoreCategories() {
 		return;
 	}
 
-	console.log("  🏷️ Seeding store categories...");
-	await db
-		.insert(storeCategory)
-		.values(storeCategories.map((name) => ({ name })));
-	console.log(`     ✓ ${storeCategories.length} store categories`);
+	console.log("  🏷️ Seeding store categories from CSV...");
+	const csv = readFileSync(STORE_CATEGORIES_CSV, "utf8");
+	const result = await importStoreCategoriesFromCsv(csv);
+	console.log(
+		`     ✓ ${result.created} store categories (skipped: ${result.skipped}, failed: ${result.failed})`,
+	);
 }
 
 export async function seedProductCategories() {
-	const [{ total }] = await db.select({ total: count() }).from(productCategory);
-	if (total > 0) {
+	const [[{ macroTotal }], [{ subTotal }]] = await Promise.all([
+		db.select({ macroTotal: count() }).from(productMacroCategory),
+		db.select({ subTotal: count() }).from(productCategory),
+	]);
+	if (macroTotal > 0 || subTotal > 0) {
 		console.log("  ⏭ Product categories already seeded, skipping");
 		return;
 	}
 
-	console.log("  🏷️ Seeding product categories...");
-	await db
-		.insert(productCategory)
-		.values(productCategories.map((name) => ({ name })));
-	console.log(`     ✓ ${productCategories.length} product categories`);
+	console.log("  🏷️ Seeding product categories from CSV...");
+	const csv = readFileSync(PRODUCT_CATEGORIES_CSV, "utf8");
+	const result = await importProductCategoriesFromCsv(csv);
+	console.log(
+		`     ✓ ${result.created} product categories (skipped: ${result.skipped}, failed: ${result.failed})`,
+	);
 }

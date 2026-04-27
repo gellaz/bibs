@@ -6,13 +6,14 @@ import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { ProductCategoriesPanel } from "@/features/product-categories/components/product-categories-panel";
+import { ProductMacroCategoriesPanel } from "@/features/product-macro-categories/components/product-macro-categories-panel";
 import { StoreCategoriesPanel } from "@/features/store-categories/components/store-categories-panel";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/configurations")({
 	component: ConfigurationsPage,
 	validateSearch: (search: Record<string, unknown>) => ({
-		tab: (search.tab as string) || "product-categories",
+		tab: (search.tab as string) || "product-macro-categories",
 	}),
 });
 
@@ -31,6 +32,11 @@ function ConfigurationsPage() {
 	});
 
 	const tabs: TabNavItem[] = [
+		{
+			value: "product-macro-categories",
+			label: "Macro Categorie Prodotto",
+			count: countsData?.productMacroCategories ?? null,
+		},
 		{
 			value: "product-categories",
 			label: "Categorie Prodotto",
@@ -62,6 +68,12 @@ function ConfigurationsPage() {
 				</Button>
 			</TabNav>
 
+			{tab === "product-macro-categories" && (
+				<ProductMacroCategoriesPanel
+					createOpen={createOpen}
+					onCreateOpenChange={setCreateOpen}
+				/>
+			)}
 			{tab === "product-categories" && (
 				<ProductCategoriesPanel
 					createOpen={createOpen}
