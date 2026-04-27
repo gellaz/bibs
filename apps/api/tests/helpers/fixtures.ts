@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
 import { productCategory } from "@/db/schemas/category";
@@ -9,6 +9,7 @@ import {
 	productClassification,
 	storeProduct,
 } from "@/db/schemas/product";
+import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import type { DrizzleTestDb } from "./test-db";
@@ -139,13 +140,33 @@ export async function createTestStoreProduct(
 	return sp;
 }
 
+export async function createTestMacroCategory(
+	db: DrizzleTestDb,
+	name = "Test Macro",
+) {
+	const existing = await db.query.productMacroCategory.findFirst({
+		where: eq(productMacroCategory.name, name),
+	});
+	if (existing) return existing;
+
+	const [macro] = await db
+		.insert(productMacroCategory)
+		.values({ name })
+		.returning();
+
+	return macro;
+}
+
 export async function createTestCategory(
 	db: DrizzleTestDb,
 	name = "Test Category",
+	macroCategoryId?: string,
 ) {
+	const macroId = macroCategoryId ?? (await createTestMacroCategory(db)).id;
+
 	const [category] = await db
 		.insert(productCategory)
-		.values({ name })
+		.values({ name, macroCategoryId: macroId })
 		.returning();
 
 	return category;

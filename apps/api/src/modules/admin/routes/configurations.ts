@@ -14,7 +14,10 @@ export const configurationsRoutes = new Elysia().get(
 			200: okRes(
 				t.Object({
 					productCategories: t.Number({
-						description: "Numero totale di categorie prodotto",
+						description: "Numero totale di sotto-categorie prodotto",
+					}),
+					productMacroCategories: t.Number({
+						description: "Numero totale di macro categorie prodotto",
 					}),
 					storeCategories: t.Number({
 						description: "Numero totale di categorie negozio",
@@ -25,7 +28,7 @@ export const configurationsRoutes = new Elysia().get(
 		detail: {
 			summary: "Contatori configurazioni",
 			description:
-				"Restituisce il numero totale di categorie prodotto e categorie negozio.",
+				"Restituisce il numero totale di macro categorie prodotto, sotto-categorie prodotto e categorie negozio.",
 			tags: ["Admin"],
 		},
 	},

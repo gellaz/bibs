@@ -20,13 +20,17 @@ export const productCategoriesWriteRoutes = new Elysia()
 		async (ctx) => {
 			const { body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await createProductCategory(body.name);
+			const data = await createProductCategory({
+				name: body.name,
+				macroCategoryId: body.macroCategoryId,
+			});
 
 			pino.info(
 				{
 					adminId: user.id,
 					categoryId: data.id,
 					categoryName: data.name,
+					macroCategoryId: data.macroCategoryId,
 					action: "product_category_created",
 				},
 				"Categoria prodotto creata",
@@ -39,14 +43,18 @@ export const productCategoriesWriteRoutes = new Elysia()
 				name: t.String({
 					minLength: 1,
 					maxLength: 100,
-					description: "Nome della categoria",
+					description: "Nome della sotto-categoria",
+				}),
+				macroCategoryId: t.String({
+					minLength: 1,
+					description: "ID della macro categoria di appartenenza",
 				}),
 			}),
 			response: withErrors({ 200: okRes(ProductCategorySchema) }),
 			detail: {
 				summary: "Crea categoria prodotto",
 				description:
-					"Crea una nuova categoria prodotto. Il nome deve essere univoco.",
+					"Crea una nuova sotto-categoria prodotto sotto una macro categoria. Il nome deve essere univoco all'interno della stessa macro.",
 				tags: ["Admin"],
 			},
 		},
@@ -59,6 +67,7 @@ export const productCategoriesWriteRoutes = new Elysia()
 			const data = await updateProductCategory({
 				productCategoryId: params.productCategoryId,
 				name: body.name,
+				macroCategoryId: body.macroCategoryId,
 			});
 
 			pino.info(
@@ -66,6 +75,7 @@ export const productCategoriesWriteRoutes = new Elysia()
 					adminId: user.id,
 					categoryId: data.id,
 					newName: data.name,
+					newMacroCategoryId: data.macroCategoryId,
 					action: "product_category_updated",
 				},
 				"Categoria prodotto aggiornata",
@@ -80,16 +90,25 @@ export const productCategoriesWriteRoutes = new Elysia()
 				}),
 			}),
 			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nuovo nome della categoria",
-				}),
+				name: t.Optional(
+					t.String({
+						minLength: 1,
+						maxLength: 100,
+						description: "Nuovo nome della sotto-categoria",
+					}),
+				),
+				macroCategoryId: t.Optional(
+					t.String({
+						minLength: 1,
+						description: "Nuovo ID della macro categoria di appartenenza",
+					}),
+				),
 			}),
 			response: withErrors({ 200: okRes(ProductCategorySchema) }),
 			detail: {
 				summary: "Aggiorna categoria prodotto",
-				description: "Aggiorna il nome di una categoria prodotto esistente.",
+				description:
+					"Aggiorna nome e/o macro categoria di una sotto-categoria prodotto esistente.",
 				tags: ["Admin"],
 			},
 		},
@@ -123,7 +142,7 @@ export const productCategoriesWriteRoutes = new Elysia()
 			detail: {
 				summary: "Elimina categoria prodotto",
 				description:
-					"Elimina una categoria prodotto. Fallisce se la categoria non esiste.",
+					"Elimina una sotto-categoria prodotto. Fallisce se la categoria non esiste.",
 				tags: ["Admin"],
 			},
 		},

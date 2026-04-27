@@ -11,6 +11,7 @@ import { adminModule } from "@/modules/admin";
 import { customerModule } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
 import { productCategoriesModule } from "@/modules/product-categories";
+import { productMacroCategoriesModule } from "@/modules/product-macro-categories";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
 import { storeCategoriesModule } from "@/modules/store-categories";
@@ -147,6 +148,7 @@ const app = new Elysia()
 	.use(betterAuth)
 	.use(registration)
 	.use(adminModule)
+	.use(productMacroCategoriesModule)
 	.use(productCategoriesModule)
 	.use(storeCategoriesModule)
 	.use(locationsModule)
