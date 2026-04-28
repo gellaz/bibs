@@ -6,8 +6,6 @@
 		"target": "ES2022",
 		"jsx": "react-jsx",
 		"module": "ESNext",
-		"ignoreDeprecations": "6.0",
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./src/*", "../api/src/*"],
 			"~/*": ["../../packages/ui/src/*"]
