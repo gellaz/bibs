@@ -74,7 +74,7 @@ Allineare lo stack di build/typing/test del monorepo `bibs` allo stack del proge
 ### 4.2 `apps/{admin,customer,seller}/package.json`
 
 - **Aggiungere** a `devDependencies`: `@rolldown/plugin-babel: catalog:`, `babel-plugin-react-compiler: catalog:`, `nitro: catalog:`.
-- **Rimuovere** da `apps/admin/devDependencies`: `vite-tsconfig-paths` (già non presente in customer/seller).
+- **Rimuovere** `vite-tsconfig-paths` da `devDependencies` di tutti e 3 i frontend (admin/customer/seller — verificato: tutti e 3 lo importano nel `vite.config.ts` e lo elencano in `devDependencies`).
 
 ### 4.3 `package.json` (root)
 
@@ -97,12 +97,12 @@ Ogni stage = un commit. Ogni stage ha gate di verifica obbligatori. Se un gate f
 
 ### Stage 2 — Vitest 4 + jsdom 28
 - Bump `vitest` ^4.1.5 e `jsdom` ^28.1.0 in catalog; `bun install`.
-- Fix breaking changes Vitest 4 (signature `vi.mock`, default `pool`, ecc.) — solo `apps/admin` ha test attivi via vitest; `apps/api` usa `bun test` quindi è invariato.
-- **Gate:** `bun run --cwd apps/admin test` (se esistono test) + `bun run test` (apps/api).
+- Fix breaking changes Vitest 4 (signature `vi.mock`, default `pool`, ecc.). **Verificato durante stesura del piano: nessun test vitest esiste sui 3 frontend** — gate Vitest 4 è effettivamente solo "il pacchetto si installa". `apps/api` usa `bun test`, quindi totalmente invariato.
+- **Gate:** `bun install` completa pulito + `bun run typecheck` clean (per intercettare eventuali type-mismatch su `@testing-library/*` con jsdom 28 anche se non usati a runtime).
 
 ### Stage 3 — Vite 8 + plugin-react 6 + tsconfigPaths nativo
 - Bump `vite` ^8.0.0 e `@vitejs/plugin-react` ^6.0.1 in catalog.
-- Rimuovere `vite-tsconfig-paths` da catalog e da `apps/admin/devDependencies`.
+- Rimuovere `vite-tsconfig-paths` da catalog e da `devDependencies` di admin/customer/seller.
 - Aggiornare i 3 `vite.config.ts` (sostituire plugin con `resolve.tsconfigPaths: true`).
 - `bun install`.
 - **Gate:** `bun run typecheck` + `bun run --cwd apps/admin build` + smoke `bun run dev:admin` con verifica HTTP 200 su `localhost:3003/`.
