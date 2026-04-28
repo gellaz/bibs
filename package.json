@@ -73,6 +73,6 @@
 		"@biomejs/biome": "^2.4.13",
 		"concurrently": "^9.2.1",
 		"lefthook": "^2.1.6",
-		"typescript": "^5.9.3"
+		"typescript": "^6.0.2"
 	}
 }
