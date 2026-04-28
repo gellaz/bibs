@@ -46,11 +46,13 @@
 	},
 	"devDependencies": {
 		"@inlang/paraglide-js": "catalog:",
+		"@rolldown/plugin-babel": "catalog:",
 		"@tanstack/devtools-vite": "catalog:",
 		"@types/node": "catalog:",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "catalog:",
+		"babel-plugin-react-compiler": "catalog:",
 		"vite": "catalog:"
 	}
 }
