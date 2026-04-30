@@ -1,5 +1,6 @@
 import { t } from "elysia";
 import {
+	BrandSchema,
 	CustomerAddressSchema,
 	CustomerProfileSchema,
 	EmployeeSchema,
@@ -64,6 +65,7 @@ export const ProductWithRelationsSchema = t.Object({
 	productCategoryAssignments: t.Array(ProductCategoryAssignmentWithCategory),
 	storeProducts: t.Array(StoreProductWithStore),
 	images: t.Array(ProductImageSchema),
+	brand: t.Nullable(BrandSchema),
 });
 
 // StoreProduct + product (for order items)

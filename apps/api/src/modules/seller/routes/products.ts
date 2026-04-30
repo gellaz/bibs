@@ -5,6 +5,7 @@ import { PaginationQuery } from "@/lib/pagination";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
 	CsvImportResultSchema,
+	EanLookupResultSchema,
 	OkMessage,
 	okPageRes,
 	okRes,
@@ -20,6 +21,7 @@ import {
 	deleteProduct,
 	getProduct,
 	listProducts,
+	lookupProductByEan,
 	updateProduct,
 } from "../services/products";
 
@@ -38,6 +40,31 @@ export const productsRoutes = new Elysia()
 				summary: "Lista prodotti",
 				description:
 					"Restituisce la lista paginata dei prodotti del venditore con categorie, disponibilità per negozio e immagini.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.get(
+		"/products/lookup",
+		async ({ query }) => {
+			const data = await lookupProductByEan({ ean: query.ean });
+			return ok(data);
+		},
+		{
+			query: t.Object({
+				ean: t.String({
+					pattern: "^(\\d{8}|\\d{13})$",
+					description: "Codice EAN-8 o EAN-13",
+				}),
+			}),
+			auth: true,
+			response: withErrors({
+				200: okRes(t.Union([EanLookupResultSchema, t.Null()])),
+			}),
+			detail: {
+				summary: "Lookup prodotto per EAN",
+				description:
+					"Restituisce i dati pre-compilabili dell'ultimo prodotto creato con questo EAN (cross-seller). Esclude prezzo e immagini. Ritorna null se nessun prodotto matcha.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -79,6 +106,8 @@ export const productsRoutes = new Elysia()
 					productId: data.id,
 					productName: data.name,
 					categoryIds: body.categoryIds,
+					ean: data.ean,
+					brandId: data.brandId,
 					action: "product_created",
 				},
 				"Nuovo prodotto creato",
@@ -144,6 +173,24 @@ export const productsRoutes = new Elysia()
 					t.Array(t.String(), {
 						description:
 							"IDs delle immagini esistenti nell'ordine desiderato. La prima diventa l'immagine di default.",
+					}),
+				),
+				ean: t.Optional(
+					t.Union([t.String({ pattern: "^(\\d{8}|\\d{13})$" }), t.Null()], {
+						description: "Codice EAN (null per cancellarlo)",
+					}),
+				),
+				brandId: t.Optional(
+					t.Union([t.String(), t.Null()], {
+						description: "ID brand esistente (null per rimuovere)",
+					}),
+				),
+				brandName: t.Optional(
+					t.String({
+						minLength: 1,
+						maxLength: 120,
+						description:
+							"Nome brand da creare (ignorato se brandId valorizzato)",
 					}),
 				),
 			}),

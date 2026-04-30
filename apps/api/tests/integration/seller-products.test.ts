@@ -32,6 +32,7 @@ mock.module("@/lib/s3", () => ({
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
 import { eq } from "drizzle-orm";
+import { brand } from "@/db/schemas/brand";
 import { productCategoryAssignment } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
 import {
@@ -39,11 +40,14 @@ import {
 	deleteProduct,
 	getProduct,
 	listProducts,
+	lookupProductByEan,
 	updateProduct,
 } from "@/modules/seller/services/products";
 import { truncateAll } from "../helpers/cleanup";
 import {
+	createTestBrand,
 	createTestCategory,
+	createTestMacroCategory,
 	createTestProduct,
 	createTestSeller,
 } from "../helpers/fixtures";
@@ -268,5 +272,201 @@ describe("deleteProduct", () => {
 				sellerProfileId: other.profile.id,
 			}),
 		).rejects.toBeInstanceOf(ServiceError);
+	});
+});
+
+describe("createProduct - brand and EAN", () => {
+	it("creates a product with a brandName, creating the brand on the fly", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const cat = await createTestCategory(db);
+
+		const created = await createProduct({
+			sellerProfileId: seller.profile.id,
+			name: "Sneakers",
+			price: "59.90",
+			categoryIds: [cat.id],
+			brandName: "Nike",
+		});
+
+		expect(created.brandId).toBeTruthy();
+
+		const brandRow = await db.query.brand.findFirst({
+			where: eq(brand.id, created.brandId!),
+		});
+		expect(brandRow?.name).toBe("Nike");
+		expect(brandRow?.sellerProfileId).toBe(seller.profile.id);
+	});
+
+	it("reuses an existing brand when name matches case-insensitively", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const cat = await createTestCategory(db);
+		const existing = await createTestBrand(db, seller.profile.id, "Nike");
+
+		const created = await createProduct({
+			sellerProfileId: seller.profile.id,
+			name: "Sneakers 2",
+			price: "59.90",
+			categoryIds: [cat.id],
+			brandName: "NIKE",
+		});
+
+		expect(created.brandId).toBe(existing.id);
+	});
+
+	it("uses brandId when provided, ignoring brandName", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const cat = await createTestCategory(db);
+		const existing = await createTestBrand(db, seller.profile.id, "Adidas");
+
+		const created = await createProduct({
+			sellerProfileId: seller.profile.id,
+			name: "Tee",
+			price: "19.90",
+			categoryIds: [cat.id],
+			brandId: existing.id,
+			brandName: "ShouldBeIgnored",
+		});
+
+		expect(created.brandId).toBe(existing.id);
+
+		const brands = await db.query.brand.findMany({
+			where: eq(brand.sellerProfileId, seller.profile.id),
+		});
+		expect(brands.find((b) => b.name === "ShouldBeIgnored")).toBeUndefined();
+	});
+
+	it("rejects brandId belonging to another seller with 404", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const cat = await createTestCategory(db);
+		const brandOfB = await createTestBrand(db, sellerB.profile.id, "Foreign");
+
+		await expect(
+			createProduct({
+				sellerProfileId: sellerA.profile.id,
+				name: "X",
+				price: "1.00",
+				categoryIds: [cat.id],
+				brandId: brandOfB.id,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("stores ean and accepts duplicate ean across different sellers", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const cat = await createTestCategory(db);
+
+		const a = await createProduct({
+			sellerProfileId: sellerA.profile.id,
+			name: "Coca",
+			price: "1.00",
+			categoryIds: [cat.id],
+			ean: "5449000000996",
+		});
+		const b = await createProduct({
+			sellerProfileId: sellerB.profile.id,
+			name: "Coca",
+			price: "1.20",
+			categoryIds: [cat.id],
+			ean: "5449000000996",
+		});
+
+		expect(a.ean).toBe("5449000000996");
+		expect(b.ean).toBe("5449000000996");
+	});
+
+	it("rejects duplicate ean for the same seller (unique violation)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const cat = await createTestCategory(db);
+
+		await createProduct({
+			sellerProfileId: seller.profile.id,
+			name: "First",
+			price: "1.00",
+			categoryIds: [cat.id],
+			ean: "5449000000996",
+		});
+
+		await expect(
+			createProduct({
+				sellerProfileId: seller.profile.id,
+				name: "Second",
+				price: "2.00",
+				categoryIds: [cat.id],
+				ean: "5449000000996",
+			}),
+		).rejects.toThrow();
+	});
+
+	it("rejects categoryIds spanning multiple macro-categories", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macroA = await createTestMacroCategory(db, "Macro A");
+		const macroB = await createTestMacroCategory(db, "Macro B");
+		const catA = await createTestCategory(db, "Cat A", macroA.id);
+		const catB = await createTestCategory(db, "Cat B", macroB.id);
+
+		await expect(
+			createProduct({
+				sellerProfileId: seller.profile.id,
+				name: "Mixed",
+				price: "1.00",
+				categoryIds: [catA.id, catB.id],
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+});
+
+describe("lookupProductByEan", () => {
+	it("returns null when no product matches", async () => {
+		const result = await lookupProductByEan({ ean: "00000000" });
+		expect(result).toBeNull();
+	});
+
+	it("returns the latest product across sellers, with brand and categories", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const macro = await createTestMacroCategory(db, "Foo");
+		const cat = await createTestCategory(db, "Bar", macro.id);
+		const brandA = await createTestBrand(db, sellerA.profile.id, "BrandA");
+
+		await createProduct({
+			sellerProfileId: sellerA.profile.id,
+			name: "Old",
+			price: "1.00",
+			categoryIds: [cat.id],
+			ean: "12345678",
+			brandId: brandA.id,
+		});
+		await new Promise((r) => setTimeout(r, 10));
+
+		const brandB = await createTestBrand(db, sellerB.profile.id, "BrandB");
+		await createProduct({
+			sellerProfileId: sellerB.profile.id,
+			name: "New",
+			description: "Latest version",
+			price: "2.00",
+			categoryIds: [cat.id],
+			ean: "12345678",
+			brandId: brandB.id,
+		});
+
+		const result = await lookupProductByEan({ ean: "12345678" });
+
+		expect(result).not.toBeNull();
+		expect(result!.name).toBe("New");
+		expect(result!.description).toBe("Latest version");
+		expect(result!.ean).toBe("12345678");
+		expect(result!.brandName).toBe("BrandB");
+		expect(result!.macroCategoryId).toBe(macro.id);
+		expect(result!.categoryIds).toEqual([cat.id]);
 	});
 });
