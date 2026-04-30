@@ -11,6 +11,7 @@ import {
 	timestamp,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { brand } from "./brand";
 import { productCategory } from "./category";
 import { productImage } from "./product-image";
 import { sellerProfile } from "./seller";
@@ -27,6 +28,10 @@ export const product = pgTable(
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
 		name: text("name").notNull(),
 		description: text("description"),
+		ean: text("ean"),
+		brandId: text("brand_id").references(() => brand.id, {
+			onDelete: "set null",
+		}),
 		price: numeric("price", { precision: 10, scale: 2 }).notNull(),
 		isActive: boolean("is_active").default(true).notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })
@@ -47,6 +52,15 @@ export const product = pgTable(
       )`,
 		),
 		check("product_price_non_negative", sql`${table.price} >= 0`),
+		uniqueIndex("product_seller_ean_unique")
+			.on(table.sellerProfileId, table.ean)
+			.where(sql`${table.ean} IS NOT NULL`),
+		index("product_ean_idx").on(table.ean),
+		index("product_brand_id_idx").on(table.brandId),
+		check(
+			"product_ean_format",
+			sql`${table.ean} IS NULL OR ${table.ean} ~ '^(\\d{8}|\\d{13})$'`,
+		),
 	],
 );
 
@@ -55,13 +69,17 @@ export const productRelations = relations(product, ({ one, many }) => ({
 		fields: [product.sellerProfileId],
 		references: [sellerProfile.id],
 	}),
-	productClassifications: many(productClassification),
+	brand: one(brand, {
+		fields: [product.brandId],
+		references: [brand.id],
+	}),
+	productCategoryAssignments: many(productCategoryAssignment),
 	storeProducts: many(storeProduct),
 	images: many(productImage),
 }));
 
-export const productClassification = pgTable(
-	"product_classifications",
+export const productCategoryAssignment = pgTable(
+	"product_category_assignments",
 	{
 		productId: text("product_id")
 			.notNull()
@@ -72,19 +90,21 @@ export const productClassification = pgTable(
 	},
 	(table) => [
 		primaryKey({ columns: [table.productId, table.productCategoryId] }),
-		index("product_classification_category_id_idx").on(table.productCategoryId),
+		index("product_category_assignments_category_id_idx").on(
+			table.productCategoryId,
+		),
 	],
 );
 
-export const productClassificationRelations = relations(
-	productClassification,
+export const productCategoryAssignmentRelations = relations(
+	productCategoryAssignment,
 	({ one }) => ({
 		product: one(product, {
-			fields: [productClassification.productId],
+			fields: [productCategoryAssignment.productId],
 			references: [product.id],
 		}),
 		category: one(productCategory, {
-			fields: [productClassification.productCategoryId],
+			fields: [productCategoryAssignment.productCategoryId],
 			references: [productCategory.id],
 		}),
 	}),

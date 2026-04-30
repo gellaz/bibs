@@ -15,6 +15,13 @@
       "when": 1777280047054,
       "tag": "0001_grey_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746009600000,
+      "tag": "0002_brands_ean_rename_classifications",
+      "breakpoints": true
     }
   ]
 }
