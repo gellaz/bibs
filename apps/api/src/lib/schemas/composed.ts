@@ -1,5 +1,6 @@
 import { t } from "elysia";
 import {
+	BrandSchema,
 	CustomerAddressSchema,
 	CustomerProfileSchema,
 	EmployeeSchema,
@@ -45,8 +46,8 @@ export const EmployeeWithUserSchema = t.Object({
 	user: UserSchema,
 });
 
-// Product classification with category
-const ProductClassificationWithCategory = t.Object({
+// Product category assignment with category
+const ProductCategoryAssignmentWithCategory = t.Object({
 	productId: t.String(),
 	productCategoryId: t.String(),
 	category: ProductCategorySchema,
@@ -61,9 +62,10 @@ const StoreProductWithStore = t.Object({
 // Product with full relations (seller product list)
 export const ProductWithRelationsSchema = t.Object({
 	...ProductSchema.properties,
-	productClassifications: t.Array(ProductClassificationWithCategory),
+	productCategoryAssignments: t.Array(ProductCategoryAssignmentWithCategory),
 	storeProducts: t.Array(StoreProductWithStore),
 	images: t.Array(ProductImageSchema),
+	brand: t.Nullable(BrandSchema),
 });
 
 // StoreProduct + product (for order items)

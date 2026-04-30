@@ -103,6 +103,14 @@ export const ProductMacroCategorySchema = t.Object({
 	updatedAt: t.Date(),
 });
 
+export const BrandSchema = t.Object({
+	id: t.String(),
+	sellerProfileId: t.String(),
+	name: t.String({ description: "Nome del brand" }),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
 export const ProductCategorySchema = t.Object({
 	id: t.String(),
 	macroCategoryId: t.String({
@@ -252,8 +260,24 @@ export const ProductSchema = t.Object({
 	description: t.Nullable(t.String()),
 	price: t.String({ description: "Prezzo in formato decimale (es. '9.99')" }),
 	isActive: t.Boolean({ description: "Se il prodotto è attivo e visibile" }),
+	ean: t.Nullable(t.String({ description: "Codice EAN-8 o EAN-13" })),
+	brandId: t.Nullable(t.String({ description: "ID del brand del venditore" })),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
+});
+
+export const EanLookupResultSchema = t.Object({
+	name: t.String(),
+	description: t.Nullable(t.String()),
+	ean: t.String(),
+	brandName: t.Nullable(
+		t.String({
+			description:
+				"Nome del brand del prodotto sorgente — il venditore corrente farà match-or-create",
+		}),
+	),
+	macroCategoryId: t.Nullable(t.String()),
+	categoryIds: t.Array(t.String()),
 });
 
 export const ProductImageSchema = t.Object({

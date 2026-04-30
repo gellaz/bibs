@@ -30,7 +30,7 @@ import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCategory,
 	createTestProduct,
-	createTestProductClassification,
+	createTestProductCategoryAssignment,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
@@ -288,7 +288,7 @@ describe("searchProducts — category filter", () => {
 		});
 
 		// Assign only the sweet product to the "Dolci" category
-		await createTestProductClassification(db, sweet.id, category.id);
+		await createTestProductCategoryAssignment(db, sweet.id, category.id);
 
 		const result = await searchProducts({ categoryId: category.id });
 
@@ -320,9 +320,9 @@ describe("searchProducts — category filter", () => {
 			{ name: "Pizza Dolce" }, // contains "dolce" but is in salati
 		);
 
-		await createTestProductClassification(db, tiramisu.id, dolci.id);
-		await createTestProductClassification(db, panna.id, dolci.id);
-		await createTestProductClassification(db, pizza.id, salati.id);
+		await createTestProductCategoryAssignment(db, tiramisu.id, dolci.id);
+		await createTestProductCategoryAssignment(db, panna.id, dolci.id);
+		await createTestProductCategoryAssignment(db, pizza.id, salati.id);
 
 		// Search for "classico" in the "Dolci" category only
 		const result = await searchProducts({

@@ -1,5 +1,5 @@
 import { toast } from "@bibs/ui/components/sonner";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PlusIcon } from "lucide-react";
 import { useCallback, useState } from "react";
@@ -22,21 +22,6 @@ function NewProductPage() {
 	const goBack = () =>
 		void navigate({ to: "/products", search: { page: 1, limit: 20 } });
 
-	const { data: categories } = useQuery({
-		queryKey: ["product-categories"],
-		queryFn: async () => {
-			const response = await api()["product-categories"].get({
-				query: { page: 1, limit: 100 },
-			});
-
-			if (response.error) {
-				throw new Error("Errore nel caricamento categorie");
-			}
-
-			return response.data.data;
-		},
-	});
-
 	const createMutation = useMutation({
 		mutationFn: async (formData: ProductFormValues) => {
 			const response = await api().seller.products.post({
@@ -44,6 +29,9 @@ function NewProductPage() {
 				description: formData.description,
 				price: formData.price,
 				categoryIds: formData.categoryIds,
+				ean: formData.ean,
+				brandId: formData.brandId,
+				brandName: formData.brandName,
 			});
 
 			if (response.error) {
@@ -68,6 +56,7 @@ function NewProductPage() {
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["products"] });
+			void queryClient.invalidateQueries({ queryKey: ["seller-brands"] });
 			toast.success("Prodotto creato con successo");
 			goBack();
 		},
@@ -95,7 +84,6 @@ function NewProductPage() {
 			</div>
 
 			<ProductForm
-				categories={categories ?? []}
 				onSubmit={(values) => createMutation.mutate(values)}
 				onCancel={goBack}
 				isPending={createMutation.isPending}

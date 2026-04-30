@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
 	product,
-	productClassification,
+	productCategoryAssignment,
 	storeProduct,
 } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
@@ -41,9 +41,9 @@ export async function searchProducts(params: SearchParams) {
 	if (categoryId) {
 		conditions.push(
 			sql`EXISTS (
-        SELECT 1 FROM ${productClassification}
-        WHERE ${productClassification.productId} = ${product.id}
-        AND ${productClassification.productCategoryId} = ${categoryId}
+        SELECT 1 FROM ${productCategoryAssignment}
+        WHERE ${productCategoryAssignment.productId} = ${product.id}
+        AND ${productCategoryAssignment.productCategoryId} = ${categoryId}
       )`,
 		);
 	}

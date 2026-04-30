@@ -48,22 +48,6 @@ function EditProductPage() {
 		},
 	});
 
-	const { data: categories } = useQuery({
-		queryKey: ["product-categories"],
-		queryFn: async () => {
-			const response = await api()["product-categories"].get({
-				query: { page: 1, limit: 100 },
-			});
-
-			if (response.error) {
-				throw new Error("Errore nel caricamento categorie");
-			}
-
-			return response.data.data;
-		},
-	});
-
-	// Initialize existing images from loaded product (once)
 	if (product && !initialized) {
 		setExistingImages(
 			product.images.map((img) => ({ id: img.id, url: img.url })),
@@ -93,13 +77,18 @@ function EditProductPage() {
 
 	const updateMutation = useMutation({
 		mutationFn: async (formData: ProductFormValues) => {
-			const response = await api().seller.products({ productId }).patch({
-				name: formData.name,
-				description: formData.description,
-				price: formData.price,
-				categoryIds: formData.categoryIds,
-				imageOrder: formData.imageOrder,
-			});
+			const response = await api()
+				.seller.products({ productId })
+				.patch({
+					name: formData.name,
+					description: formData.description,
+					price: formData.price,
+					categoryIds: formData.categoryIds,
+					imageOrder: formData.imageOrder,
+					ean: formData.ean ?? null,
+					brandId: formData.brandId ?? null,
+					brandName: formData.brandName,
+				});
 
 			if (response.error) {
 				throw new Error(
@@ -124,6 +113,7 @@ function EditProductPage() {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["products"] });
 			void queryClient.invalidateQueries({ queryKey: ["product", productId] });
+			void queryClient.invalidateQueries({ queryKey: ["seller-brands"] });
 			toast.success("Prodotto aggiornato con successo");
 			goBack();
 		},
@@ -150,6 +140,9 @@ function EditProductPage() {
 		);
 	}
 
+	const firstAssignment = product.productCategoryAssignments[0];
+	const macroCategoryId = firstAssignment?.category.macroCategoryId ?? null;
+
 	return (
 		<div className="mx-auto max-w-2xl space-y-6">
 			<div className="flex items-center justify-between">
@@ -171,11 +164,14 @@ function EditProductPage() {
 					name: product.name,
 					description: product.description,
 					price: product.price,
-					categoryIds: product.productClassifications.map(
-						(pc) => pc.productCategoryId,
+					categoryIds: product.productCategoryAssignments.map(
+						(a) => a.productCategoryId,
 					),
+					ean: product.ean,
+					brandId: product.brand?.id,
+					brandName: product.brand?.name,
+					macroCategoryId,
 				}}
-				categories={categories ?? []}
 				existingImages={existingImages}
 				onDeleteExisting={(imageId) => deleteImageMutation.mutate(imageId)}
 				onSubmit={(values) => updateMutation.mutate(values)}
