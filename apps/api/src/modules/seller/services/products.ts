@@ -100,7 +100,7 @@ interface CreateProductParams {
 	name: string;
 	description?: string;
 	price: string;
-	categoryIds: string[];
+	categoryIds?: string[];
 	ean?: string;
 	brandId?: string;
 	brandName?: string;
@@ -109,14 +109,14 @@ interface CreateProductParams {
 export async function createProduct(params: CreateProductParams) {
 	const {
 		sellerProfileId,
-		categoryIds,
+		categoryIds = [],
 		brandId,
 		brandName,
 		ean,
 		...productData
 	} = params;
 
-	// Validate: all categoryIds belong to a single macro-category
+	// Validate: if multiple categories given, all belong to one macro
 	if (categoryIds.length > 1) {
 		const macros = await db
 			.selectDistinct({ macroId: productCategory.macroCategoryId })
@@ -129,6 +129,8 @@ export async function createProduct(params: CreateProductParams) {
 			);
 		}
 	}
+
+	const normalizedEan = ean && ean.length > 0 ? ean : null;
 
 	return db.transaction(async (tx) => {
 		// Resolve brand: brandId wins over brandName
@@ -155,7 +157,7 @@ export async function createProduct(params: CreateProductParams) {
 			.values({
 				sellerProfileId,
 				...productData,
-				ean: ean ?? null,
+				ean: normalizedEan,
 				brandId: resolvedBrandId,
 			})
 			.returning();
@@ -218,7 +220,9 @@ export async function updateProduct(params: UpdateProductParams) {
 		// Build product update payload including optional ean/brandId fields
 		const productUpdates: Record<string, unknown> = { ...productData };
 
-		if (ean !== undefined) productUpdates.ean = ean;
+		if (ean !== undefined) {
+			productUpdates.ean = ean === null || ean.length === 0 ? null : ean;
+		}
 
 		if (brandId !== undefined) {
 			if (brandId === null) {

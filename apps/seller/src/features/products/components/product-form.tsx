@@ -87,7 +87,7 @@ export function ProductForm({
 		},
 	});
 
-	const selectedCategories = watch("categoryIds");
+	const selectedCategories = watch("categoryIds") ?? [];
 	const nameValue = watch("name");
 	const eanValue = watch("ean") ?? "";
 	const brandIdValue = watch("brandId");
@@ -140,7 +140,7 @@ export function ProductForm({
 		if (overwrite || !macroCategoryId) {
 			setMacroCategoryId(lookupResult.macroCategoryId);
 		}
-		if (overwrite || cur.categoryIds.length === 0) {
+		if (overwrite || (cur.categoryIds ?? []).length === 0) {
 			setValue("categoryIds", lookupResult.categoryIds, {
 				shouldValidate: true,
 			});
@@ -154,7 +154,7 @@ export function ProductForm({
 		!!brandIdValue ||
 		!!brandNameValue ||
 		!!macroCategoryId ||
-		getValues("categoryIds").length > 0;
+		(getValues("categoryIds") ?? []).length > 0;
 
 	const handleDrop = useCallback(
 		(acceptedFiles: File[]) => {
@@ -304,10 +304,9 @@ export function ProductForm({
 			<Field data-invalid={!!errors.categoryIds}>
 				<ProductCategoriesPicker
 					macroCategoryId={macroCategoryId}
-					categoryIds={selectedCategories}
+					categoryIds={selectedCategories ?? []}
 					onMacroChange={onMacroChange}
 					onToggleCategory={toggleCategory}
-					required
 				/>
 				<FieldError errors={[errors.categoryIds]} />
 			</Field>

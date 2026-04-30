@@ -18,16 +18,17 @@ export const CreateProductBody = Type.Object({
 		description: "Prezzo (formato decimale, es. '9.99')",
 		error: "Il prezzo deve essere nel formato 0.00",
 	}),
-	categoryIds: Type.Array(Type.String({ description: "ID categoria" }), {
-		minItems: 1,
-		description:
-			"Almeno una categoria obbligatoria — tutte appartenenti alla stessa macro-categoria",
-		error: "Seleziona almeno una categoria",
-	}),
+	categoryIds: Type.Optional(
+		Type.Array(Type.String({ description: "ID categoria" }), {
+			description:
+				"Categorie del prodotto (opzionali). Se più di una, devono appartenere alla stessa macro-categoria",
+		}),
+	),
 	ean: Type.Optional(
 		Type.String({
-			pattern: "^(\\d{8}|\\d{13})$",
-			description: "Codice EAN-8 (8 cifre) o EAN-13 (13 cifre)",
+			pattern: "^$|^(\\d{8}|\\d{13})$",
+			description:
+				"Codice EAN-8 (8 cifre) o EAN-13 (13 cifre). Stringa vuota equivale a omesso.",
 			error: "EAN deve essere 8 o 13 cifre",
 		}),
 	),

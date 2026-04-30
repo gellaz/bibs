@@ -146,8 +146,8 @@ export const productsRoutes = new Elysia()
 			body: t.Object({
 				categoryIds: t.Optional(
 					t.Array(t.String(), {
-						minItems: 1,
-						description: "Nuove categorie (sostituisce le precedenti)",
+						description:
+							"Nuove categorie (sostituisce le precedenti). Array vuoto per rimuoverle tutte.",
 					}),
 				),
 				name: t.Optional(
@@ -176,8 +176,8 @@ export const productsRoutes = new Elysia()
 					}),
 				),
 				ean: t.Optional(
-					t.Union([t.String({ pattern: "^(\\d{8}|\\d{13})$" }), t.Null()], {
-						description: "Codice EAN (null per cancellarlo)",
+					t.Union([t.String({ pattern: "^$|^(\\d{8}|\\d{13})$" }), t.Null()], {
+						description: "Codice EAN (null o stringa vuota per cancellarlo)",
 					}),
 				),
 				brandId: t.Optional(
