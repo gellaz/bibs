@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { brand } from "@/db/schemas/brand";
 import { product, productCategoryAssignment } from "@/db/schemas/product";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
