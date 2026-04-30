@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
+import { brand } from "@/db/schemas/brand";
 import { productCategory } from "@/db/schemas/category";
 import { customerProfile } from "@/db/schemas/customer";
 import { organization } from "@/db/schemas/organization";
@@ -180,6 +181,18 @@ export async function createTestProductCategoryAssignment(
 	await db
 		.insert(productCategoryAssignment)
 		.values({ productId, productCategoryId });
+}
+
+export async function createTestBrand(
+	db: DrizzleTestDb,
+	sellerProfileId: string,
+	name = "Test Brand",
+) {
+	const [b] = await db
+		.insert(brand)
+		.values({ sellerProfileId, name })
+		.returning();
+	return b;
 }
 
 // ── Organization ──────────────────────────────────────────────────────────────

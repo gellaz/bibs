@@ -6,6 +6,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
 import { getSellerStoreIds } from "./context";
+import { brandsRoutes } from "./routes/brands";
 import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
 import { onboardingRoutes } from "./routes/onboarding";
@@ -95,6 +96,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 				// Mount all sub-route plugins
 				.use(storesRoutes)
 				.use(productsRoutes)
+				.use(brandsRoutes)
 				.use(imagesRoutes)
 				.use(storeImagesRoutes)
 				.use(stockRoutes)

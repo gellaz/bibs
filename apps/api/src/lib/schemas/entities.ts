@@ -103,6 +103,14 @@ export const ProductMacroCategorySchema = t.Object({
 	updatedAt: t.Date(),
 });
 
+export const BrandSchema = t.Object({
+	id: t.String(),
+	sellerProfileId: t.String(),
+	name: t.String({ description: "Nome del brand" }),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
 export const ProductCategorySchema = t.Object({
 	id: t.String(),
 	macroCategoryId: t.String({
