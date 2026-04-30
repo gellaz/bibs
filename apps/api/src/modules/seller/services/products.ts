@@ -1,6 +1,6 @@
 import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { product, productClassification } from "@/db/schemas/product";
+import { product, productCategoryAssignment } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
@@ -20,7 +20,7 @@ export async function listProducts(params: ListProductsParams) {
 		db.query.product.findMany({
 			where: eq(product.sellerProfileId, sellerProfileId),
 			with: {
-				productClassifications: { with: { category: true } },
+				productCategoryAssignments: { with: { category: true } },
 				storeProducts: { with: { store: { columns: { location: false } } } },
 				images: { orderBy: (img, { asc }) => [asc(img.position)] },
 			},
@@ -50,7 +50,7 @@ export async function getProduct(params: GetProductParams) {
 			eq(product.sellerProfileId, sellerProfileId),
 		),
 		with: {
-			productClassifications: { with: { category: true } },
+			productCategoryAssignments: { with: { category: true } },
 			storeProducts: { with: { store: { columns: { location: false } } } },
 			images: { orderBy: (img, { asc }) => [asc(img.position)] },
 		},
@@ -78,7 +78,7 @@ export async function createProduct(params: CreateProductParams) {
 			.returning();
 
 		if (categoryIds.length > 0) {
-			await tx.insert(productClassification).values(
+			await tx.insert(productCategoryAssignment).values(
 				categoryIds.map((categoryId) => ({
 					productId: created.id,
 					productCategoryId: categoryId,
@@ -140,11 +140,11 @@ export async function updateProduct(params: UpdateProductParams) {
 
 		if (categoryIds) {
 			await tx
-				.delete(productClassification)
-				.where(eq(productClassification.productId, updated.id));
+				.delete(productCategoryAssignment)
+				.where(eq(productCategoryAssignment.productId, updated.id));
 
 			if (categoryIds.length > 0) {
-				await tx.insert(productClassification).values(
+				await tx.insert(productCategoryAssignment).values(
 					categoryIds.map((categoryId) => ({
 						productId: updated.id,
 						productCategoryId: categoryId,

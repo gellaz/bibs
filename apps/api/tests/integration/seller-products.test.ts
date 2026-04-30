@@ -32,7 +32,7 @@ mock.module("@/lib/s3", () => ({
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
 import { eq } from "drizzle-orm";
-import { productClassification } from "@/db/schemas/product";
+import { productCategoryAssignment } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
 import {
 	createProduct,
@@ -124,7 +124,7 @@ describe("getProduct", () => {
 		});
 
 		expect(result.id).toBe(p.id);
-		expect(result.productClassifications).toEqual([]);
+		expect(result.productCategoryAssignments).toEqual([]);
 		expect(result.storeProducts).toEqual([]);
 		expect(result.images).toEqual([]);
 	});
@@ -165,8 +165,8 @@ describe("createProduct", () => {
 
 		const classifications = await db
 			.select()
-			.from(productClassification)
-			.where(eq(productClassification.productId, created.id));
+			.from(productCategoryAssignment)
+			.where(eq(productCategoryAssignment.productId, created.id));
 		expect(classifications).toHaveLength(2);
 	});
 });
@@ -215,8 +215,8 @@ describe("updateProduct", () => {
 
 		const classifications = await db
 			.select()
-			.from(productClassification)
-			.where(eq(productClassification.productId, p.id));
+			.from(productCategoryAssignment)
+			.where(eq(productCategoryAssignment.productId, p.id));
 		expect(classifications).toHaveLength(1);
 		expect(classifications[0].productCategoryId).toBe(cat3.id);
 	});

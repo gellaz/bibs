@@ -6,7 +6,7 @@ import { customerProfile } from "@/db/schemas/customer";
 import { organization } from "@/db/schemas/organization";
 import {
 	product,
-	productClassification,
+	productCategoryAssignment,
 	storeProduct,
 } from "@/db/schemas/product";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
@@ -172,13 +172,13 @@ export async function createTestCategory(
 	return category;
 }
 
-export async function createTestProductClassification(
+export async function createTestProductCategoryAssignment(
 	db: DrizzleTestDb,
 	productId: string,
 	productCategoryId: string,
 ) {
 	await db
-		.insert(productClassification)
+		.insert(productCategoryAssignment)
 		.values({ productId, productCategoryId });
 }
 

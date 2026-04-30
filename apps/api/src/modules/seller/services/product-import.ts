@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { product, productClassification } from "@/db/schemas/product";
+import { product, productCategoryAssignment } from "@/db/schemas/product";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
@@ -161,7 +161,7 @@ export async function importProductsFromCsv(
 			);
 
 			if (classifications.length > 0) {
-				await tx.insert(productClassification).values(classifications);
+				await tx.insert(productCategoryAssignment).values(classifications);
 			}
 
 			created = inserted.length;

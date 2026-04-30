@@ -102,8 +102,8 @@ function ProductsListPage() {
 										<TableCell className="text-sm">€{product.price}</TableCell>
 										<TableCell className="text-sm">
 											<div className="flex flex-wrap gap-1">
-												{product.productClassifications.length > 0 ? (
-													product.productClassifications.map((pc) => (
+												{product.productCategoryAssignments.length > 0 ? (
+													product.productCategoryAssignments.map((pc) => (
 														<Badge
 															key={pc.productCategoryId}
 															variant="secondary"

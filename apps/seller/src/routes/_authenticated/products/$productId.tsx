@@ -171,7 +171,7 @@ function EditProductPage() {
 					name: product.name,
 					description: product.description,
 					price: product.price,
-					categoryIds: product.productClassifications.map(
+					categoryIds: product.productCategoryAssignments.map(
 						(pc) => pc.productCategoryId,
 					),
 				}}
