@@ -24,8 +24,35 @@ L'EAN, se valorizzato, attiva una **lookup cross-seller** che pre-compila i camp
 | EAN — pre-compilazione | Lookup ultimo prodotto cross-seller con stesso EAN. Pre-compila `name`, `description`, `macroCategoryId`, `categoryIds`, `brandName`. **Mai** prezzo o immagini. |
 | EAN — UX | Banner inline con bottone *"Compila campi"*. Niente auto-fill silenzioso. |
 | Macrocategoria — modello | Solo filtro UI nel picker delle sotto-categorie. Nessuna nuova colonna su `products` (la macro è già derivabile da `product_categories.macro_category_id`). |
+| Naming join table | Rinomina `product_classifications` → `product_category_assignments` (code: `productClassification` → `productCategoryAssignment`) per chiarezza. |
+| Naming componente picker | Rinomina `product-category-picker.tsx` → `product-categories-picker.tsx` (plurale). |
+| Strategia migrazioni | Migrazioni progressive da subito (anche in dev pre-1.0). Squash deliberato all'arrivo a 1.0. |
 
 ## Architettura — Schema DB
+
+### Rename join table `product_classifications` → `product_category_assignments`
+
+`apps/api/src/db/schemas/product.ts`: rinomina l'export Drizzle `productClassification` → `productCategoryAssignment` e tutti i suoi indici/relations:
+
+- `pgTable("product_classifications", …)` → `pgTable("product_category_assignments", …)`
+- `productClassification` (variabile) → `productCategoryAssignment`
+- `productClassificationRelations` → `productCategoryAssignmentRelations`
+- index `product_classification_category_id_idx` → `product_category_assignments_category_id_idx`
+
+Il rename si propaga a:
+
+- `apps/api/src/db/schemas/category.ts` (relations import)
+- `apps/api/src/lib/schemas/composed.ts` (relations export)
+- `apps/api/src/modules/seller/services/products.ts` (insert/delete in `createProduct`/`updateProduct`)
+- `apps/api/src/modules/seller/services/product-import.ts`
+- `apps/api/src/modules/customer/services/search.ts`
+- `apps/api/tests/helpers/fixtures.ts`
+- `apps/api/tests/integration/seller-products.test.ts`
+- `apps/seller/src/routes/_authenticated/products/index.tsx` (usa `productClassifications` come relation key)
+- `apps/seller/src/routes/_authenticated/products/$productId.tsx` (idem)
+- `apps/api/README.md` e `apps/api/AGENTS.md` (documentazione)
+
+Drizzle genera automaticamente `ALTER TABLE product_classifications RENAME TO product_category_assignments` con rinomina di FK e indici. Nessuna perdita di dati. Migrazione progressive — non si edita `0000_init.sql`.
 
 ### Nuova tabella `brands`
 
@@ -64,7 +91,9 @@ L'index `product_ean_idx` (non partial) abilita la lookup cross-seller veloce.
 
 ### Migrazione
 
-Generata via `bun run db:generate`, revisionata, applicata via `bun run db:migrate`. **Non** usare `db:push` (deny-listed).
+Generata via `bun run db:generate`, revisionata, applicata via `bun run db:migrate`. **Non** usare `db:push` (deny-listed). Migrazione progressive — il file generato sarà `apps/api/src/db/migrations/0002_<descrittore>.sql` (Drizzle sceglie il numero in base allo snapshot esistente).
+
+Strategia di lungo termine concordata: si rimane su migrazioni progressive da subito anche in fase pre-1.0 — quando si arriverà a 1.0 si farà uno "squash" deliberato (cancellare `migrations/` e rigenerare un nuovo `0000_init.sql` dallo schema corrente). Nel frattempo si esercita lo stesso flusso che girerà in produzione.
 
 ## Architettura — Schemi TypeBox
 
@@ -246,7 +275,7 @@ Vive **fuori** da react-hook-form per via dell'oggetto composito; sincronizzato 
 
 ### Refactor del category picker
 
-`apps/seller/src/features/products/components/product-classification-picker.tsx` (rinomina + estende l'attuale `product-category-picker.tsx`; quest'ultimo non è usato altrove, viene cancellato).
+`apps/seller/src/features/products/components/product-categories-picker.tsx` (rinomina al plurale + estende l'attuale `product-category-picker.tsx`; quest'ultimo non è usato altrove, viene cancellato). L'import in `product-form.tsx` viene aggiornato di conseguenza.
 
 ```ts
 interface ProductClassificationPickerProps {
