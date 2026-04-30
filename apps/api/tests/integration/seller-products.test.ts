@@ -33,8 +33,9 @@ mock.module("@/lib/s3", () => ({
 
 import { eq } from "drizzle-orm";
 import { brand } from "@/db/schemas/brand";
-import { productCategoryAssignment } from "@/db/schemas/product";
+import { product, productCategoryAssignment } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
+import { importProductsFromCsv } from "@/modules/seller/services/product-import";
 import {
 	createProduct,
 	deleteProduct,
@@ -468,5 +469,58 @@ describe("lookupProductByEan", () => {
 		expect(result!.brandName).toBe("BrandB");
 		expect(result!.macroCategoryId).toBe(macro.id);
 		expect(result!.categoryIds).toEqual([cat.id]);
+	});
+});
+
+// ── importProductsFromCsv - per-row EAN collision ─────────────────────────────
+
+describe("importProductsFromCsv - per-row EAN collision", () => {
+	it("skips a row that conflicts with an existing seller EAN and continues importing other rows", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "Macro Import");
+		const cat = await createTestCategory(db, "Cat Import", macro.id);
+
+		// Seed: an existing product with EAN
+		await createProduct({
+			sellerProfileId: seller.profile.id,
+			name: "Existing",
+			price: "1.00",
+			categoryIds: [cat.id],
+			ean: "1111111111116",
+		});
+
+		// CSV with three rows: row 2 conflicts on EAN, rows 1 and 3 are fine
+		const csv = [
+			"name,description,price,categories,ean,brand",
+			"OK1,d1,2.00,Cat Import,2222222222229,",
+			"Conflict,d2,3.00,Cat Import,1111111111116,",
+			"OK2,d3,4.00,Cat Import,3333333333332,",
+		].join("\n");
+
+		const result = await importProductsFromCsv({
+			sellerProfileId: seller.profile.id,
+			csvText: csv,
+		});
+
+		expect(result.created).toBe(2);
+		expect(result.skipped).toBe(1);
+		expect(result.failed).toBe(1);
+		expect(result.errors).toHaveLength(1);
+		expect(result.errors[0]).toMatchObject({
+			row: 3,
+			message: expect.stringContaining("EAN"),
+		});
+
+		// Verify the two non-conflicting rows actually landed in DB
+		const products = await db.query.product.findMany({
+			where: eq(product.sellerProfileId, seller.profile.id),
+		});
+		expect(products).toHaveLength(3); // existing + OK1 + OK2
+		const eans = products
+			.map((p) => p.ean)
+			.filter(Boolean)
+			.sort();
+		expect(eans).toEqual(["1111111111116", "2222222222229", "3333333333332"]);
 	});
 });

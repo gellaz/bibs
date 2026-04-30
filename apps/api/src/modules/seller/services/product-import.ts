@@ -190,33 +190,41 @@ export async function importProductsFromCsv(
 					: null;
 
 				try {
-					const [inserted] = await tx
-						.insert(product)
-						.values({
-							sellerProfileId,
-							name: p.name,
-							description: p.description,
-							price: p.price,
-							ean: p.ean,
-							brandId,
-						})
-						.returning({ id: product.id });
+					// tx.transaction() uses a SAVEPOINT internally so a unique-violation
+					// aborts only this nested block, not the whole import transaction.
+					await tx.transaction(async (nested) => {
+						const [inserted] = await nested
+							.insert(product)
+							.values({
+								sellerProfileId,
+								name: p.name,
+								description: p.description,
+								price: p.price,
+								ean: p.ean,
+								brandId,
+							})
+							.returning({ id: product.id });
 
-					if (p.categoryIds.length > 0) {
-						await tx.insert(productCategoryAssignment).values(
-							p.categoryIds.map((categoryId) => ({
-								productId: inserted.id,
-								productCategoryId: categoryId,
-							})),
-						);
-					}
+						if (p.categoryIds.length > 0) {
+							await nested.insert(productCategoryAssignment).values(
+								p.categoryIds.map((categoryId) => ({
+									productId: inserted.id,
+									productCategoryId: categoryId,
+								})),
+							);
+						}
+					});
 					created++;
 				} catch (err: unknown) {
-					const e = err as { code?: string; constraint_name?: string };
+					// Drizzle wraps pg errors in DrizzleQueryError; the original pg
+					// DatabaseError (with .code and .constraint) lives in .cause.
+					const pg = (
+						err instanceof Error && err.cause != null ? err.cause : err
+					) as { code?: string; constraint?: string };
 					if (
-						e.code === "23505" &&
-						(e.constraint_name === "product_seller_ean_unique" ||
-							/ean/.test(e.constraint_name ?? ""))
+						pg.code === "23505" &&
+						(pg.constraint === "product_seller_ean_unique" ||
+							/ean/.test(pg.constraint ?? ""))
 					) {
 						errors.push({
 							row: rowNum,
