@@ -3,13 +3,22 @@ import { ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { errorBody } from "@/lib/responses";
 
+/**
+ * Unwraps a possibly-wrapped error to find the underlying pg DatabaseError.
+ * Drizzle wraps query errors in DrizzleQueryError with the original pg error
+ * in `.cause`, so we need to dig one level deeper.
+ */
+function unwrapPgError(error: unknown): { code?: string; constraint?: string } {
+	if (error instanceof Error && error.cause != null) {
+		return error.cause as { code?: string; constraint?: string };
+	}
+	return error as { code?: string; constraint?: string };
+}
+
 /** Checks if an error is a pg unique_violation (code 23505). */
 function isUniqueViolation(error: unknown): boolean {
-	return (
-		error instanceof Error &&
-		"code" in error &&
-		(error as { code: unknown }).code === "23505"
-	);
+	const pg = unwrapPgError(error);
+	return pg.code === "23505";
 }
 
 export const errorHandler = new Elysia({ name: "error-handler" }).onError(
@@ -41,20 +50,23 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 		if (isUniqueViolation(error)) {
 			set.status = 409;
 
+			const pg = unwrapPgError(error);
 			pino.warn(
 				{
 					errorCode: "CONFLICT",
-					constraint: (error as { constraint?: string }).constraint,
+					constraint: pg.constraint,
 					path: pathname,
 					method,
 				},
 				"Unique constraint violation",
 			);
 
-			return errorBody(
-				"CONFLICT",
-				"A record with the same value already exists",
-			);
+			const message =
+				pg.constraint === "product_seller_ean_unique"
+					? "Hai già un prodotto con questo EAN"
+					: "A record with the same value already exists";
+
+			return errorBody("CONFLICT", message);
 		}
 
 		if (code === "VALIDATION") {
