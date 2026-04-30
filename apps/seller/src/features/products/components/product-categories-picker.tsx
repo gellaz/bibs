@@ -43,7 +43,7 @@ export function ProductCategoriesPicker({
 			const response = await api()["product-categories"].get({
 				query: {
 					page: 1,
-					limit: 200,
+					limit: 100,
 					macroCategoryId: macroCategoryId ?? undefined,
 				},
 			});
