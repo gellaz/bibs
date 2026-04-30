@@ -23,14 +23,12 @@ function isUniqueViolation(error: unknown): boolean {
 
 export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 	{ as: "global" },
-	({ code, error, set, request, store }) => {
+	({ code, error, status, request, store }) => {
 		const pino = getLogger(store);
 		const pathname = new URL(request.url).pathname;
 		const { method } = request;
 
 		if (error instanceof ServiceError) {
-			set.status = error.status;
-
 			const logLevel = error.status >= 500 ? "error" : "warn";
 			pino[logLevel](
 				{
@@ -43,13 +41,11 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 				`ServiceError: ${error.message}`,
 			);
 
-			return errorBody(error.code, error.message);
+			return status(error.status, errorBody(error.code, error.message));
 		}
 
 		// Postgres unique constraint violation → 409 Conflict
 		if (isUniqueViolation(error)) {
-			set.status = 409;
-
 			const pg = unwrapPgError(error);
 			pino.warn(
 				{
@@ -66,12 +62,10 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 					? "Hai già un prodotto con questo EAN"
 					: "A record with the same value already exists";
 
-			return errorBody("CONFLICT", message);
+			return status(409, errorBody("CONFLICT", message));
 		}
 
 		if (code === "VALIDATION") {
-			set.status = 422;
-
 			pino.warn(
 				{
 					errorCode: "VALIDATION_ERROR",
@@ -82,12 +76,10 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 				"Validation error",
 			);
 
-			return errorBody("VALIDATION_ERROR", error.message);
+			return status(422, errorBody("VALIDATION_ERROR", error.message));
 		}
 
 		if (code === "NOT_FOUND") {
-			set.status = 404;
-
 			pino.warn(
 				{
 					errorCode: "NOT_FOUND",
@@ -97,10 +89,8 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 				"Route not found",
 			);
 
-			return errorBody("NOT_FOUND", "Route not found");
+			return status(404, errorBody("NOT_FOUND", "Route not found"));
 		}
-
-		set.status = 500;
 
 		pino.error(
 			{
@@ -113,6 +103,6 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 			"Unhandled error",
 		);
 
-		return errorBody("INTERNAL_ERROR", "Internal server error");
+		return status(500, errorBody("INTERNAL_ERROR", "Internal server error"));
 	},
 );
