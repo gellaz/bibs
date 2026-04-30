@@ -1,10 +1,13 @@
+import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { brand } from "@/db/schemas/brand";
 import { product, productCategoryAssignment } from "@/db/schemas/product";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
 
 const PRICE_REGEX = /^\d+\.\d{2}$/;
+const EAN_REGEX = /^(\d{8}|\d{13})$/;
 
 const EXPECTED_HEADERS = ["name", "description", "price", "categories"];
 
@@ -25,6 +28,8 @@ interface ValidProduct {
 	description: string | undefined;
 	price: string;
 	categoryIds: string[];
+	ean: string | null;
+	brandName: string | null;
 }
 
 interface ImportProductsParams {
@@ -39,7 +44,6 @@ export async function importProductsFromCsv(
 
 	const { headers, rows } = parseCsv(csvText);
 
-	// Validate headers
 	for (const expected of EXPECTED_HEADERS) {
 		if (!headers.includes(expected)) {
 			throw new ServiceError(
@@ -64,8 +68,9 @@ export async function importProductsFromCsv(
 	const descIdx = headers.indexOf("description");
 	const priceIdx = headers.indexOf("price");
 	const catIdx = headers.indexOf("categories");
+	const eanIdx = headers.indexOf("ean");
+	const brandIdx = headers.indexOf("brand");
 
-	// Fetch all categories once and build a name→id map (case-insensitive)
 	const allCategories = await db.query.productCategory.findMany({
 		columns: { id: true, name: true },
 	});
@@ -76,19 +81,16 @@ export async function importProductsFromCsv(
 	const errors: ImportError[] = [];
 	const validProducts: ValidProduct[] = [];
 
-	// ── Phase 1: validate all rows ─────────────
 	for (let i = 0; i < rows.length; i++) {
 		const row = rows[i];
-		const rowNum = i + 2; // 1-indexed, +1 for header
+		const rowNum = i + 2;
 
-		// Validate name
 		const name = row[nameIdx];
 		if (!name) {
 			errors.push({ row: rowNum, message: "Missing product name" });
 			continue;
 		}
 
-		// Validate price
 		const price = row[priceIdx];
 		if (!price || !PRICE_REGEX.test(price)) {
 			errors.push({
@@ -98,7 +100,6 @@ export async function importProductsFromCsv(
 			continue;
 		}
 
-		// Resolve categories
 		const categoriesRaw = row[catIdx] ?? "";
 		const categoryNames = categoriesRaw
 			.split(";")
@@ -132,41 +133,104 @@ export async function importProductsFromCsv(
 			continue;
 		}
 
+		const eanRaw = eanIdx >= 0 ? (row[eanIdx]?.trim() ?? "") : "";
+		const ean = eanRaw.length > 0 ? eanRaw : null;
+		if (ean !== null && !EAN_REGEX.test(ean)) {
+			errors.push({
+				row: rowNum,
+				message: `Invalid EAN: "${ean}". Expected 8 or 13 digits`,
+			});
+			continue;
+		}
+
+		const brandRaw = brandIdx >= 0 ? (row[brandIdx]?.trim() ?? "") : "";
+		const brandName = brandRaw.length > 0 ? brandRaw : null;
+
 		const description = row[descIdx] || undefined;
-		validProducts.push({ name, description, price, categoryIds });
-	}
-
-	// ── Phase 2: batch insert in a single transaction ──
-	let created = 0;
-
-	if (validProducts.length > 0) {
-		await db.transaction(async (tx) => {
-			const inserted = await tx
-				.insert(product)
-				.values(
-					validProducts.map((p) => ({
-						sellerProfileId,
-						name: p.name,
-						description: p.description,
-						price: p.price,
-					})),
-				)
-				.returning({ id: product.id });
-
-			const classifications = inserted.flatMap((row, idx) =>
-				validProducts[idx].categoryIds.map((categoryId) => ({
-					productId: row.id,
-					productCategoryId: categoryId,
-				})),
-			);
-
-			if (classifications.length > 0) {
-				await tx.insert(productCategoryAssignment).values(classifications);
-			}
-
-			created = inserted.length;
+		validProducts.push({
+			name,
+			description,
+			price,
+			categoryIds,
+			ean,
+			brandName,
 		});
 	}
 
-	return { created, skipped: 0, failed: errors.length, errors };
+	let created = 0;
+	let skipped = 0;
+
+	if (validProducts.length > 0) {
+		await db.transaction(async (tx) => {
+			// Batch brand upserts for all unique brand names in this import
+			const uniqueBrandNames = Array.from(
+				new Set(
+					validProducts
+						.map((p) => p.brandName)
+						.filter((n): n is string => n !== null),
+				),
+			);
+			const brandIdByLower = new Map<string, string>();
+			for (const bname of uniqueBrandNames) {
+				const result = await tx.execute<{ id: string }>(
+					sql`INSERT INTO brands (id, seller_profile_id, name)
+					     VALUES (gen_random_uuid()::text, ${sellerProfileId}, ${bname})
+					     ON CONFLICT (seller_profile_id, lower(name))
+					     DO UPDATE SET updated_at = now()
+					     RETURNING id`,
+				);
+				const id = (result as unknown as { rows: { id: string }[] }).rows[0].id;
+				brandIdByLower.set(bname.toLowerCase(), id);
+			}
+
+			for (let i = 0; i < validProducts.length; i++) {
+				const p = validProducts[i];
+				const rowNum = i + 2;
+				const brandId = p.brandName
+					? (brandIdByLower.get(p.brandName.toLowerCase()) ?? null)
+					: null;
+
+				try {
+					const [inserted] = await tx
+						.insert(product)
+						.values({
+							sellerProfileId,
+							name: p.name,
+							description: p.description,
+							price: p.price,
+							ean: p.ean,
+							brandId,
+						})
+						.returning({ id: product.id });
+
+					if (p.categoryIds.length > 0) {
+						await tx.insert(productCategoryAssignment).values(
+							p.categoryIds.map((categoryId) => ({
+								productId: inserted.id,
+								productCategoryId: categoryId,
+							})),
+						);
+					}
+					created++;
+				} catch (err: unknown) {
+					const e = err as { code?: string; constraint_name?: string };
+					if (
+						e.code === "23505" &&
+						(e.constraint_name === "product_seller_ean_unique" ||
+							/ean/.test(e.constraint_name ?? ""))
+					) {
+						errors.push({
+							row: rowNum,
+							message: `EAN già usato per un altro prodotto del venditore: "${p.ean}"`,
+						});
+						skipped++;
+						continue;
+					}
+					throw err;
+				}
+			}
+		});
+	}
+
+	return { created, skipped, failed: errors.length, errors };
 }
