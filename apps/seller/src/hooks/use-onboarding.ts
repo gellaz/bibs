@@ -221,7 +221,7 @@ export function useInviteTeamMember() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (params: { email: string }) => {
+		mutationFn: async (params: { email: string; storeIds: string[] }) => {
 			const response = await api().seller.onboarding.team.invite.post(params);
 			if (response.error) {
 				const errorMsg =

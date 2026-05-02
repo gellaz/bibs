@@ -67,7 +67,7 @@ export const employeesRoutes = new Elysia()
 			const { sellerProfile: sp, isOwner, body } = withSeller(ctx);
 			requireOwner(isOwner);
 
-			const data = await inviteEmployee(sp.id, body.email);
+			const data = await inviteEmployee(sp.id, body.email, body.storeIds);
 			return ok(data);
 		},
 		{

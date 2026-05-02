@@ -44,6 +44,9 @@ export const SellerProfileWithUserSchema = t.Object({
 export const EmployeeWithUserSchema = t.Object({
 	...EmployeeSchema.properties,
 	user: UserSchema,
+	storeIds: t.Array(t.String(), {
+		description: "ID dei negozi a cui il dipendente è assegnato",
+	}),
 });
 
 // Product category assignment with category

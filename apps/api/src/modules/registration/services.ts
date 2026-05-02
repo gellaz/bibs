@@ -3,10 +3,14 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
-import { storeEmployee } from "@/db/schemas/employee";
-import { employeeInvitation } from "@/db/schemas/employee-invitation";
+import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
+import {
+	employeeInvitation,
+	employeeInvitationStores,
+} from "@/db/schemas/employee-invitation";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
+import { store as storeTable } from "@/db/schemas/store";
 import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
@@ -145,10 +149,33 @@ export async function acceptInvite(params: AcceptInviteParams) {
 			.set({ role: "employee", emailVerified: true })
 			.where(eq(user.id, newUser.id));
 
-		await tx.insert(storeEmployee).values({
-			sellerProfileId: invitation.sellerProfileId,
-			userId: newUser.id,
-		});
+		const [createdEmployee] = await tx
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: invitation.sellerProfileId,
+				userId: newUser.id,
+			})
+			.returning();
+
+		// Propagate store assignments from the invitation,
+		// INNER JOIN with store table so deleted stores are silently dropped.
+		const invitedStores = await tx
+			.select({ storeId: employeeInvitationStores.storeId })
+			.from(employeeInvitationStores)
+			.innerJoin(
+				storeTable,
+				eq(employeeInvitationStores.storeId, storeTable.id),
+			)
+			.where(eq(employeeInvitationStores.invitationId, invitation.id));
+
+		if (invitedStores.length > 0) {
+			await tx.insert(storeEmployeeStores).values(
+				invitedStores.map((s) => ({
+					storeEmployeeId: createdEmployee.id,
+					storeId: s.storeId,
+				})),
+			);
+		}
 
 		await tx
 			.update(employeeInvitation)

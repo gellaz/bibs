@@ -427,6 +427,9 @@ export const EmployeeInvitationSchema = t.Object({
 	),
 	expiresAt: t.Date({ description: "Scadenza dell'invito" }),
 	createdAt: t.Date(),
+	storeIds: t.Array(t.String(), {
+		description: "ID dei negozi preselezionati per l'invito",
+	}),
 });
 
 export const PointTransactionSchema = t.Object({

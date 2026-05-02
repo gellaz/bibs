@@ -51,6 +51,7 @@ import {
 	XIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { useStores } from "@/hooks/use-stores";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
@@ -100,8 +101,10 @@ function useInvitations(enabled: boolean) {
 function useInviteEmployee() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (email: string) => {
-			const response = await api().seller.employees.invite.post({ email });
+		// TODO(Task 22): replace with multi-checkbox store selector.
+		// For now, defaults to all stores of the seller.
+		mutationFn: async (params: { email: string; storeIds: string[] }) => {
+			const response = await api().seller.employees.invite.post(params);
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || "Errore durante l'invio dell'invito",
@@ -217,6 +220,7 @@ const statusVariants: Record<
 
 function InviteEmployeeDialog() {
 	const inviteMutation = useInviteEmployee();
+	const { data: allStores } = useStores();
 	const [open, setOpen] = useState(false);
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
@@ -233,7 +237,11 @@ function InviteEmployeeDialog() {
 		if (!email.trim()) return;
 
 		try {
-			await inviteMutation.mutateAsync(email.trim());
+			// TODO(Task 22): replace with multi-checkbox store selector.
+			await inviteMutation.mutateAsync({
+				email: email.trim(),
+				storeIds: (allStores ?? []).map((s) => s.id),
+			});
 			reset();
 			setOpen(false);
 		} catch (err) {
