@@ -14,16 +14,23 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
-import { useNavigate } from "@tanstack/react-router";
-import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+	ChevronsUpDownIcon,
+	LogOutIcon,
+	UserIcon,
+	UsersIcon,
+} from "lucide-react";
 import LocaleSwitcher from "@/components/locale-switcher";
 import ThemeToggle from "@/components/theme-toggle";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import { authClient } from "@/lib/auth-client";
 
 export function NavUser() {
 	const { isMobile } = useSidebar();
 	const { data: session } = authClient.useSession();
 	const navigate = useNavigate();
+	const isOwner = useIsOwner();
 
 	if (!session?.user) {
 		return null;
@@ -79,6 +86,23 @@ export function NavUser() {
 								</div>
 							</div>
 						</DropdownMenuLabel>
+						<DropdownMenuSeparator />
+						<DropdownMenuGroup>
+							<DropdownMenuItem asChild>
+								<Link to="/profile">
+									<UserIcon />
+									<span>Profilo</span>
+								</Link>
+							</DropdownMenuItem>
+							{isOwner && (
+								<DropdownMenuItem asChild>
+									<Link to="/team" search={{ page: 1, limit: 20 }}>
+										<UsersIcon />
+										<span>Team</span>
+									</Link>
+								</DropdownMenuItem>
+							)}
+						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<div className="flex items-center gap-2 px-2 py-1.5">
