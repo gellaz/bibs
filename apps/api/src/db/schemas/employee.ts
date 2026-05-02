@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
 	index,
 	pgTable,
+	primaryKey,
 	text,
 	timestamp,
 	uniqueIndex,
@@ -9,6 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { sellerProfile } from "./seller";
+import { store } from "./store";
 
 export const employeeStatuses = ["active", "banned", "removed"] as const;
 export type EmployeeStatus = (typeof employeeStatuses)[number];
@@ -46,13 +48,47 @@ export const storeEmployee = pgTable(
 	],
 );
 
-export const storeEmployeeRelations = relations(storeEmployee, ({ one }) => ({
-	sellerProfile: one(sellerProfile, {
-		fields: [storeEmployee.sellerProfileId],
-		references: [sellerProfile.id],
+export const storeEmployeeRelations = relations(
+	storeEmployee,
+	({ one, many }) => ({
+		sellerProfile: one(sellerProfile, {
+			fields: [storeEmployee.sellerProfileId],
+			references: [sellerProfile.id],
+		}),
+		user: one(user, {
+			fields: [storeEmployee.userId],
+			references: [user.id],
+		}),
+		storeAssignments: many(storeEmployeeStores),
 	}),
-	user: one(user, {
-		fields: [storeEmployee.userId],
-		references: [user.id],
+);
+
+export const storeEmployeeStores = pgTable(
+	"store_employee_stores",
+	{
+		storeEmployeeId: text("store_employee_id")
+			.notNull()
+			.references(() => storeEmployee.id, { onDelete: "cascade" }),
+		storeId: text("store_id")
+			.notNull()
+			.references(() => store.id, { onDelete: "cascade" }),
+	},
+	(t) => [
+		primaryKey({ columns: [t.storeEmployeeId, t.storeId] }),
+		index("store_employee_stores_store_id_idx").on(t.storeId),
+	],
+);
+
+export const storeEmployeeStoresRelations = relations(
+	storeEmployeeStores,
+	({ one }) => ({
+		storeEmployee: one(storeEmployee, {
+			fields: [storeEmployeeStores.storeEmployeeId],
+			references: [storeEmployee.id],
+		}),
+		store: one(store, {
+			fields: [storeEmployeeStores.storeId],
+			references: [store.id],
+		}),
 	}),
-}));
+);
