@@ -26,6 +26,8 @@ function NewProductPage() {
 
 	const createMutation = useMutation({
 		mutationFn: async (formData: ProductFormValues) => {
+			const storeId = activeStore?.id;
+			if (!storeId) throw new Error("Nessun negozio selezionato");
 			const response = await api().seller.products.post({
 				name: formData.name,
 				description: formData.description,
@@ -34,7 +36,7 @@ function NewProductPage() {
 				ean: formData.ean,
 				brandId: formData.brandId,
 				brandName: formData.brandName,
-				storeId: activeStore!.id,
+				storeId,
 			});
 
 			if (response.error) {

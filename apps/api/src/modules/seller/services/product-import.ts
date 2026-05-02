@@ -1,6 +1,10 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { product, productCategoryAssignment } from "@/db/schemas/product";
+import {
+	product,
+	productCategoryAssignment,
+	storeProduct,
+} from "@/db/schemas/product";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
@@ -33,13 +37,14 @@ interface ValidProduct {
 
 interface ImportProductsParams {
 	sellerProfileId: string;
+	storeId: string;
 	csvText: string;
 }
 
 export async function importProductsFromCsv(
 	params: ImportProductsParams,
 ): Promise<ImportResult> {
-	const { sellerProfileId, csvText } = params;
+	const { sellerProfileId, storeId, csvText } = params;
 
 	const { headers, rows } = parseCsv(csvText);
 
@@ -213,6 +218,12 @@ export async function importProductsFromCsv(
 								})),
 							);
 						}
+
+						await nested.insert(storeProduct).values({
+							productId: inserted.id,
+							storeId,
+							stock: 0,
+						});
 					});
 					created++;
 				} catch (err: unknown) {

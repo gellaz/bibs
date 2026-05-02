@@ -233,11 +233,18 @@ export const productsRoutes = new Elysia()
 	.post(
 		"/products/import",
 		async (ctx) => {
-			const { sellerProfile: sp, body, user, store } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store, isOwner } = sellerCtx;
+			await ensureStoreAccess(body.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
 			const pino = getLogger(store);
 			const csvText = await body.file.text();
 			const result = await importProductsFromCsv({
 				sellerProfileId: sp.id,
+				storeId: body.storeId,
 				csvText,
 			});
 
@@ -248,6 +255,7 @@ export const productsRoutes = new Elysia()
 					created: result.created,
 					failed: result.failed,
 					action: "products_imported",
+					storeId: body.storeId,
 				},
 				"Importazione prodotti da CSV completata",
 			);
@@ -260,6 +268,7 @@ export const productsRoutes = new Elysia()
 					type: "text/csv",
 					description: "File CSV con i prodotti da importare",
 				}),
+				storeId: t.String({ description: "ID del negozio attivo" }),
 			}),
 			response: withErrors({ 200: okRes(CsvImportResultSchema) }),
 			detail: {

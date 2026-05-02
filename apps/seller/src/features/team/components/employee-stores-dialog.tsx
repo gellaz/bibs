@@ -98,11 +98,21 @@ export function EmployeeStoresDialog({
 						))}
 					</div>
 				)}
+				{!isLoading && selected.size === 0 && (
+					<p className="text-xs text-destructive px-2">
+						Seleziona almeno un negozio per salvare. Se vuoi rimuovere tutte le
+						assegnazioni, usa l&apos;azione &quot;Rimuovi&quot; dal menu del
+						dipendente.
+					</p>
+				)}
 				<DialogFooter>
 					<DialogClose asChild>
 						<Button variant="ghost">Annulla</Button>
 					</DialogClose>
-					<Button onClick={submit} disabled={update.isPending}>
+					<Button
+						onClick={submit}
+						disabled={update.isPending || selected.size === 0}
+					>
 						{update.isPending ? "Salvataggio…" : "Salva"}
 					</Button>
 				</DialogFooter>

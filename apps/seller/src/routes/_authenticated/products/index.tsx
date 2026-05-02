@@ -32,8 +32,10 @@ function ProductsListPage() {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["products", activeStore?.id, page, limit],
 		queryFn: async () => {
+			const storeId = activeStore?.id;
+			if (!storeId) throw new Error("No active store");
 			const response = await api().seller.products.get({
-				query: { storeId: activeStore!.id, page, limit },
+				query: { storeId, page, limit },
 			});
 
 			if (response.error) {

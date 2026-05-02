@@ -631,6 +631,7 @@ describe("importProductsFromCsv - per-row EAN collision", () => {
 
 		const result = await importProductsFromCsv({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			csvText: csv,
 		});
 
