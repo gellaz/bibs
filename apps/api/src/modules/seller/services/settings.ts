@@ -6,6 +6,7 @@ import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
+import { getEmployeeAssignedStoreIds } from "./access";
 
 // ── Helpers ─────────────────────────────────
 
@@ -35,7 +36,15 @@ function assertNoPendingChange(
 
 // ── GET settings ────────────────────────────
 
-export async function getSellerSettings(sellerProfileId: string) {
+interface GetSellerSettingsParams {
+	sellerProfileId: string;
+	userId: string;
+	isOwner: boolean;
+}
+
+export async function getSellerSettings(params: GetSellerSettingsParams) {
+	const { sellerProfileId, userId, isOwner } = params;
+
 	const profile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerProfileId),
 		with: { organization: true, changes: true },
@@ -54,11 +63,16 @@ export async function getSellerSettings(sellerProfileId: string) {
 		(c) => c.status === "pending",
 	);
 
+	const assignedStoreIds = isOwner
+		? null
+		: await getEmployeeAssignedStoreIds(userId, sellerProfileId);
+
 	return {
 		profile,
 		organization: profile.organization ?? null,
 		paymentMethod: payment ?? null,
 		pendingChanges,
+		assignedStoreIds,
 	};
 }
 
