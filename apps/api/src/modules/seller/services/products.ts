@@ -3,7 +3,11 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
 import { productCategory } from "@/db/schemas/category";
-import { product, productCategoryAssignment } from "@/db/schemas/product";
+import {
+	product,
+	productCategoryAssignment,
+	storeProduct,
+} from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
@@ -37,31 +41,57 @@ async function findOrCreateBrandInTx(
 
 interface ListProductsParams {
 	sellerProfileId: string;
+	storeId: string;
 	page?: number;
 	limit?: number;
 }
 
 export async function listProducts(params: ListProductsParams) {
-	const { sellerProfileId } = params;
+	const { sellerProfileId, storeId } = params;
 	const { page, limit, offset } = parsePagination(params);
 
-	const [data, [{ total }]] = await Promise.all([
-		db.query.product.findMany({
-			where: eq(product.sellerProfileId, sellerProfileId),
-			with: {
-				productCategoryAssignments: { with: { category: true } },
-				storeProducts: { with: { store: { columns: { location: false } } } },
-				images: { orderBy: (img, { asc }) => [asc(img.position)] },
-				brand: true,
-			},
-			limit,
-			offset,
-		}),
-		db
-			.select({ total: count() })
-			.from(product)
-			.where(eq(product.sellerProfileId, sellerProfileId)),
-	]);
+	const storeCondition = and(
+		eq(product.sellerProfileId, sellerProfileId),
+		eq(storeProduct.storeId, storeId),
+	);
+
+	// Get the IDs of products available in this store, paginated.
+	const productIdsRows = await db
+		.select({ id: product.id })
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(storeCondition)
+		.limit(limit)
+		.offset(offset);
+
+	const productIds = productIdsRows.map((r) => r.id);
+
+	// Total count
+	const [{ total }] = await db
+		.select({ total: count() })
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(storeCondition);
+
+	// Fetch full products with relations using the page's product IDs.
+	const data =
+		productIds.length === 0
+			? []
+			: await db.query.product.findMany({
+					where: inArray(product.id, productIds),
+					with: {
+						productCategoryAssignments: { with: { category: true } },
+						storeProducts: {
+							with: { store: { columns: { location: false } } },
+						},
+						images: { orderBy: (img, { asc }) => [asc(img.position)] },
+						brand: true,
+					},
+				});
+
+	// Sort data to preserve the order from productIds (the JOIN-paginated order).
+	const order = new Map(productIds.map((id, idx) => [id, idx]));
+	data.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 
 	return { data, pagination: { page, limit, total } };
 }

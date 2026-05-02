@@ -22,10 +22,10 @@ export function StoreInventory({ storeId }: StoreInventoryProps) {
 	const queryClient = useQueryClient();
 
 	const { data, isLoading } = useQuery({
-		queryKey: ["products"],
+		queryKey: ["products", storeId],
 		queryFn: async () => {
 			const response = await api().seller.products.get({
-				query: { page: 1, limit: 100 },
+				query: { storeId, page: 1, limit: 100 },
 			});
 			if (response.error) {
 				throw new Error(
@@ -41,7 +41,7 @@ export function StoreInventory({ storeId }: StoreInventoryProps) {
 	const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
 	const invalidate = () =>
-		void queryClient.invalidateQueries({ queryKey: ["products"] });
+		void queryClient.invalidateQueries({ queryKey: ["products", storeId] });
 
 	const scheduleSave = (productId: string, stock: number) => {
 		clearTimeout(saveTimers.current[productId]);

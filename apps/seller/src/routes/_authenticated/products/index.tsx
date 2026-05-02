@@ -12,6 +12,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PackageIcon, PlusIcon } from "lucide-react";
+import { useActiveStore } from "@/hooks/use-active-store";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/")({
@@ -26,12 +27,13 @@ export const Route = createFileRoute("/_authenticated/products/")({
 
 function ProductsListPage() {
 	const { page, limit } = Route.useSearch();
+	const { activeStore } = useActiveStore();
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["products", page, limit],
+		queryKey: ["products", activeStore?.id, page, limit],
 		queryFn: async () => {
 			const response = await api().seller.products.get({
-				query: { page, limit },
+				query: { storeId: activeStore!.id, page, limit },
 			});
 
 			if (response.error) {
@@ -42,6 +44,7 @@ function ProductsListPage() {
 
 			return response.data;
 		},
+		enabled: !!activeStore?.id,
 	});
 
 	return (

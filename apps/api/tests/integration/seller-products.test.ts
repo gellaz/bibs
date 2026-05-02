@@ -51,6 +51,8 @@ import {
 	createTestMacroCategory,
 	createTestProduct,
 	createTestSeller,
+	createTestStore,
+	createTestStoreProduct,
 } from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -73,8 +75,12 @@ describe("listProducts", () => {
 	it("returns empty list when seller has no products", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
 
-		const result = await listProducts({ sellerProfileId: seller.profile.id });
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+		});
 
 		expect(result.data).toHaveLength(0);
 		expect(result.pagination.total).toBe(0);
@@ -84,11 +90,19 @@ describe("listProducts", () => {
 		const db = getTestDb();
 		const sellerA = await createTestSeller(db, { email: "a@test.com" });
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
-		await createTestProduct(db, sellerA.profile.id, { name: "A1" });
-		await createTestProduct(db, sellerA.profile.id, { name: "A2" });
-		await createTestProduct(db, sellerB.profile.id, { name: "B1" });
+		const storeA = await createTestStore(db, sellerA.profile.id);
+		const storeB = await createTestStore(db, sellerB.profile.id);
+		const a1 = await createTestProduct(db, sellerA.profile.id, { name: "A1" });
+		const a2 = await createTestProduct(db, sellerA.profile.id, { name: "A2" });
+		const b1 = await createTestProduct(db, sellerB.profile.id, { name: "B1" });
+		await createTestStoreProduct(db, storeA.id, a1.id);
+		await createTestStoreProduct(db, storeA.id, a2.id);
+		await createTestStoreProduct(db, storeB.id, b1.id);
 
-		const result = await listProducts({ sellerProfileId: sellerA.profile.id });
+		const result = await listProducts({
+			sellerProfileId: sellerA.profile.id,
+			storeId: storeA.id,
+		});
 
 		expect(result.data).toHaveLength(2);
 		expect(result.pagination.total).toBe(2);
@@ -100,18 +114,46 @@ describe("listProducts", () => {
 	it("respects page/limit pagination", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const sA = await createTestStore(db, seller.profile.id);
 		for (let i = 0; i < 5; i++) {
-			await createTestProduct(db, seller.profile.id, { name: `P${i}` });
+			const p = await createTestProduct(db, seller.profile.id, {
+				name: `P${i}`,
+			});
+			await createTestStoreProduct(db, sA.id, p.id);
 		}
 
 		const result = await listProducts({
 			sellerProfileId: seller.profile.id,
+			storeId: sA.id,
 			page: 2,
 			limit: 2,
 		});
 
 		expect(result.data).toHaveLength(2);
 		expect(result.pagination.total).toBe(5);
+	});
+
+	it("returns only products available in the requested store", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const sA = await createTestStore(db, seller.profile.id, { name: "A" });
+		const sB = await createTestStore(db, seller.profile.id, { name: "B" });
+		const pInA = await createTestProduct(db, seller.profile.id, {
+			name: "InA",
+		});
+		const pInB = await createTestProduct(db, seller.profile.id, {
+			name: "InB",
+		});
+		await createTestStoreProduct(db, sA.id, pInA.id, { stock: 5 });
+		await createTestStoreProduct(db, sB.id, pInB.id, { stock: 3 });
+
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: sA.id,
+		});
+
+		expect(result.data.map((p) => p.name)).toEqual(["InA"]);
+		expect(result.pagination.total).toBe(1);
 	});
 });
 
@@ -248,7 +290,9 @@ describe("deleteProduct", () => {
 	it("deletes an owned product", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const p = await createTestProduct(db, seller.profile.id);
+		await createTestStoreProduct(db, s.id, p.id);
 
 		const deleted = await deleteProduct({
 			productId: p.id,
@@ -257,7 +301,10 @@ describe("deleteProduct", () => {
 
 		expect(deleted.id).toBe(p.id);
 
-		const result = await listProducts({ sellerProfileId: seller.profile.id });
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+		});
 		expect(result.data).toHaveLength(0);
 	});
 

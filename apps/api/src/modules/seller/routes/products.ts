@@ -14,7 +14,7 @@ import {
 	withErrors,
 } from "@/lib/schemas";
 import { CreateProductBody } from "@/lib/schemas/forms";
-import { withSeller } from "../context";
+import { ensureStoreAccess, withSeller } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
 	createProduct,
@@ -29,17 +29,32 @@ export const productsRoutes = new Elysia()
 	.get(
 		"/products",
 		async (ctx) => {
-			const { sellerProfile: sp, query } = withSeller(ctx);
-			const result = await listProducts({ sellerProfileId: sp.id, ...query });
+			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
+			const result = await listProducts({
+				sellerProfileId: sp.id,
+				storeId: query.storeId,
+				page: query.page,
+				limit: query.limit,
+			});
 			return okPage(result.data, result.pagination);
 		},
 		{
-			query: PaginationQuery,
+			query: t.Composite([
+				PaginationQuery,
+				t.Object({
+					storeId: t.String({ description: "ID del negozio attivo" }),
+				}),
+			]),
 			response: withErrors({ 200: okPageRes(ProductWithRelationsSchema) }),
 			detail: {
-				summary: "Lista prodotti",
+				summary: "Lista prodotti del negozio",
 				description:
-					"Restituisce la lista paginata dei prodotti del venditore con categorie, disponibilità per negozio e immagini.",
+					"Restituisce i prodotti disponibili nel negozio specificato (filtrati via store_products).",
 				tags: ["Seller - Products"],
 			},
 		},
