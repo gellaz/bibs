@@ -31,8 +31,10 @@ import { user as userTable } from "@/db/schemas/auth";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { employeeInvitationStores } from "@/db/schemas/employee-invitation";
 import {
+	getEmployeeStores,
 	inviteEmployee,
 	listEmployees,
+	setEmployeeStores,
 } from "@/modules/seller/services/employees";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestSeller, createTestStore } from "../helpers/fixtures";
@@ -114,6 +116,118 @@ describe("inviteEmployee with storeIds", () => {
 
 		await expect(
 			inviteEmployee(profileA.id, "n@test.com", [sB.id]),
+		).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe("setEmployeeStores", () => {
+	it("replaces the assignment set idempotently", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const sA = await createTestStore(db, profile.id);
+		const sB = await createTestStore(db, profile.id);
+		const sC = await createTestStore(db, profile.id);
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+
+		await setEmployeeStores({
+			sellerProfileId: profile.id,
+			employeeId: emp.id,
+			storeIds: [sA.id, sB.id],
+		});
+		const after1 = await getEmployeeStores({
+			sellerProfileId: profile.id,
+			employeeId: emp.id,
+		});
+		expect(after1.map((s) => s.id).sort()).toEqual([sA.id, sB.id].sort());
+
+		await setEmployeeStores({
+			sellerProfileId: profile.id,
+			employeeId: emp.id,
+			storeIds: [sB.id, sC.id],
+		});
+		const after2 = await getEmployeeStores({
+			sellerProfileId: profile.id,
+			employeeId: emp.id,
+		});
+		expect(after2.map((s) => s.id).sort()).toEqual([sB.id, sC.id].sort());
+	});
+
+	it("rejects storeIds not belonging to the seller (404)", async () => {
+		const db = getTestDb();
+		const a = await createTestSeller(db);
+		const b = await createTestSeller(db, { email: "other@test.com" });
+		const sB = await createTestStore(db, b.profile.id);
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: a.profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+
+		await expect(
+			setEmployeeStores({
+				sellerProfileId: a.profile.id,
+				employeeId: emp.id,
+				storeIds: [sB.id],
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("getEmployeeStores: 404 if employee not found in seller", async () => {
+		const db = getTestDb();
+		const a = await createTestSeller(db);
+		const b = await createTestSeller(db, { email: "another@test.com" });
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: a.profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+
+		// Querying as 'b' should 404 (employee belongs to a)
+		await expect(
+			getEmployeeStores({ sellerProfileId: b.profile.id, employeeId: emp.id }),
 		).rejects.toMatchObject({ status: 404 });
 	});
 });

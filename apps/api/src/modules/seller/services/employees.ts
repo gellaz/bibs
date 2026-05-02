@@ -1,7 +1,7 @@
 import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
-import { storeEmployee } from "@/db/schemas/employee";
+import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import {
 	employeeInvitation,
 	employeeInvitationStores,
@@ -247,4 +247,82 @@ export async function removeEmployee(params: EmployeeActionParams) {
 
 	if (!updated) throw new ServiceError(404, "Employee not found");
 	return updated;
+}
+
+interface EmployeeStoresParams {
+	sellerProfileId: string;
+	employeeId: string;
+}
+
+export async function getEmployeeStores(params: EmployeeStoresParams) {
+	// Verify employee belongs to this seller (404 otherwise)
+	const emp = await db.query.storeEmployee.findFirst({
+		where: and(
+			eq(storeEmployee.id, params.employeeId),
+			eq(storeEmployee.sellerProfileId, params.sellerProfileId),
+		),
+	});
+	if (!emp) throw new ServiceError(404, "Employee not found");
+
+	return db
+		.select({
+			id: storeTable.id,
+			name: storeTable.name,
+			city: storeTable.city,
+			province: storeTable.province,
+		})
+		.from(storeEmployeeStores)
+		.innerJoin(storeTable, eq(storeEmployeeStores.storeId, storeTable.id))
+		.where(eq(storeEmployeeStores.storeEmployeeId, params.employeeId));
+}
+
+interface SetEmployeeStoresParams extends EmployeeStoresParams {
+	storeIds: string[];
+}
+
+export async function setEmployeeStores(params: SetEmployeeStoresParams) {
+	// Verify employee belongs to seller (404)
+	const emp = await db.query.storeEmployee.findFirst({
+		where: and(
+			eq(storeEmployee.id, params.employeeId),
+			eq(storeEmployee.sellerProfileId, params.sellerProfileId),
+		),
+	});
+	if (!emp) throw new ServiceError(404, "Employee not found");
+
+	// Validate every storeId belongs to this seller (use Set to dedupe defensively)
+	const uniqueStoreIds = Array.from(new Set(params.storeIds));
+	if (uniqueStoreIds.length > 0) {
+		const valid = await db
+			.select({ id: storeTable.id })
+			.from(storeTable)
+			.where(
+				and(
+					inArray(storeTable.id, uniqueStoreIds),
+					eq(storeTable.sellerProfileId, params.sellerProfileId),
+				),
+			);
+		if (valid.length !== uniqueStoreIds.length) {
+			throw new ServiceError(
+				404,
+				"Uno o più negozi non appartengono al tuo profilo",
+			);
+		}
+	}
+
+	await db.transaction(async (tx) => {
+		await tx
+			.delete(storeEmployeeStores)
+			.where(eq(storeEmployeeStores.storeEmployeeId, params.employeeId));
+		if (uniqueStoreIds.length > 0) {
+			await tx.insert(storeEmployeeStores).values(
+				uniqueStoreIds.map((storeId) => ({
+					storeEmployeeId: params.employeeId,
+					storeId,
+				})),
+			);
+		}
+	});
+
+	return getEmployeeStores(params);
 }

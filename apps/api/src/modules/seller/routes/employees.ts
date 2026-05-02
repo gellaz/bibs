@@ -15,12 +15,21 @@ import { requireOwner, withSeller } from "../context";
 import {
 	banEmployee,
 	cancelInvitation,
+	getEmployeeStores,
 	inviteEmployee,
 	listEmployeeInvitations,
 	listEmployees,
 	removeEmployee,
+	setEmployeeStores,
 	unbanEmployee,
 } from "../services/employees";
+
+const StoreMinimalSchema = t.Object({
+	id: t.String(),
+	name: t.String(),
+	city: t.String(),
+	province: t.Nullable(t.String()),
+});
 
 const EmployeesListResponse = t.Object({
 	success: t.Literal(true),
@@ -193,6 +202,60 @@ export const employeesRoutes = new Elysia()
 				summary: "Rimuovi dipendente",
 				description:
 					"Imposta lo stato del dipendente a 'removed'. L'operazione è un soft-delete.",
+				tags: ["Seller - Employees"],
+			},
+		},
+	)
+	.get(
+		"/employees/:employeeId/stores",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+			requireOwner(isOwner);
+			const data = await getEmployeeStores({
+				sellerProfileId: sp.id,
+				employeeId: params.employeeId,
+			});
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				employeeId: t.String({ description: "ID del dipendente" }),
+			}),
+			response: withErrors({ 200: okRes(t.Array(StoreMinimalSchema)) }),
+			detail: {
+				summary: "Negozi assegnati al dipendente",
+				description:
+					"Restituisce la lista dei negozi a cui il dipendente è assegnato. Solo titolare.",
+				tags: ["Seller - Employees"],
+			},
+		},
+	)
+	.put(
+		"/employees/:employeeId/stores",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner, params, body } = withSeller(ctx);
+			requireOwner(isOwner);
+			const data = await setEmployeeStores({
+				sellerProfileId: sp.id,
+				employeeId: params.employeeId,
+				storeIds: body.storeIds,
+			});
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				employeeId: t.String({ description: "ID del dipendente" }),
+			}),
+			body: t.Object({
+				storeIds: t.Array(t.String(), {
+					description: "ID dei negozi (replace idempotente)",
+				}),
+			}),
+			response: withErrors({ 200: okRes(t.Array(StoreMinimalSchema)) }),
+			detail: {
+				summary: "Aggiorna assegnazione negozi",
+				description:
+					"Sostituisce l'insieme di negozi assegnati al dipendente (idempotente). Solo titolare.",
 				tags: ["Seller - Employees"],
 			},
 		},
