@@ -12,22 +12,29 @@ import {
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-	HomeIcon,
-	PackageIcon,
-	StoreIcon,
-	UserIcon,
-	UsersIcon,
-} from "lucide-react";
-import { CompanyHeader } from "@/components/company-header";
+import { HomeIcon, PackageIcon, SettingsIcon } from "lucide-react";
 import { NavUser } from "@/components/nav-user";
+import { StoreSwitcher } from "@/components/store-switcher";
 
 const navItems = [
-	{ title: "Home", to: "/" as const, icon: HomeIcon },
-	{ title: "Negozi", to: "/stores" as const, icon: StoreIcon },
-	{ title: "Prodotti", to: "/products" as const, icon: PackageIcon },
-	{ title: "Team", to: "/team" as const, icon: UsersIcon },
-	{ title: "Profilo", to: "/profile" as const, icon: UserIcon },
+	{
+		title: "Home",
+		to: "/" as const,
+		icon: HomeIcon,
+		match: (p: string) => p === "/",
+	},
+	{
+		title: "Prodotti",
+		to: "/products" as const,
+		icon: PackageIcon,
+		match: (p: string) => p.startsWith("/products"),
+	},
+	{
+		title: "Impostazioni negozio",
+		to: "/store" as const,
+		icon: SettingsIcon,
+		match: (p: string) => p.startsWith("/store"),
+	},
 ];
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
@@ -36,7 +43,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	return (
 		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
-				<CompanyHeader />
+				<StoreSwitcher />
 			</SidebarHeader>
 
 			<SidebarContent>
@@ -45,10 +52,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{navItems.map((item) => {
-								const isActive =
-									item.to === "/"
-										? pathname === "/"
-										: pathname.startsWith(item.to);
+								const isActive = item.match(pathname);
 								return (
 									<SidebarMenuItem key={item.title}>
 										<SidebarMenuButton
