@@ -60,7 +60,11 @@ function NewProductPage() {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["products"] });
 			void queryClient.invalidateQueries({ queryKey: ["seller-brands"] });
-			toast.success("Prodotto creato con successo");
+			toast.success(
+				activeStore
+					? `Prodotto creato in ${activeStore.name}`
+					: "Prodotto creato con successo",
+			);
 			goBack();
 		},
 		onError: (error: Error) => {
