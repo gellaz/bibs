@@ -7,6 +7,7 @@ import {
 	ProductForm,
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
+import { useActiveStore } from "@/hooks/use-active-store";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/new")({
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/products/new")({
 function NewProductPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { activeStore } = useActiveStore();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
 
@@ -32,6 +34,7 @@ function NewProductPage() {
 				ean: formData.ean,
 				brandId: formData.brandId,
 				brandName: formData.brandName,
+				storeId: activeStore!.id,
 			});
 
 			if (response.error) {
@@ -86,7 +89,7 @@ function NewProductPage() {
 			<ProductForm
 				onSubmit={(values) => createMutation.mutate(values)}
 				onCancel={goBack}
-				isPending={createMutation.isPending}
+				isPending={createMutation.isPending || !activeStore}
 				submitLabel="Crea Prodotto"
 				pendingLabel="Creazione..."
 				onNameChange={handleNameChange}

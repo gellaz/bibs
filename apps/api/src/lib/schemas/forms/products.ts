@@ -43,4 +43,9 @@ export const CreateProductBody = Type.Object({
 				"Nome di un brand da creare (ignorato se brandId è valorizzato)",
 		}),
 	),
+	storeId: Type.String({
+		description:
+			"ID del negozio in cui creare il prodotto (autoassegnazione store_products)",
+		error: "storeId è obbligatorio",
+	}),
 });

@@ -127,6 +127,7 @@ export async function getProduct(params: GetProductParams) {
 
 interface CreateProductParams {
 	sellerProfileId: string;
+	storeId: string;
 	name: string;
 	description?: string;
 	price: string;
@@ -139,6 +140,7 @@ interface CreateProductParams {
 export async function createProduct(params: CreateProductParams) {
 	const {
 		sellerProfileId,
+		storeId,
 		categoryIds = [],
 		brandId,
 		brandName,
@@ -191,6 +193,13 @@ export async function createProduct(params: CreateProductParams) {
 				brandId: resolvedBrandId,
 			})
 			.returning();
+
+		// Auto-assign to the active store with stock=0.
+		await tx.insert(storeProduct).values({
+			productId: created.id,
+			storeId,
+			stock: 0,
+		});
 
 		if (categoryIds.length > 0) {
 			await tx.insert(productCategoryAssignment).values(

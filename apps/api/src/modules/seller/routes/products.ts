@@ -110,8 +110,13 @@ export const productsRoutes = new Elysia()
 	.post(
 		"/products",
 		async (ctx) => {
-			const { sellerProfile: sp, body, user, store } = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store, isOwner } = withSeller(ctx);
 			const pino = getLogger(store);
+			await ensureStoreAccess(body.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
 			const data = await createProduct({ sellerProfileId: sp.id, ...body });
 
 			pino.info(
@@ -120,6 +125,7 @@ export const productsRoutes = new Elysia()
 					sellerProfileId: sp.id,
 					productId: data.id,
 					productName: data.name,
+					storeId: body.storeId,
 					categoryIds: body.categoryIds,
 					ean: data.ean,
 					brandId: data.brandId,

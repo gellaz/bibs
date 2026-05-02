@@ -6,7 +6,7 @@ import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
-import type { Static } from "@sinclair/typebox";
+import { type Static, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
@@ -19,8 +19,10 @@ import {
 	ProductImageDropzone,
 } from "./product-image-dropzone";
 
-type ProductFormData = Static<typeof CreateProductBody>;
-const compiledSchema = TypeCompiler.Compile(CreateProductBody);
+// storeId is injected by the route at submit time — exclude it from form validation.
+const CreateProductFormBody = Type.Omit(CreateProductBody, ["storeId"]);
+type ProductFormData = Static<typeof CreateProductFormBody>;
+const compiledSchema = TypeCompiler.Compile(CreateProductFormBody);
 
 export type { ExistingImage };
 

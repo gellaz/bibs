@@ -31,9 +31,13 @@ mock.module("@/lib/s3", () => ({
 
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { brand } from "@/db/schemas/brand";
-import { product, productCategoryAssignment } from "@/db/schemas/product";
+import {
+	product,
+	productCategoryAssignment,
+	storeProduct as storeProductTable,
+} from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
 import { importProductsFromCsv } from "@/modules/seller/services/product-import";
 import {
@@ -197,11 +201,13 @@ describe("createProduct", () => {
 	it("creates a product and links the categories", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const cat1 = await createTestCategory(db, "Cat A");
 		const cat2 = await createTestCategory(db, "Cat B");
 
 		const created = await createProduct({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			name: "Espresso",
 			price: "1.20",
 			categoryIds: [cat1.id, cat2.id],
@@ -215,6 +221,30 @@ describe("createProduct", () => {
 			.from(productCategoryAssignment)
 			.where(eq(productCategoryAssignment.productId, created.id));
 		expect(classifications).toHaveLength(2);
+	});
+});
+
+describe("createProduct with storeId", () => {
+	it("creates the product and a store_products row with stock=0", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
+
+		const created = await createProduct({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			name: "P",
+			price: "9.99",
+		});
+
+		const sp = await db.query.storeProduct.findFirst({
+			where: and(
+				eq(storeProductTable.productId, created.id),
+				eq(storeProductTable.storeId, s.id),
+			),
+		});
+		expect(sp).toBeDefined();
+		expect(sp!.stock).toBe(0);
 	});
 });
 
@@ -243,12 +273,14 @@ describe("updateProduct", () => {
 	it("replaces categories when categoryIds is provided", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const cat1 = await createTestCategory(db, "Cat A");
 		const cat2 = await createTestCategory(db, "Cat B");
 		const cat3 = await createTestCategory(db, "Cat C");
 
 		const p = await createProduct({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			name: "Prod",
 			price: "1.00",
 			categoryIds: [cat1.id, cat2.id],
@@ -327,10 +359,12 @@ describe("createProduct - brand and EAN", () => {
 	it("creates a product with a brandName, creating the brand on the fly", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const cat = await createTestCategory(db);
 
 		const created = await createProduct({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			name: "Sneakers",
 			price: "59.90",
 			categoryIds: [cat.id],
@@ -349,11 +383,13 @@ describe("createProduct - brand and EAN", () => {
 	it("reuses an existing brand when name matches case-insensitively", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const cat = await createTestCategory(db);
 		const existing = await createTestBrand(db, seller.profile.id, "Nike");
 
 		const created = await createProduct({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			name: "Sneakers 2",
 			price: "59.90",
 			categoryIds: [cat.id],
@@ -366,11 +402,13 @@ describe("createProduct - brand and EAN", () => {
 	it("uses brandId when provided, ignoring brandName", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const cat = await createTestCategory(db);
 		const existing = await createTestBrand(db, seller.profile.id, "Adidas");
 
 		const created = await createProduct({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			name: "Tee",
 			price: "19.90",
 			categoryIds: [cat.id],
@@ -390,12 +428,14 @@ describe("createProduct - brand and EAN", () => {
 		const db = getTestDb();
 		const sellerA = await createTestSeller(db, { email: "a@test.com" });
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const sA = await createTestStore(db, sellerA.profile.id);
 		const cat = await createTestCategory(db);
 		const brandOfB = await createTestBrand(db, sellerB.profile.id, "Foreign");
 
 		await expect(
 			createProduct({
 				sellerProfileId: sellerA.profile.id,
+				storeId: sA.id,
 				name: "X",
 				price: "1.00",
 				categoryIds: [cat.id],
@@ -408,10 +448,13 @@ describe("createProduct - brand and EAN", () => {
 		const db = getTestDb();
 		const sellerA = await createTestSeller(db, { email: "a@test.com" });
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const sA = await createTestStore(db, sellerA.profile.id);
+		const sB = await createTestStore(db, sellerB.profile.id);
 		const cat = await createTestCategory(db);
 
 		const a = await createProduct({
 			sellerProfileId: sellerA.profile.id,
+			storeId: sA.id,
 			name: "Coca",
 			price: "1.00",
 			categoryIds: [cat.id],
@@ -419,6 +462,7 @@ describe("createProduct - brand and EAN", () => {
 		});
 		const b = await createProduct({
 			sellerProfileId: sellerB.profile.id,
+			storeId: sB.id,
 			name: "Coca",
 			price: "1.20",
 			categoryIds: [cat.id],
@@ -432,10 +476,12 @@ describe("createProduct - brand and EAN", () => {
 	it("rejects duplicate ean for the same seller (unique violation)", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const cat = await createTestCategory(db);
 
 		await createProduct({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			name: "First",
 			price: "1.00",
 			categoryIds: [cat.id],
@@ -445,6 +491,7 @@ describe("createProduct - brand and EAN", () => {
 		await expect(
 			createProduct({
 				sellerProfileId: seller.profile.id,
+				storeId: s.id,
 				name: "Second",
 				price: "2.00",
 				categoryIds: [cat.id],
@@ -456,6 +503,7 @@ describe("createProduct - brand and EAN", () => {
 	it("rejects categoryIds spanning multiple macro-categories", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const macroA = await createTestMacroCategory(db, "Macro A");
 		const macroB = await createTestMacroCategory(db, "Macro B");
 		const catA = await createTestCategory(db, "Cat A", macroA.id);
@@ -464,6 +512,7 @@ describe("createProduct - brand and EAN", () => {
 		await expect(
 			createProduct({
 				sellerProfileId: seller.profile.id,
+				storeId: s.id,
 				name: "Mixed",
 				price: "1.00",
 				categoryIds: [catA.id, catB.id],
@@ -482,12 +531,15 @@ describe("lookupProductByEan", () => {
 		const db = getTestDb();
 		const sellerA = await createTestSeller(db, { email: "a@test.com" });
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const sA = await createTestStore(db, sellerA.profile.id);
+		const sB = await createTestStore(db, sellerB.profile.id);
 		const macro = await createTestMacroCategory(db, "Foo");
 		const cat = await createTestCategory(db, "Bar", macro.id);
 		const brandA = await createTestBrand(db, sellerA.profile.id, "BrandA");
 
 		await createProduct({
 			sellerProfileId: sellerA.profile.id,
+			storeId: sA.id,
 			name: "Old",
 			price: "1.00",
 			categoryIds: [cat.id],
@@ -499,6 +551,7 @@ describe("lookupProductByEan", () => {
 		const brandB = await createTestBrand(db, sellerB.profile.id, "BrandB");
 		await createProduct({
 			sellerProfileId: sellerB.profile.id,
+			storeId: sB.id,
 			name: "New",
 			description: "Latest version",
 			price: "2.00",
@@ -525,12 +578,14 @@ describe("importProductsFromCsv - per-row EAN collision", () => {
 	it("skips a row that conflicts with an existing seller EAN and continues importing other rows", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const macro = await createTestMacroCategory(db, "Macro Import");
 		const cat = await createTestCategory(db, "Cat Import", macro.id);
 
 		// Seed: an existing product with EAN
 		await createProduct({
 			sellerProfileId: seller.profile.id,
+			storeId: s.id,
 			name: "Existing",
 			price: "1.00",
 			categoryIds: [cat.id],
