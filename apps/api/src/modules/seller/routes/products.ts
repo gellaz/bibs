@@ -87,10 +87,13 @@ export const productsRoutes = new Elysia()
 	.get(
 		"/products/:productId",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params } = sellerCtx;
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
 			const data = await getProduct({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				accessibleStoreIds,
 			});
 			return ok(data);
 		},
@@ -150,10 +153,13 @@ export const productsRoutes = new Elysia()
 	.patch(
 		"/products/:productId",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, body } = sellerCtx;
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
 			const data = await updateProduct({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				accessibleStoreIds,
 				...body,
 			});
 
@@ -267,12 +273,15 @@ export const productsRoutes = new Elysia()
 	.delete(
 		"/products/:productId",
 		async (ctx) => {
-			const { sellerProfile: sp, params, user, store } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, user, store } = sellerCtx;
 			const pino = getLogger(store);
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
 
 			const deleted = await deleteProduct({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				accessibleStoreIds,
 			});
 
 			pino.warn(

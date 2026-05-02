@@ -167,16 +167,19 @@ describe("getProduct", () => {
 	it("returns the product with relations when owned by the seller", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
 		const p = await createTestProduct(db, seller.profile.id);
+		await createTestStoreProduct(db, store.id, p.id);
 
 		const result = await getProduct({
 			productId: p.id,
 			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [store.id],
 		});
 
 		expect(result.id).toBe(p.id);
 		expect(result.productCategoryAssignments).toEqual([]);
-		expect(result.storeProducts).toEqual([]);
+		expect(result.storeProducts).toHaveLength(1);
 		expect(result.images).toEqual([]);
 	});
 
@@ -190,6 +193,24 @@ describe("getProduct", () => {
 			getProduct({
 				productId: p.id,
 				sellerProfileId: otherSeller.profile.id,
+				accessibleStoreIds: [],
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("returns 404 when product not in any accessible store", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const sA = await createTestStore(db, seller.profile.id, { name: "A" });
+		const sB = await createTestStore(db, seller.profile.id, { name: "B" });
+		const p = await createTestProduct(db, seller.profile.id);
+		await createTestStoreProduct(db, sB.id, p.id); // p only in sB
+
+		await expect(
+			getProduct({
+				productId: p.id,
+				sellerProfileId: seller.profile.id,
+				accessibleStoreIds: [sA.id], // employee assigned only to sA
 			}),
 		).rejects.toMatchObject({ status: 404 });
 	});
@@ -254,14 +275,17 @@ describe("updateProduct", () => {
 	it("updates name and price", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
 		const p = await createTestProduct(db, seller.profile.id, {
 			name: "Old",
 			price: "5.00",
 		});
+		await createTestStoreProduct(db, s.id, p.id);
 
 		const updated = await updateProduct({
 			productId: p.id,
 			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [s.id],
 			name: "New",
 			price: "7.50",
 		});
@@ -285,10 +309,12 @@ describe("updateProduct", () => {
 			price: "1.00",
 			categoryIds: [cat1.id, cat2.id],
 		});
+		// createProduct already creates a storeProduct row for s.id
 
 		await updateProduct({
 			productId: p.id,
 			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [s.id],
 			categoryIds: [cat3.id],
 		});
 
@@ -309,6 +335,7 @@ describe("updateProduct", () => {
 		const result = await updateProduct({
 			productId: p.id,
 			sellerProfileId: other.profile.id,
+			accessibleStoreIds: [],
 			name: "Hacked",
 		});
 
@@ -329,6 +356,7 @@ describe("deleteProduct", () => {
 		const deleted = await deleteProduct({
 			productId: p.id,
 			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [s.id],
 		});
 
 		expect(deleted.id).toBe(p.id);
@@ -350,6 +378,7 @@ describe("deleteProduct", () => {
 			deleteProduct({
 				productId: p.id,
 				sellerProfileId: other.profile.id,
+				accessibleStoreIds: [],
 			}),
 		).rejects.toBeInstanceOf(ServiceError);
 	});

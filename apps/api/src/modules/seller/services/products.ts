@@ -101,10 +101,11 @@ export async function listProducts(params: ListProductsParams) {
 interface GetProductParams {
 	productId: string;
 	sellerProfileId: string;
+	accessibleStoreIds: string[];
 }
 
 export async function getProduct(params: GetProductParams) {
-	const { productId, sellerProfileId } = params;
+	const { productId, sellerProfileId, accessibleStoreIds } = params;
 
 	const found = await db.query.product.findFirst({
 		where: and(
@@ -120,6 +121,13 @@ export async function getProduct(params: GetProductParams) {
 	});
 
 	if (!found) throw new ServiceError(404, "Product not found");
+
+	// Verify accessibility: at least one storeProducts row must be in accessibleStoreIds
+	const accessible = found.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) throw new ServiceError(404, "Product not found");
+
 	return found;
 }
 
@@ -219,6 +227,7 @@ export async function createProduct(params: CreateProductParams) {
 interface UpdateProductParams {
 	productId: string;
 	sellerProfileId: string;
+	accessibleStoreIds: string[];
 	categoryIds?: string[];
 	imageOrder?: string[];
 	name?: string;
@@ -233,6 +242,7 @@ export async function updateProduct(params: UpdateProductParams) {
 	const {
 		productId,
 		sellerProfileId,
+		accessibleStoreIds,
 		categoryIds,
 		imageOrder,
 		ean,
@@ -240,6 +250,20 @@ export async function updateProduct(params: UpdateProductParams) {
 		brandName,
 		...productData
 	} = params;
+
+	// Verify accessibility before mutating
+	const existing = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: { storeProducts: { columns: { storeId: true } } },
+	});
+	if (!existing) return null;
+	const accessible = existing.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) return null;
 
 	// Validate: all categoryIds belong to a single macro-category
 	if (categoryIds && categoryIds.length > 1) {
@@ -350,10 +374,25 @@ export async function updateProduct(params: UpdateProductParams) {
 interface DeleteProductParams {
 	productId: string;
 	sellerProfileId: string;
+	accessibleStoreIds: string[];
 }
 
 export async function deleteProduct(params: DeleteProductParams) {
-	const { productId, sellerProfileId } = params;
+	const { productId, sellerProfileId, accessibleStoreIds } = params;
+
+	// Verify accessibility before mutating
+	const check = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: { storeProducts: { columns: { storeId: true } } },
+	});
+	if (!check) throw new ServiceError(404, "Product not found");
+	const accessible = check.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) throw new ServiceError(404, "Product not found");
 
 	// Fetch images to clean up S3 before cascade-deleting the product
 	const images = await db.query.productImage.findMany({

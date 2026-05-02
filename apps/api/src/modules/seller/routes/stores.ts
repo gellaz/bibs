@@ -23,8 +23,18 @@ export const storesRoutes = new Elysia()
 	.get(
 		"/stores",
 		async (ctx) => {
-			const { sellerProfile: sp, query } = withSeller(ctx);
-			const result = await listStores({ sellerProfileId: sp.id, ...query });
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, isOwner, query } = sellerCtx;
+			// Owner: undefined filter = all stores. Employee: explicit list = only assigned stores (may be empty).
+			const filterStoreIds = isOwner
+				? undefined
+				: await sellerCtx.getAccessibleStoreIds();
+			const result = await listStores({
+				sellerProfileId: sp.id,
+				filterStoreIds,
+				page: query.page,
+				limit: query.limit,
+			});
 			return okPage(result.data, result.pagination);
 		},
 		{

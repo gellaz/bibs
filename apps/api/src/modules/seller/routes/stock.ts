@@ -6,7 +6,7 @@ import {
 	StoreProductSchema,
 	withErrors,
 } from "@/lib/schemas";
-import { withSeller } from "../context";
+import { ensureStoreAccess, withSeller } from "../context";
 import {
 	assignProductToStores,
 	removeProductFromStore,
@@ -17,7 +17,15 @@ export const stockRoutes = new Elysia()
 	.post(
 		"/products/:productId/stores",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, body, isOwner, user } = sellerCtx;
+			for (const storeId of body.storeIds) {
+				await ensureStoreAccess(storeId, {
+					userId: user.id,
+					sellerProfileId: sp.id,
+					isOwner,
+				});
+			}
 			const data = await assignProductToStores({
 				productId: params.productId,
 				sellerProfileId: sp.id,
@@ -54,7 +62,13 @@ export const stockRoutes = new Elysia()
 	.patch(
 		"/products/:productId/stores/:storeId",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, body, isOwner, user } = sellerCtx;
+			await ensureStoreAccess(params.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
 			const data = await updateStock({
 				productId: params.productId,
 				storeId: params.storeId,
@@ -83,7 +97,13 @@ export const stockRoutes = new Elysia()
 	.delete(
 		"/products/:productId/stores/:storeId",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, isOwner, user } = sellerCtx;
+			await ensureStoreAccess(params.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
 			await removeProductFromStore({
 				productId: params.productId,
 				storeId: params.storeId,

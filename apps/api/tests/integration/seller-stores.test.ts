@@ -36,7 +36,7 @@ import {
 	updateStore,
 } from "@/modules/seller/services/stores";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestSeller } from "../helpers/fixtures";
+import { createTestSeller, createTestStore } from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -98,6 +98,33 @@ describe("listStores", () => {
 		expect(
 			result.data.every((s) => s.sellerProfileId === sellerA.profile.id),
 		).toBe(true);
+	});
+
+	it("filterStoreIds: empty array returns zero stores", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await createTestStore(db, seller.profile.id);
+
+		const result = await listStores({
+			sellerProfileId: seller.profile.id,
+			filterStoreIds: [],
+		});
+		expect(result.data).toHaveLength(0);
+		expect(result.pagination.total).toBe(0);
+	});
+
+	it("filterStoreIds: non-empty array returns only listed stores", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const sA = await createTestStore(db, seller.profile.id, { name: "A" });
+		await createTestStore(db, seller.profile.id, { name: "B" });
+
+		const result = await listStores({
+			sellerProfileId: seller.profile.id,
+			filterStoreIds: [sA.id],
+		});
+		expect(result.data).toHaveLength(1);
+		expect(result.data[0].id).toBe(sA.id);
 	});
 
 	it("excludes soft-deleted stores", async () => {

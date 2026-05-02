@@ -19,9 +19,9 @@ export const ordersRoutes = new Elysia()
 	.get(
 		"/orders",
 		async (ctx) => {
-			const { getStoreIds, query } = withSeller(ctx);
+			const { getAccessibleStoreIds, query } = withSeller(ctx);
 			const result = await listSellerOrders({
-				storeIds: await getStoreIds(),
+				storeIds: await getAccessibleStoreIds(),
 				...query,
 			});
 			return okPage(result.data, result.pagination);
@@ -40,10 +40,10 @@ export const ordersRoutes = new Elysia()
 	.get(
 		"/orders/:orderId",
 		async (ctx) => {
-			const { getStoreIds, params } = withSeller(ctx);
+			const { getAccessibleStoreIds, params } = withSeller(ctx);
 			const data = await getSellerOrder({
 				orderId: params.orderId,
-				storeIds: await getStoreIds(),
+				storeIds: await getAccessibleStoreIds(),
 			});
 			return ok(data);
 		},
@@ -63,11 +63,14 @@ export const ordersRoutes = new Elysia()
 	.patch(
 		"/orders/:orderId/ready",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params } = sellerCtx;
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
 			const data = await transitionOrder(
 				params.orderId,
 				sp.id,
 				"ready_for_pickup",
+				accessibleStoreIds,
 			);
 			return ok(data);
 		},
@@ -87,8 +90,15 @@ export const ordersRoutes = new Elysia()
 	.patch(
 		"/orders/:orderId/ship",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
-			const data = await transitionOrder(params.orderId, sp.id, "shipped");
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params } = sellerCtx;
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
+			const data = await transitionOrder(
+				params.orderId,
+				sp.id,
+				"shipped",
+				accessibleStoreIds,
+			);
 			return ok(data);
 		},
 		{
@@ -107,8 +117,15 @@ export const ordersRoutes = new Elysia()
 	.patch(
 		"/orders/:orderId/complete",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
-			const data = await transitionOrder(params.orderId, sp.id, "completed");
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params } = sellerCtx;
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
+			const data = await transitionOrder(
+				params.orderId,
+				sp.id,
+				"completed",
+				accessibleStoreIds,
+			);
 			return ok(data);
 		},
 		{
