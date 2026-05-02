@@ -5,6 +5,7 @@ import { product } from "@/db/schemas/product";
 import type { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
+import { getEmployeeAssignedStoreIds } from "./services/access";
 
 /**
  * Context injected by the seller guard's `.resolve()` and auth macro.
@@ -15,6 +16,8 @@ export interface SellerResolvedContext {
 	isOwner: boolean;
 	/** Lazy getter — only queries DB on first call, caches the result. */
 	getStoreIds: () => Promise<string[]>;
+	/** Lazy: tutti gli store accessibili al chiamante (owner: tutti; employee: solo assegnati). */
+	getAccessibleStoreIds: () => Promise<string[]>;
 	user: {
 		id: string;
 		name: string;
@@ -80,6 +83,45 @@ export async function ensureStoreOwnership(
 	});
 	if (!s) throw new ServiceError(404, "Store not found");
 	return s;
+}
+
+export interface AccessCtx {
+	userId: string;
+	sellerProfileId: string;
+	isOwner: boolean;
+}
+
+/**
+ * Owner: tutti gli store non-deleted del sellerProfile.
+ * Employee: solo gli storeId presenti in store_employee_stores per il chiamante.
+ */
+export async function getAccessibleStoreIdsFor(
+	ctx: AccessCtx,
+): Promise<string[]> {
+	if (ctx.isOwner) return getSellerStoreIds(ctx.sellerProfileId);
+	return getEmployeeAssignedStoreIds(ctx.userId, ctx.sellerProfileId);
+}
+
+/**
+ * Throws 404 (owner) o 403 (employee) se il chiamante non può operare sullo store.
+ * Owner: verifica via ensureStoreOwnership (404 se non appartiene al seller o cancellato).
+ * Employee: 403 se storeId non in assignedStoreIds, anche se lo store esiste e appartiene al seller.
+ */
+export async function ensureStoreAccess(
+	storeId: string,
+	ctx: AccessCtx,
+): Promise<void> {
+	if (ctx.isOwner) {
+		await ensureStoreOwnership(storeId, ctx.sellerProfileId);
+		return;
+	}
+	const assigned = await getEmployeeAssignedStoreIds(
+		ctx.userId,
+		ctx.sellerProfileId,
+	);
+	if (!assigned.includes(storeId)) {
+		throw new ServiceError(403, "Accesso negato a questo negozio");
+	}
 }
 
 /**

@@ -5,7 +5,7 @@ import { storeEmployee } from "@/db/schemas/employee";
 import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
-import { getSellerStoreIds } from "./context";
+import { getAccessibleStoreIdsFor, getSellerStoreIds } from "./context";
 import { brandsRoutes } from "./routes/brands";
 import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
@@ -63,10 +63,20 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 						let cached: Promise<string[]> | null = null;
 						const getStoreIds = () =>
 							(cached ??= getSellerStoreIds(profile.id));
+
+						let cachedAccessible: Promise<string[]> | null = null;
+						const getAccessibleStoreIds = () =>
+							(cachedAccessible ??= getAccessibleStoreIdsFor({
+								userId: u.id,
+								sellerProfileId: profile.id,
+								isOwner: true,
+							}));
+
 						return {
 							sellerProfile: profile,
 							isOwner: true as const,
 							getStoreIds,
+							getAccessibleStoreIds,
 						};
 					}
 
@@ -84,10 +94,20 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 						let cached: Promise<string[]> | null = null;
 						const getStoreIds = () =>
 							(cached ??= getSellerStoreIds(emp.sellerProfile.id));
+
+						let cachedAccessible: Promise<string[]> | null = null;
+						const getAccessibleStoreIds = () =>
+							(cachedAccessible ??= getAccessibleStoreIdsFor({
+								userId: u.id,
+								sellerProfileId: emp.sellerProfile.id,
+								isOwner: false,
+							}));
+
 						return {
 							sellerProfile: emp.sellerProfile,
 							isOwner: false as const,
 							getStoreIds,
+							getAccessibleStoreIds,
 						};
 					}
 
