@@ -1,5 +1,5 @@
 import type { Static } from "@sinclair/typebox";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
 	storePhoneNumber as storePhoneNumberTable,
@@ -13,17 +13,27 @@ type OpeningHours = Static<typeof OpeningHoursSchema>;
 
 interface ListStoresParams {
 	sellerProfileId: string;
+	/** undefined = no filter (owner sees all). Empty array = no stores. Non-empty = filter to listed IDs. */
+	filterStoreIds?: string[];
 	page?: number;
 	limit?: number;
 }
 
 export async function listStores(params: ListStoresParams) {
-	const { sellerProfileId } = params;
+	const { sellerProfileId, filterStoreIds } = params;
 	const { page, limit, offset } = parsePagination(params);
+
+	// Special case: explicit empty array means "no accessible stores" — return zero.
+	if (filterStoreIds !== undefined && filterStoreIds.length === 0) {
+		return { data: [], pagination: { page, limit, total: 0 } };
+	}
 
 	const where = and(
 		eq(storeTable.sellerProfileId, sellerProfileId),
 		isNull(storeTable.deletedAt),
+		filterStoreIds !== undefined
+			? inArray(storeTable.id, filterStoreIds)
+			: undefined,
 	);
 
 	const [data, [{ total }]] = await Promise.all([

@@ -14,7 +14,7 @@ import {
 	withErrors,
 } from "@/lib/schemas";
 import { CreateProductBody } from "@/lib/schemas/forms";
-import { withSeller } from "../context";
+import { ensureStoreAccess, withSeller } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
 	createProduct,
@@ -29,17 +29,32 @@ export const productsRoutes = new Elysia()
 	.get(
 		"/products",
 		async (ctx) => {
-			const { sellerProfile: sp, query } = withSeller(ctx);
-			const result = await listProducts({ sellerProfileId: sp.id, ...query });
+			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
+			const result = await listProducts({
+				sellerProfileId: sp.id,
+				storeId: query.storeId,
+				page: query.page,
+				limit: query.limit,
+			});
 			return okPage(result.data, result.pagination);
 		},
 		{
-			query: PaginationQuery,
+			query: t.Composite([
+				PaginationQuery,
+				t.Object({
+					storeId: t.String({ description: "ID del negozio attivo" }),
+				}),
+			]),
 			response: withErrors({ 200: okPageRes(ProductWithRelationsSchema) }),
 			detail: {
-				summary: "Lista prodotti",
+				summary: "Lista prodotti del negozio",
 				description:
-					"Restituisce la lista paginata dei prodotti del venditore con categorie, disponibilità per negozio e immagini.",
+					"Restituisce i prodotti disponibili nel negozio specificato (filtrati via store_products).",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -72,10 +87,13 @@ export const productsRoutes = new Elysia()
 	.get(
 		"/products/:productId",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params } = sellerCtx;
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
 			const data = await getProduct({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				accessibleStoreIds,
 			});
 			return ok(data);
 		},
@@ -95,8 +113,13 @@ export const productsRoutes = new Elysia()
 	.post(
 		"/products",
 		async (ctx) => {
-			const { sellerProfile: sp, body, user, store } = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store, isOwner } = withSeller(ctx);
 			const pino = getLogger(store);
+			await ensureStoreAccess(body.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
 			const data = await createProduct({ sellerProfileId: sp.id, ...body });
 
 			pino.info(
@@ -105,6 +128,7 @@ export const productsRoutes = new Elysia()
 					sellerProfileId: sp.id,
 					productId: data.id,
 					productName: data.name,
+					storeId: body.storeId,
 					categoryIds: body.categoryIds,
 					ean: data.ean,
 					brandId: data.brandId,
@@ -129,10 +153,13 @@ export const productsRoutes = new Elysia()
 	.patch(
 		"/products/:productId",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, body } = sellerCtx;
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
 			const data = await updateProduct({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				accessibleStoreIds,
 				...body,
 			});
 
@@ -206,11 +233,18 @@ export const productsRoutes = new Elysia()
 	.post(
 		"/products/import",
 		async (ctx) => {
-			const { sellerProfile: sp, body, user, store } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store, isOwner } = sellerCtx;
+			await ensureStoreAccess(body.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
 			const pino = getLogger(store);
 			const csvText = await body.file.text();
 			const result = await importProductsFromCsv({
 				sellerProfileId: sp.id,
+				storeId: body.storeId,
 				csvText,
 			});
 
@@ -221,6 +255,7 @@ export const productsRoutes = new Elysia()
 					created: result.created,
 					failed: result.failed,
 					action: "products_imported",
+					storeId: body.storeId,
 				},
 				"Importazione prodotti da CSV completata",
 			);
@@ -233,6 +268,7 @@ export const productsRoutes = new Elysia()
 					type: "text/csv",
 					description: "File CSV con i prodotti da importare",
 				}),
+				storeId: t.String({ description: "ID del negozio attivo" }),
 			}),
 			response: withErrors({ 200: okRes(CsvImportResultSchema) }),
 			detail: {
@@ -246,12 +282,15 @@ export const productsRoutes = new Elysia()
 	.delete(
 		"/products/:productId",
 		async (ctx) => {
-			const { sellerProfile: sp, params, user, store } = withSeller(ctx);
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, user, store } = sellerCtx;
 			const pino = getLogger(store);
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
 
 			const deleted = await deleteProduct({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				accessibleStoreIds,
 			});
 
 			pino.warn(

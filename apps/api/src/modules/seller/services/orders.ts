@@ -34,8 +34,14 @@ export async function transitionOrder(
 	orderId: string,
 	sellerProfileId: string,
 	toStatus: OrderStatus,
+	accessibleStoreIds: string[],
 ) {
 	const existing = await findSellerOrder(orderId, sellerProfileId);
+
+	// Verify store-level accessibility
+	if (!accessibleStoreIds.includes(existing.storeId)) {
+		throw new ServiceError(404, "Order not found");
+	}
 
 	assertTransition(
 		existing.status as OrderStatus,

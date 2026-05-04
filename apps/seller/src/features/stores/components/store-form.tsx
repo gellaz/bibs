@@ -32,6 +32,7 @@ interface StoreFormProps {
 	submitLabel?: string;
 	pendingLabel?: string;
 	onNameChange?: (name: string) => void;
+	readOnly?: boolean;
 }
 
 export function StoreForm({
@@ -42,6 +43,7 @@ export function StoreForm({
 	submitLabel = "Crea Negozio",
 	pendingLabel = "Creazione...",
 	onNameChange,
+	readOnly = false,
 }: StoreFormProps) {
 	const [openingHours, setOpeningHours] = useState<DaySchedule[]>(
 		() =>
@@ -116,6 +118,7 @@ export function StoreForm({
 						id="store-name"
 						placeholder="Es. Bottega del Gusto"
 						autoFocus
+						disabled={readOnly}
 						{...register("name")}
 					/>
 					<FieldError errors={[errors.name]} />
@@ -127,6 +130,7 @@ export function StoreForm({
 						id="store-description"
 						placeholder="Descrizione del negozio (opzionale)"
 						rows={2}
+						disabled={readOnly}
 						{...register("description")}
 					/>
 				</Field>
@@ -138,6 +142,7 @@ export function StoreForm({
 					<Input
 						id="store-address1"
 						placeholder="Via Roma 1"
+						disabled={readOnly}
 						{...register("addressLine1")}
 					/>
 					<FieldError errors={[errors.addressLine1]} />
@@ -148,6 +153,7 @@ export function StoreForm({
 					<Input
 						id="store-address2"
 						placeholder="Interno, piano, scala (opzionale)"
+						disabled={readOnly}
 						{...register("addressLine2")}
 					/>
 				</Field>
@@ -157,7 +163,12 @@ export function StoreForm({
 						<FieldLabel htmlFor="store-city" required>
 							Città
 						</FieldLabel>
-						<Input id="store-city" placeholder="Milano" {...register("city")} />
+						<Input
+							id="store-city"
+							placeholder="Milano"
+							disabled={readOnly}
+							{...register("city")}
+						/>
 						<FieldError errors={[errors.city]} />
 					</Field>
 					<Field data-invalid={!!errors.zipCode}>
@@ -169,6 +180,7 @@ export function StoreForm({
 							placeholder="20100"
 							inputMode="numeric"
 							maxLength={5}
+							disabled={readOnly}
 							{...register("zipCode")}
 						/>
 						<FieldError errors={[errors.zipCode]} />
@@ -181,6 +193,7 @@ export function StoreForm({
 						id="store-province"
 						placeholder="MI (opzionale)"
 						maxLength={2}
+						disabled={readOnly}
 						{...register("province", {
 							setValueAs: (v: string) => v || undefined,
 						})}
@@ -194,6 +207,7 @@ export function StoreForm({
 						id="store-website"
 						type="url"
 						placeholder="https://esempio.it (opzionale)"
+						disabled={readOnly}
 						{...register("websiteUrl", {
 							setValueAs: (v: string) => v || undefined,
 						})}
@@ -201,26 +215,33 @@ export function StoreForm({
 					<FieldError errors={[errors.websiteUrl]} />
 				</Field>
 
-				<OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
+				<OpeningHoursEditor
+					value={openingHours}
+					onChange={setOpeningHours}
+					readOnly={readOnly}
+				/>
 
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
 						<Label>Numeri di telefono</Label>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => append({ label: "", number: "" })}
-						>
-							<PlusIcon className="size-3" />
-							<span>Aggiungi</span>
-						</Button>
+						{!readOnly && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => append({ label: "", number: "" })}
+							>
+								<PlusIcon className="size-3" />
+								<span>Aggiungi</span>
+							</Button>
+						)}
 					</div>
 					{fields.map((field, index) => (
 						<div key={field.id} className="flex gap-2">
 							<Input
 								placeholder="Etichetta (es. Principale)"
 								className="w-1/3"
+								disabled={readOnly}
 								{...register(`phoneNumbers.${index}.label`)}
 							/>
 							<Field
@@ -230,31 +251,36 @@ export function StoreForm({
 								<Input
 									placeholder="Numero di telefono"
 									type="tel"
+									disabled={readOnly}
 									{...register(`phoneNumbers.${index}.number`)}
 								/>
 								<FieldError errors={[errors.phoneNumbers?.[index]?.number]} />
 							</Field>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon"
-								onClick={() => remove(index)}
-							>
-								<Trash2Icon className="size-4" />
-							</Button>
+							{!readOnly && (
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									onClick={() => remove(index)}
+								>
+									<Trash2Icon className="size-4" />
+								</Button>
+							)}
 						</div>
 					))}
 				</div>
 			</div>
 
-			<div className="flex justify-end gap-3 pt-2">
-				<Button type="button" variant="outline" onClick={onCancel}>
-					Annulla
-				</Button>
-				<Button type="submit" disabled={isPending}>
-					{isPending ? pendingLabel : submitLabel}
-				</Button>
-			</div>
+			{!readOnly && (
+				<div className="flex justify-end gap-3 pt-2">
+					<Button type="button" variant="outline" onClick={onCancel}>
+						Annulla
+					</Button>
+					<Button type="submit" disabled={isPending}>
+						{isPending ? pendingLabel : submitLabel}
+					</Button>
+				</div>
+			)}
 		</form>
 	);
 }

@@ -23,6 +23,7 @@ import {
 	useInviteTeamMember,
 	useOnboardingInvitations,
 } from "@/hooks/use-onboarding";
+import { useStores } from "@/hooks/use-stores";
 
 export const Route = createFileRoute("/_authenticated/onboarding/team")({
 	component: TeamPage,
@@ -34,6 +35,7 @@ function TeamPage() {
 	const completeMutation = useCompleteTeam();
 	const goBackMutation = useGoBack();
 	const { data: invitations = [], isLoading } = useOnboardingInvitations();
+	const { data: stores } = useStores();
 
 	const [email, setEmail] = useState("");
 	const [apiError, setApiError] = useState("");
@@ -52,7 +54,10 @@ function TeamPage() {
 		if (!email.trim()) return;
 
 		try {
-			await inviteMutation.mutateAsync({ email: email.trim() });
+			await inviteMutation.mutateAsync({
+				email: email.trim(),
+				storeIds: (stores ?? []).map((s) => s.id),
+			});
 			setEmail("");
 			setSuccessMsg("Invito inviato!");
 			setTimeout(() => setSuccessMsg(""), 5000);

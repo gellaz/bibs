@@ -193,6 +193,11 @@ export const TeamInviteBody = Type.Object({
 		description: "Email del collaboratore da invitare",
 		error: "Inserisci un indirizzo email valido",
 	}),
+	storeIds: Type.Array(Type.String(), {
+		minItems: 1,
+		description: "ID dei negozi a cui assegnare il collaboratore (almeno 1)",
+		error: "Seleziona almeno un negozio",
+	}),
 });
 
 export const AcceptInviteBody = Type.Object({

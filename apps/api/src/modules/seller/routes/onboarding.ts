@@ -279,7 +279,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 		async (ctx) => {
 			const { user, body, store } = withSellerAuth(ctx);
 			const pino = getLogger(store);
-			const data = await inviteTeamMember(user.id, body.email);
+			const data = await inviteTeamMember(user.id, body.email, body.storeIds);
 
 			pino.info(
 				{

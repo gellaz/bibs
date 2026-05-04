@@ -1,8 +1,11 @@
 import type { Static } from "@sinclair/typebox";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
-import { employeeInvitation } from "@/db/schemas/employee-invitation";
+import {
+	employeeInvitation,
+	employeeInvitationStores,
+} from "@/db/schemas/employee-invitation";
 import { organization } from "@/db/schemas/organization";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import type { OnboardingStatus } from "@/db/schemas/seller";
@@ -404,7 +407,11 @@ export async function updatePayment(params: PaymentParams) {
 
 // ── Step 5: Team
 
-export async function inviteTeamMember(userId: string, email: string) {
+export async function inviteTeamMember(
+	userId: string,
+	email: string,
+	storeIds: string[],
+) {
 	const profile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.userId, userId),
 		with: { organization: true },
@@ -412,6 +419,23 @@ export async function inviteTeamMember(userId: string, email: string) {
 
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 	assertStatus(profile.onboardingStatus, "pending_team");
+
+	// Validate storeIds belong to this seller's stores
+	if (storeIds.length === 0) {
+		throw new ServiceError(400, "Almeno un negozio deve essere selezionato");
+	}
+	const valid = await db
+		.select({ id: store.id })
+		.from(store)
+		.where(
+			and(inArray(store.id, storeIds), eq(store.sellerProfileId, profile.id)),
+		);
+	if (valid.length !== storeIds.length) {
+		throw new ServiceError(
+			404,
+			"Uno o più negozi non appartengono al tuo profilo",
+		);
+	}
 
 	// Check if this email was already invited for this seller
 	const existing = await db.query.employeeInvitation.findFirst({
@@ -439,14 +463,16 @@ export async function inviteTeamMember(userId: string, email: string) {
 	const expiresAt = new Date();
 	expiresAt.setDate(expiresAt.getDate() + INVITATION_EXPIRY_DAYS);
 
-	const [invitation] = await db
-		.insert(employeeInvitation)
-		.values({
-			sellerProfileId: profile.id,
-			email,
-			expiresAt,
-		})
-		.returning();
+	const invitation = await db.transaction(async (tx) => {
+		const [inv] = await tx
+			.insert(employeeInvitation)
+			.values({ sellerProfileId: profile.id, email, expiresAt })
+			.returning();
+		await tx
+			.insert(employeeInvitationStores)
+			.values(storeIds.map((storeId) => ({ invitationId: inv.id, storeId })));
+		return inv;
+	});
 
 	// Send invitation email
 	const businessName = profile.organization?.businessName ?? "Bibs";
@@ -465,7 +491,7 @@ export async function inviteTeamMember(userId: string, email: string) {
 		].join(""),
 	});
 
-	return invitation;
+	return { ...invitation, storeIds };
 }
 
 export async function listOnboardingInvitations(userId: string) {
@@ -475,10 +501,15 @@ export async function listOnboardingInvitations(userId: string) {
 
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 
-	return db.query.employeeInvitation.findMany({
+	const invitations = await db.query.employeeInvitation.findMany({
 		where: eq(employeeInvitation.sellerProfileId, profile.id),
+		with: { storeAssignments: { columns: { storeId: true } } },
 		orderBy: (inv, { desc }) => [desc(inv.createdAt)],
 	});
+	return invitations.map((i) => ({
+		...i,
+		storeIds: i.storeAssignments.map((a) => a.storeId),
+	}));
 }
 
 export async function completeTeam(userId: string) {

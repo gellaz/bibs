@@ -10,6 +10,7 @@ import {
 } from "@bibs/ui/components/alert-dialog";
 import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
+import { Checkbox } from "@bibs/ui/components/checkbox";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
 import {
 	Dialog,
@@ -43,6 +44,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	MoreHorizontalIcon,
+	PencilIcon,
 	SendIcon,
 	ShieldBanIcon,
 	ShieldCheckIcon,
@@ -51,6 +53,9 @@ import {
 	XIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { EmployeeStoresDialog } from "@/features/team/components/employee-stores-dialog";
+import { StoreChips } from "@/features/team/components/store-chips";
+import { useStores } from "@/hooks/use-stores";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
@@ -100,8 +105,8 @@ function useInvitations(enabled: boolean) {
 function useInviteEmployee() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (email: string) => {
-			const response = await api().seller.employees.invite.post({ email });
+		mutationFn: async (params: { email: string; storeIds: string[] }) => {
+			const response = await api().seller.employees.invite.post(params);
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || "Errore durante l'invio dell'invito",
@@ -217,13 +222,16 @@ const statusVariants: Record<
 
 function InviteEmployeeDialog() {
 	const inviteMutation = useInviteEmployee();
+	const { data: allStores } = useStores();
 	const [open, setOpen] = useState(false);
 	const [email, setEmail] = useState("");
 	const [error, setError] = useState("");
+	const [selectedStores, setSelectedStores] = useState<Set<string>>(new Set());
 
 	function reset() {
 		setEmail("");
 		setError("");
+		setSelectedStores(new Set());
 	}
 
 	async function handleSubmit(e: React.FormEvent) {
@@ -231,9 +239,13 @@ function InviteEmployeeDialog() {
 		setError("");
 
 		if (!email.trim()) return;
+		if (selectedStores.size === 0) return;
 
 		try {
-			await inviteMutation.mutateAsync(email.trim());
+			await inviteMutation.mutateAsync({
+				email: email.trim(),
+				storeIds: Array.from(selectedStores),
+			});
 			reset();
 			setOpen(false);
 		} catch (err) {
@@ -281,13 +293,49 @@ function InviteEmployeeDialog() {
 							required
 						/>
 					</div>
+					<div className="flex flex-col gap-1.5">
+						<Label>Negozi a cui assegnare *</Label>
+						<div className="flex flex-col gap-1 max-h-48 overflow-auto rounded-md border p-2">
+							{(allStores ?? []).map((s) => (
+								<Label
+									key={s.id}
+									className="flex items-center gap-2 cursor-pointer rounded p-1.5 hover:bg-muted"
+								>
+									<Checkbox
+										checked={selectedStores.has(s.id)}
+										onCheckedChange={() =>
+											setSelectedStores((prev) => {
+												const next = new Set(prev);
+												if (next.has(s.id)) next.delete(s.id);
+												else next.add(s.id);
+												return next;
+											})
+										}
+									/>
+									<span className="flex-1 text-sm">{s.name}</span>
+								</Label>
+							))}
+						</div>
+						{selectedStores.size === 0 && (
+							<p className="text-xs text-muted-foreground">
+								Almeno 1 negozio richiesto
+							</p>
+						)}
+					</div>
 					<DialogFooter>
 						<DialogClose asChild>
 							<Button type="button" variant="outline">
 								Annulla
 							</Button>
 						</DialogClose>
-						<Button type="submit" disabled={inviteMutation.isPending}>
+						<Button
+							type="submit"
+							disabled={
+								inviteMutation.isPending ||
+								!email.trim() ||
+								selectedStores.size === 0
+							}
+						>
 							{inviteMutation.isPending ? "Invio..." : "Invia invito"}
 						</Button>
 					</DialogFooter>
@@ -429,7 +477,7 @@ function TeamPage() {
 
 	const currentUserId = session?.user.id;
 	const isOwner = session?.user.role === "seller";
-	const colCount = isOwner ? 6 : 5;
+	const colCount = isOwner ? 7 : 6;
 
 	// Only fetch invitations for the owner
 	const { data: invitationsData } = useInvitations(isOwner);
@@ -476,10 +524,11 @@ function TeamPage() {
 					<Table>
 						<TableHeader>
 							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<TableHead className="w-[25%] pl-6">Nome</TableHead>
-								<TableHead className="w-[25%]">Email</TableHead>
-								<TableHead className="w-[15%]">Ruolo</TableHead>
-								<TableHead className="w-[15%]">Stato</TableHead>
+								<TableHead className="w-[20%] pl-6">Nome</TableHead>
+								<TableHead className="w-[22%]">Email</TableHead>
+								<TableHead className="w-[12%]">Ruolo</TableHead>
+								<TableHead className="w-[12%]">Stato</TableHead>
+								<TableHead className="w-[14%]">Negozi</TableHead>
 								<TableHead className="w-[10%]">Data</TableHead>
 								{isOwner && (
 									<TableHead className="w-[10%] pr-6 text-right">
@@ -504,6 +553,9 @@ function TeamPage() {
 									</TableCell>
 									<TableCell>
 										<Badge variant="default">Attivo</Badge>
+									</TableCell>
+									<TableCell className="text-muted-foreground text-sm italic">
+										Tutti i negozi
 									</TableCell>
 									<TableCell className="text-muted-foreground text-sm">
 										—
@@ -531,6 +583,27 @@ function TeamPage() {
 										>
 											{statusLabels[employee.status] ?? employee.status}
 										</Badge>
+									</TableCell>
+									<TableCell>
+										<div className="flex items-center gap-2">
+											<StoreChips storeIds={employee.storeIds} />
+											{isOwner && (
+												<EmployeeStoresDialog
+													employeeId={employee.id}
+													employeeName={employee.user.name}
+													trigger={
+														<Button
+															size="icon"
+															variant="ghost"
+															className="h-6 w-6"
+														>
+															<PencilIcon className="size-3" />
+															<span className="sr-only">Modifica</span>
+														</Button>
+													}
+												/>
+											)}
+										</div>
 									</TableCell>
 									<TableCell className="text-muted-foreground text-sm">
 										{new Date(employee.createdAt).toLocaleDateString("it-IT", {
@@ -568,6 +641,9 @@ function TeamPage() {
 										</TableCell>
 										<TableCell>
 											<Badge variant="outline">In attesa</Badge>
+										</TableCell>
+										<TableCell>
+											<StoreChips storeIds={invitation.storeIds} />
 										</TableCell>
 										<TableCell className="text-sm">
 											{new Date(invitation.createdAt).toLocaleDateString(

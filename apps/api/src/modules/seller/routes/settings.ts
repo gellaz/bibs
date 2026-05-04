@@ -31,9 +31,13 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 	.get(
 		"/",
 		async (ctx) => {
-			const { sellerProfile, store } = withSeller(ctx);
+			const { sellerProfile, store, isOwner, user } = withSeller(ctx);
 			const pino = getLogger(store);
-			const data = await getSellerSettings(sellerProfile.id);
+			const data = await getSellerSettings({
+				sellerProfileId: sellerProfile.id,
+				userId: user.id,
+				isOwner,
+			});
 
 			pino.info(
 				{ sellerId: sellerProfile.id, action: "get_seller_settings" },

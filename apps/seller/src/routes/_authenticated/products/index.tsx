@@ -12,6 +12,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PackageIcon, PlusIcon } from "lucide-react";
+import { useActiveStore } from "@/hooks/use-active-store";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/")({
@@ -26,12 +27,15 @@ export const Route = createFileRoute("/_authenticated/products/")({
 
 function ProductsListPage() {
 	const { page, limit } = Route.useSearch();
+	const { activeStore } = useActiveStore();
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["products", page, limit],
+		queryKey: ["products", activeStore?.id, page, limit],
 		queryFn: async () => {
+			const storeId = activeStore?.id;
+			if (!storeId) throw new Error("No active store");
 			const response = await api().seller.products.get({
-				query: { page, limit },
+				query: { storeId, page, limit },
 			});
 
 			if (response.error) {
@@ -42,15 +46,20 @@ function ProductsListPage() {
 
 			return response.data;
 		},
+		enabled: !!activeStore?.id,
 	});
 
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<div>
-					<h1 className="text-2xl font-bold">Prodotti</h1>
+					<h1 className="text-2xl font-bold">
+						Prodotti{activeStore ? ` — ${activeStore.name}` : ""}
+					</h1>
 					<p className="text-muted-foreground text-sm">
-						Gestisci il catalogo dei tuoi prodotti
+						{activeStore
+							? `Catalogo del negozio ${activeStore.name}`
+							: "Seleziona un negozio per visualizzare il catalogo"}
 					</p>
 				</div>
 				<Button asChild>
@@ -132,12 +141,20 @@ function ProductsListPage() {
 											<PackageIcon className="text-muted-foreground/40 size-8" />
 											<div>
 												<p className="text-muted-foreground font-medium">
-													Nessun prodotto trovato
+													Nessun prodotto in{" "}
+													{activeStore?.name ?? "questo negozio"}
 												</p>
 												<p className="text-muted-foreground/60 text-sm">
-													I tuoi prodotti appariranno qui
+													Inizia ad aggiungere prodotti al catalogo di questo
+													negozio.
 												</p>
 											</div>
+											<Button asChild className="mt-2">
+												<Link to="/products/new">
+													<PlusIcon />
+													<span>Crea il primo prodotto</span>
+												</Link>
+											</Button>
 										</div>
 									</TableCell>
 								</TableRow>

@@ -3,7 +3,11 @@ import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
 import { productCategory } from "@/db/schemas/category";
-import { product, productCategoryAssignment } from "@/db/schemas/product";
+import {
+	product,
+	productCategoryAssignment,
+	storeProduct,
+} from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
@@ -37,31 +41,57 @@ async function findOrCreateBrandInTx(
 
 interface ListProductsParams {
 	sellerProfileId: string;
+	storeId: string;
 	page?: number;
 	limit?: number;
 }
 
 export async function listProducts(params: ListProductsParams) {
-	const { sellerProfileId } = params;
+	const { sellerProfileId, storeId } = params;
 	const { page, limit, offset } = parsePagination(params);
 
-	const [data, [{ total }]] = await Promise.all([
-		db.query.product.findMany({
-			where: eq(product.sellerProfileId, sellerProfileId),
-			with: {
-				productCategoryAssignments: { with: { category: true } },
-				storeProducts: { with: { store: { columns: { location: false } } } },
-				images: { orderBy: (img, { asc }) => [asc(img.position)] },
-				brand: true,
-			},
-			limit,
-			offset,
-		}),
-		db
-			.select({ total: count() })
-			.from(product)
-			.where(eq(product.sellerProfileId, sellerProfileId)),
-	]);
+	const storeCondition = and(
+		eq(product.sellerProfileId, sellerProfileId),
+		eq(storeProduct.storeId, storeId),
+	);
+
+	// Get the IDs of products available in this store, paginated.
+	const productIdsRows = await db
+		.select({ id: product.id })
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(storeCondition)
+		.limit(limit)
+		.offset(offset);
+
+	const productIds = productIdsRows.map((r) => r.id);
+
+	// Total count
+	const [{ total }] = await db
+		.select({ total: count() })
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(storeCondition);
+
+	// Fetch full products with relations using the page's product IDs.
+	const data =
+		productIds.length === 0
+			? []
+			: await db.query.product.findMany({
+					where: inArray(product.id, productIds),
+					with: {
+						productCategoryAssignments: { with: { category: true } },
+						storeProducts: {
+							with: { store: { columns: { location: false } } },
+						},
+						images: { orderBy: (img, { asc }) => [asc(img.position)] },
+						brand: true,
+					},
+				});
+
+	// Sort data to preserve the order from productIds (the JOIN-paginated order).
+	const order = new Map(productIds.map((id, idx) => [id, idx]));
+	data.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 
 	return { data, pagination: { page, limit, total } };
 }
@@ -71,10 +101,11 @@ export async function listProducts(params: ListProductsParams) {
 interface GetProductParams {
 	productId: string;
 	sellerProfileId: string;
+	accessibleStoreIds: string[];
 }
 
 export async function getProduct(params: GetProductParams) {
-	const { productId, sellerProfileId } = params;
+	const { productId, sellerProfileId, accessibleStoreIds } = params;
 
 	const found = await db.query.product.findFirst({
 		where: and(
@@ -90,6 +121,13 @@ export async function getProduct(params: GetProductParams) {
 	});
 
 	if (!found) throw new ServiceError(404, "Product not found");
+
+	// Verify accessibility: at least one storeProducts row must be in accessibleStoreIds
+	const accessible = found.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) throw new ServiceError(404, "Product not found");
+
 	return found;
 }
 
@@ -97,6 +135,7 @@ export async function getProduct(params: GetProductParams) {
 
 interface CreateProductParams {
 	sellerProfileId: string;
+	storeId: string;
 	name: string;
 	description?: string;
 	price: string;
@@ -109,6 +148,7 @@ interface CreateProductParams {
 export async function createProduct(params: CreateProductParams) {
 	const {
 		sellerProfileId,
+		storeId,
 		categoryIds = [],
 		brandId,
 		brandName,
@@ -162,6 +202,13 @@ export async function createProduct(params: CreateProductParams) {
 			})
 			.returning();
 
+		// Auto-assign to the active store with stock=0.
+		await tx.insert(storeProduct).values({
+			productId: created.id,
+			storeId,
+			stock: 0,
+		});
+
 		if (categoryIds.length > 0) {
 			await tx.insert(productCategoryAssignment).values(
 				categoryIds.map((categoryId) => ({
@@ -180,6 +227,7 @@ export async function createProduct(params: CreateProductParams) {
 interface UpdateProductParams {
 	productId: string;
 	sellerProfileId: string;
+	accessibleStoreIds: string[];
 	categoryIds?: string[];
 	imageOrder?: string[];
 	name?: string;
@@ -194,6 +242,7 @@ export async function updateProduct(params: UpdateProductParams) {
 	const {
 		productId,
 		sellerProfileId,
+		accessibleStoreIds,
 		categoryIds,
 		imageOrder,
 		ean,
@@ -201,6 +250,20 @@ export async function updateProduct(params: UpdateProductParams) {
 		brandName,
 		...productData
 	} = params;
+
+	// Verify accessibility before mutating
+	const existing = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: { storeProducts: { columns: { storeId: true } } },
+	});
+	if (!existing) return null;
+	const accessible = existing.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) return null;
 
 	// Validate: all categoryIds belong to a single macro-category
 	if (categoryIds && categoryIds.length > 1) {
@@ -311,10 +374,25 @@ export async function updateProduct(params: UpdateProductParams) {
 interface DeleteProductParams {
 	productId: string;
 	sellerProfileId: string;
+	accessibleStoreIds: string[];
 }
 
 export async function deleteProduct(params: DeleteProductParams) {
-	const { productId, sellerProfileId } = params;
+	const { productId, sellerProfileId, accessibleStoreIds } = params;
+
+	// Verify accessibility before mutating
+	const check = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: { storeProducts: { columns: { storeId: true } } },
+	});
+	if (!check) throw new ServiceError(404, "Product not found");
+	const accessible = check.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) throw new ServiceError(404, "Product not found");
 
 	// Fetch images to clean up S3 before cascade-deleting the product
 	const images = await db.query.productImage.findMany({

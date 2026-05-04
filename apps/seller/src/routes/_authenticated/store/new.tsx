@@ -1,56 +1,53 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { PlusIcon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
+import { useActiveStore } from "@/hooks/use-active-store";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/_authenticated/stores/new")({
+export const Route = createFileRoute("/_authenticated/store/new")({
+	beforeLoad: async () => {
+		const session = await authClient.getSession();
+		if (session.data?.user.role !== "seller") {
+			throw redirect({ to: "/store" });
+		}
+	},
 	component: NewStorePage,
 });
 
 function NewStorePage() {
 	const navigate = useNavigate();
-	const { data: session } = authClient.useSession();
-
-	// Employees cannot create stores
-	useEffect(() => {
-		if (session && session.user.role !== "seller") {
-			void navigate({ to: "/stores", search: { page: 1, limit: 20 } });
-		}
-	}, [session, navigate]);
 	const queryClient = useQueryClient();
+	const { setActiveStoreId } = useActiveStore();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
-
-	const goBack = () =>
-		void navigate({ to: "/stores", search: { page: 1, limit: 20 } });
 
 	const createMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
 			const response = await api().seller.stores.post(formData);
-
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || "Errore nella creazione",
 				);
 			}
-
 			return response.data;
 		},
-		onSuccess: () => {
+		onSuccess: (data) => {
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });
 			toast.success("Negozio creato con successo");
-			goBack();
+			if (data?.data?.id) {
+				setActiveStoreId(data.data.id);
+			}
+			void navigate({ to: "/" });
 		},
-		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante la creazione");
-		},
+		onError: (error: Error) =>
+			toast.error(error.message || "Errore durante la creazione"),
 	});
 
 	return (
@@ -73,7 +70,7 @@ function NewStorePage() {
 
 			<StoreForm
 				onSubmit={(data) => createMutation.mutate(data)}
-				onCancel={goBack}
+				onCancel={() => void navigate({ to: "/store" })}
 				isPending={createMutation.isPending}
 				onNameChange={handleNameChange}
 			/>

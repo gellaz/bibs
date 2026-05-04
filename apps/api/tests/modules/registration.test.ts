@@ -306,3 +306,19 @@ describe("POST /register/sign-in — success", () => {
 		expect(body.error).toBe("UNAUTHORIZED");
 	});
 });
+
+// ── Tests: acceptInvite storeEmployeeStores propagation ──────────────────────
+// SKIPPED: acceptInvite calls better-auth's auth.api.signUpEmail internally,
+// which requires a live HTTP server + full auth plugin stack. This file uses
+// mock.module to stub services at the route level, not at the service level,
+// so acceptInvite cannot be called directly here without a dedicated
+// testcontainer integration test similar to seller-employees.test.ts.
+// The store-propagation logic is exercised at the service layer in that suite.
+// TODO: add a testcontainer integration test for acceptInvite once a
+// test-auth-client helper exists (see AGENTS.md TODO list).
+
+describe("acceptInvite storeEmployeeStores propagation", () => {
+	it.skip("inserts store_employee_stores rows for assigned stores — skipped (requires better-auth integration harness)", () => {});
+
+	it.skip("skips stores deleted between invite and accept — skipped (requires better-auth integration harness)", () => {});
+});

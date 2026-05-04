@@ -2,12 +2,14 @@ import { relations, sql } from "drizzle-orm";
 import {
 	index,
 	pgTable,
+	primaryKey,
 	text,
 	timestamp,
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
 import { sellerProfile } from "./seller";
+import { store } from "./store";
 
 export const invitationStatuses = ["pending", "accepted", "expired"] as const;
 export type InvitationStatus = (typeof invitationStatuses)[number];
@@ -47,10 +49,41 @@ export const employeeInvitation = pgTable(
 
 export const employeeInvitationRelations = relations(
 	employeeInvitation,
-	({ one }) => ({
+	({ one, many }) => ({
 		sellerProfile: one(sellerProfile, {
 			fields: [employeeInvitation.sellerProfileId],
 			references: [sellerProfile.id],
+		}),
+		storeAssignments: many(employeeInvitationStores),
+	}),
+);
+
+export const employeeInvitationStores = pgTable(
+	"employee_invitation_stores",
+	{
+		invitationId: text("invitation_id")
+			.notNull()
+			.references(() => employeeInvitation.id, { onDelete: "cascade" }),
+		storeId: text("store_id")
+			.notNull()
+			.references(() => store.id, { onDelete: "cascade" }),
+	},
+	(t) => [
+		primaryKey({ columns: [t.invitationId, t.storeId] }),
+		index("employee_invitation_stores_store_id_idx").on(t.storeId),
+	],
+);
+
+export const employeeInvitationStoresRelations = relations(
+	employeeInvitationStores,
+	({ one }) => ({
+		invitation: one(employeeInvitation, {
+			fields: [employeeInvitationStores.invitationId],
+			references: [employeeInvitation.id],
+		}),
+		store: one(store, {
+			fields: [employeeInvitationStores.storeId],
+			references: [store.id],
 		}),
 	}),
 );

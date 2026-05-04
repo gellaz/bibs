@@ -4,6 +4,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from "@bibs/ui/components/breadcrumb";
+import { Button } from "@bibs/ui/components/button";
 import { Separator } from "@bibs/ui/components/separator";
 import {
 	SidebarInset,
@@ -21,6 +22,7 @@ import { useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
+import { useStores } from "@/hooks/use-stores";
 import { authClient } from "@/lib/auth-client";
 
 /** Map onboarding status → route the user should be on */
@@ -148,6 +150,11 @@ function AuthenticatedLayout() {
 		);
 	}
 
+	// Employee: render via gate that shows empty state if no stores assigned
+	if (role === "employee") {
+		return <EmployeeStoreGate navigate={navigate} />;
+	}
+
 	// If seller is still onboarding, render outlet without sidebar
 	if (
 		role === "seller" &&
@@ -155,6 +162,66 @@ function AuthenticatedLayout() {
 		onboarding.onboardingStatus !== "active"
 	) {
 		return <Outlet />;
+	}
+
+	return (
+		<ActiveStoreProvider>
+			<SidebarProvider>
+				<AppSidebar />
+				<SidebarInset>
+					<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+						<SidebarTrigger className="-ml-1" />
+						<Separator orientation="vertical" className="mr-2 h-4" />
+						<Breadcrumb>
+							<BreadcrumbList>
+								<BreadcrumbItem>
+									<BreadcrumbPage>Bibs Seller</BreadcrumbPage>
+								</BreadcrumbItem>
+							</BreadcrumbList>
+						</Breadcrumb>
+					</header>
+					<div className="flex-1 p-4">
+						<Outlet />
+					</div>
+				</SidebarInset>
+			</SidebarProvider>
+		</ActiveStoreProvider>
+	);
+}
+
+function EmployeeStoreGate({
+	navigate,
+}: {
+	navigate: ReturnType<typeof useNavigate>;
+}) {
+	const { data: stores, isLoading } = useStores();
+
+	if (isLoading) {
+		return (
+			<div className="flex h-screen items-center justify-center">
+				<Spinner className="size-8" />
+			</div>
+		);
+	}
+
+	if ((stores ?? []).length === 0) {
+		return (
+			<div className="flex h-screen flex-col items-center justify-center gap-4 px-4 text-center">
+				<h1 className="text-2xl font-bold">Nessun negozio assegnato</h1>
+				<p className="text-muted-foreground max-w-md">
+					Non sei ancora assegnato a nessun negozio. Contatta il titolare per
+					ottenere l'accesso.
+				</p>
+				<Button
+					variant="outline"
+					onClick={() =>
+						void authClient.signOut().then(() => navigate({ to: "/login" }))
+					}
+				>
+					Esci
+				</Button>
+			</div>
+		);
 	}
 
 	return (

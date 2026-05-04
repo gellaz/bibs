@@ -44,6 +44,9 @@ export const SellerProfileWithUserSchema = t.Object({
 export const EmployeeWithUserSchema = t.Object({
 	...EmployeeSchema.properties,
 	user: UserSchema,
+	storeIds: t.Array(t.String(), {
+		description: "ID dei negozi a cui il dipendente è assegnato",
+	}),
 });
 
 // Product category assignment with category
@@ -108,6 +111,10 @@ export const SellerSettingsSchema = t.Object({
 	organization: t.Nullable(OrganizationSchema),
 	paymentMethod: t.Nullable(PaymentMethodSchema),
 	pendingChanges: t.Array(SellerProfileChangeSchema),
+	assignedStoreIds: t.Union([t.Array(t.String()), t.Null()], {
+		description:
+			"Lista storeId assegnati all'employee, o null se owner (= tutti)",
+	}),
 });
 
 // Change request with seller profile + user (admin view)

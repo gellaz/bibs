@@ -26,6 +26,7 @@ interface DaySchedule {
 export interface OpeningHoursEditorProps {
 	value: DaySchedule[];
 	onChange: (value: DaySchedule[]) => void;
+	readOnly?: boolean;
 }
 
 const DEFAULT_WEEKDAY_SLOTS: TimeSlot[] = [
@@ -45,6 +46,7 @@ export const DEFAULT_OPENING_HOURS: DaySchedule[] = Array.from(
 export function OpeningHoursEditor({
 	value,
 	onChange,
+	readOnly = false,
 }: OpeningHoursEditorProps) {
 	const getDaySchedule = useCallback(
 		(dayOfWeek: number) => value.find((d) => d.dayOfWeek === dayOfWeek),
@@ -147,7 +149,8 @@ export function OpeningHoursEditor({
 									<button
 										type="button"
 										onClick={() => toggleDay(dayOfWeek, !isActive)}
-										className={`inline-flex w-14 justify-center items-center rounded-full border px-1.5 py-0.5 text-[11px] font-semibold transition-all duration-200 ease-in-out ${
+										disabled={readOnly}
+										className={`inline-flex w-14 justify-center items-center rounded-full border px-1.5 py-0.5 text-[11px] font-semibold transition-all duration-200 ease-in-out disabled:cursor-not-allowed disabled:opacity-60 ${
 											isActive
 												? "border-emerald-500/50 text-emerald-600 hover:border-emerald-500 hover:bg-emerald-50 dark:border-emerald-400/50 dark:text-emerald-400 dark:hover:border-emerald-400 dark:hover:bg-emerald-950/30"
 												: "border-muted-foreground/30 text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"
@@ -181,6 +184,7 @@ export function OpeningHoursEditor({
 															e.target.value,
 														)
 													}
+													disabled={readOnly}
 													className="h-7 w-28 lg:w-24 text-sm tabular-nums"
 												/>
 												<span className="text-xs text-muted-foreground shrink-0 text-center lg:hidden w-8">
@@ -200,9 +204,10 @@ export function OpeningHoursEditor({
 															e.target.value,
 														)
 													}
+													disabled={readOnly}
 													className="h-7 w-28 lg:w-24 text-sm tabular-nums"
 												/>
-												{schedule.slots.length > 1 && (
+												{schedule.slots.length > 1 && !readOnly && (
 													<button
 														type="button"
 														onClick={() => removeSlot(dayOfWeek, slotIndex)}
@@ -219,7 +224,7 @@ export function OpeningHoursEditor({
 
 								<div className="flex-1" />
 
-								{isActive && schedule.slots.length < 4 && (
+								{isActive && schedule.slots.length < 4 && !readOnly && (
 									<button
 										type="button"
 										onClick={() => addSlot(dayOfWeek)}

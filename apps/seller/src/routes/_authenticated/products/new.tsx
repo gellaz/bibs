@@ -7,6 +7,7 @@ import {
 	ProductForm,
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
+import { useActiveStore } from "@/hooks/use-active-store";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/new")({
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/products/new")({
 function NewProductPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { activeStore } = useActiveStore();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
 
@@ -24,6 +26,8 @@ function NewProductPage() {
 
 	const createMutation = useMutation({
 		mutationFn: async (formData: ProductFormValues) => {
+			const storeId = activeStore?.id;
+			if (!storeId) throw new Error("Nessun negozio selezionato");
 			const response = await api().seller.products.post({
 				name: formData.name,
 				description: formData.description,
@@ -32,6 +36,7 @@ function NewProductPage() {
 				ean: formData.ean,
 				brandId: formData.brandId,
 				brandName: formData.brandName,
+				storeId,
 			});
 
 			if (response.error) {
@@ -57,7 +62,11 @@ function NewProductPage() {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["products"] });
 			void queryClient.invalidateQueries({ queryKey: ["seller-brands"] });
-			toast.success("Prodotto creato con successo");
+			toast.success(
+				activeStore
+					? `Prodotto creato in ${activeStore.name}`
+					: "Prodotto creato con successo",
+			);
 			goBack();
 		},
 		onError: (error: Error) => {
@@ -86,7 +95,7 @@ function NewProductPage() {
 			<ProductForm
 				onSubmit={(values) => createMutation.mutate(values)}
 				onCancel={goBack}
-				isPending={createMutation.isPending}
+				isPending={createMutation.isPending || !activeStore}
 				submitLabel="Crea Prodotto"
 				pendingLabel="Creazione..."
 				onNameChange={handleNameChange}
