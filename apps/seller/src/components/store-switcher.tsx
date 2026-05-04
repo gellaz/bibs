@@ -16,6 +16,7 @@ import { Link } from "@tanstack/react-router";
 import {
 	CheckIcon,
 	ChevronsUpDownIcon,
+	InfoIcon,
 	PlusIcon,
 	SettingsIcon,
 	StoreIcon,
@@ -90,8 +91,12 @@ export function StoreSwitcher() {
 						<DropdownMenuSeparator />
 						<DropdownMenuItem asChild>
 							<Link to="/store">
-								<SettingsIcon />
-								<span>Modifica negozio attivo</span>
+								{isOwner ? <SettingsIcon /> : <InfoIcon />}
+								<span>
+									{isOwner
+										? "Modifica negozio attivo"
+										: "Informazioni negozio attivo"}
+								</span>
 							</Link>
 						</DropdownMenuItem>
 						{isOwner && (

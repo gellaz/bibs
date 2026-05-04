@@ -215,7 +215,11 @@ export function StoreForm({
 					<FieldError errors={[errors.websiteUrl]} />
 				</Field>
 
-				<OpeningHoursEditor value={openingHours} onChange={setOpeningHours} />
+				<OpeningHoursEditor
+					value={openingHours}
+					onChange={setOpeningHours}
+					readOnly={readOnly}
+				/>
 
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
