@@ -41,7 +41,7 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 						<MoreHorizontalIcon className="size-4" />
 					</Button>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end">
+				<DropdownMenuContent align="end" className="w-auto">
 					{status !== "trashed" && (
 						<DropdownMenuItem asChild className="whitespace-nowrap">
 							<Link to="/products/$productId" params={{ productId }}>
