@@ -259,7 +259,14 @@ export const ProductSchema = t.Object({
 	name: t.String(),
 	description: t.Nullable(t.String()),
 	price: t.String({ description: "Prezzo in formato decimale (es. '9.99')" }),
-	isActive: t.Boolean({ description: "Se il prodotto è attivo e visibile" }),
+	status: t.Union(
+		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
+		{
+			description:
+				"Stato del prodotto: 'active' (visibile), 'disabled' (nascosto al customer), 'trashed' (in cestino, eliminabile fisicamente)",
+			default: "active",
+		},
+	),
 	ean: t.Nullable(t.String({ description: "Codice EAN-8 o EAN-13" })),
 	brandId: t.Nullable(t.String({ description: "ID del brand del venditore" })),
 	createdAt: t.Date(),
