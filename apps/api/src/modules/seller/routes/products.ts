@@ -49,6 +49,7 @@ export const productsRoutes = new Elysia()
 				storeId: query.storeId,
 				page: query.page,
 				limit: query.limit,
+				statusFilter: query.statusFilter,
 			});
 			return okPage(result.data, result.pagination);
 		},
@@ -57,13 +58,26 @@ export const productsRoutes = new Elysia()
 				PaginationQuery,
 				t.Object({
 					storeId: t.String({ description: "ID del negozio attivo" }),
+					statusFilter: t.Optional(
+						t.Union(
+							[
+								t.Literal("active"),
+								t.Literal("disabled"),
+								t.Literal("trashed"),
+							],
+							{
+								description: "Filtra per stato. Default 'active'.",
+								default: "active",
+							},
+						),
+					),
 				}),
 			]),
 			response: withErrors({ 200: okPageRes(ProductWithRelationsSchema) }),
 			detail: {
 				summary: "Lista prodotti del negozio",
 				description:
-					"Restituisce i prodotti disponibili nel negozio specificato (filtrati via store_products).",
+					"Restituisce i prodotti del negozio filtrati per stato. Senza statusFilter, ritorna solo i prodotti attivi.",
 				tags: ["Seller - Products"],
 			},
 		},

@@ -47,15 +47,17 @@ interface ListProductsParams {
 	storeId: string;
 	page?: number;
 	limit?: number;
+	statusFilter?: ProductStatus;
 }
 
 export async function listProducts(params: ListProductsParams) {
-	const { sellerProfileId, storeId } = params;
+	const { sellerProfileId, storeId, statusFilter = "active" } = params;
 	const { page, limit, offset } = parsePagination(params);
 
 	const storeCondition = and(
 		eq(product.sellerProfileId, sellerProfileId),
 		eq(storeProduct.storeId, storeId),
+		eq(product.status, statusFilter),
 	);
 
 	// Get the IDs of products available in this store, paginated.

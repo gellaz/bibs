@@ -32,6 +32,7 @@ import { productAuditLog } from "@/db/schemas/product-audit-log";
 import { ServiceError } from "@/lib/errors";
 import {
 	deleteProduct,
+	listProducts,
 	updateProductStatus,
 } from "@/modules/seller/services/products";
 import { truncateAll } from "../helpers/cleanup";
@@ -196,5 +197,57 @@ describe("deleteProduct (permanent)", () => {
 		).rejects.toMatchObject({
 			status: 409,
 		});
+	});
+});
+
+describe("listProducts statusFilter", () => {
+	it("returns only active products by default", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const pa = await createTestProduct(db, seller.profile.id, {
+			name: "A",
+			status: "active",
+		});
+		const pd = await createTestProduct(db, seller.profile.id, {
+			name: "D",
+			status: "disabled",
+		});
+		const pt = await createTestProduct(db, seller.profile.id, {
+			name: "T",
+			status: "trashed",
+		});
+		for (const p of [pa, pd, pt]) {
+			await createTestStoreProduct(db, store.id, p.id);
+		}
+
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+		});
+		expect(result.data.map((p) => p.id)).toEqual([pa.id]);
+	});
+
+	it("filters by trashed when requested", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const pa = await createTestProduct(db, seller.profile.id, {
+			name: "A",
+			status: "active",
+		});
+		const pt = await createTestProduct(db, seller.profile.id, {
+			name: "T",
+			status: "trashed",
+		});
+		await createTestStoreProduct(db, store.id, pa.id);
+		await createTestStoreProduct(db, store.id, pt.id);
+
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			statusFilter: "trashed",
+		});
+		expect(result.data.map((p) => p.id)).toEqual([pt.id]);
 	});
 });
