@@ -12,16 +12,14 @@ Set style: **Logo Raster** or **Vector Illustration**. Aspect 1:1.
 Minimal flat vector logo for "bibs", a curated local-commerce marketplace
 for Italian neighborhoods. Mark: an open hand, palm up, offering, drawn
 with a single clean continuous line, slightly architectural geometry,
-not overly cute. A small saffron yellow circle rests in the palm
-representing what is offered. Below the mark: lowercase wordmark "bibs"
+not overly cute. Above the mark: lowercase wordmark "bibs"
 in a rounded warm grotesque sans-serif (Bricolage Grotesque feel),
 weight semi-bold, slightly negative letter-spacing. Color: deep navy
-ink #2f3f76 on warm cream #fbf8f0 background. Centered, balanced,
-generous negative space, flat 2D, editorial Italian minimalism, like a
-printed neighborhood guide. No gradient. No 3D. No shadow. No glow.
+ink #2f3f76. Centered, balanced, generous negative space, flat 2D. No gradient. No 3D. No shadow. No glow.
 ```
 
 Negative / avoid:
+
 ```
 gradient, drop shadow, glassmorphism, 3D, realistic skin, character
 face, anatomy details, neon, cyan, sky blue, Amazon yellow, gold,
@@ -42,6 +40,7 @@ photo
 ```
 
 Variant for a more architectural mark (sterner geometry):
+
 ```
 minimalist geometric logo, open palm offering, single continuous line,
 navy ink, small saffron dot resting in palm, lowercase italic-feeling

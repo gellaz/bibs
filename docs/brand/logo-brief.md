@@ -146,7 +146,7 @@ Rough order-of-magnitude expectations: a thoughtful single-designer engagement o
 - [`DESIGN.md`](../../DESIGN.md): visual system, color palette, typography, components, named rules.
 - [`.impeccable/design.json`](../../.impeccable/design.json): machine-readable design tokens.
 - [`logo-prompts.md`](logo-prompts.md): image-generator prompts for fast exploration before or alongside the design engagement.
-- Current placeholder logo at [`apps/customer/public/brand/logo.png`](../../apps/customer/public/brand/logo.png): the existing draft. Carries the right concept (open palm, navy wordmark) but needs refinement against this brief.
+- Current iteration at [`apps/customer/public/brand/logo.svg`](../../apps/customer/public/brand/logo.svg): Recraft-generated mark (direction B), retinted to the bibs palette (Ink + Cream). Lockup as a square Ink-on-Cream tile. Still needs a type-tuned wordmark (Bricolage-aligned or custom), a separate mark-only variant, and transparent/knockout variants for varied surfaces.
 
 ## 10. Contact
 
