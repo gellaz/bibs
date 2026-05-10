@@ -154,4 +154,8 @@ export const orderItemRelations = relations(orderItem, ({ one }) => ({
 		fields: [orderItem.storeProductId],
 		references: [storeProduct.id],
 	}),
+	product: one(product, {
+		fields: [orderItem.productId],
+		references: [product.id],
+	}),
 }));

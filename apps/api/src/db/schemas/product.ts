@@ -16,8 +16,8 @@ import { productImage } from "./product-image";
 import { sellerProfile } from "./seller";
 import { store } from "./store";
 
-export const PRODUCT_STATUS = ["active", "disabled", "trashed"] as const;
-export type ProductStatus = (typeof PRODUCT_STATUS)[number];
+export const productStatuses = ["active", "disabled", "trashed"] as const;
+export type ProductStatus = (typeof productStatuses)[number];
 
 export const product = pgTable(
 	"products",
@@ -35,7 +35,7 @@ export const product = pgTable(
 			onDelete: "set null",
 		}),
 		price: numeric("price", { precision: 10, scale: 2 }).notNull(),
-		status: text("status", { enum: PRODUCT_STATUS })
+		status: text("status", { enum: productStatuses })
 			.default("active")
 			.notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })

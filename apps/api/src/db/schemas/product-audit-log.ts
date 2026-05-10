@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	check,
 	index,
@@ -12,7 +12,7 @@ import { product } from "./product";
 
 // Esclude 'deleted_permanently' perché l'audit row verrebbe cancellato a cascata
 // col prodotto: il delete fisico è registrato solo nei log Pino.
-export const PRODUCT_AUDIT_ACTION = [
+export const productAuditActions = [
 	"created",
 	"updated",
 	"disabled",
@@ -20,7 +20,7 @@ export const PRODUCT_AUDIT_ACTION = [
 	"trashed",
 	"restored",
 ] as const;
-export type ProductAuditAction = (typeof PRODUCT_AUDIT_ACTION)[number];
+export type ProductAuditAction = (typeof productAuditActions)[number];
 
 export const productAuditLog = pgTable(
 	"product_audit_log",
@@ -34,7 +34,7 @@ export const productAuditLog = pgTable(
 		actorUserId: text("actor_user_id").references(() => user.id, {
 			onDelete: "set null",
 		}),
-		action: text("action", { enum: PRODUCT_AUDIT_ACTION }).notNull(),
+		action: text("action", { enum: productAuditActions }).notNull(),
 		metadata: jsonb("metadata").$type<Record<string, unknown> | null>(),
 		occurredAt: timestamp("occurred_at", { withTimezone: true })
 			.defaultNow()
@@ -51,4 +51,18 @@ export const productAuditLog = pgTable(
 			sql`${table.action} IN ('created','updated','disabled','enabled','trashed','restored')`,
 		),
 	],
+);
+
+export const productAuditLogRelations = relations(
+	productAuditLog,
+	({ one }) => ({
+		product: one(product, {
+			fields: [productAuditLog.productId],
+			references: [product.id],
+		}),
+		actor: one(user, {
+			fields: [productAuditLog.actorUserId],
+			references: [user.id],
+		}),
+	}),
 );

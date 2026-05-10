@@ -27,7 +27,7 @@
 
 | File | Responsabilità |
 |---|---|
-| `apps/api/src/db/schemas/product-audit-log.ts` | Schema Drizzle della tabella `product_audit_log` + costante `PRODUCT_AUDIT_ACTION` |
+| `apps/api/src/db/schemas/product-audit-log.ts` | Schema Drizzle della tabella `product_audit_log` + costante `productAuditActions` |
 | `apps/api/src/modules/seller/services/product-audit.ts` | Helper `recordProductAudit` e `recordProductAuditBatch` (single + batch insert nel transaction context) |
 | `apps/api/tests/integration/seller-product-status.test.ts` | Test integrazione: `updateProductStatus`, `deleteProductPermanently`, list filtering, status counts |
 | `apps/api/tests/integration/seller-product-bulk.test.ts` | Test integrazione: `bulkUpdateProductStatus`, `bulkDeletePermanent` |
@@ -85,13 +85,13 @@ Apri `apps/api/src/db/schemas/product.ts` e sostituisci la sezione del campo `is
 
 ```ts
 // In testa al file, sotto gli import esistenti:
-export const PRODUCT_STATUS = ["active", "disabled", "trashed"] as const;
-export type ProductStatus = (typeof PRODUCT_STATUS)[number];
+export const productStatuses = ["active", "disabled", "trashed"] as const;
+export type ProductStatus = (typeof productStatuses)[number];
 
 // Dentro pgTable("products", { ... }):
 // RIMUOVI: isActive: boolean("is_active").default(true).notNull(),
 // AGGIUNGI:
-status: text("status", { enum: PRODUCT_STATUS })
+status: text("status", { enum: productStatuses })
     .default("active")
     .notNull(),
 ```
@@ -133,7 +133,7 @@ import { product } from "./product";
 
 // Esclude 'deleted_permanently' perché l'audit row verrebbe cancellato a cascata
 // col prodotto: il delete fisico è registrato solo nei log Pino.
-export const PRODUCT_AUDIT_ACTION = [
+export const productAuditActions = [
     "created",
     "updated",
     "disabled",
@@ -141,7 +141,7 @@ export const PRODUCT_AUDIT_ACTION = [
     "trashed",
     "restored",
 ] as const;
-export type ProductAuditAction = (typeof PRODUCT_AUDIT_ACTION)[number];
+export type ProductAuditAction = (typeof productAuditActions)[number];
 
 export const productAuditLog = pgTable(
     "product_audit_log",
@@ -155,7 +155,7 @@ export const productAuditLog = pgTable(
         actorUserId: text("actor_user_id").references(() => user.id, {
             onDelete: "set null",
         }),
-        action: text("action", { enum: PRODUCT_AUDIT_ACTION }).notNull(),
+        action: text("action", { enum: productAuditActions }).notNull(),
         metadata: jsonb("metadata").$type<Record<string, unknown> | null>(),
         occurredAt: timestamp("occurred_at", { withTimezone: true })
             .defaultNow()
@@ -900,7 +900,7 @@ Apri `apps/api/src/modules/seller/services/products.ts` e aggiungi in fondo (pri
 
 ```ts
 import {
-    PRODUCT_STATUS,
+    productStatuses,
     type ProductStatus,
 } from "@/db/schemas/product";
 import {
@@ -995,11 +995,11 @@ Expected: PASS, 5 test verdi.
 Apri `apps/api/src/lib/schemas/entities.ts` (o `composed.ts`, scegli per coerenza con dove sono i body schemas — guarda dove è `CreateProductBody`). Aggiungi:
 
 ```ts
-import { PRODUCT_STATUS } from "@/db/schemas/product";
+import { productStatuses } from "@/db/schemas/product";
 
 export const ProductStatusBody = t.Object({
     status: t.Union(
-        PRODUCT_STATUS.map((s) => t.Literal(s)),
+        productStatuses.map((s) => t.Literal(s)),
         { description: "Nuovo stato del prodotto" },
     ),
 });
@@ -1434,7 +1434,7 @@ In `apps/api/src/lib/schemas/entities.ts` (o dove sono i body schema), aggiungi:
 export const BulkStatusBody = t.Object({
     productIds: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
     status: t.Union(
-        PRODUCT_STATUS.map((s) => t.Literal(s)),
+        productStatuses.map((s) => t.Literal(s)),
         { description: "Stato target da applicare a tutti gli ID" },
     ),
 });
@@ -1901,7 +1901,7 @@ In `apps/api/src/modules/seller/routes/products.ts:29`, estendi la query schema 
                 storeId: t.String({ description: "ID del negozio attivo" }),
                 statusFilter: t.Optional(
                     t.Union(
-                        PRODUCT_STATUS.map((s) => t.Literal(s)),
+                        productStatuses.map((s) => t.Literal(s)),
                         {
                             description:
                                 "Filtra per stato. Default 'active'.",
@@ -1922,7 +1922,7 @@ In `apps/api/src/modules/seller/routes/products.ts:29`, estendi la query schema 
 )
 ```
 
-Aggiungi import `PRODUCT_STATUS` (e `ProductStatus` se serve in funzione) dal modulo schemas in cima al file.
+Aggiungi import `productStatuses` (e `ProductStatus` se serve in funzione) dal modulo schemas in cima al file.
 
 - [ ] **Step 10.5: Run typecheck + test**
 
