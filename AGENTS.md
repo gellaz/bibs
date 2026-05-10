@@ -12,6 +12,18 @@ This file provides guidance when working with the **bibs** monorepo.
 - `apps/admin/` — Admin back-office (TanStack Start + React 19), port **3003**
 - `packages/ui/` — Shared UI component library (`@bibs/ui`) — shadcn/ui (radix-nova style) + Radix UI + Tailwind CSS v4
 
+## Design Context
+
+Strategic and visual context for any agent doing UI / brand work lives at the repo root and is loaded automatically by the `impeccable` skill:
+
+- **[PRODUCT.md](PRODUCT.md)** — register, mission, vision, users (shoppers, merchants, civic partners, admins), brand personality, anti-references, the 5 design principles, accessibility baseline. Source of truth for *who* and *why*.
+- **[DESIGN.md](DESIGN.md)** — visual system: Creative North Star ("The Open Hand"), color tokens (Ink + Cream + Saffron palette in OKLCH), typography (Geist + Bricolage Grotesque), elevation, components, do's and don'ts. Source of truth for *how it looks*. Frontmatter is normative.
+- **[.impeccable/design.json](.impeccable/design.json)** — sidecar with full HTML/CSS for canonical components and signature patterns (Reward Pill, Civic Pill, Distance Pill, Shopkeeper's Window, Market Square). Used by the impeccable live panel and as a reference for new component code.
+
+Note: the codebase as of writing carries the default shadcn radix-nova preset (cyan-sky `--primary`, neutral grayscale, Geist-only). DESIGN.md prescribes the brand-aligned target (navy Ink + warm Cream + Saffron, Bricolage Grotesque display). New work follows DESIGN.md; existing screens migrate opportunistically, not in a big-bang refactor.
+
+To refresh strategic or visual context: `$impeccable teach` (PRODUCT) or `$impeccable document` (DESIGN). To start any new feature: `$impeccable craft <feature>`.
+
 ## Commands
 
 - `bun install` — install all workspace dependencies

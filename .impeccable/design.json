@@ -1,0 +1,338 @@
+{
+	"schemaVersion": 2,
+	"generatedAt": "2026-05-10T00:00:00Z",
+	"title": "Design System: bibs",
+	"extensions": {
+		"colorMeta": {
+			"ink": {
+				"role": "primary",
+				"displayName": "Ink",
+				"canonical": "oklch(0.34 0.10 258)",
+				"tonalRamp": [
+					"oklch(0.18 0.06 258)",
+					"oklch(0.24 0.08 258)",
+					"oklch(0.30 0.09 258)",
+					"oklch(0.34 0.10 258)",
+					"oklch(0.46 0.10 258)",
+					"oklch(0.62 0.09 258)",
+					"oklch(0.78 0.06 258)",
+					"oklch(0.94 0.02 258)"
+				]
+			},
+			"ink-deep": {
+				"role": "primary",
+				"displayName": "Ink Deep",
+				"canonical": "oklch(0.24 0.08 258)"
+			},
+			"ink-soft": {
+				"role": "primary",
+				"displayName": "Ink Soft",
+				"canonical": "oklch(0.46 0.10 258)"
+			},
+			"cream": {
+				"role": "neutral",
+				"displayName": "Cream",
+				"canonical": "oklch(0.985 0.008 80)",
+				"tonalRamp": [
+					"oklch(0.20 0.012 80)",
+					"oklch(0.32 0.013 80)",
+					"oklch(0.50 0.012 80)",
+					"oklch(0.68 0.012 80)",
+					"oklch(0.82 0.013 80)",
+					"oklch(0.91 0.012 80)",
+					"oklch(0.965 0.012 80)",
+					"oklch(0.985 0.008 80)"
+				]
+			},
+			"warm-paper": {
+				"role": "neutral",
+				"displayName": "Warm Paper",
+				"canonical": "oklch(0.965 0.012 80)"
+			},
+			"warm-edge": {
+				"role": "neutral",
+				"displayName": "Warm Edge",
+				"canonical": "oklch(0.91 0.012 80)"
+			},
+			"warm-line": {
+				"role": "neutral",
+				"displayName": "Warm Line",
+				"canonical": "oklch(0.86 0.014 80)"
+			},
+			"warm-shadow": {
+				"role": "neutral",
+				"displayName": "Warm Shadow",
+				"canonical": "oklch(0.50 0.012 80)"
+			},
+			"dusk": {
+				"role": "neutral",
+				"displayName": "Dusk",
+				"canonical": "oklch(0.22 0.014 80)"
+			},
+			"saffron": {
+				"role": "secondary",
+				"displayName": "Saffron",
+				"canonical": "oklch(0.78 0.14 75)",
+				"tonalRamp": [
+					"oklch(0.30 0.10 70)",
+					"oklch(0.42 0.13 70)",
+					"oklch(0.55 0.16 72)",
+					"oklch(0.66 0.16 70)",
+					"oklch(0.78 0.14 75)",
+					"oklch(0.86 0.10 78)",
+					"oklch(0.93 0.06 80)",
+					"oklch(0.98 0.02 82)"
+				]
+			},
+			"saffron-deep": {
+				"role": "secondary",
+				"displayName": "Saffron Deep",
+				"canonical": "oklch(0.66 0.16 70)"
+			},
+			"brick": {
+				"role": "tertiary",
+				"displayName": "Brick",
+				"canonical": "oklch(0.55 0.18 25)"
+			},
+			"olive": {
+				"role": "tertiary",
+				"displayName": "Olive",
+				"canonical": "oklch(0.62 0.10 135)"
+			}
+		},
+		"typographyMeta": {
+			"display": {
+				"displayName": "Display",
+				"purpose": "Hero on customer brand pages, shop name on Shopkeeper's Window. One per page; never inside a card."
+			},
+			"headline": {
+				"displayName": "Headline",
+				"purpose": "Section heads on customer surfaces, card-as-hero titles, empty-state headlines."
+			},
+			"title": {
+				"displayName": "Title",
+				"purpose": "Card titles, list-item primary, dialog titles, settings group heads."
+			},
+			"body": {
+				"displayName": "Body",
+				"purpose": "Paragraphs, descriptions, long-form merchant text. Max 72ch."
+			},
+			"label": {
+				"displayName": "Label",
+				"purpose": "Chips, pills, badges, button text, table headers. Sentence case in Italian; only saffron reward badges use ALL CAPS."
+			},
+			"mono": {
+				"displayName": "Mono",
+				"purpose": "Prices, distances, point balances, order codes, compact addresses."
+			}
+		},
+		"shadows": [
+			{
+				"name": "rest",
+				"value": "none",
+				"purpose": "Default. No shadow. A 1px Warm Edge border carries separation when needed."
+			},
+			{
+				"name": "xs",
+				"value": "0 1px 3px 0px hsl(0 0% 0% / 0.05)",
+				"purpose": "Subtle hover lift on cards."
+			},
+			{
+				"name": "sm",
+				"value": "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10)",
+				"purpose": "Hover on buttons and primary surfaces; default on dropdown menus."
+			},
+			{
+				"name": "md",
+				"value": "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10)",
+				"purpose": "Popovers, comboboxes, persistent menus."
+			},
+			{
+				"name": "lg",
+				"value": "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10)",
+				"purpose": "Drawers, sheets, the merchant detail Shopkeeper's Window when it enters the viewport."
+			},
+			{
+				"name": "xl",
+				"value": "0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10)",
+				"purpose": "Modal dialogs only. Used very rarely; modals are usually laziness."
+			}
+		],
+		"motion": [
+			{
+				"name": "ease-out-quart",
+				"value": "cubic-bezier(0.22, 1, 0.36, 1)",
+				"purpose": "Default state easing: hover, focus, color transitions."
+			},
+			{
+				"name": "ease-out-quint",
+				"value": "cubic-bezier(0.22, 1, 0.32, 1)",
+				"purpose": "Stronger ease-out for layout entries: drawers, sheets, the Shopkeeper's Window opening."
+			},
+			{
+				"name": "duration-state",
+				"value": "180ms",
+				"purpose": "State transitions on color, opacity, border."
+			},
+			{
+				"name": "duration-layout",
+				"value": "320ms",
+				"purpose": "Layout transitions: drawers entering, sheets settling."
+			}
+		],
+		"breakpoints": [
+			{ "name": "sm", "value": "640px" },
+			{ "name": "md", "value": "768px" },
+			{ "name": "lg", "value": "1024px" },
+			{ "name": "xl", "value": "1280px" }
+		]
+	},
+	"components": [
+		{
+			"name": "Primary Button",
+			"kind": "button",
+			"refersTo": "button-primary",
+			"description": "Primary call-to-action. Ink on Cream, calm and confident.",
+			"html": "<button class=\"ds-btn-primary\">Vai al negozio</button>",
+			"css": ".ds-btn-primary { background: oklch(0.34 0.10 258); color: oklch(0.985 0.008 80); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.04em; padding: 0.625rem 1.125rem; border: none; border-radius: 0.425rem; cursor: pointer; transition: background 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-primary:hover { background: oklch(0.24 0.08 258); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.78 0.14 75); outline-offset: 2px; }"
+		},
+		{
+			"name": "Secondary Button",
+			"kind": "button",
+			"refersTo": "button-secondary",
+			"description": "Secondary action. Warm Paper surface, Ink text.",
+			"html": "<button class=\"ds-btn-secondary\">Salva per dopo</button>",
+			"css": ".ds-btn-secondary { background: oklch(0.965 0.012 80); color: oklch(0.34 0.10 258); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.04em; padding: 0.625rem 1.125rem; border: 1px solid oklch(0.91 0.012 80); border-radius: 0.425rem; cursor: pointer; transition: background 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-secondary:hover { background: oklch(0.91 0.012 80); border-color: oklch(0.86 0.014 80); } .ds-btn-secondary:focus-visible { outline: 2px solid oklch(0.46 0.10 258); outline-offset: 2px; }"
+		},
+		{
+			"name": "Ghost Button",
+			"kind": "button",
+			"refersTo": "button-ghost",
+			"description": "Tertiary action inside cards or quiet contexts.",
+			"html": "<button class=\"ds-btn-ghost\">Annulla</button>",
+			"css": ".ds-btn-ghost { background: transparent; color: oklch(0.34 0.10 258); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.04em; padding: 0.5rem 0.875rem; border: none; border-radius: 0.425rem; cursor: pointer; transition: background 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-btn-ghost:hover { background: oklch(0.965 0.012 80); } .ds-btn-ghost:focus-visible { outline: 2px solid oklch(0.46 0.10 258); outline-offset: 2px; }"
+		},
+		{
+			"name": "Search Input",
+			"kind": "input",
+			"refersTo": "input",
+			"description": "The customer search bar. Holds the cursor; opens, never gates.",
+			"html": "<label class=\"ds-input-search\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" aria-hidden=\"true\"><circle cx=\"7\" cy=\"7\" r=\"5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M11 11l3 3\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg><input type=\"search\" placeholder=\"Cerca nel quartiere…\" /></label>",
+			"css": ".ds-input-search { display: inline-flex; align-items: center; gap: 0.5rem; background: oklch(0.985 0.008 80); color: oklch(0.50 0.012 80); padding: 0.625rem 0.875rem; border: 1px solid oklch(0.91 0.012 80); border-radius: 0.425rem; transition: border-color 150ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-input-search:focus-within { border-color: oklch(0.34 0.10 258); box-shadow: 0 0 0 2px oklch(0.78 0.14 75 / 0.5); color: oklch(0.34 0.10 258); } .ds-input-search input { background: transparent; border: none; outline: none; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 400; line-height: 1.55; color: oklch(0.22 0.014 80); width: 22ch; } .ds-input-search input::placeholder { color: oklch(0.50 0.012 80); }"
+		},
+		{
+			"name": "Shop Card",
+			"kind": "card",
+			"refersTo": "card",
+			"description": "Discovery tile in the Market Square. Photo + identity + presence + distance, no price.",
+			"html": "<article class=\"ds-card-shop\"><div class=\"ds-card-shop__photo\" aria-hidden=\"true\"></div><div class=\"ds-card-shop__body\"><h3 class=\"ds-card-shop__name\">Salumeria Borgo</h3><p class=\"ds-card-shop__line\">Salumi e formaggi locali</p><div class=\"ds-card-shop__meta\"><span class=\"ds-pill-distance\">0,4 km</span><span class=\"ds-pill-presence ds-pill-presence--open\"><span class=\"ds-pill-presence__dot\"></span>Aperto fino alle 19:30</span></div></div></article>",
+			"css": ".ds-card-shop { display: flex; flex-direction: column; background: oklch(0.965 0.012 80); border: 1px solid oklch(0.91 0.012 80); border-radius: 0.625rem; overflow: hidden; transition: box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-card-shop:hover { box-shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.05); border-color: oklch(0.86 0.014 80); } .ds-card-shop__photo { aspect-ratio: 3 / 4; background: linear-gradient(160deg, oklch(0.91 0.012 80), oklch(0.86 0.014 80)); } .ds-card-shop__body { padding: 1rem 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.375rem; } .ds-card-shop__name { font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1.25rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.005em; color: oklch(0.22 0.014 80); margin: 0; } .ds-card-shop__line { font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 400; line-height: 1.55; color: oklch(0.50 0.012 80); margin: 0; } .ds-card-shop__meta { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem; } .ds-pill-distance { display: inline-flex; align-items: center; background: oklch(0.985 0.008 80); color: oklch(0.34 0.10 258); font-family: Geist Mono, ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; padding: 0.25rem 0.625rem; border-radius: 9999px; border: 1px solid oklch(0.91 0.012 80); } .ds-pill-presence { display: inline-flex; align-items: center; gap: 0.375rem; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; color: oklch(0.46 0.10 258); padding: 0.25rem 0; } .ds-pill-presence__dot { width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: oklch(0.78 0.14 75); } .ds-pill-presence--open .ds-pill-presence__dot { background: oklch(0.78 0.14 75); }"
+		},
+		{
+			"name": "Reward Pill",
+			"kind": "chip",
+			"refersTo": "badge-saffron",
+			"description": "Signature: the Reward Thread. Saffron pill announces points earned. ALL CAPS. ≤1 per surface.",
+			"html": "<span class=\"ds-badge-reward\"><svg viewBox=\"0 0 16 16\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M8 1l1.8 4.6L14.5 6 11 9.2l1 4.8L8 11.6 4 14l1-4.8L1.5 6l4.7-.4z\" fill=\"currentColor\"/></svg>+5 PUNTI</span>",
+			"css": ".ds-badge-reward { display: inline-flex; align-items: center; gap: 0.375rem; background: oklch(0.78 0.14 75); color: oklch(0.22 0.014 80); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; line-height: 1.2; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.25rem 0.625rem; border-radius: 9999px; }"
+		},
+		{
+			"name": "Civic Pill",
+			"kind": "chip",
+			"refersTo": "badge-civic",
+			"description": "Signature: 360° civic involvement. Marks surfaces where a Comune participates.",
+			"html": "<span class=\"ds-badge-civic\"><svg viewBox=\"0 0 16 16\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M2 14h12M3 14V7l5-3 5 3v7M6 14V9h4v5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Il Comune di Modena partecipa</span>",
+			"css": ".ds-badge-civic { display: inline-flex; align-items: center; gap: 0.375rem; background: oklch(0.965 0.012 80); color: oklch(0.34 0.10 258); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.01em; padding: 0.25rem 0.75rem; border: 1px solid oklch(0.34 0.10 258); border-radius: 9999px; }"
+		},
+		{
+			"name": "Bottom Tab Bar (Customer)",
+			"kind": "nav",
+			"refersTo": "nav-bottom",
+			"description": "Mobile-first navigation for the customer app. Saffron underline marks active.",
+			"html": "<nav class=\"ds-nav-bottom\" aria-label=\"Navigazione principale\"><a class=\"ds-nav-bottom__item\" href=\"/\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path d=\"M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-7H9v7H5a1 1 0 0 1-1-1z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></svg>Home</a><a class=\"ds-nav-bottom__item ds-nav-bottom__item--active\" href=\"/cerca\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M16 16l4 4\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></svg>Cerca</a><a class=\"ds-nav-bottom__item\" href=\"/premi\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path d=\"M12 3l2.7 6.9L22 11l-5.5 5 1.5 7.2L12 19l-6 4.2L7.5 16 2 11l7.3-1.1z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></svg>Premi</a><a class=\"ds-nav-bottom__item\" href=\"/profilo\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M4 21c0-4 4-7 8-7s8 3 8 7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></svg>Profilo</a></nav>",
+			"css": ".ds-nav-bottom { display: grid; grid-template-columns: repeat(4, 1fr); background: oklch(0.985 0.008 80); border-top: 1px solid oklch(0.91 0.012 80); padding: 0.25rem 0 calc(0.25rem + env(safe-area-inset-bottom)); } .ds-nav-bottom__item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.5rem 0.25rem; min-height: 44px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; line-height: 1.2; color: oklch(0.46 0.10 258); text-decoration: none; position: relative; transition: color 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-nav-bottom__item:hover { color: oklch(0.34 0.10 258); } .ds-nav-bottom__item--active { color: oklch(0.34 0.10 258); } .ds-nav-bottom__item--active::after { content: \"\"; position: absolute; bottom: 0; left: 25%; right: 25%; height: 2px; border-radius: 2px; background: oklch(0.78 0.14 75); }"
+		}
+	],
+	"narrative": {
+		"northStar": "The Open Hand",
+		"overview": "bibs is shaped like the gesture in its own logo. An open hand offering, palm up, neither pulling nor pushing. The interface is confident enough to slow down: it makes room around the merchant, the product, the place. Where Amazon collapses everything into a yellow-CTA grid, bibs leaves space for a shop's name, its street, the hours it keeps today. Two surface idioms run inside this metaphor without breaking it: The Shopkeeper's Window (every merchant detail page, photo-led, identity above inventory) and The Market Square (discovery and home, presence + distance + 'aperto adesso' + civic chips). The parent metaphor decides the tone; the surface idioms decide the rhythm.",
+		"keyCharacteristics": [
+			"Navy ink on warm cream, never pure white, never black.",
+			"Generous spacing as a moral position. The merchant gets room.",
+			"Geist (UI workhorse) + Bricolage Grotesque (warm display). Two voices, one register.",
+			"Saffron is the only saturated accent. ≤5% of the surface, signal moments only.",
+			"Flat by default. Elevation is reserved for state response.",
+			"Motion respects prefers-reduced-motion without exception. Ease-out exponential, no bounce."
+		],
+		"rules": [
+			{
+				"name": "The Single Hand Rule",
+				"body": "Saffron belongs to ≤5% of any given screen, only on signal moments: reward, civic, presence, focus. Every additional saffron pixel weakens the one that earned its place.",
+				"section": "colors"
+			},
+			{
+				"name": "The Ink Rule",
+				"body": "Pure black (#000) and pure white (#fff) are prohibited. Foreground is Dusk; background is Cream.",
+				"section": "colors"
+			},
+			{
+				"name": "The No-Cyan Rule",
+				"body": "The current shadcn preset's cyan-sky primary is legacy and contradicts the wordmark. Do not introduce new uses; migrate opportunistically. The brand voice is navy ink.",
+				"section": "colors"
+			},
+			{
+				"name": "The Two-Voice Rule",
+				"body": "Bricolage carries identity. Geist carries information. Mixing roles breaks the system.",
+				"section": "typography"
+			},
+			{
+				"name": "The 72ch Rule",
+				"body": "Body copy never exceeds 72 characters per line.",
+				"section": "typography"
+			},
+			{
+				"name": "The Italian-First Rule",
+				"body": "All scale ratios are tuned on Italian copy, which runs slightly longer than English. Verify hierarchy with Italian strings; never tune on Lorem ipsum.",
+				"section": "typography"
+			},
+			{
+				"name": "The Flat-By-Default Rule",
+				"body": "Surfaces are flat. Shadows respond to state. Decorative ambient glow is forbidden.",
+				"section": "elevation"
+			},
+			{
+				"name": "The 1px Border Rule",
+				"body": "Where shadow would be the obvious answer for separation at rest, use a 1px Warm Edge border instead.",
+				"section": "elevation"
+			}
+		],
+		"dos": [
+			"Do lead with the merchant: face, name, place, hours come before the inventory grid on every customer surface.",
+			"Do use Ink as the brand voice. Wordmark, primary buttons, headlines, focus rings: the same Ink everywhere.",
+			"Do keep Saffron at ≤5% of any screen, on signal moments only.",
+			"Do show distance, opening status, and pickup-or-delivery affordances on every store and product card.",
+			"Do show the civic pill ('il Comune di X partecipa') wherever it's true.",
+			"Do keep Body lines under 72 characters.",
+			"Do tune typography on Italian copy.",
+			"Do keep the system flat by default.",
+			"Do respect prefers-reduced-motion without an opt-out.",
+			"Do ease out with exponential curves (cubic-bezier(0.22, 1, 0.36, 1) or steeper). 150-220ms for state, 280-380ms for layout."
+		],
+		"donts": [
+			"Don't introduce new uses of the cyan-sky --primary. The brand is navy Ink. The cyan is legacy.",
+			"Don't use pure #000 or #fff anywhere. Foreground is Dusk; background is Cream.",
+			"Don't use a side-stripe border (border-left > 1px) as a colored accent.",
+			"Don't use gradient text (background-clip: text over a gradient).",
+			"Don't use glassmorphism or backdrop-blur as decoration.",
+			"Don't ship the SaaS hero-metric template.",
+			"Don't ship identical icon-heading-text card grids.",
+			"Don't ship Amazon-style yellow CTAs, infinite anonymous product grids, or density-over-clarity layouts.",
+			"Don't ship Groupon-style coupon stickers, countdown timers, or manipulative urgency.",
+			"Don't put crypto / web3 / dark-and-neon energy anywhere.",
+			"Don't put Bricolage on a price or a button. Bricolage is the *who*; Geist is the *what*.",
+			"Don't nest a card inside a card.",
+			"Don't wrap everything in a container with the same padding.",
+			"Don't reach for a modal as the first thought."
+		]
+	}
+}
