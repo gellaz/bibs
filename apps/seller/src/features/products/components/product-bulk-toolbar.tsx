@@ -1,5 +1,12 @@
 import { Button } from "@bibs/ui/components/button";
-import { XIcon } from "lucide-react";
+import {
+	EyeIcon,
+	EyeOffIcon,
+	RotateCcwIcon,
+	Trash2Icon,
+	TrashIcon,
+	XIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { ConfirmPermanentDeleteDialog } from "@/features/products/components/confirm-permanent-delete-dialog";
 import type { ProductStatusFilter } from "@/features/products/components/product-status-tabs";
@@ -45,6 +52,7 @@ export function ProductBulkToolbar({
 					{statusFilter === "active" && (
 						<>
 							<Button size="sm" onClick={apply("disabled")}>
+								<EyeOffIcon className="size-4" />
 								{m.products_action_disable()}
 							</Button>
 							<Button
@@ -52,6 +60,7 @@ export function ProductBulkToolbar({
 								variant="destructive"
 								onClick={apply("trashed")}
 							>
+								<Trash2Icon className="size-4" />
 								{m.products_action_trash()}
 							</Button>
 						</>
@@ -59,6 +68,7 @@ export function ProductBulkToolbar({
 					{statusFilter === "disabled" && (
 						<>
 							<Button size="sm" onClick={apply("active")}>
+								<EyeIcon className="size-4" />
 								{m.products_action_enable()}
 							</Button>
 							<Button
@@ -66,6 +76,7 @@ export function ProductBulkToolbar({
 								variant="destructive"
 								onClick={apply("trashed")}
 							>
+								<Trash2Icon className="size-4" />
 								{m.products_action_trash()}
 							</Button>
 						</>
@@ -73,6 +84,7 @@ export function ProductBulkToolbar({
 					{statusFilter === "trashed" && (
 						<>
 							<Button size="sm" onClick={apply("active")}>
+								<RotateCcwIcon className="size-4" />
 								{m.products_action_restore()}
 							</Button>
 							<Button
@@ -80,6 +92,7 @@ export function ProductBulkToolbar({
 								variant="destructive"
 								onClick={() => setConfirmOpen(true)}
 							>
+								<TrashIcon className="size-4" />
 								{m.products_action_delete_permanent()}
 							</Button>
 						</>

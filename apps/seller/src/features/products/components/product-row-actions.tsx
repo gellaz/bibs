@@ -7,7 +7,15 @@ import {
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
 import { Link } from "@tanstack/react-router";
-import { MoreHorizontalIcon } from "lucide-react";
+import {
+	EyeIcon,
+	EyeOffIcon,
+	MoreHorizontalIcon,
+	PencilIcon,
+	RotateCcwIcon,
+	Trash2Icon,
+	TrashIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { ConfirmPermanentDeleteDialog } from "@/features/products/components/confirm-permanent-delete-dialog";
 import { useProductMutations } from "@/features/products/hooks/use-product-mutations";
@@ -35,8 +43,9 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
 					{status !== "trashed" && (
-						<DropdownMenuItem asChild>
+						<DropdownMenuItem asChild className="whitespace-nowrap">
 							<Link to="/products/$productId" params={{ productId }}>
+								<PencilIcon />
 								{m.products_action_edit()}
 							</Link>
 						</DropdownMenuItem>
@@ -44,6 +53,7 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 
 					{status === "active" && (
 						<DropdownMenuItem
+							className="whitespace-nowrap"
 							onSelect={() =>
 								setStatus.mutate({
 									productId,
@@ -52,12 +62,14 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 								})
 							}
 						>
+							<EyeOffIcon />
 							{m.products_action_disable()}
 						</DropdownMenuItem>
 					)}
 
 					{status === "disabled" && (
 						<DropdownMenuItem
+							className="whitespace-nowrap"
 							onSelect={() =>
 								setStatus.mutate({
 									productId,
@@ -66,12 +78,14 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 								})
 							}
 						>
+							<EyeIcon />
 							{m.products_action_enable()}
 						</DropdownMenuItem>
 					)}
 
 					{status === "trashed" && (
 						<DropdownMenuItem
+							className="whitespace-nowrap"
 							onSelect={() =>
 								setStatus.mutate({
 									productId,
@@ -80,6 +94,7 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 								})
 							}
 						>
+							<RotateCcwIcon />
 							{m.products_action_restore()}
 						</DropdownMenuItem>
 					)}
@@ -89,6 +104,7 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 					{status !== "trashed" ? (
 						<DropdownMenuItem
 							variant="destructive"
+							className="whitespace-nowrap"
 							onSelect={() =>
 								setStatus.mutate({
 									productId,
@@ -97,13 +113,16 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 								})
 							}
 						>
+							<Trash2Icon />
 							{m.products_action_trash()}
 						</DropdownMenuItem>
 					) : (
 						<DropdownMenuItem
 							variant="destructive"
+							className="whitespace-nowrap"
 							onSelect={() => setConfirmOpen(true)}
 						>
+							<TrashIcon />
 							{m.products_action_delete_permanent()}
 						</DropdownMenuItem>
 					)}

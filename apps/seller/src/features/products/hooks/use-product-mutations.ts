@@ -10,6 +10,12 @@ interface SetStatusVars {
 	status: ProductStatus;
 	/** Status before the mutation, for the Undo toast action. */
 	previousStatus: ProductStatus;
+	/**
+	 * Set when this mutation is dispatched as the inverse of a previous one
+	 * (i.e. via the "Annulla" toast action). Suppresses the Undo button on the
+	 * confirmation toast so the user can't undo the undo, ad infinitum.
+	 */
+	isUndo?: boolean;
 }
 
 interface BulkSetStatusVars {
@@ -43,6 +49,10 @@ export function useProductMutations(activeStoreId: string | undefined) {
 		},
 		onSuccess: (_data, vars) => {
 			invalidateAll();
+			if (vars.isUndo) {
+				toast.success(m.products_toast_status_changed());
+				return;
+			}
 			toast.success(m.products_toast_status_changed(), {
 				action: {
 					label: m.products_toast_undo(),
@@ -51,6 +61,7 @@ export function useProductMutations(activeStoreId: string | undefined) {
 							productId: vars.productId,
 							status: vars.previousStatus,
 							previousStatus: vars.status,
+							isUndo: true,
 						});
 					},
 				},
