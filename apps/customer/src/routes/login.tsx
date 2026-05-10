@@ -1,3 +1,4 @@
+import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -65,9 +66,7 @@ function LoginPage() {
 		<div className="flex min-h-screen items-center justify-center px-4">
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
-					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg font-bold">
-						B
-					</div>
+					<BrandMark className="mx-auto mb-2 size-12" />
 					<CardTitle className="font-display text-xl">bibs</CardTitle>
 					<CardDescription>Accedi con le tue credenziali</CardDescription>
 				</CardHeader>

@@ -33,7 +33,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
 			Authorization: `Bearer ${env.RESEND_API_KEY}`,
 		},
 		body: JSON.stringify({
-			from: env.EMAIL_FROM ?? "Bibs <noreply@bibs.it>",
+			from: env.EMAIL_FROM ?? "bibs <noreply@bibs.it>",
 			to,
 			subject,
 			html,

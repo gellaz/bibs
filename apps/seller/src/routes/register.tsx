@@ -1,3 +1,4 @@
+import { BrandMark } from "@bibs/ui/components/brand-mark";
 import {
 	Card,
 	CardContent,
@@ -52,12 +53,10 @@ function RegisterPage() {
 		<div className="flex min-h-screen items-center justify-center px-4">
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
-					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg font-bold">
-						B
-					</div>
+					<BrandMark className="mx-auto mb-2 size-12" />
 					<CardTitle className="text-xl">Registrati come Venditore</CardTitle>
 					<CardDescription>
-						Crea il tuo account per iniziare a vendere su Bibs
+						Crea il tuo account per iniziare a vendere su bibs
 					</CardDescription>
 				</CardHeader>
 				<CardContent>

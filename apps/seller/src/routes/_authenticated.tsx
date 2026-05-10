@@ -175,7 +175,7 @@ function AuthenticatedLayout() {
 						<Breadcrumb>
 							<BreadcrumbList>
 								<BreadcrumbItem>
-									<BreadcrumbPage>Bibs Seller</BreadcrumbPage>
+									<BreadcrumbPage>bibs Seller</BreadcrumbPage>
 								</BreadcrumbItem>
 							</BreadcrumbList>
 						</Breadcrumb>
@@ -235,7 +235,7 @@ function EmployeeStoreGate({
 						<Breadcrumb>
 							<BreadcrumbList>
 								<BreadcrumbItem>
-									<BreadcrumbPage>Bibs Seller</BreadcrumbPage>
+									<BreadcrumbPage>bibs Seller</BreadcrumbPage>
 								</BreadcrumbItem>
 							</BreadcrumbList>
 						</Breadcrumb>
