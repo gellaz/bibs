@@ -37,14 +37,14 @@ Per renderle production-ready servono modifiche di schema su `products`, `order_
 `apps/api/src/db/schemas/product.ts`
 
 ```ts
-export const PRODUCT_STATUS = ['active', 'disabled', 'trashed'] as const;
-export type ProductStatus = (typeof PRODUCT_STATUS)[number];
+export const productStatuses = ['active', 'disabled', 'trashed'] as const;
+export type ProductStatus = (typeof productStatuses)[number];
 
 export const product = pgTable(
   'products',
   {
     // ... campi esistenti invariati ...
-    status: text('status', { enum: PRODUCT_STATUS })
+    status: text('status', { enum: productStatuses })
       .default('active')
       .notNull(),
     // RIMOSSO: isActive boolean
@@ -129,7 +129,7 @@ import { product } from './product';
 
 // Esclude 'deleted_permanently' perché l'audit row verrebbe cancellato a cascata
 // col prodotto: il delete fisico è registrato solo nei log Pino.
-export const PRODUCT_AUDIT_ACTION = [
+export const productAuditActions = [
   'created',
   'updated',
   'disabled',
@@ -137,7 +137,7 @@ export const PRODUCT_AUDIT_ACTION = [
   'trashed',
   'restored',
 ] as const;
-export type ProductAuditAction = (typeof PRODUCT_AUDIT_ACTION)[number];
+export type ProductAuditAction = (typeof productAuditActions)[number];
 
 export const productAuditLog = pgTable(
   'product_audit_log',
@@ -149,7 +149,7 @@ export const productAuditLog = pgTable(
     actorUserId: text('actor_user_id').references(() => user.id, {
       onDelete: 'set null',
     }),
-    action: text('action', { enum: PRODUCT_AUDIT_ACTION }).notNull(),
+    action: text('action', { enum: productAuditActions }).notNull(),
     metadata: jsonb('metadata').$type<Record<string, unknown> | null>(),
     occurredAt: timestamp('occurred_at', { withTimezone: true })
       .defaultNow()
@@ -214,7 +214,7 @@ Sempre invocato all'interno della stessa transazione del cambio di stato (per ev
 ```ts
 // Schema TypeBox in apps/api/src/lib/schemas/products.ts
 const ProductStatusBody = t.Object({
-  status: t.Union(PRODUCT_STATUS.map((s) => t.Literal(s))),
+  status: t.Union(productStatuses.map((s) => t.Literal(s))),
 });
 ```
 
@@ -256,7 +256,7 @@ Logica del service `deleteProductPermanently`:
 ```ts
 const BulkStatusBody = t.Object({
   productIds: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
-  status: t.Union(PRODUCT_STATUS.map((s) => t.Literal(s))),
+  status: t.Union(productStatuses.map((s) => t.Literal(s))),
 });
 const BulkResult = t.Object({
   succeeded: t.Array(t.String()),
@@ -309,7 +309,7 @@ const ListQuery = t.Object({
   page: t.Number({ default: 1 }),
   limit: t.Number({ default: 20 }),
   statusFilter: t.Union(
-    PRODUCT_STATUS.map((s) => t.Literal(s)),
+    productStatuses.map((s) => t.Literal(s)),
     { default: 'active' },
   ),
 });
