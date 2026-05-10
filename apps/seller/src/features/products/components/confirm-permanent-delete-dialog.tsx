@@ -57,10 +57,7 @@ export function ConfirmPermanentDeleteDialog({
 					<AlertDialogCancel>
 						{m.products_confirm_delete_cancel()}
 					</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={handleConfirm}
-						className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-					>
+					<AlertDialogAction variant="destructive" onClick={handleConfirm}>
 						{m.products_confirm_delete_action()}
 					</AlertDialogAction>
 				</AlertDialogFooter>
