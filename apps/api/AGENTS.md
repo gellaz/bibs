@@ -295,12 +295,33 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     - `categories.ts` — `seedStoreCategories()`, `seedProductCategories()` (skip-if-present)
     - `fetch-locations.ts` — standalone script to refresh the location JSON from GitHub
     - `regions.json`, `provinces.json`, `municipalities.json` — generated and committed
-  - `fixtures/` — test users for dev/staging only, depend on `better-auth`'s `signUpEmail`:
-    - `index.ts` — `seedFixtures()` runs admins + customers + sellers in order
+  - `fixtures/` — test users for dev/staging only, depend on `better-auth`'s `signUpEmail`. Order matters: admins
+    → customers → sellers → extra-stores → team → brands → products. Each step is idempotent via canary check:
+    - `index.ts` — `seedFixtures()` orchestrator
     - `admins.ts` — `seedAdmins()` (3 admin users)
     - `customers.ts` — `seedCustomers()` (~300 customers)
-    - `sellers.ts` — `seedSellers()` (~150 sellers across the onboarding state machine)
-    - `utils.ts` — shared fixture data (Italian names, cities, streets) and `pick()` helper
+    - `sellers.ts` — `seedSellers()` (~150 sellers; the first 55 are `active` → `seller1..seller55@test.com`)
+    - `extra-stores.ts` — `seedExtraStores()` adds 1–2 extra stores to 8 designated active sellers
+      (idx `[0,7,14,21,28,35,42,49]` → `seller{1,8,15,22,29,36,43,50}`); naming `<prefix> <lastName> <suffix>`
+      where suffix ∈ {Centro, Stazione, …}. Per-seller canary: only fills the names that are missing
+    - `team.ts` — `seedTeam()` creates **45 employee users** `employee1..employee45@test.com` (role `"employee"`,
+      not `"seller"`), `storeEmployee` rows and store-assignments, plus **8 pending invitations**
+      `pending-invite-1..8@test.com` (token `inv-test-<n>`, `expiresAt` 2099-12-31). Distribution:
+      - 7 single-store sellers × 2 emp + 7 × 1 emp (idx `[2,5,9,12,16,19,23,26,30,33,37,40,44,47]`)
+      - 4 multi-store × 4 emp (idx `[0,14,28,42]`) + 4 × 2 emp (idx `[7,21,35,49]`)
+    - `brands.ts` — `seedBrands()` picks 4–8 brands per active seller from a shared pool of 20 realistic Italian
+      brand names (rows are scoped per seller — schema has unique `(sellerProfileId, lower(name))`). Returns
+      `Map<sellerProfileId, brand[]>` consumed by `seedProducts`
+    - `products.ts` — `seedProducts()` generates 30–50 products per active seller (~2150 total) deterministically:
+      EAN-13 sequential from `8000000000000`, price range per macro-category, brand assigned 90% of the time, status
+      90/5/5 active/disabled/trashed. Then `productCategoryAssignment`, `storeProduct` inventory (70% of products
+      in all of the seller's stores, 30% in one), and `productImage` placeholders pointing at picsum.photos
+    - `utils.ts` — shared fixture data (Italian names, cities, streets, brand pool, product nouns/adjectives,
+      `prefixToMacro` map, `genEan13`) and `pick()` helper
+
+    All test users have password `password123`. For coherent data, run on a freshly reset DB
+    (`bun run infra:reset && bun run db:migrate && bun run db:seed`); otherwise canary skips heal partial state
+    incrementally but won't reshuffle assignments made under previous DB shape.
 - `src/db/schemas/` — Drizzle table definitions and relations:
   - `auth.ts` — user, session, account, verification (better-auth tables)
   - `customer.ts` — customer_profiles (points balance)

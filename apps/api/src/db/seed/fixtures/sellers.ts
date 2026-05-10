@@ -23,7 +23,7 @@ const legalForms = [
 
 // ── Business types & store names ──────────────────────────
 
-const businessPrefixes = [
+export const businessPrefixes = [
 	"Alimentari",
 	"Panificio",
 	"Pasticceria",
