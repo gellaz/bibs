@@ -38,12 +38,16 @@ function PageSizeSelector({
 				value={String(pageSize)}
 				onValueChange={(value) => onPageSizeChange(Number(value))}
 			>
-				<SelectTrigger size="sm" className="w-16">
+				<SelectTrigger size="sm" className="w-[4.5rem] tabular-nums">
 					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>
 					{options.map((option) => (
-						<SelectItem key={option} value={String(option)}>
+						<SelectItem
+							key={option}
+							value={String(option)}
+							className="tabular-nums"
+						>
 							{option}
 						</SelectItem>
 					))}

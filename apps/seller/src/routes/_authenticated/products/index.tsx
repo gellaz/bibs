@@ -1,6 +1,8 @@
 import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
+import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
 	Table,
@@ -230,17 +232,41 @@ function ProductsListPage() {
 				</div>
 			)}
 
-			{data?.pagination && data.pagination.total > 0 && (
-				<div className="text-muted-foreground flex items-center justify-between text-sm">
-					<div>
-						Pagina {page} di {Math.ceil(data.pagination.total / limit)}
-					</div>
-					<div>
-						Totale: {data.pagination.total} prodott
-						{data.pagination.total === 1 ? "o" : "i"}
-					</div>
-				</div>
-			)}
+			{data?.pagination &&
+				data.pagination.total > 0 &&
+				(() => {
+					const total = data.pagination.total;
+					const totalPages = Math.ceil(total / limit);
+					const rangeStart = (page - 1) * limit + 1;
+					const rangeEnd = Math.min(page * limit, total);
+					return (
+						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+							<p className="text-muted-foreground text-sm tabular-nums">
+								{rangeStart}–{rangeEnd} di {total} prodott
+								{total === 1 ? "o" : "i"}
+							</p>
+							<div className="flex items-center gap-4">
+								<PageSizeSelector
+									pageSize={limit}
+									onPageSizeChange={(size) =>
+										void navigate({
+											search: (prev) => ({ ...prev, limit: size, page: 1 }),
+										})
+									}
+								/>
+								<DataPagination
+									page={page}
+									totalPages={totalPages}
+									onPageChange={(next) =>
+										void navigate({
+											search: (prev) => ({ ...prev, page: next }),
+										})
+									}
+								/>
+							</div>
+						</div>
+					);
+				})()}
 		</div>
 	);
 }
