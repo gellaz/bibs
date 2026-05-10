@@ -48,13 +48,13 @@ const statusConfig: Record<
 		label: "In attesa di revisione",
 		variant: "outline",
 		className:
-			"border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 dark:bg-amber-500/20",
+			"border-saffron/30 bg-saffron/10 text-saffron-deep dark:text-saffron dark:bg-saffron/20",
 	},
 	active: {
 		label: "Attivo",
 		variant: "outline",
 		className:
-			"border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 dark:bg-emerald-500/20",
+			"border-olive/30 bg-olive/10 text-olive dark:text-olive dark:bg-olive/20",
 	},
 	rejected: {
 		label: "Rifiutato",

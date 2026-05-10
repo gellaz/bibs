@@ -97,7 +97,7 @@ function AcceptInvitePage() {
 					</div>
 					<CardTitle className="text-xl">Crea la tua password</CardTitle>
 					<CardDescription>
-						Sei stato invitato a collaborare su Bibs. Scegli una password per
+						Sei stato invitato a collaborare su bibs. Scegli una password per
 						completare la registrazione.
 					</CardDescription>
 				</CardHeader>

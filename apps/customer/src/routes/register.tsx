@@ -88,7 +88,7 @@ function RegisterPage() {
 					</div>
 					<CardTitle className="text-xl">Crea un account</CardTitle>
 					<CardDescription>
-						Registrati per iniziare a fare acquisti su Bibs
+						Registrati per iniziare a fare acquisti su bibs
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
