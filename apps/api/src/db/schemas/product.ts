@@ -1,6 +1,5 @@
 import { relations, sql } from "drizzle-orm";
 import {
-	boolean,
 	check,
 	index,
 	integer,
@@ -16,6 +15,9 @@ import { productCategory } from "./category";
 import { productImage } from "./product-image";
 import { sellerProfile } from "./seller";
 import { store } from "./store";
+
+export const PRODUCT_STATUS = ["active", "disabled", "trashed"] as const;
+export type ProductStatus = (typeof PRODUCT_STATUS)[number];
 
 export const product = pgTable(
 	"products",
@@ -33,7 +35,9 @@ export const product = pgTable(
 			onDelete: "set null",
 		}),
 		price: numeric("price", { precision: 10, scale: 2 }).notNull(),
-		isActive: boolean("is_active").default(true).notNull(),
+		status: text("status", { enum: PRODUCT_STATUS })
+			.default("active")
+			.notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -54,12 +58,17 @@ export const product = pgTable(
 		check("product_price_non_negative", sql`${table.price} >= 0`),
 		uniqueIndex("product_seller_ean_unique")
 			.on(table.sellerProfileId, table.ean)
-			.where(sql`${table.ean} IS NOT NULL`),
+			.where(sql`${table.ean} IS NOT NULL AND ${table.status} != 'trashed'`),
 		index("product_ean_idx").on(table.ean),
 		index("product_brand_id_idx").on(table.brandId),
+		index("product_status_idx").on(table.status),
 		check(
 			"product_ean_format",
 			sql`${table.ean} IS NULL OR ${table.ean} ~ '^(\\d{8}|\\d{13})$'`,
+		),
+		check(
+			"product_status_valid",
+			sql`${table.status} IN ('active','disabled','trashed')`,
 		),
 	],
 );

@@ -111,6 +111,7 @@ export async function createTestProduct(
 		name?: string;
 		price?: string;
 		description?: string;
+		status?: "active" | "disabled" | "trashed";
 	} = {},
 ) {
 	const [newProduct] = await db
@@ -120,7 +121,7 @@ export async function createTestProduct(
 			name: params.name ?? "Test Product",
 			description: params.description ?? "A test product",
 			price: params.price ?? "10.00",
-			isActive: true,
+			status: params.status ?? "active",
 		})
 		.returning();
 
