@@ -4,14 +4,17 @@ import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
 import { productCategory } from "@/db/schemas/category";
 import {
+	type ProductStatus,
 	product,
 	productCategoryAssignment,
 	storeProduct,
 } from "@/db/schemas/product";
+import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
+import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
 
 // ── Brand resolution helper ───────────────────────────────────────────────────
 //
@@ -44,15 +47,17 @@ interface ListProductsParams {
 	storeId: string;
 	page?: number;
 	limit?: number;
+	statusFilter?: ProductStatus;
 }
 
 export async function listProducts(params: ListProductsParams) {
-	const { sellerProfileId, storeId } = params;
+	const { sellerProfileId, storeId, statusFilter = "active" } = params;
 	const { page, limit, offset } = parsePagination(params);
 
 	const storeCondition = and(
 		eq(product.sellerProfileId, sellerProfileId),
 		eq(storeProduct.storeId, storeId),
+		eq(product.status, statusFilter),
 	);
 
 	// Get the IDs of products available in this store, paginated.
@@ -94,6 +99,44 @@ export async function listProducts(params: ListProductsParams) {
 	data.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 
 	return { data, pagination: { page, limit, total } };
+}
+
+// ── getProductStatusCounts ────────────────────────────────────────────────────
+
+interface GetCountsParams {
+	sellerProfileId: string;
+	storeId: string;
+}
+
+export async function getProductStatusCounts(
+	params: GetCountsParams,
+): Promise<Record<ProductStatus, number>> {
+	const { sellerProfileId, storeId } = params;
+
+	const rows = await db
+		.select({
+			status: product.status,
+			count: count(),
+		})
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(
+			and(
+				eq(product.sellerProfileId, sellerProfileId),
+				eq(storeProduct.storeId, storeId),
+			),
+		)
+		.groupBy(product.status);
+
+	const result: Record<ProductStatus, number> = {
+		active: 0,
+		disabled: 0,
+		trashed: 0,
+	};
+	for (const r of rows) {
+		result[r.status as ProductStatus] = Number(r.count);
+	}
+	return result;
 }
 
 // ── getProduct ────────────────────────────────────────────────────────────────
@@ -394,6 +437,10 @@ export async function deleteProduct(params: DeleteProductParams) {
 	);
 	if (!accessible) throw new ServiceError(404, "Product not found");
 
+	if (check.status !== "trashed") {
+		throw new ServiceError(409, "Sposta prima il prodotto nel cestino");
+	}
+
 	// Fetch images to clean up S3 before cascade-deleting the product
 	const images = await db.query.productImage.findMany({
 		where: eq(productImage.productId, productId),
@@ -465,4 +512,253 @@ export async function lookupProductByEan(
 		macroCategoryId,
 		categoryIds,
 	};
+}
+
+// ── updateProductStatus ───────────────────────────────────────────────────────
+
+interface UpdateProductStatusParams {
+	productId: string;
+	sellerProfileId: string;
+	accessibleStoreIds: string[];
+	actorUserId: string;
+	status: ProductStatus;
+}
+
+function deriveAuditAction(
+	previous: ProductStatus,
+	next: ProductStatus,
+): ProductAuditAction {
+	if (next === "trashed") return "trashed";
+	if (previous === "trashed") return "restored";
+	if (next === "disabled") return "disabled";
+	return "enabled";
+}
+
+export async function updateProductStatus(params: UpdateProductStatusParams) {
+	const {
+		productId,
+		sellerProfileId,
+		accessibleStoreIds,
+		actorUserId,
+		status,
+	} = params;
+
+	const found = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: { storeProducts: { columns: { storeId: true } } },
+	});
+	if (!found) throw new ServiceError(404, "Product not found");
+
+	const accessible = found.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) throw new ServiceError(404, "Product not found");
+
+	if (found.status === status) return found;
+
+	return db.transaction(async (tx) => {
+		const [updated] = await tx
+			.update(product)
+			.set({ status, updatedAt: new Date() })
+			.where(eq(product.id, productId))
+			.returning();
+
+		const action = deriveAuditAction(found.status, status);
+		await recordProductAudit(
+			{
+				productId,
+				actorUserId,
+				action,
+				metadata:
+					action === "restored"
+						? { previousStatus: found.status, newStatus: status }
+						: undefined,
+			},
+			tx,
+		);
+
+		return updated;
+	});
+}
+
+// ── bulkUpdateProductStatus ───────────────────────────────────────────────────
+
+interface BulkUpdateParams {
+	sellerProfileId: string;
+	accessibleStoreIds: string[];
+	actorUserId: string;
+	productIds: string[];
+	status: ProductStatus;
+}
+
+interface BulkResult {
+	succeeded: string[];
+	failed: { productId: string; reason: "not_found" | "no_access" }[];
+}
+
+export async function bulkUpdateProductStatus(
+	params: BulkUpdateParams,
+): Promise<BulkResult> {
+	const {
+		sellerProfileId,
+		accessibleStoreIds,
+		actorUserId,
+		productIds,
+		status,
+	} = params;
+
+	if (productIds.length === 0) return { succeeded: [], failed: [] };
+
+	return db.transaction(async (tx) => {
+		// 1. Carica i prodotti del seller con relativi storeIds
+		const ownedRows = await tx
+			.select({
+				id: product.id,
+				status: product.status,
+				storeId: storeProduct.storeId,
+			})
+			.from(product)
+			.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+			.where(
+				and(
+					inArray(product.id, productIds),
+					eq(product.sellerProfileId, sellerProfileId),
+				),
+			);
+
+		// 2. Determina ownership / accessibility
+		const ownedIds = new Set<string>();
+		const accessibleIds = new Set<string>();
+		const previousStatusByProduct = new Map<string, ProductStatus>();
+		for (const r of ownedRows) {
+			ownedIds.add(r.id);
+			previousStatusByProduct.set(r.id, r.status as ProductStatus);
+			if (accessibleStoreIds.includes(r.storeId)) accessibleIds.add(r.id);
+		}
+
+		const failed: BulkResult["failed"] = [];
+		const accessibleArr: string[] = [];
+		for (const id of productIds) {
+			if (!ownedIds.has(id)) {
+				failed.push({ productId: id, reason: "not_found" });
+			} else if (!accessibleIds.has(id)) {
+				failed.push({ productId: id, reason: "no_access" });
+			} else {
+				accessibleArr.push(id);
+			}
+		}
+
+		// 3. Filter to those whose status actually changes
+		const toUpdate = accessibleArr.filter(
+			(id) => previousStatusByProduct.get(id) !== status,
+		);
+
+		if (toUpdate.length > 0) {
+			await tx
+				.update(product)
+				.set({ status, updatedAt: new Date() })
+				.where(inArray(product.id, toUpdate));
+
+			// 4. Audit batch
+			const entries = toUpdate.map((id) => {
+				const prev = previousStatusByProduct.get(id) as ProductStatus;
+				const action = deriveAuditAction(prev, status);
+				return {
+					productId: id,
+					actorUserId,
+					action,
+					metadata:
+						action === "restored"
+							? { previousStatus: prev, newStatus: status }
+							: undefined,
+				};
+			});
+			await recordProductAuditBatch(entries, tx);
+		}
+
+		return { succeeded: accessibleArr, failed };
+	});
+}
+
+// ── bulkDeletePermanent ───────────────────────────────────────────────────────
+
+interface BulkDeleteParams {
+	sellerProfileId: string;
+	accessibleStoreIds: string[];
+	productIds: string[];
+}
+
+interface BulkDeleteResult {
+	succeeded: string[];
+	failed: {
+		productId: string;
+		reason: "not_found" | "no_access" | "not_in_trash";
+	}[];
+}
+
+export async function bulkDeletePermanent(
+	params: BulkDeleteParams,
+): Promise<BulkDeleteResult> {
+	const { sellerProfileId, accessibleStoreIds, productIds } = params;
+
+	if (productIds.length === 0) return { succeeded: [], failed: [] };
+
+	// Categorize ownership and trashed-ness BEFORE the transaction
+	const ownedRows = await db
+		.select({
+			id: product.id,
+			status: product.status,
+			storeId: storeProduct.storeId,
+		})
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(
+			and(
+				inArray(product.id, productIds),
+				eq(product.sellerProfileId, sellerProfileId),
+			),
+		);
+
+	const ownedIds = new Set<string>();
+	const accessibleIds = new Set<string>();
+	const trashedIds = new Set<string>();
+	for (const r of ownedRows) {
+		ownedIds.add(r.id);
+		if (accessibleStoreIds.includes(r.storeId)) accessibleIds.add(r.id);
+		if (r.status === "trashed") trashedIds.add(r.id);
+	}
+
+	const failed: BulkDeleteResult["failed"] = [];
+	const toDelete: string[] = [];
+	for (const id of productIds) {
+		if (!ownedIds.has(id)) {
+			failed.push({ productId: id, reason: "not_found" });
+		} else if (!accessibleIds.has(id)) {
+			failed.push({ productId: id, reason: "no_access" });
+		} else if (!trashedIds.has(id)) {
+			failed.push({ productId: id, reason: "not_in_trash" });
+		} else {
+			toDelete.push(id);
+		}
+	}
+
+	if (toDelete.length === 0) return { succeeded: [], failed };
+
+	// Fetch S3 keys before delete
+	const images = await db
+		.select({ key: productImage.key })
+		.from(productImage)
+		.where(inArray(productImage.productId, toDelete));
+
+	await db.transaction(async (tx) => {
+		await tx.delete(product).where(inArray(product.id, toDelete));
+	});
+
+	// Best-effort S3 cleanup outside transaction
+	await Promise.allSettled(images.map((img) => s3.delete(img.key)));
+
+	return { succeeded: toDelete, failed };
 }

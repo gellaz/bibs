@@ -15,11 +15,12 @@ export async function refundStockAndPoints(
 		id: string;
 		customerProfileId: string;
 		pointsSpent: number;
-		items: { storeProductId: string; quantity: number }[];
+		items: { storeProductId: string | null; quantity: number }[];
 	},
 ) {
-	// Restock items
+	// Restock items — skip orphans whose store_product was hard-deleted (FK now null)
 	for (const item of order.items) {
+		if (!item.storeProductId) continue;
 		await tx
 			.update(storeProduct)
 			.set({ stock: sql`${storeProduct.stock} + ${item.quantity}` })

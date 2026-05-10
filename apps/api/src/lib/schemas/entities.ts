@@ -259,11 +259,69 @@ export const ProductSchema = t.Object({
 	name: t.String(),
 	description: t.Nullable(t.String()),
 	price: t.String({ description: "Prezzo in formato decimale (es. '9.99')" }),
-	isActive: t.Boolean({ description: "Se il prodotto è attivo e visibile" }),
+	status: t.Union(
+		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
+		{
+			description:
+				"Stato del prodotto: 'active' (visibile), 'disabled' (nascosto al customer), 'trashed' (in cestino, eliminabile fisicamente)",
+			default: "active",
+		},
+	),
 	ean: t.Nullable(t.String({ description: "Codice EAN-8 o EAN-13" })),
 	brandId: t.Nullable(t.String({ description: "ID del brand del venditore" })),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
+});
+
+export const ProductStatusBody = t.Object({
+	status: t.Union(
+		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
+		{ description: "Nuovo stato del prodotto" },
+	),
+});
+
+export const BulkStatusBody = t.Object({
+	productIds: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
+	status: t.Union(
+		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
+		{ description: "Stato target da applicare a tutti gli ID" },
+	),
+});
+
+export const BulkStatusResult = t.Object({
+	succeeded: t.Array(t.String(), {
+		description: "ID dei prodotti cambiati (o già nello stato richiesto)",
+	}),
+	failed: t.Array(
+		t.Object({
+			productId: t.String(),
+			reason: t.Union([t.Literal("not_found"), t.Literal("no_access")]),
+		}),
+	),
+});
+
+export const ProductStatusCounts = t.Object({
+	active: t.Integer({ minimum: 0 }),
+	disabled: t.Integer({ minimum: 0 }),
+	trashed: t.Integer({ minimum: 0 }),
+});
+
+export const BulkDeleteBody = t.Object({
+	productIds: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
+});
+
+export const BulkDeleteResult = t.Object({
+	succeeded: t.Array(t.String()),
+	failed: t.Array(
+		t.Object({
+			productId: t.String(),
+			reason: t.Union([
+				t.Literal("not_found"),
+				t.Literal("no_access"),
+				t.Literal("not_in_trash"),
+			]),
+		}),
+	),
 });
 
 export const EanLookupResultSchema = t.Object({
@@ -383,7 +441,32 @@ export const OrderSchema = t.Object({
 export const OrderItemSchema = t.Object({
 	id: t.String(),
 	orderId: t.String(),
-	storeProductId: t.String(),
+	storeProductId: t.Nullable(
+		t.String({
+			description:
+				"FK al store_product. NULL se il prodotto è stato rimosso dopo l'ordine",
+		}),
+	),
+	productId: t.Nullable(
+		t.String({
+			description:
+				"FK al product. NULL se il prodotto è stato rimosso dopo l'ordine",
+		}),
+	),
+	productName: t.String({
+		description: "Snapshot del nome prodotto al momento dell'ordine",
+	}),
+	productEan: t.Nullable(
+		t.String({ description: "Snapshot EAN al momento dell'ordine" }),
+	),
+	brandName: t.Nullable(
+		t.String({ description: "Snapshot nome brand al momento dell'ordine" }),
+	),
+	productImageUrl: t.Nullable(
+		t.String({
+			description: "Snapshot URL prima immagine al momento dell'ordine",
+		}),
+	),
 	quantity: t.Number({ minimum: 1, description: "Quantità ordinata" }),
 	unitPrice: t.String({
 		description: "Prezzo unitario al momento dell'ordine",

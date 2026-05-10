@@ -77,10 +77,10 @@ const StoreProductWithProduct = t.Object({
 	product: ProductSchema,
 });
 
-// OrderItem + storeProduct with product
+// OrderItem + storeProduct with product (storeProduct nullable: FK is set null on hard delete)
 const OrderItemWithProduct = t.Object({
 	...OrderItemSchema.properties,
-	storeProduct: StoreProductWithProduct,
+	storeProduct: t.Nullable(StoreProductWithProduct),
 });
 
 // CustomerProfile + user (seller order view)

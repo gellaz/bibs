@@ -33,7 +33,8 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { customerProfile } from "@/db/schemas/customer";
 import { order, orderItem } from "@/db/schemas/order";
-import { storeProduct } from "@/db/schemas/product";
+import { product as productTable, storeProduct } from "@/db/schemas/product";
+import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
 import {
 	cancelOrder,
@@ -42,6 +43,7 @@ import {
 } from "@/modules/customer/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
+	createTestBrand,
 	createTestCustomer,
 	createTestProduct,
 	createTestSeller,
@@ -118,6 +120,52 @@ describe("createOrder — direct", () => {
 			.where(eq(orderItem.orderId, result.id));
 		expect(items).toHaveLength(1);
 		expect(items[0].quantity).toBe(2);
+	});
+
+	it("populates snapshot fields on order_items at checkout", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "snap@test.com" });
+		const testStore = await createTestStore(db, seller.profile.id);
+		const b = await createTestBrand(db, seller.profile.id, "Acme");
+		const prod = await createTestProduct(db, seller.profile.id, {
+			name: "Pizza Margherita",
+		});
+		// Imposta brand_id e ean dopo la creazione (createTestProduct fixture non li accetta)
+		await db
+			.update(productTable)
+			.set({ brandId: b.id, ean: "12345678" })
+			.where(eq(productTable.id, prod.id));
+		await db.insert(productImage).values({
+			productId: prod.id,
+			url: "https://example.com/img.png",
+			key: "img-key",
+			position: 0,
+		});
+		const sp = await createTestStoreProduct(db, testStore.id, prod.id, {
+			stock: 5,
+		});
+		const customer = await createTestCustomer(db, { email: "c@test.com" });
+
+		const newOrder = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: "direct",
+			storeId: testStore.id,
+			items: [{ storeProductId: sp.id, quantity: 1 }],
+		});
+
+		const items = await db.query.orderItem.findMany({
+			where: eq(orderItem.orderId, newOrder.id),
+		});
+		expect(items).toHaveLength(1);
+		expect(items[0]).toMatchObject({
+			productName: "Pizza Margherita",
+			productEan: "12345678",
+			brandName: "Acme",
+			productImageUrl: "https://example.com/img.png",
+			productId: prod.id,
+			storeProductId: sp.id,
+		});
 	});
 
 	it("awards loyalty points for direct orders", async () => {

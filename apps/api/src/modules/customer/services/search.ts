@@ -24,7 +24,7 @@ export async function searchProducts(params: SearchParams) {
 	const { page, limit, offset } = parsePagination(params);
 
 	const conditions: ReturnType<typeof sql>[] = [
-		sql`${product.isActive} = true`,
+		sql`${product.status} = 'active'`,
 	];
 
 	// Full-text search (Italian)

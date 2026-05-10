@@ -27,7 +27,10 @@ function EditProductPage() {
 	const handleNameChange = useCallback((value: string) => setName(value), []);
 
 	const goBack = () =>
-		void navigate({ to: "/products", search: { page: 1, limit: 20 } });
+		void navigate({
+			to: "/products",
+			search: { page: 1, limit: 20, statusFilter: "active" },
+		});
 
 	const {
 		data: product,

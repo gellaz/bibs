@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { customerAddress } from "./address";
 import { customerProfile } from "./customer";
-import { storeProduct } from "./product";
+import { product, storeProduct } from "./product";
 import { store } from "./store";
 
 export const orderTypes = [
@@ -117,15 +117,29 @@ export const orderItem = pgTable(
 		orderId: text("order_id")
 			.notNull()
 			.references(() => order.id, { onDelete: "cascade" }),
-		storeProductId: text("store_product_id")
-			.notNull()
-			.references(() => storeProduct.id, { onDelete: "restrict" }),
+
+		// === snapshot al momento dell'ordine (NUOVO) ===
+		productName: text("product_name").notNull(),
+		productEan: text("product_ean"),
+		brandName: text("brand_name"),
+		productImageUrl: text("product_image_url"),
+
+		// === soft FK (CAMBIATO da NOT NULL/restrict a nullable/set null) ===
+		productId: text("product_id").references(() => product.id, {
+			onDelete: "set null",
+		}),
+		storeProductId: text("store_product_id").references(() => storeProduct.id, {
+			onDelete: "set null",
+		}),
+
+		// === esistenti invariati ===
 		quantity: integer("quantity").notNull(),
 		unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
 	},
 	(table) => [
 		index("order_item_order_id_idx").on(table.orderId),
 		index("order_item_store_product_id_idx").on(table.storeProductId),
+		index("order_item_product_id_idx").on(table.productId),
 		check("order_item_quantity_positive", sql`${table.quantity} > 0`),
 		check("order_item_unit_price_non_negative", sql`${table.unitPrice} >= 0`),
 	],
@@ -139,5 +153,9 @@ export const orderItemRelations = relations(orderItem, ({ one }) => ({
 	storeProduct: one(storeProduct, {
 		fields: [orderItem.storeProductId],
 		references: [storeProduct.id],
+	}),
+	product: one(product, {
+		fields: [orderItem.productId],
+		references: [product.id],
 	}),
 }));

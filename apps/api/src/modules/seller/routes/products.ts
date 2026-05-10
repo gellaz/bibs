@@ -4,25 +4,36 @@ import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
+	BulkDeleteBody,
+	BulkDeleteResult,
+	BulkStatusBody,
+	BulkStatusResult,
 	CsvImportResultSchema,
 	EanLookupResultSchema,
 	OkMessage,
 	okPageRes,
 	okRes,
 	ProductSchema,
+	ProductStatusBody,
+	ProductStatusCounts,
 	ProductWithRelationsSchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { CreateProductBody } from "@/lib/schemas/forms";
 import { ensureStoreAccess, withSeller } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
+	bulkDeletePermanent,
+	bulkUpdateProductStatus,
 	createProduct,
 	deleteProduct,
 	getProduct,
+	getProductStatusCounts,
 	listProducts,
 	lookupProductByEan,
 	updateProduct,
+	updateProductStatus,
 } from "../services/products";
 
 export const productsRoutes = new Elysia()
@@ -40,6 +51,7 @@ export const productsRoutes = new Elysia()
 				storeId: query.storeId,
 				page: query.page,
 				limit: query.limit,
+				statusFilter: query.statusFilter,
 			});
 			return okPage(result.data, result.pagination);
 		},
@@ -48,13 +60,26 @@ export const productsRoutes = new Elysia()
 				PaginationQuery,
 				t.Object({
 					storeId: t.String({ description: "ID del negozio attivo" }),
+					statusFilter: t.Optional(
+						t.Union(
+							[
+								t.Literal("active"),
+								t.Literal("disabled"),
+								t.Literal("trashed"),
+							],
+							{
+								description: "Filtra per stato. Default 'active'.",
+								default: "active",
+							},
+						),
+					),
 				}),
 			]),
 			response: withErrors({ 200: okPageRes(ProductWithRelationsSchema) }),
 			detail: {
 				summary: "Lista prodotti del negozio",
 				description:
-					"Restituisce i prodotti disponibili nel negozio specificato (filtrati via store_products).",
+					"Restituisce i prodotti del negozio filtrati per stato. Senza statusFilter, ritorna solo i prodotti attivi.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -80,6 +105,35 @@ export const productsRoutes = new Elysia()
 				summary: "Lookup prodotto per EAN",
 				description:
 					"Restituisce i dati pre-compilabili dell'ultimo prodotto creato con questo EAN (cross-seller). Esclude prezzo e immagini. Ritorna null se nessun prodotto matcha.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.get(
+		"/products/status-counts",
+		async (ctx) => {
+			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
+
+			const counts = await getProductStatusCounts({
+				sellerProfileId: sp.id,
+				storeId: query.storeId,
+			});
+			return ok(counts);
+		},
+		{
+			query: t.Object({
+				storeId: t.String({ description: "ID del negozio attivo" }),
+			}),
+			response: withErrors({ 200: okRes(ProductStatusCounts) }),
+			detail: {
+				summary: "Conta prodotti per stato",
+				description:
+					"Ritorna il numero di prodotti per ciascun stato (active/disabled/trashed) nel negozio specificato.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -279,6 +333,130 @@ export const productsRoutes = new Elysia()
 			},
 		},
 	)
+	.patch(
+		"/products/:productId/status",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, body, user, store } = sellerCtx;
+			const pino = getLogger(store);
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
+
+			const updated = await updateProductStatus({
+				productId: params.productId,
+				sellerProfileId: sp.id,
+				accessibleStoreIds,
+				actorUserId: user.id,
+				status: body.status,
+			});
+
+			pino.info(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					productId: updated.id,
+					status: updated.status,
+					action: "product_status_updated",
+				},
+				"Stato prodotto aggiornato",
+			);
+
+			return ok(updated);
+		},
+		{
+			params: t.Object({
+				productId: t.String({ description: "ID del prodotto" }),
+			}),
+			body: ProductStatusBody,
+			response: withErrors({ 200: okRes(ProductSchema) }),
+			detail: {
+				summary: "Aggiorna stato prodotto",
+				description:
+					"Cambia lo stato del prodotto (active/disabled/trashed). Scrive un'entry sull'audit log se lo stato cambia. No-op se lo stato è già quello richiesto.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.post(
+		"/products/bulk/status",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store } = sellerCtx;
+			const pino = getLogger(store);
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
+
+			const result = await bulkUpdateProductStatus({
+				sellerProfileId: sp.id,
+				accessibleStoreIds,
+				actorUserId: user.id,
+				productIds: body.productIds,
+				status: body.status,
+			});
+
+			pino.info(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					requested: body.productIds.length,
+					succeeded: result.succeeded.length,
+					failed: result.failed.length,
+					status: body.status,
+					action: "products_bulk_status_updated",
+				},
+				"Bulk update di stato prodotti",
+			);
+
+			return ok(result);
+		},
+		{
+			body: BulkStatusBody,
+			response: withErrors({ 200: okRes(BulkStatusResult) }),
+			detail: {
+				summary: "Cambia stato di più prodotti",
+				description:
+					"Imposta lo stato (active/disabled/trashed) di più prodotti in un'unica chiamata. Best-effort: gli ID inaccessibili o non trovati finiscono in 'failed' con la reason. Limite: 100 ID per chiamata.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.post(
+		"/products/bulk/delete-permanent",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store } = sellerCtx;
+			const pino = getLogger(store);
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
+
+			const result = await bulkDeletePermanent({
+				sellerProfileId: sp.id,
+				accessibleStoreIds,
+				productIds: body.productIds,
+			});
+
+			pino.warn(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					requested: body.productIds.length,
+					succeeded: result.succeeded.length,
+					failed: result.failed.length,
+					action: "products_bulk_deleted_permanently",
+				},
+				"Bulk delete fisico prodotti",
+			);
+
+			return ok(result);
+		},
+		{
+			body: BulkDeleteBody,
+			response: withErrors({ 200: okRes(BulkDeleteResult) }),
+			detail: {
+				summary: "Elimina definitivamente più prodotti",
+				description:
+					"Elimina fisicamente più prodotti dal cestino in un'unica chiamata. Solo i prodotti con status='trashed' vengono eliminati; gli altri finiscono in 'failed'. Limite: 100 ID per chiamata.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
 	.delete(
 		"/products/:productId",
 		async (ctx) => {
@@ -310,11 +488,11 @@ export const productsRoutes = new Elysia()
 			params: t.Object({
 				productId: t.String({ description: "ID del prodotto" }),
 			}),
-			response: withErrors({ 200: OkMessage }),
+			response: withConflictErrors({ 200: OkMessage }),
 			detail: {
-				summary: "Elimina prodotto",
+				summary: "Elimina prodotto definitivamente",
 				description:
-					"Elimina un prodotto e tutte le sue classificazioni, stock e immagini associate (cascade).",
+					"Elimina fisicamente un prodotto e tutti i dati associati (immagini, stock, classificazioni). Richiede che il prodotto sia in cestino (status='trashed'); altrimenti restituisce 409. Per nascondere un prodotto senza eliminarlo, usa PATCH /:id/status con status='disabled' o 'trashed'.",
 				tags: ["Seller - Products"],
 			},
 		},
