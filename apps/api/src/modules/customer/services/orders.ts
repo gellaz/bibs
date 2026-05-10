@@ -118,6 +118,11 @@ export async function createOrder(params: CreateOrderParams) {
 		let totalCents = 0;
 		const resolvedItems: {
 			storeProductId: string;
+			productId: string;
+			productName: string;
+			productEan: string | null;
+			brandName: string | null;
+			productImageUrl: string | null;
 			quantity: number;
 			unitPrice: string;
 		}[] = [];
@@ -128,7 +133,17 @@ export async function createOrder(params: CreateOrderParams) {
 					eq(storeProduct.id, item.storeProductId),
 					eq(storeProduct.storeId, storeId),
 				),
-				with: { product: true },
+				with: {
+					product: {
+						with: {
+							brand: true,
+							images: {
+								orderBy: (img, { asc }) => [asc(img.position)],
+								limit: 1,
+							},
+						},
+					},
+				},
 			});
 
 			if (!sp)
@@ -145,6 +160,11 @@ export async function createOrder(params: CreateOrderParams) {
 			totalCents += toCents(sp.product.price) * item.quantity;
 			resolvedItems.push({
 				storeProductId: sp.id,
+				productId: sp.product.id,
+				productName: sp.product.name,
+				productEan: sp.product.ean ?? null,
+				brandName: sp.product.brand?.name ?? null,
+				productImageUrl: sp.product.images[0]?.url ?? null,
 				quantity: item.quantity,
 				unitPrice: sp.product.price,
 			});
@@ -190,11 +210,16 @@ export async function createOrder(params: CreateOrderParams) {
 			})
 			.returning();
 
-		// Create order items
+		// Create order items with product snapshot for historical integrity
 		await tx.insert(orderItem).values(
 			resolvedItems.map((item) => ({
 				orderId: newOrder.id,
 				storeProductId: item.storeProductId,
+				productId: item.productId,
+				productName: item.productName,
+				productEan: item.productEan,
+				brandName: item.brandName,
+				productImageUrl: item.productImageUrl,
 				quantity: item.quantity,
 				unitPrice: item.unitPrice,
 			})),

@@ -441,7 +441,32 @@ export const OrderSchema = t.Object({
 export const OrderItemSchema = t.Object({
 	id: t.String(),
 	orderId: t.String(),
-	storeProductId: t.String(),
+	storeProductId: t.Nullable(
+		t.String({
+			description:
+				"FK al store_product. NULL se il prodotto è stato rimosso dopo l'ordine",
+		}),
+	),
+	productId: t.Nullable(
+		t.String({
+			description:
+				"FK al product. NULL se il prodotto è stato rimosso dopo l'ordine",
+		}),
+	),
+	productName: t.String({
+		description: "Snapshot del nome prodotto al momento dell'ordine",
+	}),
+	productEan: t.Nullable(
+		t.String({ description: "Snapshot EAN al momento dell'ordine" }),
+	),
+	brandName: t.Nullable(
+		t.String({ description: "Snapshot nome brand al momento dell'ordine" }),
+	),
+	productImageUrl: t.Nullable(
+		t.String({
+			description: "Snapshot URL prima immagine al momento dell'ordine",
+		}),
+	),
 	quantity: t.Number({ minimum: 1, description: "Quantità ordinata" }),
 	unitPrice: t.String({
 		description: "Prezzo unitario al momento dell'ordine",
