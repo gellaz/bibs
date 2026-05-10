@@ -300,6 +300,24 @@ export const BulkStatusResult = t.Object({
 	),
 });
 
+export const BulkDeleteBody = t.Object({
+	productIds: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
+});
+
+export const BulkDeleteResult = t.Object({
+	succeeded: t.Array(t.String()),
+	failed: t.Array(
+		t.Object({
+			productId: t.String(),
+			reason: t.Union([
+				t.Literal("not_found"),
+				t.Literal("no_access"),
+				t.Literal("not_in_trash"),
+			]),
+		}),
+	),
+});
+
 export const EanLookupResultSchema = t.Object({
 	name: t.String(),
 	description: t.Nullable(t.String()),

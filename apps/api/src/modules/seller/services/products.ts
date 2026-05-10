@@ -642,3 +642,83 @@ export async function bulkUpdateProductStatus(
 		return { succeeded: accessibleArr, failed };
 	});
 }
+
+// ── bulkDeletePermanent ───────────────────────────────────────────────────────
+
+interface BulkDeleteParams {
+	sellerProfileId: string;
+	accessibleStoreIds: string[];
+	productIds: string[];
+}
+
+interface BulkDeleteResult {
+	succeeded: string[];
+	failed: {
+		productId: string;
+		reason: "not_found" | "no_access" | "not_in_trash";
+	}[];
+}
+
+export async function bulkDeletePermanent(
+	params: BulkDeleteParams,
+): Promise<BulkDeleteResult> {
+	const { sellerProfileId, accessibleStoreIds, productIds } = params;
+
+	if (productIds.length === 0) return { succeeded: [], failed: [] };
+
+	// Categorize ownership and trashed-ness BEFORE the transaction
+	const ownedRows = await db
+		.select({
+			id: product.id,
+			status: product.status,
+			storeId: storeProduct.storeId,
+		})
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(
+			and(
+				inArray(product.id, productIds),
+				eq(product.sellerProfileId, sellerProfileId),
+			),
+		);
+
+	const ownedIds = new Set<string>();
+	const accessibleIds = new Set<string>();
+	const trashedIds = new Set<string>();
+	for (const r of ownedRows) {
+		ownedIds.add(r.id);
+		if (accessibleStoreIds.includes(r.storeId)) accessibleIds.add(r.id);
+		if (r.status === "trashed") trashedIds.add(r.id);
+	}
+
+	const failed: BulkDeleteResult["failed"] = [];
+	const toDelete: string[] = [];
+	for (const id of productIds) {
+		if (!ownedIds.has(id)) {
+			failed.push({ productId: id, reason: "not_found" });
+		} else if (!accessibleIds.has(id)) {
+			failed.push({ productId: id, reason: "no_access" });
+		} else if (!trashedIds.has(id)) {
+			failed.push({ productId: id, reason: "not_in_trash" });
+		} else {
+			toDelete.push(id);
+		}
+	}
+
+	if (toDelete.length === 0) return { succeeded: [], failed };
+
+	// Fetch S3 keys before delete
+	const images = await db
+		.select({ key: productImage.key })
+		.from(productImage)
+		.where(inArray(productImage.productId, toDelete));
+
+	await db.transaction(async (tx) => {
+		await tx.delete(product).where(inArray(product.id, toDelete));
+	});
+
+	// Best-effort S3 cleanup outside transaction
+	await Promise.allSettled(images.map((img) => s3.delete(img.key)));
+
+	return { succeeded: toDelete, failed };
+}

@@ -26,7 +26,10 @@ mock.module("@/lib/s3", () => ({
 	s3: { delete: mock(async () => {}) },
 }));
 
-import { bulkUpdateProductStatus } from "@/modules/seller/services/products";
+import {
+	bulkDeletePermanent,
+	bulkUpdateProductStatus,
+} from "@/modules/seller/services/products";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestProduct,
@@ -132,5 +135,43 @@ describe("bulkUpdateProductStatus", () => {
 		const audit = await db.query.productAuditLog.findMany();
 		expect(audit).toHaveLength(1);
 		expect(audit[0].productId).toBe(pActive.id);
+	});
+});
+
+describe("bulkDeletePermanent", () => {
+	it("deletes only products in trash and reports the rest as failed", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const pTrash = await createTestProduct(db, seller.profile.id, {
+			name: "P-trash",
+			status: "trashed",
+		});
+		const pActive = await createTestProduct(db, seller.profile.id, {
+			name: "P-active",
+			status: "active",
+		});
+		await createTestStoreProduct(db, store.id, pTrash.id);
+		await createTestStoreProduct(db, store.id, pActive.id);
+
+		const result = await bulkDeletePermanent({
+			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [store.id],
+			productIds: [pTrash.id, pActive.id, "non-existent"],
+		});
+
+		expect(result.succeeded).toEqual([pTrash.id]);
+		const failedById = new Map(
+			result.failed.map((f) => [f.productId, f.reason]),
+		);
+		expect(failedById.get(pActive.id)).toBe("not_in_trash");
+		expect(failedById.get("non-existent")).toBe("not_found");
+
+		// Verify deletion
+		const remaining = await db.query.product.findMany();
+		expect(remaining.map((p) => p.id)).toEqual(
+			expect.arrayContaining([pActive.id]),
+		);
+		expect(remaining.find((p) => p.id === pTrash.id)).toBeUndefined();
 	});
 });

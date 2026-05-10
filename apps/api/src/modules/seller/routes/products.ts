@@ -4,6 +4,8 @@ import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
+	BulkDeleteBody,
+	BulkDeleteResult,
 	BulkStatusBody,
 	BulkStatusResult,
 	CsvImportResultSchema,
@@ -21,6 +23,7 @@ import { CreateProductBody } from "@/lib/schemas/forms";
 import { ensureStoreAccess, withSeller } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
+	bulkDeletePermanent,
 	bulkUpdateProductStatus,
 	createProduct,
 	deleteProduct,
@@ -366,6 +369,45 @@ export const productsRoutes = new Elysia()
 				summary: "Cambia stato di più prodotti",
 				description:
 					"Imposta lo stato (active/disabled/trashed) di più prodotti in un'unica chiamata. Best-effort: gli ID inaccessibili o non trovati finiscono in 'failed' con la reason. Limite: 100 ID per chiamata.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.post(
+		"/products/bulk/delete-permanent",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store } = sellerCtx;
+			const pino = getLogger(store);
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
+
+			const result = await bulkDeletePermanent({
+				sellerProfileId: sp.id,
+				accessibleStoreIds,
+				productIds: body.productIds,
+			});
+
+			pino.warn(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					requested: body.productIds.length,
+					succeeded: result.succeeded.length,
+					failed: result.failed.length,
+					action: "products_bulk_deleted_permanently",
+				},
+				"Bulk delete fisico prodotti",
+			);
+
+			return ok(result);
+		},
+		{
+			body: BulkDeleteBody,
+			response: withErrors({ 200: okRes(BulkDeleteResult) }),
+			detail: {
+				summary: "Elimina definitivamente più prodotti",
+				description:
+					"Elimina fisicamente più prodotti dal cestino in un'unica chiamata. Solo i prodotti con status='trashed' vengono eliminati; gli altri finiscono in 'failed'. Limite: 100 ID per chiamata.",
 				tags: ["Seller - Products"],
 			},
 		},
