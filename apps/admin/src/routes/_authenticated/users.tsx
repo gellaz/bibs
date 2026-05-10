@@ -1,3 +1,5 @@
+import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
 	Table,
@@ -8,7 +10,7 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { UsersIcon } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { UserRoleBadge } from "@/components/user-role-badge";
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/users")({
 
 function UsersPage() {
 	const { page, limit } = Route.useSearch();
+	const navigate = useNavigate({ from: "/users" });
 	const offset = (page - 1) * limit;
 
 	const { data, isLoading, error } = useQuery({
@@ -125,12 +128,29 @@ function UsersPage() {
 			)}
 
 			{total > 0 && (
-				<div className="text-muted-foreground flex items-center justify-between text-sm">
-					<div>
-						Pagina {page} di {totalPages}
-					</div>
-					<div>
-						Totale: {total} utent{total === 1 ? "e" : "i"}
+				<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+					<p className="text-muted-foreground text-sm tabular-nums">
+						{(page - 1) * limit + 1}–{Math.min(page * limit, total)} di {total}{" "}
+						utent{total === 1 ? "e" : "i"}
+					</p>
+					<div className="flex items-center gap-4">
+						<PageSizeSelector
+							pageSize={limit}
+							onPageSizeChange={(size) =>
+								void navigate({
+									search: (prev) => ({ ...prev, limit: size, page: 1 }),
+								})
+							}
+						/>
+						<DataPagination
+							page={page}
+							totalPages={totalPages}
+							onPageChange={(next) =>
+								void navigate({
+									search: (prev) => ({ ...prev, page: next }),
+								})
+							}
+						/>
 					</div>
 				</div>
 			)}

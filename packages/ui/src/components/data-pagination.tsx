@@ -80,11 +80,11 @@ function DataPagination({
 
 	return (
 		<Pagination className={cn("justify-start", className)}>
-			<PaginationContent>
+			<PaginationContent className="gap-1">
 				<PaginationItem>
 					<Button
-						variant="outline"
-						size="icon-sm"
+						variant="ghost"
+						size="icon"
 						disabled={page <= 1}
 						onClick={() => onPageChange(page - 1)}
 						aria-label="Pagina precedente"
@@ -102,16 +102,19 @@ function DataPagination({
 						);
 					}
 
+					const isActive = item === page;
 					return (
 						<PaginationItem key={item}>
 							<Button
-								variant={item === page ? "outline" : "ghost"}
-								size="icon-sm"
+								variant="ghost"
+								size="icon"
 								onClick={() => onPageChange(item)}
 								aria-label={`Pagina ${item}`}
-								aria-current={item === page ? "page" : undefined}
+								aria-current={isActive ? "page" : undefined}
 								className={cn(
-									item === page && "border-primary/30 font-semibold",
+									"tabular-nums",
+									isActive &&
+										"bg-foreground text-background hover:bg-foreground/90 hover:text-background font-semibold cursor-default",
 								)}
 							>
 								{item}
@@ -122,8 +125,8 @@ function DataPagination({
 
 				<PaginationItem>
 					<Button
-						variant="outline"
-						size="icon-sm"
+						variant="ghost"
+						size="icon"
 						disabled={page >= totalPages}
 						onClick={() => onPageChange(page + 1)}
 						aria-label="Pagina successiva"
