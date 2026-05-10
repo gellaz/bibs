@@ -475,15 +475,15 @@ export async function inviteTeamMember(
 	});
 
 	// Send invitation email
-	const businessName = profile.organization?.businessName ?? "Bibs";
+	const businessName = profile.organization?.businessName ?? "bibs";
 	const inviteUrl = `${env.SELLER_APP_URL}/invite/${invitation.invitationToken}`;
 
 	await sendEmail({
 		to: email,
-		subject: `Sei stato invitato a collaborare con ${businessName} — Bibs`,
+		subject: `${businessName} ti ha invitato a collaborare su bibs`,
 		html: [
 			`<p>Ciao,</p>`,
-			`<p><strong>${businessName}</strong> ti ha invitato a collaborare come membro del team su Bibs.</p>`,
+			`<p><strong>${businessName}</strong> ti ha invitato a collaborare come membro del team su bibs.</p>`,
 			`<p>Clicca sul link seguente per creare la tua password e accedere:</p>`,
 			`<p><a href="${inviteUrl}">${inviteUrl}</a></p>`,
 			`<p>Il link scade tra ${INVITATION_EXPIRY_DAYS} giorni.</p>`,

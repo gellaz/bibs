@@ -62,8 +62,8 @@ const app = new Elysia()
 		openapi({
 			documentation: {
 				info: {
-					title: "Bibs API",
-					description: "API per il marketplace di commercio locale Bibs",
+					title: "bibs API",
+					description: "API per il marketplace di commercio locale bibs",
 					version: "1.0.0",
 				},
 				tags: [
