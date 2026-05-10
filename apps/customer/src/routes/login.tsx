@@ -68,7 +68,7 @@ function LoginPage() {
 					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg font-bold">
 						B
 					</div>
-					<CardTitle className="text-xl">bibs</CardTitle>
+					<CardTitle className="font-display text-xl">bibs</CardTitle>
 					<CardDescription>Accedi con le tue credenziali</CardDescription>
 				</CardHeader>
 				<CardContent>

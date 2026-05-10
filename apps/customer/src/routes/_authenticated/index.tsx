@@ -8,7 +8,7 @@ function Home() {
 	return (
 		<div className="flex min-h-screen items-center justify-center">
 			<div className="text-center">
-				<h1 className="text-4xl font-bold">bibs</h1>
+				<h1 className="font-display text-4xl font-medium">bibs</h1>
 				<p className="mt-4 text-muted-foreground">
 					Welcome to the customer app
 				</p>

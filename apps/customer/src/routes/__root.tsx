@@ -54,7 +54,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function NotFound() {
 	return (
 		<div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-			<h1 className="text-4xl font-bold">404</h1>
+			<h1 className="font-display text-4xl font-bold">404</h1>
 			<p className="text-muted-foreground">Pagina non trovata</p>
 			<Link to="/" className="text-primary underline">
 				Torna alla home
