@@ -27,9 +27,13 @@ mock.module("@/lib/s3", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import { product as productTable } from "@/db/schemas/product";
 import { productAuditLog } from "@/db/schemas/product-audit-log";
 import { ServiceError } from "@/lib/errors";
-import { updateProductStatus } from "@/modules/seller/services/products";
+import {
+	deleteProduct,
+	updateProductStatus,
+} from "@/modules/seller/services/products";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestProduct,
@@ -156,5 +160,41 @@ describe("updateProductStatus", () => {
 				status: "disabled",
 			}),
 		).rejects.toBeInstanceOf(ServiceError);
+	});
+});
+
+describe("deleteProduct (permanent)", () => {
+	it("succeeds when product is in trash", async () => {
+		const { db, seller, store, product } = await makeAccessibleProduct({
+			status: "trashed",
+		});
+
+		const deleted = await deleteProduct({
+			productId: product.id,
+			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [store.id],
+		});
+		expect(deleted.id).toBe(product.id);
+
+		const remaining = await db.query.product.findFirst({
+			where: eq(productTable.id, product.id),
+		});
+		expect(remaining).toBeUndefined();
+	});
+
+	it("returns 409 when product is not in trash", async () => {
+		const { seller, store, product } = await makeAccessibleProduct({
+			status: "active",
+		});
+
+		await expect(
+			deleteProduct({
+				productId: product.id,
+				sellerProfileId: seller.profile.id,
+				accessibleStoreIds: [store.id],
+			}),
+		).rejects.toMatchObject({
+			status: 409,
+		});
 	});
 });

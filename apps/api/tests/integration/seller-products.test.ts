@@ -346,11 +346,13 @@ describe("updateProduct", () => {
 // ── deleteProduct ─────────────────────────────────────────────────────────────
 
 describe("deleteProduct", () => {
-	it("deletes an owned product", async () => {
+	it("deletes an owned product when status is trashed", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const s = await createTestStore(db, seller.profile.id);
-		const p = await createTestProduct(db, seller.profile.id);
+		const p = await createTestProduct(db, seller.profile.id, {
+			status: "trashed",
+		});
 		await createTestStoreProduct(db, s.id, p.id);
 
 		const deleted = await deleteProduct({

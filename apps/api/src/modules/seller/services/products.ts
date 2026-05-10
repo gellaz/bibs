@@ -397,6 +397,10 @@ export async function deleteProduct(params: DeleteProductParams) {
 	);
 	if (!accessible) throw new ServiceError(404, "Product not found");
 
+	if (check.status !== "trashed") {
+		throw new ServiceError(409, "Sposta prima il prodotto nel cestino");
+	}
+
 	// Fetch images to clean up S3 before cascade-deleting the product
 	const images = await db.query.productImage.findMany({
 		where: eq(productImage.productId, productId),

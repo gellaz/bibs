@@ -12,6 +12,7 @@ import {
 	ProductSchema,
 	ProductStatusBody,
 	ProductWithRelationsSchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { CreateProductBody } from "@/lib/schemas/forms";
@@ -355,11 +356,11 @@ export const productsRoutes = new Elysia()
 			params: t.Object({
 				productId: t.String({ description: "ID del prodotto" }),
 			}),
-			response: withErrors({ 200: OkMessage }),
+			response: withConflictErrors({ 200: OkMessage }),
 			detail: {
-				summary: "Elimina prodotto",
+				summary: "Elimina prodotto definitivamente",
 				description:
-					"Elimina un prodotto e tutte le sue classificazioni, stock e immagini associate (cascade).",
+					"Elimina fisicamente un prodotto e tutti i dati associati (immagini, stock, classificazioni). Richiede che il prodotto sia in cestino (status='trashed'); altrimenti restituisce 409. Per nascondere un prodotto senza eliminarlo, usa PATCH /:id/status con status='disabled' o 'trashed'.",
 				tags: ["Seller - Products"],
 			},
 		},
