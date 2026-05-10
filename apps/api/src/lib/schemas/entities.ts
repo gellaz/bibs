@@ -273,6 +273,13 @@ export const ProductSchema = t.Object({
 	updatedAt: t.Date(),
 });
 
+export const ProductStatusBody = t.Object({
+	status: t.Union(
+		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
+		{ description: "Nuovo stato del prodotto" },
+	),
+});
+
 export const EanLookupResultSchema = t.Object({
 	name: t.String(),
 	description: t.Nullable(t.String()),

@@ -4,14 +4,17 @@ import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
 import { productCategory } from "@/db/schemas/category";
 import {
+	type ProductStatus,
 	product,
 	productCategoryAssignment,
 	storeProduct,
 } from "@/db/schemas/product";
+import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
+import { recordProductAudit } from "./product-audit";
 
 // ── Brand resolution helper ───────────────────────────────────────────────────
 //
@@ -465,4 +468,74 @@ export async function lookupProductByEan(
 		macroCategoryId,
 		categoryIds,
 	};
+}
+
+// ── updateProductStatus ───────────────────────────────────────────────────────
+
+interface UpdateProductStatusParams {
+	productId: string;
+	sellerProfileId: string;
+	accessibleStoreIds: string[];
+	actorUserId: string;
+	status: ProductStatus;
+}
+
+function deriveAuditAction(
+	previous: ProductStatus,
+	next: ProductStatus,
+): ProductAuditAction {
+	if (next === "trashed") return "trashed";
+	if (previous === "trashed") return "restored";
+	if (next === "disabled") return "disabled";
+	return "enabled";
+}
+
+export async function updateProductStatus(params: UpdateProductStatusParams) {
+	const {
+		productId,
+		sellerProfileId,
+		accessibleStoreIds,
+		actorUserId,
+		status,
+	} = params;
+
+	const found = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: { storeProducts: { columns: { storeId: true } } },
+	});
+	if (!found) throw new ServiceError(404, "Product not found");
+
+	const accessible = found.storeProducts.some((sp) =>
+		accessibleStoreIds.includes(sp.storeId),
+	);
+	if (!accessible) throw new ServiceError(404, "Product not found");
+
+	if (found.status === status) return found;
+
+	return db.transaction(async (tx) => {
+		const [updated] = await tx
+			.update(product)
+			.set({ status, updatedAt: new Date() })
+			.where(eq(product.id, productId))
+			.returning();
+
+		const action = deriveAuditAction(found.status, status);
+		await recordProductAudit(
+			{
+				productId,
+				actorUserId,
+				action,
+				metadata:
+					action === "restored"
+						? { previousStatus: found.status, newStatus: status }
+						: undefined,
+			},
+			tx,
+		);
+
+		return updated;
+	});
 }

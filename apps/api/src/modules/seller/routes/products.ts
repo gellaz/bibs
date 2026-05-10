@@ -10,6 +10,7 @@ import {
 	okPageRes,
 	okRes,
 	ProductSchema,
+	ProductStatusBody,
 	ProductWithRelationsSchema,
 	withErrors,
 } from "@/lib/schemas";
@@ -23,6 +24,7 @@ import {
 	listProducts,
 	lookupProductByEan,
 	updateProduct,
+	updateProductStatus,
 } from "../services/products";
 
 export const productsRoutes = new Elysia()
@@ -275,6 +277,49 @@ export const productsRoutes = new Elysia()
 				summary: "Importa prodotti da CSV",
 				description:
 					"Importa prodotti in blocco da un file CSV. Colonne attese: name, description, price, categories (nomi separati da ';'). Colonne opzionali: ean (8 o 13 cifre), brand (match-or-create per venditore). Restituisce il numero di prodotti creati, le righe saltate per EAN duplicato, e gli eventuali errori per riga.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.patch(
+		"/products/:productId/status",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, body, user, store } = sellerCtx;
+			const pino = getLogger(store);
+			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
+
+			const updated = await updateProductStatus({
+				productId: params.productId,
+				sellerProfileId: sp.id,
+				accessibleStoreIds,
+				actorUserId: user.id,
+				status: body.status,
+			});
+
+			pino.info(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					productId: updated.id,
+					status: updated.status,
+					action: "product_status_updated",
+				},
+				"Stato prodotto aggiornato",
+			);
+
+			return ok(updated);
+		},
+		{
+			params: t.Object({
+				productId: t.String({ description: "ID del prodotto" }),
+			}),
+			body: ProductStatusBody,
+			response: withErrors({ 200: okRes(ProductSchema) }),
+			detail: {
+				summary: "Aggiorna stato prodotto",
+				description:
+					"Cambia lo stato del prodotto (active/disabled/trashed). Scrive un'entry sull'audit log se lo stato cambia. No-op se lo stato è già quello richiesto.",
 				tags: ["Seller - Products"],
 			},
 		},
