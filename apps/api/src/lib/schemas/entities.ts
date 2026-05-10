@@ -280,6 +280,26 @@ export const ProductStatusBody = t.Object({
 	),
 });
 
+export const BulkStatusBody = t.Object({
+	productIds: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
+	status: t.Union(
+		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
+		{ description: "Stato target da applicare a tutti gli ID" },
+	),
+});
+
+export const BulkStatusResult = t.Object({
+	succeeded: t.Array(t.String(), {
+		description: "ID dei prodotti cambiati (o già nello stato richiesto)",
+	}),
+	failed: t.Array(
+		t.Object({
+			productId: t.String(),
+			reason: t.Union([t.Literal("not_found"), t.Literal("no_access")]),
+		}),
+	),
+});
+
 export const EanLookupResultSchema = t.Object({
 	name: t.String(),
 	description: t.Nullable(t.String()),

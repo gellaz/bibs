@@ -14,7 +14,7 @@ import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
-import { recordProductAudit } from "./product-audit";
+import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
 
 // ── Brand resolution helper ───────────────────────────────────────────────────
 //
@@ -541,5 +541,104 @@ export async function updateProductStatus(params: UpdateProductStatusParams) {
 		);
 
 		return updated;
+	});
+}
+
+// ── bulkUpdateProductStatus ───────────────────────────────────────────────────
+
+interface BulkUpdateParams {
+	sellerProfileId: string;
+	accessibleStoreIds: string[];
+	actorUserId: string;
+	productIds: string[];
+	status: ProductStatus;
+}
+
+interface BulkResult {
+	succeeded: string[];
+	failed: { productId: string; reason: "not_found" | "no_access" }[];
+}
+
+export async function bulkUpdateProductStatus(
+	params: BulkUpdateParams,
+): Promise<BulkResult> {
+	const {
+		sellerProfileId,
+		accessibleStoreIds,
+		actorUserId,
+		productIds,
+		status,
+	} = params;
+
+	if (productIds.length === 0) return { succeeded: [], failed: [] };
+
+	return db.transaction(async (tx) => {
+		// 1. Carica i prodotti del seller con relativi storeIds
+		const ownedRows = await tx
+			.select({
+				id: product.id,
+				status: product.status,
+				storeId: storeProduct.storeId,
+			})
+			.from(product)
+			.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+			.where(
+				and(
+					inArray(product.id, productIds),
+					eq(product.sellerProfileId, sellerProfileId),
+				),
+			);
+
+		// 2. Determina ownership / accessibility
+		const ownedIds = new Set<string>();
+		const accessibleIds = new Set<string>();
+		const previousStatusByProduct = new Map<string, ProductStatus>();
+		for (const r of ownedRows) {
+			ownedIds.add(r.id);
+			previousStatusByProduct.set(r.id, r.status as ProductStatus);
+			if (accessibleStoreIds.includes(r.storeId)) accessibleIds.add(r.id);
+		}
+
+		const failed: BulkResult["failed"] = [];
+		const accessibleArr: string[] = [];
+		for (const id of productIds) {
+			if (!ownedIds.has(id)) {
+				failed.push({ productId: id, reason: "not_found" });
+			} else if (!accessibleIds.has(id)) {
+				failed.push({ productId: id, reason: "no_access" });
+			} else {
+				accessibleArr.push(id);
+			}
+		}
+
+		// 3. Filter to those whose status actually changes
+		const toUpdate = accessibleArr.filter(
+			(id) => previousStatusByProduct.get(id) !== status,
+		);
+
+		if (toUpdate.length > 0) {
+			await tx
+				.update(product)
+				.set({ status, updatedAt: new Date() })
+				.where(inArray(product.id, toUpdate));
+
+			// 4. Audit batch
+			const entries = toUpdate.map((id) => {
+				const prev = previousStatusByProduct.get(id) as ProductStatus;
+				const action = deriveAuditAction(prev, status);
+				return {
+					productId: id,
+					actorUserId,
+					action,
+					metadata:
+						action === "restored"
+							? { previousStatus: prev, newStatus: status }
+							: undefined,
+				};
+			});
+			await recordProductAuditBatch(entries, tx);
+		}
+
+		return { succeeded: accessibleArr, failed };
 	});
 }
