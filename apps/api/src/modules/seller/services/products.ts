@@ -101,6 +101,44 @@ export async function listProducts(params: ListProductsParams) {
 	return { data, pagination: { page, limit, total } };
 }
 
+// ── getProductStatusCounts ────────────────────────────────────────────────────
+
+interface GetCountsParams {
+	sellerProfileId: string;
+	storeId: string;
+}
+
+export async function getProductStatusCounts(
+	params: GetCountsParams,
+): Promise<Record<ProductStatus, number>> {
+	const { sellerProfileId, storeId } = params;
+
+	const rows = await db
+		.select({
+			status: product.status,
+			count: count(),
+		})
+		.from(product)
+		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+		.where(
+			and(
+				eq(product.sellerProfileId, sellerProfileId),
+				eq(storeProduct.storeId, storeId),
+			),
+		)
+		.groupBy(product.status);
+
+	const result: Record<ProductStatus, number> = {
+		active: 0,
+		disabled: 0,
+		trashed: 0,
+	};
+	for (const r of rows) {
+		result[r.status as ProductStatus] = Number(r.count);
+	}
+	return result;
+}
+
 // ── getProduct ────────────────────────────────────────────────────────────────
 
 interface GetProductParams {

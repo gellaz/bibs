@@ -300,6 +300,12 @@ export const BulkStatusResult = t.Object({
 	),
 });
 
+export const ProductStatusCounts = t.Object({
+	active: t.Integer({ minimum: 0 }),
+	disabled: t.Integer({ minimum: 0 }),
+	trashed: t.Integer({ minimum: 0 }),
+});
+
 export const BulkDeleteBody = t.Object({
 	productIds: t.Array(t.String(), { minItems: 1, maxItems: 100 }),
 });

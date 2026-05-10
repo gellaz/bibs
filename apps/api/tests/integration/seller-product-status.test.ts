@@ -32,6 +32,7 @@ import { productAuditLog } from "@/db/schemas/product-audit-log";
 import { ServiceError } from "@/lib/errors";
 import {
 	deleteProduct,
+	getProductStatusCounts,
 	listProducts,
 	updateProductStatus,
 } from "@/modules/seller/services/products";
@@ -249,5 +250,42 @@ describe("listProducts statusFilter", () => {
 			statusFilter: "trashed",
 		});
 		expect(result.data.map((p) => p.id)).toEqual([pt.id]);
+	});
+});
+
+describe("getProductStatusCounts", () => {
+	it("returns counts grouped by status for the given store", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		for (const status of [
+			"active",
+			"active",
+			"disabled",
+			"trashed",
+			"trashed",
+			"trashed",
+		] as const) {
+			const p = await createTestProduct(db, seller.profile.id, { status });
+			await createTestStoreProduct(db, store.id, p.id);
+		}
+
+		const counts = await getProductStatusCounts({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+		});
+		expect(counts).toEqual({ active: 2, disabled: 1, trashed: 3 });
+	});
+
+	it("returns zeros when store is empty", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+
+		const counts = await getProductStatusCounts({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+		});
+		expect(counts).toEqual({ active: 0, disabled: 0, trashed: 0 });
 	});
 });

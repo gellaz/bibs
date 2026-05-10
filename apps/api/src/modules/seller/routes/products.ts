@@ -15,6 +15,7 @@ import {
 	okRes,
 	ProductSchema,
 	ProductStatusBody,
+	ProductStatusCounts,
 	ProductWithRelationsSchema,
 	withConflictErrors,
 	withErrors,
@@ -28,6 +29,7 @@ import {
 	createProduct,
 	deleteProduct,
 	getProduct,
+	getProductStatusCounts,
 	listProducts,
 	lookupProductByEan,
 	updateProduct,
@@ -103,6 +105,35 @@ export const productsRoutes = new Elysia()
 				summary: "Lookup prodotto per EAN",
 				description:
 					"Restituisce i dati pre-compilabili dell'ultimo prodotto creato con questo EAN (cross-seller). Esclude prezzo e immagini. Ritorna null se nessun prodotto matcha.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.get(
+		"/products/status-counts",
+		async (ctx) => {
+			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
+
+			const counts = await getProductStatusCounts({
+				sellerProfileId: sp.id,
+				storeId: query.storeId,
+			});
+			return ok(counts);
+		},
+		{
+			query: t.Object({
+				storeId: t.String({ description: "ID del negozio attivo" }),
+			}),
+			response: withErrors({ 200: okRes(ProductStatusCounts) }),
+			detail: {
+				summary: "Conta prodotti per stato",
+				description:
+					"Ritorna il numero di prodotti per ciascun stato (active/disabled/trashed) nel negozio specificato.",
 				tags: ["Seller - Products"],
 			},
 		},
