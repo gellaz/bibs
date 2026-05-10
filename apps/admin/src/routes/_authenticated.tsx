@@ -72,7 +72,7 @@ function AuthenticatedLayout() {
 					<Breadcrumb>
 						<BreadcrumbList>
 							<BreadcrumbItem>
-								<BreadcrumbPage>Bibs Admin</BreadcrumbPage>
+								<BreadcrumbPage>bibs Admin</BreadcrumbPage>
 							</BreadcrumbItem>
 						</BreadcrumbList>
 					</Breadcrumb>

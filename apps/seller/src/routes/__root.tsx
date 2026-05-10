@@ -32,9 +32,21 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		meta: [
 			{ charSet: "utf-8" },
 			{ name: "viewport", content: "width=device-width, initial-scale=1" },
-			{ title: "BIBS Seller" },
+			{ title: "bibs Seller" },
 		],
-		links: [{ rel: "stylesheet", href: appCss }],
+		links: [
+			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
+			{
+				rel: "preconnect",
+				href: "https://fonts.gstatic.com",
+				crossOrigin: "anonymous",
+			},
+			{
+				rel: "stylesheet",
+				href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap",
+			},
+			{ rel: "stylesheet", href: appCss },
+		],
 	}),
 	shellComponent: RootDocument,
 	notFoundComponent: NotFound,
@@ -43,7 +55,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function NotFound() {
 	return (
 		<div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
-			<h1 className="text-4xl font-bold">404</h1>
+			<h1 className="font-display text-4xl font-bold">404</h1>
 			<p className="text-muted-foreground">Pagina non trovata</p>
 			<Link to="/" className="text-primary underline">
 				Torna alla home

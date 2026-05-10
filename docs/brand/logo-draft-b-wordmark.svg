@@ -1,0 +1,14 @@
+<svg viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="bibs wordmark">
+	<title>bibs wordmark, draft B</title>
+	<desc>Wordmark-only: lowercase 'bibs' in Bricolage Grotesque. Navy ink. Convert text to outlines in Figma/Illustrator before final delivery.</desc>
+
+	<text
+		x="100"
+		y="56"
+		text-anchor="middle"
+		fill="#2f3f76"
+		font-family="Bricolage Grotesque, Cabinet Grotesk, ui-sans-serif, system-ui, sans-serif"
+		font-weight="600"
+		font-size="64"
+		letter-spacing="-0.02em">bibs</text>
+</svg>

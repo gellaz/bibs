@@ -1,3 +1,4 @@
+import { BrandMark } from "@bibs/ui/components/brand-mark";
 import {
 	Sidebar,
 	SidebarContent,
@@ -49,11 +50,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild>
 							<Link to="/">
-								<div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-sm font-bold">
-									B
-								</div>
+								<BrandMark className="size-8" />
 								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="truncate font-semibold">Bibs</span>
+									<span className="font-display truncate font-semibold">
+										bibs
+									</span>
 									<span className="truncate text-xs text-muted-foreground">
 										Admin
 									</span>

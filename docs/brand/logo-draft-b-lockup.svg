@@ -1,0 +1,36 @@
+<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="bibs logo lockup, open hand mark above wordmark">
+	<title>bibs logo lockup, draft B</title>
+	<desc>Open palm offering mark above lowercase wordmark. Navy ink on transparent. Saffron offering dot in palm. Draft, not final.</desc>
+	<defs>
+		<style>
+			.ink { stroke: #2f3f76; }
+			.ink-fill { fill: #2f3f76; }
+			.saffron-fill { fill: #e6b057; }
+			.wordmark { fill: #2f3f76; font-family: "Bricolage Grotesque", "Cabinet Grotesk", ui-sans-serif, system-ui, sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.02em; }
+		</style>
+	</defs>
+
+	<g transform="translate(50 8)" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+		<path class="ink" d="
+			M 14 36
+			Q 8 28 12 22
+			Q 16 18 22 22
+			Q 26 24 28 30
+			Q 28 18 36 18
+			Q 44 18 44 30
+			Q 44 12 52 12
+			Q 60 12 60 30
+			Q 60 16 68 16
+			Q 76 16 76 30
+			Q 76 22 82 22
+			Q 88 22 88 30
+			L 88 38
+			Q 88 50 70 54
+			Q 50 56 30 54
+			Q 14 50 14 36
+			Z" />
+		<circle class="saffron-fill" cx="51" cy="40" r="3.6" stroke="none" />
+	</g>
+
+	<text class="wordmark" x="100" y="130" text-anchor="middle">bibs</text>
+</svg>

@@ -62,7 +62,7 @@ export const auth = betterAuth({
 
 			await sendEmail({
 				to: user.email,
-				subject: "Verifica il tuo indirizzo email — Bibs",
+				subject: "Verifica la tua email su bibs",
 				html: `<p>Ciao ${user.name},</p><p>Clicca sul link per verificare il tuo indirizzo email:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
 			});
 		},
