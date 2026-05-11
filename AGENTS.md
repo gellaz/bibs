@@ -212,6 +212,12 @@ The Mend Renovate Bot (configured in `renovate.json` at the repo root) opens dep
 
 When Renovate opens a grouped PR, treat it like any other PR: the existing `ci.yml` jobs (`lint`, `typecheck`, `api-test`) gate the merge. If a bump breaks the typecheck or a frontend SSR response, close the PR or pin the offending package via `ignoreDeps` and document why in the commit.
 
+##### Operational patterns
+
+- **Status panel.** The persistent "Dependency Dashboard" issue (auto-created by `renovate[bot]`) lists every outdated dep, every pending update, and TanStack packages under "Ignored". It is the source of truth for what Renovate sees — pin it in the repo's Issues sidebar.
+- **Major breaking PRs → defer.** When a major bump's CI fails (typecheck/lint/test red) and the porting work isn't a priority, close the PR with a short comment (e.g. `Deferred: major breaking change; revisit in a dedicated porting window`) and `--delete-branch`. Renovate does not recreate a manually-closed PR for the same target version, so the noise stays out of the way until a new major release ships.
+- **Force a run outside the Monday schedule.** Tick the **🔐 Create all awaiting schedule PRs at once 🔐** checkbox at the bottom of the Dependency Dashboard issue. Renovate reacts to the GitHub webhook within ~1 min and opens every queued PR immediately. Single-PR checkboxes higher in the issue do the same per-package.
+
 ### Adding New Dependencies
 
 #### Shared dependency (used by 2+ workspaces)
