@@ -200,6 +200,18 @@ bun update
 # For major updates, edit package.json manually and test thoroughly
 ```
 
+#### 5. Automated weekly updates (Renovate)
+
+The Mend Renovate Bot (configured in `renovate.json` at the repo root) opens dependency-bump PRs every Monday morning (Europe/Rome). Non-breaking updates are processed automatically:
+
+- **Patches and curated dev-tooling minors** (`@types/*`, `@biomejs/*`, `vite*`, `vitest*`) are auto-merged once CI is green.
+- **Other minor / all major bumps** are opened as PRs but require manual review and merge.
+- **`rangeStrategy: "bump"`** keeps caret floors in `package.json` in sync with `bun.lock` automatically, replacing the manual floor-sync pass.
+- **TanStack packages** are pinned to `latest` in the catalog and intentionally excluded (`ignoreDeps`); they appear in the Dependency Dashboard issue as a reminder for the manual SSR-checked bump (see `apps/{admin,customer,seller}` SSR verification).
+- **Catalog support** is provided by a `customManagers` regex on the root `package.json`; this can be removed once renovatebot/renovate#42909 ships native Bun catalog support.
+
+When Renovate opens a grouped PR, treat it like any other PR: the existing `ci.yml` jobs (`lint`, `typecheck`, `api-test`) gate the merge. If a bump breaks the typecheck or a frontend SSR response, close the PR or pin the offending package via `ignoreDeps` and document why in the commit.
+
 ### Adding New Dependencies
 
 #### Shared dependency (used by 2+ workspaces)

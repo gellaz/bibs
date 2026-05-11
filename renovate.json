@@ -1,0 +1,91 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended",
+		":semanticCommitTypeAll(chore)",
+		":semanticCommitScope(deps)",
+		":dependencyDashboard"
+	],
+	"timezone": "Europe/Rome",
+	"schedule": ["before 6am on monday"],
+	"rangeStrategy": "bump",
+	"prHourlyLimit": 4,
+	"prConcurrentLimit": 8,
+	"platformAutomerge": true,
+	"labels": ["dependencies", "automated"],
+	"ignoreDeps": [
+		"@tanstack/devtools-vite",
+		"@tanstack/react-devtools",
+		"@tanstack/react-query",
+		"@tanstack/react-query-devtools",
+		"@tanstack/react-router",
+		"@tanstack/react-router-devtools",
+		"@tanstack/react-router-ssr-query",
+		"@tanstack/react-start",
+		"@tanstack/react-table",
+		"@tanstack/router-plugin"
+	],
+	"packageRules": [
+		{
+			"matchUpdateTypes": ["patch"],
+			"matchDepTypes": ["dependencies", "devDependencies"],
+			"automerge": true,
+			"groupName": "patch sweep"
+		},
+		{
+			"matchUpdateTypes": ["minor"],
+			"matchDepTypes": ["devDependencies"],
+			"matchPackageNames": [
+				"@types/**",
+				"@biomejs/**",
+				"vitest",
+				"@vitest/**",
+				"vite",
+				"@vitejs/**"
+			],
+			"automerge": true
+		},
+		{
+			"matchPackageNames": ["drizzle-orm", "drizzle-kit", "drizzle-zod"],
+			"groupName": "drizzle"
+		},
+		{
+			"matchPackageNames": ["better-auth", "@better-auth/**"],
+			"groupName": "better-auth"
+		},
+		{
+			"matchPackageNames": ["elysia", "@elysiajs/**", "logixlysia"],
+			"groupName": "elysia"
+		},
+		{
+			"matchPackageNames": ["radix-ui", "@radix-ui/**", "@base-ui/react"],
+			"groupName": "radix"
+		},
+		{
+			"matchPackageNames": ["vite", "@vitejs/**", "vitest", "@vitest/**"],
+			"groupName": "vite/vitest"
+		},
+		{
+			"matchPackageNames": ["@types/**"],
+			"groupName": "types"
+		},
+		{
+			"matchUpdateTypes": ["major"],
+			"addLabels": ["major"],
+			"automerge": false
+		}
+	],
+	"customManagers": [
+		{
+			"customType": "regex",
+			"managerFilePatterns": ["/^package\\.json$/"],
+			"matchStringsStrategy": "recursive",
+			"matchStrings": [
+				"\"catalog\"\\s*:\\s*\\{(?<catalogBlock>[\\s\\S]*?)\\n\\s*\\}",
+				"\"(?<depName>[^\"]+)\"\\s*:\\s*\"(?<currentValue>(?:\\^|~)?\\d+\\.\\d+\\.\\d+[^\"]*)\""
+			],
+			"datasourceTemplate": "npm",
+			"versioningTemplate": "npm"
+		}
+	]
+}
