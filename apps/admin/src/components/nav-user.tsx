@@ -1,4 +1,3 @@
-import { Avatar, AvatarFallback } from "@bibs/ui/components/avatar";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,6 +13,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
+import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
 import LocaleSwitcher from "@/components/locale-switcher";
@@ -30,14 +30,6 @@ export function NavUser() {
 	}
 
 	const user = session.user;
-	const initials = user.name
-		? user.name
-				.split(" ")
-				.map((n) => n[0])
-				.join("")
-				.toUpperCase()
-				.slice(0, 2)
-		: "U";
 
 	return (
 		<SidebarMenu>
@@ -48,11 +40,7 @@ export function NavUser() {
 							size="lg"
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
-							<Avatar className="h-8 w-8 rounded-lg">
-								<AvatarFallback className="rounded-lg">
-									{initials}
-								</AvatarFallback>
-							</Avatar>
+							<UserAvatar name={user.name} image={user.image} />
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-medium">{user.name}</span>
 								<span className="truncate text-xs">{user.email}</span>
@@ -68,11 +56,7 @@ export function NavUser() {
 					>
 						<DropdownMenuLabel className="p-0 font-normal">
 							<div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-								<Avatar className="h-8 w-8 rounded-lg">
-									<AvatarFallback className="rounded-lg">
-										{initials}
-									</AvatarFallback>
-								</Avatar>
+								<UserAvatar name={user.name} image={user.image} />
 								<div className="grid flex-1 text-left text-sm leading-tight">
 									<span className="truncate font-medium">{user.name}</span>
 									<span className="truncate text-xs">{user.email}</span>
