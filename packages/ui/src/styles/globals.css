@@ -55,7 +55,7 @@
 	--secondary-foreground: var(--ink);
 	--muted: var(--warm-paper);
 	--muted-foreground: var(--warm-shadow);
-	--accent: var(--warm-paper);
+	--accent: var(--warm-edge);
 	--accent-foreground: var(--ink);
 	--destructive: var(--brick);
 	--destructive-foreground: var(--cream);

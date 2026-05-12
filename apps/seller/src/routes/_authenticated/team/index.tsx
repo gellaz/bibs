@@ -8,9 +8,8 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
-import { Badge } from "@bibs/ui/components/badge";
+import { AvatarBadge } from "@bibs/ui/components/avatar";
 import { Button } from "@bibs/ui/components/button";
-import { Checkbox } from "@bibs/ui/components/checkbox";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
 import {
 	Dialog,
@@ -31,7 +30,7 @@ import {
 } from "@bibs/ui/components/dropdown-menu";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import { Spinner } from "@bibs/ui/components/spinner";
+import { Skeleton } from "@bibs/ui/components/skeleton";
 import {
 	Table,
 	TableBody,
@@ -40,9 +39,12 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { UserAvatar } from "@bibs/ui/components/user-avatar";
+import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
+	CheckIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
 	SendIcon,
@@ -53,6 +55,8 @@ import {
 	XIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { MembershipStatusBadge } from "@/components/membership-status-badge";
+import { SellerRoleBadge } from "@/components/seller-role-badge";
 import { EmployeeStoresDialog } from "@/features/team/components/employee-stores-dialog";
 import { StoreChips } from "@/features/team/components/store-chips";
 import { useStores } from "@/hooks/use-stores";
@@ -203,24 +207,9 @@ function useRemoveEmployee() {
 
 // ─── Status / role helpers ───────────────────────────────
 
-const statusLabels: Record<string, string> = {
-	active: "Attivo",
-	banned: "Sospeso",
-	removed: "Rimosso",
-};
-
-const statusVariants: Record<
-	string,
-	"default" | "secondary" | "destructive" | "outline"
-> = {
-	active: "default",
-	banned: "destructive",
-	removed: "secondary",
-};
-
 // ─── Invite Employee Dialog (owner-only) ─────────────────
 
-function InviteEmployeeDialog() {
+function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 	const inviteMutation = useInviteEmployee();
 	const { data: allStores } = useStores();
 	const [open, setOpen] = useState(false);
@@ -262,10 +251,12 @@ function InviteEmployeeDialog() {
 			}}
 		>
 			<DialogTrigger asChild>
-				<Button>
-					<SendIcon />
-					<span>Invita membro</span>
-				</Button>
+				{trigger ?? (
+					<Button>
+						<SendIcon />
+						<span>Invita membro</span>
+					</Button>
+				)}
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
@@ -295,15 +286,14 @@ function InviteEmployeeDialog() {
 					</div>
 					<div className="flex flex-col gap-1.5">
 						<Label>Negozi a cui assegnare *</Label>
-						<div className="flex flex-col gap-1 max-h-48 overflow-auto rounded-md border p-2">
-							{(allStores ?? []).map((s) => (
-								<Label
-									key={s.id}
-									className="flex items-center gap-2 cursor-pointer rounded p-1.5 hover:bg-muted"
-								>
-									<Checkbox
-										checked={selectedStores.has(s.id)}
-										onCheckedChange={() =>
+						<div className="flex max-h-48 flex-col gap-1 overflow-auto py-1">
+							{(allStores ?? []).map((s) => {
+								const isSelected = selectedStores.has(s.id);
+								return (
+									<button
+										key={s.id}
+										type="button"
+										onClick={() =>
 											setSelectedStores((prev) => {
 												const next = new Set(prev);
 												if (next.has(s.id)) next.delete(s.id);
@@ -311,13 +301,36 @@ function InviteEmployeeDialog() {
 												return next;
 											})
 										}
-									/>
-									<span className="flex-1 text-sm">{s.name}</span>
-								</Label>
-							))}
+										aria-pressed={isSelected}
+										className={cn(
+											"flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
+											isSelected
+												? "border-primary bg-primary/10 dark:bg-primary/15"
+												: "border-transparent hover:bg-accent/50",
+										)}
+									>
+										<span
+											aria-hidden="true"
+											className={cn(
+												"flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+												isSelected
+													? "border-primary bg-primary text-primary-foreground"
+													: "border-border bg-card",
+											)}
+										>
+											{isSelected && (
+												<CheckIcon className="size-3.5" strokeWidth={3} />
+											)}
+										</span>
+										<span className="truncate text-sm font-medium">
+											{s.name}
+										</span>
+									</button>
+								);
+							})}
 						</div>
 						{selectedStores.size === 0 && (
-							<p className="text-xs text-muted-foreground">
+							<p className="text-muted-foreground text-xs">
 								Almeno 1 negozio richiesto
 							</p>
 						)}
@@ -349,9 +362,11 @@ function InviteEmployeeDialog() {
 
 function EmployeeActions({
 	employeeId,
+	employeeName,
 	status,
 }: {
 	employeeId: string;
+	employeeName: string;
 	status: string;
 }) {
 	const banMutation = useBanEmployee();
@@ -360,6 +375,7 @@ function EmployeeActions({
 	const [confirmAction, setConfirmAction] = useState<
 		"ban" | "unban" | "remove" | null
 	>(null);
+	const [storesDialogOpen, setStoresDialogOpen] = useState(false);
 
 	const isPending =
 		banMutation.isPending ||
@@ -405,6 +421,17 @@ function EmployeeActions({
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
+					{status !== "removed" && (
+						<DropdownMenuItem
+							onSelect={(e) => {
+								e.preventDefault();
+								setStoresDialogOpen(true);
+							}}
+						>
+							<PencilIcon />
+							Modifica negozi
+						</DropdownMenuItem>
+					)}
 					{status === "active" && (
 						<DropdownMenuItem onClick={() => setConfirmAction("ban")}>
 							<ShieldBanIcon />
@@ -432,6 +459,13 @@ function EmployeeActions({
 				</DropdownMenuContent>
 			</DropdownMenu>
 
+			<EmployeeStoresDialog
+				employeeId={employeeId}
+				employeeName={employeeName}
+				open={storesDialogOpen}
+				onOpenChange={setStoresDialogOpen}
+			/>
+
 			<AlertDialog
 				open={confirmAction !== null}
 				onOpenChange={(v) => !v && setConfirmAction(null)}
@@ -457,13 +491,39 @@ function EmployeeActions({
 	);
 }
 
-// ─── "Tu" badge ──────────────────────────────────────────
+// ─── Skeleton row ────────────────────────────────────────
 
-function YouBadge() {
+function TeamTableSkeletonRow({ withActions }: { withActions: boolean }) {
+	const cell = "bg-warm-edge";
 	return (
-		<Badge variant="outline" className="ml-1.5 text-xs">
-			Tu
-		</Badge>
+		<TableRow className="hover:bg-transparent">
+			<TableCell className="pl-6">
+				<div className="flex items-center gap-3">
+					<Skeleton className={`size-8 rounded-full ${cell}`} />
+					<div className="flex flex-col gap-1.5">
+						<Skeleton className={`h-3.5 w-32 ${cell}`} />
+						<Skeleton className={`h-3 w-40 ${cell}`} />
+					</div>
+				</div>
+			</TableCell>
+			<TableCell>
+				<Skeleton className={`h-5 w-20 rounded-full ${cell}`} />
+			</TableCell>
+			<TableCell>
+				<Skeleton className={`h-5 w-20 rounded-full ${cell}`} />
+			</TableCell>
+			<TableCell>
+				<Skeleton className={`h-4 w-24 ${cell}`} />
+			</TableCell>
+			<TableCell>
+				<Skeleton className={`h-4 w-20 ${cell}`} />
+			</TableCell>
+			{withActions && (
+				<TableCell className="pr-6 text-right">
+					<Skeleton className={`ml-auto size-7 rounded-md ${cell}`} />
+				</TableCell>
+			)}
+		</TableRow>
 	);
 }
 
@@ -477,7 +537,7 @@ function TeamPage() {
 
 	const currentUserId = session?.user.id;
 	const isOwner = session?.user.role === "seller";
-	const colCount = isOwner ? 7 : 6;
+	const colCount = isOwner ? 6 : 5;
 
 	// Only fetch invitations for the owner
 	const { data: invitationsData } = useInvitations(isOwner);
@@ -515,138 +575,110 @@ function TeamPage() {
 				</div>
 			)}
 
-			{isLoading ? (
-				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
-					<Spinner className="size-8" />
-				</div>
-			) : (
-				<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-					<Table>
-						<TableHeader>
-							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<TableHead className="w-[20%] pl-6">Nome</TableHead>
-								<TableHead className="w-[22%]">Email</TableHead>
-								<TableHead className="w-[12%]">Ruolo</TableHead>
-								<TableHead className="w-[12%]">Stato</TableHead>
-								<TableHead className="w-[14%]">Negozi</TableHead>
-								<TableHead className="w-[10%]">Data</TableHead>
-								{isOwner && (
-									<TableHead className="w-[10%] pr-6 text-right">
-										Azioni
-									</TableHead>
-								)}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{/* Owner row — always first */}
-							{owner && (
-								<TableRow className="bg-muted/20">
-									<TableCell className="pl-6 font-semibold">
-										{owner.name}
-										{currentUserId === owner.id && <YouBadge />}
-									</TableCell>
-									<TableCell className="text-muted-foreground text-sm">
-										{owner.email}
-									</TableCell>
-									<TableCell>
-										<Badge variant="default">Titolare</Badge>
-									</TableCell>
-									<TableCell>
-										<Badge variant="default">Attivo</Badge>
-									</TableCell>
-									<TableCell className="text-muted-foreground text-sm italic">
-										Tutti i negozi
-									</TableCell>
-									<TableCell className="text-muted-foreground text-sm">
-										—
-									</TableCell>
-									{isOwner && <TableCell />}
-								</TableRow>
+			<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
+				<Table>
+					<TableHeader>
+						<TableRow className="bg-muted/50 hover:bg-muted/50">
+							<TableHead className="w-[30%] pl-6">Utente</TableHead>
+							<TableHead className="w-[13%]">Ruolo</TableHead>
+							<TableHead className="w-[13%]">Stato</TableHead>
+							<TableHead className="w-[18%]">Negozi</TableHead>
+							<TableHead className="w-[14%]">Data</TableHead>
+							{isOwner && (
+								<TableHead className="w-[12%] pr-6 text-right">
+									Azioni
+								</TableHead>
 							)}
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{isLoading ? (
+							Array.from({ length: 5 }).map((_, i) => (
+								<TeamTableSkeletonRow
+									key={`skel-${i}`}
+									withActions={!!isOwner}
+								/>
+							))
+						) : (
+							<>
+								{/* Owner row — always first */}
+								{owner && (
+									<TableRow className="bg-saffron-deep/8 hover:bg-saffron-deep/8">
+										<TableCell className="pl-6">
+											<div className="flex items-center gap-3">
+												<UserAvatar name={owner.name}>
+													{currentUserId === owner.id && (
+														<AvatarBadge
+															className="bg-saffron-deep ring-card"
+															aria-label="Sei tu"
+															title="Sei tu"
+														/>
+													)}
+												</UserAvatar>
+												<div className="flex min-w-0 flex-col leading-tight">
+													<span className="truncate font-semibold">
+														{owner.name}
+													</span>
+													<span className="truncate text-muted-foreground text-xs">
+														{owner.email}
+													</span>
+												</div>
+											</div>
+										</TableCell>
+										<TableCell>
+											<SellerRoleBadge userRole="seller" />
+										</TableCell>
+										<TableCell>
+											<MembershipStatusBadge status="active" />
+										</TableCell>
+										<TableCell className="text-muted-foreground text-sm italic">
+											Tutti i negozi
+										</TableCell>
+										<TableCell className="text-muted-foreground text-sm">
+											—
+										</TableCell>
+										{isOwner && <TableCell />}
+									</TableRow>
+								)}
 
-							{/* Employee rows */}
-							{data?.data?.map((employee) => (
-								<TableRow key={employee.id} className="group">
-									<TableCell className="pl-6 font-semibold">
-										{employee.user.name}
-										{currentUserId === employee.userId && <YouBadge />}
-									</TableCell>
-									<TableCell className="text-muted-foreground text-sm">
-										{employee.user.email}
-									</TableCell>
-									<TableCell>
-										<Badge variant="secondary">Dipendente</Badge>
-									</TableCell>
-									<TableCell>
-										<Badge
-											variant={statusVariants[employee.status] ?? "outline"}
-										>
-											{statusLabels[employee.status] ?? employee.status}
-										</Badge>
-									</TableCell>
-									<TableCell>
-										<div className="flex items-center gap-2">
+								{/* Employee rows */}
+								{data?.data?.map((employee) => (
+									<TableRow key={employee.id} className="group">
+										<TableCell className="pl-6">
+											<div className="flex items-center gap-3">
+												<UserAvatar
+													name={employee.user.name}
+													image={employee.user.image}
+												>
+													{currentUserId === employee.userId && (
+														<AvatarBadge
+															className="bg-saffron-deep ring-card"
+															aria-label="Sei tu"
+															title="Sei tu"
+														/>
+													)}
+												</UserAvatar>
+												<div className="flex min-w-0 flex-col leading-tight">
+													<span className="truncate font-semibold">
+														{employee.user.name}
+													</span>
+													<span className="truncate text-muted-foreground text-xs">
+														{employee.user.email}
+													</span>
+												</div>
+											</div>
+										</TableCell>
+										<TableCell>
+											<SellerRoleBadge userRole="employee" />
+										</TableCell>
+										<TableCell>
+											<MembershipStatusBadge status={employee.status} />
+										</TableCell>
+										<TableCell>
 											<StoreChips storeIds={employee.storeIds} />
-											{isOwner && (
-												<EmployeeStoresDialog
-													employeeId={employee.id}
-													employeeName={employee.user.name}
-													trigger={
-														<Button
-															size="icon"
-															variant="ghost"
-															className="h-6 w-6"
-														>
-															<PencilIcon className="size-3" />
-															<span className="sr-only">Modifica</span>
-														</Button>
-													}
-												/>
-											)}
-										</div>
-									</TableCell>
-									<TableCell className="text-muted-foreground text-sm">
-										{new Date(employee.createdAt).toLocaleDateString("it-IT", {
-											year: "numeric",
-											month: "short",
-											day: "numeric",
-										})}
-									</TableCell>
-									{isOwner && (
-										<TableCell className="pr-6 text-right">
-											<EmployeeActions
-												employeeId={employee.id}
-												status={employee.status}
-											/>
 										</TableCell>
-									)}
-								</TableRow>
-							))}
-
-							{/* Pending invitation rows — owner only, after employees */}
-							{isOwner &&
-								pendingInvitations.map((invitation) => (
-									<TableRow
-										key={`inv-${invitation.id}`}
-										className="text-muted-foreground/80"
-									>
-										<TableCell className="pl-6 italic">
-											{invitation.email.split("@")[0]}
-										</TableCell>
-										<TableCell className="text-sm">
-											{invitation.email}
-										</TableCell>
-										<TableCell>
-											<Badge variant="secondary">Dipendente</Badge>
-										</TableCell>
-										<TableCell>
-											<Badge variant="outline">In attesa</Badge>
-										</TableCell>
-										<TableCell>
-											<StoreChips storeIds={invitation.storeIds} />
-										</TableCell>
-										<TableCell className="text-sm">
-											{new Date(invitation.createdAt).toLocaleDateString(
+										<TableCell className="text-muted-foreground text-sm">
+											{new Date(employee.createdAt).toLocaleDateString(
 												"it-IT",
 												{
 													year: "numeric",
@@ -655,46 +687,108 @@ function TeamPage() {
 												},
 											)}
 										</TableCell>
-										<TableCell className="pr-6 text-right">
-											<Button
-												variant="ghost"
-												size="icon-sm"
-												disabled={cancelMutation.isPending}
-												onClick={() =>
-													void cancelMutation.mutateAsync(invitation.id)
-												}
-												title="Annulla invito"
-											>
-												<XIcon />
-												<span className="sr-only">Annulla invito</span>
-											</Button>
-										</TableCell>
+										{isOwner && (
+											<TableCell className="pr-6 text-right">
+												<EmployeeActions
+													employeeId={employee.id}
+													employeeName={employee.user.name}
+													status={employee.status}
+												/>
+											</TableCell>
+										)}
 									</TableRow>
 								))}
 
-							{/* Empty state */}
-							{!hasContent && (
-								<TableRow className="hover:bg-transparent">
-									<TableCell colSpan={colCount} className="h-32 text-center">
-										<div className="flex flex-col items-center gap-2">
-											<UsersIcon className="text-muted-foreground/40 size-8" />
-											<div>
-												<p className="text-muted-foreground font-medium">
-													Nessun membro nel team
-												</p>
-												<p className="text-muted-foreground/60 text-sm">
-													Invita collaboratori per gestire insieme il tuo
-													negozio
-												</p>
+								{/* Pending invitation rows — owner only, after employees */}
+								{isOwner &&
+									pendingInvitations.map((invitation) => (
+										<TableRow
+											key={`inv-${invitation.id}`}
+											className="text-muted-foreground/80"
+										>
+											<TableCell className="pl-6 italic">
+												<div className="flex items-center gap-3">
+													<UserAvatar name={invitation.email.split("@")[0]} />
+													<div className="flex min-w-0 flex-col leading-tight">
+														<span className="truncate">
+															{invitation.email.split("@")[0]}
+														</span>
+														<span className="truncate text-muted-foreground text-xs not-italic">
+															{invitation.email}
+														</span>
+													</div>
+												</div>
+											</TableCell>
+											<TableCell>
+												<SellerRoleBadge userRole="employee" />
+											</TableCell>
+											<TableCell>
+												<MembershipStatusBadge status="pending" />
+											</TableCell>
+											<TableCell>
+												<StoreChips storeIds={invitation.storeIds} />
+											</TableCell>
+											<TableCell className="text-sm">
+												{new Date(invitation.createdAt).toLocaleDateString(
+													"it-IT",
+													{
+														year: "numeric",
+														month: "short",
+														day: "numeric",
+													},
+												)}
+											</TableCell>
+											<TableCell className="pr-6 text-right">
+												<Button
+													variant="ghost"
+													size="icon-sm"
+													disabled={cancelMutation.isPending}
+													onClick={() =>
+														void cancelMutation.mutateAsync(invitation.id)
+													}
+													title="Annulla invito"
+												>
+													<XIcon />
+													<span className="sr-only">Annulla invito</span>
+												</Button>
+											</TableCell>
+										</TableRow>
+									))}
+
+								{/* Empty state */}
+								{!hasContent && (
+									<TableRow className="hover:bg-transparent">
+										<TableCell colSpan={colCount} className="h-40 text-center">
+											<div className="flex flex-col items-center gap-3">
+												<UsersIcon className="text-muted-foreground/40 size-8" />
+												<div>
+													<p className="text-muted-foreground font-medium">
+														Nessun membro nel team
+													</p>
+													<p className="text-muted-foreground/60 text-sm">
+														Invita collaboratori per gestire insieme il tuo
+														negozio
+													</p>
+												</div>
+												{isOwner && (
+													<InviteEmployeeDialog
+														trigger={
+															<Button size="sm" className="mt-1">
+																<SendIcon />
+																Invita il primo collaboratore
+															</Button>
+														}
+													/>
+												)}
 											</div>
-										</div>
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				</div>
-			)}
+										</TableCell>
+									</TableRow>
+								)}
+							</>
+						)}
+					</TableBody>
+				</Table>
+			</div>
 
 			{totalPages > 1 && (
 				<div className="flex items-center justify-between">
