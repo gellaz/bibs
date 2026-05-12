@@ -73,13 +73,45 @@ Third-party registries and libraries compatible with shadcn/ui:
 - **[Aceternity UI](https://ui.aceternity.com/)** — eye-catching animated components and effects
 - **[Tailark](https://tailark.com/)** — Tailwind CSS component blocks and templates
 
-## Adding Components
+## Registries
 
-Use the shadcn CLI with the project's `components.json` config:
+`components.json` declares three sources the shadcn CLI (v3+) and the `shadcn` MCP server can resolve:
+
+| Namespace | Source | Auth |
+|---|---|---|
+| _(unprefixed)_ | [shadcn/ui](https://ui.shadcn.com/docs/components) — default registry | none |
+| `@kibo-ui` | [Kibo UI](https://www.kibo-ui.com/) — advanced components (data table, kanban, gantt, …) | none |
+| `@shadcnblocks` | [Shadcnblocks](https://www.shadcnblocks.com/) — pre-built page blocks & sections (we hold an **Elite lifetime license**) | `Bearer ${SHADCNBLOCKS_API_KEY}` |
+
+### `@shadcnblocks` setup (one-time, per developer)
+
+The block catalog lives at <https://www.shadcnblocks.com/blocks>. Browsing requires a paid account; the dashboard at <https://www.shadcnblocks.com/dashboard/api> issues the API key tied to the bibs license.
 
 ```bash
-bunx --bun shadcn@latest add <component> --cwd packages/ui
+cp packages/ui/.env.example packages/ui/.env.local
+# paste the key into SHADCNBLOCKS_API_KEY=
 ```
+
+`.env.local` is gitignored. **Important**: the shadcn CLI loads env files from the shell's working directory (`process.cwd()`), not from `--cwd`. Always `cd packages/ui` before running install commands — `--cwd packages/ui` alone is not enough for env interpolation to pick up the key. The `shadcn` MCP server (declared in `.mcp.json` with `--cwd ./packages/ui`) reads the same file — restart Claude Code after creating it.
+
+> Note: the registry URL in `components.json` uses `www.shadcnblocks.com` (not the bare `shadcnblocks.com` shown in the official setup snippet). The bare host 308-redirects to `www.`, and HTTP clients drop the `Authorization` header on cross-host redirects, producing a confusing 401.
+
+## Adding Components
+
+Use the shadcn CLI from inside `packages/ui/` so it picks up both `components.json` and `.env.local`:
+
+```bash
+cd packages/ui
+
+# Default shadcn/ui registry
+bunx --bun shadcn@latest add <component>
+
+# Namespaced registries
+bunx --bun shadcn@latest add @kibo-ui/<component>
+bunx --bun shadcn@latest add @shadcnblocks/<block>
+```
+
+Use `--dry-run` first when trying a new block — it lists the files and deps the install would touch without writing anything.
 
 ## Scripts
 
