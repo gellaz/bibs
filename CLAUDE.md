@@ -13,7 +13,7 @@ On first clone, to get the same agent experience as the rest of the team:
 1. **Install Claude Code**: <https://claude.com/claude-code>
 2. **MCP servers**: `.mcp.json` at repo root auto-loads:
    - `context7` — live library docs for TanStack, Elysia, Drizzle, Tailwind (and a fallback for better-auth)
-   - `shadcn` — browse/search/install components from shadcn registries declared in [packages/ui/components.json](packages/ui/components.json) (`@kibo-ui`, `@shadcnblocks`, and the default shadcn/ui registry)
+   - `shadcn` — browse/search/install components from shadcn registries declared in [packages/ui/components.json](packages/ui/components.json) (default [shadcn/ui](https://ui.shadcn.com/), [`@kibo-ui`](https://www.kibo-ui.com/), and [`@shadcnblocks`](https://www.shadcnblocks.com/) — Elite lifetime license, needs `SHADCNBLOCKS_API_KEY` in `packages/ui/.env.local`; see [packages/ui/README.md](packages/ui/README.md#registries))
    - `better-auth` — remote MCP server at `https://mcp.better-auth.com/mcp`, maintained by the Better Auth team. Preferred over context7 for Better Auth work (auth/sessions across the API and the 3 frontends)
    Claude Code prompts on first run to approve them.
 3. **Hooks, permissions & plugins**: `.claude/settings.json` is checked in and applied automatically:

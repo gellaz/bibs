@@ -19,6 +19,11 @@
 	},
 	"registries": {
 		"@kibo-ui": "https://www.kibo-ui.com/r/{name}.json",
-		"@shadcnblocks": "https://shadcnblocks.com/r/{name}.json"
+		"@shadcnblocks": {
+			"url": "https://www.shadcnblocks.com/r/{name}",
+			"headers": {
+				"Authorization": "Bearer ${SHADCNBLOCKS_API_KEY}"
+			}
+		}
 	}
 }
