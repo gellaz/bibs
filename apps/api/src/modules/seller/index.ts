@@ -7,6 +7,7 @@ import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
 import { getAccessibleStoreIdsFor, getSellerStoreIds } from "./context";
 import { brandsRoutes } from "./routes/brands";
+import { discountsRoutes } from "./routes/discounts";
 import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
 import { onboardingRoutes } from "./routes/onboarding";
@@ -122,5 +123,6 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 				.use(stockRoutes)
 				.use(ordersRoutes)
 				.use(employeesRoutes)
-				.use(settingsRoutes),
+				.use(settingsRoutes)
+				.use(discountsRoutes),
 	);
