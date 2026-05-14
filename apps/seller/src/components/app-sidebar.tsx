@@ -12,7 +12,7 @@ import {
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { HomeIcon, PackageIcon, SettingsIcon } from "lucide-react";
+import { HomeIcon, PackageIcon, SettingsIcon, TagIcon } from "lucide-react";
 import { NavUser } from "@/components/nav-user";
 import { StoreSwitcher } from "@/components/store-switcher";
 
@@ -28,6 +28,12 @@ const navItems = [
 		to: "/products" as const,
 		icon: PackageIcon,
 		match: (p: string) => p.startsWith("/products"),
+	},
+	{
+		title: "Promozioni",
+		to: "/promotions" as const,
+		icon: TagIcon,
+		match: (p: string) => p.startsWith("/promotions"),
 	},
 	{
 		title: "Impostazioni negozio",
