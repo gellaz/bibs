@@ -64,3 +64,79 @@ export function useArchiveDiscount() {
 		},
 	});
 }
+
+export function useUpdateDiscount(discountId: string) {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async (patch: {
+			title?: string;
+			percent?: number;
+			startsAt?: Date;
+			endsAt?: Date | null;
+		}) => {
+			const res = await api().seller.discounts({ discountId }).patch(patch);
+			if (res.error) throw new Error(res.error.value?.message || "Errore");
+			return res.data;
+		},
+		onSuccess: () => {
+			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
+		},
+	});
+}
+
+export function useAddDiscountProducts(discountId: string) {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async (productIds: string[]) => {
+			const res = await api()
+				.seller.discounts({ discountId })
+				.products.post({ productIds });
+			if (res.error) throw new Error(res.error.value?.message || "Errore");
+			return res.data;
+		},
+		onSuccess: () => {
+			void qc.invalidateQueries({
+				queryKey: [...DISCOUNTS_KEY, "products", discountId],
+			});
+			void qc.invalidateQueries({
+				queryKey: [...DISCOUNTS_KEY, "detail", discountId],
+			});
+		},
+	});
+}
+
+export function useRemoveDiscountProducts(discountId: string) {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async (productIds: string[]) => {
+			const res = await api()
+				.seller.discounts({ discountId })
+				.products.delete({ productIds });
+			if (res.error) throw new Error(res.error.value?.message || "Errore");
+			return res.data;
+		},
+		onSuccess: () => {
+			void qc.invalidateQueries({
+				queryKey: [...DISCOUNTS_KEY, "products", discountId],
+			});
+			void qc.invalidateQueries({
+				queryKey: [...DISCOUNTS_KEY, "detail", discountId],
+			});
+		},
+	});
+}
+
+export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
+	return useQuery({
+		queryKey: [...DISCOUNTS_KEY, "products", discountId, page, limit],
+		queryFn: async () => {
+			const res = await api()
+				.seller.discounts({ discountId })
+				.products.get({ query: { page, limit } });
+			if (res.error)
+				throw new Error(res.error.value?.message || "Errore caricamento");
+			return res.data;
+		},
+		enabled: !!discountId,
+	});
+}
