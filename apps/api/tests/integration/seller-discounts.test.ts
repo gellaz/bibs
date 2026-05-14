@@ -21,9 +21,12 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-import { createDiscount } from "@/modules/seller/services/discounts";
+import {
+	createDiscount,
+	updateDiscount,
+} from "@/modules/seller/services/discounts";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestSeller } from "../helpers/fixtures";
+import { createTestDiscount, createTestSeller } from "../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -124,5 +127,107 @@ describe("createDiscount", () => {
 				endsAt: null,
 			}),
 		).rejects.toThrow();
+	});
+});
+
+describe("updateDiscount", () => {
+	it("updates title and endsAt at any time", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		// running promo (startsAt in the past)
+		const d = await createTestDiscount(db, seller.profile.id, {
+			startsAt: new Date(Date.now() - 3600_000),
+			endsAt: new Date(Date.now() + 86_400_000),
+		});
+		const newEnd = new Date(Date.now() + 2 * 86_400_000);
+
+		const updated = await updateDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			patch: { title: "Saldi prolungati", endsAt: newEnd },
+		});
+
+		expect(updated.title).toBe("Saldi prolungati");
+		expect(updated.endsAt?.toISOString()).toBe(newEnd.toISOString());
+	});
+
+	it("allows changing percent before start", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			startsAt: new Date(Date.now() + 86_400_000), // future
+			endsAt: new Date(Date.now() + 2 * 86_400_000),
+			percent: 10,
+		});
+
+		const updated = await updateDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			patch: { percent: 30 },
+		});
+		expect(updated.percent).toBe(30);
+	});
+
+	it("rejects percent change once started (409)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			startsAt: new Date(Date.now() - 3600_000), // started
+			endsAt: new Date(Date.now() + 86_400_000),
+			percent: 10,
+		});
+
+		await expect(
+			updateDiscount({
+				discountId: d.id,
+				sellerProfileId: seller.profile.id,
+				patch: { percent: 30 },
+			}),
+		).rejects.toMatchObject({ status: 409 });
+	});
+
+	it("rejects startsAt change once started (409)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			startsAt: new Date(Date.now() - 3600_000),
+		});
+
+		await expect(
+			updateDiscount({
+				discountId: d.id,
+				sellerProfileId: seller.profile.id,
+				patch: { startsAt: new Date(Date.now() + 86_400_000) },
+			}),
+		).rejects.toMatchObject({ status: 409 });
+	});
+
+	it("rejects endsAt in the past", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id);
+
+		await expect(
+			updateDiscount({
+				discountId: d.id,
+				sellerProfileId: seller.profile.id,
+				patch: { endsAt: new Date(Date.now() - 86_400_000) },
+			}),
+		).rejects.toMatchObject({ status: 409 });
+	});
+
+	it("returns 404 if discount does not exist or belongs to another seller", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const d = await createTestDiscount(db, sellerA.profile.id);
+
+		await expect(
+			updateDiscount({
+				discountId: d.id,
+				sellerProfileId: sellerB.profile.id,
+				patch: { title: "Hack" },
+			}),
+		).rejects.toMatchObject({ status: 404 });
 	});
 });
