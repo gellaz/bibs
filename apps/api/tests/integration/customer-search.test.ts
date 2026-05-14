@@ -26,9 +26,11 @@ mock.module("@/db", () => ({
 // ── Imports ───────────────────────────────────────────────────────────────────
 
 import { searchProducts } from "@/modules/customer/services/search";
+import { addProductsToDiscount } from "@/modules/seller/services/discounts";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCategory,
+	createTestDiscount,
 	createTestProduct,
 	createTestProductCategoryAssignment,
 	createTestSeller,
@@ -366,5 +368,48 @@ describe("searchProducts — pagination", () => {
 		const page2Ids = page2.data.map((p) => p.id);
 		const overlap = page1Ids.filter((id) => page2Ids.includes(id));
 		expect(overlap).toHaveLength(0);
+	});
+});
+
+describe("search: discount annotation", () => {
+	it("returns discount fields for products with an active discount", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const p = await createTestProduct(db, seller.profile.id, {
+			name: "Maglione",
+			price: "100.00",
+		});
+		await createTestStoreProduct(db, store.id, p.id, { stock: 5 });
+		const d = await createTestDiscount(db, seller.profile.id, {
+			percent: 25,
+			title: "Saldi",
+		});
+		await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p.id],
+		});
+
+		const out = await searchProducts({ q: "maglione" });
+		const item = out.data[0];
+		expect(item.discountedPrice).toBe("75.00");
+		expect(item.discountPercent).toBe(25);
+		expect(item.discountTitle).toBe("Saldi");
+	});
+
+	it("returns null discount fields for products without active discount", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const p = await createTestProduct(db, seller.profile.id, {
+			name: "Sciarpa",
+		});
+		await createTestStoreProduct(db, store.id, p.id, { stock: 3 });
+
+		const out = await searchProducts({ q: "sciarpa" });
+		const item = out.data[0];
+		expect(item.discountedPrice).toBeNull();
+		expect(item.discountPercent).toBeNull();
 	});
 });

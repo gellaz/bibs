@@ -88,7 +88,10 @@ export async function getBestActiveDiscounts(
 		FROM products p
 		JOIN discount_products dp ON dp.product_id = p.id
 		JOIN discounts d ON d.id = dp.discount_id
-		WHERE p.id = ANY(${productIds})
+		WHERE p.id IN (${sql.join(
+			productIds.map((id) => sql`${id}`),
+			sql`, `,
+		)})
 		  AND d.seller_profile_id = p.seller_profile_id
 		  AND d.status = 'active'
 		  AND d.starts_at <= now()
