@@ -21,6 +21,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
 import {
 	addProductsToDiscount,
 	archiveDiscount,
@@ -523,5 +524,107 @@ describe("getDiscountProducts", () => {
 		expect(res.data[0].id).toBe(p1.id);
 		expect(res.data[0].originalPrice).toBe("100.00");
 		expect(res.data[0].discountedPrice).toBe("75.00");
+	});
+});
+
+describe("getBestActiveDiscount", () => {
+	it("returns null when no active discount", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id);
+		expect(await getBestActiveDiscount(p.id)).toBeNull();
+	});
+
+	it("returns the discount with highest percent among active running", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id, {
+			price: "100.00",
+		});
+		const d10 = await createTestDiscount(db, seller.profile.id, {
+			percent: 10,
+			title: "ten",
+		});
+		const d30 = await createTestDiscount(db, seller.profile.id, {
+			percent: 30,
+			title: "thirty",
+		});
+		await addProductsToDiscount({
+			discountId: d10.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p.id],
+		});
+		await addProductsToDiscount({
+			discountId: d30.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p.id],
+		});
+
+		const out = await getBestActiveDiscount(p.id);
+		expect(out?.percent).toBe(30);
+		expect(out?.discountedPrice).toBe("70.00");
+	});
+
+	it("ignores paused discounts", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			percent: 30,
+			status: "paused",
+		});
+		await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p.id],
+		});
+		expect(await getBestActiveDiscount(p.id)).toBeNull();
+	});
+
+	it("ignores expired and scheduled discounts", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id);
+		const dExpired = await createTestDiscount(db, seller.profile.id, {
+			percent: 30,
+			startsAt: new Date(Date.now() - 2 * 86_400_000),
+			endsAt: new Date(Date.now() - 86_400_000),
+		});
+		const dScheduled = await createTestDiscount(db, seller.profile.id, {
+			percent: 30,
+			startsAt: new Date(Date.now() + 86_400_000),
+			endsAt: new Date(Date.now() + 2 * 86_400_000),
+		});
+		await addProductsToDiscount({
+			discountId: dExpired.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p.id],
+		});
+		await addProductsToDiscount({
+			discountId: dScheduled.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p.id],
+		});
+		expect(await getBestActiveDiscount(p.id)).toBeNull();
+	});
+
+	it("respects endsAt NULL (no expiration)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id, {
+			price: "50.00",
+		});
+		const d = await createTestDiscount(db, seller.profile.id, {
+			percent: 20,
+			endsAt: null,
+		});
+		await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p.id],
+		});
+		const out = await getBestActiveDiscount(p.id);
+		expect(out?.percent).toBe(20);
+		expect(out?.discountedPrice).toBe("40.00");
 	});
 });
