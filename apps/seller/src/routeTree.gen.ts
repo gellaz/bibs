@@ -17,12 +17,16 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/store'
+import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedTeamIndexRouteImport } from './routes/_authenticated/team/index'
 import { Route as AuthenticatedStoreIndexRouteImport } from './routes/_authenticated/store/index'
+import { Route as AuthenticatedPromotionsIndexRouteImport } from './routes/_authenticated/promotions/index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
 import { Route as AuthenticatedStoreNewRouteImport } from './routes/_authenticated/store/new'
+import { Route as AuthenticatedPromotionsNewRouteImport } from './routes/_authenticated/promotions/new'
+import { Route as AuthenticatedPromotionsDiscountIdRouteImport } from './routes/_authenticated/promotions/$discountId'
 import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenticated/products/new'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products/$productId'
 import { Route as AuthenticatedOnboardingTeamRouteImport } from './routes/_authenticated/onboarding/team'
@@ -72,6 +76,11 @@ const AuthenticatedStoreRoute = AuthenticatedStoreRouteImport.update({
   path: '/store',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPromotionsRoute = AuthenticatedPromotionsRouteImport.update({
+  id: '/promotions',
+  path: '/promotions',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -92,6 +101,12 @@ const AuthenticatedStoreIndexRoute = AuthenticatedStoreIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedStoreRoute,
 } as any)
+const AuthenticatedPromotionsIndexRoute =
+  AuthenticatedPromotionsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPromotionsRoute,
+  } as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
     id: '/',
@@ -103,6 +118,18 @@ const AuthenticatedStoreNewRoute = AuthenticatedStoreNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedStoreRoute,
 } as any)
+const AuthenticatedPromotionsNewRoute =
+  AuthenticatedPromotionsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AuthenticatedPromotionsRoute,
+  } as any)
+const AuthenticatedPromotionsDiscountIdRoute =
+  AuthenticatedPromotionsDiscountIdRouteImport.update({
+    id: '/$discountId',
+    path: '/$discountId',
+    getParentRoute: () => AuthenticatedPromotionsRoute,
+  } as any)
 const AuthenticatedProductsNewRoute =
   AuthenticatedProductsNewRouteImport.update({
     id: '/new',
@@ -165,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
+  '/promotions': typeof AuthenticatedPromotionsRouteWithChildren
   '/store': typeof AuthenticatedStoreRouteWithChildren
   '/team': typeof AuthenticatedTeamRouteWithChildren
   '/invite/$token': typeof InviteTokenRoute
@@ -177,8 +205,11 @@ export interface FileRoutesByFullPath {
   '/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
+  '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
+  '/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/store/new': typeof AuthenticatedStoreNewRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
+  '/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/store/': typeof AuthenticatedStoreIndexRoute
   '/team/': typeof AuthenticatedTeamIndexRoute
 }
@@ -198,8 +229,11 @@ export interface FileRoutesByTo {
   '/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
+  '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
+  '/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/store/new': typeof AuthenticatedStoreNewRoute
   '/products': typeof AuthenticatedProductsIndexRoute
+  '/promotions': typeof AuthenticatedPromotionsIndexRoute
   '/store': typeof AuthenticatedStoreIndexRoute
   '/team': typeof AuthenticatedTeamIndexRoute
 }
@@ -211,6 +245,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/promotions': typeof AuthenticatedPromotionsRouteWithChildren
   '/_authenticated/store': typeof AuthenticatedStoreRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRouteWithChildren
   '/invite/$token': typeof InviteTokenRoute
@@ -224,8 +259,11 @@ export interface FileRoutesById {
   '/_authenticated/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
+  '/_authenticated/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
+  '/_authenticated/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/_authenticated/store/new': typeof AuthenticatedStoreNewRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
+  '/_authenticated/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/_authenticated/store/': typeof AuthenticatedStoreIndexRoute
   '/_authenticated/team/': typeof AuthenticatedTeamIndexRoute
 }
@@ -238,6 +276,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/products'
     | '/profile'
+    | '/promotions'
     | '/store'
     | '/team'
     | '/invite/$token'
@@ -250,8 +289,11 @@ export interface FileRouteTypes {
     | '/onboarding/team'
     | '/products/$productId'
     | '/products/new'
+    | '/promotions/$discountId'
+    | '/promotions/new'
     | '/store/new'
     | '/products/'
+    | '/promotions/'
     | '/store/'
     | '/team/'
   fileRoutesByTo: FileRoutesByTo
@@ -271,8 +313,11 @@ export interface FileRouteTypes {
     | '/onboarding/team'
     | '/products/$productId'
     | '/products/new'
+    | '/promotions/$discountId'
+    | '/promotions/new'
     | '/store/new'
     | '/products'
+    | '/promotions'
     | '/store'
     | '/team'
   id:
@@ -283,6 +328,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/products'
     | '/_authenticated/profile'
+    | '/_authenticated/promotions'
     | '/_authenticated/store'
     | '/_authenticated/team'
     | '/invite/$token'
@@ -296,8 +342,11 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding/team'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/new'
+    | '/_authenticated/promotions/$discountId'
+    | '/_authenticated/promotions/new'
     | '/_authenticated/store/new'
     | '/_authenticated/products/'
+    | '/_authenticated/promotions/'
     | '/_authenticated/store/'
     | '/_authenticated/team/'
   fileRoutesById: FileRoutesById
@@ -368,6 +417,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/promotions': {
+      id: '/_authenticated/promotions'
+      path: '/promotions'
+      fullPath: '/promotions'
+      preLoaderRoute: typeof AuthenticatedPromotionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -396,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreIndexRouteImport
       parentRoute: typeof AuthenticatedStoreRoute
     }
+    '/_authenticated/promotions/': {
+      id: '/_authenticated/promotions/'
+      path: '/'
+      fullPath: '/promotions/'
+      preLoaderRoute: typeof AuthenticatedPromotionsIndexRouteImport
+      parentRoute: typeof AuthenticatedPromotionsRoute
+    }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
       path: '/'
@@ -409,6 +472,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/store/new'
       preLoaderRoute: typeof AuthenticatedStoreNewRouteImport
       parentRoute: typeof AuthenticatedStoreRoute
+    }
+    '/_authenticated/promotions/new': {
+      id: '/_authenticated/promotions/new'
+      path: '/new'
+      fullPath: '/promotions/new'
+      preLoaderRoute: typeof AuthenticatedPromotionsNewRouteImport
+      parentRoute: typeof AuthenticatedPromotionsRoute
+    }
+    '/_authenticated/promotions/$discountId': {
+      id: '/_authenticated/promotions/$discountId'
+      path: '/$discountId'
+      fullPath: '/promotions/$discountId'
+      preLoaderRoute: typeof AuthenticatedPromotionsDiscountIdRouteImport
+      parentRoute: typeof AuthenticatedPromotionsRoute
     }
     '/_authenticated/products/new': {
       id: '/_authenticated/products/new'
@@ -493,6 +570,25 @@ const AuthenticatedProductsRouteWithChildren =
     AuthenticatedProductsRouteChildren,
   )
 
+interface AuthenticatedPromotionsRouteChildren {
+  AuthenticatedPromotionsDiscountIdRoute: typeof AuthenticatedPromotionsDiscountIdRoute
+  AuthenticatedPromotionsNewRoute: typeof AuthenticatedPromotionsNewRoute
+  AuthenticatedPromotionsIndexRoute: typeof AuthenticatedPromotionsIndexRoute
+}
+
+const AuthenticatedPromotionsRouteChildren: AuthenticatedPromotionsRouteChildren =
+  {
+    AuthenticatedPromotionsDiscountIdRoute:
+      AuthenticatedPromotionsDiscountIdRoute,
+    AuthenticatedPromotionsNewRoute: AuthenticatedPromotionsNewRoute,
+    AuthenticatedPromotionsIndexRoute: AuthenticatedPromotionsIndexRoute,
+  }
+
+const AuthenticatedPromotionsRouteWithChildren =
+  AuthenticatedPromotionsRoute._addFileChildren(
+    AuthenticatedPromotionsRouteChildren,
+  )
+
 interface AuthenticatedStoreRouteChildren {
   AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRoute
   AuthenticatedStoreIndexRoute: typeof AuthenticatedStoreIndexRoute
@@ -520,6 +616,7 @@ const AuthenticatedTeamRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRouteWithChildren
   AuthenticatedStoreRoute: typeof AuthenticatedStoreRouteWithChildren
   AuthenticatedTeamRoute: typeof AuthenticatedTeamRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -535,6 +632,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedPromotionsRoute: AuthenticatedPromotionsRouteWithChildren,
   AuthenticatedStoreRoute: AuthenticatedStoreRouteWithChildren,
   AuthenticatedTeamRoute: AuthenticatedTeamRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
@@ -562,12 +660,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
