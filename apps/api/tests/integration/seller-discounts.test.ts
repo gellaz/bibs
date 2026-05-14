@@ -22,13 +22,19 @@ mock.module("@/db", () => ({
 }));
 
 import {
+	addProductsToDiscount,
 	archiveDiscount,
 	createDiscount,
 	pauseDiscount,
+	removeProductsFromDiscount,
 	updateDiscount,
 } from "@/modules/seller/services/discounts";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestDiscount, createTestSeller } from "../helpers/fixtures";
+import {
+	createTestDiscount,
+	createTestProduct,
+	createTestSeller,
+} from "../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -304,5 +310,85 @@ describe("archiveDiscount", () => {
 		await expect(
 			archiveDiscount({ discountId: d.id, sellerProfileId: seller.profile.id }),
 		).rejects.toMatchObject({ status: 409 });
+	});
+});
+
+describe("addProductsToDiscount", () => {
+	it("inserts all valid products, idempotent on re-add", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		const d = await createTestDiscount(db, seller.profile.id);
+
+		const r1 = await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p1.id, p2.id],
+		});
+		expect(r1.added).toBe(2);
+		expect(r1.alreadyPresent).toBe(0);
+		expect(r1.rejected).toEqual([]);
+
+		const r2 = await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p1.id, p2.id],
+		});
+		expect(r2.added).toBe(0);
+		expect(r2.alreadyPresent).toBe(2);
+	});
+
+	it("rejects products of another seller", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const pA = await createTestProduct(db, sellerA.profile.id);
+		const pB = await createTestProduct(db, sellerB.profile.id);
+		const d = await createTestDiscount(db, sellerA.profile.id);
+
+		const r = await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: sellerA.profile.id,
+			productIds: [pA.id, pB.id],
+		});
+		expect(r.added).toBe(1);
+		expect(r.rejected).toEqual([pB.id]);
+	});
+
+	it("404 if discount does not belong to seller", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const d = await createTestDiscount(db, sellerA.profile.id);
+		await expect(
+			addProductsToDiscount({
+				discountId: d.id,
+				sellerProfileId: sellerB.profile.id,
+				productIds: [],
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe("removeProductsFromDiscount", () => {
+	it("removes only specified products", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		const d = await createTestDiscount(db, seller.profile.id);
+		await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p1.id, p2.id],
+		});
+
+		const r = await removeProductsFromDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p1.id],
+		});
+		expect(r.removed).toBe(1);
 	});
 });
