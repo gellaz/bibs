@@ -36,6 +36,13 @@
       "when": 1778414037863,
       "tag": "0004_products_status_order_items_snapshot_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778781761877,
+      "tag": "0005_known_the_hood",
+      "breakpoints": true
     }
   ]
 }
