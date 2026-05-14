@@ -90,3 +90,50 @@ export async function updateDiscount(params: UpdateDiscountParams) {
 
 	return updated;
 }
+
+interface SimpleByIdParams {
+	discountId: string;
+	sellerProfileId: string;
+}
+
+export async function pauseDiscount(params: SimpleByIdParams) {
+	const existing = await db.query.discount.findFirst({
+		where: and(
+			eq(discount.id, params.discountId),
+			eq(discount.sellerProfileId, params.sellerProfileId),
+		),
+	});
+	if (!existing) throw new ServiceError(404, "Promozione non trovata");
+	if (existing.status === "archived") {
+		throw new ServiceError(
+			409,
+			"Promozione archiviata: non può essere ripresa",
+		);
+	}
+	const nextStatus = existing.status === "active" ? "paused" : "active";
+	const [out] = await db
+		.update(discount)
+		.set({ status: nextStatus })
+		.where(eq(discount.id, params.discountId))
+		.returning();
+	return out;
+}
+
+export async function archiveDiscount(params: SimpleByIdParams) {
+	const existing = await db.query.discount.findFirst({
+		where: and(
+			eq(discount.id, params.discountId),
+			eq(discount.sellerProfileId, params.sellerProfileId),
+		),
+	});
+	if (!existing) throw new ServiceError(404, "Promozione non trovata");
+	if (existing.status === "archived") {
+		throw new ServiceError(409, "Promozione già archiviata");
+	}
+	const [out] = await db
+		.update(discount)
+		.set({ status: "archived" })
+		.where(eq(discount.id, params.discountId))
+		.returning();
+	return out;
+}

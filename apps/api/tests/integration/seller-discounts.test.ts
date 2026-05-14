@@ -22,7 +22,9 @@ mock.module("@/db", () => ({
 }));
 
 import {
+	archiveDiscount,
 	createDiscount,
+	pauseDiscount,
 	updateDiscount,
 } from "@/modules/seller/services/discounts";
 import { truncateAll } from "../helpers/cleanup";
@@ -229,5 +231,78 @@ describe("updateDiscount", () => {
 				patch: { title: "Hack" },
 			}),
 		).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe("pauseDiscount", () => {
+	it("toggles active → paused", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			status: "active",
+		});
+		const out = await pauseDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+		});
+		expect(out.status).toBe("paused");
+	});
+
+	it("toggles paused → active", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			status: "paused",
+		});
+		const out = await pauseDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+		});
+		expect(out.status).toBe("active");
+	});
+
+	it("returns 409 on archived", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			status: "archived",
+		});
+		await expect(
+			pauseDiscount({ discountId: d.id, sellerProfileId: seller.profile.id }),
+		).rejects.toMatchObject({ status: 409 });
+	});
+
+	it("returns 404 for wrong seller", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const d = await createTestDiscount(db, sellerA.profile.id);
+		await expect(
+			pauseDiscount({ discountId: d.id, sellerProfileId: sellerB.profile.id }),
+		).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe("archiveDiscount", () => {
+	it("moves to archived", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id);
+		const out = await archiveDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+		});
+		expect(out.status).toBe("archived");
+	});
+
+	it("rejects re-archive (409)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			status: "archived",
+		});
+		await expect(
+			archiveDiscount({ discountId: d.id, sellerProfileId: seller.profile.id }),
+		).rejects.toMatchObject({ status: 409 });
 	});
 });
