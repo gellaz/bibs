@@ -114,6 +114,8 @@ export async function createTestProduct(
 		price?: string;
 		description?: string;
 		status?: "active" | "disabled" | "trashed";
+		brandId?: string;
+		categoryIds?: string[];
 	} = {},
 ) {
 	const [newProduct] = await db
@@ -124,8 +126,18 @@ export async function createTestProduct(
 			description: params.description ?? "A test product",
 			price: params.price ?? "10.00",
 			status: params.status ?? "active",
+			brandId: params.brandId,
 		})
 		.returning();
+
+	if (params.categoryIds?.length) {
+		await db.insert(productCategoryAssignment).values(
+			params.categoryIds.map((cid) => ({
+				productId: newProduct.id,
+				productCategoryId: cid,
+			})),
+		);
+	}
 
 	return newProduct;
 }

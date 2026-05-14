@@ -44,39 +44,94 @@ async function findOrCreateBrandInTx(
 
 interface ListProductsParams {
 	sellerProfileId: string;
-	storeId: string;
+	storeId?: string;
 	page?: number;
 	limit?: number;
 	statusFilter?: ProductStatus;
+	brandId?: string;
+	productCategoryId?: string;
+	productMacroCategoryId?: string;
+	minPrice?: string;
+	maxPrice?: string;
+	inStock?: boolean;
+	excludeDiscountId?: string;
 }
 
 export async function listProducts(params: ListProductsParams) {
-	const { sellerProfileId, storeId, statusFilter = "active" } = params;
+	const {
+		sellerProfileId,
+		storeId,
+		statusFilter = "active",
+		brandId,
+		productCategoryId,
+		productMacroCategoryId,
+		minPrice,
+		maxPrice,
+		inStock,
+		excludeDiscountId,
+	} = params;
 	const { page, limit, offset } = parsePagination(params);
 
-	const storeCondition = and(
+	const conditions = [
 		eq(product.sellerProfileId, sellerProfileId),
-		eq(storeProduct.storeId, storeId),
 		eq(product.status, statusFilter),
-	);
+	];
 
-	// Get the IDs of products available in this store, paginated.
-	const productIdsRows = await db
-		.select({ id: product.id })
-		.from(product)
-		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
-		.where(storeCondition)
-		.limit(limit)
-		.offset(offset);
+	if (brandId) conditions.push(eq(product.brandId, brandId));
+	if (minPrice) conditions.push(sql`${product.price} >= ${minPrice}::numeric`);
+	if (maxPrice) conditions.push(sql`${product.price} <= ${maxPrice}::numeric`);
 
+	if (storeId) {
+		conditions.push(eq(storeProduct.storeId, storeId));
+	}
+
+	if (inStock) {
+		conditions.push(
+			sql`EXISTS (SELECT 1 FROM store_products sp WHERE sp.product_id = ${product.id} AND sp.stock > 0)`,
+		);
+	}
+
+	if (productCategoryId) {
+		conditions.push(
+			sql`EXISTS (SELECT 1 FROM product_category_assignments pca WHERE pca.product_id = ${product.id} AND pca.product_category_id = ${productCategoryId})`,
+		);
+	}
+
+	if (productMacroCategoryId) {
+		conditions.push(
+			sql`EXISTS (SELECT 1 FROM product_category_assignments pca JOIN product_categories pc ON pc.id = pca.product_category_id WHERE pca.product_id = ${product.id} AND pc.macro_category_id = ${productMacroCategoryId})`,
+		);
+	}
+
+	if (excludeDiscountId) {
+		conditions.push(
+			sql`NOT EXISTS (SELECT 1 FROM discount_products dp WHERE dp.product_id = ${product.id} AND dp.discount_id = ${excludeDiscountId})`,
+		);
+	}
+
+	const where = and(...conditions);
+
+	// If storeId is provided, JOIN store_products; otherwise plain query.
+	const baseQuery = storeId
+		? db
+				.select({ id: product.id })
+				.from(product)
+				.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+				.where(where)
+		: db.select({ id: product.id }).from(product).where(where);
+
+	const productIdsRows = await baseQuery.limit(limit).offset(offset);
 	const productIds = productIdsRows.map((r) => r.id);
 
-	// Total count
-	const [{ total }] = await db
-		.select({ total: count() })
-		.from(product)
-		.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
-		.where(storeCondition);
+	const countQuery = storeId
+		? db
+				.select({ total: count() })
+				.from(product)
+				.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+				.where(where)
+		: db.select({ total: count() }).from(product).where(where);
+
+	const [{ total }] = await countQuery;
 
 	// Fetch full products with relations using the page's product IDs.
 	const data =
