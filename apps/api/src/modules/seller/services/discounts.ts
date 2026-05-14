@@ -1,8 +1,22 @@
-import { and, eq, inArray } from "drizzle-orm";
+import {
+	and,
+	count,
+	desc,
+	eq,
+	gt,
+	gte,
+	inArray,
+	isNull,
+	lt,
+	lte,
+	or,
+	sql,
+} from "drizzle-orm";
 import { db } from "@/db";
 import { discount, discountProduct } from "@/db/schemas/discount";
 import { product } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
+import { parsePagination } from "@/lib/pagination";
 
 interface CreateDiscountParams {
 	sellerProfileId: string;
@@ -245,4 +259,150 @@ export async function removeProductsFromDiscount(params: RemoveProductsParams) {
 		.returning({ productId: discountProduct.productId });
 
 	return { removed: deleted.length };
+}
+
+// ── List / Get / GetProducts ──────────────────────────────────────────────────
+
+export type DiscountOperationalState =
+	| "all"
+	| "scheduled"
+	| "running"
+	| "paused"
+	| "expired"
+	| "archived";
+
+interface ListDiscountsParams {
+	sellerProfileId: string;
+	page?: number;
+	limit?: number;
+	state?: DiscountOperationalState;
+	search?: string;
+}
+
+export async function listDiscounts(params: ListDiscountsParams) {
+	const { page, limit, offset } = parsePagination(params);
+	const state = params.state ?? "all";
+	const now = new Date();
+
+	const whereParts: ReturnType<typeof eq>[] = [
+		eq(discount.sellerProfileId, params.sellerProfileId),
+	];
+
+	switch (state) {
+		case "archived":
+			whereParts.push(eq(discount.status, "archived"));
+			break;
+		case "paused":
+			whereParts.push(eq(discount.status, "paused"));
+			break;
+		case "scheduled":
+			whereParts.push(eq(discount.status, "active"));
+			whereParts.push(gt(discount.startsAt, now));
+			break;
+		case "running":
+			whereParts.push(eq(discount.status, "active"));
+			whereParts.push(lte(discount.startsAt, now));
+			whereParts.push(or(isNull(discount.endsAt), gte(discount.endsAt, now))!);
+			break;
+		case "expired":
+			whereParts.push(eq(discount.status, "active"));
+			whereParts.push(lt(discount.endsAt, now));
+			break;
+		case "all":
+		default:
+			whereParts.push(sql`${discount.status} <> 'archived'`);
+			break;
+	}
+
+	if (params.search) {
+		whereParts.push(sql`${discount.title} ILIKE ${"%" + params.search + "%"}`);
+	}
+
+	const where = and(...whereParts);
+
+	const rows = await db
+		.select({
+			d: discount,
+			productCount: sql<number>`(SELECT count(*)::int FROM ${discountProduct} WHERE ${discountProduct.discountId} = ${discount.id})`,
+		})
+		.from(discount)
+		.where(where)
+		.orderBy(desc(discount.startsAt))
+		.limit(limit)
+		.offset(offset);
+
+	const [{ total }] = await db
+		.select({ total: count() })
+		.from(discount)
+		.where(where);
+
+	return {
+		data: rows.map((r) => ({ ...r.d, productCount: r.productCount })),
+		pagination: { page, limit, total },
+	};
+}
+
+interface ByIdParams {
+	discountId: string;
+	sellerProfileId: string;
+}
+
+export async function getDiscountById(params: ByIdParams) {
+	const d = await db.query.discount.findFirst({
+		where: and(
+			eq(discount.id, params.discountId),
+			eq(discount.sellerProfileId, params.sellerProfileId),
+		),
+	});
+	if (!d) throw new ServiceError(404, "Promozione non trovata");
+
+	const [{ c }] = await db
+		.select({ c: count() })
+		.from(discountProduct)
+		.where(eq(discountProduct.discountId, params.discountId));
+
+	return { ...d, productCount: c };
+}
+
+interface GetDiscountProductsParams extends ByIdParams {
+	page?: number;
+	limit?: number;
+}
+
+export async function getDiscountProducts(params: GetDiscountProductsParams) {
+	const d = await db.query.discount.findFirst({
+		where: and(
+			eq(discount.id, params.discountId),
+			eq(discount.sellerProfileId, params.sellerProfileId),
+		),
+		columns: { id: true, percent: true },
+	});
+	if (!d) throw new ServiceError(404, "Promozione non trovata");
+
+	const { page, limit, offset } = parsePagination(params);
+
+	const rows = await db
+		.select({
+			id: product.id,
+			name: product.name,
+			originalPrice: product.price,
+			brandId: product.brandId,
+			discountedPrice: sql<string>`ROUND(${product.price} * (1 - ${d.percent}::numeric / 100), 2)::text`,
+		})
+		.from(product)
+		.innerJoin(discountProduct, eq(discountProduct.productId, product.id))
+		.where(eq(discountProduct.discountId, d.id))
+		.orderBy(discountProduct.addedAt)
+		.limit(limit)
+		.offset(offset);
+
+	const [{ total }] = await db
+		.select({ total: count() })
+		.from(discountProduct)
+		.where(eq(discountProduct.discountId, d.id));
+
+	return {
+		data: rows,
+		pagination: { page, limit, total },
+	};
 }

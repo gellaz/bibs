@@ -25,6 +25,9 @@ import {
 	addProductsToDiscount,
 	archiveDiscount,
 	createDiscount,
+	getDiscountById,
+	getDiscountProducts,
+	listDiscounts,
 	pauseDiscount,
 	removeProductsFromDiscount,
 	updateDiscount,
@@ -390,5 +393,135 @@ describe("removeProductsFromDiscount", () => {
 			productIds: [p1.id],
 		});
 		expect(r.removed).toBe(1);
+	});
+});
+
+describe("listDiscounts", () => {
+	it("filters by operational state 'running'", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Running",
+			startsAt: new Date(Date.now() - 3600_000),
+			endsAt: new Date(Date.now() + 86_400_000),
+		});
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Scheduled",
+			startsAt: new Date(Date.now() + 86_400_000),
+			endsAt: new Date(Date.now() + 2 * 86_400_000),
+		});
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Expired",
+			startsAt: new Date(Date.now() - 2 * 86_400_000),
+			endsAt: new Date(Date.now() - 86_400_000),
+		});
+
+		const result = await listDiscounts({
+			sellerProfileId: seller.profile.id,
+			state: "running",
+		});
+		expect(result.data).toHaveLength(1);
+		expect(result.data[0].title).toBe("Running");
+	});
+
+	it("filters 'archived' separately, hidden from 'all'", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Active",
+			status: "active",
+		});
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Arch",
+			status: "archived",
+		});
+
+		const all = await listDiscounts({
+			sellerProfileId: seller.profile.id,
+			state: "all",
+		});
+		expect(all.data.find((d) => d.title === "Arch")).toBeUndefined();
+
+		const arch = await listDiscounts({
+			sellerProfileId: seller.profile.id,
+			state: "archived",
+		});
+		expect(arch.data).toHaveLength(1);
+	});
+
+	it("includes productCount", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id);
+		const p1 = await createTestProduct(db, seller.profile.id);
+		const p2 = await createTestProduct(db, seller.profile.id);
+		await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p1.id, p2.id],
+		});
+
+		const list = await listDiscounts({ sellerProfileId: seller.profile.id });
+		expect(list.data[0].productCount).toBe(2);
+	});
+
+	it("does not leak other sellers' discounts", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		await createTestDiscount(db, sellerA.profile.id, { title: "A" });
+		await createTestDiscount(db, sellerB.profile.id, { title: "B" });
+
+		const out = await listDiscounts({ sellerProfileId: sellerA.profile.id });
+		expect(out.data.map((d) => d.title)).toEqual(["A"]);
+	});
+});
+
+describe("getDiscountById", () => {
+	it("returns the discount + productCount, 404 if not owned", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db, { email: "a@test.com" });
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const d = await createTestDiscount(db, sellerA.profile.id);
+
+		const found = await getDiscountById({
+			discountId: d.id,
+			sellerProfileId: sellerA.profile.id,
+		});
+		expect(found.id).toBe(d.id);
+		expect(found.productCount).toBe(0);
+
+		await expect(
+			getDiscountById({
+				discountId: d.id,
+				sellerProfileId: sellerB.profile.id,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe("getDiscountProducts", () => {
+	it("returns paginated products with original and discounted prices", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p1 = await createTestProduct(db, seller.profile.id, {
+			name: "P1",
+			price: "100.00",
+		});
+		const d = await createTestDiscount(db, seller.profile.id, { percent: 25 });
+		await addProductsToDiscount({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+			productIds: [p1.id],
+		});
+
+		const res = await getDiscountProducts({
+			discountId: d.id,
+			sellerProfileId: seller.profile.id,
+		});
+		expect(res.data).toHaveLength(1);
+		expect(res.data[0].id).toBe(p1.id);
+		expect(res.data[0].originalPrice).toBe("100.00");
+		expect(res.data[0].discountedPrice).toBe("75.00");
 	});
 });
