@@ -308,14 +308,13 @@ export async function listDiscounts(params: ListDiscountsParams) {
 			whereParts.push(eq(discount.status, "active"));
 			whereParts.push(lt(discount.endsAt, now));
 			break;
-		case "all":
 		default:
 			whereParts.push(sql`${discount.status} <> 'archived'`);
 			break;
 	}
 
 	if (params.search) {
-		whereParts.push(sql`${discount.title} ILIKE ${"%" + params.search + "%"}`);
+		whereParts.push(sql`${discount.title} ILIKE ${`%${params.search}%`}`);
 	}
 
 	const where = and(...whereParts);
