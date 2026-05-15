@@ -3,6 +3,7 @@ export * from "./auth";
 export * from "./brand";
 export * from "./category";
 export * from "./customer";
+export * from "./discount";
 export * from "./employee";
 export * from "./employee-invitation";
 export * from "./location";

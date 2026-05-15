@@ -41,17 +41,26 @@ export const productsRoutes = new Elysia()
 		"/products",
 		async (ctx) => {
 			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
-			await ensureStoreAccess(query.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			if (query.storeId) {
+				await ensureStoreAccess(query.storeId, {
+					userId: user.id,
+					sellerProfileId: sp.id,
+					isOwner,
+				});
+			}
 			const result = await listProducts({
 				sellerProfileId: sp.id,
 				storeId: query.storeId,
 				page: query.page,
 				limit: query.limit,
 				statusFilter: query.statusFilter,
+				brandId: query.brandId,
+				productCategoryId: query.productCategoryId,
+				productMacroCategoryId: query.productMacroCategoryId,
+				minPrice: query.minPrice,
+				maxPrice: query.maxPrice,
+				inStock: query.inStock,
+				excludeDiscountId: query.excludeDiscountId,
 			});
 			return okPage(result.data, result.pagination);
 		},
@@ -59,7 +68,11 @@ export const productsRoutes = new Elysia()
 			query: t.Composite([
 				PaginationQuery,
 				t.Object({
-					storeId: t.String({ description: "ID del negozio attivo" }),
+					storeId: t.Optional(
+						t.String({
+							description: "ID del negozio attivo (se assente: seller-wide)",
+						}),
+					),
 					statusFilter: t.Optional(
 						t.Union(
 							[
@@ -73,13 +86,40 @@ export const productsRoutes = new Elysia()
 							},
 						),
 					),
+					brandId: t.Optional(t.String({ description: "Filtra per marca" })),
+					productCategoryId: t.Optional(
+						t.String({ description: "Filtra per categoria" }),
+					),
+					productMacroCategoryId: t.Optional(
+						t.String({ description: "Filtra per macro-categoria" }),
+					),
+					minPrice: t.Optional(
+						t.String({
+							pattern: "^\\d+(\\.\\d{1,2})?$",
+							description: "Prezzo minimo",
+						}),
+					),
+					maxPrice: t.Optional(
+						t.String({
+							pattern: "^\\d+(\\.\\d{1,2})?$",
+							description: "Prezzo massimo",
+						}),
+					),
+					inStock: t.Optional(
+						t.Boolean({ description: "Solo prodotti con stock>0" }),
+					),
+					excludeDiscountId: t.Optional(
+						t.String({
+							description: "Escludi prodotti già in questa promo",
+						}),
+					),
 				}),
 			]),
 			response: withErrors({ 200: okPageRes(ProductWithRelationsSchema) }),
 			detail: {
-				summary: "Lista prodotti del negozio",
+				summary: "Lista prodotti del venditore",
 				description:
-					"Restituisce i prodotti del negozio filtrati per stato. Senza statusFilter, ritorna solo i prodotti attivi.",
+					"Restituisce i prodotti del venditore filtrati per stato e filtri opzionali. Senza storeId, lista seller-wide.",
 				tags: ["Seller - Products"],
 			},
 		},

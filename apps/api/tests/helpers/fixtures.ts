@@ -4,6 +4,8 @@ import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
 import { productCategory } from "@/db/schemas/category";
 import { customerProfile } from "@/db/schemas/customer";
+import type { DiscountStatus } from "@/db/schemas/discount";
+import { discount, discountProduct } from "@/db/schemas/discount";
 import { organization } from "@/db/schemas/organization";
 import {
 	product,
@@ -112,6 +114,8 @@ export async function createTestProduct(
 		price?: string;
 		description?: string;
 		status?: "active" | "disabled" | "trashed";
+		brandId?: string;
+		categoryIds?: string[];
 	} = {},
 ) {
 	const [newProduct] = await db
@@ -122,8 +126,18 @@ export async function createTestProduct(
 			description: params.description ?? "A test product",
 			price: params.price ?? "10.00",
 			status: params.status ?? "active",
+			brandId: params.brandId,
 		})
 		.returning();
+
+	if (params.categoryIds?.length) {
+		await db.insert(productCategoryAssignment).values(
+			params.categoryIds.map((cid) => ({
+				productId: newProduct.id,
+				productCategoryId: cid,
+			})),
+		);
+	}
 
 	return newProduct;
 }
@@ -256,4 +270,46 @@ export async function createTestCustomerAddress(
 		.returning();
 
 	return addr;
+}
+
+// ── Discount ──────────────────────────────────────────────────────────────────
+
+export async function createTestDiscount(
+	db: DrizzleTestDb,
+	sellerProfileId: string,
+	params: {
+		title?: string;
+		percent?: number;
+		startsAt?: Date;
+		endsAt?: Date | null;
+		status?: DiscountStatus;
+	} = {},
+) {
+	const [row] = await db
+		.insert(discount)
+		.values({
+			sellerProfileId,
+			title: params.title ?? "Saldi di prova",
+			percent: params.percent ?? 20,
+			startsAt: params.startsAt ?? new Date(Date.now() - 60_000),
+			endsAt:
+				params.endsAt === undefined
+					? new Date(Date.now() + 86_400_000)
+					: params.endsAt,
+			status: params.status ?? "active",
+		})
+		.returning();
+	return row;
+}
+
+export async function createTestDiscountProduct(
+	db: DrizzleTestDb,
+	discountId: string,
+	productId: string,
+) {
+	const [row] = await db
+		.insert(discountProduct)
+		.values({ discountId, productId })
+		.returning();
+	return row;
 }

@@ -8,6 +8,7 @@ import {
 import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
 import { parsePagination } from "@/lib/pagination";
+import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 
 interface SearchParams {
 	q?: string;
@@ -125,5 +126,18 @@ export async function searchProducts(params: SearchParams) {
 			.where(whereClause),
 	]);
 
-	return { data, pagination: { page, limit, total } };
+	const productIds = data.map((r) => r.id);
+	const discountMap = await getBestActiveDiscounts(productIds);
+	const annotated = data.map((r) => {
+		const info = discountMap.get(r.id);
+		return {
+			...r,
+			discountedPrice: info?.discountedPrice ?? null,
+			discountPercent: info?.percent ?? null,
+			discountTitle: info?.title ?? null,
+			discountEndsAt: info?.endsAt ?? null,
+		};
+	});
+
+	return { data: annotated, pagination: { page, limit, total } };
 }

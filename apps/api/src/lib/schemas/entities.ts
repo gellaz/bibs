@@ -623,4 +623,10 @@ export const SearchResultSchema = t.Object({
 		}),
 		{ description: "Immagini del prodotto ordinate per posizione" },
 	),
+	discountedPrice: t.Nullable(
+		t.String({ description: "Prezzo scontato, se promo attiva" }),
+	),
+	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
+	discountTitle: t.Nullable(t.String()),
+	discountEndsAt: t.Nullable(t.Date()),
 });
