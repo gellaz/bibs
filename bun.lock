@@ -137,6 +137,7 @@
         "@tanstack/react-router-devtools": "catalog:",
         "@tanstack/react-router-ssr-query": "catalog:",
         "@tanstack/react-start": "catalog:",
+        "@tanstack/react-table": "catalog:",
         "@tanstack/router-plugin": "catalog:",
         "better-auth": "catalog:",
         "lucide-react": "catalog:",
@@ -163,6 +164,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@base-ui/react": "^1.4.1",
+        "@tanstack/react-table": "catalog:",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
