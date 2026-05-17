@@ -27,13 +27,11 @@ export async function uploadUserAvatar({
 	userId,
 	file,
 }: UploadUserAvatarParams) {
-	// 1. Recupera l'immagine corrente (per cleanup successivo)
 	const current = await db.query.user.findFirst({
 		where: eq(userTable.id, userId),
 		columns: { image: true },
 	});
 
-	// 2. Normalizza l'immagine lato server (rete di sicurezza)
 	const buffer = Buffer.from(await file.arrayBuffer());
 	let processed: Buffer;
 	try {
@@ -45,12 +43,10 @@ export async function uploadUserAvatar({
 		throw new ServiceError(400, "Immagine non valida o corrotta");
 	}
 
-	// 3. Upload su S3 con nuovo UUID (cache busting + niente collisioni)
 	const key = `users/${userId}/${crypto.randomUUID()}.jpg`;
 	const url = publicUrl(key);
 	await s3.write(key, processed);
 
-	// 4. Aggiorna user.image; rollback S3 se fallisce
 	try {
 		await db
 			.update(userTable)
@@ -63,7 +59,6 @@ export async function uploadUserAvatar({
 		throw err;
 	}
 
-	// 5. Cleanup best-effort del file precedente (non blocca la response)
 	if (current?.image) {
 		const oldKey = extractOurKey(current.image);
 		if (oldKey) {
