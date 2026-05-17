@@ -62,6 +62,10 @@ export const product = pgTable(
 		index("product_ean_idx").on(table.ean),
 		index("product_brand_id_idx").on(table.brandId),
 		index("product_status_idx").on(table.status),
+		index("product_name_trgm_idx").using(
+			"gin",
+			sql`lower(${table.name}) gin_trgm_ops`,
+		),
 		check(
 			"product_ean_format",
 			sql`${table.ean} IS NULL OR ${table.ean} ~ '^(\\d{8}|\\d{13})$'`,

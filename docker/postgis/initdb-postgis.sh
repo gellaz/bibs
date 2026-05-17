@@ -21,5 +21,6 @@ for DB in template_postgis "$POSTGRES_DB"; do
 		\c
 		CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 		CREATE EXTENSION IF NOT EXISTS postgis_tiger_geocoder;
+		CREATE EXTENSION IF NOT EXISTS pg_trgm;
 	EOSQL
 done

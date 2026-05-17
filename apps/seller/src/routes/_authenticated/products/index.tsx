@@ -2,6 +2,12 @@ import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+} from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -14,8 +20,8 @@ import {
 } from "@bibs/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { PackageIcon, PlusIcon } from "lucide-react";
-import { useMemo } from "react";
+import { PackageIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
 import { ProductRowActions } from "@/features/products/components/product-row-actions";
 import {
@@ -24,35 +30,80 @@ import {
 } from "@/features/products/components/product-status-tabs";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products/")({
 	component: ProductsListPage,
-	validateSearch: (search: Record<string, unknown>) => {
+	validateSearch: (
+		search: Record<string, unknown>,
+	): {
+		page: number;
+		limit: number;
+		statusFilter: ProductStatusFilter;
+		q?: string;
+	} => {
 		const sf = search.statusFilter;
 		const statusFilter: ProductStatusFilter =
 			sf === "disabled" || sf === "trashed" ? sf : "active";
+		const rawQ = typeof search.q === "string" ? search.q : "";
 		return {
 			page: Number(search.page ?? 1),
 			limit: Number(search.limit ?? 20),
 			statusFilter,
+			...(rawQ.length > 0 ? { q: rawQ } : {}),
 		};
 	},
 });
 
 function ProductsListPage() {
-	const { page, limit, statusFilter } = Route.useSearch();
+	const { page, limit, statusFilter, q: routeQ } = Route.useSearch();
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();
 
+	// Input controlled, ma è il valore *deboundato* che finisce nell'URL e
+	// scatena le query. Quando l'utente naviga (back/forward), il localQ viene
+	// riallineato a routeQ.
+	const [localQ, setLocalQ] = useState(routeQ ?? "");
+	const debouncedQ = useDebouncedValue(localQ, 300);
+	const effectiveRouteQ = routeQ ?? "";
+
+	useEffect(() => {
+		setLocalQ(routeQ ?? "");
+	}, [routeQ]);
+
+	useEffect(() => {
+		if (debouncedQ === effectiveRouteQ) return;
+		void navigate({
+			search: (prev) => ({
+				...prev,
+				q: debouncedQ.length > 0 ? debouncedQ : undefined,
+				page: 1,
+			}),
+		});
+	}, [debouncedQ, effectiveRouteQ, navigate]);
+
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["products", activeStore?.id, page, limit, statusFilter],
+		queryKey: [
+			"products",
+			activeStore?.id,
+			page,
+			limit,
+			statusFilter,
+			effectiveRouteQ,
+		],
 		queryFn: async () => {
 			const storeId = activeStore?.id;
 			if (!storeId) throw new Error("No active store");
 			const response = await api().seller.products.get({
-				query: { storeId, page, limit, statusFilter },
+				query: {
+					storeId,
+					page,
+					limit,
+					statusFilter,
+					q: effectiveRouteQ.length > 0 ? effectiveRouteQ : undefined,
+				},
 			});
 			if (response.error) {
 				throw new Error(response.error.value?.message || "Errore caricamento");
@@ -68,7 +119,7 @@ function ProductsListPage() {
 	);
 	const selection = useProductSelection({
 		currentPageIds,
-		resetKey: `${activeStore?.id ?? ""}|${statusFilter}`,
+		resetKey: `${activeStore?.id ?? ""}|${statusFilter}|${effectiveRouteQ}`,
 	});
 
 	const goToTab = (next: ProductStatusFilter) =>
@@ -77,11 +128,13 @@ function ProductsListPage() {
 		});
 
 	const emptyMessage =
-		statusFilter === "active"
-			? m.products_empty_active()
-			: statusFilter === "disabled"
-				? m.products_empty_disabled()
-				: m.products_empty_trashed();
+		effectiveRouteQ.length > 0
+			? m.products_search_no_results({ query: effectiveRouteQ })
+			: statusFilter === "active"
+				? m.products_empty_active()
+				: statusFilter === "disabled"
+					? m.products_empty_disabled()
+					: m.products_empty_trashed();
 
 	return (
 		<div className="space-y-4">
@@ -105,11 +158,35 @@ function ProductsListPage() {
 			</div>
 
 			{activeStore && (
-				<ProductStatusTabs
-					storeId={activeStore.id}
-					value={statusFilter}
-					onChange={goToTab}
-				/>
+				<div className="space-y-3">
+					<InputGroup className="max-w-md">
+						<InputGroupAddon align="inline-start">
+							<SearchIcon />
+						</InputGroupAddon>
+						<InputGroupInput
+							value={localQ}
+							onChange={(e) => setLocalQ(e.target.value)}
+							placeholder={m.products_search_placeholder()}
+							aria-label={m.products_search_placeholder()}
+						/>
+						{localQ.length > 0 && (
+							<InputGroupAddon align="inline-end">
+								<InputGroupButton
+									size="icon-xs"
+									onClick={() => setLocalQ("")}
+									aria-label={m.products_search_clear()}
+								>
+									<XIcon />
+								</InputGroupButton>
+							</InputGroupAddon>
+						)}
+					</InputGroup>
+					<ProductStatusTabs
+						storeId={activeStore.id}
+						value={statusFilter}
+						onChange={goToTab}
+					/>
+				</div>
 			)}
 
 			<ProductBulkToolbar
