@@ -10,6 +10,7 @@ import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { customerModule } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
+import { meModule } from "@/modules/me";
 import { productCategoriesModule } from "@/modules/product-categories";
 import { productMacroCategoriesModule } from "@/modules/product-macro-categories";
 import { registration } from "@/modules/registration";
@@ -129,6 +130,7 @@ const app = new Elysia()
 						name: "Locations",
 						description: "Regioni, province e comuni italiani",
 					},
+					{ name: "Me", description: "Profilo dell'utente corrente" },
 					{ name: "System", description: "Health check e stato del servizio" },
 				],
 				components: {
@@ -154,6 +156,7 @@ const app = new Elysia()
 	.use(locationsModule)
 	.use(sellerModule)
 	.use(customerModule)
+	.use(meModule)
 	.use(cronJobs)
 	.use(health);
 
