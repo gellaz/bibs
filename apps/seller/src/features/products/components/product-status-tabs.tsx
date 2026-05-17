@@ -1,4 +1,4 @@
-import { Tabs, TabsList, TabsTrigger } from "@bibs/ui/components/tabs";
+import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
@@ -26,31 +26,32 @@ export function ProductStatusTabs({ storeId, value, onChange }: Props) {
 
 	const counts = data ?? { active: 0, disabled: 0, trashed: 0 };
 
+	const tabs: TabNavItem[] = [
+		{
+			value: "active",
+			label: m.products_tab_active(),
+			count: counts.active,
+			badgeColor: "emerald",
+		},
+		{
+			value: "disabled",
+			label: m.products_tab_disabled(),
+			count: counts.disabled,
+			badgeColor: "amber",
+		},
+		{
+			value: "trashed",
+			label: m.products_tab_trashed(),
+			count: counts.trashed,
+			badgeColor: "red",
+		},
+	];
+
 	return (
-		<Tabs
-			value={value}
-			onValueChange={(v) => onChange(v as ProductStatusFilter)}
-		>
-			<TabsList>
-				<TabsTrigger value="active">
-					{m.products_tab_active()}{" "}
-					<span className="ml-1 text-muted-foreground">
-						{m.products_tab_count({ count: counts.active })}
-					</span>
-				</TabsTrigger>
-				<TabsTrigger value="disabled">
-					{m.products_tab_disabled()}{" "}
-					<span className="ml-1 text-muted-foreground">
-						{m.products_tab_count({ count: counts.disabled })}
-					</span>
-				</TabsTrigger>
-				<TabsTrigger value="trashed">
-					{m.products_tab_trashed()}{" "}
-					<span className="ml-1 text-muted-foreground">
-						{m.products_tab_count({ count: counts.trashed })}
-					</span>
-				</TabsTrigger>
-			</TabsList>
-		</Tabs>
+		<TabNav
+			tabs={tabs}
+			activeTab={value}
+			onTabChange={(v) => onChange(v as ProductStatusFilter)}
+		/>
 	);
 }

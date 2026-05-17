@@ -1,4 +1,4 @@
-import { Tabs, TabsList, TabsTrigger } from "@bibs/ui/components/tabs";
+import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { m } from "@/paraglide/messages";
 
 export type PromotionState =
@@ -24,15 +24,16 @@ const ORDER: { value: PromotionState; label: () => string }[] = [
 ];
 
 export function PromotionStateTabs({ value, onChange }: Props) {
+	const tabs: TabNavItem[] = ORDER.map((s) => ({
+		value: s.value,
+		label: s.label(),
+	}));
+
 	return (
-		<Tabs value={value} onValueChange={(v) => onChange(v as PromotionState)}>
-			<TabsList>
-				{ORDER.map((s) => (
-					<TabsTrigger key={s.value} value={s.value}>
-						{s.label()}
-					</TabsTrigger>
-				))}
-			</TabsList>
-		</Tabs>
+		<TabNav
+			tabs={tabs}
+			activeTab={value}
+			onTabChange={(v) => onChange(v as PromotionState)}
+		/>
 	);
 }

@@ -75,7 +75,7 @@ export function ProductForm({
 		setValue,
 		watch,
 		getValues,
-		formState: { errors },
+		formState: { errors, isDirty },
 	} = useForm<ProductFormData>({
 		resolver: typeboxResolver(compiledSchema),
 		defaultValues: {
@@ -329,7 +329,13 @@ export function ProductForm({
 				<Button type="button" variant="outline" onClick={onCancel}>
 					Annulla
 				</Button>
-				<Button type="submit" disabled={isPending}>
+				<Button
+					type="submit"
+					disabled={
+						isPending ||
+						(!isDirty && files.length === 0 && imageOrder === undefined)
+					}
+				>
 					{isPending ? pendingLabel : submitLabel}
 				</Button>
 			</div>

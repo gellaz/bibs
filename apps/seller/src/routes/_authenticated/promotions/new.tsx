@@ -2,11 +2,13 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { EntityFormHeader } from "@/components/entity-form-header";
+import { SectionHeader } from "@/components/section-header";
 import {
 	DiscountForm,
 	type DiscountFormValues,
 } from "@/features/promotions/components/discount-form";
-import { ProductPickerSheet } from "@/features/promotions/components/product-picker-sheet";
+import { ProductSelector } from "@/features/promotions/components/product-selector";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
@@ -18,7 +20,8 @@ function NewPromotionPage() {
 	const navigate = useNavigate();
 	const qc = useQueryClient();
 	const [productIds, setProductIds] = useState<string[]>([]);
-	const [pickerOpen, setPickerOpen] = useState(false);
+	const [percent, setPercent] = useState<number>(10);
+	const [title, setTitle] = useState<string>("");
 
 	const createMutation = useMutation({
 		mutationFn: async (values: DiscountFormValues) => {
@@ -45,39 +48,48 @@ function NewPromotionPage() {
 	});
 
 	return (
-		<div className="space-y-6">
-			<h1 className="text-2xl font-bold">{m.promotions_form_submit_new()}</h1>
+		<div className="-m-4 xl:flex xl:h-full xl:flex-col">
+			<div className="grid xl:flex-1 xl:grid-cols-[2fr_3fr] xl:gap-x-0">
+				<div className="space-y-6 p-4 pb-6 xl:p-6">
+					<EntityFormHeader
+						mode="create"
+						title={title}
+						placeholder="Nuova Promozione"
+						subtitle="Configura una nuova promozione"
+					/>
 
-			<DiscountForm
-				submitLabel={m.promotions_form_submit_new()}
-				submitting={createMutation.isPending}
-				onSubmit={async (v) => {
-					await createMutation.mutateAsync(v);
-				}}
-			/>
+					<DiscountForm
+						submitLabel={m.promotions_form_submit_new()}
+						submitting={createMutation.isPending}
+						onPercentChange={setPercent}
+						onTitleChange={setTitle}
+						onCancel={() =>
+							void navigate({
+								to: "/promotions",
+								search: { page: 1, limit: 20, state: "all" as const },
+							})
+						}
+						onSubmit={async (v) => {
+							await createMutation.mutateAsync(v);
+						}}
+					/>
+				</div>
 
-			<div className="space-y-2">
-				<h2 className="font-medium">{m.promotions_form_products_section()}</h2>
-				<p className="text-muted-foreground text-sm">
-					{m.promotions_form_products_count({ count: productIds.length })}
-				</p>
-				<button
-					type="button"
-					className="text-primary text-sm hover:underline"
-					onClick={() => setPickerOpen(true)}
-				>
-					{m.promotions_form_add_products()}
-				</button>
+				<section className="space-y-6 border-t p-4 pt-6 xl:border-t-0 xl:border-l xl:p-6">
+					<SectionHeader
+						title={m.promotions_section_products_title()}
+						subtitle={m.promotions_section_products_subtitle()}
+					/>
+					<ProductSelector
+						mode={{
+							kind: "local",
+							percent,
+							includedIds: productIds,
+							onChange: setProductIds,
+						}}
+					/>
+				</section>
 			</div>
-
-			<ProductPickerSheet
-				open={pickerOpen}
-				onOpenChange={setPickerOpen}
-				alreadySelectedIds={new Set(productIds)}
-				onConfirm={(ids) =>
-					setProductIds((prev) => Array.from(new Set([...prev, ...ids])))
-				}
-			/>
 		</div>
 	);
 }

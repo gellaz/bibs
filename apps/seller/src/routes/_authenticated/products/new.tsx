@@ -1,8 +1,8 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PlusIcon } from "lucide-react";
 import { useCallback, useState } from "react";
+import { EntityFormHeader } from "@/components/entity-form-header";
 import {
 	ProductForm,
 	type ProductFormValues,
@@ -79,21 +79,12 @@ function NewProductPage() {
 
 	return (
 		<div className="mx-auto max-w-2xl space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold">
-						{name || (
-							<span className="text-muted-foreground">Nuovo Prodotto</span>
-						)}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						Inserisci i dati del nuovo prodotto
-					</p>
-				</div>
-				<div className="bg-primary flex size-10 items-center justify-center rounded-lg">
-					<PlusIcon className="text-primary-foreground size-5" />
-				</div>
-			</div>
+			<EntityFormHeader
+				mode="create"
+				title={name}
+				placeholder="Nuovo Prodotto"
+				subtitle="Aggiungi un nuovo prodotto al catalogo"
+			/>
 
 			<ProductForm
 				onSubmit={(values) => createMutation.mutate(values)}

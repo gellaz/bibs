@@ -1,8 +1,8 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { PlusIcon } from "lucide-react";
 import { useCallback, useState } from "react";
+import { EntityFormHeader } from "@/components/entity-form-header";
 import {
 	StoreForm,
 	type StoreFormData,
@@ -52,21 +52,12 @@ function NewStorePage() {
 
 	return (
 		<div className="mx-auto max-w-2xl space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-2xl font-bold">
-						{name || (
-							<span className="text-muted-foreground">Nuovo Negozio</span>
-						)}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						Aggiungi un nuovo punto vendita
-					</p>
-				</div>
-				<div className="bg-primary flex size-10 items-center justify-center rounded-lg">
-					<PlusIcon className="text-primary-foreground size-5" />
-				</div>
-			</div>
+			<EntityFormHeader
+				mode="create"
+				title={name}
+				placeholder="Nuovo Negozio"
+				subtitle="Aggiungi un nuovo punto vendita"
+			/>
 
 			<StoreForm
 				onSubmit={(data) => createMutation.mutate(data)}
