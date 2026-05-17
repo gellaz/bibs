@@ -11,6 +11,7 @@ const BADGE_COLORS: Record<string, string> = {
 	emerald:
 		"bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-300/50 dark:bg-emerald-500/15 dark:text-emerald-400 dark:ring-emerald-500/30",
 	red: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-300/50 dark:bg-red-500/15 dark:text-red-400 dark:ring-red-500/30",
+	blue: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-300/50 dark:bg-blue-500/15 dark:text-blue-400 dark:ring-blue-500/30",
 };
 
 export interface TabNavItem {

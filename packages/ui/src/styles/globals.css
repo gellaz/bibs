@@ -20,10 +20,10 @@
  * Light mode is canonical; dark mode is a respectful interpretation, not a
  * separate brand voice.
  *
- * Display typography: --font-display falls back to Geist when Bricolage
- * Grotesque is not loaded by the app. To activate the brand display face,
- * preload Bricolage Grotesque from Fontshare or Google Fonts in the app's
- * root layout (e.g. <link rel="preconnect"> + <link href="...">).
+ * Display typography: --font-display falls back to Geist when Satoshi is
+ * not loaded by the app. To activate the brand display face, preload Satoshi
+ * from Fontshare in the app's root layout
+ * (e.g. <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap">).
  */
 
 :root {
@@ -84,8 +84,7 @@
 	/* Typography. */
 	--font-sans: Geist, ui-sans-serif, sans-serif, system-ui;
 	--font-display:
-		"Bricolage Grotesque", "Cabinet Grotesk", Geist, ui-sans-serif, system-ui,
-		sans-serif;
+		Satoshi, "Cabinet Grotesk", Geist, ui-sans-serif, system-ui, sans-serif;
 	--font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 	--font-mono: Geist Mono, ui-monospace, monospace;
 

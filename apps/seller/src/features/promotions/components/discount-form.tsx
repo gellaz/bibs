@@ -1,11 +1,12 @@
 import { Button } from "@bibs/ui/components/button";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import { Switch } from "@bibs/ui/components/switch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { DiscountPercentInput } from "@/features/promotions/components/discount-percent-input";
+import { DiscountPeriodPicker } from "@/features/promotions/components/discount-period-picker";
 import { m } from "@/paraglide/messages";
 
 export const discountFormSchema = z
@@ -37,7 +38,18 @@ export interface DiscountFormProps {
 	disableStartsAt?: boolean;
 	submitLabel: string;
 	onSubmit: (values: DiscountFormValues) => Promise<void> | void;
+	onCancel?: () => void;
+	onPercentChange?: (percent: number) => void;
+	onTitleChange?: (title: string) => void;
 	submitting?: boolean;
+}
+
+function defaultLocalNow(): string {
+	const d = new Date();
+	const pad = (n: number) => n.toString().padStart(2, "0");
+	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+		d.getHours(),
+	)}:${pad(d.getMinutes())}`;
 }
 
 export function DiscountForm({
@@ -46,6 +58,9 @@ export function DiscountForm({
 	disableStartsAt,
 	submitLabel,
 	onSubmit,
+	onCancel,
+	onPercentChange,
+	onTitleChange,
 	submitting,
 }: DiscountFormProps) {
 	const form = useForm<DiscountFormInput, unknown, DiscountFormValues>({
@@ -53,30 +68,49 @@ export function DiscountForm({
 		defaultValues: {
 			title: "",
 			percent: 10,
-			startsAt: new Date().toISOString().slice(0, 16),
+			startsAt: defaultLocalNow(),
 			endsAt: "",
 			noEndDate: false,
 			...defaultValues,
 		},
 	});
 
-	const noEndDate = form.watch("noEndDate");
+	const title = form.watch("title") ?? "";
+	const percentRaw = form.watch("percent");
+	const percent = Number(percentRaw);
+	const safePercent = Number.isFinite(percent) ? percent : 0;
+	const startsAt = form.watch("startsAt") ?? "";
+	const endsAt = form.watch("endsAt") ?? "";
+	const noEndDate = form.watch("noEndDate") ?? false;
+
 	useEffect(() => {
 		if (noEndDate) form.setValue("endsAt", "");
 	}, [noEndDate, form]);
 
+	useEffect(() => {
+		if (!onPercentChange) return;
+		if (Number.isFinite(safePercent) && safePercent > 0)
+			onPercentChange(safePercent);
+	}, [safePercent, onPercentChange]);
+
+	useEffect(() => {
+		if (!onTitleChange) return;
+		onTitleChange(title);
+	}, [title, onTitleChange]);
+
 	return (
-		<form
-			onSubmit={form.handleSubmit(onSubmit)}
-			className="max-w-2xl space-y-4"
-		>
+		<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 			<div className="space-y-2">
 				<Label htmlFor="title">{m.promotions_form_title_label()}</Label>
 				<Input
 					id="title"
+					maxLength={80}
 					placeholder={m.promotions_form_title_placeholder()}
 					{...form.register("title")}
 				/>
+				<p className="text-muted-foreground text-xs">
+					{m.promotions_form_title_helper()}
+				</p>
 				{form.formState.errors.title && (
 					<p className="text-destructive text-sm">
 						{form.formState.errors.title.message}
@@ -84,65 +118,31 @@ export function DiscountForm({
 				)}
 			</div>
 
-			<div className="space-y-2">
-				<Label htmlFor="percent">{m.promotions_form_percent_label()}</Label>
-				<div className="relative max-w-[8rem]">
-					<Input
-						id="percent"
-						type="number"
-						min={1}
-						max={99}
-						step={1}
-						disabled={disablePercent}
-						{...form.register("percent")}
-					/>
-					<span className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2 text-sm">
-						%
-					</span>
-				</div>
-				{form.formState.errors.percent && (
-					<p className="text-destructive text-sm">
-						{form.formState.errors.percent.message}
-					</p>
-				)}
-			</div>
+			<DiscountPercentInput
+				value={safePercent}
+				onChange={(n) => form.setValue("percent", n, { shouldValidate: true })}
+				disabled={disablePercent}
+				error={form.formState.errors.percent?.message}
+			/>
 
-			<div className="grid grid-cols-2 gap-4">
-				<div className="space-y-2">
-					<Label htmlFor="startsAt">
-						{m.promotions_form_starts_at_label()}
-					</Label>
-					<Input
-						id="startsAt"
-						type="datetime-local"
-						disabled={disableStartsAt}
-						{...form.register("startsAt")}
-					/>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor="endsAt">{m.promotions_form_ends_at_label()}</Label>
-					<Input
-						id="endsAt"
-						type="datetime-local"
-						disabled={noEndDate}
-						{...form.register("endsAt")}
-					/>
-					{form.formState.errors.endsAt && (
-						<p className="text-destructive text-sm">
-							{form.formState.errors.endsAt.message}
-						</p>
-					)}
-				</div>
-			</div>
-
-			<div className="flex items-center gap-2">
-				<Switch
-					id="noEndDate"
-					checked={noEndDate}
-					onCheckedChange={(v) => form.setValue("noEndDate", v)}
-				/>
-				<Label htmlFor="noEndDate">{m.promotions_form_no_end_date()}</Label>
-			</div>
+			<DiscountPeriodPicker
+				startsAt={startsAt}
+				endsAt={endsAt}
+				noEndDate={noEndDate}
+				disableStartsAt={disableStartsAt}
+				onChange={(next) => {
+					form.setValue("startsAt", next.startsAt, { shouldDirty: true });
+					form.setValue("endsAt", next.endsAt, { shouldDirty: true });
+					form.setValue("noEndDate", next.noEndDate, {
+						shouldDirty: true,
+						shouldValidate: true,
+					});
+				}}
+				error={
+					form.formState.errors.endsAt?.message ??
+					form.formState.errors.startsAt?.message
+				}
+			/>
 
 			{(disablePercent || disableStartsAt) && (
 				<p className="text-muted-foreground text-xs">
@@ -150,9 +150,16 @@ export function DiscountForm({
 				</p>
 			)}
 
-			<Button type="submit" disabled={submitting}>
-				{submitLabel}
-			</Button>
+			<div className="flex justify-end gap-3 pt-2">
+				{onCancel && (
+					<Button type="button" variant="outline" onClick={onCancel}>
+						Annulla
+					</Button>
+				)}
+				<Button type="submit" disabled={submitting || !form.formState.isDirty}>
+					{submitLabel}
+				</Button>
+			</div>
 		</form>
 	);
 }

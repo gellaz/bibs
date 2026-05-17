@@ -59,7 +59,7 @@ export function StoreForm({
 		handleSubmit,
 		control,
 		watch,
-		formState: { errors },
+		formState: { errors, isDirty },
 	} = useForm<StoreFormData>({
 		resolver: typeboxResolver(compiledSchema),
 		defaultValues: {
@@ -276,7 +276,7 @@ export function StoreForm({
 					<Button type="button" variant="outline" onClick={onCancel}>
 						Annulla
 					</Button>
-					<Button type="submit" disabled={isPending}>
+					<Button type="submit" disabled={isPending || !isDirty}>
 						{isPending ? pendingLabel : submitLabel}
 					</Button>
 				</div>
