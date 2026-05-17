@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
@@ -41,6 +41,28 @@ async function findOrCreateBrandInTx(
 }
 
 // ── listProducts ──────────────────────────────────────────────────────────────
+//
+// Sanitizza un termine di ricerca libero in un'espressione `to_tsquery`
+// con prefix matching su ogni token. Ritorna `null` se la query effettiva
+// (dopo trimming e rimozione di caratteri non alfanumerici/whitespace)
+// produce zero token utili, così il caller può saltare il branch full-text.
+//
+// Esempio:
+//   "Lava Bosch"  →  "lava:* & bosch:*"
+//   "'; DROP--"   →  "drop:*"
+//   ""            →  null
+//   "a"           →  null   (minimo 2 char effettivi)
+function buildPrefixTsquery(raw: string): string | null {
+	const trimmed = raw.trim();
+	if (trimmed.length < 2) return null;
+	const tokens = trimmed
+		.toLowerCase()
+		.split(/\s+/)
+		.map((t) => t.replace(/[^\p{L}\p{N}_]/gu, ""))
+		.filter((t) => t.length > 0);
+	if (tokens.length === 0) return null;
+	return tokens.map((t) => `${t}:*`).join(" & ");
+}
 
 interface ListProductsParams {
 	sellerProfileId: string;
@@ -55,6 +77,7 @@ interface ListProductsParams {
 	maxPrice?: string;
 	inStock?: boolean;
 	excludeDiscountId?: string;
+	q?: string;
 }
 
 export async function listProducts(params: ListProductsParams) {
@@ -69,6 +92,7 @@ export async function listProducts(params: ListProductsParams) {
 		maxPrice,
 		inStock,
 		excludeDiscountId,
+		q,
 	} = params;
 	const { page, limit, offset } = parsePagination(params);
 
@@ -109,19 +133,75 @@ export async function listProducts(params: ListProductsParams) {
 		);
 	}
 
+	// Ricerca testuale avanzata: tsvector con prefix matching (italian) +
+	// trigram similarity (typo tolerance) + EAN exact + brand-name fuzzy.
+	// L'OR sfrutta gli indici GIN: product_search_idx, product_name_trgm_idx,
+	// product_ean_idx, brands_name_trgm_idx.
+	const tsquery = q ? buildPrefixTsquery(q) : null;
+	const qTrimmed = q?.trim() ?? "";
+	const searchActive = tsquery !== null;
+	if (searchActive) {
+		const orClause = or(
+			sql`(
+        setweight(to_tsvector('italian', ${product.name}), 'A') ||
+        setweight(to_tsvector('italian', coalesce(${product.description}, '')), 'B')
+      ) @@ to_tsquery('italian', ${tsquery})`,
+			sql`similarity(lower(${product.name}), lower(${qTrimmed})) > 0.25`,
+			sql`lower(${product.ean}) = lower(${qTrimmed})`,
+			sql`EXISTS (
+        SELECT 1 FROM brands b
+        WHERE b.id = ${product.brandId}
+        AND lower(b.name) % lower(${qTrimmed})
+      )`,
+		);
+		if (orClause) conditions.push(orClause);
+	}
+
 	const where = and(...conditions);
 
-	// If storeId is provided, JOIN store_products; otherwise plain query.
-	const baseQuery = storeId
-		? db
-				.select({ id: product.id })
-				.from(product)
-				.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
-				.where(where)
-		: db.select({ id: product.id }).from(product).where(where);
+	// Score combinato: full-text rank (peso 1) + trigram similarity sul name (peso 0.5).
+	// Usato per ordinare quando `q` è presente.
+	const scoreExpr = searchActive
+		? sql<number>`(
+        ts_rank_cd(
+          setweight(to_tsvector('italian', ${product.name}), 'A') ||
+          setweight(to_tsvector('italian', coalesce(${product.description}, '')), 'B'),
+          to_tsquery('italian', ${tsquery})
+        )
+        + 0.5 * similarity(lower(${product.name}), lower(${qTrimmed}))
+      )`.as("score")
+		: null;
 
-	const productIdsRows = await baseQuery.limit(limit).offset(offset);
-	const productIds = productIdsRows.map((r) => r.id);
+	// Pattern: paginare gli ID dalla baseQuery, poi rifetchare con le relations.
+	// Quando c'è ricerca, ordiniamo per score DESC, createdAt DESC.
+	let productIds: string[];
+	if (searchActive && scoreExpr) {
+		const base = storeId
+			? db
+					.select({ id: product.id, score: scoreExpr })
+					.from(product)
+					.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+					.where(where)
+			: db
+					.select({ id: product.id, score: scoreExpr })
+					.from(product)
+					.where(where);
+		const rows = await base
+			.orderBy(sql`score DESC`, desc(product.createdAt))
+			.limit(limit)
+			.offset(offset);
+		productIds = rows.map((r) => r.id);
+	} else {
+		const base = storeId
+			? db
+					.select({ id: product.id })
+					.from(product)
+					.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+					.where(where)
+			: db.select({ id: product.id }).from(product).where(where);
+		const rows = await base.limit(limit).offset(offset);
+		productIds = rows.map((r) => r.id);
+	}
 
 	const countQuery = storeId
 		? db

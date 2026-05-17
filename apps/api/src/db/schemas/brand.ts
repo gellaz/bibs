@@ -33,6 +33,10 @@ export const brand = pgTable(
 			sql`lower(${table.name})`,
 		),
 		index("brands_seller_profile_id_idx").on(table.sellerProfileId),
+		index("brands_name_trgm_idx").using(
+			"gin",
+			sql`lower(${table.name}) gin_trgm_ops`,
+		),
 	],
 );
 

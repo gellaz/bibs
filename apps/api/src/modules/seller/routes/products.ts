@@ -61,6 +61,7 @@ export const productsRoutes = new Elysia()
 				maxPrice: query.maxPrice,
 				inStock: query.inStock,
 				excludeDiscountId: query.excludeDiscountId,
+				q: query.q,
 			});
 			return okPage(result.data, result.pagination);
 		},
@@ -113,13 +114,20 @@ export const productsRoutes = new Elysia()
 							description: "Escludi prodotti già in questa promo",
 						}),
 					),
+					q: t.Optional(
+						t.String({
+							maxLength: 100,
+							description:
+								"Ricerca testuale su nome, descrizione, EAN e brand. Full-text con prefix matching e fuzzy (typo) tolerance. Minimo 2 caratteri effettivi.",
+						}),
+					),
 				}),
 			]),
 			response: withErrors({ 200: okPageRes(ProductWithRelationsSchema) }),
 			detail: {
 				summary: "Lista prodotti del venditore",
 				description:
-					"Restituisce i prodotti del venditore filtrati per stato e filtri opzionali. Senza storeId, lista seller-wide.",
+					"Restituisce i prodotti del venditore filtrati per stato e filtri opzionali. Senza storeId, lista seller-wide. Con `q` attiva ricerca testuale ordinata per rilevanza.",
 				tags: ["Seller - Products"],
 			},
 		},

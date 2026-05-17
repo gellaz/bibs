@@ -43,6 +43,13 @@
       "when": 1778781761877,
       "tag": "0005_known_the_hood",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779054950475,
+      "tag": "0006_sharp_vulture",
+      "breakpoints": true
     }
   ]
 }
