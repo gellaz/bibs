@@ -18,6 +18,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import {
+	type TableColumnDef,
+	useColumnVisibility,
+} from "@bibs/ui/hooks/use-column-visibility";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { PackageIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
@@ -57,10 +62,31 @@ export const Route = createFileRoute("/_authenticated/products/")({
 	},
 });
 
+type ProductColumnId =
+	| "name"
+	| "price"
+	| "category"
+	| "brand"
+	| "ean"
+	| "createdAt";
+
+const PRODUCT_COLUMNS: ReadonlyArray<TableColumnDef<ProductColumnId>> = [
+	{ id: "name", label: "Nome", locked: true },
+	{ id: "price", label: "Prezzo", defaultVisible: true },
+	{ id: "category", label: "Categoria", defaultVisible: true },
+	{ id: "brand", label: "Marca", defaultVisible: false },
+	{ id: "ean", label: "EAN", defaultVisible: false },
+	{ id: "createdAt", label: "Data", defaultVisible: true },
+];
+
 function ProductsListPage() {
 	const { page, limit, statusFilter, q: routeQ } = Route.useSearch();
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();
+	const cols = useColumnVisibility({
+		storageKey: "seller.products.columns",
+		columns: PRODUCT_COLUMNS,
+	});
 
 	// Input controlled, ma è il valore *deboundato* che finisce nell'URL e
 	// scatena le query. Quando l'utente naviga (back/forward), il localQ viene
@@ -226,11 +252,25 @@ function ProductsListPage() {
 										aria-label="Seleziona tutti"
 									/>
 								</TableHead>
-								<TableHead className="w-[35%]">Nome</TableHead>
-								<TableHead className="w-[20%]">Prezzo</TableHead>
-								<TableHead className="w-[20%]">Categoria</TableHead>
-								<TableHead className="w-[15%]">Data</TableHead>
-								<TableHead className="w-12 pr-4" />
+								<TableHead className="w-[30%]">Nome</TableHead>
+								{cols.isVisible("price") && (
+									<TableHead className="w-[15%]">Prezzo</TableHead>
+								)}
+								{cols.isVisible("category") && (
+									<TableHead className="w-[20%]">Categoria</TableHead>
+								)}
+								{cols.isVisible("brand") && (
+									<TableHead className="w-[12%]">Marca</TableHead>
+								)}
+								{cols.isVisible("ean") && (
+									<TableHead className="w-[12%]">EAN</TableHead>
+								)}
+								{cols.isVisible("createdAt") && (
+									<TableHead className="w-[12%]">Data</TableHead>
+								)}
+								<TableHead className="w-16 pr-2 text-right">
+									<TableColumnsToggle visibility={cols} align="end" />
+								</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -259,30 +299,55 @@ function ProductsListPage() {
 												</Link>
 											)}
 										</TableCell>
-										<TableCell className="text-sm">€{product.price}</TableCell>
-										<TableCell className="text-sm">
-											<div className="flex flex-wrap gap-1">
-												{product.productCategoryAssignments.length > 0 ? (
-													product.productCategoryAssignments.map((pc) => (
-														<Badge
-															key={pc.productCategoryId}
-															variant="secondary"
-														>
-															{pc.category.name}
-														</Badge>
-													))
-												) : (
-													<span className="text-muted-foreground">—</span>
+										{cols.isVisible("price") && (
+											<TableCell className="text-sm tabular-nums">
+												€{product.price}
+											</TableCell>
+										)}
+										{cols.isVisible("category") && (
+											<TableCell className="text-sm">
+												<div className="flex flex-wrap gap-1">
+													{product.productCategoryAssignments.length > 0 ? (
+														product.productCategoryAssignments.map((pc) => (
+															<Badge
+																key={pc.productCategoryId}
+																variant="secondary"
+															>
+																{pc.category.name}
+															</Badge>
+														))
+													) : (
+														<span className="text-muted-foreground">—</span>
+													)}
+												</div>
+											</TableCell>
+										)}
+										{cols.isVisible("brand") && (
+											<TableCell className="text-muted-foreground text-sm">
+												{product.brand?.name ?? (
+													<span className="text-muted-foreground/60">—</span>
 												)}
-											</div>
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											{new Date(product.createdAt).toLocaleDateString("it-IT", {
-												year: "numeric",
-												month: "short",
-												day: "numeric",
-											})}
-										</TableCell>
+											</TableCell>
+										)}
+										{cols.isVisible("ean") && (
+											<TableCell className="text-muted-foreground text-sm tabular-nums">
+												{product.ean ?? (
+													<span className="text-muted-foreground/60">—</span>
+												)}
+											</TableCell>
+										)}
+										{cols.isVisible("createdAt") && (
+											<TableCell className="text-muted-foreground text-sm">
+												{new Date(product.createdAt).toLocaleDateString(
+													"it-IT",
+													{
+														year: "numeric",
+														month: "short",
+														day: "numeric",
+													},
+												)}
+											</TableCell>
+										)}
 										<TableCell className="pr-4">
 											<ProductRowActions
 												productId={product.id}
@@ -294,7 +359,10 @@ function ProductsListPage() {
 								))
 							) : (
 								<TableRow className="hover:bg-transparent">
-									<TableCell colSpan={6} className="h-32 text-center">
+									<TableCell
+										colSpan={2 + cols.visibleCount}
+										className="h-32 text-center"
+									>
 										<div className="flex flex-col items-center gap-2">
 											<PackageIcon className="text-muted-foreground/40 size-8" />
 											<p className="text-muted-foreground font-medium">
