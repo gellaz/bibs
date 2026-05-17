@@ -1,3 +1,4 @@
+import { Toaster } from "@bibs/ui/components/sonner";
 import { TooltipProvider } from "@bibs/ui/components/tooltip";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
@@ -75,6 +76,7 @@ function RootDocument(_props: { children: React.ReactNode }) {
 					<TooltipProvider>
 						<Outlet />
 					</TooltipProvider>
+					<Toaster richColors position="top-right" />
 					<TanStackDevtools
 						config={{
 							position: "bottom-right",
