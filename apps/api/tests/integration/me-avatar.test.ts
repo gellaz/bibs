@@ -30,14 +30,14 @@ const s3DeleteMock = mock(async (_key: string) => {});
 
 mock.module("@/lib/s3", () => ({
 	s3: { write: s3WriteMock, delete: s3DeleteMock },
-	publicUrl: (key: string) => `http://test-bucket/${key}`,
+	publicUrl: (key: string) => `http://minio/test-bucket/${key}`,
 }));
 
 // env mock: ci serve S3_ENDPOINT e S3_BUCKET per extractOurKey
 mock.module("@/lib/env", () => ({
 	env: {
-		S3_ENDPOINT: "http://test-bucket",
-		S3_BUCKET: "",
+		S3_ENDPOINT: "http://minio",
+		S3_BUCKET: "test-bucket",
 	},
 }));
 
@@ -93,7 +93,7 @@ describe("uploadUserAvatar", () => {
 		expect((data as Buffer).byteLength).toBeGreaterThan(0);
 
 		// La URL ritornata punta al bucket
-		expect(result.url).toBe(`http://test-bucket/${key}`);
+		expect(result.url).toBe(`http://minio/test-bucket/${key}`);
 		expect(result.key).toBe(key);
 
 		// user.image aggiornato in DB
@@ -112,7 +112,7 @@ describe("uploadUserAvatar", () => {
 		const oldKey = `users/${user.id}/old-uuid.jpg`;
 		await db
 			.update(userTable)
-			.set({ image: `http://test-bucket/${oldKey}` })
+			.set({ image: `http://minio/test-bucket/${oldKey}` })
 			.where(eq(userTable.id, user.id));
 
 		await uploadUserAvatar({ userId: user.id, file: makeTestImageFile() });
@@ -164,7 +164,7 @@ describe("deleteUserAvatar", () => {
 		const key = `users/${user.id}/some-uuid.jpg`;
 		await db
 			.update(userTable)
-			.set({ image: `http://test-bucket/${key}` })
+			.set({ image: `http://minio/test-bucket/${key}` })
 			.where(eq(userTable.id, user.id));
 
 		await deleteUserAvatar({ userId: user.id });

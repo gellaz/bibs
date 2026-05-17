@@ -17,12 +17,9 @@ interface UploadUserAvatarParams {
  * altrimenti null (es. URL legacy o da provider esterno OAuth).
  */
 function extractOurKey(imageUrl: string): string | null {
-	// Build prefix cleanly: when S3_BUCKET is empty the path goes straight after the endpoint.
-	const base = env.S3_BUCKET
-		? `${env.S3_ENDPOINT}/${env.S3_BUCKET}/`
-		: `${env.S3_ENDPOINT}/`;
-	if (!imageUrl.startsWith(base)) return null;
-	const key = imageUrl.slice(base.length);
+	const expectedPrefix = `${env.S3_ENDPOINT}/${env.S3_BUCKET}/`;
+	if (!imageUrl.startsWith(expectedPrefix)) return null;
+	const key = imageUrl.slice(expectedPrefix.length);
 	return key.startsWith("users/") ? key : null;
 }
 
