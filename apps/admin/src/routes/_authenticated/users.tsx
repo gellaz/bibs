@@ -1,17 +1,12 @@
 import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { DataTable } from "@bibs/ui/components/data-table";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import { Spinner } from "@bibs/ui/components/spinner";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@bibs/ui/components/table";
+import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 import { UsersIcon } from "lucide-react";
+import { useMemo } from "react";
 import { PageHeader } from "@/components/page-header";
 import { UserRoleBadge } from "@/components/user-role-badge";
 import { authClient } from "@/lib/auth-client";
@@ -26,7 +21,23 @@ export const Route = createFileRoute("/_authenticated/users")({
 	},
 });
 
+type AdminUser = {
+	id: string;
+	name: string;
+	email: string;
+	role: string | null | undefined;
+	createdAt: string | Date;
+};
+
+const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
+	year: "numeric",
+	month: "long",
+	day: "numeric",
+};
+
 function UsersPage() {
+	"use no memo";
+
 	const { page, limit } = Route.useSearch();
 	const navigate = useNavigate({ from: "/users" });
 	const offset = (page - 1) * limit;
@@ -53,8 +64,60 @@ function UsersPage() {
 		},
 	});
 
+	const rows = useMemo<AdminUser[]>(
+		() => (data?.users ?? []) as AdminUser[],
+		[data],
+	);
+
 	const total = data?.total ?? 0;
 	const totalPages = Math.ceil(total / limit);
+
+	const columns = useMemo<ColumnDef<AdminUser>[]>(
+		() => [
+			{
+				id: "name",
+				header: "Nome",
+				enableHiding: false,
+				meta: {
+					headerClassName: "pl-6",
+					cellClassName: "pl-6 font-semibold",
+				},
+				cell: ({ row }) => row.original.name,
+			},
+			{
+				id: "email",
+				header: "Email",
+				meta: { cellClassName: "text-muted-foreground text-sm" },
+				cell: ({ row }) => row.original.email,
+			},
+			{
+				id: "role",
+				header: "Ruolo",
+				cell: ({ row }) => <UserRoleBadge role={row.original.role} />,
+			},
+			{
+				id: "createdAt",
+				header: "Registrato il",
+				meta: {
+					headerClassName: "pr-2",
+					cellClassName: "text-muted-foreground text-sm",
+				},
+				cell: ({ row }) =>
+					new Date(row.original.createdAt).toLocaleDateString(
+						"it-IT",
+						DATE_FMT_OPTS,
+					),
+			},
+			{
+				id: "toggle",
+				enableHiding: false,
+				meta: { headerClassName: "w-12 pr-6 text-right" },
+				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				cell: () => null,
+			},
+		],
+		[],
+	);
 
 	return (
 		<div className="space-y-4">
@@ -64,68 +127,28 @@ function UsersPage() {
 			/>
 
 			{error && (
-				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
 				</div>
 			)}
 
-			{isLoading ? (
-				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
-					<Spinner className="size-8" />
-				</div>
-			) : (
-				<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-					<Table>
-						<TableHeader>
-							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<TableHead className="pl-6">Nome</TableHead>
-								<TableHead>Email</TableHead>
-								<TableHead>Ruolo</TableHead>
-								<TableHead className="pr-6">Registrato il</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data?.users && data.users.length > 0 ? (
-								data.users.map((user) => (
-									<TableRow key={user.id} className="group">
-										<TableCell className="pl-6 font-semibold">
-											{user.name}
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											{user.email}
-										</TableCell>
-										<TableCell>
-											<UserRoleBadge role={user.role} />
-										</TableCell>
-										<TableCell className="text-muted-foreground pr-6 text-sm">
-											{new Date(user.createdAt).toLocaleDateString("it-IT", {
-												year: "numeric",
-												month: "long",
-												day: "numeric",
-											})}
-										</TableCell>
-									</TableRow>
-								))
-							) : (
-								<TableRow className="hover:bg-transparent">
-									<TableCell colSpan={4} className="h-32 text-center">
-										<div className="flex flex-col items-center gap-2">
-											<UsersIcon className="text-muted-foreground/40 size-8" />
-											<div>
-												<p className="text-muted-foreground font-medium">
-													Nessun utente trovato
-												</p>
-											</div>
-										</div>
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				</div>
-			)}
+			<DataTable
+				data={rows}
+				columns={columns}
+				storageKey="admin.users.columns"
+				getRowId={(row) => row.id}
+				isLoading={isLoading}
+				emptyState={
+					<div className="flex flex-col items-center gap-2">
+						<UsersIcon className="text-muted-foreground/40 size-8" />
+						<p className="text-muted-foreground font-medium">
+							Nessun utente trovato
+						</p>
+					</div>
+				}
+			/>
 
 			{total > 0 && (
 				<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
