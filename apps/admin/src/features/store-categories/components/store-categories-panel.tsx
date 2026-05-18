@@ -10,6 +10,7 @@ import {
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { DataTable } from "@bibs/ui/components/data-table";
 import {
 	Dialog,
 	DialogContent,
@@ -21,17 +22,10 @@ import { Input } from "@bibs/ui/components/input";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
-import { SortableTableHead } from "@bibs/ui/components/sortable-table-head";
-import { Spinner } from "@bibs/ui/components/spinner";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@bibs/ui/components/table";
+import { SortableHeadButton } from "@bibs/ui/components/sortable-table-head";
+import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
 	PencilIcon,
 	SearchIcon,
@@ -39,7 +33,7 @@ import {
 	Trash2Icon,
 	UploadIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	CsvImportDialog,
 	type CsvImportResult,
@@ -61,10 +55,18 @@ interface StoreCategoriesPanelProps {
 
 type SortByField = "name" | "createdAt";
 
+const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
+	year: "numeric",
+	month: "long",
+	day: "numeric",
+};
+
 export function StoreCategoriesPanel({
 	createOpen,
 	onCreateOpenChange,
 }: StoreCategoriesPanelProps) {
+	"use no memo";
+
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 	const [search, setSearch] = useState("");
@@ -139,13 +141,11 @@ export function StoreCategoriesPanel({
 	const createMutation = useMutation({
 		mutationFn: async (name: string) => {
 			const response = await api().admin["store-categories"].post({ name });
-
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || "Failed to create store category",
 				);
 			}
-
 			return response.data;
 		},
 		onSuccess: () => {
@@ -163,13 +163,11 @@ export function StoreCategoriesPanel({
 			const response = await api()
 				.admin["store-categories"]({ categoryId: id })
 				.patch({ name });
-
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || "Failed to update store category",
 				);
 			}
-
 			return response.data;
 		},
 		onSuccess: () => {
@@ -188,13 +186,11 @@ export function StoreCategoriesPanel({
 			const response = await api()
 				.admin["store-categories"]({ categoryId: id })
 				.delete();
-
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || "Failed to delete store category",
 				);
 			}
-
 			return response.data;
 		},
 		onSuccess: () => {
@@ -227,10 +223,97 @@ export function StoreCategoriesPanel({
 		return data;
 	};
 
+	const rows = useMemo<StoreCategory[]>(
+		() => (data?.data as StoreCategory[]) ?? [],
+		[data],
+	);
+
+	const columns = useMemo<ColumnDef<StoreCategory>[]>(
+		() => [
+			{
+				id: "name",
+				enableHiding: false,
+				meta: {
+					menuLabel: "Nome",
+					headerClassName: "w-[40%] pl-4",
+					cellClassName: "pl-6 font-semibold",
+				},
+				header: () => (
+					<SortableHeadButton
+						active={sortBy === "name"}
+						sortOrder={sortOrder}
+						onSort={() => handleSort("name")}
+					>
+						Nome
+					</SortableHeadButton>
+				),
+				cell: ({ row }) => row.original.name,
+			},
+			{
+				id: "createdAt",
+				meta: {
+					menuLabel: "Data creazione",
+					headerClassName: "w-[40%]",
+					cellClassName: "text-muted-foreground text-sm",
+				},
+				header: () => (
+					<SortableHeadButton
+						active={sortBy === "createdAt"}
+						sortOrder={sortOrder}
+						onSort={() => handleSort("createdAt")}
+					>
+						Data Creazione
+					</SortableHeadButton>
+				),
+				cell: ({ row }) =>
+					new Date(row.original.createdAt).toLocaleDateString(
+						"it-IT",
+						DATE_FMT_OPTS,
+					),
+			},
+			{
+				id: "actions",
+				enableHiding: false,
+				meta: {
+					headerClassName: "w-[20%] pr-6 text-right",
+					cellClassName: "pr-6 text-right",
+				},
+				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				cell: ({ row }) => (
+					<div className="flex items-center justify-end gap-1">
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							onClick={() => {
+								setSelectedCategory(row.original);
+								setEditOpen(true);
+							}}
+							aria-label="Modifica categoria"
+						>
+							<PencilIcon className="size-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							onClick={() => {
+								setSelectedCategory(row.original);
+								setDeleteOpen(true);
+							}}
+							aria-label="Elimina categoria"
+						>
+							<Trash2Icon className="size-4" />
+						</Button>
+					</div>
+				),
+			},
+		],
+		[sortBy, sortOrder],
+	);
+
 	return (
 		<div className="space-y-4">
 			{error && (
-				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
@@ -253,102 +336,26 @@ export function StoreCategoriesPanel({
 				</Button>
 			</div>
 
-			{isLoading ? (
-				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
-					<Spinner className="size-8" />
-				</div>
-			) : (
-				<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-					<Table>
-						<TableHeader>
-							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<SortableTableHead
-									className="w-[40%] pl-4"
-									active={sortBy === "name"}
-									sortOrder={sortOrder}
-									onSort={() => handleSort("name")}
-								>
-									Nome
-								</SortableTableHead>
-								<SortableTableHead
-									className="w-[40%]"
-									active={sortBy === "createdAt"}
-									sortOrder={sortOrder}
-									onSort={() => handleSort("createdAt")}
-								>
-									Data Creazione
-								</SortableTableHead>
-								<TableHead className="w-[20%] pr-6 text-right">
-									Azioni
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data?.data && data.data.length > 0 ? (
-								data.data.map((category: StoreCategory) => (
-									<TableRow key={category.id} className="group">
-										<TableCell className="pl-6 font-semibold">
-											{category.name}
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											{new Date(category.createdAt).toLocaleDateString(
-												"it-IT",
-												{
-													year: "numeric",
-													month: "long",
-													day: "numeric",
-												},
-											)}
-										</TableCell>
-										<TableCell className="pr-6 text-right">
-											<div className="flex items-center justify-end gap-1">
-												<Button
-													variant="ghost"
-													size="icon-sm"
-													onClick={() => {
-														setSelectedCategory(category);
-														setEditOpen(true);
-													}}
-													aria-label="Modifica categoria"
-												>
-													<PencilIcon className="size-4" />
-												</Button>
-												<Button
-													variant="ghost"
-													size="icon-sm"
-													onClick={() => {
-														setSelectedCategory(category);
-														setDeleteOpen(true);
-													}}
-													aria-label="Elimina categoria"
-												>
-													<Trash2Icon className="size-4" />
-												</Button>
-											</div>
-										</TableCell>
-									</TableRow>
-								))
-							) : (
-								<TableRow className="hover:bg-transparent">
-									<TableCell colSpan={3} className="h-32 text-center">
-										<div className="flex flex-col items-center gap-2">
-											<StoreIcon className="text-muted-foreground/40 size-8" />
-											<div>
-												<p className="text-muted-foreground font-medium">
-													Nessuna categoria negozio trovata
-												</p>
-												<p className="text-muted-foreground/60 text-sm">
-													Crea la prima categoria per iniziare
-												</p>
-											</div>
-										</div>
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				</div>
-			)}
+			<DataTable
+				data={rows}
+				columns={columns}
+				storageKey="admin.store-categories.columns"
+				getRowId={(row) => row.id}
+				isLoading={isLoading}
+				emptyState={
+					<div className="flex flex-col items-center gap-2">
+						<StoreIcon className="text-muted-foreground/40 size-8" />
+						<div>
+							<p className="text-muted-foreground font-medium">
+								Nessuna categoria negozio trovata
+							</p>
+							<p className="text-muted-foreground/60 text-sm">
+								Crea la prima categoria per iniziare
+							</p>
+						</div>
+					</div>
+				}
+			/>
 
 			{data?.pagination &&
 				data.pagination.total > 0 &&
@@ -378,7 +385,6 @@ export function StoreCategoriesPanel({
 					);
 				})()}
 
-			{/* Create Dialog */}
 			<Dialog open={createOpen} onOpenChange={onCreateOpenChange}>
 				<DialogContent>
 					<DialogHeader>
@@ -397,7 +403,6 @@ export function StoreCategoriesPanel({
 				</DialogContent>
 			</Dialog>
 
-			{/* Edit Dialog */}
 			<Dialog open={editOpen} onOpenChange={setEditOpen}>
 				<DialogContent>
 					<DialogHeader>
@@ -439,7 +444,6 @@ export function StoreCategoriesPanel({
 				onSuccess={invalidateAll}
 			/>
 
-			{/* Delete Confirmation */}
 			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
