@@ -2,7 +2,6 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
@@ -13,14 +12,7 @@ import {
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
 import { Link } from "@tanstack/react-router";
-import {
-	CheckIcon,
-	ChevronsUpDownIcon,
-	InfoIcon,
-	PlusIcon,
-	SettingsIcon,
-	StoreIcon,
-} from "lucide-react";
+import { ChevronsUpDownIcon, PlusIcon, StoreIcon } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
 
@@ -32,6 +24,8 @@ export function StoreSwitcher() {
 	if (isLoading || stores.length === 0) {
 		return null;
 	}
+
+	const otherStores = stores.filter((s) => s.id !== activeStore?.id);
 
 	return (
 		<SidebarMenu>
@@ -58,54 +52,66 @@ export function StoreSwitcher() {
 						</SidebarMenuButton>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
-						className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+						className="w-(--radix-dropdown-menu-trigger-width) min-w-64 overflow-hidden rounded-lg p-0"
 						align="start"
 						side={isMobile ? "bottom" : "right"}
 						sideOffset={4}
 					>
-						<DropdownMenuLabel className="text-xs text-muted-foreground">
-							Negozi
-						</DropdownMenuLabel>
-						{stores.map((store) => {
-							const isActive = store.id === activeStore?.id;
-							return (
-								<DropdownMenuItem
-									key={store.id}
-									onClick={() => setActiveStoreId(store.id)}
-									className="gap-2 p-2"
-								>
-									<div className="flex size-6 items-center justify-center rounded-md border">
-										<StoreIcon className="size-3.5 shrink-0" />
-									</div>
-									<div className="flex flex-1 flex-col">
-										<span>{store.name}</span>
-										<span className="text-xs text-muted-foreground">
-											{store.city}
-											{store.province ? ` (${store.province})` : ""}
-										</span>
-									</div>
-									{isActive && <CheckIcon className="size-4" />}
-								</DropdownMenuItem>
-							);
-						})}
-						<DropdownMenuSeparator />
-						<DropdownMenuItem asChild>
-							<Link to="/store">
-								{isOwner ? <SettingsIcon /> : <InfoIcon />}
-								<span>
-									{isOwner
-										? "Modifica negozio attivo"
-										: "Informazioni negozio attivo"}
-								</span>
-							</Link>
-						</DropdownMenuItem>
+						{activeStore && (
+							<div className="border-b px-3 py-3">
+								<div className="truncate text-sm font-medium leading-snug">
+									{activeStore.name}
+								</div>
+								<div className="mt-0.5 truncate text-xs text-muted-foreground">
+									{activeStore.city}
+									{activeStore.province ? ` (${activeStore.province})` : ""}
+								</div>
+							</div>
+						)}
+
+						{otherStores.length > 0 && (
+							<div className="py-1">
+								<div className="px-3 py-1.5 text-xs text-muted-foreground">
+									Cambia negozio
+								</div>
+								{otherStores.map((store) => (
+									<DropdownMenuItem
+										key={store.id}
+										onClick={() => setActiveStoreId(store.id)}
+										className="mx-1 gap-2 rounded-md px-2 py-2"
+									>
+										<div className="flex size-6 items-center justify-center rounded-md border">
+											<StoreIcon className="size-3.5 shrink-0" />
+										</div>
+										<div className="flex min-w-0 flex-1 flex-col">
+											<span className="truncate">{store.name}</span>
+											<span className="truncate text-xs text-muted-foreground">
+												{store.city}
+												{store.province ? ` (${store.province})` : ""}
+											</span>
+										</div>
+									</DropdownMenuItem>
+								))}
+							</div>
+						)}
+
 						{isOwner && (
-							<DropdownMenuItem asChild>
-								<Link to="/store/new">
-									<PlusIcon />
-									<span>Aggiungi negozio</span>
-								</Link>
-							</DropdownMenuItem>
+							<>
+								{otherStores.length > 0 && (
+									<DropdownMenuSeparator className="my-0" />
+								)}
+								<div className="py-1">
+									<DropdownMenuItem
+										asChild
+										className="mx-1 gap-2 rounded-md px-2 py-2"
+									>
+										<Link to="/store/new">
+											<PlusIcon className="size-4" />
+											<span>Aggiungi negozio</span>
+										</Link>
+									</DropdownMenuItem>
+								</div>
+							</>
 						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
