@@ -57,6 +57,8 @@ export function TableColumnsToggle<TData>({
 	labels: labelOverrides,
 	className,
 }: TableColumnsToggleProps<TData>) {
+	"use no memo";
+
 	const labels = { ...DEFAULT_LABELS, ...labelOverrides };
 
 	const menuColumns = table

@@ -71,6 +71,8 @@ export function DataTable<TData>({
 	rowClassName,
 	containerClassName,
 }: DataTableProps<TData>) {
+	"use no memo";
+
 	const table = useDataTable({
 		data,
 		columns,

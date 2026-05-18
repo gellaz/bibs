@@ -63,6 +63,8 @@ const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
 };
 
 function ProductsListPage() {
+	"use no memo";
+
 	const { page, limit, statusFilter, q: routeQ } = Route.useSearch();
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();

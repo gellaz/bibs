@@ -76,6 +76,8 @@ export function useDataTable<TData>({
 	manualPagination,
 	getRowId,
 }: UseDataTableOptions<TData>): Table<TData> {
+	"use no memo";
+
 	const defaults = useMemo<VisibilityState>(
 		() => initialColumnVisibility ?? {},
 		[initialColumnVisibility],
