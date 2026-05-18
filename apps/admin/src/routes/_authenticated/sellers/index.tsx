@@ -10,30 +10,24 @@ import {
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { DataTable } from "@bibs/ui/components/data-table";
 import { Input } from "@bibs/ui/components/input";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
-import { SortableTableHead } from "@bibs/ui/components/sortable-table-head";
-import { Spinner } from "@bibs/ui/components/spinner";
+import { SortableHeadButton } from "@bibs/ui/components/sortable-table-head";
 import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@bibs/ui/components/table";
+import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
 	CheckCircle2Icon,
 	SearchIcon,
 	ShieldCheckIcon,
 	XCircleIcon,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
@@ -75,7 +69,15 @@ interface Seller {
 	} | null;
 }
 
+const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
+	year: "numeric",
+	month: "long",
+	day: "numeric",
+};
+
 function SellersPage() {
+	"use no memo";
+
 	const { status } = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
 	const queryClient = useQueryClient();
@@ -94,14 +96,12 @@ function SellersPage() {
 
 	const activeTab = status ?? "all";
 
-	// Reset page & search on tab change
 	useEffect(() => {
 		setPage(1);
 		setSearch("");
 		setDebouncedSearch("");
 	}, [status]);
 
-	// Debounce search
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	useEffect(() => {
 		debounceRef.current = setTimeout(() => {
@@ -167,19 +167,15 @@ function SellersPage() {
 	const verifyMutation = useMutation({
 		mutationFn: async (sellerId: string) => {
 			const response = await api().admin.sellers({ sellerId }).verify.patch();
-
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || "Errore nella verifica",
 				);
 			}
-
 			return response.data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-sellers"],
-			});
+			void queryClient.invalidateQueries({ queryKey: ["admin-sellers"] });
 			void queryClient.invalidateQueries({
 				queryKey: ["admin-sellers-counts"],
 			});
@@ -194,17 +190,13 @@ function SellersPage() {
 	const rejectMutation = useMutation({
 		mutationFn: async (sellerId: string) => {
 			const response = await api().admin.sellers({ sellerId }).reject.patch();
-
 			if (response.error) {
 				throw new Error(response.error.value?.message || "Errore nel rifiuto");
 			}
-
 			return response.data;
 		},
 		onSuccess: () => {
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-sellers"],
-			});
+			void queryClient.invalidateQueries({ queryKey: ["admin-sellers"] });
 			void queryClient.invalidateQueries({
 				queryKey: ["admin-sellers-counts"],
 			});
@@ -235,7 +227,6 @@ function SellersPage() {
 
 	const isMutating = verifyMutation.isPending || rejectMutation.isPending;
 
-	// Show actions column when viewing all statuses or specifically pending_review
 	const showActions = !status || status === "pending_review";
 
 	const sellerTabs: TabNavItem[] = STATUS_TABS.map((tab) => ({
@@ -253,6 +244,152 @@ function SellersPage() {
 					? (countsData[tab.value as keyof typeof countsData] ?? 0)
 					: null,
 	}));
+
+	const rows = useMemo<Seller[]>(() => (data?.data as Seller[]) ?? [], [data]);
+
+	const columns = useMemo<ColumnDef<Seller>[]>(() => {
+		const cols: ColumnDef<Seller>[] = [
+			{
+				id: "name",
+				enableHiding: false,
+				meta: {
+					menuLabel: "Venditore",
+					headerClassName: "pl-4",
+					cellClassName: "pl-6 font-semibold",
+				},
+				header: () => (
+					<SortableHeadButton
+						active={sortBy === "name"}
+						sortOrder={sortOrder}
+						onSort={() => handleSort("name")}
+					>
+						Venditore
+					</SortableHeadButton>
+				),
+				cell: ({ row }) => {
+					const s = row.original;
+					return (
+						<Link
+							to="/sellers/$sellerId"
+							params={{ sellerId: s.id }}
+							className="hover:text-primary hover:underline"
+						>
+							{s.firstName && s.lastName
+								? `${s.firstName} ${s.lastName}`
+								: s.user.name}
+						</Link>
+					);
+				},
+			},
+			{
+				id: "email",
+				header: "Email",
+				meta: { cellClassName: "text-muted-foreground text-sm" },
+				cell: ({ row }) => row.original.user.email,
+			},
+			{
+				id: "organization",
+				header: "Azienda",
+				meta: { cellClassName: "text-sm" },
+				cell: ({ row }) =>
+					row.original.organization?.businessName ?? (
+						<span className="text-muted-foreground">—</span>
+					),
+			},
+			{
+				id: "vatNumber",
+				header: "P.IVA",
+				meta: { cellClassName: "text-sm" },
+				cell: ({ row }) =>
+					row.original.organization ? (
+						<code className="text-xs">
+							{row.original.organization.vatNumber}
+						</code>
+					) : (
+						<span className="text-muted-foreground">—</span>
+					),
+			},
+		];
+
+		if (!status) {
+			cols.push({
+				id: "onboardingStatus",
+				header: "Stato",
+				cell: ({ row }) => (
+					<OnboardingStatusBadge status={row.original.onboardingStatus} />
+				),
+			});
+		}
+
+		cols.push({
+			id: "createdAt",
+			meta: {
+				menuLabel: "Registrato il",
+				cellClassName: "text-muted-foreground text-sm",
+			},
+			header: () => (
+				<SortableHeadButton
+					active={sortBy === "createdAt"}
+					sortOrder={sortOrder}
+					onSort={() => handleSort("createdAt")}
+				>
+					Registrato il
+				</SortableHeadButton>
+			),
+			cell: ({ row }) =>
+				new Date(row.original.createdAt).toLocaleDateString(
+					"it-IT",
+					DATE_FMT_OPTS,
+				),
+		});
+
+		if (showActions) {
+			cols.push({
+				id: "actions",
+				enableHiding: false,
+				meta: {
+					headerClassName: "pr-6 text-right",
+					cellClassName: "pr-6 text-right",
+				},
+				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				cell: ({ row }) => {
+					const s = row.original;
+					if (s.onboardingStatus !== "pending_review") return null;
+					return (
+						<div className="flex items-center justify-end gap-1.5">
+							<Button
+								variant="success"
+								size="sm"
+								onClick={() => setConfirmAction({ type: "verify", seller: s })}
+							>
+								<CheckCircle2Icon className="size-3.5" />
+								Approva
+							</Button>
+							<Button
+								variant="destructive"
+								size="sm"
+								onClick={() => setConfirmAction({ type: "reject", seller: s })}
+							>
+								<XCircleIcon className="size-3.5" />
+								Rifiuta
+							</Button>
+						</div>
+					);
+				},
+			});
+		} else {
+			// When actions are hidden, still need a column to host the toggle.
+			cols.push({
+				id: "toggle",
+				enableHiding: false,
+				meta: { headerClassName: "w-12 pr-6 text-right" },
+				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				cell: () => null,
+			});
+		}
+
+		return cols;
+	}, [status, showActions, sortBy, sortOrder]);
 
 	return (
 		<div className="space-y-4">
@@ -278,160 +415,41 @@ function SellersPage() {
 			</div>
 
 			{error && (
-				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
 				</div>
 			)}
 
-			{isLoading ? (
-				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
-					<Spinner className="size-8" />
-				</div>
-			) : (
-				<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-					<Table>
-						<TableHeader>
-							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<SortableTableHead
-									className="pl-4"
-									active={sortBy === "name"}
-									sortOrder={sortOrder}
-									onSort={() => handleSort("name")}
-								>
-									Venditore
-								</SortableTableHead>
-								<TableHead>Email</TableHead>
-								<TableHead>Azienda</TableHead>
-								<TableHead>P.IVA</TableHead>
-								{!status && <TableHead>Stato</TableHead>}
-								<SortableTableHead
-									active={sortBy === "createdAt"}
-									sortOrder={sortOrder}
-									onSort={() => handleSort("createdAt")}
-								>
-									Registrato il
-								</SortableTableHead>
-								{showActions && (
-									<TableHead className="pr-6 text-right">Azioni</TableHead>
-								)}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data?.data && data.data.length > 0 ? (
-								data.data.map((seller: Seller) => (
-									<TableRow key={seller.id} className="group">
-										<TableCell className="pl-6 font-semibold">
-											<Link
-												to="/sellers/$sellerId"
-												params={{ sellerId: seller.id }}
-												className="hover:text-primary hover:underline"
-											>
-												{seller.firstName && seller.lastName
-													? `${seller.firstName} ${seller.lastName}`
-													: seller.user.name}
-											</Link>
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											{seller.user.email}
-										</TableCell>
-										<TableCell className="text-sm">
-											{seller.organization?.businessName ?? (
-												<span className="text-muted-foreground">—</span>
-											)}
-										</TableCell>
-										<TableCell className="text-sm">
-											{seller.organization ? (
-												<code className="text-xs">
-													{seller.organization.vatNumber}
-												</code>
-											) : (
-												<span className="text-muted-foreground">—</span>
-											)}
-										</TableCell>
-										{!status && (
-											<TableCell>
-												<OnboardingStatusBadge
-													status={seller.onboardingStatus}
-												/>
-											</TableCell>
-										)}
-										<TableCell className="text-muted-foreground text-sm">
-											{new Date(seller.createdAt).toLocaleDateString("it-IT", {
-												year: "numeric",
-												month: "long",
-												day: "numeric",
-											})}
-										</TableCell>
-										{showActions && (
-											<TableCell className="pr-6 text-right">
-												{seller.onboardingStatus === "pending_review" ? (
-													<div className="flex items-center justify-end gap-1.5">
-														<Button
-															variant="success"
-															size="sm"
-															onClick={() =>
-																setConfirmAction({
-																	type: "verify",
-																	seller,
-																})
-															}
-														>
-															<CheckCircle2Icon className="size-3.5" />
-															Approva
-														</Button>
-														<Button
-															variant="destructive"
-															size="sm"
-															onClick={() =>
-																setConfirmAction({
-																	type: "reject",
-																	seller,
-																})
-															}
-														>
-															<XCircleIcon className="size-3.5" />
-															Rifiuta
-														</Button>
-													</div>
-												) : null}
-											</TableCell>
-										)}
-									</TableRow>
-								))
-							) : (
-								<TableRow className="hover:bg-transparent">
-									<TableCell
-										colSpan={showActions ? 7 : 6}
-										className="h-32 text-center"
-									>
-										<div className="flex flex-col items-center gap-2">
-											<ShieldCheckIcon className="text-muted-foreground/40 size-8" />
-											<div>
-												<p className="text-muted-foreground font-medium">
-													Nessun venditore trovato
-												</p>
-												<p className="text-muted-foreground/60 text-sm">
-													{debouncedSearch
-														? `Nessun risultato per "${debouncedSearch}"`
-														: status === "pending_review"
-															? "Nessuna candidatura in attesa di revisione"
-															: status === "rejected"
-																? "Nessuna candidatura rifiutata"
-																: status === "active"
-																	? "Nessun venditore attivo"
-																	: "Le nuove candidature appariranno qui"}
-												</p>
-											</div>
-										</div>
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				</div>
-			)}
+			<DataTable
+				data={rows}
+				columns={columns}
+				storageKey="admin.sellers.columns"
+				getRowId={(row) => row.id}
+				isLoading={isLoading}
+				emptyState={
+					<div className="flex flex-col items-center gap-2">
+						<ShieldCheckIcon className="text-muted-foreground/40 size-8" />
+						<div>
+							<p className="text-muted-foreground font-medium">
+								Nessun venditore trovato
+							</p>
+							<p className="text-muted-foreground/60 text-sm">
+								{debouncedSearch
+									? `Nessun risultato per "${debouncedSearch}"`
+									: status === "pending_review"
+										? "Nessuna candidatura in attesa di revisione"
+										: status === "rejected"
+											? "Nessuna candidatura rifiutata"
+											: status === "active"
+												? "Nessun venditore attivo"
+												: "Le nuove candidature appariranno qui"}
+							</p>
+						</div>
+					</div>
+				}
+			/>
 
 			{data?.pagination &&
 				data.pagination.total > 0 &&
@@ -461,7 +479,6 @@ function SellersPage() {
 					);
 				})()}
 
-			{/* Confirm Action Dialog */}
 			<AlertDialog
 				open={!!confirmAction}
 				onOpenChange={(open) => {
