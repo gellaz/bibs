@@ -11,6 +11,7 @@ import {
 import { AvatarBadge } from "@bibs/ui/components/avatar";
 import { Button } from "@bibs/ui/components/button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { DataTable } from "@bibs/ui/components/data-table";
 import {
 	Dialog,
 	DialogClose,
@@ -30,19 +31,12 @@ import {
 } from "@bibs/ui/components/dropdown-menu";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import { Skeleton } from "@bibs/ui/components/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@bibs/ui/components/table";
+import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
 	CheckIcon,
 	MoreHorizontalIcon,
@@ -54,7 +48,7 @@ import {
 	UsersIcon,
 	XIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MembershipStatusBadge } from "@/components/membership-status-badge";
 import { SellerRoleBadge } from "@/components/seller-role-badge";
 import { EmployeeStoresDialog } from "@/features/team/components/employee-stores-dialog";
@@ -205,8 +199,6 @@ function useRemoveEmployee() {
 	});
 }
 
-// ─── Status / role helpers ───────────────────────────────
-
 // ─── Invite Employee Dialog (owner-only) ─────────────────
 
 function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
@@ -268,7 +260,7 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 					{error && (
-						<div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+						<div className="bg-destructive/10 text-destructive rounded-md px-3 py-2 text-sm">
 							{error}
 						</div>
 					)}
@@ -303,10 +295,10 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 										}
 										aria-pressed={isSelected}
 										className={cn(
-											"flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50",
+											"focus-visible:ring-ring/50 flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2",
 											isSelected
 												? "border-primary bg-primary/10 dark:bg-primary/15"
-												: "border-transparent hover:bg-accent/50",
+												: "hover:bg-accent/50 border-transparent",
 										)}
 									>
 										<span
@@ -491,45 +483,48 @@ function EmployeeActions({
 	);
 }
 
-// ─── Skeleton row ────────────────────────────────────────
+// ─── Row model ───────────────────────────────────────────
 
-function TeamTableSkeletonRow({ withActions }: { withActions: boolean }) {
-	const cell = "bg-warm-edge";
-	return (
-		<TableRow className="hover:bg-transparent">
-			<TableCell className="pl-6">
-				<div className="flex items-center gap-3">
-					<Skeleton className={`size-8 rounded-full ${cell}`} />
-					<div className="flex flex-col gap-1.5">
-						<Skeleton className={`h-3.5 w-32 ${cell}`} />
-						<Skeleton className={`h-3 w-40 ${cell}`} />
-					</div>
-				</div>
-			</TableCell>
-			<TableCell>
-				<Skeleton className={`h-5 w-20 rounded-full ${cell}`} />
-			</TableCell>
-			<TableCell>
-				<Skeleton className={`h-5 w-20 rounded-full ${cell}`} />
-			</TableCell>
-			<TableCell>
-				<Skeleton className={`h-4 w-24 ${cell}`} />
-			</TableCell>
-			<TableCell>
-				<Skeleton className={`h-4 w-20 ${cell}`} />
-			</TableCell>
-			{withActions && (
-				<TableCell className="pr-6 text-right">
-					<Skeleton className={`ml-auto size-7 rounded-md ${cell}`} />
-				</TableCell>
-			)}
-		</TableRow>
-	);
-}
+type OwnerRow = {
+	kind: "owner";
+	id: string;
+	owner: { id: string; name: string; email: string };
+	isSelf: boolean;
+};
+type EmployeeRow = {
+	kind: "employee";
+	id: string;
+	employee: NonNullable<
+		Awaited<
+			ReturnType<ReturnType<typeof api>["seller"]["employees"]["get"]>
+		>["data"]
+	>["data"][number];
+	isSelf: boolean;
+};
+type InvitationRow = {
+	kind: "invitation";
+	id: string;
+	invitation: NonNullable<
+		Awaited<
+			ReturnType<
+				ReturnType<typeof api>["seller"]["employees"]["invitations"]["get"]
+			>
+		>["data"]
+	>["data"][number];
+};
+type TeamRow = OwnerRow | EmployeeRow | InvitationRow;
+
+const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
+	year: "numeric",
+	month: "short",
+	day: "numeric",
+};
 
 // ─── Main Page ───────────────────────────────────────────
 
 function TeamPage() {
+	"use no memo";
+
 	const { page, limit } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const { data: session } = authClient.useSession();
@@ -537,21 +532,227 @@ function TeamPage() {
 
 	const currentUserId = session?.user.id;
 	const isOwner = session?.user.role === "seller";
-	const colCount = isOwner ? 6 : 5;
 
-	// Only fetch invitations for the owner
 	const { data: invitationsData } = useInvitations(isOwner);
 	const cancelMutation = useCancelInvitation();
-	const pendingInvitations =
-		invitationsData?.data?.filter((i) => i.status === "pending") ?? [];
+	const pendingInvitations = useMemo(
+		() => invitationsData?.data?.filter((i) => i.status === "pending") ?? [],
+		[invitationsData],
+	);
 
 	const totalPages = data?.pagination
 		? Math.ceil(data.pagination.total / limit)
 		: 0;
 
 	const owner = data?.owner ?? null;
-	const hasEmployees = (data?.data?.length ?? 0) > 0;
-	const hasContent = !!owner || hasEmployees || pendingInvitations.length > 0;
+
+	const rows = useMemo<TeamRow[]>(() => {
+		const out: TeamRow[] = [];
+		if (owner) {
+			out.push({
+				kind: "owner",
+				id: `owner-${owner.id}`,
+				owner,
+				isSelf: currentUserId === owner.id,
+			});
+		}
+		for (const e of data?.data ?? []) {
+			out.push({
+				kind: "employee",
+				id: `emp-${e.id}`,
+				employee: e,
+				isSelf: currentUserId === e.userId,
+			});
+		}
+		if (isOwner) {
+			for (const inv of pendingInvitations) {
+				out.push({
+					kind: "invitation",
+					id: `inv-${inv.id}`,
+					invitation: inv,
+				});
+			}
+		}
+		return out;
+	}, [owner, data?.data, currentUserId, isOwner, pendingInvitations]);
+
+	const columns = useMemo<ColumnDef<TeamRow>[]>(() => {
+		const cols: ColumnDef<TeamRow>[] = [
+			{
+				id: "user",
+				header: "Utente",
+				enableHiding: false,
+				meta: {
+					headerClassName: "w-[30%] pl-6",
+					cellClassName: "pl-6",
+				},
+				cell: ({ row }) => {
+					const r = row.original;
+					if (r.kind === "owner") {
+						return (
+							<div className="flex items-center gap-3">
+								<UserAvatar name={r.owner.name}>
+									{r.isSelf && (
+										<AvatarBadge
+											className="bg-saffron-deep ring-card"
+											aria-label="Sei tu"
+											title="Sei tu"
+										/>
+									)}
+								</UserAvatar>
+								<div className="flex min-w-0 flex-col leading-tight">
+									<span className="truncate font-semibold">{r.owner.name}</span>
+									<span className="text-muted-foreground truncate text-xs">
+										{r.owner.email}
+									</span>
+								</div>
+							</div>
+						);
+					}
+					if (r.kind === "employee") {
+						return (
+							<div className="flex items-center gap-3">
+								<UserAvatar
+									name={r.employee.user.name}
+									image={r.employee.user.image}
+								>
+									{r.isSelf && (
+										<AvatarBadge
+											className="bg-saffron-deep ring-card"
+											aria-label="Sei tu"
+											title="Sei tu"
+										/>
+									)}
+								</UserAvatar>
+								<div className="flex min-w-0 flex-col leading-tight">
+									<span className="truncate font-semibold">
+										{r.employee.user.name}
+									</span>
+									<span className="text-muted-foreground truncate text-xs">
+										{r.employee.user.email}
+									</span>
+								</div>
+							</div>
+						);
+					}
+					return (
+						<div className="flex items-center gap-3 italic">
+							<UserAvatar name={r.invitation.email.split("@")[0]} />
+							<div className="flex min-w-0 flex-col leading-tight">
+								<span className="truncate">
+									{r.invitation.email.split("@")[0]}
+								</span>
+								<span className="text-muted-foreground truncate text-xs not-italic">
+									{r.invitation.email}
+								</span>
+							</div>
+						</div>
+					);
+				},
+			},
+			{
+				id: "role",
+				header: "Ruolo",
+				meta: { headerClassName: "w-[13%]" },
+				cell: ({ row }) => {
+					const r = row.original;
+					return (
+						<SellerRoleBadge
+							userRole={r.kind === "owner" ? "seller" : "employee"}
+						/>
+					);
+				},
+			},
+			{
+				id: "status",
+				header: "Stato",
+				meta: { headerClassName: "w-[13%]" },
+				cell: ({ row }) => {
+					const r = row.original;
+					if (r.kind === "owner")
+						return <MembershipStatusBadge status="active" />;
+					if (r.kind === "employee")
+						return <MembershipStatusBadge status={r.employee.status} />;
+					return <MembershipStatusBadge status="pending" />;
+				},
+			},
+			{
+				id: "stores",
+				header: "Negozi",
+				meta: { headerClassName: "w-[18%]" },
+				cell: ({ row }) => {
+					const r = row.original;
+					if (r.kind === "owner") {
+						return (
+							<span className="text-muted-foreground text-sm italic">
+								Tutti i negozi
+							</span>
+						);
+					}
+					const storeIds =
+						r.kind === "employee" ? r.employee.storeIds : r.invitation.storeIds;
+					return <StoreChips storeIds={storeIds} />;
+				},
+			},
+			{
+				id: "createdAt",
+				header: "Data",
+				meta: {
+					headerClassName: "w-[14%]",
+					cellClassName: "text-muted-foreground text-sm",
+				},
+				cell: ({ row }) => {
+					const r = row.original;
+					if (r.kind === "owner") return "—";
+					const createdAt =
+						r.kind === "employee"
+							? r.employee.createdAt
+							: r.invitation.createdAt;
+					return new Date(createdAt).toLocaleDateString("it-IT", DATE_FMT_OPTS);
+				},
+			},
+		];
+
+		// The actions column always exists so the toggle button has a home.
+		// For non-owner viewers the cells render nothing (read-only view).
+		cols.push({
+			id: "actions",
+			enableHiding: false,
+			meta: {
+				headerClassName: "w-[12%] pr-6 text-right",
+				cellClassName: "pr-6 text-right",
+			},
+			header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+			cell: ({ row }) => {
+				if (!isOwner) return null;
+				const r = row.original;
+				if (r.kind === "owner") return null;
+				if (r.kind === "employee") {
+					return (
+						<EmployeeActions
+							employeeId={r.employee.id}
+							employeeName={r.employee.user.name}
+							status={r.employee.status}
+						/>
+					);
+				}
+				return (
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						disabled={cancelMutation.isPending}
+						onClick={() => void cancelMutation.mutateAsync(r.invitation.id)}
+						title="Annulla invito"
+					>
+						<XIcon />
+						<span className="sr-only">Annulla invito</span>
+					</Button>
+				);
+			},
+		});
+
+		return cols;
+	}, [isOwner, cancelMutation]);
 
 	return (
 		<div className="space-y-6">
@@ -568,227 +769,50 @@ function TeamPage() {
 			</div>
 
 			{error && (
-				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
 				</div>
 			)}
 
-			<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-				<Table>
-					<TableHeader>
-						<TableRow className="bg-muted/50 hover:bg-muted/50">
-							<TableHead className="w-[30%] pl-6">Utente</TableHead>
-							<TableHead className="w-[13%]">Ruolo</TableHead>
-							<TableHead className="w-[13%]">Stato</TableHead>
-							<TableHead className="w-[18%]">Negozi</TableHead>
-							<TableHead className="w-[14%]">Data</TableHead>
-							{isOwner && (
-								<TableHead className="w-[12%] pr-6 text-right">
-									Azioni
-								</TableHead>
-							)}
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{isLoading ? (
-							Array.from({ length: 5 }).map((_, i) => (
-								<TeamTableSkeletonRow
-									key={`skel-${i}`}
-									withActions={!!isOwner}
-								/>
-							))
-						) : (
-							<>
-								{/* Owner row — always first */}
-								{owner && (
-									<TableRow className="bg-saffron-deep/8 hover:bg-saffron-deep/8">
-										<TableCell className="pl-6">
-											<div className="flex items-center gap-3">
-												<UserAvatar name={owner.name}>
-													{currentUserId === owner.id && (
-														<AvatarBadge
-															className="bg-saffron-deep ring-card"
-															aria-label="Sei tu"
-															title="Sei tu"
-														/>
-													)}
-												</UserAvatar>
-												<div className="flex min-w-0 flex-col leading-tight">
-													<span className="truncate font-semibold">
-														{owner.name}
-													</span>
-													<span className="truncate text-muted-foreground text-xs">
-														{owner.email}
-													</span>
-												</div>
-											</div>
-										</TableCell>
-										<TableCell>
-											<SellerRoleBadge userRole="seller" />
-										</TableCell>
-										<TableCell>
-											<MembershipStatusBadge status="active" />
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm italic">
-											Tutti i negozi
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											—
-										</TableCell>
-										{isOwner && <TableCell />}
-									</TableRow>
-								)}
-
-								{/* Employee rows */}
-								{data?.data?.map((employee) => (
-									<TableRow key={employee.id} className="group">
-										<TableCell className="pl-6">
-											<div className="flex items-center gap-3">
-												<UserAvatar
-													name={employee.user.name}
-													image={employee.user.image}
-												>
-													{currentUserId === employee.userId && (
-														<AvatarBadge
-															className="bg-saffron-deep ring-card"
-															aria-label="Sei tu"
-															title="Sei tu"
-														/>
-													)}
-												</UserAvatar>
-												<div className="flex min-w-0 flex-col leading-tight">
-													<span className="truncate font-semibold">
-														{employee.user.name}
-													</span>
-													<span className="truncate text-muted-foreground text-xs">
-														{employee.user.email}
-													</span>
-												</div>
-											</div>
-										</TableCell>
-										<TableCell>
-											<SellerRoleBadge userRole="employee" />
-										</TableCell>
-										<TableCell>
-											<MembershipStatusBadge status={employee.status} />
-										</TableCell>
-										<TableCell>
-											<StoreChips storeIds={employee.storeIds} />
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											{new Date(employee.createdAt).toLocaleDateString(
-												"it-IT",
-												{
-													year: "numeric",
-													month: "short",
-													day: "numeric",
-												},
-											)}
-										</TableCell>
-										{isOwner && (
-											<TableCell className="pr-6 text-right">
-												<EmployeeActions
-													employeeId={employee.id}
-													employeeName={employee.user.name}
-													status={employee.status}
-												/>
-											</TableCell>
-										)}
-									</TableRow>
-								))}
-
-								{/* Pending invitation rows — owner only, after employees */}
-								{isOwner &&
-									pendingInvitations.map((invitation) => (
-										<TableRow
-											key={`inv-${invitation.id}`}
-											className="text-muted-foreground/80"
-										>
-											<TableCell className="pl-6 italic">
-												<div className="flex items-center gap-3">
-													<UserAvatar name={invitation.email.split("@")[0]} />
-													<div className="flex min-w-0 flex-col leading-tight">
-														<span className="truncate">
-															{invitation.email.split("@")[0]}
-														</span>
-														<span className="truncate text-muted-foreground text-xs not-italic">
-															{invitation.email}
-														</span>
-													</div>
-												</div>
-											</TableCell>
-											<TableCell>
-												<SellerRoleBadge userRole="employee" />
-											</TableCell>
-											<TableCell>
-												<MembershipStatusBadge status="pending" />
-											</TableCell>
-											<TableCell>
-												<StoreChips storeIds={invitation.storeIds} />
-											</TableCell>
-											<TableCell className="text-sm">
-												{new Date(invitation.createdAt).toLocaleDateString(
-													"it-IT",
-													{
-														year: "numeric",
-														month: "short",
-														day: "numeric",
-													},
-												)}
-											</TableCell>
-											<TableCell className="pr-6 text-right">
-												<Button
-													variant="ghost"
-													size="icon-sm"
-													disabled={cancelMutation.isPending}
-													onClick={() =>
-														void cancelMutation.mutateAsync(invitation.id)
-													}
-													title="Annulla invito"
-												>
-													<XIcon />
-													<span className="sr-only">Annulla invito</span>
-												</Button>
-											</TableCell>
-										</TableRow>
-									))}
-
-								{/* Empty state */}
-								{!hasContent && (
-									<TableRow className="hover:bg-transparent">
-										<TableCell colSpan={colCount} className="h-40 text-center">
-											<div className="flex flex-col items-center gap-3">
-												<UsersIcon className="text-muted-foreground/40 size-8" />
-												<div>
-													<p className="text-muted-foreground font-medium">
-														Nessun membro nel team
-													</p>
-													<p className="text-muted-foreground/60 text-sm">
-														Invita collaboratori per gestire insieme il tuo
-														negozio
-													</p>
-												</div>
-												{isOwner && (
-													<InviteEmployeeDialog
-														trigger={
-															<Button size="sm" className="mt-1">
-																<SendIcon />
-																Invita il primo collaboratore
-															</Button>
-														}
-													/>
-												)}
-											</div>
-										</TableCell>
-									</TableRow>
-								)}
-							</>
+			<DataTable
+				data={rows}
+				columns={columns}
+				storageKey="seller.team.columns"
+				getRowId={(row) => row.id}
+				isLoading={isLoading}
+				rowClassName={(row) => {
+					const r = row.original;
+					if (r.kind === "owner")
+						return "bg-saffron-deep/8 hover:bg-saffron-deep/8";
+					if (r.kind === "invitation") return "text-muted-foreground/80";
+					return "";
+				}}
+				emptyState={
+					<div className="flex flex-col items-center gap-3">
+						<UsersIcon className="text-muted-foreground/40 size-8" />
+						<div>
+							<p className="text-muted-foreground font-medium">
+								Nessun membro nel team
+							</p>
+							<p className="text-muted-foreground/60 text-sm">
+								Invita collaboratori per gestire insieme il tuo negozio
+							</p>
+						</div>
+						{isOwner && (
+							<InviteEmployeeDialog
+								trigger={
+									<Button size="sm" className="mt-1">
+										<SendIcon />
+										Invita il primo collaboratore
+									</Button>
+								}
+							/>
 						)}
-					</TableBody>
-				</Table>
-			</div>
+					</div>
+				}
+			/>
 
 			{totalPages > 1 && (
 				<div className="flex items-center justify-between">
