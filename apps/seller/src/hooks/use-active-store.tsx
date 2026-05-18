@@ -16,10 +16,6 @@ interface Store {
 	city: string;
 	addressLine1: string;
 	province: string | null;
-	openingHours: Array<{
-		dayOfWeek: number;
-		slots: Array<{ open: string; close: string }>;
-	}> | null;
 }
 
 interface ActiveStoreContextValue {

@@ -15,7 +15,6 @@ import { Link } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, PlusIcon, StoreIcon } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { formatOpenState, getOpenState } from "@/lib/store-status";
 
 export function StoreSwitcher() {
 	const { isMobile } = useSidebar();
@@ -26,7 +25,6 @@ export function StoreSwitcher() {
 		return null;
 	}
 
-	const openState = activeStore ? getOpenState(activeStore.openingHours) : null;
 	const otherStores = stores.filter((s) => s.id !== activeStore?.id);
 
 	return (
@@ -59,7 +57,7 @@ export function StoreSwitcher() {
 						side={isMobile ? "bottom" : "right"}
 						sideOffset={4}
 					>
-						{activeStore && openState && (
+						{activeStore && (
 							<div className="border-b px-3 py-3">
 								<div className="truncate text-sm font-medium leading-snug">
 									{activeStore.name}
@@ -67,25 +65,6 @@ export function StoreSwitcher() {
 								<div className="mt-0.5 truncate text-xs text-muted-foreground">
 									{activeStore.city}
 									{activeStore.province ? ` (${activeStore.province})` : ""}
-								</div>
-								<div className="mt-2 flex items-center gap-1.5 text-xs">
-									<span
-										aria-hidden
-										className={
-											openState.status === "open"
-												? "inline-block size-1.5 rounded-full bg-olive"
-												: "inline-block size-1.5 rounded-full bg-muted-foreground/50"
-										}
-									/>
-									<span
-										className={
-											openState.status === "open"
-												? "text-olive"
-												: "text-muted-foreground"
-										}
-									>
-										{formatOpenState(openState)}
-									</span>
 								</div>
 							</div>
 						)}
