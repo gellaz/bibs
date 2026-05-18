@@ -1,11 +1,21 @@
+import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { DataTable } from "@bibs/ui/components/data-table";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@bibs/ui/components/dropdown-menu";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
-import { Spinner } from "@bibs/ui/components/spinner";
+import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { PlusIcon, TagIcon } from "lucide-react";
-import { PromotionListTable } from "@/features/promotions/components/promotion-list-table";
+import type { ColumnDef } from "@tanstack/react-table";
+import { MoreVerticalIcon, PlusIcon, TagIcon } from "lucide-react";
+import { useMemo } from "react";
+import { PromotionStateBadge } from "@/features/promotions/components/promotion-state-badge";
 import {
 	type PromotionState,
 	PromotionStateTabs,
@@ -49,7 +59,24 @@ const EMPTY_MESSAGE: Record<PromotionState, () => string> = {
 	archived: () => m.promotions_empty_archived(),
 };
 
+interface DiscountRow {
+	id: string;
+	title: string;
+	percent: number;
+	startsAt: string;
+	endsAt: string | null;
+	status: "active" | "paused" | "archived";
+	productCount: number;
+}
+
+const PERIOD_FMT_OPTS: Intl.DateTimeFormatOptions = {
+	day: "numeric",
+	month: "short",
+};
+
 function PromotionsListPage() {
+	"use no memo";
+
 	const { page, limit, state } = Route.useSearch();
 	const navigate = useNavigate({ from: "/promotions/" });
 
@@ -81,6 +108,156 @@ function PromotionsListPage() {
 		});
 	};
 
+	const rows = useMemo<DiscountRow[]>(
+		() =>
+			(data?.data ?? []).map((d) => ({
+				id: d.id,
+				title: d.title,
+				percent: d.percent,
+				startsAt:
+					typeof d.startsAt === "string"
+						? d.startsAt
+						: new Date(d.startsAt).toISOString(),
+				endsAt:
+					d.endsAt == null
+						? null
+						: typeof d.endsAt === "string"
+							? d.endsAt
+							: new Date(d.endsAt).toISOString(),
+				status: d.status,
+				productCount: d.productCount,
+			})),
+		[data],
+	);
+
+	const columns = useMemo<ColumnDef<DiscountRow>[]>(
+		() => [
+			{
+				id: "title",
+				header: () => m.promotions_col_title(),
+				enableHiding: false,
+				meta: {
+					menuLabel: m.promotions_col_title(),
+					cellClassName: "font-medium",
+				},
+				cell: ({ row }) => (
+					<Link
+						to="/promotions/$discountId"
+						params={{ discountId: row.original.id }}
+						className="hover:underline"
+					>
+						{row.original.title}
+					</Link>
+				),
+			},
+			{
+				id: "discount",
+				header: () => m.promotions_col_discount(),
+				meta: {
+					menuLabel: m.promotions_col_discount(),
+					headerClassName: "w-24",
+				},
+				cell: ({ row }) => (
+					<Badge variant="secondary">-{row.original.percent}%</Badge>
+				),
+			},
+			{
+				id: "period",
+				header: () => m.promotions_col_period(),
+				meta: {
+					menuLabel: m.promotions_col_period(),
+					cellClassName: "text-sm tabular-nums",
+				},
+				cell: ({ row }) => {
+					const r = row.original;
+					return (
+						<>
+							{new Date(r.startsAt).toLocaleDateString(
+								"it-IT",
+								PERIOD_FMT_OPTS,
+							)}{" "}
+							→{" "}
+							{r.endsAt
+								? new Date(r.endsAt).toLocaleDateString(
+										"it-IT",
+										PERIOD_FMT_OPTS,
+									)
+								: "∞"}
+						</>
+					);
+				},
+			},
+			{
+				id: "productCount",
+				header: () => m.promotions_col_products(),
+				meta: {
+					menuLabel: m.promotions_col_products(),
+					headerClassName: "w-24 text-right",
+					cellClassName: "text-right tabular-nums",
+				},
+				cell: ({ row }) => row.original.productCount,
+			},
+			{
+				id: "state",
+				header: () => m.promotions_col_state(),
+				enableHiding: false,
+				meta: { menuLabel: m.promotions_col_state(), headerClassName: "w-32" },
+				cell: ({ row }) => (
+					<PromotionStateBadge
+						status={row.original.status}
+						startsAt={row.original.startsAt}
+						endsAt={row.original.endsAt}
+					/>
+				),
+			},
+			{
+				id: "actions",
+				enableHiding: false,
+				meta: {
+					headerClassName: "w-12 pr-2 text-right",
+					cellClassName: "text-right",
+				},
+				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				cell: ({ row }) => {
+					const r = row.original;
+					return (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant="ghost" size="icon-sm">
+									<MoreVerticalIcon />
+									<span className="sr-only">Azioni</span>
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem asChild>
+									<Link
+										to="/promotions/$discountId"
+										params={{ discountId: r.id }}
+									>
+										{m.promotions_action_edit()}
+									</Link>
+								</DropdownMenuItem>
+								{r.status !== "archived" && (
+									<DropdownMenuItem onSelect={() => onPauseToggle(r.id)}>
+										{r.status === "paused"
+											? m.promotions_action_resume()
+											: m.promotions_action_pause()}
+									</DropdownMenuItem>
+								)}
+								{r.status !== "archived" && (
+									<DropdownMenuItem onSelect={() => onArchive(r.id)}>
+										{m.promotions_action_archive()}
+									</DropdownMenuItem>
+								)}
+							</DropdownMenuContent>
+						</DropdownMenu>
+					);
+				},
+			},
+		],
+		[onPauseToggle, onArchive],
+	);
+
 	return (
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
@@ -108,42 +285,21 @@ function PromotionsListPage() {
 				</div>
 			)}
 
-			{isLoading ? (
-				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
-					<Spinner className="size-8" />
-				</div>
-			) : data?.data && data.data.length > 0 ? (
-				<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-					<PromotionListTable
-						rows={data.data.map((d) => ({
-							id: d.id,
-							title: d.title,
-							percent: d.percent,
-							startsAt:
-								typeof d.startsAt === "string"
-									? d.startsAt
-									: new Date(d.startsAt).toISOString(),
-							endsAt:
-								d.endsAt == null
-									? null
-									: typeof d.endsAt === "string"
-										? d.endsAt
-										: new Date(d.endsAt).toISOString(),
-							status: d.status,
-							productCount: d.productCount,
-						}))}
-						onPauseToggle={onPauseToggle}
-						onArchive={onArchive}
-					/>
-				</div>
-			) : (
-				<div className="bg-card flex h-64 flex-col items-center justify-center gap-2 rounded-lg border">
-					<TagIcon className="text-muted-foreground/40 size-8" />
-					<p className="text-muted-foreground font-medium">
-						{EMPTY_MESSAGE[state]()}
-					</p>
-				</div>
-			)}
+			<DataTable
+				data={rows}
+				columns={columns}
+				storageKey="seller.promotions.columns"
+				getRowId={(row) => row.id}
+				isLoading={isLoading}
+				emptyState={
+					<div className="flex flex-col items-center gap-2">
+						<TagIcon className="text-muted-foreground/40 size-8" />
+						<p className="text-muted-foreground font-medium">
+							{EMPTY_MESSAGE[state]()}
+						</p>
+					</div>
+				}
+			/>
 
 			{data?.pagination &&
 				data.pagination.total > 0 &&
