@@ -2,6 +2,7 @@ import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
+import { DataTable } from "@bibs/ui/components/data-table";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -9,17 +10,10 @@ import {
 	InputGroupInput,
 } from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import { Spinner } from "@bibs/ui/components/spinner";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@bibs/ui/components/table";
+import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import type { ColumnDef } from "@tanstack/react-table";
 import { PackageIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
@@ -57,7 +51,20 @@ export const Route = createFileRoute("/_authenticated/products/")({
 	},
 });
 
+const INITIAL_COLUMN_VISIBILITY = {
+	brand: false,
+	ean: false,
+};
+
+const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
+	year: "numeric",
+	month: "short",
+	day: "numeric",
+};
+
 function ProductsListPage() {
+	"use no memo";
+
 	const { page, limit, statusFilter, q: routeQ } = Route.useSearch();
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();
@@ -113,10 +120,10 @@ function ProductsListPage() {
 		enabled: !!activeStore?.id,
 	});
 
-	const currentPageIds = useMemo(
-		() => data?.data?.map((p) => p.id) ?? [],
-		[data],
-	);
+	type Product = NonNullable<typeof data>["data"][number];
+	const rows = useMemo<Product[]>(() => data?.data ?? [], [data]);
+
+	const currentPageIds = useMemo(() => rows.map((p) => p.id), [rows]);
 	const selection = useProductSelection({
 		currentPageIds,
 		resetKey: `${activeStore?.id ?? ""}|${statusFilter}|${effectiveRouteQ}`,
@@ -135,6 +142,151 @@ function ProductsListPage() {
 				: statusFilter === "disabled"
 					? m.products_empty_disabled()
 					: m.products_empty_trashed();
+
+	const columns = useMemo<ColumnDef<Product>[]>(
+		() => [
+			{
+				id: "select",
+				enableHiding: false,
+				meta: {
+					headerClassName: "w-10 pl-4",
+					cellClassName: "pl-4",
+				},
+				header: () => (
+					<Checkbox
+						checked={
+							selection.headerCheckboxState === "checked"
+								? true
+								: selection.headerCheckboxState === "indeterminate"
+									? "indeterminate"
+									: false
+						}
+						onCheckedChange={() => selection.toggleAllOnPage()}
+						aria-label="Seleziona tutti"
+					/>
+				),
+				cell: ({ row }) => (
+					<Checkbox
+						checked={selection.isSelected(row.original.id)}
+						onCheckedChange={() => selection.toggleOne(row.original.id)}
+						aria-label={`Seleziona ${row.original.name}`}
+					/>
+				),
+			},
+			{
+				id: "name",
+				header: "Nome",
+				enableHiding: false,
+				meta: {
+					headerClassName: "w-[30%]",
+					cellClassName: "font-semibold",
+				},
+				cell: ({ row }) => {
+					const product = row.original;
+					if (statusFilter === "trashed") {
+						return (
+							<span className="text-muted-foreground">{product.name}</span>
+						);
+					}
+					return (
+						<Link
+							to="/products/$productId"
+							params={{ productId: product.id }}
+							className="hover:underline"
+						>
+							{product.name}
+						</Link>
+					);
+				},
+			},
+			{
+				id: "price",
+				header: "Prezzo",
+				meta: {
+					headerClassName: "w-[15%]",
+					cellClassName: "text-sm tabular-nums",
+				},
+				cell: ({ row }) => <>€{row.original.price}</>,
+			},
+			{
+				id: "category",
+				header: "Categoria",
+				meta: {
+					headerClassName: "w-[20%]",
+					cellClassName: "text-sm",
+				},
+				cell: ({ row }) => {
+					const assignments = row.original.productCategoryAssignments;
+					if (assignments.length === 0) {
+						return <span className="text-muted-foreground">—</span>;
+					}
+					return (
+						<div className="flex flex-wrap gap-1">
+							{assignments.map((pc) => (
+								<Badge key={pc.productCategoryId} variant="secondary">
+									{pc.category.name}
+								</Badge>
+							))}
+						</div>
+					);
+				},
+			},
+			{
+				id: "brand",
+				header: "Marca",
+				meta: {
+					headerClassName: "w-[12%]",
+					cellClassName: "text-muted-foreground text-sm",
+				},
+				cell: ({ row }) =>
+					row.original.brand?.name ?? (
+						<span className="text-muted-foreground/60">—</span>
+					),
+			},
+			{
+				id: "ean",
+				header: "EAN",
+				meta: {
+					headerClassName: "w-[12%]",
+					cellClassName: "text-muted-foreground text-sm tabular-nums",
+				},
+				cell: ({ row }) =>
+					row.original.ean ?? (
+						<span className="text-muted-foreground/60">—</span>
+					),
+			},
+			{
+				id: "createdAt",
+				header: "Data",
+				meta: {
+					headerClassName: "w-[12%]",
+					cellClassName: "text-muted-foreground text-sm",
+				},
+				cell: ({ row }) =>
+					new Date(row.original.createdAt).toLocaleDateString(
+						"it-IT",
+						DATE_FMT_OPTS,
+					),
+			},
+			{
+				id: "actions",
+				enableHiding: false,
+				meta: {
+					headerClassName: "w-16 pr-2 text-right",
+					cellClassName: "pr-4",
+				},
+				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				cell: ({ row }) => (
+					<ProductRowActions
+						productId={row.original.id}
+						status={row.original.status}
+						activeStoreId={activeStore?.id ?? ""}
+					/>
+				),
+			},
+		],
+		[selection, statusFilter, activeStore?.id],
+	);
 
 	return (
 		<div className="space-y-4">
@@ -197,117 +349,27 @@ function ProductsListPage() {
 			/>
 
 			{error && (
-				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
 				</div>
 			)}
 
-			{isLoading ? (
-				<div className="bg-card flex h-64 items-center justify-center rounded-lg border">
-					<Spinner className="size-8" />
-				</div>
-			) : (
-				<div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-					<Table>
-						<TableHeader>
-							<TableRow className="bg-muted/50 hover:bg-muted/50">
-								<TableHead className="w-10 pl-4">
-									<Checkbox
-										checked={
-											selection.headerCheckboxState === "checked"
-												? true
-												: selection.headerCheckboxState === "indeterminate"
-													? "indeterminate"
-													: false
-										}
-										onCheckedChange={() => selection.toggleAllOnPage()}
-										aria-label="Seleziona tutti"
-									/>
-								</TableHead>
-								<TableHead className="w-[35%]">Nome</TableHead>
-								<TableHead className="w-[20%]">Prezzo</TableHead>
-								<TableHead className="w-[20%]">Categoria</TableHead>
-								<TableHead className="w-[15%]">Data</TableHead>
-								<TableHead className="w-12 pr-4" />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data?.data && data.data.length > 0 ? (
-								data.data.map((product) => (
-									<TableRow key={product.id} className="group">
-										<TableCell className="pl-4">
-											<Checkbox
-												checked={selection.isSelected(product.id)}
-												onCheckedChange={() => selection.toggleOne(product.id)}
-												aria-label={`Seleziona ${product.name}`}
-											/>
-										</TableCell>
-										<TableCell className="font-semibold">
-											{statusFilter === "trashed" ? (
-												<span className="text-muted-foreground">
-													{product.name}
-												</span>
-											) : (
-												<Link
-													to="/products/$productId"
-													params={{ productId: product.id }}
-													className="hover:underline"
-												>
-													{product.name}
-												</Link>
-											)}
-										</TableCell>
-										<TableCell className="text-sm">€{product.price}</TableCell>
-										<TableCell className="text-sm">
-											<div className="flex flex-wrap gap-1">
-												{product.productCategoryAssignments.length > 0 ? (
-													product.productCategoryAssignments.map((pc) => (
-														<Badge
-															key={pc.productCategoryId}
-															variant="secondary"
-														>
-															{pc.category.name}
-														</Badge>
-													))
-												) : (
-													<span className="text-muted-foreground">—</span>
-												)}
-											</div>
-										</TableCell>
-										<TableCell className="text-muted-foreground text-sm">
-											{new Date(product.createdAt).toLocaleDateString("it-IT", {
-												year: "numeric",
-												month: "short",
-												day: "numeric",
-											})}
-										</TableCell>
-										<TableCell className="pr-4">
-											<ProductRowActions
-												productId={product.id}
-												status={product.status}
-												activeStoreId={activeStore?.id ?? ""}
-											/>
-										</TableCell>
-									</TableRow>
-								))
-							) : (
-								<TableRow className="hover:bg-transparent">
-									<TableCell colSpan={6} className="h-32 text-center">
-										<div className="flex flex-col items-center gap-2">
-											<PackageIcon className="text-muted-foreground/40 size-8" />
-											<p className="text-muted-foreground font-medium">
-												{emptyMessage}
-											</p>
-										</div>
-									</TableCell>
-								</TableRow>
-							)}
-						</TableBody>
-					</Table>
-				</div>
-			)}
+			<DataTable
+				data={rows}
+				columns={columns}
+				storageKey="seller.products.columns"
+				initialColumnVisibility={INITIAL_COLUMN_VISIBILITY}
+				getRowId={(row) => row.id}
+				isLoading={isLoading}
+				emptyState={
+					<div className="flex flex-col items-center gap-2">
+						<PackageIcon className="text-muted-foreground/40 size-8" />
+						<p className="text-muted-foreground font-medium">{emptyMessage}</p>
+					</div>
+				}
+			/>
 
 			{data?.pagination &&
 				data.pagination.total > 0 &&
