@@ -51,3 +51,6 @@ logs/
 
 # brainstorming companion (superpowers visual mockups, persisted per-session)
 .superpowers/
+
+# Playwright MCP browser artifacts (per-agent-session snapshots and logs)
+.playwright-mcp/
