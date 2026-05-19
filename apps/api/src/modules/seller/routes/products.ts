@@ -62,6 +62,8 @@ export const productsRoutes = new Elysia()
 				inStock: query.inStock,
 				excludeDiscountId: query.excludeDiscountId,
 				q: query.q,
+				sort: query.sort,
+				order: query.order,
 			});
 			return okPage(result.data, result.pagination);
 		},
@@ -119,6 +121,26 @@ export const productsRoutes = new Elysia()
 							maxLength: 100,
 							description:
 								"Ricerca testuale su nome, descrizione, EAN e brand. Full-text con prefix matching e fuzzy (typo) tolerance. Minimo 2 caratteri effettivi.",
+						}),
+					),
+					sort: t.Optional(
+						t.Union(
+							[
+								t.Literal("name"),
+								t.Literal("price"),
+								t.Literal("ean"),
+								t.Literal("createdAt"),
+								t.Literal("updatedAt"),
+							],
+							{
+								description:
+									"Campo di ordinamento. Ignorato quando `q` è attivo (vince la rilevanza). Default: createdAt.",
+							},
+						),
+					),
+					order: t.Optional(
+						t.Union([t.Literal("asc"), t.Literal("desc")], {
+							description: "Direzione di ordinamento. Default: desc.",
 						}),
 					),
 				}),

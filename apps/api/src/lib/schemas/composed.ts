@@ -8,7 +8,7 @@ import {
 	OrderSchema,
 	OrganizationSchema,
 	PaymentMethodSchema,
-	ProductCategorySchema,
+	ProductCategoryWithMacroSchema,
 	ProductImageSchema,
 	ProductSchema,
 	SellerProfileChangeSchema,
@@ -49,11 +49,11 @@ export const EmployeeWithUserSchema = t.Object({
 	}),
 });
 
-// Product category assignment with category
+// Product category assignment with category (includes parent macro)
 const ProductCategoryAssignmentWithCategory = t.Object({
 	productId: t.String(),
 	productCategoryId: t.String(),
-	category: ProductCategorySchema,
+	category: ProductCategoryWithMacroSchema,
 });
 
 // StoreProduct + store (location excluded — PostGIS EWKB fails in nested relational queries)
