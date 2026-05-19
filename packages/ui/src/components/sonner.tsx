@@ -11,11 +11,27 @@ import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-	const { theme = "system" } = useTheme();
+	const { resolvedTheme } = useTheme();
+	const isDark = resolvedTheme === "dark";
+
+	// In dark mode let Sonner default (#000) win — è esattamente l'effetto
+	// near-black voluto. In light mode sovrascriviamo a `--popover` per evitare
+	// che il toast diventi nero su cream.
+	const style = isDark
+		? ({
+				"--normal-text": "var(--popover-foreground)",
+				"--border-radius": "var(--radius)",
+			} as React.CSSProperties)
+		: ({
+				"--normal-bg": "var(--popover)",
+				"--normal-text": "var(--popover-foreground)",
+				"--normal-border": "var(--border)",
+				"--border-radius": "var(--radius)",
+			} as React.CSSProperties);
 
 	return (
 		<Sonner
-			theme={theme as ToasterProps["theme"]}
+			theme={(resolvedTheme ?? "light") as ToasterProps["theme"]}
 			className="toaster group"
 			icons={{
 				success: <CircleCheckIcon className="size-4" />,
@@ -24,14 +40,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 				error: <OctagonXIcon className="size-4" />,
 				loading: <Loader2Icon className="size-4 animate-spin" />,
 			}}
-			style={
-				{
-					"--normal-bg": "var(--popover)",
-					"--normal-text": "var(--popover-foreground)",
-					"--normal-border": "var(--border)",
-					"--border-radius": "var(--radius)",
-				} as React.CSSProperties
-			}
+			style={style}
 			toastOptions={{
 				classNames: {
 					toast: "cn-toast",

@@ -1,5 +1,18 @@
 import { Checkbox } from "@bibs/ui/components/checkbox";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@bibs/ui/components/command";
 import { Label } from "@bibs/ui/components/label";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@bibs/ui/components/popover";
 import {
 	Select,
 	SelectContent,
@@ -8,6 +21,8 @@ import {
 	SelectValue,
 } from "@bibs/ui/components/select";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDownIcon, XIcon } from "lucide-react";
+import { useState } from "react";
 import { api } from "@/lib/api";
 
 interface ProductCategoriesPickerProps {
@@ -25,6 +40,8 @@ export function ProductCategoriesPicker({
 	onToggleCategory,
 	required = false,
 }: ProductCategoriesPickerProps) {
+	const [open, setOpen] = useState(false);
+
 	const { data: macros = [] } = useQuery({
 		queryKey: ["product-macro-categories"],
 		queryFn: async () => {
@@ -53,15 +70,19 @@ export function ProductCategoriesPicker({
 		enabled: !!macroCategoryId,
 	});
 
+	const selectedCategories = categories.filter((c) =>
+		categoryIds.includes(c.id),
+	);
+
 	return (
-		<div className="space-y-3">
+		<div className="space-y-4">
 			<div className="space-y-2">
 				<Label>Macrocategoria{required && " *"}</Label>
 				<Select
 					value={macroCategoryId ?? ""}
 					onValueChange={(v) => onMacroChange(v || null)}
 				>
-					<SelectTrigger>
+					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Seleziona una macrocategoria" />
 					</SelectTrigger>
 					<SelectContent>
@@ -76,35 +97,91 @@ export function ProductCategoriesPicker({
 
 			{macroCategoryId && (
 				<div className="space-y-2">
-					<Label>
-						Categorie{required && " *"}
-						{categoryIds.length > 0 && (
-							<span className="ml-1 text-xs font-normal text-muted-foreground">
-								({categoryIds.length} selezionat
-								{categoryIds.length === 1 ? "a" : "e"})
-							</span>
-						)}
-					</Label>
-					{categories.length > 0 ? (
-						<div className="max-h-40 space-y-1 overflow-y-auto rounded-md border p-2">
-							{categories.map((cat) => (
-								<label
-									key={cat.id}
-									htmlFor={`cat-${cat.id}`}
-									className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent"
-								>
-									<Checkbox
-										id={`cat-${cat.id}`}
-										checked={categoryIds.includes(cat.id)}
-										onCheckedChange={() => onToggleCategory(cat.id)}
-									/>
-									{cat.name}
-								</label>
-							))}
-						</div>
-					) : (
-						<p className="text-xs text-muted-foreground">
-							Nessuna categoria disponibile per questa macro
+					<Label>Categorie{required && " *"}</Label>
+					<Popover open={open} onOpenChange={setOpen}>
+						<PopoverTrigger asChild>
+							<button
+								type="button"
+								aria-expanded={open}
+								className="border-input dark:bg-input/30 dark:hover:bg-input/50 focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-8 w-full items-center justify-between gap-1.5 rounded-lg border bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:ring-3"
+							>
+								<div className="flex flex-wrap items-center gap-1.5">
+									{selectedCategories.length === 0 ? (
+										<span className="text-muted-foreground">
+											Aggiungi categorie…
+										</span>
+									) : (
+										selectedCategories.map((cat) => (
+											<span
+												key={cat.id}
+												className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+											>
+												{cat.name}
+												{/* biome-ignore lint/a11y/useSemanticElements: a nested <button> inside the PopoverTrigger <button> is invalid HTML; use a span with role=button to keep the X interactive without parent button conflict. */}
+												<span
+													role="button"
+													tabIndex={0}
+													aria-label={`Rimuovi ${cat.name}`}
+													className="hover:bg-primary-foreground/20 -mr-0.5 flex size-3.5 items-center justify-center rounded-full"
+													onClick={(e) => {
+														e.stopPropagation();
+														onToggleCategory(cat.id);
+													}}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															e.preventDefault();
+															e.stopPropagation();
+															onToggleCategory(cat.id);
+														}
+													}}
+												>
+													<XIcon className="size-3" />
+												</span>
+											</span>
+										))
+									)}
+								</div>
+								<ChevronDownIcon className="text-muted-foreground size-4 shrink-0" />
+							</button>
+						</PopoverTrigger>
+						<PopoverContent
+							className="w-(--radix-popover-trigger-width) p-0"
+							align="start"
+						>
+							<Command>
+								<CommandInput placeholder="Cerca categoria…" />
+								<CommandList>
+									<CommandEmpty>
+										Nessuna categoria disponibile per questa macro.
+									</CommandEmpty>
+									<CommandGroup>
+										{categories.map((cat) => {
+											const isOn = categoryIds.includes(cat.id);
+											return (
+												<CommandItem
+													key={cat.id}
+													value={cat.name}
+													onSelect={() => onToggleCategory(cat.id)}
+												>
+													<Checkbox
+														checked={isOn}
+														tabIndex={-1}
+														aria-hidden
+														className="pointer-events-none"
+													/>
+													{cat.name}
+												</CommandItem>
+											);
+										})}
+									</CommandGroup>
+								</CommandList>
+							</Command>
+						</PopoverContent>
+					</Popover>
+					{categoryIds.length > 0 && (
+						<p className="text-muted-foreground text-xs">
+							{categoryIds.length} selezionat
+							{categoryIds.length === 1 ? "a" : "e"}
 						</p>
 					)}
 				</div>

@@ -132,12 +132,15 @@ export function ProductForm({
 	const applyLookup = (overwrite: boolean) => {
 		if (!lookupResult) return;
 		const cur = getValues();
-		if (overwrite || !cur.name) setValue("name", lookupResult.name);
+		if (overwrite || !cur.name)
+			setValue("name", lookupResult.name, { shouldDirty: true });
 		if (overwrite || !cur.description)
-			setValue("description", lookupResult.description ?? "");
+			setValue("description", lookupResult.description ?? "", {
+				shouldDirty: true,
+			});
 		if (lookupResult.brandName && (overwrite || !brandIdValue)) {
-			setValue("brandId", undefined);
-			setValue("brandName", lookupResult.brandName);
+			setValue("brandId", undefined, { shouldDirty: true });
+			setValue("brandName", lookupResult.brandName, { shouldDirty: true });
 		}
 		if (overwrite || !macroCategoryId) {
 			setMacroCategoryId(lookupResult.macroCategoryId);
@@ -145,6 +148,7 @@ export function ProductForm({
 		if (overwrite || (cur.categoryIds ?? []).length === 0) {
 			setValue("categoryIds", lookupResult.categoryIds, {
 				shouldValidate: true,
+				shouldDirty: true,
 			});
 		}
 		setLookupDismissed(true);
@@ -181,21 +185,27 @@ export function ProductForm({
 		const next = current.includes(categoryId)
 			? current.filter((id) => id !== categoryId)
 			: [...current, categoryId];
-		setValue("categoryIds", next, { shouldValidate: true });
+		setValue("categoryIds", next, { shouldValidate: true, shouldDirty: true });
 	};
 
 	const onMacroChange = (next: string | null) => {
 		const hadCategories = selectedCategories.length > 0;
 		setMacroCategoryId(next);
-		setValue("categoryIds", [], { shouldValidate: true });
+		setValue("categoryIds", [], { shouldValidate: true, shouldDirty: true });
 		if (hadCategories && next !== macroCategoryId) {
 			toast.info("Categorie resettate per via del cambio di macrocategoria");
 		}
 	};
 
 	const onBrandChange = (next: BrandComboboxValue | null) => {
-		setValue("brandId", next?.brandId, { shouldValidate: true });
-		setValue("brandName", next?.brandName, { shouldValidate: true });
+		setValue("brandId", next?.brandId, {
+			shouldValidate: true,
+			shouldDirty: true,
+		});
+		setValue("brandName", next?.brandName, {
+			shouldValidate: true,
+			shouldDirty: true,
+		});
 	};
 
 	const onFormSubmit: SubmitHandler<ProductFormData> = (data) => {

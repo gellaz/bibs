@@ -40,12 +40,21 @@ export function ProductBulkToolbar({
 
 	return (
 		<>
-			<div className="bg-card sticky top-0 z-10 flex items-center gap-3 border-b px-4 py-2">
+			<div className="bg-card sticky top-0 z-10 flex items-center gap-3 rounded-lg border px-4 py-2.5 shadow-sm">
+				<span
+					aria-hidden
+					className="bg-primary size-1.5 shrink-0 rounded-full"
+				/>
 				<span className="text-sm font-medium">
 					{m.products_bulk_selected({ count: selectedIds.length })}
 				</span>
-				<Button variant="ghost" size="sm" onClick={onClear}>
-					<XIcon className="size-4" />
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={onClear}
+					className="text-muted-foreground hover:text-foreground -ml-1 h-7 px-2"
+				>
+					<XIcon className="size-3.5" />
 					{m.products_bulk_clear_selection()}
 				</Button>
 				<div className="ml-auto flex gap-2">

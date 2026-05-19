@@ -6,6 +6,7 @@ import {
 	type OnChangeFn,
 	type PaginationState,
 	type RowData,
+	type SortingState,
 	type Table,
 	type Updater,
 	useReactTable,
@@ -52,6 +53,16 @@ export interface UseDataTableOptions<TData> {
 		pageCount: number;
 		onPaginationChange: (state: PaginationState) => void;
 	};
+	/**
+	 * Enable server-side sorting. When present, the table is in `manualSorting`
+	 * mode: TanStack tracks the state and exposes `column.getToggleSortingHandler()`
+	 * / `column.getIsSorted()` to your column headers, but does not sort client-side.
+	 * The caller fetches sorted data from the API based on `sorting`.
+	 */
+	manualSorting?: {
+		sorting: SortingState;
+		onSortingChange: (state: SortingState) => void;
+	};
 	/** Stable row identity. Defaults to `index`; pass when rows have a real id. */
 	getRowId?: (row: TData, index: number) => string;
 }
@@ -74,6 +85,7 @@ export function useDataTable<TData>({
 	storageKey,
 	initialColumnVisibility,
 	manualPagination,
+	manualSorting,
 	getRowId,
 }: UseDataTableOptions<TData>): Table<TData> {
 	"use no memo";
@@ -142,6 +154,14 @@ export function useDataTable<TData>({
 				}
 			: undefined;
 
+	const onSortingChange: OnChangeFn<SortingState> | undefined = manualSorting
+		? (updater) => {
+				const prev = manualSorting.sorting;
+				const next = typeof updater === "function" ? updater(prev) : updater;
+				manualSorting.onSortingChange(next);
+			}
+		: undefined;
+
 	return useReactTable<TData>({
 		data,
 		columns,
@@ -156,11 +176,14 @@ export function useDataTable<TData>({
 						},
 					}
 				: {}),
+			...(manualSorting ? { sorting: manualSorting.sorting } : {}),
 		},
 		onColumnVisibilityChange,
 		onPaginationChange,
+		onSortingChange,
 		manualPagination: Boolean(manualPagination),
 		pageCount: manualPagination?.pageCount,
+		manualSorting: Boolean(manualSorting),
 		getCoreRowModel: getCoreRowModel(),
 		getRowId,
 	});

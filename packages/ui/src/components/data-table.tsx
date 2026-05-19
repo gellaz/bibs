@@ -1,11 +1,14 @@
 "use client";
 
 import {
+	type Column,
 	type ColumnDef,
 	flexRender,
 	type Row,
+	type SortingState,
 	type VisibilityState,
 } from "@tanstack/react-table";
+import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Spinner } from "~/components/spinner";
@@ -43,6 +46,16 @@ interface DataTableProps<TData> {
 	rowClassName?: string | ((row: Row<TData>) => string);
 	/** Class on the rounded card wrapper around the table. */
 	containerClassName?: string;
+	/**
+	 * Enable server-side sorting. The caller owns `sorting` (typically as URL
+	 * search params) and refetches on change. Pass `sorting` and the setter;
+	 * mark sortable columns with `enableSorting: true` and use `SortableHeader`
+	 * in their `header` renderer.
+	 */
+	manualSorting?: {
+		sorting: SortingState;
+		onSortingChange: (state: SortingState) => void;
+	};
 }
 
 /**
@@ -70,6 +83,7 @@ export function DataTable<TData>({
 	emptyState,
 	rowClassName,
 	containerClassName,
+	manualSorting,
 }: DataTableProps<TData>) {
 	"use no memo";
 
@@ -79,6 +93,7 @@ export function DataTable<TData>({
 		storageKey,
 		initialColumnVisibility,
 		getRowId,
+		manualSorting,
 	});
 
 	if (isLoading) {
@@ -109,7 +124,7 @@ export function DataTable<TData>({
 					{table.getHeaderGroups().map((headerGroup) => (
 						<TableRow
 							key={headerGroup.id}
-							className="bg-muted/50 hover:bg-muted/50"
+							className="bg-transparent hover:bg-transparent"
 						>
 							{headerGroup.headers.map((header) => {
 								const meta = header.column.columnDef.meta;
@@ -177,5 +192,50 @@ export function DataTable<TData>({
 				</TableBody>
 			</TablePrimitive>
 		</div>
+	);
+}
+
+/**
+ * Header cell with sort affordance. Use inside a column `header` renderer
+ * when the column has `enableSorting: true` and the DataTable receives
+ * `manualSorting`. Cycles asc → desc → none on click.
+ */
+export function SortableHeader<TData, TValue>({
+	column,
+	children,
+	className,
+}: {
+	column: Column<TData, TValue>;
+	children: ReactNode;
+	className?: string;
+}) {
+	const sorted = column.getIsSorted();
+	const Icon =
+		sorted === "asc"
+			? ArrowUpIcon
+			: sorted === "desc"
+				? ArrowDownIcon
+				: ChevronsUpDownIcon;
+	return (
+		<button
+			type="button"
+			onClick={column.getToggleSortingHandler()}
+			className={cn(
+				"focus-visible:ring-ring/40 -mx-1 inline-flex h-full w-fit items-center gap-1 rounded px-1 text-[0.72rem] font-medium tracking-[0.08em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none",
+				sorted
+					? "text-foreground"
+					: "text-muted-foreground hover:text-foreground",
+				className,
+			)}
+		>
+			{children}
+			<Icon
+				className={cn(
+					"size-3 shrink-0 transition-opacity",
+					sorted ? "opacity-100" : "opacity-50",
+				)}
+				aria-hidden
+			/>
+		</button>
 	);
 }

@@ -1,8 +1,9 @@
 import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
+import { CopyButton } from "@bibs/ui/components/copy-button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable } from "@bibs/ui/components/data-table";
+import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -10,10 +11,11 @@ import {
 	InputGroupInput,
 } from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
+import { Price } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { PackageIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
@@ -28,6 +30,16 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
+type ProductSortField = "name" | "price" | "ean" | "createdAt" | "updatedAt";
+type SortOrder = "asc" | "desc";
+const SORT_FIELDS: ProductSortField[] = [
+	"name",
+	"price",
+	"ean",
+	"createdAt",
+	"updatedAt",
+];
+
 export const Route = createFileRoute("/_authenticated/products/")({
 	component: ProductsListPage,
 	validateSearch: (
@@ -37,16 +49,26 @@ export const Route = createFileRoute("/_authenticated/products/")({
 		limit: number;
 		statusFilter: ProductStatusFilter;
 		q?: string;
+		sort?: ProductSortField;
+		order?: SortOrder;
 	} => {
 		const sf = search.statusFilter;
 		const statusFilter: ProductStatusFilter =
 			sf === "disabled" || sf === "trashed" ? sf : "active";
 		const rawQ = typeof search.q === "string" ? search.q : "";
+		const sort = SORT_FIELDS.includes(search.sort as ProductSortField)
+			? (search.sort as ProductSortField)
+			: undefined;
+		const order =
+			search.order === "asc" || search.order === "desc"
+				? (search.order as SortOrder)
+				: undefined;
 		return {
 			page: Number(search.page ?? 1),
 			limit: Number(search.limit ?? 20),
 			statusFilter,
 			...(rawQ.length > 0 ? { q: rawQ } : {}),
+			...(sort && order ? { sort, order } : {}),
 		};
 	},
 });
@@ -54,6 +76,7 @@ export const Route = createFileRoute("/_authenticated/products/")({
 const INITIAL_COLUMN_VISIBILITY = {
 	brand: false,
 	ean: false,
+	updatedAt: false,
 };
 
 const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
@@ -62,10 +85,37 @@ const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
 	day: "numeric",
 };
 
+const DATETIME_FMT_OPTS: Intl.DateTimeFormatOptions = {
+	year: "numeric",
+	month: "long",
+	day: "numeric",
+	hour: "2-digit",
+	minute: "2-digit",
+};
+
+function DateCell({ value }: { value: string | Date }) {
+	const d = value instanceof Date ? value : new Date(value);
+	return (
+		<time
+			dateTime={d.toISOString()}
+			title={d.toLocaleString("it-IT", DATETIME_FMT_OPTS)}
+		>
+			{d.toLocaleDateString("it-IT", DATE_FMT_OPTS)}
+		</time>
+	);
+}
+
 function ProductsListPage() {
 	"use no memo";
 
-	const { page, limit, statusFilter, q: routeQ } = Route.useSearch();
+	const {
+		page,
+		limit,
+		statusFilter,
+		q: routeQ,
+		sort,
+		order,
+	} = Route.useSearch();
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();
 
@@ -99,6 +149,8 @@ function ProductsListPage() {
 			limit,
 			statusFilter,
 			effectiveRouteQ,
+			sort,
+			order,
 		],
 		queryFn: async () => {
 			const storeId = activeStore?.id;
@@ -110,6 +162,7 @@ function ProductsListPage() {
 					limit,
 					statusFilter,
 					q: effectiveRouteQ.length > 0 ? effectiveRouteQ : undefined,
+					...(sort && order ? { sort, order } : {}),
 				},
 			});
 			if (response.error) {
@@ -119,6 +172,21 @@ function ProductsListPage() {
 		},
 		enabled: !!activeStore?.id,
 	});
+
+	const sorting: SortingState =
+		sort && order ? [{ id: sort, desc: order === "desc" }] : [];
+
+	const onSortingChange = (next: SortingState) => {
+		const head = next[0];
+		void navigate({
+			search: (prev) => ({
+				...prev,
+				sort: head ? (head.id as ProductSortField) : undefined,
+				order: head ? (head.desc ? "desc" : "asc") : undefined,
+				page: 1,
+			}),
+		});
+	};
 
 	type Product = NonNullable<typeof data>["data"][number];
 	const rows = useMemo<Product[]>(() => data?.data ?? [], [data]);
@@ -175,38 +243,75 @@ function ProductsListPage() {
 			},
 			{
 				id: "name",
-				header: "Nome",
+				accessorKey: "name",
+				header: ({ column }) => (
+					<SortableHeader column={column}>Nome</SortableHeader>
+				),
 				enableHiding: false,
+				enableSorting: true,
 				meta: {
 					headerClassName: "w-[30%]",
 					cellClassName: "font-semibold",
+					menuLabel: "Nome",
 				},
 				cell: ({ row }) => {
 					const product = row.original;
-					if (statusFilter === "trashed") {
+					const primaryImage = product.images[0]?.url;
+					const isTrashed = statusFilter === "trashed";
+					const thumbnail = (
+						<div className="bg-warm-paper border-warm-edge size-9 shrink-0 overflow-hidden rounded-md border">
+							{primaryImage ? (
+								<img
+									src={primaryImage}
+									alt=""
+									className="size-full object-cover"
+									loading="lazy"
+								/>
+							) : (
+								<div className="text-muted-foreground/50 flex size-full items-center justify-center">
+									<PackageIcon className="size-4" />
+								</div>
+							)}
+						</div>
+					);
+					const label = (
+						<span className={isTrashed ? "text-muted-foreground" : ""}>
+							{product.name}
+						</span>
+					);
+					if (isTrashed) {
 						return (
-							<span className="text-muted-foreground">{product.name}</span>
+							<div className="flex items-center gap-3">
+								{thumbnail}
+								{label}
+							</div>
 						);
 					}
 					return (
 						<Link
 							to="/products/$productId"
 							params={{ productId: product.id }}
-							className="hover:underline"
+							className="flex items-center gap-3 hover:underline"
 						>
-							{product.name}
+							{thumbnail}
+							{label}
 						</Link>
 					);
 				},
 			},
 			{
 				id: "price",
-				header: "Prezzo",
+				accessorKey: "price",
+				header: ({ column }) => (
+					<SortableHeader column={column}>Prezzo</SortableHeader>
+				),
+				enableSorting: true,
 				meta: {
 					headerClassName: "w-[15%]",
-					cellClassName: "text-sm tabular-nums",
+					cellClassName: "text-sm",
+					menuLabel: "Prezzo",
 				},
-				cell: ({ row }) => <>€{row.original.price}</>,
+				cell: ({ row }) => <Price value={row.original.price} />,
 			},
 			{
 				id: "category",
@@ -220,13 +325,29 @@ function ProductsListPage() {
 					if (assignments.length === 0) {
 						return <span className="text-muted-foreground">—</span>;
 					}
+					const macroName = assignments[0].category.macroCategory.name;
+					const cats = assignments.map((a) => a.category);
+					const MAX_VISIBLE = 2;
+					const visible = cats.slice(0, MAX_VISIBLE);
+					const overflow = cats.length - visible.length;
 					return (
-						<div className="flex flex-wrap gap-1">
-							{assignments.map((pc) => (
-								<Badge key={pc.productCategoryId} variant="secondary">
-									{pc.category.name}
-								</Badge>
-							))}
+						<div
+							className="flex flex-col gap-1 leading-tight"
+							title={cats.map((c) => c.name).join(", ")}
+						>
+							<span className="text-muted-foreground text-[0.65rem] font-medium tracking-[0.06em] uppercase">
+								{macroName}
+							</span>
+							<div className="flex flex-wrap items-center gap-1">
+								{visible.map((c) => (
+									<Badge key={c.id}>{c.name}</Badge>
+								))}
+								{overflow > 0 && (
+									<span className="text-muted-foreground text-xs">
+										+{overflow}
+									</span>
+								)}
+							</div>
 						</div>
 					);
 				},
@@ -245,28 +366,56 @@ function ProductsListPage() {
 			},
 			{
 				id: "ean",
-				header: "EAN",
+				accessorKey: "ean",
+				header: ({ column }) => (
+					<SortableHeader column={column}>EAN</SortableHeader>
+				),
+				enableSorting: true,
 				meta: {
 					headerClassName: "w-[12%]",
 					cellClassName: "text-muted-foreground text-sm tabular-nums",
+					menuLabel: "EAN",
 				},
-				cell: ({ row }) =>
-					row.original.ean ?? (
-						<span className="text-muted-foreground/60">—</span>
-					),
+				cell: ({ row }) => {
+					const ean = row.original.ean;
+					if (!ean) {
+						return <span className="text-muted-foreground/60">—</span>;
+					}
+					return (
+						<div className="flex items-center gap-1">
+							<span>{ean}</span>
+							<CopyButton value={ean} label={`Copia EAN ${ean}`} />
+						</div>
+					);
+				},
 			},
 			{
 				id: "createdAt",
-				header: "Data",
+				accessorKey: "createdAt",
+				header: ({ column }) => (
+					<SortableHeader column={column}>Creato</SortableHeader>
+				),
+				enableSorting: true,
 				meta: {
 					headerClassName: "w-[12%]",
 					cellClassName: "text-muted-foreground text-sm",
+					menuLabel: "Creato",
 				},
-				cell: ({ row }) =>
-					new Date(row.original.createdAt).toLocaleDateString(
-						"it-IT",
-						DATE_FMT_OPTS,
-					),
+				cell: ({ row }) => <DateCell value={row.original.createdAt} />,
+			},
+			{
+				id: "updatedAt",
+				accessorKey: "updatedAt",
+				header: ({ column }) => (
+					<SortableHeader column={column}>Aggiornato</SortableHeader>
+				),
+				enableSorting: true,
+				meta: {
+					headerClassName: "w-[12%]",
+					cellClassName: "text-muted-foreground text-sm",
+					menuLabel: "Aggiornato",
+				},
+				cell: ({ row }) => <DateCell value={row.original.updatedAt} />,
 			},
 			{
 				id: "actions",
@@ -363,6 +512,12 @@ function ProductsListPage() {
 				initialColumnVisibility={INITIAL_COLUMN_VISIBILITY}
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				manualSorting={{ sorting, onSortingChange }}
+				rowClassName={(row) =>
+					selection.isSelected(row.original.id)
+						? "bg-primary/10 hover:bg-primary/10 [&>td]:opacity-60 [&>td:first-child]:opacity-100"
+						: ""
+				}
 				emptyState={
 					<div className="flex flex-col items-center gap-2">
 						<PackageIcon className="text-muted-foreground/40 size-8" />

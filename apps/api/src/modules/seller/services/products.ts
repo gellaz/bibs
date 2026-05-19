@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
@@ -64,6 +64,14 @@ function buildPrefixTsquery(raw: string): string | null {
 	return tokens.map((t) => `${t}:*`).join(" & ");
 }
 
+export type ProductSortField =
+	| "name"
+	| "price"
+	| "ean"
+	| "createdAt"
+	| "updatedAt";
+export type SortOrder = "asc" | "desc";
+
 interface ListProductsParams {
 	sellerProfileId: string;
 	storeId?: string;
@@ -78,6 +86,8 @@ interface ListProductsParams {
 	inStock?: boolean;
 	excludeDiscountId?: string;
 	q?: string;
+	sort?: ProductSortField;
+	order?: SortOrder;
 }
 
 export async function listProducts(params: ListProductsParams) {
@@ -93,6 +103,8 @@ export async function listProducts(params: ListProductsParams) {
 		inStock,
 		excludeDiscountId,
 		q,
+		sort,
+		order = "desc",
 	} = params;
 	const { page, limit, offset } = parsePagination(params);
 
@@ -192,6 +204,30 @@ export async function listProducts(params: ListProductsParams) {
 			.offset(offset);
 		productIds = rows.map((r) => r.id);
 	} else {
+		// Server-side sort. EAN is nullable → NULLs always last via IS NULL prefix.
+		// createdAt is added as stable tiebreaker (skipped when it's the primary key).
+		const dir = order === "asc" ? asc : desc;
+		const orderByClauses = (() => {
+			switch (sort) {
+				case "name":
+					return [dir(product.name), desc(product.createdAt)];
+				case "price":
+					return [dir(product.price), desc(product.createdAt)];
+				case "ean":
+					return [
+						sql`${product.ean} IS NULL`,
+						dir(product.ean),
+						desc(product.createdAt),
+					];
+				case "createdAt":
+					return [dir(product.createdAt)];
+				case "updatedAt":
+					return [dir(product.updatedAt), desc(product.createdAt)];
+				default:
+					return [desc(product.createdAt)];
+			}
+		})();
+
 		const base = storeId
 			? db
 					.select({ id: product.id })
@@ -199,7 +235,10 @@ export async function listProducts(params: ListProductsParams) {
 					.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
 					.where(where)
 			: db.select({ id: product.id }).from(product).where(where);
-		const rows = await base.limit(limit).offset(offset);
+		const rows = await base
+			.orderBy(...orderByClauses)
+			.limit(limit)
+			.offset(offset);
 		productIds = rows.map((r) => r.id);
 	}
 
@@ -220,7 +259,9 @@ export async function listProducts(params: ListProductsParams) {
 			: await db.query.product.findMany({
 					where: inArray(product.id, productIds),
 					with: {
-						productCategoryAssignments: { with: { category: true } },
+						productCategoryAssignments: {
+							with: { category: { with: { macroCategory: true } } },
+						},
 						storeProducts: {
 							with: { store: { columns: { location: false } } },
 						},
@@ -230,8 +271,8 @@ export async function listProducts(params: ListProductsParams) {
 				});
 
 	// Sort data to preserve the order from productIds (the JOIN-paginated order).
-	const order = new Map(productIds.map((id, idx) => [id, idx]));
-	data.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+	const indexById = new Map(productIds.map((id, idx) => [id, idx]));
+	data.sort((a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0));
 
 	return { data, pagination: { page, limit, total } };
 }
@@ -291,7 +332,9 @@ export async function getProduct(params: GetProductParams) {
 			eq(product.sellerProfileId, sellerProfileId),
 		),
 		with: {
-			productCategoryAssignments: { with: { category: true } },
+			productCategoryAssignments: {
+				with: { category: { with: { macroCategory: true } } },
+			},
 			storeProducts: { with: { store: { columns: { location: false } } } },
 			images: { orderBy: (img, { asc }) => [asc(img.position)] },
 			brand: true,

@@ -1,5 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
 import { Input } from "@bibs/ui/components/input";
+import { formatPriceEur } from "@bibs/ui/components/price";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { Switch } from "@bibs/ui/components/switch";
@@ -56,17 +57,6 @@ function applyPercent(originalPrice: string, percent: number): string {
 	const n = Number.parseFloat(originalPrice);
 	if (!Number.isFinite(n)) return originalPrice;
 	return (n * (1 - percent / 100)).toFixed(2);
-}
-
-const EUR_FORMATTER = new Intl.NumberFormat("it-IT", {
-	style: "currency",
-	currency: "EUR",
-});
-
-function formatEur(value: string): string {
-	const n = Number.parseFloat(value);
-	if (!Number.isFinite(n)) return value;
-	return EUR_FORMATTER.format(n);
 }
 
 export function ProductSelector({ mode }: ProductSelectorProps) {
@@ -479,9 +469,9 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 										className={cn(
 											"group cursor-pointer transition-colors duration-200",
 											isIncluded
-												? "bg-blue-50/60 hover:bg-blue-100/60 dark:bg-blue-500/5 dark:hover:bg-blue-500/10"
+												? "bg-primary/10 hover:bg-primary/15"
 												: "hover:bg-muted/40",
-											"data-[just-added=true]:bg-blue-100 data-[just-added=true]:duration-500 dark:data-[just-added=true]:bg-blue-500/15",
+											"data-[just-added=true]:bg-primary/20 data-[just-added=true]:duration-500",
 										)}
 									>
 										<TableCell className="pl-4">
@@ -490,7 +480,7 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 												className={cn(
 													"block size-2 rounded-full transition-colors",
 													isIncluded
-														? "bg-blue-500"
+														? "bg-primary"
 														: "bg-transparent ring-1 ring-inset ring-border group-hover:ring-foreground/40",
 												)}
 											/>
@@ -500,7 +490,7 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 												<span className="font-medium">{row.name}</span>
 												<div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
 													{isIncluded && (
-														<span className="font-medium text-blue-700 dark:text-blue-400">
+														<span className="text-primary font-medium">
 															{m.promotions_selector_row_state_included()}
 														</span>
 													)}
@@ -512,23 +502,23 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 												</div>
 											</div>
 										</TableCell>
-										<TableCell className="text-right font-mono text-sm tabular-nums">
+										<TableCell className="text-right text-sm tabular-nums">
 											{isIncluded && discountedPrice ? (
 												<span className="inline-flex items-baseline gap-2">
 													<span className="text-muted-foreground line-through">
-														{formatEur(row.originalPrice)}
+														{formatPriceEur(row.originalPrice)}
 													</span>
 													<span className="text-foreground font-semibold">
-														{formatEur(discountedPrice)}
+														{formatPriceEur(discountedPrice)}
 													</span>
 												</span>
 											) : (
-												<span>{formatEur(row.originalPrice)}</span>
+												<span>{formatPriceEur(row.originalPrice)}</span>
 											)}
 										</TableCell>
 										<TableCell className="pr-4 text-right">
 											{isIncluded ? (
-												<span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 font-mono text-xs font-medium text-blue-800 dark:bg-blue-500/15 dark:text-blue-300">
+												<span className="bg-primary/15 text-primary inline-flex items-center rounded-full px-2 py-0.5 font-mono text-xs font-medium">
 													−{mode.percent}%
 												</span>
 											) : (

@@ -6,8 +6,10 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
+import { toast } from "@bibs/ui/components/sonner";
 import { Link } from "@tanstack/react-router";
 import {
+	CopyIcon,
 	EyeIcon,
 	EyeOffIcon,
 	MoreHorizontalIcon,
@@ -50,6 +52,21 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 							</Link>
 						</DropdownMenuItem>
 					)}
+
+					<DropdownMenuItem
+						className="whitespace-nowrap"
+						onSelect={async () => {
+							try {
+								await navigator.clipboard.writeText(productId);
+								toast.success(m.products_action_copy_id_success());
+							} catch {
+								toast.error(m.products_action_copy_id_error());
+							}
+						}}
+					>
+						<CopyIcon />
+						{m.products_action_copy_id()}
+					</DropdownMenuItem>
 
 					{status === "active" && (
 						<DropdownMenuItem
