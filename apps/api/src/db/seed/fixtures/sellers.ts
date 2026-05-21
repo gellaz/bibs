@@ -284,9 +284,16 @@ export async function seedSellers() {
 			const { user: u } = await auth.api.signUpEmail({
 				body: { name: s.name, email: s.email, password: "password123" },
 			});
+			const personal = s.profileFields.firstName
+				? {
+						firstName: s.profileFields.firstName,
+						lastName: s.profileFields.lastName,
+						birthDate: s.profileFields.birthDate,
+					}
+				: {};
 			await db
 				.update(user)
-				.set({ role: "seller", emailVerified: true })
+				.set({ role: "seller", emailVerified: true, ...personal })
 				.where(eq(user.id, u.id));
 			created.push({ userId: u.id, data: s });
 		} catch {
