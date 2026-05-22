@@ -48,6 +48,12 @@
 	--cobalt-deep: oklch(0.42 0.19 256);
 	--brick: oklch(0.55 0.18 25);
 	--olive: oklch(0.62 0.1 135);
+	/* Warning amber — semantic state for caution-grade actions (disable, archive,
+	   "you sure?" steps that aren't yet destructive). Hue 60 puts it between
+	   saffron (75, brand-only on customer) and brick (25, destructive); the role
+	   is state, not brand, so it never replaces saffron on the customer register
+	   and never appears as a brand accent on seller/admin. */
+	--warning: oklch(0.62 0.14 60);
 
 	/* Light-mode semantic mapping. */
 	--background: var(--cream);
@@ -149,6 +155,7 @@
 	--accent-foreground: var(--cream);
 	--destructive: oklch(0.66 0.16 25);
 	--destructive-foreground: var(--cream);
+	--warning: oklch(0.78 0.14 60);
 	--border: oklch(0.32 0.013 258);
 	--input: oklch(0.36 0.013 258);
 	--ring: oklch(0.62 0.1 258);
@@ -187,6 +194,7 @@
 	--color-cobalt-deep: var(--cobalt-deep);
 	--color-brick: var(--brick);
 	--color-olive: var(--olive);
+	--color-warning: var(--warning);
 
 	/* Shadcn semantic mapping (existing). */
 	--color-background: var(--background);

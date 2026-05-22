@@ -87,22 +87,6 @@ export function ProductRowActions({
 						{m.products_action_copy_id()}
 					</DropdownMenuItem>
 
-					{status === "active" && (
-						<DropdownMenuItem
-							className="whitespace-nowrap"
-							onSelect={() =>
-								setStatus.mutate({
-									productId,
-									status: "disabled",
-									previousStatus: "active",
-								})
-							}
-						>
-							<EyeOffIcon />
-							{m.products_action_disable()}
-						</DropdownMenuItem>
-					)}
-
 					{status === "disabled" && (
 						<DropdownMenuItem
 							className="whitespace-nowrap"
@@ -136,6 +120,23 @@ export function ProductRowActions({
 					)}
 
 					<DropdownMenuSeparator />
+
+					{status === "active" && (
+						<DropdownMenuItem
+							variant="warning"
+							className="whitespace-nowrap"
+							onSelect={() =>
+								setStatus.mutate({
+									productId,
+									status: "disabled",
+									previousStatus: "active",
+								})
+							}
+						>
+							<EyeOffIcon />
+							{m.products_action_disable()}
+						</DropdownMenuItem>
+					)}
 
 					{status !== "trashed" ? (
 						<DropdownMenuItem
