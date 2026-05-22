@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { storeProduct } from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { ensureProductOwnership } from "../context";
@@ -134,4 +134,93 @@ export async function adjustStock(params: AdjustStockParams) {
 	});
 	if (!existing) throw new ServiceError(404, "Store-product link not found");
 	throw new ServiceError(409, "Stock would go negative");
+}
+
+// ── bulkAdjustStock ───────────────────────────────────────────────────────────
+
+interface BulkAdjustStockParams {
+	sellerProfileId: string;
+	storeId: string;
+	productIds: string[];
+	mode: "delta" | "set";
+	value: number;
+}
+
+interface BulkAdjustFailure {
+	productId: string;
+	reason: "not_found" | "would_go_negative";
+}
+
+export async function bulkAdjustStock(params: BulkAdjustStockParams) {
+	const { sellerProfileId, storeId, productIds, mode, value } = params;
+
+	// 1. Filtra i productIds per ownership: non leakare cross-seller.
+	const ownedRows = await db
+		.select({ id: product.id })
+		.from(product)
+		.where(
+			and(
+				inArray(product.id, productIds),
+				eq(product.sellerProfileId, sellerProfileId),
+			),
+		);
+	const ownedIds = new Set(ownedRows.map((r) => r.id));
+
+	const failed: BulkAdjustFailure[] = [];
+	for (const pid of productIds) {
+		if (!ownedIds.has(pid))
+			failed.push({ productId: pid, reason: "not_found" });
+	}
+
+	// 2. Per ogni id owned: UPDATE atomico per-row.
+	const succeeded: Awaited<ReturnType<typeof adjustStock>>[] = [];
+	for (const productId of ownedIds) {
+		if (mode === "delta") {
+			const [updated] = await db
+				.update(storeProduct)
+				.set({ stock: sql`${storeProduct.stock} + ${value}` })
+				.where(
+					and(
+						eq(storeProduct.productId, productId),
+						eq(storeProduct.storeId, storeId),
+						sql`${storeProduct.stock} + ${value} >= 0`,
+					),
+				)
+				.returning();
+			if (updated) {
+				succeeded.push(updated);
+				continue;
+			}
+			// discrimina 404 vs would_go_negative
+			const existing = await db.query.storeProduct.findFirst({
+				where: and(
+					eq(storeProduct.productId, productId),
+					eq(storeProduct.storeId, storeId),
+				),
+			});
+			failed.push({
+				productId,
+				reason: existing ? "would_go_negative" : "not_found",
+			});
+		} else {
+			// mode = "set"
+			const [updated] = await db
+				.update(storeProduct)
+				.set({ stock: value })
+				.where(
+					and(
+						eq(storeProduct.productId, productId),
+						eq(storeProduct.storeId, storeId),
+					),
+				)
+				.returning();
+			if (updated) {
+				succeeded.push(updated);
+				continue;
+			}
+			failed.push({ productId, reason: "not_found" });
+		}
+	}
+
+	return { succeeded, failed };
 }

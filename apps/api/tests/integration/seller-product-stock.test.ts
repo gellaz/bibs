@@ -28,7 +28,7 @@ mock.module("@/lib/s3", () => ({
 
 import { and, eq } from "drizzle-orm";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
-import { adjustStock } from "@/modules/seller/services/stock";
+import { adjustStock, bulkAdjustStock } from "@/modules/seller/services/stock";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestProduct,
@@ -196,5 +196,33 @@ describe("adjustStock", () => {
 			),
 		});
 		expect(fresh?.stock).toBe(13);
+	});
+});
+
+describe("bulkAdjustStock", () => {
+	it("applica un delta positivo a N prodotti", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		const p3 = await createTestProduct(db, seller.profile.id, { name: "P3" });
+		await createTestStoreProduct(db, store.id, p1.id, { stock: 5 });
+		await createTestStoreProduct(db, store.id, p2.id, { stock: 10 });
+		await createTestStoreProduct(db, store.id, p3.id, { stock: 3 });
+
+		const result = await bulkAdjustStock({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			productIds: [p1.id, p2.id, p3.id],
+			mode: "delta",
+			value: 2,
+		});
+
+		expect(result.succeeded).toHaveLength(3);
+		expect(result.failed).toHaveLength(0);
+		expect(result.succeeded.find((r) => r.productId === p1.id)?.stock).toBe(7);
+		expect(result.succeeded.find((r) => r.productId === p2.id)?.stock).toBe(12);
+		expect(result.succeeded.find((r) => r.productId === p3.id)?.stock).toBe(5);
 	});
 });
