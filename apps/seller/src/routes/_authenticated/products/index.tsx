@@ -626,7 +626,7 @@ function ProductsListPage() {
 				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
 				rowClassName={(row) =>
 					selection.isSelected(row.original.id)
-						? "bg-primary/10 hover:bg-primary/10 [&>td]:opacity-60 [&>td:first-child]:opacity-100"
+						? "bg-primary/10 hover:bg-primary/10 [&>td:not(:first-child):not(:last-child)]:opacity-60"
 						: ""
 				}
 				emptyState={

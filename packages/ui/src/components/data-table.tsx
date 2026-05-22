@@ -43,8 +43,12 @@ function stickyHeaderClass(sticky: "left" | "right" | undefined) {
 }
 
 function stickyCellClass(sticky: "left" | "right" | undefined) {
+	// Bg SOLIDI (no /50 alpha) cosi' il contenuto in scroll non traspare
+	// mai sotto le sticky cells. Su hover sono leggermente piu' sature
+	// di muted/50 (default del TR primitive sulle altre celle), trade-off
+	// accettato in cambio della no-transparency garantita.
 	const stateBg =
-		"bg-card group-hover:bg-muted/50 group-data-[state=selected]:bg-muted";
+		"bg-card group-hover:bg-muted group-data-[state=selected]:bg-muted";
 	if (sticky === "left") return cn("sticky left-0 z-10", SHADOW_RIGHT, stateBg);
 	if (sticky === "right")
 		return cn("sticky right-0 z-10", SHADOW_LEFT, stateBg);
@@ -157,21 +161,14 @@ export function DataTable<TData>({
 							key={headerGroup.id}
 							className="bg-transparent hover:bg-transparent"
 						>
-							{headerGroup.headers.map((header, idx) => {
+							{headerGroup.headers.map((header) => {
 								const meta = header.column.columnDef.meta;
-								const isLastInRow = idx === headerGroup.headers.length - 1;
 								const explicitSize =
 									header.getSize() !== 150 ? header.getSize() : undefined;
 								return (
 									<TableHead
 										key={header.id}
 										className={cn(
-											// Divider verticale fra colonne adiacenti. Per coppie
-											// di celle che scrollano insieme, border-collapse:collapse
-											// muove il bordo con loro: ok. Per il boundary
-											// sticky↔scroll, il box-shadow su stickyHeaderClass
-											// resta ancorato alla sticky cell anche durante lo scroll.
-											!isLastInRow && "border-r",
 											stickyHeaderClass(meta?.sticky),
 											meta?.headerClassName,
 										)}
@@ -206,15 +203,12 @@ export function DataTable<TData>({
 									data-state={row.getIsSelected() ? "selected" : undefined}
 									className={cn("group", extraClass)}
 								>
-									{row.getVisibleCells().map((cell, idx) => {
+									{row.getVisibleCells().map((cell) => {
 										const meta = cell.column.columnDef.meta;
-										const isLastInRow =
-											idx === row.getVisibleCells().length - 1;
 										return (
 											<TableCell
 												key={cell.id}
 												className={cn(
-													!isLastInRow && "border-r",
 													stickyCellClass(meta?.sticky),
 													meta?.cellClassName,
 												)}
