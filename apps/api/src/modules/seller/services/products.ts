@@ -80,7 +80,7 @@ interface ListProductsParams {
 	limit?: number;
 	statusFilter?: ProductStatus;
 	brandId?: string;
-	productCategoryId?: string;
+	productCategoryIds?: string[];
 	productMacroCategoryId?: string;
 	minPrice?: string;
 	maxPrice?: string;
@@ -97,7 +97,7 @@ export async function listProducts(params: ListProductsParams) {
 		storeId,
 		statusFilter = "active",
 		brandId,
-		productCategoryId,
+		productCategoryIds,
 		productMacroCategoryId,
 		minPrice,
 		maxPrice,
@@ -128,9 +128,13 @@ export async function listProducts(params: ListProductsParams) {
 		);
 	}
 
-	if (productCategoryId) {
+	if (productCategoryIds && productCategoryIds.length > 0) {
+		const idList = sql.join(
+			productCategoryIds.map((id) => sql`${id}`),
+			sql`, `,
+		);
 		conditions.push(
-			sql`EXISTS (SELECT 1 FROM product_category_assignments pca WHERE pca.product_id = ${product.id} AND pca.product_category_id = ${productCategoryId})`,
+			sql`EXISTS (SELECT 1 FROM product_category_assignments pca WHERE pca.product_id = ${product.id} AND pca.product_category_id IN (${idList}))`,
 		);
 	}
 

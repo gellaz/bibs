@@ -55,7 +55,7 @@ export const productsRoutes = new Elysia()
 				limit: query.limit,
 				statusFilter: query.statusFilter,
 				brandId: query.brandId,
-				productCategoryId: query.productCategoryId,
+				productCategoryIds: query.productCategoryIds,
 				productMacroCategoryId: query.productMacroCategoryId,
 				minPrice: query.minPrice,
 				maxPrice: query.maxPrice,
@@ -90,8 +90,11 @@ export const productsRoutes = new Elysia()
 						),
 					),
 					brandId: t.Optional(t.String({ description: "Filtra per marca" })),
-					productCategoryId: t.Optional(
-						t.String({ description: "Filtra per categoria" }),
+					productCategoryIds: t.Optional(
+						t.Array(t.String(), {
+							description:
+								"Filtra per una o più categorie foglia. Repeated query param: `?productCategoryIds=a&productCategoryIds=b`. AND fra dimensioni, OR fra le categorie passate.",
+						}),
 					),
 					productMacroCategoryId: t.Optional(
 						t.String({ description: "Filtra per macro-categoria" }),

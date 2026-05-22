@@ -166,6 +166,46 @@ describe("listProducts with new filters", () => {
 		});
 		expect(out.data.map((p) => p.name)).toEqual(["A"]);
 	});
+
+	it("filters by productCategoryIds: OR semantics over the array", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "M");
+		const c1 = await createTestCategory(db, "C1", macro.id);
+		const c2 = await createTestCategory(db, "C2", macro.id);
+		const c3 = await createTestCategory(db, "C3", macro.id);
+		await createTestProduct(db, seller.profile.id, {
+			name: "P1",
+			categoryIds: [c1.id],
+		});
+		await createTestProduct(db, seller.profile.id, {
+			name: "P2",
+			categoryIds: [c2.id],
+		});
+		await createTestProduct(db, seller.profile.id, {
+			name: "P3",
+			categoryIds: [c3.id],
+		});
+
+		const out = await listProducts({
+			sellerProfileId: seller.profile.id,
+			productCategoryIds: [c1.id, c3.id],
+		});
+		expect(out.data.map((p) => p.name).sort()).toEqual(["P1", "P3"]);
+	});
+
+	it("productCategoryIds vuoto: nessun filtro applicato", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await createTestProduct(db, seller.profile.id, { name: "A" });
+		await createTestProduct(db, seller.profile.id, { name: "B" });
+
+		const out = await listProducts({
+			sellerProfileId: seller.profile.id,
+			productCategoryIds: [],
+		});
+		expect(out.data.map((p) => p.name).sort()).toEqual(["A", "B"]);
+	});
 });
 
 describe("sort by stock", () => {
