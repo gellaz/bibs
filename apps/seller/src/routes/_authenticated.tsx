@@ -12,6 +12,7 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
@@ -166,8 +167,10 @@ function AuthenticatedLayout() {
 			<SidebarProvider>
 				<AppSidebar />
 				<SidebarInset>
-					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur md:hidden">
+					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
 						<SidebarTrigger className="-ml-1" />
+						<div aria-hidden className="h-4 w-px bg-border" />
+						<AppBreadcrumb />
 					</header>
 					<div className="flex-1 p-4">
 						<Outlet />
@@ -220,8 +223,10 @@ function EmployeeStoreGate({
 			<SidebarProvider>
 				<AppSidebar />
 				<SidebarInset>
-					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur md:hidden">
+					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
 						<SidebarTrigger className="-ml-1" />
+						<div aria-hidden className="h-4 w-px bg-border" />
+						<AppBreadcrumb />
 					</header>
 					<div className="flex-1 p-4">
 						<Outlet />
