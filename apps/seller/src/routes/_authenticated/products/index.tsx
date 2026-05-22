@@ -323,6 +323,12 @@ function ProductsListPage() {
 			},
 			{
 				id: "stock",
+				// accessorFn serve a TanStack Table per registrare il sort handler:
+				// senza un accessor, getToggleSortingHandler() non aggancia il click sull'header.
+				// Il valore client-side qui è solo cosmetico — l'ordering reale lo fa il backend.
+				accessorFn: (row) =>
+					row.storeProducts.find((sp) => sp.storeId === activeStore?.id)
+						?.stock ?? 0,
 				header: ({ column }) => (
 					<SortableHeader column={column}>
 						{m.products_stock_column_header()}
