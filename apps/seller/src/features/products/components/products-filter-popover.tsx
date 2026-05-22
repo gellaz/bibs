@@ -14,19 +14,19 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@bibs/ui/components/popover";
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { useAllProductCategories } from "../hooks/use-all-product-categories";
+import { useSellerCategoriesInUse } from "../hooks/use-seller-categories-in-use";
 
-// Converte input utente (it: "5,00") in canonical decimal ("5.00").
-// Ritorna undefined se la stringa pulita non matcha il pattern accettato dal backend.
 function normalizePrice(raw: string): string | undefined {
 	const trimmed = raw.trim().replace(",", ".");
 	if (trimmed.length === 0) return undefined;
 	if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return undefined;
 	return trimmed;
 }
+
+type StatusFilter = "active" | "disabled" | "trashed";
 
 export interface FilterValue {
 	categoryIds?: string[];
@@ -37,14 +37,20 @@ export interface FilterValue {
 interface ProductsFilterPopoverProps {
 	value: FilterValue;
 	onChange: (next: FilterValue) => void;
+	storeId: string | undefined;
+	statusFilter: StatusFilter | undefined;
 	trigger: ReactNode;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
 
+const VISIBLE_CHIPS = 2;
+
 export function ProductsFilterPopover({
 	value,
 	onChange,
+	storeId,
+	statusFilter,
 	trigger,
 	open,
 	onOpenChange,
@@ -76,7 +82,7 @@ export function ProductsFilterPopover({
 	}, [debouncedMax]);
 
 	const { data: categories = [], isLoading: catsLoading } =
-		useAllProductCategories();
+		useSellerCategoriesInUse(storeId, statusFilter);
 	type Category = (typeof categories)[number];
 
 	const grouped = useMemo(() => {
@@ -100,35 +106,39 @@ export function ProductsFilterPopover({
 
 	const selectedIds = value.categoryIds ?? [];
 	const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-
-	const triggerLabel = useMemo(() => {
-		if (selectedIds.length === 0) return "Tutte le categorie";
-		if (selectedIds.length === 1) {
-			return (
-				categories.find((c) => c.id === selectedIds[0])?.name ?? "1 categoria"
-			);
-		}
-		const first = categories.find((c) => c.id === selectedIds[0])?.name;
-		if (!first) return `${selectedIds.length} categorie`;
-		return `${first} +${selectedIds.length - 1}`;
-	}, [selectedIds, categories]);
+	const selectedCategories = useMemo(
+		() =>
+			selectedIds
+				.map((id) => categories.find((c) => c.id === id))
+				.filter((c): c is Category => Boolean(c)),
+		[selectedIds, categories],
+	);
 
 	const toggleCategory = (id: string) => {
 		const next = new Set(selectedSet);
-		if (next.has(id)) {
-			next.delete(id);
-		} else {
-			next.add(id);
-		}
+		if (next.has(id)) next.delete(id);
+		else next.add(id);
 		onChange({
 			...value,
 			categoryIds: next.size === 0 ? undefined : Array.from(next),
 		});
 	};
 
+	const removeCategory = (id: string) => {
+		const next = selectedIds.filter((cid) => cid !== id);
+		onChange({
+			...value,
+			categoryIds: next.length === 0 ? undefined : next,
+		});
+	};
+
 	const clearCategories = () => {
 		onChange({ ...value, categoryIds: undefined });
 	};
+
+	const visibleChips = selectedCategories.slice(0, VISIBLE_CHIPS);
+	const overflowCount = selectedCategories.length - visibleChips.length;
+	const noCategoriesAvailable = !catsLoading && categories.length === 0;
 
 	const priceHint = (() => {
 		const minN = normalizePrice(localMin);
@@ -160,21 +170,61 @@ export function ProductsFilterPopover({
 						</Label>
 						<Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
 							<PopoverTrigger asChild>
-								<Button
-									variant="outline"
-									role="combobox"
+								<button
+									type="button"
 									aria-expanded={categoryOpen}
-									className="w-full justify-between font-normal"
+									disabled={noCategoriesAvailable}
+									className="border-input dark:bg-input/30 dark:hover:bg-input/50 focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-9 w-full items-center justify-between gap-1.5 rounded-lg border bg-transparent px-2.5 py-1.5 text-sm transition-colors outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60"
 								>
-									<span
-										className={
-											selectedIds.length === 0 ? "text-muted-foreground" : ""
-										}
-									>
-										{catsLoading ? "Caricamento…" : triggerLabel}
-									</span>
-									<ChevronsUpDownIcon className="text-muted-foreground size-4 shrink-0 opacity-60" />
-								</Button>
+									<div className="flex flex-wrap items-center gap-1.5">
+										{catsLoading && selectedCategories.length === 0 && (
+											<span className="text-muted-foreground">
+												Caricamento…
+											</span>
+										)}
+										{!catsLoading && selectedCategories.length === 0 && (
+											<span className="text-muted-foreground">
+												{noCategoriesAvailable
+													? "Nessuna categoria nel catalogo"
+													: "Seleziona categorie…"}
+											</span>
+										)}
+										{visibleChips.map((cat) => (
+											<span
+												key={cat.id}
+												className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+											>
+												{cat.name}
+												{/* biome-ignore lint/a11y/useSemanticElements: nested <button> inside button trigger is invalid HTML; span with role keeps the X interactive without DOM nesting issues. */}
+												<span
+													role="button"
+													tabIndex={0}
+													aria-label={`Rimuovi ${cat.name}`}
+													className="hover:bg-primary-foreground/20 -mr-0.5 flex size-3.5 items-center justify-center rounded-full"
+													onClick={(e) => {
+														e.stopPropagation();
+														removeCategory(cat.id);
+													}}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															e.preventDefault();
+															e.stopPropagation();
+															removeCategory(cat.id);
+														}
+													}}
+												>
+													<XIcon className="size-3" />
+												</span>
+											</span>
+										))}
+										{overflowCount > 0 && (
+											<span className="text-muted-foreground text-xs">
+												+{overflowCount}
+											</span>
+										)}
+									</div>
+									<ChevronDownIcon className="text-muted-foreground size-4 shrink-0" />
+								</button>
 							</PopoverTrigger>
 							<PopoverContent className="w-72 p-0" align="start" sideOffset={4}>
 								<Command>

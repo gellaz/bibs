@@ -569,6 +569,8 @@ function ProductsListPage() {
 						</InputGroup>
 						<ProductsFilterBar
 							value={{ categoryIds, minPrice, maxPrice }}
+							storeId={activeStore.id}
+							statusFilter={statusFilter}
 							onChange={(next) =>
 								void navigate({
 									search: (prev) => ({
