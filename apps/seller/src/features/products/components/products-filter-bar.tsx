@@ -55,13 +55,17 @@ export function ProductsFilterBar({
 				open={open}
 				onOpenChange={setOpen}
 				trigger={
-					<Button variant="outline" size="sm" className="gap-2">
+					<Button variant="outline" className="relative gap-2">
 						<FilterIcon className="size-4" />
 						Filtri
 						{activeCount > 0 && (
-							<Badge variant="secondary" className="ml-1">
+							<span
+								role="status"
+								aria-label={`${activeCount} filtri attivi`}
+								className="bg-cobalt-soft text-cobalt-deep ring-background absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold tabular-nums ring-2"
+							>
 								{activeCount}
-							</Badge>
+							</span>
 						)}
 					</Button>
 				}
