@@ -571,6 +571,7 @@ function ProductsListPage() {
 							value={{ categoryIds, minPrice, maxPrice }}
 							storeId={activeStore.id}
 							statusFilter={statusFilter}
+							totalResults={data?.pagination.total}
 							onChange={(next) =>
 								void navigate({
 									search: (prev) => ({

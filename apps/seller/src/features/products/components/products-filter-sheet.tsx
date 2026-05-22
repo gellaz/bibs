@@ -14,9 +14,11 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@bibs/ui/components/popover";
+import { Separator } from "@bibs/ui/components/separator";
 import {
 	Sheet,
 	SheetContent,
+	SheetDescription,
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
@@ -47,9 +49,75 @@ interface ProductsFilterSheetProps {
 	onChange: (next: FilterValue) => void;
 	storeId: string | undefined;
 	statusFilter: StatusFilter | undefined;
+	totalResults: number | undefined;
 	trigger: ReactNode;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+}
+
+function ResultSummary({ count }: { count: number | undefined }) {
+	if (count === undefined) {
+		return (
+			<SheetDescription className="text-muted-foreground/70">
+				Caricamento…
+			</SheetDescription>
+		);
+	}
+	if (count === 0) {
+		return (
+			<SheetDescription>
+				Nessun prodotto corrisponde ai filtri attuali.
+			</SheetDescription>
+		);
+	}
+	return (
+		<SheetDescription>
+			<span className="tabular-nums font-medium text-foreground">{count}</span>{" "}
+			{count === 1 ? "prodotto corrispondente" : "prodotti corrispondenti"}
+		</SheetDescription>
+	);
+}
+
+interface SectionHeaderProps {
+	label: string;
+	active: boolean;
+	summary?: string;
+	onClear?: () => void;
+}
+
+function SectionHeader({
+	label,
+	active,
+	summary,
+	onClear,
+}: SectionHeaderProps) {
+	return (
+		<div className="flex items-baseline justify-between gap-3">
+			<div className="flex items-center gap-2">
+				{active && (
+					<span
+						aria-hidden
+						className="bg-cobalt size-1.5 shrink-0 rounded-full"
+					/>
+				)}
+				<Label className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
+					{label}
+				</Label>
+				{summary && (
+					<span className="text-muted-foreground/70 text-xs">{summary}</span>
+				)}
+			</div>
+			{active && onClear && (
+				<button
+					type="button"
+					onClick={onClear}
+					className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2"
+				>
+					Cancella
+				</button>
+			)}
+		</div>
+	);
 }
 
 const VISIBLE_CHIPS = 2;
@@ -59,6 +127,7 @@ export function ProductsFilterSheet({
 	onChange,
 	storeId,
 	statusFilter,
+	totalResults,
 	trigger,
 	open,
 	onOpenChange,
@@ -172,15 +241,25 @@ export function ProductsFilterSheet({
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetTrigger asChild>{trigger}</SheetTrigger>
 			<SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-				<SheetHeader className="border-b px-6 py-4">
-					<SheetTitle>Filtri</SheetTitle>
+				<SheetHeader className="border-b px-6 py-5">
+					<SheetTitle className="text-base">Filtri</SheetTitle>
+					<ResultSummary count={totalResults} />
 				</SheetHeader>
 
-				<div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-					<section className="space-y-2">
-						<Label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-							Categoria
-						</Label>
+				<div className="flex-1 overflow-y-auto">
+					<section className="space-y-3 px-6 py-5">
+						<SectionHeader
+							label="Categoria"
+							active={selectedIds.length > 0}
+							summary={
+								selectedIds.length > 0
+									? `${selectedIds.length} selezionat${
+											selectedIds.length === 1 ? "a" : "e"
+										}`
+									: undefined
+							}
+							onClear={clearCategories}
+						/>
 						<Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
 							<PopoverTrigger asChild>
 								<button
@@ -287,10 +366,33 @@ export function ProductsFilterSheet({
 						</Popover>
 					</section>
 
-					<section className="space-y-2">
-						<Label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-							Prezzo
-						</Label>
+					<Separator />
+
+					<section className="space-y-3 px-6 py-5">
+						<SectionHeader
+							label="Prezzo"
+							active={Boolean(value.minPrice || value.maxPrice)}
+							summary={(() => {
+								if (value.minPrice && value.maxPrice)
+									return `${value.minPrice}–${value.maxPrice} €`;
+								if (value.minPrice) return `da ${value.minPrice} €`;
+								if (value.maxPrice) return `fino a ${value.maxPrice} €`;
+								return undefined;
+							})()}
+							onClear={
+								value.minPrice || value.maxPrice
+									? () => {
+											setLocalMin("");
+											setLocalMax("");
+											onChange({
+												...value,
+												minPrice: undefined,
+												maxPrice: undefined,
+											});
+										}
+									: undefined
+							}
+						/>
 						<div className="grid grid-cols-2 gap-3">
 							<div className="space-y-1">
 								<Label htmlFor="filter-min-price" className="text-xs">
@@ -335,13 +437,24 @@ export function ProductsFilterSheet({
 					</section>
 				</div>
 
-				<SheetFooter className="border-t px-6 py-3">
+				<SheetFooter className="flex-row items-center justify-between border-t px-6 py-3">
+					<p className="text-muted-foreground text-xs">
+						{(() => {
+							const n =
+								selectedIds.length +
+								(value.minPrice ? 1 : 0) +
+								(value.maxPrice ? 1 : 0);
+							if (n === 0) return "Nessun filtro attivo";
+							return `${n} filtr${n === 1 ? "o" : "i"} attiv${n === 1 ? "o" : "i"}`;
+						})()}
+					</p>
 					<Button
 						variant="ghost"
+						size="sm"
 						onClick={handleReset}
 						disabled={!hasActiveFilters}
 					>
-						Cancella tutti i filtri
+						Cancella tutti
 					</Button>
 				</SheetFooter>
 			</SheetContent>

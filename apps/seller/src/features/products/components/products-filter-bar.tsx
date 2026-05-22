@@ -12,6 +12,7 @@ interface ProductsFilterBarProps {
 	onChange: (next: FilterValue) => void;
 	storeId: string | undefined;
 	statusFilter: StatusFilter | undefined;
+	totalResults: number | undefined;
 }
 
 function formatPriceIt(decimal: string): string {
@@ -54,6 +55,7 @@ export function ProductsFilterBar({
 	onChange,
 	storeId,
 	statusFilter,
+	totalResults,
 }: ProductsFilterBarProps) {
 	const [open, setOpen] = useState(false);
 
@@ -86,6 +88,7 @@ export function ProductsFilterBar({
 				onChange={onChange}
 				storeId={storeId}
 				statusFilter={statusFilter}
+				totalResults={totalResults}
 				open={open}
 				onOpenChange={setOpen}
 				trigger={
