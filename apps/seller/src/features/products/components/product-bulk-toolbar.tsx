@@ -2,12 +2,14 @@ import { Button } from "@bibs/ui/components/button";
 import {
 	EyeIcon,
 	EyeOffIcon,
+	PackageIcon,
 	RotateCcwIcon,
 	Trash2Icon,
 	TrashIcon,
 	XIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { BulkStockAdjustDialog } from "@/features/products/components/bulk-stock-adjust-dialog";
 import { ConfirmPermanentDeleteDialog } from "@/features/products/components/confirm-permanent-delete-dialog";
 import type { ProductStatusFilter } from "@/features/products/components/product-status-tabs";
 import { useProductMutations } from "@/features/products/hooks/use-product-mutations";
@@ -28,6 +30,7 @@ export function ProductBulkToolbar({
 }: Props) {
 	const { bulkSetStatus } = useProductMutations(activeStoreId);
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [adjustOpen, setAdjustOpen] = useState(false);
 
 	if (selectedIds.length === 0) return null;
 
@@ -60,6 +63,14 @@ export function ProductBulkToolbar({
 				<div className="ml-auto flex gap-2">
 					{statusFilter === "active" && (
 						<>
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => setAdjustOpen(true)}
+							>
+								<PackageIcon className="size-4" />
+								{m.products_bulk_adjust_stock_button()}
+							</Button>
 							<Button size="sm" onClick={apply("disabled")}>
 								<EyeOffIcon className="size-4" />
 								{m.products_action_disable()}
@@ -114,6 +125,13 @@ export function ProductBulkToolbar({
 				onOpenChange={setConfirmOpen}
 				productIds={selectedIds}
 				activeStoreId={activeStoreId}
+				onSuccess={onClear}
+			/>
+			<BulkStockAdjustDialog
+				open={adjustOpen}
+				onOpenChange={setAdjustOpen}
+				productIds={selectedIds}
+				storeId={activeStoreId}
 				onSuccess={onClear}
 			/>
 		</>
