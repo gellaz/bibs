@@ -10,6 +10,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { Link } from "@tanstack/react-router";
 import {
 	CopyIcon,
+	CopyPlusIcon,
 	EyeIcon,
 	EyeOffIcon,
 	MoreHorizontalIcon,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ConfirmPermanentDeleteDialog } from "@/features/products/components/confirm-permanent-delete-dialog";
+import { StoreAssignmentDialog } from "@/features/products/components/store-assignment-dialog";
 import { useProductMutations } from "@/features/products/hooks/use-product-mutations";
 import { m } from "@/paraglide/messages";
 
@@ -29,11 +31,18 @@ interface Props {
 	productId: string;
 	status: ProductStatus;
 	activeStoreId: string;
+	assignedStoreIds: string[];
 }
 
-export function ProductRowActions({ productId, status, activeStoreId }: Props) {
+export function ProductRowActions({
+	productId,
+	status,
+	activeStoreId,
+	assignedStoreIds,
+}: Props) {
 	const { setStatus } = useProductMutations(activeStoreId);
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [addStoreOpen, setAddStoreOpen] = useState(false);
 
 	return (
 		<>
@@ -50,6 +59,16 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 								<PencilIcon />
 								{m.products_action_edit()}
 							</Link>
+						</DropdownMenuItem>
+					)}
+
+					{status !== "trashed" && (
+						<DropdownMenuItem
+							className="whitespace-nowrap"
+							onSelect={() => setAddStoreOpen(true)}
+						>
+							<CopyPlusIcon />
+							{m.products_action_add_to_store()}
 						</DropdownMenuItem>
 					)}
 
@@ -151,6 +170,13 @@ export function ProductRowActions({ productId, status, activeStoreId }: Props) {
 				onOpenChange={setConfirmOpen}
 				productIds={[productId]}
 				activeStoreId={activeStoreId}
+			/>
+
+			<StoreAssignmentDialog
+				productId={productId}
+				assignedStoreIds={assignedStoreIds}
+				open={addStoreOpen}
+				onOpenChange={setAddStoreOpen}
 			/>
 		</>
 	);

@@ -467,6 +467,9 @@ function ProductsListPage() {
 						productId={row.original.id}
 						status={row.original.status}
 						activeStoreId={activeStore?.id ?? ""}
+						assignedStoreIds={row.original.storeProducts.map(
+							(sp) => sp.storeId,
+						)}
 					/>
 				),
 			},
