@@ -3,12 +3,14 @@ import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
+import { Separator } from "@bibs/ui/components/separator";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import "@/lib/typebox-formats";
 import { PlusIcon, Trash2Icon } from "lucide-react";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { type SubmitHandler, useFieldArray, useForm } from "react-hook-form";
 import {
@@ -33,6 +35,32 @@ interface StoreFormProps {
 	pendingLabel?: string;
 	onNameChange?: (name: string) => void;
 	readOnly?: boolean;
+}
+
+function FormSection({
+	title,
+	description,
+	children,
+}: {
+	title: string;
+	description?: string;
+	children: ReactNode;
+}) {
+	return (
+		<section className="grid gap-6 md:grid-cols-[18rem_1fr] md:gap-12">
+			<header className="space-y-1.5">
+				<h2 className="font-display text-base font-semibold tracking-tight text-foreground">
+					{title}
+				</h2>
+				{description && (
+					<p className="text-sm leading-relaxed text-muted-foreground">
+						{description}
+					</p>
+				)}
+			</header>
+			<div className="space-y-4">{children}</div>
+		</section>
+	);
 }
 
 export function StoreForm({
@@ -87,7 +115,6 @@ export function StoreForm({
 	});
 
 	const onFormSubmit: SubmitHandler<StoreFormData> = (data) => {
-		// Clean up empty optional fields
 		const cleaned: StoreFormData = {
 			...data,
 			description: data.description || undefined,
@@ -108,8 +135,11 @@ export function StoreForm({
 	};
 
 	return (
-		<form onSubmit={handleSubmit(onFormSubmit)}>
-			<div className="space-y-4 py-4">
+		<form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10">
+			<FormSection
+				title="Identità"
+				description="Come si chiama il negozio e con che voce si racconta."
+			>
 				<Field data-invalid={!!errors.name}>
 					<FieldLabel htmlFor="store-name" required>
 						Nome
@@ -128,13 +158,20 @@ export function StoreForm({
 					<FieldLabel htmlFor="store-description">Descrizione</FieldLabel>
 					<Textarea
 						id="store-description"
-						placeholder="Descrizione del negozio (opzionale)"
+						placeholder="Una riga sul negozio (opzionale)"
 						rows={2}
 						disabled={readOnly}
 						{...register("description")}
 					/>
 				</Field>
+			</FormSection>
 
+			<Separator />
+
+			<FormSection
+				title="Indirizzo"
+				description="Dove si trova fisicamente, come ti raggiungono."
+			>
 				<Field data-invalid={!!errors.addressLine1}>
 					<FieldLabel htmlFor="store-address1" required>
 						Indirizzo
@@ -158,7 +195,7 @@ export function StoreForm({
 					/>
 				</Field>
 
-				<div className="grid grid-cols-2 gap-4">
+				<div className="grid grid-cols-[1fr_auto] gap-4">
 					<Field data-invalid={!!errors.city}>
 						<FieldLabel htmlFor="store-city" required>
 							Città
@@ -171,7 +208,7 @@ export function StoreForm({
 						/>
 						<FieldError errors={[errors.city]} />
 					</Field>
-					<Field data-invalid={!!errors.zipCode}>
+					<Field data-invalid={!!errors.zipCode} className="w-32">
 						<FieldLabel htmlFor="store-zip" required>
 							CAP
 						</FieldLabel>
@@ -187,11 +224,11 @@ export function StoreForm({
 					</Field>
 				</div>
 
-				<Field data-invalid={!!errors.province}>
+				<Field data-invalid={!!errors.province} className="w-32">
 					<FieldLabel htmlFor="store-province">Provincia</FieldLabel>
 					<Input
 						id="store-province"
-						placeholder="MI (opzionale)"
+						placeholder="MI"
 						maxLength={2}
 						disabled={readOnly}
 						{...register("province", {
@@ -200,27 +237,27 @@ export function StoreForm({
 					/>
 					<FieldError errors={[errors.province]} />
 				</Field>
+			</FormSection>
 
-				<Field data-invalid={!!errors.websiteUrl}>
-					<FieldLabel htmlFor="store-website">Sito web</FieldLabel>
-					<Input
-						id="store-website"
-						type="url"
-						placeholder="https://esempio.it (opzionale)"
-						disabled={readOnly}
-						{...register("websiteUrl", {
-							setValueAs: (v: string) => v || undefined,
-						})}
-					/>
-					<FieldError errors={[errors.websiteUrl]} />
-				</Field>
+			<Separator />
 
+			<FormSection
+				title="Orari di apertura"
+				description="Fasce orarie per ogni giorno. Le festività particolari si gestiscono dal calendario."
+			>
 				<OpeningHoursEditor
 					value={openingHours}
 					onChange={setOpeningHours}
 					readOnly={readOnly}
 				/>
+			</FormSection>
 
+			<Separator />
+
+			<FormSection
+				title="Contatti"
+				description="Numeri di telefono e sito web pubblico."
+			>
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
 						<Label>Numeri di telefono</Label>
@@ -236,50 +273,77 @@ export function StoreForm({
 							</Button>
 						)}
 					</div>
-					{fields.map((field, index) => (
-						<div key={field.id} className="flex gap-2">
-							<Input
-								placeholder="Etichetta (es. Principale)"
-								className="w-1/3"
-								disabled={readOnly}
-								{...register(`phoneNumbers.${index}.label`)}
-							/>
-							<Field
-								data-invalid={!!errors.phoneNumbers?.[index]?.number}
-								className="flex-1"
-							>
-								<Input
-									placeholder="Numero di telefono"
-									type="tel"
-									disabled={readOnly}
-									{...register(`phoneNumbers.${index}.number`)}
-								/>
-								<FieldError errors={[errors.phoneNumbers?.[index]?.number]} />
-							</Field>
-							{!readOnly && (
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon"
-									onClick={() => remove(index)}
-								>
-									<Trash2Icon className="size-4" />
-								</Button>
-							)}
+					{fields.length === 0 ? (
+						<p className="text-sm text-muted-foreground italic">
+							Nessun numero impostato.
+						</p>
+					) : (
+						<div className="space-y-2">
+							{fields.map((field, index) => (
+								<div key={field.id} className="flex gap-2">
+									<Input
+										placeholder="Etichetta (es. Principale)"
+										className="w-1/3"
+										disabled={readOnly}
+										{...register(`phoneNumbers.${index}.label`)}
+									/>
+									<Field
+										data-invalid={!!errors.phoneNumbers?.[index]?.number}
+										className="flex-1"
+									>
+										<Input
+											placeholder="Numero di telefono"
+											type="tel"
+											disabled={readOnly}
+											{...register(`phoneNumbers.${index}.number`)}
+										/>
+										<FieldError
+											errors={[errors.phoneNumbers?.[index]?.number]}
+										/>
+									</Field>
+									{!readOnly && (
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon"
+											onClick={() => remove(index)}
+										>
+											<Trash2Icon className="size-4" />
+										</Button>
+									)}
+								</div>
+							))}
 						</div>
-					))}
+					)}
 				</div>
-			</div>
+
+				<Field data-invalid={!!errors.websiteUrl}>
+					<FieldLabel htmlFor="store-website">Sito web</FieldLabel>
+					<Input
+						id="store-website"
+						type="url"
+						placeholder="https://esempio.it (opzionale)"
+						disabled={readOnly}
+						{...register("websiteUrl", {
+							setValueAs: (v: string) => v || undefined,
+						})}
+					/>
+					<FieldError errors={[errors.websiteUrl]} />
+				</Field>
+			</FormSection>
 
 			{!readOnly && (
-				<div className="flex justify-end gap-3 pt-2">
-					<Button type="button" variant="outline" onClick={onCancel}>
-						Annulla
-					</Button>
-					<Button type="submit" disabled={isPending || !isDirty}>
-						{isPending ? pendingLabel : submitLabel}
-					</Button>
-				</div>
+				<>
+					<Separator />
+					<div className="flex justify-end gap-3">
+						<Button type="button" variant="outline" onClick={onCancel}>
+							Annulla
+						</Button>
+						<Button type="submit" disabled={isPending || !isDirty}>
+							{isPending ? pendingLabel : submitLabel}
+						</Button>
+					</div>
+				</>
 			)}
 		</form>
 	);
