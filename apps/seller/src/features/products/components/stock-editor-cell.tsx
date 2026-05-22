@@ -145,7 +145,7 @@ export function StockEditorCell({
 				className="h-7 w-7"
 				onClick={onDecrement}
 				disabled={adjust.isPending || set.isPending || optimistic === 0}
-				aria-label="Diminuisci"
+				aria-label={m.products_stock_decrement_aria()}
 			>
 				<MinusIcon className="size-3.5" />
 			</Button>
@@ -180,7 +180,7 @@ export function StockEditorCell({
 				className="h-7 w-7"
 				onClick={onIncrement}
 				disabled={adjust.isPending || set.isPending}
-				aria-label="Aumenta"
+				aria-label={m.products_stock_increment_aria()}
 			>
 				<PlusIcon className="size-3.5" />
 			</Button>

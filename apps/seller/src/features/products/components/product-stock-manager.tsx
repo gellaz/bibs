@@ -56,7 +56,7 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 			if (response.error) throw new Error("Errore nella rimozione dal negozio");
 		},
 		onSuccess: () => {
-			toast.success("Prodotto rimosso dal negozio");
+			toast.success(m.products_stock_manager_removed_success());
 			invalidate();
 		},
 		onError: (err: Error) => toast.error(err.message),
@@ -71,7 +71,7 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 			if (response.error) throw new Error("Errore assegnazione");
 		},
 		onSuccess: () => {
-			toast.success("Prodotto reso disponibile");
+			toast.success(m.products_stock_manager_assigned_success());
 			invalidate();
 		},
 		onError: (err: Error) => toast.error(err.message),

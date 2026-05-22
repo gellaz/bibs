@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { getLogger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
 import {
 	OkMessage,
@@ -104,7 +105,15 @@ export const stockRoutes = new Elysia()
 		"/products/:productId/stores/:storeId/stock-adjust",
 		async (ctx) => {
 			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params, body, isOwner, user } = sellerCtx;
+			const {
+				sellerProfile: sp,
+				params,
+				body,
+				isOwner,
+				user,
+				store,
+			} = sellerCtx;
+			const pino = getLogger(store);
 			await ensureStoreAccess(params.storeId, {
 				userId: user.id,
 				sellerProfileId: sp.id,
@@ -116,6 +125,18 @@ export const stockRoutes = new Elysia()
 				sellerProfileId: sp.id,
 				delta: body.delta,
 			});
+			pino.info(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					productId: params.productId,
+					storeId: params.storeId,
+					delta: body.delta,
+					newStock: data.stock,
+					action: "stock_adjusted",
+				},
+				"Stock modificato",
+			);
 			return ok(data);
 		},
 		{
@@ -137,7 +158,8 @@ export const stockRoutes = new Elysia()
 		"/products/bulk/stock-adjust",
 		async (ctx) => {
 			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, body, isOwner, user } = sellerCtx;
+			const { sellerProfile: sp, body, isOwner, user, store } = sellerCtx;
+			const pino = getLogger(store);
 			await ensureStoreAccess(body.storeId, {
 				userId: user.id,
 				sellerProfileId: sp.id,
@@ -150,6 +172,20 @@ export const stockRoutes = new Elysia()
 				mode: body.mode,
 				value: body.value,
 			});
+			pino.info(
+				{
+					userId: user.id,
+					sellerProfileId: sp.id,
+					storeId: body.storeId,
+					mode: body.mode,
+					value: body.value,
+					requested: body.productIds.length,
+					succeeded: result.succeeded.length,
+					failed: result.failed.length,
+					action: "stock_bulk_adjusted",
+				},
+				"Bulk adjust stock",
+			);
 			return ok(result);
 		},
 		{
