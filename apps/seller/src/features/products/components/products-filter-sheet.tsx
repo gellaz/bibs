@@ -24,7 +24,15 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@bibs/ui/components/sheet";
-import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react";
+import {
+	CheckIcon,
+	ChevronDownIcon,
+	EuroIcon,
+	type LucideIcon,
+	SlidersHorizontalIcon,
+	TagIcon,
+	XIcon,
+} from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useSellerCategoriesInUse } from "../hooks/use-seller-categories-in-use";
@@ -79,6 +87,7 @@ function ResultSummary({ count }: { count: number | undefined }) {
 }
 
 interface SectionHeaderProps {
+	icon: LucideIcon;
 	label: string;
 	active: boolean;
 	summary?: string;
@@ -86,20 +95,25 @@ interface SectionHeaderProps {
 }
 
 function SectionHeader({
+	icon: Icon,
 	label,
 	active,
 	summary,
 	onClear,
 }: SectionHeaderProps) {
 	return (
-		<div className="flex items-baseline justify-between gap-3">
-			<div className="flex items-center gap-2">
-				{active && (
-					<span
-						aria-hidden
-						className="bg-cobalt size-1.5 shrink-0 rounded-full"
-					/>
-				)}
+		<div className="flex items-center justify-between gap-3">
+			<div className="flex items-center gap-2.5">
+				<span
+					aria-hidden
+					className={
+						active
+							? "bg-cobalt-soft text-cobalt-deep flex size-6 shrink-0 items-center justify-center rounded-md"
+							: "text-muted-foreground/70 flex size-6 shrink-0 items-center justify-center"
+					}
+				>
+					<Icon className="size-3.5" />
+				</span>
 				<Label className="text-muted-foreground text-xs font-medium tracking-[0.08em] uppercase">
 					{label}
 				</Label>
@@ -242,13 +256,24 @@ export function ProductsFilterSheet({
 			<SheetTrigger asChild>{trigger}</SheetTrigger>
 			<SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
 				<SheetHeader className="border-b px-6 py-5">
-					<SheetTitle className="text-base">Filtri</SheetTitle>
-					<ResultSummary count={totalResults} />
+					<div className="flex items-center gap-2.5">
+						<span
+							aria-hidden
+							className="bg-cobalt-soft text-cobalt-deep flex size-8 shrink-0 items-center justify-center rounded-lg"
+						>
+							<SlidersHorizontalIcon className="size-4" />
+						</span>
+						<div className="flex flex-col gap-0.5">
+							<SheetTitle className="text-base leading-none">Filtri</SheetTitle>
+							<ResultSummary count={totalResults} />
+						</div>
+					</div>
 				</SheetHeader>
 
 				<div className="flex-1 overflow-y-auto">
 					<section className="space-y-3 px-6 py-5">
 						<SectionHeader
+							icon={TagIcon}
 							label="Categoria"
 							active={selectedIds.length > 0}
 							summary={
@@ -370,6 +395,7 @@ export function ProductsFilterSheet({
 
 					<section className="space-y-3 px-6 py-5">
 						<SectionHeader
+							icon={EuroIcon}
 							label="Prezzo"
 							active={Boolean(value.minPrice || value.maxPrice)}
 							summary={(() => {
