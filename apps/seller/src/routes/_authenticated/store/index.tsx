@@ -139,7 +139,7 @@ function StoreSettingsPage() {
 	return (
 		<div className="mx-auto max-w-2xl space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold">
+				<h1 className="font-display text-2xl font-semibold tracking-tight">
 					{name || store.name || (
 						<span className="text-muted-foreground">Impostazioni negozio</span>
 					)}
