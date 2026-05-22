@@ -68,6 +68,7 @@ export type ProductSortField =
 	| "name"
 	| "price"
 	| "ean"
+	| "stock"
 	| "createdAt"
 	| "updatedAt";
 export type SortOrder = "asc" | "desc";
@@ -223,6 +224,11 @@ export async function listProducts(params: ListProductsParams) {
 					return [dir(product.createdAt)];
 				case "updatedAt":
 					return [dir(product.updatedAt), desc(product.createdAt)];
+				case "stock":
+					if (!storeId) {
+						throw new ServiceError(400, "sort=stock requires storeId");
+					}
+					return [dir(storeProduct.stock), desc(product.createdAt)];
 				default:
 					return [desc(product.createdAt)];
 			}

@@ -129,12 +129,13 @@ export const productsRoutes = new Elysia()
 								t.Literal("name"),
 								t.Literal("price"),
 								t.Literal("ean"),
+								t.Literal("stock"),
 								t.Literal("createdAt"),
 								t.Literal("updatedAt"),
 							],
 							{
 								description:
-									"Campo di ordinamento. Ignorato quando `q` è attivo (vince la rilevanza). Default: createdAt.",
+									"Campo di ordinamento. `stock` richiede `storeId`. Ignorato quando `q` è attivo (vince la rilevanza). Default: createdAt.",
 							},
 						),
 					),

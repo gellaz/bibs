@@ -165,3 +165,63 @@ describe("listProducts with new filters", () => {
 		expect(out.data.map((p) => p.name)).toEqual(["A"]);
 	});
 });
+
+describe("sort by stock", () => {
+	it("ordina per stock crescente", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		const p3 = await createTestProduct(db, seller.profile.id, { name: "P3" });
+		await createTestStoreProduct(db, store.id, p1.id, { stock: 5 });
+		await createTestStoreProduct(db, store.id, p2.id, { stock: 1 });
+		await createTestStoreProduct(db, store.id, p3.id, { stock: 9 });
+
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			page: 1,
+			limit: 20,
+			sort: "stock",
+			order: "asc",
+		});
+
+		expect(result.data.map((p) => p.name)).toEqual(["P2", "P1", "P3"]);
+	});
+
+	it("ordina per stock decrescente", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		await createTestStoreProduct(db, store.id, p1.id, { stock: 5 });
+		await createTestStoreProduct(db, store.id, p2.id, { stock: 12 });
+
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			page: 1,
+			limit: 20,
+			sort: "stock",
+			order: "desc",
+		});
+
+		expect(result.data.map((p) => p.name)).toEqual(["P2", "P1"]);
+	});
+
+	it("respinge sort=stock senza storeId con 400", async () => {
+		const seller = await createTestSeller(getTestDb());
+
+		await expect(
+			listProducts({
+				sellerProfileId: seller.profile.id,
+				page: 1,
+				limit: 20,
+				sort: "stock",
+				order: "asc",
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+});
