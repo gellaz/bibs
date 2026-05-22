@@ -27,14 +27,23 @@ import { cn } from "~/lib/utils";
 // l'header sta sopra ai body sticky cells in caso di overlap; le body cells
 // rispecchiano hover/selected del <tr> per mantenere coerenza con la riga.
 //
-// Il separator visivo USA un box-shadow outset di 1px, non un border, perche'
-// `border-collapse: collapse` (default browser per <table> via Tailwind reset)
+// Il separator usa box-shadow (non border) perche' `border-collapse: collapse`
 // fonde i border delle celle adiacenti: il border-r della sticky cell verrebbe
 // "trascinato via" insieme alla cella vicina quando l'utente scrolla. Il
-// box-shadow invece e' painted come parte della sticky cell e resta ancorato
-// al suo edge in ogni scroll position.
-const SHADOW_RIGHT = "shadow-[1px_0_0_0_var(--color-border)]";
-const SHADOW_LEFT = "shadow-[-1px_0_0_0_var(--color-border)]";
+// box-shadow e' painted come parte della sticky cell e resta ancorato al suo
+// edge in ogni scroll position.
+//
+// Due shadow stratificate:
+//  1. Linea hard 2px al color-border per essere VISIBILE anche con il
+//     --warm-edge molto chiaro su bg-card (il singolo px a quel contrasto
+//     sparisce sui display ad alto DPI).
+//  2. Soft fade nero a bassa alpha (4px offset, 6px blur, -4px spread) come
+//     scroll affordance — segnala visivamente "qui sotto sta scorrendo
+//     contenuto". Pattern standard di Notion/Linear/Google Sheets.
+const SHADOW_RIGHT =
+	"shadow-[2px_0_0_0_var(--color-border),6px_0_6px_-4px_oklch(0_0_0/0.08)]";
+const SHADOW_LEFT =
+	"shadow-[-2px_0_0_0_var(--color-border),-6px_0_6px_-4px_oklch(0_0_0/0.08)]";
 
 function stickyHeaderClass(sticky: "left" | "right" | undefined) {
 	if (sticky === "left") return cn("sticky left-0 z-20 bg-card", SHADOW_RIGHT);
