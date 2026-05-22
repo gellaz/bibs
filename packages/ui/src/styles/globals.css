@@ -37,8 +37,15 @@
 	--warm-line: oklch(0.86 0.014 80);
 	--warm-shadow: oklch(0.5 0.012 80);
 	--dusk: oklch(0.22 0.014 80);
+	/* Saffron — reserved signal for the customer (brand) register: reward,
+	   civic partner, "aperto adesso". Not used in seller/admin (product). */
 	--saffron: oklch(0.78 0.14 75);
 	--saffron-deep: oklch(0.66 0.16 70);
+	/* Cobalt — accent for the product register (seller, admin). Aligned to
+	   Tailwind blue-* the seller already paints with. */
+	--cobalt: oklch(0.55 0.19 256);
+	--cobalt-soft: oklch(0.95 0.05 256);
+	--cobalt-deep: oklch(0.42 0.19 256);
 	--brick: oklch(0.55 0.18 25);
 	--olive: oklch(0.62 0.1 135);
 
@@ -116,15 +123,24 @@
 
 .dark {
 	/* Brand archetype tokens (--ink, --cream, ...) are inherited from :root.
-	   Only semantic tokens are remapped here. */
+	   Cobalt is re-tuned for dark surfaces: --cobalt becomes the hover/pressed
+	   tier (matches light's --cobalt-deep), and a brighter --cobalt at rest
+	   stays legible on dusk backgrounds. */
+	--cobalt: oklch(0.68 0.16 256);
+	--cobalt-soft: oklch(0.3 0.1 256);
+	--cobalt-deep: oklch(0.55 0.19 256);
+	/* Only semantic tokens are remapped below. */
 	--background: oklch(0.2 0.014 258);
 	--foreground: var(--cream);
 	--card: oklch(0.26 0.014 258);
 	--card-foreground: var(--cream);
 	--popover: oklch(0.3 0.014 258);
 	--popover-foreground: var(--cream);
-	--primary: oklch(0.62 0.1 258);
-	--primary-foreground: oklch(0.2 0.014 258);
+	/* Primary inverts in dark: cream button with ink text. Same ingredients
+	   as light (--ink + --cream), reversed for legibility on dusk surfaces.
+	   Preserves brand voice; no separate primary color in dark. */
+	--primary: var(--cream);
+	--primary-foreground: var(--ink);
 	--secondary: oklch(0.3 0.014 258);
 	--secondary-foreground: var(--cream);
 	--muted: oklch(0.26 0.014 258);
@@ -166,6 +182,9 @@
 	--color-dusk: var(--dusk);
 	--color-saffron: var(--saffron);
 	--color-saffron-deep: var(--saffron-deep);
+	--color-cobalt: var(--cobalt);
+	--color-cobalt-soft: var(--cobalt-soft);
+	--color-cobalt-deep: var(--cobalt-deep);
 	--color-brick: var(--brick);
 	--color-olive: var(--olive);
 

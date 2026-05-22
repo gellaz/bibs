@@ -1,3 +1,4 @@
+import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -137,40 +138,56 @@ function StoreSettingsPage() {
 	}
 
 	return (
-		<div className="mx-auto max-w-2xl space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold">
+		<div className="mx-auto max-w-5xl space-y-10">
+			<header className="space-y-1">
+				<h1 className="font-display text-2xl font-semibold tracking-tight">
 					{name || store.name || (
 						<span className="text-muted-foreground">Impostazioni negozio</span>
 					)}
 				</h1>
 				<p className="text-muted-foreground text-sm">
 					{isOwner
-						? "Modifica le informazioni del negozio attivo"
-						: "Informazioni del negozio (sola lettura)"}
+						? "Modifica le informazioni del negozio attivo."
+						: "Informazioni del negozio (sola lettura)."}
 				</p>
-			</div>
+			</header>
 
 			{isOwner && (
-				<ProductImageDropzone
-					files={newFiles}
-					onDrop={(accepted) =>
-						setNewFiles((prev) => [
-							...prev,
-							...accepted.slice(
-								0,
-								MAX_STORE_IMAGES - existingImages.length - prev.length,
-							),
-						])
-					}
-					onRemoveFile={(index) =>
-						setNewFiles((prev) => prev.filter((_, i) => i !== index))
-					}
-					onReorderFiles={setNewFiles}
-					existingImages={existingImages}
-					onDeleteExisting={(imageId) => deleteImageMutation.mutate(imageId)}
-					maxFiles={MAX_STORE_IMAGES}
-				/>
+				<>
+					<section className="grid gap-6 md:grid-cols-[18rem_1fr] md:gap-12">
+						<div className="space-y-1.5">
+							<h2 className="font-display text-base font-semibold tracking-tight text-foreground">
+								Vetrina
+							</h2>
+							<p className="text-sm leading-relaxed text-muted-foreground">
+								Le foto del negozio che i clienti vedono per primi. Fino a{" "}
+								{MAX_STORE_IMAGES}, riordinabili.
+							</p>
+						</div>
+						<ProductImageDropzone
+							files={newFiles}
+							onDrop={(accepted) =>
+								setNewFiles((prev) => [
+									...prev,
+									...accepted.slice(
+										0,
+										MAX_STORE_IMAGES - existingImages.length - prev.length,
+									),
+								])
+							}
+							onRemoveFile={(index) =>
+								setNewFiles((prev) => prev.filter((_, i) => i !== index))
+							}
+							onReorderFiles={setNewFiles}
+							existingImages={existingImages}
+							onDeleteExisting={(imageId) =>
+								deleteImageMutation.mutate(imageId)
+							}
+							maxFiles={MAX_STORE_IMAGES}
+						/>
+					</section>
+					<Separator />
+				</>
 			)}
 
 			<StoreForm

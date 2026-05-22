@@ -13,23 +13,27 @@ colors:
   warm-shadow: "oklch(0.50 0.012 80)"
   saffron: "oklch(0.78 0.14 75)"
   saffron-deep: "oklch(0.66 0.16 70)"
+  cobalt: "oklch(0.55 0.19 256)"
+  cobalt-soft: "oklch(0.95 0.05 256)"
+  cobalt-deep: "oklch(0.42 0.19 256)"
   brick: "oklch(0.55 0.18 25)"
   olive: "oklch(0.62 0.10 135)"
   ink-on-saffron: "oklch(0.22 0.014 80)"
+  ink-on-cobalt: "oklch(0.985 0.008 80)"
   ink-on-brick: "oklch(0.985 0.008 80)"
 typography:
   display:
-    fontFamily: "Bricolage Grotesque, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Satoshi, Cabinet Grotesk, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(2.5rem, 6vw, 4.25rem)"
-    fontWeight: 500
+    fontWeight: 700
     lineHeight: 1.05
-    letterSpacing: "-0.015em"
+    letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Bricolage Grotesque, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Satoshi, Cabinet Grotesk, Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(1.625rem, 3vw, 2.125rem)"
-    fontWeight: 600
+    fontWeight: 700
     lineHeight: 1.18
-    letterSpacing: "-0.01em"
+    letterSpacing: "-0.015em"
   title:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1.25rem"
@@ -107,6 +111,12 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "0.125rem 0.625rem"
+  badge-cobalt:
+    backgroundColor: "{colors.cobalt-soft}"
+    textColor: "{colors.cobalt-deep}"
+    typography: "{typography.label}"
+    rounded: "{rounded.pill}"
+    padding: "0.125rem 0.625rem"
   badge-civic:
     backgroundColor: "{colors.warm-paper}"
     textColor: "{colors.ink}"
@@ -155,24 +165,29 @@ default.
 - Navy ink on warm cream, never pure white, never black. The page reads like
   a printed map, not a dashboard.
 - Generous spacing as a moral position. The merchant gets room.
-- Typography pairs Geist (UI workhorse) with Bricolage Grotesque (warm
-  display). Two voices, one register.
-- Saffron is the only saturated accent and it is rare. ≤5% of the surface,
-  signal moments only (reward earned, civic partner, "aperto adesso", focus).
+- Typography pairs Geist (UI workhorse) with Satoshi (warm display, loaded
+  from Fontshare). Two voices, one register.
+- Two accent roles, one per register. **Saffron** is the brand-register
+  signal (customer surfaces): reward earned, civic partner, "aperto adesso",
+  presence dots. **Cobalt** is the product-register accent (seller, admin):
+  selection state, focus on operational controls, accent fills on chips and
+  badges. Neither is decorative; neither is used across registers.
 - Flat by default. Elevation is reserved for state response.
 - Motion respects `prefers-reduced-motion` without exception. Ease-out
   exponential curves, no bounce.
 
-**Migration note.** The codebase as of writing carries the shadcn radix-nova
-preset (cyan-sky `--primary`, neutral grayscale, Geist-only). DESIGN.md is
-normative for new work: the next implementations align tokens to this spec.
-Existing screens migrate opportunistically, never as a big-bang refactor.
+**Register split.** PRODUCT.md sets the customer as brand-default surface;
+seller and admin override to product per task. DESIGN.md follows: every
+token is shared (one ink, one cream, one type ramp), but two accents are
+reserved per register — saffron on brand, cobalt on product. A seller chip
+in saffron, or a customer reward pill in cobalt, is wrong by construction.
 
 ## 2. Colors: The Ink-and-Paper Palette
 
-A bichromatic system: navy ink on warm cream, with a single saffron signal.
-The cream is not white, the ink is not black, and the saffron earns its
-visibility.
+A bichromatic system: navy ink on warm cream, with two register-bound
+accents — saffron for brand surfaces and cobalt for product surfaces. The
+cream is not white, the ink is not black, and the accents earn their
+visibility one register at a time.
 
 ### Primary
 
@@ -203,15 +218,30 @@ the brand ink. The cream is the territory; the ink draws on it.
 - **Dusk** (`oklch(0.22 0.014 80)`): primary foreground text on cream.
   Tinted ink, not pure black.
 
-### Accent: Saffron
+### Accent (brand register): Saffron
 
-A single saturated color, used for signal moments only.
+Reserved for the customer surface. Signal moments only, never operational
+chrome.
 
 - **Saffron** (`oklch(0.78 0.14 75)`): reward earned, points balance,
-  civic partner pill ("il Comune partecipa"), "aperto adesso", new badge,
-  focus ring at critical moments.
+  civic partner pill ("il Comune partecipa"), "aperto adesso", new badge.
 - **Saffron Deep** (`oklch(0.66 0.16 70)`): hovered or pressed saffron
   surfaces, smaller saffron text on cream where contrast matters.
+
+### Accent (product register): Cobalt
+
+Reserved for seller and admin surfaces. Operational accent: selection,
+focus on controls, accent fills on chips and badges, primary action
+emphasis where ink alone is too quiet. Aligned to Tailwind's `blue-*`
+family so existing seller usage (`bg-blue-50 text-blue-700`, etc.)
+migrates token-by-token without a visual jump.
+
+- **Cobalt** (`oklch(0.55 0.19 256)`): mid-tier accent, ≈ blue-500. Filled
+  chips, accent dots, ring at focus on operational controls.
+- **Cobalt Soft** (`oklch(0.95 0.05 256)`): tinted background, ≈ blue-50.
+  Chip and badge fills behind cobalt-deep text.
+- **Cobalt Deep** (`oklch(0.42 0.19 256)`): pressed and emphasis, ≈
+  blue-700. Text on cobalt-soft backgrounds, hovered cobalt surfaces.
 
 ### State
 
@@ -224,42 +254,54 @@ A single saturated color, used for signal moments only.
 
 ### Named Rules
 
-**The Single Hand Rule.** Saffron is the open palm. It belongs to ≤5% of
-any given screen, and only on signal moments: reward, civic, presence,
-focus. Never as a decorative accent, never on body chrome, never on a
-gradient. Every additional saffron pixel weakens the one that earned its
-place.
+**The Single Hand Rule.** On the customer surface, saffron is the open
+palm. It belongs to ≤5% of any given screen, and only on signal moments:
+reward, civic, presence. Never as a decorative accent, never on body
+chrome, never on a gradient. Every additional saffron pixel weakens the
+one that earned its place.
+
+**The Cobalt Discipline.** On seller and admin surfaces, cobalt earns
+its place by carrying selection and focus on operational controls. It
+can paint more than 5% of a chip-dense view (a selected row, a focused
+input ring, an accent badge), but never replaces ink as the primary
+action. Ink stays the voice; cobalt is the state.
+
+**The Cross-Register Ban.** Saffron must not appear on seller/admin
+chrome. Cobalt must not appear on customer brand surfaces. Each register
+keeps its accent; mixing them collapses the distinction the system is
+built on.
 
 **The Ink Rule.** Pure black (`#000`) and pure white (`#fff`) are
 prohibited. Foreground is Dusk. Background is Cream. Surfaces with no
 chroma feel like a tax form. The whole system tints, slightly.
 
-**The No-Cyan Rule.** The current shadcn preset's cyan-sky primary
-(`oklch(0.746 0.16 232.661)`) is legacy and contradicts the wordmark. Do
-not introduce new uses; migrate opportunistically. The brand voice is
-navy ink, full stop.
-
 ## 3. Typography
 
-**Display Font:** Bricolage Grotesque (variable), with a `ui-sans-serif`
-fallback. Free via Fontshare / Google Fonts.
+**Display Font:** Satoshi (variable, weights 300–900), loaded from
+Fontshare. Fallback chain: Cabinet Grotesk → Geist → `ui-sans-serif`.
+Seller already preloads it from `__root.tsx`; customer and admin should
+follow when they need display chrome of their own.
 **Body Font:** Geist (variable), with `ui-sans-serif`. Already in the repo.
 **Mono Font:** Geist Mono. For prices, codes, distances, point balances.
 
-**Character.** Bricolage is a warm grotesque with rounded terminals and a
-subtle quirk in its widest weights: a sibling of the wordmark's
-hand-marker quality, but disciplined enough for headlines. Geist is the
-neutral workhorse. Together they read like a small magazine running on
-solid editorial chrome: identity at the top, clarity below.
+**Character.** Satoshi is a contemporary geometric grotesque with tight
+counters and a confident dark weight: it gives the wordmark a structural
+sibling that scales from a 12pt label to a 64px hero without changing
+voice. Where Geist is a generous UI workhorse, Satoshi is the display
+counterpart — a touch firmer, a touch more deliberate. Together they
+read like a small magazine running on solid editorial chrome: identity
+at the top, clarity below.
 
 ### Hierarchy
 
-- **Display** (Bricolage 500, `clamp(2.5rem, 6vw, 4.25rem)`, line-height
-  1.05, tracking -0.015em): hero on customer brand pages, shop name on
-  Shopkeeper's Window detail pages. One per page. Never inside a card.
-- **Headline** (Bricolage 600, `clamp(1.625rem, 3vw, 2.125rem)`,
-  line-height 1.18): section heads on the customer surface, card-as-hero
-  titles, empty-state headlines.
+- **Display** (Satoshi 700, `clamp(2.5rem, 6vw, 4.25rem)`, line-height
+  1.05, tracking -0.02em): hero on customer brand pages, page title on
+  the Shopkeeper's Window detail pages, onboarding welcome on seller.
+  One per page. Never inside a card.
+- **Headline** (Satoshi 700, `clamp(1.625rem, 3vw, 2.125rem)`,
+  line-height 1.18, tracking -0.015em): section heads on customer
+  surfaces, card-as-hero titles, empty-state headlines, entity form
+  headers on seller.
 - **Title** (Geist 600, 1.25rem, line-height 1.3): card titles, list
   item primary, dialog titles, settings group heads.
 - **Body** (Geist 400, 1rem, line-height 1.55, max line length 65–72ch):
@@ -267,16 +309,17 @@ solid editorial chrome: identity at the top, clarity below.
   characters.
 - **Label** (Geist 500, 0.8125rem, line-height 1.3, tracking 0.04em):
   chips, pills, badges, button text, table headers. Sentence case in
-  Italian; only the saffron reward badges use ALL CAPS, and only there.
+  Italian; only the saffron reward badges (customer) use ALL CAPS, and
+  only there.
 - **Mono** (Geist Mono 400, 0.875rem): prices, distances ("0.4 km"),
   point balances, order codes, addresses in compact form.
 
 ### Named Rules
 
-**The Two-Voice Rule.** Bricolage carries identity. Geist carries
-information. Mixing roles, putting Bricolage on a price tag or Geist on
-a hero, breaks the system. If a piece of text is the *what*, Geist; if
-it is the *who* or the *welcome*, Bricolage.
+**The Two-Voice Rule.** Satoshi carries identity. Geist carries
+information. Mixing roles, putting Satoshi on a price tag or Geist on a
+hero, breaks the system. If a piece of text is the *what*, Geist; if it
+is the *who* or the *welcome*, Satoshi.
 
 **The 72ch Rule.** Body copy never exceeds 72 characters per line. Above
 that the eye loses the line return, the merchant's story stops feeling
@@ -339,9 +382,10 @@ statement of offer ("vai al negozio", "prenota").
   inline-auto on desktop.
 - **Hover:** background shifts to Ink Deep over 180ms ease-out-quart.
   No translate, no glow.
-- **Focus:** 2px Saffron ring offset 2px from the surface. Saffron is
-  reserved for focus on the most critical actions; ghost and secondary
-  variants use Ink Soft for focus.
+- **Focus:** 2px ring offset 2px from the surface. Ring color follows the
+  register: **Saffron** on customer surfaces, **Cobalt** on seller/admin.
+  Ink Soft is the fallback for ghost and secondary variants in both
+  registers.
 - **Secondary:** Warm Paper background, Ink text, same padding.
 - **Ghost:** transparent background, Ink text, smaller padding
   (0.5rem × 0.875rem). For tertiary actions inside cards.
@@ -355,8 +399,9 @@ Inputs are openings, not gates.
 - **Shape:** rounded `md` (0.425rem).
 - **Style:** Cream background, Warm Edge 1px border, Dusk text, body
   typography, padding 0.625rem × 0.875rem.
-- **Focus:** border shifts to Ink, Saffron ring 2px outside the border
-  at offset 2px. Smooth 150ms ease-out-quart.
+- **Focus:** border shifts to Ink, ring 2px outside the border at offset
+  2px. Ring is Saffron on customer surfaces, Cobalt on seller/admin.
+  Smooth 150ms ease-out-quart.
 - **Error:** border shifts to Brick, helper text in Brick below the
   input. No icons or red glow; the change in border carries the signal.
 - **Disabled:** 60% opacity, Warm Paper background. Cursor: not-allowed.
@@ -378,17 +423,23 @@ card; the card itself disappears.
 
 ### Chips and Pills
 
-Chips carry presence. The system has three meaningful kinds:
+Chips carry presence. The system has four meaningful kinds:
 
-- **Saffron Reward Pill** (`badge-saffron`): Saffron background, Dusk
-  text, ALL CAPS label, rounded `pill`. Used for "+5 PUNTI",
-  "RICOMPENSA SBLOCCATA". One of these per surface, maximum.
-- **Civic Pill** (`badge-civic`): Warm Paper background, Ink text, 1px
-  Ink border, sentence case. "Il Comune di Modena partecipa". Visible on
-  customer surfaces where civic incentives apply.
-- **Distance Pill** (`distance-pill`): Cream background, Ink text, mono
-  number, "0.4 km" or "12 min a piedi". Visible on every store and
-  product card. The Market Square's voice.
+- **Saffron Reward Pill** (`badge-saffron`, customer only): Saffron
+  background, Dusk text, ALL CAPS label, rounded `pill`. Used for "+5
+  PUNTI", "RICOMPENSA SBLOCCATA". One per surface, maximum.
+- **Civic Pill** (`badge-civic`, customer only): Warm Paper background,
+  Ink text, 1px Ink border, sentence case. "Il Comune di Modena
+  partecipa". Visible on customer surfaces where civic incentives apply.
+- **Distance Pill** (`distance-pill`, customer only): Cream background,
+  Ink text, mono number, "0.4 km" or "12 min a piedi". Visible on every
+  store and product card. The Market Square's voice.
+- **Cobalt Pill** (`badge-cobalt`, seller/admin only): Cobalt Soft
+  background, Cobalt Deep text, sentence case, rounded `pill`. Used for
+  operational state — counts ("3 selezionati"), category badges on a
+  product table, "in evidenza" flags. Common on data-dense surfaces;
+  no upper-bound rule like saffron — but it never replaces an icon when
+  shape would do.
 
 ### Inputs / Search
 
@@ -409,10 +460,10 @@ search resolves with location context (geo gate), never anonymous.
 ### Signature Components
 
 **The Shopkeeper's Window (merchant detail).** Hero photo full-bleed,
-shop name in Display Bricolage on Cream, address + hours + civic pill
-in a strip below. Inventory grid begins below the strip with `2xl`
-spacing. The shopkeeper's voice (a short bio, optional) appears in Body
-Geist, max 65ch, in Warm Shadow.
+shop name in Display Satoshi on Cream, address + hours + civic pill in a
+strip below. Inventory grid begins below the strip with `2xl` spacing.
+The shopkeeper's voice (a short bio, optional) appears in Body Geist,
+max 65ch, in Warm Shadow.
 
 **The Market Square (discovery).** A dense but breathing index of
 nearby shops. Each tile carries: photo (3:4), shop name (Title), one
@@ -433,7 +484,8 @@ twice on the same surface. The thread reads as one voice across pages.
   the inventory grid on every customer surface.
 - **Do** use Ink as the brand voice. Wordmark, primary buttons,
   headlines, focus rings: the same Ink everywhere.
-- **Do** keep Saffron at ≤5% of any screen, on signal moments only.
+- **Do** keep Saffron at ≤5% of any **customer** screen, on signal
+  moments only. On seller/admin, saffron is absent — use Cobalt instead.
 - **Do** show distance, opening status, and pickup-or-delivery
   affordances on every store and product card. The Market Square is a
   promise.
@@ -452,8 +504,11 @@ twice on the same surface. The thread reads as one voice across pages.
 
 ### Don't
 
-- **Don't** introduce new uses of the cyan-sky `--primary`. The brand
-  is navy Ink. The cyan is legacy.
+- **Don't** mix the two accents across registers. Saffron on a seller
+  chip, or cobalt on a customer reward pill, is a system error.
+- **Don't** reintroduce cyan-sky as primary. The brand voice is navy
+  Ink; cobalt belongs to the product register's accent role, not to the
+  primary action.
 - **Don't** use pure `#000` or `#fff`. Anywhere. Foreground is Dusk;
   background is Cream.
 - **Don't** use a side-stripe border (`border-left: Npx solid <color>`)
@@ -476,8 +531,8 @@ twice on the same surface. The thread reads as one voice across pages.
   manipulative urgency. The reward system is a relationship, not a hook.
 - **Don't** put crypto / web3 / dark-and-neon energy anywhere. Wrong
   register entirely.
-- **Don't** put Bricolage on a price or a button. Bricolage is the
-  *who*; Geist is the *what*.
+- **Don't** put Satoshi on a price or a button. Satoshi is the *who*;
+  Geist is the *what*.
 - **Don't** nest a card inside a card. Reach for spacing or a divider
   instead.
 - **Don't** wrap everything in a container with the same padding. Vary

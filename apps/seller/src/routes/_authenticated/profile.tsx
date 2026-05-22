@@ -10,7 +10,15 @@ export const Route = createFileRoute("/_authenticated/profile")({
 function ProfilePage() {
 	const isOwner = useIsOwner();
 	return (
-		<div className="mx-auto flex max-w-2xl flex-col gap-4">
+		<div className="mx-auto flex max-w-4xl flex-col gap-8">
+			<header className="space-y-1">
+				<h1 className="font-display text-2xl font-semibold tracking-tight">
+					Profilo
+				</h1>
+				<p className="text-sm text-muted-foreground">
+					Dati personali e informazioni dell'azienda.
+				</p>
+			</header>
 			<PersonalInfoCard />
 			<BusinessInfoCard readOnly={!isOwner} />
 		</div>

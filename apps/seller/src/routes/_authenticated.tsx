@@ -1,11 +1,4 @@
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from "@bibs/ui/components/breadcrumb";
 import { Button } from "@bibs/ui/components/button";
-import { Separator } from "@bibs/ui/components/separator";
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -19,6 +12,7 @@ import {
 	useNavigate,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
@@ -112,7 +106,9 @@ function AuthenticatedLayout() {
 	if (session.user.role === "seller" && onboardingError) {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4">
-				<h1 className="text-2xl font-bold">Errore</h1>
+				<h1 className="font-display text-2xl font-semibold tracking-tight">
+					Errore
+				</h1>
 				<p className="text-muted-foreground">
 					Impossibile caricare il profilo venditore.
 				</p>
@@ -133,7 +129,9 @@ function AuthenticatedLayout() {
 	if (role !== "seller" && role !== "employee") {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4">
-				<h1 className="text-2xl font-bold">Accesso negato</h1>
+				<h1 className="font-display text-2xl font-semibold tracking-tight">
+					Accesso negato
+				</h1>
 				<p className="text-muted-foreground">
 					Solo i venditori possono accedere a questa area.
 				</p>
@@ -169,16 +167,10 @@ function AuthenticatedLayout() {
 			<SidebarProvider>
 				<AppSidebar />
 				<SidebarInset>
-					<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
 						<SidebarTrigger className="-ml-1" />
-						<Separator orientation="vertical" className="mr-2 h-4" />
-						<Breadcrumb>
-							<BreadcrumbList>
-								<BreadcrumbItem>
-									<BreadcrumbPage>bibs Seller</BreadcrumbPage>
-								</BreadcrumbItem>
-							</BreadcrumbList>
-						</Breadcrumb>
+						<div aria-hidden className="h-4 w-px bg-border" />
+						<AppBreadcrumb />
 					</header>
 					<div className="flex-1 p-4">
 						<Outlet />
@@ -207,7 +199,9 @@ function EmployeeStoreGate({
 	if ((stores ?? []).length === 0) {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-				<h1 className="text-2xl font-bold">Nessun negozio assegnato</h1>
+				<h1 className="font-display text-2xl font-semibold tracking-tight">
+					Nessun negozio assegnato
+				</h1>
 				<p className="text-muted-foreground max-w-md">
 					Non sei ancora assegnato a nessun negozio. Contatta il titolare per
 					ottenere l'accesso.
@@ -229,16 +223,10 @@ function EmployeeStoreGate({
 			<SidebarProvider>
 				<AppSidebar />
 				<SidebarInset>
-					<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
 						<SidebarTrigger className="-ml-1" />
-						<Separator orientation="vertical" className="mr-2 h-4" />
-						<Breadcrumb>
-							<BreadcrumbList>
-								<BreadcrumbItem>
-									<BreadcrumbPage>bibs Seller</BreadcrumbPage>
-								</BreadcrumbItem>
-							</BreadcrumbList>
-						</Breadcrumb>
+						<div aria-hidden className="h-4 w-px bg-border" />
+						<AppBreadcrumb />
 					</header>
 					<div className="flex-1 p-4">
 						<Outlet />

@@ -65,6 +65,7 @@
 	"promotions_page_subtitle": "Manage percent discounts on your products",
 	"promotions_new_cta": "New promotion",
 	"promotions_empty_all": "You don't have any promotions yet",
+	"promotions_empty_all_description": "Create your first percentage discount to highlight the products you want to push.",
 	"promotions_empty_running": "No promotions running",
 	"promotions_empty_scheduled": "No promotions scheduled",
 	"promotions_empty_paused": "No promotions paused",
