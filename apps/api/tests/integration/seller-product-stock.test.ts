@@ -225,4 +225,99 @@ describe("bulkAdjustStock", () => {
 		expect(result.succeeded.find((r) => r.productId === p2.id)?.stock).toBe(12);
 		expect(result.succeeded.find((r) => r.productId === p3.id)?.stock).toBe(5);
 	});
+
+	it("imposta lo stock assoluto in mode=set", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		await createTestStoreProduct(db, store.id, p1.id, { stock: 5 });
+		await createTestStoreProduct(db, store.id, p2.id, { stock: 99 });
+
+		const result = await bulkAdjustStock({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			productIds: [p1.id, p2.id],
+			mode: "set",
+			value: 20,
+		});
+
+		expect(result.succeeded).toHaveLength(2);
+		expect(result.succeeded.every((r) => r.stock === 20)).toBe(true);
+	});
+
+	it("ritorna would_go_negative quando il delta porterebbe stock < 0", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		await createTestStoreProduct(db, store.id, p1.id, { stock: 10 });
+		await createTestStoreProduct(db, store.id, p2.id, { stock: 1 });
+
+		const result = await bulkAdjustStock({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			productIds: [p1.id, p2.id],
+			mode: "delta",
+			value: -5,
+		});
+
+		expect(result.succeeded).toHaveLength(1);
+		expect(result.succeeded[0].productId).toBe(p1.id);
+		expect(result.succeeded[0].stock).toBe(5);
+		expect(result.failed).toEqual([
+			{ productId: p2.id, reason: "would_go_negative" },
+		]);
+	});
+
+	it("ritorna not_found per productIds di altri seller", async () => {
+		const db = getTestDb();
+		const sellerA = await createTestSeller(db);
+		const sellerB = await createTestSeller(db, { email: "b@test.com" });
+		const storeA = await createTestStore(db, sellerA.profile.id);
+		const productA = await createTestProduct(db, sellerA.profile.id);
+		const productB = await createTestProduct(db, sellerB.profile.id);
+		await createTestStoreProduct(db, storeA.id, productA.id, { stock: 5 });
+
+		const result = await bulkAdjustStock({
+			sellerProfileId: sellerA.profile.id,
+			storeId: storeA.id,
+			productIds: [productA.id, productB.id],
+			mode: "delta",
+			value: 1,
+		});
+
+		expect(result.succeeded).toHaveLength(1);
+		expect(result.succeeded[0].productId).toBe(productA.id);
+		expect(result.failed).toEqual([
+			{ productId: productB.id, reason: "not_found" },
+		]);
+	});
+
+	it("ritorna not_found se il prodotto del seller non è in quel negozio", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const storeA = await createTestStore(db, seller.profile.id);
+		const storeB = await createTestStore(db, seller.profile.id, {
+			name: "Store B",
+		});
+		const product = await createTestProduct(db, seller.profile.id);
+		await createTestStoreProduct(db, storeA.id, product.id, { stock: 5 });
+		// product NON è in storeB
+
+		const result = await bulkAdjustStock({
+			sellerProfileId: seller.profile.id,
+			storeId: storeB.id,
+			productIds: [product.id],
+			mode: "delta",
+			value: 1,
+		});
+
+		expect(result.succeeded).toHaveLength(0);
+		expect(result.failed).toEqual([
+			{ productId: product.id, reason: "not_found" },
+		]);
+	});
 });
