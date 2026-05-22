@@ -241,7 +241,9 @@ function SellersPage() {
 						(countsData.rejected ?? 0)
 					: null
 				: countsData
-					? (countsData[tab.value as keyof typeof countsData] ?? 0)
+					? (countsData[
+							tab.value as "pending_review" | "active" | "rejected"
+						] ?? 0)
 					: null,
 	}));
 
