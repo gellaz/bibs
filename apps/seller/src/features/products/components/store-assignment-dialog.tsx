@@ -130,13 +130,13 @@ export function StoreAssignmentDialog({
 
 				<DialogFooter>
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
-						Annulla
+						{m.common_cancel()}
 					</Button>
 					<Button
 						onClick={() => assignMutation.mutate()}
 						disabled={selected.size === 0 || assignMutation.isPending}
 					>
-						Conferma
+						{m.common_confirm()}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

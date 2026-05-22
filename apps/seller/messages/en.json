@@ -119,5 +119,7 @@
 	"promotions_toast_resumed": "Promotion resumed",
 	"promotions_toast_archived": "Promotion archived",
 	"promotions_toast_products_added": "{added} added, {alreadyPresent} already in, {rejected} rejected",
-	"promotions_toast_products_removed": "{count} removed"
+	"promotions_toast_products_removed": "{count} removed",
+	"common_cancel": "Cancel",
+	"common_confirm": "Confirm"
 }
