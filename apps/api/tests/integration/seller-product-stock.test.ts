@@ -90,6 +90,14 @@ describe("adjustStock", () => {
 		});
 
 		expect(result.stock).toBe(7);
+
+		const fresh = await db.query.storeProduct.findFirst({
+			where: and(
+				eq(storeProductTable.productId, product.id),
+				eq(storeProductTable.storeId, store.id),
+			),
+		});
+		expect(fresh?.stock).toBe(7);
 	});
 
 	it("respinge con 409 quando il delta porterebbe lo stock sotto zero", async () => {
@@ -153,7 +161,7 @@ describe("adjustStock", () => {
 		).rejects.toMatchObject({ status: 404 });
 	});
 
-	it("è atomico sotto concorrenza", async () => {
+	it("somma correttamente 3 delta concorrenti", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const store = await createTestStore(db, seller.profile.id);
@@ -187,6 +195,6 @@ describe("adjustStock", () => {
 				eq(storeProductTable.storeId, store.id),
 			),
 		});
-		expect(fresh?.stock).toBe(13); // no lost update
+		expect(fresh?.stock).toBe(13);
 	});
 });
