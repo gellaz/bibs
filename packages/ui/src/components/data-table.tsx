@@ -157,14 +157,21 @@ export function DataTable<TData>({
 							key={headerGroup.id}
 							className="bg-transparent hover:bg-transparent"
 						>
-							{headerGroup.headers.map((header) => {
+							{headerGroup.headers.map((header, idx) => {
 								const meta = header.column.columnDef.meta;
+								const isLastInRow = idx === headerGroup.headers.length - 1;
 								const explicitSize =
 									header.getSize() !== 150 ? header.getSize() : undefined;
 								return (
 									<TableHead
 										key={header.id}
 										className={cn(
+											// Divider verticale fra colonne adiacenti. Per coppie
+											// di celle che scrollano insieme, border-collapse:collapse
+											// muove il bordo con loro: ok. Per il boundary
+											// sticky↔scroll, il box-shadow su stickyHeaderClass
+											// resta ancorato alla sticky cell anche durante lo scroll.
+											!isLastInRow && "border-r",
 											stickyHeaderClass(meta?.sticky),
 											meta?.headerClassName,
 										)}
@@ -199,12 +206,15 @@ export function DataTable<TData>({
 									data-state={row.getIsSelected() ? "selected" : undefined}
 									className={cn("group", extraClass)}
 								>
-									{row.getVisibleCells().map((cell) => {
+									{row.getVisibleCells().map((cell, idx) => {
 										const meta = cell.column.columnDef.meta;
+										const isLastInRow =
+											idx === row.getVisibleCells().length - 1;
 										return (
 											<TableCell
 												key={cell.id}
 												className={cn(
+													!isLastInRow && "border-r",
 													stickyCellClass(meta?.sticky),
 													meta?.cellClassName,
 												)}
