@@ -8,6 +8,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
+import { EmptyState } from "@bibs/ui/components/empty-state";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
@@ -294,12 +295,23 @@ function PromotionsListPage() {
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
 				emptyState={
-					<div className="flex flex-col items-center gap-2">
-						<TagIcon className="text-muted-foreground/40 size-8" />
-						<p className="text-muted-foreground font-medium">
-							{EMPTY_MESSAGE[state]()}
-						</p>
-					</div>
+					state === "all" ? (
+						<EmptyState
+							icon={TagIcon}
+							title={EMPTY_MESSAGE.all()}
+							description={m.promotions_empty_all_description()}
+							action={
+								<Button asChild>
+									<Link to="/promotions/new">
+										<PlusIcon />
+										<span>{m.promotions_new_cta()}</span>
+									</Link>
+								</Button>
+							}
+						/>
+					) : (
+						<EmptyState icon={TagIcon} title={EMPTY_MESSAGE[state]()} />
+					)
 				}
 			/>
 
