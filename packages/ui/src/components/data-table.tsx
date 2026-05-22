@@ -23,6 +23,47 @@ import {
 import { useDataTable } from "~/hooks/use-data-table";
 import { cn } from "~/lib/utils";
 
+// Classi per colonne `meta.sticky`. Header e cell hanno bg / z-index distinti:
+// l'header sta sopra ai body sticky cells in caso di overlap; le body cells
+// rispecchiano hover/selected del <tr> per mantenere coerenza con la riga.
+//
+// Il separator usa box-shadow (non border) perche' `border-collapse: collapse`
+// fonde i border delle celle adiacenti: il border-r della sticky cell verrebbe
+// "trascinato via" insieme alla cella vicina quando l'utente scrolla. Il
+// box-shadow e' painted come parte della sticky cell e resta ancorato al suo
+// edge in ogni scroll position.
+//
+// Due shadow stratificate:
+//  1. Linea hard 2px al color-border per essere VISIBILE anche con il
+//     --warm-edge molto chiaro su bg-card (il singolo px a quel contrasto
+//     sparisce sui display ad alto DPI).
+//  2. Soft fade nero a bassa alpha (4px offset, 6px blur, -4px spread) come
+//     scroll affordance — segnala visivamente "qui sotto sta scorrendo
+//     contenuto". Pattern standard di Notion/Linear/Google Sheets.
+const SHADOW_RIGHT =
+	"shadow-[2px_0_0_0_var(--color-border),6px_0_6px_-4px_oklch(0_0_0/0.08)]";
+const SHADOW_LEFT =
+	"shadow-[-2px_0_0_0_var(--color-border),-6px_0_6px_-4px_oklch(0_0_0/0.08)]";
+
+function stickyHeaderClass(sticky: "left" | "right" | undefined) {
+	if (sticky === "left") return cn("sticky left-0 z-20 bg-card", SHADOW_RIGHT);
+	if (sticky === "right") return cn("sticky right-0 z-20 bg-card", SHADOW_LEFT);
+	return undefined;
+}
+
+function stickyCellClass(sticky: "left" | "right" | undefined) {
+	// Bg SOLIDI (no /50 alpha) cosi' il contenuto in scroll non traspare
+	// mai sotto le sticky cells. Su hover sono leggermente piu' sature
+	// di muted/50 (default del TR primitive sulle altre celle), trade-off
+	// accettato in cambio della no-transparency garantita.
+	const stateBg =
+		"bg-card group-hover:bg-muted group-data-[state=selected]:bg-muted";
+	if (sticky === "left") return cn("sticky left-0 z-10", SHADOW_RIGHT, stateBg);
+	if (sticky === "right")
+		return cn("sticky right-0 z-10", SHADOW_LEFT, stateBg);
+	return undefined;
+}
+
 interface DataTableProps<TData> {
 	data: TData[];
 	columns: ColumnDef<TData, unknown>[];
@@ -115,7 +156,10 @@ export function DataTable<TData>({
 	return (
 		<div
 			className={cn(
-				"bg-card overflow-hidden rounded-lg border shadow-sm",
+				// `isolate` crea uno stacking context locale cosi' le sticky cells
+				// (z-10/z-20) restano confinate alla tabella e non possono salire
+				// sopra elementi page-level come la breadcrumb sticky.
+				"bg-card isolate overflow-hidden rounded-lg border shadow-sm",
 				containerClassName,
 			)}
 		>
@@ -133,7 +177,10 @@ export function DataTable<TData>({
 								return (
 									<TableHead
 										key={header.id}
-										className={meta?.headerClassName}
+										className={cn(
+											stickyHeaderClass(meta?.sticky),
+											meta?.headerClassName,
+										)}
 										style={
 											explicitSize !== undefined
 												? { width: explicitSize }
@@ -165,17 +212,23 @@ export function DataTable<TData>({
 									data-state={row.getIsSelected() ? "selected" : undefined}
 									className={cn("group", extraClass)}
 								>
-									{row.getVisibleCells().map((cell) => (
-										<TableCell
-											key={cell.id}
-											className={cell.column.columnDef.meta?.cellClassName}
-										>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext(),
-											)}
-										</TableCell>
-									))}
+									{row.getVisibleCells().map((cell) => {
+										const meta = cell.column.columnDef.meta;
+										return (
+											<TableCell
+												key={cell.id}
+												className={cn(
+													stickyCellClass(meta?.sticky),
+													meta?.cellClassName,
+												)}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext(),
+												)}
+											</TableCell>
+										);
+									})}
 								</TableRow>
 							);
 						})

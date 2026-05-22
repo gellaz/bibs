@@ -24,6 +24,7 @@ import {
 	type ProductStatusFilter,
 	ProductStatusTabs,
 } from "@/features/products/components/product-status-tabs";
+import { ProductsFilterBar } from "@/features/products/components/products-filter-bar";
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
@@ -59,6 +60,9 @@ export const Route = createFileRoute("/_authenticated/products/")({
 		q?: string;
 		sort?: ProductSortField;
 		order?: SortOrder;
+		categoryIds?: string[];
+		minPrice?: string;
+		maxPrice?: string;
 	} => {
 		const sf = search.statusFilter;
 		const statusFilter: ProductStatusFilter =
@@ -71,12 +75,36 @@ export const Route = createFileRoute("/_authenticated/products/")({
 			search.order === "asc" || search.order === "desc"
 				? (search.order as SortOrder)
 				: undefined;
+		// categoryIds: accetta sia repeated query (?categoryIds=a&categoryIds=b → array)
+		// sia singolare (?categoryIds=a → string). Normalizziamo sempre ad array.
+		const rawCats = search.categoryIds;
+		const categoryIds: string[] | undefined = Array.isArray(rawCats)
+			? rawCats.filter(
+					(x): x is string => typeof x === "string" && x.length > 0,
+				)
+			: typeof rawCats === "string" && rawCats.length > 0
+				? [rawCats]
+				: undefined;
+		const normalizedCategoryIds =
+			categoryIds && categoryIds.length > 0 ? categoryIds : undefined;
+		const PRICE_RE = /^\d+(\.\d{1,2})?$/;
+		const minPrice =
+			typeof search.minPrice === "string" && PRICE_RE.test(search.minPrice)
+				? search.minPrice
+				: undefined;
+		const maxPrice =
+			typeof search.maxPrice === "string" && PRICE_RE.test(search.maxPrice)
+				? search.maxPrice
+				: undefined;
 		return {
 			page: Number(search.page ?? 1),
 			limit: Number(search.limit ?? 20),
 			statusFilter,
 			...(rawQ.length > 0 ? { q: rawQ } : {}),
 			...(sort && order ? { sort, order } : {}),
+			...(normalizedCategoryIds ? { categoryIds: normalizedCategoryIds } : {}),
+			...(minPrice ? { minPrice } : {}),
+			...(maxPrice ? { maxPrice } : {}),
 		};
 	},
 });
@@ -84,7 +112,6 @@ export const Route = createFileRoute("/_authenticated/products/")({
 const INITIAL_COLUMN_VISIBILITY = {
 	brand: false,
 	ean: false,
-	updatedAt: false,
 };
 
 const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
@@ -123,6 +150,9 @@ function ProductsListPage() {
 		q: routeQ,
 		sort,
 		order,
+		categoryIds,
+		minPrice,
+		maxPrice,
 	} = Route.useSearch();
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();
@@ -159,6 +189,9 @@ function ProductsListPage() {
 			effectiveRouteQ,
 			sort,
 			order,
+			categoryIds,
+			minPrice,
+			maxPrice,
 		],
 		queryFn: async () => {
 			const storeId = activeStore?.id;
@@ -171,6 +204,11 @@ function ProductsListPage() {
 					statusFilter,
 					q: effectiveRouteQ.length > 0 ? effectiveRouteQ : undefined,
 					...(sort && order ? { sort, order } : {}),
+					...(categoryIds && categoryIds.length > 0
+						? { productCategoryIds: categoryIds }
+						: {}),
+					...(minPrice ? { minPrice } : {}),
+					...(maxPrice ? { maxPrice } : {}),
 				},
 			});
 			if (response.error) {
@@ -225,8 +263,9 @@ function ProductsListPage() {
 				id: "select",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-10 pl-4",
-					cellClassName: "pl-4",
+					headerClassName: "w-16 px-0 text-center",
+					cellClassName: "w-16 px-0 text-center",
+					sticky: "left",
 				},
 				header: () => (
 					<Checkbox
@@ -464,8 +503,9 @@ function ProductsListPage() {
 				id: "actions",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-16 pr-2 text-right",
-					cellClassName: "pr-4",
+					headerClassName: "w-16 px-0 text-center",
+					cellClassName: "w-16 px-0 text-center",
+					sticky: "right",
 				},
 				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
 				cell: ({ row }) => (
@@ -484,8 +524,8 @@ function ProductsListPage() {
 	);
 
 	return (
-		<div className="space-y-4">
-			<div className="flex items-center justify-between">
+		<div className="flex h-full min-w-0 flex-col gap-4">
+			<div className="flex shrink-0 items-center justify-between">
 				<div>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
 						Prodotti
@@ -505,29 +545,51 @@ function ProductsListPage() {
 			</div>
 
 			{activeStore && (
-				<div className="space-y-3">
-					<InputGroup className="max-w-md">
-						<InputGroupAddon align="inline-start">
-							<SearchIcon />
-						</InputGroupAddon>
-						<InputGroupInput
-							value={localQ}
-							onChange={(e) => setLocalQ(e.target.value)}
-							placeholder={m.products_search_placeholder()}
-							aria-label={m.products_search_placeholder()}
-						/>
-						{localQ.length > 0 && (
-							<InputGroupAddon align="inline-end">
-								<InputGroupButton
-									size="icon-xs"
-									onClick={() => setLocalQ("")}
-									aria-label={m.products_search_clear()}
-								>
-									<XIcon />
-								</InputGroupButton>
+				<div className="flex shrink-0 flex-col gap-3">
+					<div className="flex flex-wrap items-center gap-2">
+						<InputGroup className="max-w-md min-w-[240px] flex-1">
+							<InputGroupAddon align="inline-start">
+								<SearchIcon />
 							</InputGroupAddon>
-						)}
-					</InputGroup>
+							<InputGroupInput
+								value={localQ}
+								onChange={(e) => setLocalQ(e.target.value)}
+								placeholder={m.products_search_placeholder()}
+								aria-label={m.products_search_placeholder()}
+							/>
+							{localQ.length > 0 && (
+								<InputGroupAddon align="inline-end">
+									<InputGroupButton
+										size="icon-xs"
+										onClick={() => setLocalQ("")}
+										aria-label={m.products_search_clear()}
+									>
+										<XIcon />
+									</InputGroupButton>
+								</InputGroupAddon>
+							)}
+						</InputGroup>
+						<ProductsFilterBar
+							value={{ categoryIds, minPrice, maxPrice }}
+							storeId={activeStore.id}
+							statusFilter={statusFilter}
+							totalResults={data?.pagination.total}
+							onChange={(next) =>
+								void navigate({
+									search: (prev) => ({
+										...prev,
+										categoryIds:
+											next.categoryIds && next.categoryIds.length > 0
+												? next.categoryIds
+												: undefined,
+										minPrice: next.minPrice,
+										maxPrice: next.maxPrice,
+										page: 1,
+									}),
+								})
+							}
+						/>
+					</div>
 					<ProductStatusTabs
 						storeId={activeStore.id}
 						value={statusFilter}
@@ -536,15 +598,17 @@ function ProductsListPage() {
 				</div>
 			)}
 
-			<ProductBulkToolbar
-				selectedIds={Array.from(selection.selected)}
-				activeStoreId={activeStore?.id ?? ""}
-				statusFilter={statusFilter}
-				onClear={selection.clear}
-			/>
+			<div className="shrink-0">
+				<ProductBulkToolbar
+					selectedIds={Array.from(selection.selected)}
+					activeStoreId={activeStore?.id ?? ""}
+					statusFilter={statusFilter}
+					onClear={selection.clear}
+				/>
+			</div>
 
 			{error && (
-				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 shrink-0 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
@@ -559,9 +623,10 @@ function ProductsListPage() {
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
 				manualSorting={{ sorting, onSortingChange }}
+				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
 				rowClassName={(row) =>
 					selection.isSelected(row.original.id)
-						? "bg-primary/10 hover:bg-primary/10 [&>td]:opacity-60 [&>td:first-child]:opacity-100"
+						? "bg-primary/10 hover:bg-primary/10 [&>td:not(:first-child):not(:last-child)]:opacity-60"
 						: ""
 				}
 				emptyState={
@@ -580,7 +645,7 @@ function ProductsListPage() {
 					const rangeStart = (page - 1) * limit + 1;
 					const rangeEnd = Math.min(page * limit, total);
 					return (
-						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
 							<p className="text-muted-foreground text-sm tabular-nums">
 								{rangeStart}–{rangeEnd} di {total} prodott
 								{total === 1 ? "o" : "i"}

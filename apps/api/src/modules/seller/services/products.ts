@@ -80,7 +80,7 @@ interface ListProductsParams {
 	limit?: number;
 	statusFilter?: ProductStatus;
 	brandId?: string;
-	productCategoryId?: string;
+	productCategoryIds?: string[];
 	productMacroCategoryId?: string;
 	minPrice?: string;
 	maxPrice?: string;
@@ -97,7 +97,7 @@ export async function listProducts(params: ListProductsParams) {
 		storeId,
 		statusFilter = "active",
 		brandId,
-		productCategoryId,
+		productCategoryIds,
 		productMacroCategoryId,
 		minPrice,
 		maxPrice,
@@ -128,9 +128,13 @@ export async function listProducts(params: ListProductsParams) {
 		);
 	}
 
-	if (productCategoryId) {
+	if (productCategoryIds && productCategoryIds.length > 0) {
+		const idList = sql.join(
+			productCategoryIds.map((id) => sql`${id}`),
+			sql`, `,
+		);
 		conditions.push(
-			sql`EXISTS (SELECT 1 FROM product_category_assignments pca WHERE pca.product_id = ${product.id} AND pca.product_category_id = ${productCategoryId})`,
+			sql`EXISTS (SELECT 1 FROM product_category_assignments pca WHERE pca.product_id = ${product.id} AND pca.product_category_id IN (${idList}))`,
 		);
 	}
 
@@ -230,7 +234,7 @@ export async function listProducts(params: ListProductsParams) {
 					}
 					return [dir(storeProduct.stock), desc(product.createdAt)];
 				default:
-					return [desc(product.createdAt)];
+					return [desc(product.updatedAt), desc(product.createdAt)];
 			}
 		})();
 
@@ -281,6 +285,49 @@ export async function listProducts(params: ListProductsParams) {
 	data.sort((a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0));
 
 	return { data, pagination: { page, limit, total } };
+}
+
+// ── listCategoriesInUse ───────────────────────────────────────────────────────
+//
+// Restituisce le sotto-categorie effettivamente assegnate ad almeno un prodotto
+// del seller, opzionalmente scopate per store e status. Usato dal filtro UI
+// per offrire solo voci che producono risultati > 0.
+
+interface ListCategoriesInUseParams {
+	sellerProfileId: string;
+	storeId?: string;
+	statusFilter?: ProductStatus;
+}
+
+export async function listCategoriesInUse(params: ListCategoriesInUseParams) {
+	const { sellerProfileId, storeId, statusFilter } = params;
+
+	const conditions = [eq(product.sellerProfileId, sellerProfileId)];
+	if (statusFilter) conditions.push(eq(product.status, statusFilter));
+	if (storeId) conditions.push(eq(storeProduct.storeId, storeId));
+
+	const baseQuery = storeId
+		? db
+				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
+				.from(productCategoryAssignment)
+				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
+				.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+				.where(and(...conditions))
+		: db
+				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
+				.from(productCategoryAssignment)
+				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
+				.where(and(...conditions));
+
+	const rows = await baseQuery;
+	const ids = rows.map((r) => r.id);
+	if (ids.length === 0) return [];
+
+	return db.query.productCategory.findMany({
+		where: inArray(productCategory.id, ids),
+		with: { macroCategory: true },
+		orderBy: (pc, { asc }) => [asc(pc.name)],
+	});
 }
 
 // ── getProductStatusCounts ────────────────────────────────────────────────────
