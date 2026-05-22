@@ -256,14 +256,14 @@ export function ProductsFilterSheet({
 			<SheetTrigger asChild>{trigger}</SheetTrigger>
 			<SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
 				<SheetHeader className="border-b px-6 py-5">
-					<div className="flex items-center gap-2.5">
+					<div className="flex items-stretch gap-3">
 						<span
 							aria-hidden
-							className="bg-cobalt-soft text-cobalt-deep flex size-8 shrink-0 items-center justify-center rounded-lg"
+							className="bg-cobalt-soft text-cobalt-deep flex aspect-square shrink-0 items-center justify-center self-stretch rounded-lg"
 						>
-							<SlidersHorizontalIcon className="size-4" />
+							<SlidersHorizontalIcon className="size-5" />
 						</span>
-						<div className="flex flex-col gap-0.5">
+						<div className="flex flex-col justify-center gap-0.5">
 							<SheetTitle className="text-base leading-none">Filtri</SheetTitle>
 							<ResultSummary count={totalResults} />
 						</div>
@@ -475,11 +475,13 @@ export function ProductsFilterSheet({
 						})()}
 					</p>
 					<Button
-						variant="ghost"
+						variant="outline"
 						size="sm"
 						onClick={handleReset}
 						disabled={!hasActiveFilters}
+						className="gap-1.5"
 					>
+						<XIcon className="size-3.5" />
 						Cancella tutti
 					</Button>
 				</SheetFooter>
