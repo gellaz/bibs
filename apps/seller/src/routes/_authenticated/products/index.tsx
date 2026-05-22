@@ -488,12 +488,12 @@ function ProductsListPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
-						Prodotti{activeStore ? ` — ${activeStore.name}` : ""}
+						Prodotti
 					</h1>
 					<p className="text-muted-foreground text-sm">
 						{activeStore
-							? `Catalogo del negozio ${activeStore.name}`
-							: "Seleziona un negozio per visualizzare il catalogo"}
+							? "Catalogo, magazzino e prezzi."
+							: "Seleziona un negozio per visualizzare il catalogo."}
 					</p>
 				</div>
 				<Button asChild>

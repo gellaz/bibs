@@ -16,10 +16,10 @@ import { ToggleGroup, ToggleGroupItem } from "@bibs/ui/components/toggle-group";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
-	ChevronsUpDownIcon,
 	LogOutIcon,
 	MonitorIcon,
 	MoonIcon,
+	MoreHorizontalIcon,
 	SunIcon,
 	UserIcon,
 	UsersIcon,
@@ -122,7 +122,10 @@ export function NavUser() {
 									{user.email}
 								</span>
 							</div>
-							<ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground" />
+							<MoreHorizontalIcon
+								aria-label="Apri menu utente"
+								className="ml-auto size-4 text-muted-foreground"
+							/>
 						</SidebarMenuButton>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
