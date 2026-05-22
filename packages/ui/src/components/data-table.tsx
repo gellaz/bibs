@@ -26,17 +26,28 @@ import { cn } from "~/lib/utils";
 // Classi per colonne `meta.sticky`. Header e cell hanno bg / z-index distinti:
 // l'header sta sopra ai body sticky cells in caso di overlap; le body cells
 // rispecchiano hover/selected del <tr> per mantenere coerenza con la riga.
+//
+// Il separator visivo USA un box-shadow outset di 1px, non un border, perche'
+// `border-collapse: collapse` (default browser per <table> via Tailwind reset)
+// fonde i border delle celle adiacenti: il border-r della sticky cell verrebbe
+// "trascinato via" insieme alla cella vicina quando l'utente scrolla. Il
+// box-shadow invece e' painted come parte della sticky cell e resta ancorato
+// al suo edge in ogni scroll position.
+const SHADOW_RIGHT = "shadow-[1px_0_0_0_var(--color-border)]";
+const SHADOW_LEFT = "shadow-[-1px_0_0_0_var(--color-border)]";
+
 function stickyHeaderClass(sticky: "left" | "right" | undefined) {
-	if (sticky === "left") return "sticky left-0 z-20 bg-card border-r";
-	if (sticky === "right") return "sticky right-0 z-20 bg-card border-l";
+	if (sticky === "left") return cn("sticky left-0 z-20 bg-card", SHADOW_RIGHT);
+	if (sticky === "right") return cn("sticky right-0 z-20 bg-card", SHADOW_LEFT);
 	return undefined;
 }
 
 function stickyCellClass(sticky: "left" | "right" | undefined) {
 	const stateBg =
 		"bg-card group-hover:bg-muted/50 group-data-[state=selected]:bg-muted";
-	if (sticky === "left") return cn("sticky left-0 z-10 border-r", stateBg);
-	if (sticky === "right") return cn("sticky right-0 z-10 border-l", stateBg);
+	if (sticky === "left") return cn("sticky left-0 z-10", SHADOW_RIGHT, stateBg);
+	if (sticky === "right")
+		return cn("sticky right-0 z-10", SHADOW_LEFT, stateBg);
 	return undefined;
 }
 
