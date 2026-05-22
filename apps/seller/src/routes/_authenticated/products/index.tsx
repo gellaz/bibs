@@ -24,18 +24,26 @@ import {
 	type ProductStatusFilter,
 	ProductStatusTabs,
 } from "@/features/products/components/product-status-tabs";
+import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
-type ProductSortField = "name" | "price" | "ean" | "createdAt" | "updatedAt";
+type ProductSortField =
+	| "name"
+	| "price"
+	| "ean"
+	| "stock"
+	| "createdAt"
+	| "updatedAt";
 type SortOrder = "asc" | "desc";
 const SORT_FIELDS: ProductSortField[] = [
 	"name",
 	"price",
 	"ean",
+	"stock",
 	"createdAt",
 	"updatedAt",
 ];
@@ -314,6 +322,41 @@ function ProductsListPage() {
 				cell: ({ row }) => <Price value={row.original.price} />,
 			},
 			{
+				id: "stock",
+				// accessorFn serve a TanStack Table per registrare il sort handler:
+				// senza un accessor, getToggleSortingHandler() non aggancia il click sull'header.
+				// Il valore client-side qui è solo cosmetico — l'ordering reale lo fa il backend.
+				accessorFn: (row) =>
+					row.storeProducts.find((sp) => sp.storeId === activeStore?.id)
+						?.stock ?? 0,
+				header: ({ column }) => (
+					<SortableHeader column={column}>
+						{m.products_stock_column_header()}
+					</SortableHeader>
+				),
+				enableSorting: true,
+				meta: {
+					headerClassName: "w-[14%]",
+					cellClassName: "tabular-nums",
+					menuLabel: m.products_stock_column_header(),
+				},
+				cell: ({ row }) => {
+					const sp = row.original.storeProducts.find(
+						(sp) => sp.storeId === activeStore?.id,
+					);
+					if (!sp || !activeStore) {
+						return <span className="text-muted-foreground/60">—</span>;
+					}
+					return (
+						<StockEditorCell
+							productId={row.original.id}
+							storeId={activeStore.id}
+							stock={sp.stock}
+						/>
+					);
+				},
+			},
+			{
 				id: "category",
 				header: "Categoria",
 				meta: {
@@ -430,6 +473,9 @@ function ProductsListPage() {
 						productId={row.original.id}
 						status={row.original.status}
 						activeStoreId={activeStore?.id ?? ""}
+						assignedStoreIds={row.original.storeProducts.map(
+							(sp) => sp.storeId,
+						)}
 					/>
 				),
 			},
