@@ -132,7 +132,10 @@ export function DataTable<TData>({
 	return (
 		<div
 			className={cn(
-				"bg-card overflow-hidden rounded-lg border shadow-sm",
+				// `isolate` crea uno stacking context locale cosi' le sticky cells
+				// (z-10/z-20) restano confinate alla tabella e non possono salire
+				// sopra elementi page-level come la breadcrumb sticky.
+				"bg-card isolate overflow-hidden rounded-lg border shadow-sm",
 				containerClassName,
 			)}
 		>

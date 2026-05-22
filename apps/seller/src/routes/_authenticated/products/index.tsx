@@ -504,7 +504,7 @@ function ProductsListPage() {
 				enableHiding: false,
 				meta: {
 					headerClassName: "w-16 pr-2 text-right",
-					cellClassName: "pr-4",
+					cellClassName: "pr-2 text-right",
 					sticky: "right",
 				},
 				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
