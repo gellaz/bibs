@@ -1,4 +1,3 @@
-// apps/seller/src/features/products/components/stock-editor-cell.tsx
 "use no memo";
 
 import { Button } from "@bibs/ui/components/button";
@@ -30,16 +29,17 @@ export function StockEditorCell({
 	const [editValue, setEditValue] = useState("");
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const inputRef = useRef<HTMLInputElement | null>(null);
+	// Tracks the live pendingDelta for the unmount-flush closure ([] effect captures stale state).
+	const pendingDeltaRef = useRef(0);
+	// Prevents commitSet from firing twice when Enter triggers both onKeyDown and onBlur.
+	const committingRef = useRef(false);
 
-	// Valore visibile: server stock + delta accumulato (a meno che non siamo in edit).
 	const optimistic = stock + pendingDelta;
 
 	const flush = (deltaSnapshot: number) => {
-		if (deltaSnapshot === 0) {
-			setPendingDelta(0);
-			return;
-		}
+		if (deltaSnapshot === 0) return;
 		setPendingDelta(0);
+		pendingDeltaRef.current = 0;
 		adjust.mutate(
 			{ productId, storeId, delta: deltaSnapshot },
 			{
@@ -70,7 +70,7 @@ export function StockEditorCell({
 			// su unmount, esegui subito il flush in volo
 			if (timerRef.current) {
 				clearTimeout(timerRef.current);
-				if (pendingDelta !== 0) flush(pendingDelta);
+				if (pendingDeltaRef.current !== 0) flush(pendingDeltaRef.current);
 			}
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,6 +83,7 @@ export function StockEditorCell({
 	const onIncrement = () => {
 		const next = pendingDelta + 1;
 		setPendingDelta(next);
+		pendingDeltaRef.current = next;
 		scheduleFlush(next);
 	};
 
@@ -90,6 +91,7 @@ export function StockEditorCell({
 		if (optimistic === 0) return;
 		const next = pendingDelta - 1;
 		setPendingDelta(next);
+		pendingDeltaRef.current = next;
 		scheduleFlush(next);
 	};
 
@@ -100,24 +102,38 @@ export function StockEditorCell({
 	};
 
 	const commitSet = () => {
-		const parsed = Number.parseInt(editValue, 10);
-		if (Number.isNaN(parsed) || parsed < 0) {
+		if (committingRef.current) return;
+		committingRef.current = true;
+		try {
+			const parsed = Number.parseInt(editValue, 10);
+			if (Number.isNaN(parsed) || parsed < 0) {
+				setEditMode(false);
+				return;
+			}
+			if (parsed === optimistic) {
+				setEditMode(false);
+				return;
+			}
 			setEditMode(false);
-			return;
-		}
-		if (parsed === optimistic) {
-			setEditMode(false);
-			return;
-		}
-		setEditMode(false);
-		set.mutate(
-			{ productId, storeId, stock: parsed },
-			{
-				onError: (err: unknown) => {
-					toast.error((err as Error)?.message || "Errore");
+			// Reset pendingDelta: set.mutate sends an absolute value so any accumulated
+			// stepper delta is superseded by the explicit value the user typed.
+			setPendingDelta(0);
+			pendingDeltaRef.current = 0;
+			if (timerRef.current) {
+				clearTimeout(timerRef.current);
+				timerRef.current = null;
+			}
+			set.mutate(
+				{ productId, storeId, stock: parsed },
+				{
+					onError: (err: unknown) => {
+						toast.error((err as Error)?.message || "Errore");
+					},
 				},
-			},
-		);
+			);
+		} finally {
+			committingRef.current = false;
+		}
 	};
 
 	return (
@@ -128,7 +144,7 @@ export function StockEditorCell({
 				size="icon"
 				className="h-7 w-7"
 				onClick={onDecrement}
-				disabled={adjust.isPending || optimistic === 0}
+				disabled={adjust.isPending || set.isPending || optimistic === 0}
 				aria-label="Diminuisci"
 			>
 				<MinusIcon className="size-3.5" />
@@ -163,7 +179,7 @@ export function StockEditorCell({
 				size="icon"
 				className="h-7 w-7"
 				onClick={onIncrement}
-				disabled={adjust.isPending}
+				disabled={adjust.isPending || set.isPending}
 				aria-label="Aumenta"
 			>
 				<PlusIcon className="size-3.5" />
