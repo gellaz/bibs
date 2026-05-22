@@ -3,11 +3,14 @@ import { ok, okMessage } from "@/lib/responses";
 import {
 	OkMessage,
 	okRes,
+	StockAdjustBody,
 	StoreProductSchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { ensureStoreAccess, withSeller } from "../context";
 import {
+	adjustStock,
 	assignProductToStores,
 	removeProductFromStore,
 	updateStock,
@@ -90,6 +93,39 @@ export const stockRoutes = new Elysia()
 				summary: "Aggiorna stock",
 				description:
 					"Aggiorna la quantità di stock di un prodotto in un negozio specifico.",
+				tags: ["Seller - Stock"],
+			},
+		},
+	)
+	.post(
+		"/products/:productId/stores/:storeId/stock-adjust",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params, body, isOwner, user } = sellerCtx;
+			await ensureStoreAccess(params.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
+			const data = await adjustStock({
+				productId: params.productId,
+				storeId: params.storeId,
+				sellerProfileId: sp.id,
+				delta: body.delta,
+			});
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				productId: t.String({ description: "ID del prodotto" }),
+				storeId: t.String({ description: "ID del negozio" }),
+			}),
+			body: StockAdjustBody,
+			response: withConflictErrors({ 200: okRes(StoreProductSchema) }),
+			detail: {
+				summary: "Adegua stock (delta atomico)",
+				description:
+					"Applica un delta atomico allo stock corrente del prodotto in un negozio. Restituisce 409 se l'operazione porterebbe lo stock sotto zero. Pensato per gli step ±1 della UI seller.",
 				tags: ["Seller - Stock"],
 			},
 		},

@@ -96,3 +96,42 @@ export async function removeProductFromStore(
 	if (!deleted) throw new ServiceError(404, "Store-product link not found");
 	return deleted;
 }
+
+// ── adjustStock ───────────────────────────────────────────────────────────────
+
+interface AdjustStockParams {
+	productId: string;
+	storeId: string;
+	sellerProfileId: string;
+	delta: number;
+}
+
+export async function adjustStock(params: AdjustStockParams) {
+	const { productId, storeId, sellerProfileId, delta } = params;
+	await ensureProductOwnership(productId, sellerProfileId);
+
+	// UPDATE atomico con guard non-negative: una sola query, niente race.
+	const [updated] = await db
+		.update(storeProduct)
+		.set({ stock: sql`${storeProduct.stock} + ${delta}` })
+		.where(
+			and(
+				eq(storeProduct.productId, productId),
+				eq(storeProduct.storeId, storeId),
+				sql`${storeProduct.stock} + ${delta} >= 0`,
+			),
+		)
+		.returning();
+
+	if (updated) return updated;
+
+	// rowCount = 0 → distingui 404 (link assente) da 409 (vincolo violato).
+	const existing = await db.query.storeProduct.findFirst({
+		where: and(
+			eq(storeProduct.productId, productId),
+			eq(storeProduct.storeId, storeId),
+		),
+	});
+	if (!existing) throw new ServiceError(404, "Store-product link not found");
+	throw new ServiceError(409, "Stock would go negative");
+}
