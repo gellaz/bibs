@@ -1,7 +1,5 @@
 "use no memo";
 
-import { Button } from "@bibs/ui/components/button";
-import { Input } from "@bibs/ui/components/input";
 import { toast } from "@bibs/ui/components/sonner";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -25,16 +23,20 @@ export function StockEditorCell({
 }: Props) {
 	const { adjust, set } = useStockAdjustMutation();
 	const [pendingDelta, setPendingDelta] = useState(0);
-	const [editMode, setEditMode] = useState(false);
-	const [editValue, setEditValue] = useState("");
+	const [focused, setFocused] = useState(false);
+	const [editValue, setEditValue] = useState(String(stock));
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const inputRef = useRef<HTMLInputElement | null>(null);
 	// Tracks the live pendingDelta for the unmount-flush closure ([] effect captures stale state).
 	const pendingDeltaRef = useRef(0);
 	// Prevents commitSet from firing twice when Enter triggers both onKeyDown and onBlur.
 	const committingRef = useRef(false);
 
 	const optimistic = stock + pendingDelta;
+
+	// Sync the input with the optimistic value whenever the field isn't being edited.
+	useEffect(() => {
+		if (!focused) setEditValue(String(optimistic));
+	}, [optimistic, focused]);
 
 	const flush = (deltaSnapshot: number) => {
 		if (deltaSnapshot === 0) return;
@@ -52,7 +54,6 @@ export function StockEditorCell({
 					} else {
 						toast.error((err as Error)?.message || "Errore");
 					}
-					// rollback: il valore visibile torna a `stock` (canonical via query cache)
 				},
 			},
 		);
@@ -67,7 +68,6 @@ export function StockEditorCell({
 
 	useEffect(() => {
 		return () => {
-			// su unmount, esegui subito il flush in volo
 			if (timerRef.current) {
 				clearTimeout(timerRef.current);
 				if (pendingDeltaRef.current !== 0) flush(pendingDeltaRef.current);
@@ -95,26 +95,19 @@ export function StockEditorCell({
 		scheduleFlush(next);
 	};
 
-	const onNumberClick = () => {
-		setEditValue(String(optimistic));
-		setEditMode(true);
-		setTimeout(() => inputRef.current?.select(), 0);
-	};
-
 	const commitSet = () => {
 		if (committingRef.current) return;
 		committingRef.current = true;
 		try {
 			const parsed = Number.parseInt(editValue, 10);
 			if (Number.isNaN(parsed) || parsed < 0) {
-				setEditMode(false);
+				setEditValue(String(optimistic));
 				return;
 			}
 			if (parsed === optimistic) {
-				setEditMode(false);
+				setEditValue(String(optimistic));
 				return;
 			}
-			setEditMode(false);
 			// Reset pendingDelta: set.mutate sends an absolute value so any accumulated
 			// stepper delta is superseded by the explicit value the user typed.
 			setPendingDelta(0);
@@ -136,54 +129,61 @@ export function StockEditorCell({
 		}
 	};
 
+	const busy = adjust.isPending || set.isPending;
+
 	return (
-		<div className="flex items-center gap-1">
-			<Button
+		<div
+			data-slot="stock-stepper"
+			className="border-input bg-background focus-within:border-ring focus-within:ring-ring/50 inline-flex h-8 items-stretch overflow-hidden rounded-lg border transition-[box-shadow,border-color] focus-within:ring-3"
+		>
+			<button
 				type="button"
-				variant="ghost"
-				size="icon"
-				className="h-7 w-7"
 				onClick={onDecrement}
-				disabled={adjust.isPending || set.isPending || optimistic === 0}
+				disabled={busy || optimistic === 0}
 				aria-label={m.products_stock_decrement_aria()}
+				className="text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70 border-input flex w-8 items-center justify-center border-r outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
 			>
 				<MinusIcon className="size-3.5" />
-			</Button>
-			{editMode ? (
-				<Input
-					ref={inputRef}
-					type="number"
-					inputMode="numeric"
-					className="h-7 w-14 px-1 text-center tabular-nums"
-					value={editValue}
-					onChange={(e) => setEditValue(e.target.value)}
-					onBlur={commitSet}
-					onKeyDown={(e) => {
-						if (e.key === "Enter") commitSet();
-						else if (e.key === "Escape") setEditMode(false);
-					}}
-					min={0}
-				/>
-			) : (
-				<button
-					type="button"
-					onClick={onNumberClick}
-					className="hover:bg-accent w-10 rounded px-1 text-center font-medium tabular-nums"
-				>
-					{optimistic}
-				</button>
-			)}
-			<Button
+			</button>
+			<input
+				type="text"
+				inputMode="numeric"
+				pattern="[0-9]*"
+				value={editValue}
+				onChange={(e) =>
+					setEditValue(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))
+				}
+				onFocus={(e) => {
+					setFocused(true);
+					setEditValue(String(optimistic));
+					e.currentTarget.select();
+				}}
+				onBlur={() => {
+					setFocused(false);
+					commitSet();
+				}}
+				onKeyDown={(e) => {
+					if (e.key === "Enter") {
+						e.currentTarget.blur();
+					} else if (e.key === "Escape") {
+						setEditValue(String(optimistic));
+						setFocused(false);
+						e.currentTarget.blur();
+					}
+				}}
+				disabled={busy}
+				aria-label={m.products_stock_input_aria()}
+				className="caret-ring w-12 bg-transparent px-1 text-center text-sm font-medium tabular-nums outline-none disabled:cursor-not-allowed"
+			/>
+			<button
 				type="button"
-				variant="ghost"
-				size="icon"
-				className="h-7 w-7"
 				onClick={onIncrement}
-				disabled={adjust.isPending || set.isPending}
+				disabled={busy}
 				aria-label={m.products_stock_increment_aria()}
+				className="text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70 border-input flex w-8 items-center justify-center border-l outline-none transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
 			>
 				<PlusIcon className="size-3.5" />
-			</Button>
+			</button>
 		</div>
 	);
 }
