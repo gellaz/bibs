@@ -544,7 +544,7 @@ function ProductsListPage() {
 
 			{activeStore && (
 				<div className="space-y-3">
-					<div className="flex flex-wrap items-start gap-3">
+					<div className="flex flex-wrap items-center gap-2">
 						<InputGroup className="max-w-md min-w-[240px] flex-1">
 							<InputGroupAddon align="inline-start">
 								<SearchIcon />

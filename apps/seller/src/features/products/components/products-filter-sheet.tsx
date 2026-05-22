@@ -14,6 +14,14 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@bibs/ui/components/popover";
+import {
+	Sheet,
+	SheetContent,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@bibs/ui/components/sheet";
 import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -34,7 +42,7 @@ export interface FilterValue {
 	maxPrice?: string;
 }
 
-interface ProductsFilterPopoverProps {
+interface ProductsFilterSheetProps {
 	value: FilterValue;
 	onChange: (next: FilterValue) => void;
 	storeId: string | undefined;
@@ -46,7 +54,7 @@ interface ProductsFilterPopoverProps {
 
 const VISIBLE_CHIPS = 2;
 
-export function ProductsFilterPopover({
+export function ProductsFilterSheet({
 	value,
 	onChange,
 	storeId,
@@ -54,7 +62,7 @@ export function ProductsFilterPopover({
 	trigger,
 	open,
 	onOpenChange,
-}: ProductsFilterPopoverProps) {
+}: ProductsFilterSheetProps) {
 	const [localMin, setLocalMin] = useState(value.minPrice ?? "");
 	const [localMax, setLocalMax] = useState(value.maxPrice ?? "");
 	const debouncedMin = useDebouncedValue(localMin, 300);
@@ -155,16 +163,21 @@ export function ProductsFilterPopover({
 		onChange({});
 	};
 
+	const hasActiveFilters =
+		selectedIds.length > 0 ||
+		Boolean(value.minPrice) ||
+		Boolean(value.maxPrice);
+
 	return (
-		<Popover open={open} onOpenChange={onOpenChange}>
-			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
-			<PopoverContent
-				className="w-80 p-0"
-				align="start"
-				onOpenAutoFocus={(e) => e.preventDefault()}
-			>
-				<div className="space-y-4 p-4">
-					<div className="space-y-2">
+		<Sheet open={open} onOpenChange={onOpenChange}>
+			<SheetTrigger asChild>{trigger}</SheetTrigger>
+			<SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+				<SheetHeader className="border-b px-6 py-4">
+					<SheetTitle>Filtri</SheetTitle>
+				</SheetHeader>
+
+				<div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+					<section className="space-y-2">
 						<Label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 							Categoria
 						</Label>
@@ -195,7 +208,7 @@ export function ProductsFilterPopover({
 												className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
 											>
 												{cat.name}
-												{/* biome-ignore lint/a11y/useSemanticElements: nested <button> inside button trigger is invalid HTML; span with role keeps the X interactive without DOM nesting issues. */}
+												{/* biome-ignore lint/a11y/useSemanticElements: nested <button> inside the picker trigger button is invalid HTML; span with role keeps the X interactive without DOM nesting issues. */}
 												<span
 													role="button"
 													tabIndex={0}
@@ -226,10 +239,14 @@ export function ProductsFilterPopover({
 									<ChevronDownIcon className="text-muted-foreground size-4 shrink-0" />
 								</button>
 							</PopoverTrigger>
-							<PopoverContent className="w-72 p-0" align="start" sideOffset={4}>
+							<PopoverContent
+								className="w-(--radix-popover-trigger-width) p-0"
+								align="start"
+								sideOffset={4}
+							>
 								<Command>
 									<CommandInput placeholder="Cerca categoria…" />
-									<CommandList className="max-h-64">
+									<CommandList className="max-h-72">
 										<CommandEmpty>Nessuna categoria.</CommandEmpty>
 										{selectedIds.length > 0 && (
 											<CommandGroup>
@@ -268,13 +285,13 @@ export function ProductsFilterPopover({
 								</Command>
 							</PopoverContent>
 						</Popover>
-					</div>
+					</section>
 
-					<div className="space-y-2">
+					<section className="space-y-2">
 						<Label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 							Prezzo
 						</Label>
-						<div className="grid grid-cols-2 gap-2">
+						<div className="grid grid-cols-2 gap-3">
 							<div className="space-y-1">
 								<Label htmlFor="filter-min-price" className="text-xs">
 									Min
@@ -315,15 +332,19 @@ export function ProductsFilterPopover({
 						{priceHint && (
 							<p className="text-destructive text-xs">{priceHint}</p>
 						)}
-					</div>
-
-					<div className="flex justify-end border-t pt-3">
-						<Button variant="ghost" size="sm" onClick={handleReset}>
-							Reset
-						</Button>
-					</div>
+					</section>
 				</div>
-			</PopoverContent>
-		</Popover>
+
+				<SheetFooter className="border-t px-6 py-3">
+					<Button
+						variant="ghost"
+						onClick={handleReset}
+						disabled={!hasActiveFilters}
+					>
+						Cancella tutti i filtri
+					</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
