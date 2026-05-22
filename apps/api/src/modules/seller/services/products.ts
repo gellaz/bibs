@@ -287,6 +287,49 @@ export async function listProducts(params: ListProductsParams) {
 	return { data, pagination: { page, limit, total } };
 }
 
+// ── listCategoriesInUse ───────────────────────────────────────────────────────
+//
+// Restituisce le sotto-categorie effettivamente assegnate ad almeno un prodotto
+// del seller, opzionalmente scopate per store e status. Usato dal filtro UI
+// per offrire solo voci che producono risultati > 0.
+
+interface ListCategoriesInUseParams {
+	sellerProfileId: string;
+	storeId?: string;
+	statusFilter?: ProductStatus;
+}
+
+export async function listCategoriesInUse(params: ListCategoriesInUseParams) {
+	const { sellerProfileId, storeId, statusFilter } = params;
+
+	const conditions = [eq(product.sellerProfileId, sellerProfileId)];
+	if (statusFilter) conditions.push(eq(product.status, statusFilter));
+	if (storeId) conditions.push(eq(storeProduct.storeId, storeId));
+
+	const baseQuery = storeId
+		? db
+				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
+				.from(productCategoryAssignment)
+				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
+				.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
+				.where(and(...conditions))
+		: db
+				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
+				.from(productCategoryAssignment)
+				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
+				.where(and(...conditions));
+
+	const rows = await baseQuery;
+	const ids = rows.map((r) => r.id);
+	if (ids.length === 0) return [];
+
+	return db.query.productCategory.findMany({
+		where: inArray(productCategory.id, ids),
+		with: { macroCategory: true },
+		orderBy: (pc, { asc }) => [asc(pc.name)],
+	});
+}
+
 // ── getProductStatusCounts ────────────────────────────────────────────────────
 
 interface GetCountsParams {

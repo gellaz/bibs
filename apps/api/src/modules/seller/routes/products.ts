@@ -13,6 +13,7 @@ import {
 	OkMessage,
 	okPageRes,
 	okRes,
+	ProductCategoryWithMacroSchema,
 	ProductSchema,
 	ProductStatusBody,
 	ProductStatusCounts,
@@ -30,6 +31,7 @@ import {
 	deleteProduct,
 	getProduct,
 	getProductStatusCounts,
+	listCategoriesInUse,
 	listProducts,
 	lookupProductByEan,
 	updateProduct,
@@ -179,6 +181,53 @@ export const productsRoutes = new Elysia()
 				summary: "Lookup prodotto per EAN",
 				description:
 					"Restituisce i dati pre-compilabili dell'ultimo prodotto creato con questo EAN (cross-seller). Esclude prezzo e immagini. Ritorna null se nessun prodotto matcha.",
+				tags: ["Seller - Products"],
+			},
+		},
+	)
+	.get(
+		"/products/categories-in-use",
+		async (ctx) => {
+			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
+			if (query.storeId) {
+				await ensureStoreAccess(query.storeId, {
+					userId: user.id,
+					sellerProfileId: sp.id,
+					isOwner,
+				});
+			}
+			const data = await listCategoriesInUse({
+				sellerProfileId: sp.id,
+				storeId: query.storeId,
+				statusFilter: query.statusFilter,
+			});
+			return ok(data);
+		},
+		{
+			query: t.Object({
+				storeId: t.Optional(
+					t.String({
+						description:
+							"Restringe al negozio specificato; assente = seller-wide.",
+					}),
+				),
+				statusFilter: t.Optional(
+					t.Union(
+						[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
+						{
+							description:
+								"Restringe ai prodotti dello stato indicato. Assente = qualunque status.",
+						},
+					),
+				),
+			}),
+			response: withErrors({
+				200: okRes(t.Array(ProductCategoryWithMacroSchema)),
+			}),
+			detail: {
+				summary: "Categorie usate dal seller",
+				description:
+					"Restituisce le sotto-categorie con almeno un prodotto del seller. Filtrabile per negozio e/o status. Pensato per popolare il filtro categoria nella lista prodotti senza mostrare l'intero catalogo globale.",
 				tags: ["Seller - Products"],
 			},
 		},

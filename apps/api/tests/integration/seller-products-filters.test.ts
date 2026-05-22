@@ -25,7 +25,10 @@ mock.module("@/lib/s3", () => ({ s3: { delete: mock(async () => {}) } }));
 
 import { product } from "@/db/schemas/product";
 import { addProductsToDiscount } from "@/modules/seller/services/discounts";
-import { listProducts } from "@/modules/seller/services/products";
+import {
+	listCategoriesInUse,
+	listProducts,
+} from "@/modules/seller/services/products";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestBrand,
@@ -321,5 +324,123 @@ describe("default sort", () => {
 
 		const out = await listProducts({ sellerProfileId: seller.profile.id });
 		expect(out.data.map((p) => p.name)).toEqual(["P2", "P1"]);
+	});
+});
+
+describe("listCategoriesInUse", () => {
+	it("ritorna solo categorie con almeno un prodotto del seller", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "M");
+		const used1 = await createTestCategory(db, "Used1", macro.id);
+		const used2 = await createTestCategory(db, "Used2", macro.id);
+		await createTestCategory(db, "Unused", macro.id);
+		await createTestProduct(db, seller.profile.id, {
+			name: "A",
+			categoryIds: [used1.id],
+		});
+		await createTestProduct(db, seller.profile.id, {
+			name: "B",
+			categoryIds: [used2.id],
+		});
+
+		const out = await listCategoriesInUse({
+			sellerProfileId: seller.profile.id,
+		});
+		expect(out.map((c) => c.name).sort()).toEqual(["Used1", "Used2"]);
+	});
+
+	it("dedupica quando la stessa categoria è su più prodotti", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "M");
+		const cat = await createTestCategory(db, "Shared", macro.id);
+		await createTestProduct(db, seller.profile.id, {
+			name: "A",
+			categoryIds: [cat.id],
+		});
+		await createTestProduct(db, seller.profile.id, {
+			name: "B",
+			categoryIds: [cat.id],
+		});
+
+		const out = await listCategoriesInUse({
+			sellerProfileId: seller.profile.id,
+		});
+		expect(out.map((c) => c.name)).toEqual(["Shared"]);
+	});
+
+	it("scope per storeId: solo categorie dei prodotti nello store", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "M");
+		const cA = await createTestCategory(db, "CA", macro.id);
+		const cB = await createTestCategory(db, "CB", macro.id);
+		const storeA = await createTestStore(db, seller.profile.id);
+		const storeB = await createTestStore(db, seller.profile.id);
+		const pA = await createTestProduct(db, seller.profile.id, {
+			name: "A",
+			categoryIds: [cA.id],
+		});
+		const pB = await createTestProduct(db, seller.profile.id, {
+			name: "B",
+			categoryIds: [cB.id],
+		});
+		await createTestStoreProduct(db, storeA.id, pA.id, { stock: 1 });
+		await createTestStoreProduct(db, storeB.id, pB.id, { stock: 1 });
+
+		const outA = await listCategoriesInUse({
+			sellerProfileId: seller.profile.id,
+			storeId: storeA.id,
+		});
+		expect(outA.map((c) => c.name)).toEqual(["CA"]);
+	});
+
+	it("scope per statusFilter: ignora prodotti di status diverso", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "M");
+		const cActive = await createTestCategory(db, "Active", macro.id);
+		const cTrash = await createTestCategory(db, "Trashed", macro.id);
+		await createTestProduct(db, seller.profile.id, {
+			name: "A",
+			categoryIds: [cActive.id],
+		});
+		await createTestProduct(db, seller.profile.id, {
+			name: "T",
+			status: "trashed",
+			categoryIds: [cTrash.id],
+		});
+
+		const out = await listCategoriesInUse({
+			sellerProfileId: seller.profile.id,
+			statusFilter: "active",
+		});
+		expect(out.map((c) => c.name)).toEqual(["Active"]);
+	});
+
+	it("array vuoto quando il seller non ha prodotti", async () => {
+		const seller = await createTestSeller(getTestDb());
+		const out = await listCategoriesInUse({
+			sellerProfileId: seller.profile.id,
+		});
+		expect(out).toEqual([]);
+	});
+
+	it("non sconfina su prodotti di altri seller", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "M");
+		const cat = await createTestCategory(db, "Mine", macro.id);
+		const me = await createTestSeller(db);
+		const other = await createTestSeller(db);
+		await createTestProduct(db, other.profile.id, {
+			name: "Theirs",
+			categoryIds: [cat.id],
+		});
+
+		const out = await listCategoriesInUse({
+			sellerProfileId: me.profile.id,
+		});
+		expect(out).toEqual([]);
 	});
 });
