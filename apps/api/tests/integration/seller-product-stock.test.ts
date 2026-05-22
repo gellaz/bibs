@@ -28,7 +28,6 @@ mock.module("@/lib/s3", () => ({
 
 import { and, eq } from "drizzle-orm";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
-import { ServiceError } from "@/lib/errors";
 import { adjustStock } from "@/modules/seller/services/stock";
 import { truncateAll } from "../helpers/cleanup";
 import {
