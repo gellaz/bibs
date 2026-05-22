@@ -24,6 +24,7 @@ import {
 	type ProductStatusFilter,
 	ProductStatusTabs,
 } from "@/features/products/components/product-status-tabs";
+import { ProductsFilterBar } from "@/features/products/components/products-filter-bar";
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
@@ -59,6 +60,9 @@ export const Route = createFileRoute("/_authenticated/products/")({
 		q?: string;
 		sort?: ProductSortField;
 		order?: SortOrder;
+		categoryId?: string;
+		minPrice?: string;
+		maxPrice?: string;
 	} => {
 		const sf = search.statusFilter;
 		const statusFilter: ProductStatusFilter =
@@ -71,12 +75,28 @@ export const Route = createFileRoute("/_authenticated/products/")({
 			search.order === "asc" || search.order === "desc"
 				? (search.order as SortOrder)
 				: undefined;
+		const categoryId =
+			typeof search.categoryId === "string" && search.categoryId.length > 0
+				? search.categoryId
+				: undefined;
+		const PRICE_RE = /^\d+(\.\d{1,2})?$/;
+		const minPrice =
+			typeof search.minPrice === "string" && PRICE_RE.test(search.minPrice)
+				? search.minPrice
+				: undefined;
+		const maxPrice =
+			typeof search.maxPrice === "string" && PRICE_RE.test(search.maxPrice)
+				? search.maxPrice
+				: undefined;
 		return {
 			page: Number(search.page ?? 1),
 			limit: Number(search.limit ?? 20),
 			statusFilter,
 			...(rawQ.length > 0 ? { q: rawQ } : {}),
 			...(sort && order ? { sort, order } : {}),
+			...(categoryId ? { categoryId } : {}),
+			...(minPrice ? { minPrice } : {}),
+			...(maxPrice ? { maxPrice } : {}),
 		};
 	},
 });
@@ -84,7 +104,6 @@ export const Route = createFileRoute("/_authenticated/products/")({
 const INITIAL_COLUMN_VISIBILITY = {
 	brand: false,
 	ean: false,
-	updatedAt: false,
 };
 
 const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
@@ -123,6 +142,9 @@ function ProductsListPage() {
 		q: routeQ,
 		sort,
 		order,
+		categoryId,
+		minPrice,
+		maxPrice,
 	} = Route.useSearch();
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();
@@ -159,6 +181,9 @@ function ProductsListPage() {
 			effectiveRouteQ,
 			sort,
 			order,
+			categoryId,
+			minPrice,
+			maxPrice,
 		],
 		queryFn: async () => {
 			const storeId = activeStore?.id;
@@ -171,6 +196,9 @@ function ProductsListPage() {
 					statusFilter,
 					q: effectiveRouteQ.length > 0 ? effectiveRouteQ : undefined,
 					...(sort && order ? { sort, order } : {}),
+					...(categoryId ? { productCategoryId: categoryId } : {}),
+					...(minPrice ? { minPrice } : {}),
+					...(maxPrice ? { maxPrice } : {}),
 				},
 			});
 			if (response.error) {
@@ -506,28 +534,44 @@ function ProductsListPage() {
 
 			{activeStore && (
 				<div className="space-y-3">
-					<InputGroup className="max-w-md">
-						<InputGroupAddon align="inline-start">
-							<SearchIcon />
-						</InputGroupAddon>
-						<InputGroupInput
-							value={localQ}
-							onChange={(e) => setLocalQ(e.target.value)}
-							placeholder={m.products_search_placeholder()}
-							aria-label={m.products_search_placeholder()}
-						/>
-						{localQ.length > 0 && (
-							<InputGroupAddon align="inline-end">
-								<InputGroupButton
-									size="icon-xs"
-									onClick={() => setLocalQ("")}
-									aria-label={m.products_search_clear()}
-								>
-									<XIcon />
-								</InputGroupButton>
+					<div className="flex flex-wrap items-start gap-3">
+						<InputGroup className="max-w-md min-w-[240px] flex-1">
+							<InputGroupAddon align="inline-start">
+								<SearchIcon />
 							</InputGroupAddon>
-						)}
-					</InputGroup>
+							<InputGroupInput
+								value={localQ}
+								onChange={(e) => setLocalQ(e.target.value)}
+								placeholder={m.products_search_placeholder()}
+								aria-label={m.products_search_placeholder()}
+							/>
+							{localQ.length > 0 && (
+								<InputGroupAddon align="inline-end">
+									<InputGroupButton
+										size="icon-xs"
+										onClick={() => setLocalQ("")}
+										aria-label={m.products_search_clear()}
+									>
+										<XIcon />
+									</InputGroupButton>
+								</InputGroupAddon>
+							)}
+						</InputGroup>
+						<ProductsFilterBar
+							value={{ categoryId, minPrice, maxPrice }}
+							onChange={(next) =>
+								void navigate({
+									search: (prev) => ({
+										...prev,
+										categoryId: next.categoryId,
+										minPrice: next.minPrice,
+										maxPrice: next.maxPrice,
+										page: 1,
+									}),
+								})
+							}
+						/>
+					</div>
 					<ProductStatusTabs
 						storeId={activeStore.id}
 						value={statusFilter}
