@@ -154,6 +154,8 @@ interface BulkAdjustFailure {
 export async function bulkAdjustStock(params: BulkAdjustStockParams) {
 	const { sellerProfileId, storeId, productIds, mode, value } = params;
 
+	if (productIds.length === 0) return { succeeded: [], failed: [] };
+
 	// 1. Filtra i productIds per ownership: non leakare cross-seller.
 	const ownedRows = await db
 		.select({ id: product.id })
@@ -164,63 +166,68 @@ export async function bulkAdjustStock(params: BulkAdjustStockParams) {
 				eq(product.sellerProfileId, sellerProfileId),
 			),
 		);
-	const ownedIds = new Set(ownedRows.map((r) => r.id));
+	const ownedSet = new Set(ownedRows.map((r) => r.id));
+	// Preserve original productIds order in failed[].
+	const ownedInOrder = productIds.filter((id) => ownedSet.has(id));
 
 	const failed: BulkAdjustFailure[] = [];
 	for (const pid of productIds) {
-		if (!ownedIds.has(pid))
+		if (!ownedSet.has(pid))
 			failed.push({ productId: pid, reason: "not_found" });
 	}
 
-	// 2. Per ogni id owned: UPDATE atomico per-row.
-	const succeeded: Awaited<ReturnType<typeof adjustStock>>[] = [];
-	for (const productId of ownedIds) {
-		if (mode === "delta") {
-			const [updated] = await db
-				.update(storeProduct)
-				.set({ stock: sql`${storeProduct.stock} + ${value}` })
-				.where(
-					and(
-						eq(storeProduct.productId, productId),
-						eq(storeProduct.storeId, storeId),
-						sql`${storeProduct.stock} + ${value} >= 0`,
-					),
-				)
-				.returning();
-			if (updated) {
-				succeeded.push(updated);
-				continue;
-			}
-			// discrimina 404 vs would_go_negative
-			const existing = await db.query.storeProduct.findFirst({
-				where: and(
-					eq(storeProduct.productId, productId),
-					eq(storeProduct.storeId, storeId),
-				),
-			});
-			failed.push({
-				productId,
-				reason: existing ? "would_go_negative" : "not_found",
-			});
-		} else {
-			// mode = "set"
-			const [updated] = await db
-				.update(storeProduct)
-				.set({ stock: value })
-				.where(
-					and(
+	// 2. Per ogni id owned: UPDATE atomico per-row, wrapped in a transaction
+	//    so a transient DB error doesn't leave a partial update committed.
+	return db.transaction(async (tx) => {
+		const succeeded: Awaited<ReturnType<typeof adjustStock>>[] = [];
+		for (const productId of ownedInOrder) {
+			if (mode === "delta") {
+				const [updated] = await tx
+					.update(storeProduct)
+					.set({ stock: sql`${storeProduct.stock} + ${value}` })
+					.where(
+						and(
+							eq(storeProduct.productId, productId),
+							eq(storeProduct.storeId, storeId),
+							sql`${storeProduct.stock} + ${value} >= 0`,
+						),
+					)
+					.returning();
+				if (updated) {
+					succeeded.push(updated);
+					continue;
+				}
+				// discrimina 404 vs would_go_negative
+				const existing = await tx.query.storeProduct.findFirst({
+					where: and(
 						eq(storeProduct.productId, productId),
 						eq(storeProduct.storeId, storeId),
 					),
-				)
-				.returning();
-			if (updated) {
-				succeeded.push(updated);
-				continue;
+				});
+				failed.push({
+					productId,
+					reason: existing ? "would_go_negative" : "not_found",
+				});
+			} else {
+				// mode = "set"
+				const [updated] = await tx
+					.update(storeProduct)
+					.set({ stock: value })
+					.where(
+						and(
+							eq(storeProduct.productId, productId),
+							eq(storeProduct.storeId, storeId),
+						),
+					)
+					.returning();
+				if (updated) {
+					succeeded.push(updated);
+					continue;
+				}
+				failed.push({ productId, reason: "not_found" });
 			}
-			failed.push({ productId, reason: "not_found" });
 		}
-	}
 
-	return { succeeded, failed };
+		return { succeeded, failed };
+	});
 }
