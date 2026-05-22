@@ -172,7 +172,7 @@ function AuthenticatedLayout() {
 						<div aria-hidden className="h-4 w-px bg-border" />
 						<AppBreadcrumb />
 					</header>
-					<div className="flex-1 p-4">
+					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
 						<Outlet />
 					</div>
 				</SidebarInset>
@@ -228,7 +228,7 @@ function EmployeeStoreGate({
 						<div aria-hidden className="h-4 w-px bg-border" />
 						<AppBreadcrumb />
 					</header>
-					<div className="flex-1 p-4">
+					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
 						<Outlet />
 					</div>
 				</SidebarInset>

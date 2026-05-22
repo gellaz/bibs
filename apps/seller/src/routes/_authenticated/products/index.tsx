@@ -522,8 +522,8 @@ function ProductsListPage() {
 	);
 
 	return (
-		<div className="space-y-4">
-			<div className="flex items-center justify-between">
+		<div className="flex h-full min-w-0 flex-col gap-4">
+			<div className="flex shrink-0 items-center justify-between">
 				<div>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
 						Prodotti
@@ -543,7 +543,7 @@ function ProductsListPage() {
 			</div>
 
 			{activeStore && (
-				<div className="space-y-3">
+				<div className="flex shrink-0 flex-col gap-3">
 					<div className="flex flex-wrap items-center gap-2">
 						<InputGroup className="max-w-md min-w-[240px] flex-1">
 							<InputGroupAddon align="inline-start">
@@ -596,15 +596,17 @@ function ProductsListPage() {
 				</div>
 			)}
 
-			<ProductBulkToolbar
-				selectedIds={Array.from(selection.selected)}
-				activeStoreId={activeStore?.id ?? ""}
-				statusFilter={statusFilter}
-				onClear={selection.clear}
-			/>
+			<div className="shrink-0">
+				<ProductBulkToolbar
+					selectedIds={Array.from(selection.selected)}
+					activeStoreId={activeStore?.id ?? ""}
+					statusFilter={statusFilter}
+					onClear={selection.clear}
+				/>
+			</div>
 
 			{error && (
-				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 shrink-0 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
@@ -619,6 +621,7 @@ function ProductsListPage() {
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
 				manualSorting={{ sorting, onSortingChange }}
+				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
 				rowClassName={(row) =>
 					selection.isSelected(row.original.id)
 						? "bg-primary/10 hover:bg-primary/10 [&>td]:opacity-60 [&>td:first-child]:opacity-100"
@@ -640,7 +643,7 @@ function ProductsListPage() {
 					const rangeStart = (page - 1) * limit + 1;
 					const rangeEnd = Math.min(page * limit, total);
 					return (
-						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
 							<p className="text-muted-foreground text-sm tabular-nums">
 								{rangeStart}–{rangeEnd} di {total} prodott
 								{total === 1 ? "o" : "i"}
