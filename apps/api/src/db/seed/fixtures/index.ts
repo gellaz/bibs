@@ -4,6 +4,7 @@ import { seedCustomers } from "./customers";
 import { seedExtraStores } from "./extra-stores";
 import { seedProducts } from "./products";
 import { seedSellers } from "./sellers";
+import { seedStoreImages } from "./store-images";
 import { seedTeam } from "./team";
 
 /**
@@ -16,6 +17,7 @@ export async function seedFixtures() {
 	await seedCustomers();
 	await seedSellers();
 	await seedExtraStores();
+	await seedStoreImages();
 	await seedTeam();
 	const brandsBySeller = await seedBrands();
 	await seedProducts(brandsBySeller);
