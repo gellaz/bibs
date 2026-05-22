@@ -4,6 +4,8 @@ import {
 	OkMessage,
 	okRes,
 	StockAdjustBody,
+	StockBulkAdjustBody,
+	StockBulkAdjustResult,
 	StoreProductSchema,
 	withConflictErrors,
 	withErrors,
@@ -12,6 +14,7 @@ import { ensureStoreAccess, withSeller } from "../context";
 import {
 	adjustStock,
 	assignProductToStores,
+	bulkAdjustStock,
 	removeProductFromStore,
 	updateStock,
 } from "../services/stock";
@@ -126,6 +129,36 @@ export const stockRoutes = new Elysia()
 				summary: "Adegua stock (delta atomico)",
 				description:
 					"Applica un delta atomico allo stock corrente del prodotto in un negozio. Restituisce 409 se l'operazione porterebbe lo stock sotto zero. Pensato per gli step ±1 della UI seller.",
+				tags: ["Seller - Stock"],
+			},
+		},
+	)
+	.post(
+		"/products/bulk/stock-adjust",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, body, isOwner, user } = sellerCtx;
+			await ensureStoreAccess(body.storeId, {
+				userId: user.id,
+				sellerProfileId: sp.id,
+				isOwner,
+			});
+			const result = await bulkAdjustStock({
+				sellerProfileId: sp.id,
+				storeId: body.storeId,
+				productIds: body.productIds,
+				mode: body.mode,
+				value: body.value,
+			});
+			return ok(result);
+		},
+		{
+			body: StockBulkAdjustBody,
+			response: withErrors({ 200: okRes(StockBulkAdjustResult) }),
+			detail: {
+				summary: "Adegua stock in bulk",
+				description:
+					"Applica un delta (mode='delta') o imposta un valore assoluto (mode='set') allo stock di più prodotti in un singolo negozio. Best-effort: gli ID non accessibili o con stock insufficiente finiscono in 'failed' con reason. Limite: 100 ID per chiamata.",
 				tags: ["Seller - Stock"],
 			},
 		},
