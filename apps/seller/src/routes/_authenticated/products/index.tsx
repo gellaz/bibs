@@ -60,7 +60,7 @@ export const Route = createFileRoute("/_authenticated/products/")({
 		q?: string;
 		sort?: ProductSortField;
 		order?: SortOrder;
-		categoryId?: string;
+		categoryIds?: string[];
 		minPrice?: string;
 		maxPrice?: string;
 	} => {
@@ -75,10 +75,18 @@ export const Route = createFileRoute("/_authenticated/products/")({
 			search.order === "asc" || search.order === "desc"
 				? (search.order as SortOrder)
 				: undefined;
-		const categoryId =
-			typeof search.categoryId === "string" && search.categoryId.length > 0
-				? search.categoryId
+		// categoryIds: accetta sia repeated query (?categoryIds=a&categoryIds=b → array)
+		// sia singolare (?categoryIds=a → string). Normalizziamo sempre ad array.
+		const rawCats = search.categoryIds;
+		const categoryIds: string[] | undefined = Array.isArray(rawCats)
+			? rawCats.filter(
+					(x): x is string => typeof x === "string" && x.length > 0,
+				)
+			: typeof rawCats === "string" && rawCats.length > 0
+				? [rawCats]
 				: undefined;
+		const normalizedCategoryIds =
+			categoryIds && categoryIds.length > 0 ? categoryIds : undefined;
 		const PRICE_RE = /^\d+(\.\d{1,2})?$/;
 		const minPrice =
 			typeof search.minPrice === "string" && PRICE_RE.test(search.minPrice)
@@ -94,7 +102,7 @@ export const Route = createFileRoute("/_authenticated/products/")({
 			statusFilter,
 			...(rawQ.length > 0 ? { q: rawQ } : {}),
 			...(sort && order ? { sort, order } : {}),
-			...(categoryId ? { categoryId } : {}),
+			...(normalizedCategoryIds ? { categoryIds: normalizedCategoryIds } : {}),
 			...(minPrice ? { minPrice } : {}),
 			...(maxPrice ? { maxPrice } : {}),
 		};
@@ -142,7 +150,7 @@ function ProductsListPage() {
 		q: routeQ,
 		sort,
 		order,
-		categoryId,
+		categoryIds,
 		minPrice,
 		maxPrice,
 	} = Route.useSearch();
@@ -181,7 +189,7 @@ function ProductsListPage() {
 			effectiveRouteQ,
 			sort,
 			order,
-			categoryId,
+			categoryIds,
 			minPrice,
 			maxPrice,
 		],
@@ -196,7 +204,9 @@ function ProductsListPage() {
 					statusFilter,
 					q: effectiveRouteQ.length > 0 ? effectiveRouteQ : undefined,
 					...(sort && order ? { sort, order } : {}),
-					...(categoryId ? { productCategoryId: categoryId } : {}),
+					...(categoryIds && categoryIds.length > 0
+						? { productCategoryIds: categoryIds }
+						: {}),
 					...(minPrice ? { minPrice } : {}),
 					...(maxPrice ? { maxPrice } : {}),
 				},
@@ -558,12 +568,15 @@ function ProductsListPage() {
 							)}
 						</InputGroup>
 						<ProductsFilterBar
-							value={{ categoryId, minPrice, maxPrice }}
+							value={{ categoryIds, minPrice, maxPrice }}
 							onChange={(next) =>
 								void navigate({
 									search: (prev) => ({
 										...prev,
-										categoryId: next.categoryId,
+										categoryIds:
+											next.categoryIds && next.categoryIds.length > 0
+												? next.categoryIds
+												: undefined,
 										minPrice: next.minPrice,
 										maxPrice: next.maxPrice,
 										page: 1,

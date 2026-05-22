@@ -14,11 +14,10 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@bibs/ui/components/popover";
-import { useQuery } from "@tanstack/react-query";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { api } from "@/lib/api";
+import { useAllProductCategories } from "../hooks/use-all-product-categories";
 
 // Converte input utente (it: "5,00") in canonical decimal ("5.00").
 // Ritorna undefined se la stringa pulita non matcha il pattern accettato dal backend.
@@ -30,7 +29,7 @@ function normalizePrice(raw: string): string | undefined {
 }
 
 export interface FilterValue {
-	categoryId?: string;
+	categoryIds?: string[];
 	minPrice?: string;
 	maxPrice?: string;
 }
@@ -54,6 +53,7 @@ export function ProductsFilterPopover({
 	const [localMax, setLocalMax] = useState(value.maxPrice ?? "");
 	const debouncedMin = useDebouncedValue(localMin, 300);
 	const debouncedMax = useDebouncedValue(localMax, 300);
+	const [categoryOpen, setCategoryOpen] = useState(false);
 
 	useEffect(() => {
 		setLocalMin(value.minPrice ?? "");
@@ -75,17 +75,8 @@ export function ProductsFilterPopover({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [debouncedMax]);
 
-	const { data: categories = [] } = useQuery({
-		queryKey: ["product-categories", "filter-all"],
-		queryFn: async () => {
-			const response = await api()["product-categories"].get({
-				query: { page: 1, limit: 200 },
-			});
-			if (response.error) throw new Error("Errore caricamento categorie");
-			return response.data.data;
-		},
-	});
-
+	const { data: categories = [], isLoading: catsLoading } =
+		useAllProductCategories();
 	type Category = (typeof categories)[number];
 
 	const grouped = useMemo(() => {
@@ -106,6 +97,38 @@ export function ProductsFilterPopover({
 		}
 		return arr;
 	}, [categories]);
+
+	const selectedIds = value.categoryIds ?? [];
+	const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+	const triggerLabel = useMemo(() => {
+		if (selectedIds.length === 0) return "Tutte le categorie";
+		if (selectedIds.length === 1) {
+			return (
+				categories.find((c) => c.id === selectedIds[0])?.name ?? "1 categoria"
+			);
+		}
+		const first = categories.find((c) => c.id === selectedIds[0])?.name;
+		if (!first) return `${selectedIds.length} categorie`;
+		return `${first} +${selectedIds.length - 1}`;
+	}, [selectedIds, categories]);
+
+	const toggleCategory = (id: string) => {
+		const next = new Set(selectedSet);
+		if (next.has(id)) {
+			next.delete(id);
+		} else {
+			next.add(id);
+		}
+		onChange({
+			...value,
+			categoryIds: next.size === 0 ? undefined : Array.from(next),
+		});
+	};
+
+	const clearCategories = () => {
+		onChange({ ...value, categoryIds: undefined });
+	};
 
 	const priceHint = (() => {
 		const minN = normalizePrice(localMin);
@@ -135,46 +158,66 @@ export function ProductsFilterPopover({
 						<Label className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 							Categoria
 						</Label>
-						<Command className="rounded-md border">
-							<CommandInput placeholder="Cerca categoria…" />
-							<CommandList className="max-h-56">
-								<CommandEmpty>Nessuna categoria.</CommandEmpty>
-								<CommandGroup>
-									<CommandItem
-										value="__all__"
-										onSelect={() =>
-											onChange({ ...value, categoryId: undefined })
+						<Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+							<PopoverTrigger asChild>
+								<Button
+									variant="outline"
+									role="combobox"
+									aria-expanded={categoryOpen}
+									className="w-full justify-between font-normal"
+								>
+									<span
+										className={
+											selectedIds.length === 0 ? "text-muted-foreground" : ""
 										}
 									>
-										<div className="flex w-4 items-center">
-											{!value.categoryId && <CheckIcon className="size-4" />}
-										</div>
-										Tutte le categorie
-									</CommandItem>
-								</CommandGroup>
-								{grouped.map((g) => (
-									<CommandGroup key={g.macroName} heading={g.macroName}>
-										{g.items.map((c) => {
-											const isOn = value.categoryId === c.id;
-											return (
+										{catsLoading ? "Caricamento…" : triggerLabel}
+									</span>
+									<ChevronsUpDownIcon className="text-muted-foreground size-4 shrink-0 opacity-60" />
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent className="w-72 p-0" align="start" sideOffset={4}>
+								<Command>
+									<CommandInput placeholder="Cerca categoria…" />
+									<CommandList className="max-h-64">
+										<CommandEmpty>Nessuna categoria.</CommandEmpty>
+										{selectedIds.length > 0 && (
+											<CommandGroup>
 												<CommandItem
-													key={c.id}
-													value={`${c.name} ${g.macroName}`}
-													onSelect={() =>
-														onChange({ ...value, categoryId: c.id })
-													}
+													value="__clear__"
+													onSelect={() => clearCategories()}
+													className="text-muted-foreground"
 												>
-													<div className="flex w-4 items-center">
-														{isOn && <CheckIcon className="size-4" />}
-													</div>
-													{c.name}
+													<div className="flex w-4 items-center" />
+													Cancella selezione ({selectedIds.length})
 												</CommandItem>
-											);
-										})}
-									</CommandGroup>
-								))}
-							</CommandList>
-						</Command>
+											</CommandGroup>
+										)}
+										{grouped.map((g) => (
+											<CommandGroup key={g.macroName} heading={g.macroName}>
+												{g.items.map((c) => {
+													const isOn = selectedSet.has(c.id);
+													return (
+														<CommandItem
+															key={c.id}
+															value={`${c.name} ${g.macroName}`}
+															onSelect={() => toggleCategory(c.id)}
+														>
+															<div className="flex w-4 items-center">
+																{isOn && (
+																	<CheckIcon className="text-primary size-4" />
+																)}
+															</div>
+															{c.name}
+														</CommandItem>
+													);
+												})}
+											</CommandGroup>
+										))}
+									</CommandList>
+								</Command>
+							</PopoverContent>
+						</Popover>
 					</div>
 
 					<div className="space-y-2">
