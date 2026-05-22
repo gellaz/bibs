@@ -24,18 +24,26 @@ import {
 	type ProductStatusFilter,
 	ProductStatusTabs,
 } from "@/features/products/components/product-status-tabs";
+import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
-type ProductSortField = "name" | "price" | "ean" | "createdAt" | "updatedAt";
+type ProductSortField =
+	| "name"
+	| "price"
+	| "ean"
+	| "stock"
+	| "createdAt"
+	| "updatedAt";
 type SortOrder = "asc" | "desc";
 const SORT_FIELDS: ProductSortField[] = [
 	"name",
 	"price",
 	"ean",
+	"stock",
 	"createdAt",
 	"updatedAt",
 ];
@@ -312,6 +320,35 @@ function ProductsListPage() {
 					menuLabel: "Prezzo",
 				},
 				cell: ({ row }) => <Price value={row.original.price} />,
+			},
+			{
+				id: "stock",
+				header: ({ column }) => (
+					<SortableHeader column={column}>
+						{m.products_stock_column_header()}
+					</SortableHeader>
+				),
+				enableSorting: true,
+				meta: {
+					headerClassName: "w-[14%]",
+					cellClassName: "tabular-nums",
+					menuLabel: m.products_stock_column_header(),
+				},
+				cell: ({ row }) => {
+					const sp = row.original.storeProducts.find(
+						(sp) => sp.storeId === activeStore?.id,
+					);
+					if (!sp || !activeStore) {
+						return <span className="text-muted-foreground/60">—</span>;
+					}
+					return (
+						<StockEditorCell
+							productId={row.original.id}
+							storeId={activeStore.id}
+							stock={sp.stock}
+						/>
+					);
+				},
 			},
 			{
 				id: "category",
