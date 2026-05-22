@@ -29,6 +29,15 @@ declare module "@tanstack/react-table" {
 		headerClassName?: string;
 		/** Optional class applied to every `<td>` for this column. */
 		cellClassName?: string;
+		/**
+		 * Freeze this column to the left or right edge of the horizontal scroll
+		 * container. Requires the DataTable to live inside a scroll container
+		 * (its default `overflow-auto` is enough). Both header and body cells
+		 * are made `position: sticky` with a `bg-card` base + neutral border
+		 * separator. Row-state styling (hover/selected) is mirrored from
+		 * `<TableRow>` so sticky cells track the rest of the row.
+		 */
+		sticky?: "left" | "right";
 	}
 }
 

@@ -265,6 +265,7 @@ function ProductsListPage() {
 				meta: {
 					headerClassName: "w-10 pl-4",
 					cellClassName: "pl-4",
+					sticky: "left",
 				},
 				header: () => (
 					<Checkbox
@@ -504,6 +505,7 @@ function ProductsListPage() {
 				meta: {
 					headerClassName: "w-16 pr-2 text-right",
 					cellClassName: "pr-4",
+					sticky: "right",
 				},
 				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
 				cell: ({ row }) => (

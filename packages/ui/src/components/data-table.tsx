@@ -23,6 +23,23 @@ import {
 import { useDataTable } from "~/hooks/use-data-table";
 import { cn } from "~/lib/utils";
 
+// Classi per colonne `meta.sticky`. Header e cell hanno bg / z-index distinti:
+// l'header sta sopra ai body sticky cells in caso di overlap; le body cells
+// rispecchiano hover/selected del <tr> per mantenere coerenza con la riga.
+function stickyHeaderClass(sticky: "left" | "right" | undefined) {
+	if (sticky === "left") return "sticky left-0 z-20 bg-card border-r";
+	if (sticky === "right") return "sticky right-0 z-20 bg-card border-l";
+	return undefined;
+}
+
+function stickyCellClass(sticky: "left" | "right" | undefined) {
+	const stateBg =
+		"bg-card group-hover:bg-muted/50 group-data-[state=selected]:bg-muted";
+	if (sticky === "left") return cn("sticky left-0 z-10 border-r", stateBg);
+	if (sticky === "right") return cn("sticky right-0 z-10 border-l", stateBg);
+	return undefined;
+}
+
 interface DataTableProps<TData> {
 	data: TData[];
 	columns: ColumnDef<TData, unknown>[];
@@ -133,7 +150,10 @@ export function DataTable<TData>({
 								return (
 									<TableHead
 										key={header.id}
-										className={meta?.headerClassName}
+										className={cn(
+											stickyHeaderClass(meta?.sticky),
+											meta?.headerClassName,
+										)}
 										style={
 											explicitSize !== undefined
 												? { width: explicitSize }
@@ -165,17 +185,23 @@ export function DataTable<TData>({
 									data-state={row.getIsSelected() ? "selected" : undefined}
 									className={cn("group", extraClass)}
 								>
-									{row.getVisibleCells().map((cell) => (
-										<TableCell
-											key={cell.id}
-											className={cell.column.columnDef.meta?.cellClassName}
-										>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext(),
-											)}
-										</TableCell>
-									))}
+									{row.getVisibleCells().map((cell) => {
+										const meta = cell.column.columnDef.meta;
+										return (
+											<TableCell
+												key={cell.id}
+												className={cn(
+													stickyCellClass(meta?.sticky),
+													meta?.cellClassName,
+												)}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext(),
+												)}
+											</TableCell>
+										);
+									})}
 								</TableRow>
 							);
 						})
