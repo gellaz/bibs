@@ -136,8 +136,11 @@
 	--card-foreground: var(--cream);
 	--popover: oklch(0.3 0.014 258);
 	--popover-foreground: var(--cream);
-	--primary: oklch(0.62 0.1 258);
-	--primary-foreground: oklch(0.2 0.014 258);
+	/* Primary inverts in dark: cream button with ink text. Same ingredients
+	   as light (--ink + --cream), reversed for legibility on dusk surfaces.
+	   Preserves brand voice; no separate primary color in dark. */
+	--primary: var(--cream);
+	--primary-foreground: var(--ink);
 	--secondary: oklch(0.3 0.014 258);
 	--secondary-foreground: var(--cream);
 	--muted: oklch(0.26 0.014 258);
