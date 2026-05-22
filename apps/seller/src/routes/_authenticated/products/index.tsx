@@ -263,8 +263,8 @@ function ProductsListPage() {
 				id: "select",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-10 pl-4",
-					cellClassName: "pl-4",
+					headerClassName: "w-12 px-0 text-center",
+					cellClassName: "w-12 px-0 text-center",
 					sticky: "left",
 				},
 				header: () => (
@@ -503,8 +503,8 @@ function ProductsListPage() {
 				id: "actions",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-16 pr-2 text-right",
-					cellClassName: "pr-2 text-right",
+					headerClassName: "w-12 px-0 text-center",
+					cellClassName: "w-12 px-0 text-center",
 					sticky: "right",
 				},
 				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
