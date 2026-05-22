@@ -1,11 +1,4 @@
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from "@bibs/ui/components/breadcrumb";
 import { Button } from "@bibs/ui/components/button";
-import { Separator } from "@bibs/ui/components/separator";
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -173,16 +166,8 @@ function AuthenticatedLayout() {
 			<SidebarProvider>
 				<AppSidebar />
 				<SidebarInset>
-					<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur md:hidden">
 						<SidebarTrigger className="-ml-1" />
-						<Separator orientation="vertical" className="mr-2 h-4" />
-						<Breadcrumb>
-							<BreadcrumbList>
-								<BreadcrumbItem>
-									<BreadcrumbPage>bibs Seller</BreadcrumbPage>
-								</BreadcrumbItem>
-							</BreadcrumbList>
-						</Breadcrumb>
 					</header>
 					<div className="flex-1 p-4">
 						<Outlet />
@@ -235,16 +220,8 @@ function EmployeeStoreGate({
 			<SidebarProvider>
 				<AppSidebar />
 				<SidebarInset>
-					<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur md:hidden">
 						<SidebarTrigger className="-ml-1" />
-						<Separator orientation="vertical" className="mr-2 h-4" />
-						<Breadcrumb>
-							<BreadcrumbList>
-								<BreadcrumbItem>
-									<BreadcrumbPage>bibs Seller</BreadcrumbPage>
-								</BreadcrumbItem>
-							</BreadcrumbList>
-						</Breadcrumb>
 					</header>
 					<div className="flex-1 p-4">
 						<Outlet />
