@@ -250,7 +250,14 @@ migrates token-by-token without a visual jump.
   as the cream, not a pure alert red.
 - **Olive** (`oklch(0.62 0.10 135)`): success and km-0 affirmative
   signals (delivery confirmed, order placed, "consegna a 0.4 km"). A
-  vegetable green, not a SaaS lime.
+  vegetable green, not a SaaS lime. The `success` semantic token is an
+  alias of olive (with a lifted dark-mode value for legibility on dusk).
+- **Warning** (`oklch(0.62 0.14 60)` light, `oklch(0.78 0.14 60)` dark):
+  caution-grade actions that change state without destroying data
+  (disable a product, archive, soft-pause). Hue 60 puts it between brick
+  (25, destructive) and saffron (75, brand reward); the role is state,
+  not brand, so warning is allowed on every register while saffron stays
+  reserved to customer.
 
 ### Named Rules
 

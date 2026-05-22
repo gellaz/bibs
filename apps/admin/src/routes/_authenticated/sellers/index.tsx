@@ -37,9 +37,9 @@ type SortByField = "name" | "createdAt";
 
 const STATUS_TABS = [
 	{ value: "all", label: "Tutte", badgeColor: "default" },
-	{ value: "pending_review", label: "In revisione", badgeColor: "amber" },
-	{ value: "active", label: "Approvate", badgeColor: "emerald" },
-	{ value: "rejected", label: "Rifiutate", badgeColor: "red" },
+	{ value: "pending_review", label: "In revisione", badgeColor: "warning" },
+	{ value: "active", label: "Approvate", badgeColor: "success" },
+	{ value: "rejected", label: "Rifiutate", badgeColor: "destructive" },
 ] as const;
 
 export const Route = createFileRoute("/_authenticated/sellers/")({

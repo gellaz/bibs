@@ -31,19 +31,19 @@ export function ProductStatusTabs({ storeId, value, onChange }: Props) {
 			value: "active",
 			label: m.products_tab_active(),
 			count: counts.active,
-			badgeColor: "emerald",
+			badgeColor: "success",
 		},
 		{
 			value: "disabled",
 			label: m.products_tab_disabled(),
 			count: counts.disabled,
-			badgeColor: "amber",
+			badgeColor: "warning",
 		},
 		{
 			value: "trashed",
 			label: m.products_tab_trashed(),
 			count: counts.trashed,
-			badgeColor: "red",
+			badgeColor: "destructive",
 		},
 	];
 

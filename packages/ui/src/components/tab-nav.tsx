@@ -3,9 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "~/lib/utils";
 
+/**
+ * Semantic keys (`success`/`warning`/`destructive`) route through DESIGN.md
+ * tokens and should be the default for status badges. Raw Tailwind keys
+ * (`amber`/`red`/...) remain as escape hatches for one-off needs that don't
+ * belong to a semantic role.
+ */
 const BADGE_COLORS: Record<string, string> = {
 	default:
 		"bg-foreground/8 text-foreground/60 ring-1 ring-inset ring-foreground/10",
+	success:
+		"bg-success/10 text-success ring-1 ring-inset ring-success/30 dark:bg-success/15 dark:ring-success/40",
+	warning:
+		"bg-warning/10 text-warning ring-1 ring-inset ring-warning/30 dark:bg-warning/15 dark:ring-warning/40",
+	destructive:
+		"bg-destructive/10 text-destructive ring-1 ring-inset ring-destructive/30 dark:bg-destructive/15 dark:ring-destructive/40",
 	amber:
 		"bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-300/50 dark:bg-amber-500/15 dark:text-amber-400 dark:ring-amber-500/30",
 	emerald:
