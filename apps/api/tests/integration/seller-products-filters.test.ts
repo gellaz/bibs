@@ -7,6 +7,7 @@ import {
 	it,
 	mock,
 } from "bun:test";
+import { eq } from "drizzle-orm";
 import {
 	getTestDb,
 	setupTestContainer,
@@ -22,6 +23,7 @@ mock.module("@/db", () => ({
 }));
 mock.module("@/lib/s3", () => ({ s3: { delete: mock(async () => {}) } }));
 
+import { product } from "@/db/schemas/product";
 import { addProductsToDiscount } from "@/modules/seller/services/discounts";
 import { listProducts } from "@/modules/seller/services/products";
 import { truncateAll } from "../helpers/cleanup";
@@ -223,5 +225,61 @@ describe("sort by stock", () => {
 				order: "asc",
 			}),
 		).rejects.toMatchObject({ status: 400 });
+	});
+});
+
+describe("default sort", () => {
+	it("senza sort esplicito, ordina per updatedAt decrescente", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+		const p3 = await createTestProduct(db, seller.profile.id, { name: "P3" });
+
+		// Forziamo timestamps espliciti per evitare flakiness su clock resolution.
+		// Atteso: p2 (più recente), poi p3, poi p1.
+		await db
+			.update(product)
+			.set({ updatedAt: new Date("2026-01-01T10:00:00Z") })
+			.where(eq(product.id, p1.id));
+		await db
+			.update(product)
+			.set({ updatedAt: new Date("2026-01-01T10:00:02Z") })
+			.where(eq(product.id, p3.id));
+		await db
+			.update(product)
+			.set({ updatedAt: new Date("2026-01-01T10:00:05Z") })
+			.where(eq(product.id, p2.id));
+
+		const out = await listProducts({ sellerProfileId: seller.profile.id });
+		expect(out.data.map((p) => p.name)).toEqual(["P2", "P3", "P1"]);
+	});
+
+	it("a parità di updatedAt, tiebreak su createdAt decrescente", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+
+		const p1 = await createTestProduct(db, seller.profile.id, { name: "P1" });
+		const p2 = await createTestProduct(db, seller.profile.id, { name: "P2" });
+
+		const sameUpdatedAt = new Date("2026-01-01T10:00:00Z");
+		await db
+			.update(product)
+			.set({
+				updatedAt: sameUpdatedAt,
+				createdAt: new Date("2026-01-01T08:00:00Z"),
+			})
+			.where(eq(product.id, p1.id));
+		await db
+			.update(product)
+			.set({
+				updatedAt: sameUpdatedAt,
+				createdAt: new Date("2026-01-01T09:00:00Z"),
+			})
+			.where(eq(product.id, p2.id));
+
+		const out = await listProducts({ sellerProfileId: seller.profile.id });
+		expect(out.data.map((p) => p.name)).toEqual(["P2", "P1"]);
 	});
 });

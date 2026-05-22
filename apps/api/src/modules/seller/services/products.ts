@@ -230,7 +230,7 @@ export async function listProducts(params: ListProductsParams) {
 					}
 					return [dir(storeProduct.stock), desc(product.createdAt)];
 				default:
-					return [desc(product.createdAt)];
+					return [desc(product.updatedAt), desc(product.createdAt)];
 			}
 		})();
 
