@@ -62,8 +62,23 @@ export const NotFoundError = t.Object({
 
 export const ConflictError = t.Object({
 	success: t.Literal(false),
-	error: t.Literal("CONFLICT"),
+	error: t.Union(
+		[
+			t.Literal("CONFLICT"),
+			t.Literal("EMAIL_ALREADY_REGISTERED"),
+			t.Literal("EMAIL_PENDING_VERIFICATION"),
+		],
+		{ description: "Discriminator dell'errore 409 specifico" },
+	),
 	message: t.String({ description: "Messaggio di errore leggibile" }),
+	// Presente solo quando error === "EMAIL_PENDING_VERIFICATION".
+	resentAt: t.Optional(
+		t.String({
+			format: "date-time",
+			description:
+				"ISO timestamp dell'invio del link di verifica appena rispedito",
+		}),
+	),
 });
 
 export const ValidationError = t.Object({
