@@ -20,6 +20,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
+import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
@@ -46,6 +47,10 @@ export const Route = createFileRoute("/register")({
 function RegisterPage() {
 	const navigate = useNavigate();
 	const [error, setError] = useState("");
+	const [pending, setPending] = useState<{
+		email: string;
+		resentAt: number;
+	} | null>(null);
 
 	const { data: session } = authClient.useSession();
 	if (session?.user) {
@@ -63,6 +68,7 @@ function RegisterPage() {
 
 	const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
 		setError("");
+		setPending(null);
 		try {
 			const { error: regError } = await api().register.customer.post({
 				email: data.email,
@@ -70,7 +76,21 @@ function RegisterPage() {
 			});
 
 			if (regError) {
-				setError(regError.value.message ?? "Errore durante la registrazione");
+				const errVal = regError.value as {
+					error?: string;
+					message?: string;
+					resentAt?: string;
+				};
+
+				if (errVal.error === "EMAIL_PENDING_VERIFICATION" && errVal.resentAt) {
+					setPending({
+						email: data.email,
+						resentAt: Date.parse(errVal.resentAt),
+					});
+					return;
+				}
+
+				setError(errVal.message ?? "Errore durante la registrazione");
 				return;
 			}
 
@@ -141,6 +161,14 @@ function RegisterPage() {
 							{isSubmitting ? "Registrazione in corso..." : "Registrati"}
 						</Button>
 					</form>
+
+					{pending && (
+						<PendingVerificationBannerConnected
+							email={pending.email}
+							resentAt={pending.resentAt}
+							onUseOtherEmail={() => setPending(null)}
+						/>
+					)}
 
 					<p className="mt-4 text-center text-sm text-muted-foreground">
 						Hai già un account?{" "}
