@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { ServiceError } from "@/lib/errors";
+import { PendingVerificationError, ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { errorBody } from "@/lib/responses";
 
@@ -41,7 +41,13 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 				`ServiceError: ${error.message}`,
 			);
 
-			return status(error.status, errorBody(error.code, error.message));
+			// Le sottoclassi (PendingVerificationError, EmailAlreadyRegisteredError)
+			// possono esporre campi extra serializzabili nel body della response.
+			const body = errorBody(error.code, error.message);
+			if (error instanceof PendingVerificationError) {
+				return status(error.status, { ...body, resentAt: error.resentAt });
+			}
+			return status(error.status, body);
 		}
 
 		// Postgres unique constraint violation → 409 Conflict
