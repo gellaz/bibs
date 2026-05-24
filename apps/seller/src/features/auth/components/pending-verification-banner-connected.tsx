@@ -49,9 +49,7 @@ export function PendingVerificationBannerConnected({
 		// La route /forgot-password non esiste ancora (out of scope dello spec).
 		// Il link punta al placeholder per quando la feature arriverà.
 		void navigate({
-			// biome-ignore lint/suspicious/noExplicitAny: route non ancora dichiarata
 			to: "/forgot-password" as any,
-			// biome-ignore lint/suspicious/noExplicitAny: search params di una route non dichiarata
 			search: { email } as any,
 		});
 	};
