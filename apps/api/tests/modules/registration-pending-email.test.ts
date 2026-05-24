@@ -23,8 +23,7 @@ function userRow(
 		lastName: null,
 		birthDate: null,
 		...overrides,
-		// biome-ignore lint/suspicious/noExplicitAny: fixture shape simulates db row
-	} as any;
+	} as unknown as Parameters<typeof decideExistingUser>[0];
 }
 
 describe("decideExistingUser", () => {
