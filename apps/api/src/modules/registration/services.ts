@@ -15,6 +15,32 @@ import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 
+const PENDING_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 giorni
+
+type UserRow = NonNullable<Awaited<ReturnType<typeof db.query.user.findFirst>>>;
+
+type ExistingDecision =
+	| { kind: "none" }
+	| { kind: "verified-conflict"; user: UserRow }
+	| { kind: "pending-resend"; user: UserRow }
+	| { kind: "pending-expired"; user: UserRow };
+
+/**
+ * Decide come gestire un eventuale `user` esistente con la stessa email durante
+ * un signup. Niente side-effect: ritorna la decisione, il chiamante esegue.
+ */
+export function decideExistingUser(
+	row: UserRow | undefined | null,
+	now: number,
+): ExistingDecision {
+	if (!row) return { kind: "none" };
+	if (row.emailVerified) return { kind: "verified-conflict", user: row };
+	const age = now - new Date(row.createdAt).getTime();
+	return age < PENDING_TTL_MS
+		? { kind: "pending-resend", user: row }
+		: { kind: "pending-expired", user: row };
+}
+
 // ── Shared registration helper ──────────────
 
 interface RegisterUserParams<T> {
