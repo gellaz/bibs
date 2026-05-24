@@ -263,29 +263,39 @@ function ProductsListPage() {
 				id: "select",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-16 px-0 text-center",
-					cellClassName: "w-16 px-0 text-center",
+					// La rule `[&:has([role=checkbox])]:pr-0` su TableCell/TableHead
+					// (Radix Checkbox imposta role=checkbox) forzerebbe pr-0 e
+					// l'icona finirebbe addosso al separator. Override esplicito.
+					// px-4 + 16 px checkbox = 48 px min content, in pari con la
+					// colonna actions (px-2 + 32 px button = 48) per simmetria
+					// visiva pinned-left ↔ pinned-right.
+					headerClassName: "w-12 px-4 [&:has([role=checkbox])]:pr-4",
+					cellClassName: "w-12 px-4 [&:has([role=checkbox])]:pr-4",
 					sticky: "left",
 				},
 				header: () => (
-					<Checkbox
-						checked={
-							selection.headerCheckboxState === "checked"
-								? true
-								: selection.headerCheckboxState === "indeterminate"
-									? "indeterminate"
-									: false
-						}
-						onCheckedChange={() => selection.toggleAllOnPage()}
-						aria-label="Seleziona tutti"
-					/>
+					<div className="flex justify-center">
+						<Checkbox
+							checked={
+								selection.headerCheckboxState === "checked"
+									? true
+									: selection.headerCheckboxState === "indeterminate"
+										? "indeterminate"
+										: false
+							}
+							onCheckedChange={() => selection.toggleAllOnPage()}
+							aria-label="Seleziona tutti"
+						/>
+					</div>
 				),
 				cell: ({ row }) => (
-					<Checkbox
-						checked={selection.isSelected(row.original.id)}
-						onCheckedChange={() => selection.toggleOne(row.original.id)}
-						aria-label={`Seleziona ${row.original.name}`}
-					/>
+					<div className="flex justify-center">
+						<Checkbox
+							checked={selection.isSelected(row.original.id)}
+							onCheckedChange={() => selection.toggleOne(row.original.id)}
+							aria-label={`Seleziona ${row.original.name}`}
+						/>
+					</div>
 				),
 			},
 			{
@@ -503,20 +513,30 @@ function ProductsListPage() {
 				id: "actions",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-16 px-0 text-center",
-					cellClassName: "w-16 px-0 text-center",
+					// Stessa larghezza della colonna select (w-12) per simmetria
+					// visiva ai due bordi pinned. px-2 invece di base px-3 perche'
+					// il button icon (size-8 = 32 px) richiede content area >= 32 px:
+					// 48 - (8 + 8) = 32 esatti.
+					headerClassName: "w-12 px-2",
+					cellClassName: "w-12 px-2",
 					sticky: "right",
 				},
-				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				header: ({ table }) => (
+					<div className="flex justify-center">
+						<TableColumnsToggle table={table} align="end" />
+					</div>
+				),
 				cell: ({ row }) => (
-					<ProductRowActions
-						productId={row.original.id}
-						status={row.original.status}
-						activeStoreId={activeStore?.id ?? ""}
-						assignedStoreIds={row.original.storeProducts.map(
-							(sp) => sp.storeId,
-						)}
-					/>
+					<div className="flex justify-center">
+						<ProductRowActions
+							productId={row.original.id}
+							status={row.original.status}
+							activeStoreId={activeStore?.id ?? ""}
+							assignedStoreIds={row.original.storeProducts.map(
+								(sp) => sp.storeId,
+							)}
+						/>
+					</div>
 				),
 			},
 		],

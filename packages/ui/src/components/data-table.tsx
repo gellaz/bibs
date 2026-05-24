@@ -9,7 +9,7 @@ import {
 	type VisibilityState,
 } from "@tanstack/react-table";
 import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 import { Spinner } from "~/components/spinner";
 import {
@@ -27,23 +27,41 @@ import { cn } from "~/lib/utils";
 // l'header sta sopra ai body sticky cells in caso di overlap; le body cells
 // rispecchiano hover/selected del <tr> per mantenere coerenza con la riga.
 //
-// Il separator usa box-shadow (non border) perche' `border-collapse: collapse`
-// fonde i border delle celle adiacenti: il border-r della sticky cell verrebbe
-// "trascinato via" insieme alla cella vicina quando l'utente scrolla. Il
-// box-shadow e' painted come parte della sticky cell e resta ancorato al suo
-// edge in ogni scroll position.
+// Il separator usa INSET box-shadow (non border, non outset). Border-collapse:
+//   collapse fonde i border delle celle adiacenti: il border-r della sticky
+//   cell verrebbe "trascinato via" insieme alla cella vicina quando l'utente
+//   scrolla. Outset box-shadow viene dipinto correttamente ma "out-painted"
+//   dalla cella adiacente in `<table>` border-collapse (anche con z-index 10
+//   sulla sticky, il painting model di table-cells in collapse mode lascia
+//   passare la cella vicina sopra lo shadow esterno). Inset paint dentro la
+//   cella sticky stessa: niente puo' coprirlo, e resta ancorato al suo edge
+//   in ogni scroll position.
 //
-// Due shadow stratificate:
-//  1. Linea hard 2px al color-border per essere VISIBILE anche con il
-//     --warm-edge molto chiaro su bg-card (il singolo px a quel contrasto
-//     sparisce sui display ad alto DPI).
-//  2. Soft fade nero a bassa alpha (4px offset, 6px blur, -4px spread) come
-//     scroll affordance — segnala visivamente "qui sotto sta scorrendo
-//     contenuto". Pattern standard di Notion/Linear/Google Sheets.
+// 2px solid in colori con ~0.4 di delta sul bg-card: ben visibile sempre,
+// anche senza contenuto in scroll sotto. Trade-off: si perde il soft-fade
+// di scroll-affordance che dava lo shadow outset (per averlo servirebbe un
+// pseudo-elemento ::after absolutely positioned; non vale lo zucchero
+// extra per il caso di scroll, gia' segnalato dal contenuto che sparisce
+// sotto la sticky bg-card opaca).
+// SHADOW_RIGHT su LEFT-sticky cells: linea inset 1px (sempre) + soft fade
+// outset via ::after visibile solo quando il wrapper ha data-scrolled-left.
+// ::after eredita lo stacking context della cella sticky (z-10) e quindi
+// non viene coperto dalla cella adiacente, a differenza dell'outset
+// box-shadow nel painting model di <table> border-collapse.
 const SHADOW_RIGHT =
-	"shadow-[2px_0_0_0_var(--color-border),6px_0_6px_-4px_oklch(0_0_0/0.08)]";
+	"shadow-[inset_-1px_0_0_0_var(--color-border)] " +
+	"after:pointer-events-none after:absolute after:inset-y-0 after:left-full " +
+	"after:w-2 after:bg-gradient-to-r after:from-black/10 after:to-transparent " +
+	"after:opacity-0 after:transition-opacity after:duration-150 after:content-[''] " +
+	"dark:after:from-black/35 " +
+	"group-data-[scrolled-left=true]/scroll:after:opacity-100";
 const SHADOW_LEFT =
-	"shadow-[-2px_0_0_0_var(--color-border),-6px_0_6px_-4px_oklch(0_0_0/0.08)]";
+	"shadow-[inset_1px_0_0_0_var(--color-border)] " +
+	"before:pointer-events-none before:absolute before:inset-y-0 before:right-full " +
+	"before:w-2 before:bg-gradient-to-l before:from-black/10 before:to-transparent " +
+	"before:opacity-0 before:transition-opacity before:duration-150 before:content-[''] " +
+	"dark:before:from-black/35 " +
+	"group-data-[scrolled-right=true]/scroll:before:opacity-100";
 
 function stickyHeaderClass(sticky: "left" | "right" | undefined) {
 	if (sticky === "left") return cn("sticky left-0 z-20 bg-card", SHADOW_RIGHT);
@@ -137,6 +155,45 @@ export function DataTable<TData>({
 		manualSorting,
 	});
 
+	// Wrapper ref per pilotare data-scrolled-left/right via JS. Tailwind
+	// non puo' osservare scrollLeft (non e' una proprieta' CSS); il pattern
+	// piu' pulito e' settare data-attrs sull'antenato e leggerli dalle
+	// sticky cells via `group-data-[…]/scroll:` (vedi SHADOW_RIGHT/LEFT).
+	const wrapperRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (isLoading) return;
+		const wrapper = wrapperRef.current;
+		if (!wrapper) return;
+		const scroller = wrapper.querySelector(
+			'[data-slot="table-container"]',
+		) as HTMLElement | null;
+		if (!scroller) return;
+
+		const update = () => {
+			const sl = scroller.scrollLeft;
+			const max = scroller.scrollWidth - scroller.clientWidth;
+			wrapper.dataset.scrolledLeft = sl > 0 ? "true" : "false";
+			// `max - 1` per tollerare arrotondamenti subpixel quando si è in fondo.
+			wrapper.dataset.scrolledRight = sl < max - 1 ? "true" : "false";
+		};
+
+		update();
+		scroller.addEventListener("scroll", update, { passive: true });
+		// ResizeObserver sul <table> intercetta cambi di colonne visibili o
+		// di dati che alterano scrollWidth pur lasciando lo scroller stesso
+		// invariato.
+		const ro = new ResizeObserver(update);
+		ro.observe(scroller);
+		const tableEl = scroller.querySelector("table");
+		if (tableEl) ro.observe(tableEl);
+
+		return () => {
+			scroller.removeEventListener("scroll", update);
+			ro.disconnect();
+		};
+	}, [isLoading]);
+
 	if (isLoading) {
 		return (
 			<div
@@ -155,11 +212,17 @@ export function DataTable<TData>({
 
 	return (
 		<div
+			ref={wrapperRef}
+			data-scrolled-left="false"
+			data-scrolled-right="false"
 			className={cn(
 				// `isolate` crea uno stacking context locale cosi' le sticky cells
 				// (z-10/z-20) restano confinate alla tabella e non possono salire
 				// sopra elementi page-level come la breadcrumb sticky.
-				"bg-card isolate overflow-hidden rounded-lg border shadow-sm",
+				// `group/scroll` permette alle sticky cells di reagire ai
+				// data-scrolled-* settati dallo scroll listener via varianti
+				// `group-data-[…]/scroll:`.
+				"group/scroll bg-card isolate overflow-hidden rounded-lg border shadow-sm",
 				containerClassName,
 			)}
 		>
