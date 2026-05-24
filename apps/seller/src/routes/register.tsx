@@ -8,6 +8,7 @@ import {
 } from "@bibs/ui/components/card";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
 import { RegisterForm } from "@/features/auth/components/register-form";
 import type { RegisterFormData } from "@/features/auth/schemas/register";
 import { api } from "@/lib/api";
@@ -20,6 +21,10 @@ export const Route = createFileRoute("/register")({
 function RegisterPage() {
 	const navigate = useNavigate();
 	const [error, setError] = useState("");
+	const [pending, setPending] = useState<{
+		email: string;
+		resentAt: number;
+	} | null>(null);
 
 	const { data: session } = authClient.useSession();
 
@@ -30,6 +35,7 @@ function RegisterPage() {
 
 	async function handleSubmit(data: RegisterFormData) {
 		setError("");
+		setPending(null);
 
 		try {
 			const { error: regError } = await api().register.seller.post({
@@ -38,7 +44,21 @@ function RegisterPage() {
 			});
 
 			if (regError) {
-				setError(regError.value.message ?? "Errore durante la registrazione");
+				const errVal = regError.value as {
+					error?: string;
+					message?: string;
+					resentAt?: string;
+				};
+
+				if (errVal.error === "EMAIL_PENDING_VERIFICATION" && errVal.resentAt) {
+					setPending({
+						email: data.email,
+						resentAt: Date.parse(errVal.resentAt),
+					});
+					return;
+				}
+
+				setError(errVal.message ?? "Errore durante la registrazione");
 				return;
 			}
 
@@ -61,6 +81,13 @@ function RegisterPage() {
 				</CardHeader>
 				<CardContent>
 					<RegisterForm onSubmit={handleSubmit} apiError={error} />
+					{pending && (
+						<PendingVerificationBannerConnected
+							email={pending.email}
+							resentAt={pending.resentAt}
+							onUseOtherEmail={() => setPending(null)}
+						/>
+					)}
 					<p className="mt-4 text-center text-sm text-muted-foreground">
 						Hai già un account?{" "}
 						<Link to="/login" className="text-primary underline">
