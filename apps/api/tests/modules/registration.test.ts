@@ -82,7 +82,11 @@ mock.module("@/modules/registration/services", () => ({
 
 // ── Test app ──────────────────────────────────────────────────────────────────
 
-import { ServiceError } from "@/lib/errors";
+import {
+	EmailAlreadyRegisteredError,
+	PendingVerificationError,
+	ServiceError,
+} from "@/lib/errors";
 import { registration } from "@/modules/registration";
 import { errorHandler } from "@/plugins/error-handler";
 import { requestId } from "@/plugins/request-id";
@@ -304,6 +308,85 @@ describe("POST /register/sign-in — success", () => {
 		expect(res.status).toBe(401);
 		const body = await json(res);
 		expect(body.error).toBe("UNAUTHORIZED");
+	});
+});
+
+// ── Tests: pending email scenarios (subclassed 409 errors) ───────────────────
+
+describe("POST /register/seller — pending email scenarios", () => {
+	it("returns 409 EMAIL_ALREADY_REGISTERED when service throws EmailAlreadyRegisteredError", async () => {
+		mockRegisterSeller.mockImplementationOnce(async () => {
+			throw new EmailAlreadyRegisteredError();
+		});
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.success).toBe(false);
+		expect(body.error).toBe("EMAIL_ALREADY_REGISTERED");
+		expect(body.message).toBe("Email già registrata");
+	});
+
+	it("returns 409 EMAIL_PENDING_VERIFICATION with resentAt when service throws PendingVerificationError", async () => {
+		const fakeResentAt = "2026-05-25T13:00:00.000Z";
+		mockRegisterSeller.mockImplementationOnce(async () => {
+			throw new PendingVerificationError(fakeResentAt);
+		});
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.success).toBe(false);
+		expect(body.error).toBe("EMAIL_PENDING_VERIFICATION");
+		expect(body.resentAt).toBe(fakeResentAt);
+	});
+
+	it("plain ServiceError(409) still gets default code 'CONFLICT' (back-compat)", async () => {
+		mockRegisterSeller.mockImplementationOnce(async () => {
+			throw new ServiceError(409, "Email già registrata");
+		});
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.error).toBe("CONFLICT");
+		expect(body.resentAt).toBeUndefined();
+	});
+});
+
+describe("POST /register/customer — pending email scenarios", () => {
+	it("returns 409 EMAIL_PENDING_VERIFICATION with resentAt for customer flow", async () => {
+		const fakeResentAt = "2026-05-25T13:30:00.000Z";
+		mockRegisterCustomer.mockImplementationOnce(async () => {
+			throw new PendingVerificationError(fakeResentAt);
+		});
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.error).toBe("EMAIL_PENDING_VERIFICATION");
+		expect(body.resentAt).toBe(fakeResentAt);
+	});
+
+	it("returns 409 EMAIL_ALREADY_REGISTERED for customer flow", async () => {
+		mockRegisterCustomer.mockImplementationOnce(async () => {
+			throw new EmailAlreadyRegisteredError();
+		});
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.error).toBe("EMAIL_ALREADY_REGISTERED");
 	});
 });
 

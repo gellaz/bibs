@@ -127,5 +127,16 @@
 	"promotions_toast_products_added": "{added} added, {alreadyPresent} already in, {rejected} rejected",
 	"promotions_toast_products_removed": "{count} removed",
 	"common_cancel": "Cancel",
-	"common_confirm": "Confirm"
+	"common_confirm": "Confirm",
+	"auth_register_pending_title": "Verify your email",
+	"auth_register_pending_body": "We just resent a link to {email}. Open it to complete the registration.",
+	"auth_register_pending_resend_cta": "Resend the link",
+	"auth_register_pending_resend_cooldown": "Resend in {seconds}s",
+	"auth_register_pending_forgot_password": "Forgot your password?",
+	"auth_register_pending_use_other_email": "Use another email",
+	"auth_register_pending_resent_toast": "Verification email resent",
+	"auth_verify_email_resend_cooldown": "Resend in {seconds}s",
+	"auth_verify_email_resent_toast": "Email resent successfully",
+	"auth_verify_email_resend_error": "Couldn't resend the email. Try again in a few seconds.",
+	"auth_generic_error": "Something went wrong. Please try again."
 }

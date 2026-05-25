@@ -127,5 +127,16 @@
 	"promotions_toast_products_added": "{added} aggiunti, {alreadyPresent} già presenti, {rejected} rifiutati",
 	"promotions_toast_products_removed": "{count} rimossi",
 	"common_cancel": "Annulla",
-	"common_confirm": "Conferma"
+	"common_confirm": "Conferma",
+	"auth_register_pending_title": "Conferma la tua email",
+	"auth_register_pending_body": "Ti abbiamo rispedito un link a {email}. Aprilo per completare la registrazione.",
+	"auth_register_pending_resend_cta": "Re-invia il link",
+	"auth_register_pending_resend_cooldown": "Re-invia tra {seconds}s",
+	"auth_register_pending_forgot_password": "Hai dimenticato la password?",
+	"auth_register_pending_use_other_email": "Usa un'altra email",
+	"auth_register_pending_resent_toast": "Email di verifica rispedita",
+	"auth_verify_email_resend_cooldown": "Re-invia tra {seconds}s",
+	"auth_verify_email_resent_toast": "Email reinviata con successo",
+	"auth_verify_email_resend_error": "Impossibile reinviare l'email. Riprova tra qualche secondo.",
+	"auth_generic_error": "Qualcosa è andato storto. Riprova."
 }

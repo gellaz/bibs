@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { OkMessage, withConflictErrors } from "@/lib/schemas";
+import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas";
 import { AcceptInviteBody } from "@/lib/schemas/forms";
 import {
 	acceptInvite,
@@ -41,10 +41,11 @@ export const registration = new Elysia({
 					description: "Password (minimo 8, massimo 128 caratteri)",
 				}),
 			}),
+			response: withConflictErrors({ 200: okRes(t.Any()) }),
 			detail: {
 				summary: "Registrazione cliente",
 				description:
-					"Crea un nuovo account cliente con profilo e saldo punti inizializzato a zero.",
+					"Crea un nuovo account cliente con profilo e saldo punti inizializzato a zero. Errori 409: `EMAIL_ALREADY_REGISTERED` se l'email è già verificata; `EMAIL_PENDING_VERIFICATION` se l'email esiste ma è in attesa di verifica (entro 7gg) — il backend re-invia il link automaticamente e il body contiene `resentAt`.",
 			},
 		},
 	)
@@ -74,10 +75,11 @@ export const registration = new Elysia({
 					description: "Password (minimo 8, massimo 128 caratteri)",
 				}),
 			}),
+			response: withConflictErrors({ 200: okRes(t.Any()) }),
 			detail: {
 				summary: "Registrazione venditore",
 				description:
-					"Crea un nuovo account venditore. Dopo la verifica email, il venditore dovrà completare l'onboarding (dati personali, documento, azienda, negozio, pagamento).",
+					"Crea un nuovo account venditore. Dopo la verifica email, il venditore dovrà completare l'onboarding (dati personali, documento, azienda, negozio, pagamento). Errori 409: `EMAIL_ALREADY_REGISTERED` se l'email è già verificata; `EMAIL_PENDING_VERIFICATION` se l'email esiste ma è in attesa di verifica (entro 7gg) — il backend re-invia il link automaticamente e il body contiene `resentAt`.",
 			},
 		},
 	)

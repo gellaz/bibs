@@ -6,11 +6,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
+import { toast } from "@bibs/ui/components/sonner";
+import { useCooldown } from "@bibs/ui/hooks/use-cooldown";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 const searchSchema = z.object({
 	email: z.string().optional(),
@@ -23,21 +26,28 @@ export const Route = createFileRoute("/verify-email")({
 
 function VerifyEmailPage() {
 	const { email } = Route.useSearch();
+	const [lastSentAt, setLastSentAt] = useState<number>(() => Date.now());
+	const { secondsRemaining, ready } = useCooldown(lastSentAt, 60_000);
 	const [resending, setResending] = useState(false);
-	const [resent, setResent] = useState(false);
 
 	async function handleResend() {
-		if (!email || resending) return;
+		if (!email || !ready || resending) return;
 		setResending(true);
 		try {
-			await authClient.sendVerificationEmail({ email });
-			setResent(true);
+			await authClient.sendVerificationEmail({
+				email,
+				callbackURL: `${window.location.origin}/login`,
+			});
+			setLastSentAt(Date.now());
+			toast.success(m.auth_verify_email_resent_toast());
 		} catch {
-			// silently fail
+			toast.error(m.auth_verify_email_resend_error());
 		} finally {
 			setResending(false);
 		}
 	}
+
+	const cooldownActive = !ready && secondsRemaining > 0;
 
 	return (
 		<div className="flex min-h-screen items-center justify-center px-4">
@@ -68,20 +78,16 @@ function VerifyEmailPage() {
 							variant="outline"
 							className="w-full"
 							onClick={handleResend}
-							disabled={resending || resent}
+							disabled={cooldownActive || resending}
 						>
-							{resent
-								? "Email inviata!"
-								: resending
-									? "Invio in corso..."
+							{resending
+								? "Invio in corso..."
+								: cooldownActive
+									? m.auth_verify_email_resend_cooldown({
+											seconds: String(secondsRemaining),
+										})
 									: "Reinvia email di verifica"}
 						</Button>
-					)}
-
-					{resent && (
-						<p className="text-center text-sm text-green-600 dark:text-green-400">
-							Email di verifica reinviata con successo.
-						</p>
 					)}
 
 					<div className="border-t pt-4">

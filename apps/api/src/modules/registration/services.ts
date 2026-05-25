@@ -13,7 +13,43 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
-import { ServiceError } from "@/lib/errors";
+import {
+	EmailAlreadyRegisteredError,
+	PendingVerificationError,
+	ServiceError,
+} from "@/lib/errors";
+
+const PENDING_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 giorni
+
+type UserRow = NonNullable<Awaited<ReturnType<typeof db.query.user.findFirst>>>;
+
+type ExistingDecision =
+	| { kind: "none" }
+	| { kind: "verified-conflict"; user: UserRow }
+	| { kind: "pending-resend"; user: UserRow }
+	| { kind: "pending-expired"; user: UserRow };
+
+/**
+ * Decide come gestire un eventuale `user` esistente con la stessa email durante
+ * un signup. Niente side-effect: ritorna la decisione, il chiamante esegue.
+ */
+export function decideExistingUser(
+	row: UserRow | undefined | null,
+	now: number,
+): ExistingDecision {
+	if (!row) return { kind: "none" };
+	if (row.emailVerified) return { kind: "verified-conflict", user: row };
+	const age = now - new Date(row.createdAt).getTime();
+	return age < PENDING_TTL_MS
+		? { kind: "pending-resend", user: row }
+		: { kind: "pending-expired", user: row };
+}
+
+function callbackURLForRole(role: "seller" | "customer"): string {
+	return role === "seller"
+		? `${env.SELLER_APP_URL}/login`
+		: `${env.CUSTOMER_APP_URL}/login`;
+}
 
 // ── Shared registration helper ──────────────
 
@@ -35,8 +71,41 @@ async function registerUser<T>(params: RegisterUserParams<T>) {
 	const existing = await db.query.user.findFirst({
 		where: eq(user.email, email),
 	});
-	if (existing) {
-		throw new ServiceError(409, "Email already registered");
+
+	const decision = decideExistingUser(existing, Date.now());
+
+	switch (decision.kind) {
+		case "verified-conflict":
+			throw new EmailAlreadyRegisteredError();
+
+		case "pending-resend": {
+			// Best-effort: invia un nuovo link. Anche se fallisce, ritorna 409
+			// PENDING al client — il banner mostrerà comunque il bottone "Re-invia"
+			// per un secondo tentativo manuale.
+			const resentAt = new Date().toISOString();
+			try {
+				await auth.api.sendVerificationEmail({
+					body: { email, callbackURL },
+				});
+			} catch (err) {
+				console.error("sendVerificationEmail failed on pending re-signup", {
+					err,
+					email,
+				});
+			}
+			throw new PendingVerificationError(resentAt);
+		}
+
+		case "pending-expired": {
+			// Vecchio account abbandonato → DELETE + signup nuovo.
+			// session/account/sellerProfile/customerProfile cadono via FK cascade
+			// (verification table non ha FK su user — record orfani sono time-expired).
+			await db.delete(user).where(eq(user.id, decision.user.id));
+			break;
+		}
+
+		case "none":
+			break;
 	}
 
 	const { user: newUser, token } = await auth.api.signUpEmail({
@@ -71,7 +140,7 @@ export async function registerCustomer(params: RegisterParams) {
 	return registerUser({
 		...params,
 		role: "customer",
-		callbackURL: `${env.CUSTOMER_APP_URL}/login`,
+		callbackURL: callbackURLForRole("customer"),
 		async createProfile(tx, userId) {
 			const [profile] = await tx
 				.insert(customerProfile)
@@ -86,7 +155,7 @@ export async function registerSeller(params: RegisterParams) {
 	return registerUser({
 		...params,
 		role: "seller",
-		callbackURL: `${env.SELLER_APP_URL}/login`,
+		callbackURL: callbackURLForRole("seller"),
 		async createProfile(tx, userId) {
 			const [profile] = await tx
 				.insert(sellerProfile)
