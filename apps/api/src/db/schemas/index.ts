@@ -10,6 +10,7 @@ export * from "./location";
 export * from "./order";
 export * from "./organization";
 export * from "./payment-method";
+export * from "./pending-store-creation";
 export * from "./points";
 export * from "./pricing-config";
 export * from "./product";
