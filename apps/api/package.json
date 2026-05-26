@@ -28,7 +28,8 @@
 		"logixlysia": "^6.5.0",
 		"pg": "catalog:",
 		"pino": "^10.3.1",
-		"sharp": "catalog:"
+		"sharp": "catalog:",
+		"stripe": "catalog:"
 	},
 	"devDependencies": {
 		"@types/pg": "catalog:",
