@@ -7,6 +7,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@bibs/ui/components/dropdown-menu";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -17,9 +23,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { MoreVerticalIcon } from "lucide-react";
 import { SectionHeader } from "@/components/section-header";
+import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/billing")({
@@ -62,6 +70,8 @@ function formatDate(d: Date | string, short = false): string {
 }
 
 function BillingPage() {
+	const queryClient = useQueryClient();
+
 	const { data: summary, isLoading: summaryLoading } = useQuery({
 		queryKey: ["seller", "billing", "summary"],
 		queryFn: async () => {
@@ -88,6 +98,19 @@ function BillingPage() {
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;
+		},
+		onError: (e: Error) => toast.error(e.message),
+	});
+
+	const reactivateMutation = useMutation({
+		mutationFn: async (storeId: string) => {
+			const r = await api().seller.stores({ storeId }).reactivate.post();
+			if (r.error) throw new Error((r.error.value as any)?.message);
+			return r.data?.data;
+		},
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["seller", "billing"] });
+			toast.success("Cancellazione annullata");
 		},
 		onError: (e: Error) => toast.error(e.message),
 	});
@@ -169,6 +192,7 @@ function BillingPage() {
 									<TableHead>Stato</TableHead>
 									<TableHead>Quota</TableHead>
 									<TableHead>Prossimo rinnovo</TableHead>
+									<TableHead className="w-10" />
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -191,6 +215,58 @@ function BillingPage() {
 											</TableCell>
 											<TableCell>{formatEuro(s.feeAmountCents)}/mese</TableCell>
 											<TableCell>{periodLabel}</TableCell>
+											<TableCell>
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															aria-label="Azioni"
+														>
+															<MoreVerticalIcon className="h-4 w-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														<DropdownMenuItem
+															onSelect={() => portalMutation.mutate()}
+														>
+															Gestisci pagamento
+														</DropdownMenuItem>
+														{(s.status === "active" ||
+															s.status === "past_due" ||
+															s.status === "suspended") && (
+															<CancelStoreDialog
+																storeId={s.storeId}
+																storeName={s.storeName}
+																status={
+																	s.status as
+																		| "active"
+																		| "past_due"
+																		| "suspended"
+																}
+																currentPeriodEnd={s.currentPeriodEnd}
+																trigger={
+																	<DropdownMenuItem
+																		variant="destructive"
+																		onSelect={(e) => e.preventDefault()}
+																	>
+																		Cancella
+																	</DropdownMenuItem>
+																}
+															/>
+														)}
+														{s.status === "canceling" && (
+															<DropdownMenuItem
+																onSelect={() =>
+																	reactivateMutation.mutate(s.storeId)
+																}
+															>
+																Annulla cancellazione
+															</DropdownMenuItem>
+														)}
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</TableCell>
 										</TableRow>
 									);
 								})}

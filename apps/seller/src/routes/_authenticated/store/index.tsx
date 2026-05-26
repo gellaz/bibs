@@ -1,9 +1,11 @@
+import { Button } from "@bibs/ui/components/button";
 import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
+import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import {
 	type ExistingImage,
 	ProductImageDropzone,
@@ -23,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/store/")({
 const MAX_STORE_IMAGES = 8;
 
 function StoreSettingsPage() {
-	const { activeStore } = useActiveStore();
+	const { activeStore, activeSubscription } = useActiveStore();
 	const isOwner = useIsOwner();
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
@@ -215,6 +217,53 @@ function StoreSettingsPage() {
 				onNameChange={handleNameChange}
 				readOnly={!isOwner}
 			/>
+
+			{isOwner &&
+				activeStore &&
+				activeSubscription &&
+				activeSubscription.status !== "canceled" &&
+				activeSubscription.status !== "canceling" && (
+					<>
+						<Separator />
+						<section className="grid gap-6 md:grid-cols-[18rem_1fr] md:gap-12">
+							<div className="space-y-1.5">
+								<h2 className="font-display text-base font-semibold tracking-tight text-destructive">
+									Zona di pericolo
+								</h2>
+								<p className="text-sm leading-relaxed text-muted-foreground">
+									Cancellare il negozio interrompe la subscription mensile e
+									archivia i dati al termine del ciclo già pagato.
+								</p>
+							</div>
+							<div className="rounded-lg border border-destructive/30 p-4">
+								<h3 className="text-sm font-semibold text-destructive">
+									Cancella questo negozio
+								</h3>
+								<p className="mt-1 text-sm text-muted-foreground">
+									{activeSubscription.status === "suspended"
+										? "Il negozio è sospeso per mancato pagamento. La cancellazione è immediata."
+										: "Il negozio rimarrà attivo fino alla fine del ciclo già pagato."}
+								</p>
+								<CancelStoreDialog
+									storeId={activeStore.id}
+									storeName={activeStore.name}
+									status={
+										activeSubscription.status as
+											| "active"
+											| "past_due"
+											| "suspended"
+									}
+									currentPeriodEnd={activeSubscription.currentPeriodEnd}
+									trigger={
+										<Button variant="destructive" className="mt-3">
+											Cancella questo negozio
+										</Button>
+									}
+								/>
+							</div>
+						</section>
+					</>
+				)}
 		</div>
 	);
 }
