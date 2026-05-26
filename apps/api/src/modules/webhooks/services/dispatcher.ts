@@ -7,6 +7,8 @@ import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
 import { handleCheckoutCompleted } from "./handlers/checkout-completed";
+import { handleInvoiceFailed } from "./handlers/invoice-failed";
+import { handleInvoicePaid } from "./handlers/invoice-paid";
 import { handleSubscriptionDeleted } from "./handlers/subscription-deleted";
 import { handleSubscriptionUpdated } from "./handlers/subscription-updated";
 
@@ -73,6 +75,10 @@ async function dispatch(event: Stripe.Event): Promise<void> {
 			return handleSubscriptionUpdated(event);
 		case "customer.subscription.deleted":
 			return handleSubscriptionDeleted(event);
+		case "invoice.payment_succeeded":
+			return handleInvoicePaid(event);
+		case "invoice.payment_failed":
+			return handleInvoiceFailed(event);
 		default:
 			logger.info(
 				{ eventId: event.id, type: event.type },
