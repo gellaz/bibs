@@ -5,9 +5,11 @@ import {
 	storePhoneNumber as storePhoneNumberTable,
 	store as storeTable,
 } from "@/db/schemas/store";
+import { storeSubscription } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
+import { stripe } from "@/lib/stripe";
 
 type OpeningHours = Static<typeof OpeningHoursSchema>;
 
@@ -194,4 +196,85 @@ export async function deleteStore(params: DeleteStoreParams) {
 
 	if (!deleted) throw new ServiceError(404, "Store not found");
 	return deleted;
+}
+
+// ── Subscription cancel / reactivate ─────────────────────────────────────────
+
+interface SubParams {
+	sellerProfileId: string;
+	storeId: string;
+}
+
+interface CancelResult {
+	status: "canceling" | "canceled";
+	effectiveAt: Date;
+}
+
+interface ReactivateResult {
+	status: "active";
+}
+
+async function loadOwnedSubscription(params: SubParams) {
+	const sub = await db.query.storeSubscription.findFirst({
+		where: eq(storeSubscription.storeId, params.storeId),
+		with: { store: { columns: { sellerProfileId: true } } },
+	});
+	if (!sub) {
+		throw new ServiceError(404, "Subscription non trovata");
+	}
+	if (sub.store.sellerProfileId !== params.sellerProfileId) {
+		throw new ServiceError(403, "Non sei owner di questo negozio");
+	}
+	return sub;
+}
+
+export async function cancelStoreSubscription(
+	params: SubParams,
+): Promise<CancelResult> {
+	const sub = await loadOwnedSubscription(params);
+
+	switch (sub.status) {
+		case "active":
+		case "past_due": {
+			await db
+				.update(storeSubscription)
+				.set({ cancelReason: "seller_canceled" })
+				.where(eq(storeSubscription.id, sub.id));
+			await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+				cancel_at_period_end: true,
+			});
+			return { status: "canceling", effectiveAt: sub.currentPeriodEnd };
+		}
+		case "suspended": {
+			await db
+				.update(storeSubscription)
+				.set({ cancelReason: "seller_canceled" })
+				.where(eq(storeSubscription.id, sub.id));
+			await stripe.subscriptions.cancel(sub.stripeSubscriptionId);
+			return { status: "canceled", effectiveAt: new Date() };
+		}
+		case "canceling": {
+			return { status: "canceling", effectiveAt: sub.currentPeriodEnd };
+		}
+		case "canceled": {
+			throw new ServiceError(404, "Negozio già cancellato");
+		}
+		default: {
+			const _exhaust: never = sub.status;
+			throw new ServiceError(500, `Unhandled subscription status: ${_exhaust}`);
+		}
+	}
+}
+
+export async function reactivateStoreSubscription(
+	params: SubParams,
+): Promise<ReactivateResult> {
+	const sub = await loadOwnedSubscription(params);
+	if (sub.status !== "canceling") {
+		throw new ServiceError(409, "Negozio non in cancellazione");
+	}
+	await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+		cancel_at_period_end: false,
+	});
+	return { status: "active" };
 }

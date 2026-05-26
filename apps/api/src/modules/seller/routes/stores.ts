@@ -1,10 +1,9 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
-import { ok, okMessage, okPage } from "@/lib/responses";
+import { ok, okPage } from "@/lib/responses";
 import {
 	AddressFieldsOptional,
-	OkMessage,
 	okPageRes,
 	okRes,
 	StoreWithPhonesSchema,
@@ -13,9 +12,10 @@ import {
 import { CreateStoreBody } from "@/lib/schemas/forms";
 import { requireOwner, withSeller } from "../context";
 import {
+	cancelStoreSubscription,
 	createStore,
-	deleteStore,
 	listStores,
+	reactivateStoreSubscription,
 	updateStore,
 } from "../services/stores";
 
@@ -178,18 +178,54 @@ export const storesRoutes = new Elysia()
 			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
 			requireOwner(isOwner);
 
-			await deleteStore({ storeId: params.storeId, sellerProfileId: sp.id });
-			return okMessage("Store deleted");
+			const data = await cancelStoreSubscription({
+				sellerProfileId: sp.id,
+				storeId: params.storeId,
+			});
+			return ok(data);
 		},
 		{
 			params: t.Object({
 				storeId: t.String({ description: "ID del negozio" }),
 			}),
-			response: withErrors({ 200: OkMessage }),
+			response: withErrors({
+				200: okRes(
+					t.Object({
+						status: t.Union([t.Literal("canceling"), t.Literal("canceled")]),
+						effectiveAt: t.Date(),
+					}),
+				),
+			}),
 			detail: {
-				summary: "Elimina negozio",
+				summary: "Cancella subscription negozio",
 				description:
-					"Elimina un negozio. Solo il proprietario può eliminare negozi.",
+					"Cancel at period end per active/past_due (idempotente su canceling). Cancel immediato per suspended.",
+				tags: ["Seller - Stores"],
+			},
+		},
+	)
+	.post(
+		"/stores/:storeId/reactivate",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+			requireOwner(isOwner);
+
+			const data = await reactivateStoreSubscription({
+				sellerProfileId: sp.id,
+				storeId: params.storeId,
+			});
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				storeId: t.String({ description: "ID del negozio" }),
+			}),
+			response: withErrors({
+				200: okRes(t.Object({ status: t.Literal("active") })),
+			}),
+			detail: {
+				summary: "Annulla la cancellazione in corso",
+				description: "Solo per status='canceling' prima del period end.",
 				tags: ["Seller - Stores"],
 			},
 		},
