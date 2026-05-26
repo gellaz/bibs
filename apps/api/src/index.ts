@@ -16,6 +16,7 @@ import { productMacroCategoriesModule } from "@/modules/product-macro-categories
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
 import { storeCategoriesModule } from "@/modules/store-categories";
+import { stripeWebhookRoutes } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
 import { errorHandler } from "@/plugins/error-handler";
@@ -147,6 +148,7 @@ const app = new Elysia()
 			},
 		}),
 	)
+	.use(stripeWebhookRoutes)
 	.use(betterAuth)
 	.use(registration)
 	.use(adminModule)
