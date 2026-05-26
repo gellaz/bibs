@@ -14,19 +14,20 @@ import {
 import { useEffect } from "react";
 import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { AppSidebar } from "@/components/app-sidebar";
+import type { OnboardingStatus } from "@/db/schemas/seller";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
 import { useStores } from "@/hooks/use-stores";
 import { authClient } from "@/lib/auth-client";
 
 /** Map onboarding status → route the user should be on */
-const ONBOARDING_ROUTES: Record<string, string> = {
+const ONBOARDING_ROUTES: Partial<Record<OnboardingStatus, string>> = {
 	pending_email: "/onboarding/pending",
 	pending_personal: "/onboarding/personal-info",
 	pending_document: "/onboarding/document",
 	pending_company: "/onboarding/company",
 	pending_review: "/onboarding/pending",
-	rejected: "/onboarding/pending",
+	rejected: "/onboarding/pending", // no /rejected route yet — show pending page
 };
 
 export const Route = createFileRoute("/_authenticated")({

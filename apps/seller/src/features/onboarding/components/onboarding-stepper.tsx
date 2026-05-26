@@ -4,6 +4,7 @@ import {
 	StepperItem,
 	StepperTitle,
 } from "@bibs/ui/components/stepper";
+import type { OnboardingStatus } from "@/db/schemas/seller";
 
 const STEPS = [
 	{ key: "pending_personal", label: "Anagrafica" },
@@ -11,15 +12,6 @@ const STEPS = [
 	{ key: "pending_company", label: "Azienda" },
 	{ key: "pending_review", label: "In revisione" },
 ] as const;
-
-type OnboardingStatus =
-	| "pending_email"
-	| "pending_personal"
-	| "pending_document"
-	| "pending_company"
-	| "pending_review"
-	| "active"
-	| "rejected";
 
 function getStepIndex(status: OnboardingStatus): number {
 	const idx = STEPS.findIndex((s) => s.key === status);
