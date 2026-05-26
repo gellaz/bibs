@@ -23,3 +23,4 @@ export * from "./store";
 export * from "./store-category";
 export * from "./store-image";
 export * from "./store-subscription";
+export * from "./stripe-event";
