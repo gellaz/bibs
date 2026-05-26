@@ -12,7 +12,13 @@ import {
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { HomeIcon, PackageIcon, SettingsIcon, TagIcon } from "lucide-react";
+import {
+	CreditCardIcon,
+	HomeIcon,
+	PackageIcon,
+	SettingsIcon,
+	TagIcon,
+} from "lucide-react";
 import { NavUser } from "@/components/nav-user";
 import { StoreSwitcher } from "@/components/store-switcher";
 
@@ -40,6 +46,12 @@ const navItems = [
 		to: "/store" as const,
 		icon: SettingsIcon,
 		match: (p: string) => p.startsWith("/store"),
+	},
+	{
+		title: "Billing",
+		to: "/billing" as const,
+		icon: CreditCardIcon,
+		match: (p: string) => p.startsWith("/billing"),
 	},
 ];
 

@@ -6,6 +6,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
 import { getAccessibleStoreIdsFor, getSellerStoreIds } from "./context";
+import { billingRoutes } from "./routes/billing";
 import { brandsRoutes } from "./routes/brands";
 import { checkoutRoutes } from "./routes/checkout";
 import { discountsRoutes } from "./routes/discounts";
@@ -116,6 +117,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 					throw new ServiceError(403, "Not a seller or employee");
 				})
 				// Mount all sub-route plugins
+				.use(billingRoutes)
 				.use(storesRoutes)
 				.use(checkoutRoutes)
 				.use(productsRoutes)
