@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
+import { handleCheckoutCompleted } from "./handlers/checkout-completed";
 
 interface HandleWebhookParams {
 	payload: string;
@@ -63,9 +64,13 @@ export async function handleStripeWebhook(
 }
 
 async function dispatch(event: Stripe.Event): Promise<void> {
-	// Handlers added in tasks 14, 15, 16. Placeholder for now.
-	logger.info(
-		{ eventId: event.id, type: event.type },
-		"Stripe event dispatched (no-op placeholder)",
-	);
+	switch (event.type) {
+		case "checkout.session.completed":
+			return handleCheckoutCompleted(event);
+		default:
+			logger.info(
+				{ eventId: event.id, type: event.type },
+				"Stripe event received but not handled",
+			);
+	}
 }
