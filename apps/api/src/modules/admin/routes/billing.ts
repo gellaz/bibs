@@ -5,9 +5,39 @@ import { withAdmin } from "../context";
 import {
 	getBillingOverview,
 	getCurrentPricing,
+	listAllSubscriptions,
 	listPricingHistory,
 	updatePricing,
 } from "../services/billing";
+
+const StatusUnion = t.Union([
+	t.Literal("active"),
+	t.Literal("past_due"),
+	t.Literal("canceling"),
+	t.Literal("suspended"),
+	t.Literal("canceled"),
+]);
+
+const SubRowSchema = t.Object({
+	id: t.String(),
+	storeId: t.String(),
+	storeName: t.String(),
+	sellerEmail: t.String(),
+	status: StatusUnion,
+	feeAmountCents: t.Integer(),
+	currentPeriodEnd: t.Date(),
+	createdAt: t.Date(),
+	cancelReason: t.Nullable(t.String()),
+});
+
+const SubsPageSchema = t.Object({
+	data: t.Array(SubRowSchema),
+	pagination: t.Object({
+		page: t.Integer(),
+		limit: t.Integer(),
+		total: t.Integer(),
+	}),
+});
 
 const OverviewSchema = t.Object({
 	mrrCents: t.Integer(),
@@ -109,6 +139,35 @@ export const adminBillingRoutes = new Elysia({ prefix: "/billing" })
 				summary: "Aggiorna pricing",
 				description:
 					"Crea un nuovo Stripe Price e flip is_active sulla nuova riga pricing_config.",
+				tags: ["Admin - Billing"],
+			},
+		},
+	)
+	.get(
+		"/subscriptions",
+		async ({ query }) => {
+			const data = await listAllSubscriptions({
+				page: query.page ?? 1,
+				limit: query.limit ?? 25,
+				status: query.status,
+				sellerEmail: query.sellerEmail,
+				storeName: query.storeName,
+			});
+			return ok(data);
+		},
+		{
+			query: t.Object({
+				page: t.Optional(t.Integer({ minimum: 1 })),
+				limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
+				status: t.Optional(StatusUnion),
+				sellerEmail: t.Optional(t.String()),
+				storeName: t.Optional(t.String()),
+			}),
+			response: withErrors({ 200: okRes(SubsPageSchema) }),
+			detail: {
+				summary: "Lista subscription (admin)",
+				description:
+					"Tutti gli store_subscriptions con join su store + seller. Filtri opzionali per stato, email, nome.",
 				tags: ["Admin - Billing"],
 			},
 		},

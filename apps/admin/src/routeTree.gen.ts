@@ -23,6 +23,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSellersIndexRouteImport } from './routes/_authenticated/sellers/index'
 import { Route as AuthenticatedBillingIndexRouteImport } from './routes/_authenticated/billing/index'
 import { Route as AuthenticatedSellersSellerIdRouteImport } from './routes/_authenticated/sellers/$sellerId'
+import { Route as AuthenticatedBillingSubscriptionsRouteImport } from './routes/_authenticated/billing/subscriptions'
 import { Route as AuthenticatedBillingPricingRouteImport } from './routes/_authenticated/billing/pricing'
 
 const LoginRoute = LoginRouteImport.update({
@@ -99,6 +100,12 @@ const AuthenticatedSellersSellerIdRoute =
     path: '/$sellerId',
     getParentRoute: () => AuthenticatedSellersRoute,
   } as any)
+const AuthenticatedBillingSubscriptionsRoute =
+  AuthenticatedBillingSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedBillingRoute,
+  } as any)
 const AuthenticatedBillingPricingRoute =
   AuthenticatedBillingPricingRouteImport.update({
     id: '/pricing',
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
   '/billing/pricing': typeof AuthenticatedBillingPricingRoute
+  '/billing/subscriptions': typeof AuthenticatedBillingSubscriptionsRoute
   '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/billing/': typeof AuthenticatedBillingIndexRoute
   '/sellers/': typeof AuthenticatedSellersIndexRoute
@@ -132,6 +140,7 @@ export interface FileRoutesByTo {
   '/users': typeof AuthenticatedUsersRoute
   '/': typeof AuthenticatedIndexRoute
   '/billing/pricing': typeof AuthenticatedBillingPricingRoute
+  '/billing/subscriptions': typeof AuthenticatedBillingSubscriptionsRoute
   '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/billing': typeof AuthenticatedBillingIndexRoute
   '/sellers': typeof AuthenticatedSellersIndexRoute
@@ -150,6 +159,7 @@ export interface FileRoutesById {
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/billing/pricing': typeof AuthenticatedBillingPricingRoute
+  '/_authenticated/billing/subscriptions': typeof AuthenticatedBillingSubscriptionsRoute
   '/_authenticated/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/_authenticated/billing/': typeof AuthenticatedBillingIndexRoute
   '/_authenticated/sellers/': typeof AuthenticatedSellersIndexRoute
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/stores'
     | '/users'
     | '/billing/pricing'
+    | '/billing/subscriptions'
     | '/sellers/$sellerId'
     | '/billing/'
     | '/sellers/'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/'
     | '/billing/pricing'
+    | '/billing/subscriptions'
     | '/sellers/$sellerId'
     | '/billing'
     | '/sellers'
@@ -199,6 +211,7 @@ export interface FileRouteTypes {
     | '/_authenticated/users'
     | '/_authenticated/'
     | '/_authenticated/billing/pricing'
+    | '/_authenticated/billing/subscriptions'
     | '/_authenticated/sellers/$sellerId'
     | '/_authenticated/billing/'
     | '/_authenticated/sellers/'
@@ -309,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSellersSellerIdRouteImport
       parentRoute: typeof AuthenticatedSellersRoute
     }
+    '/_authenticated/billing/subscriptions': {
+      id: '/_authenticated/billing/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/billing/subscriptions'
+      preLoaderRoute: typeof AuthenticatedBillingSubscriptionsRouteImport
+      parentRoute: typeof AuthenticatedBillingRoute
+    }
     '/_authenticated/billing/pricing': {
       id: '/_authenticated/billing/pricing'
       path: '/pricing'
@@ -321,11 +341,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedBillingRouteChildren {
   AuthenticatedBillingPricingRoute: typeof AuthenticatedBillingPricingRoute
+  AuthenticatedBillingSubscriptionsRoute: typeof AuthenticatedBillingSubscriptionsRoute
   AuthenticatedBillingIndexRoute: typeof AuthenticatedBillingIndexRoute
 }
 
 const AuthenticatedBillingRouteChildren: AuthenticatedBillingRouteChildren = {
   AuthenticatedBillingPricingRoute: AuthenticatedBillingPricingRoute,
+  AuthenticatedBillingSubscriptionsRoute:
+    AuthenticatedBillingSubscriptionsRoute,
   AuthenticatedBillingIndexRoute: AuthenticatedBillingIndexRoute,
 }
 
