@@ -23,6 +23,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSellersIndexRouteImport } from './routes/_authenticated/sellers/index'
 import { Route as AuthenticatedBillingIndexRouteImport } from './routes/_authenticated/billing/index'
 import { Route as AuthenticatedSellersSellerIdRouteImport } from './routes/_authenticated/sellers/$sellerId'
+import { Route as AuthenticatedBillingPricingRouteImport } from './routes/_authenticated/billing/pricing'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -98,6 +99,12 @@ const AuthenticatedSellersSellerIdRoute =
     path: '/$sellerId',
     getParentRoute: () => AuthenticatedSellersRoute,
   } as any)
+const AuthenticatedBillingPricingRoute =
+  AuthenticatedBillingPricingRouteImport.update({
+    id: '/pricing',
+    path: '/pricing',
+    getParentRoute: () => AuthenticatedBillingRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/sellers': typeof AuthenticatedSellersRouteWithChildren
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
+  '/billing/pricing': typeof AuthenticatedBillingPricingRoute
   '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/billing/': typeof AuthenticatedBillingIndexRoute
   '/sellers/': typeof AuthenticatedSellersIndexRoute
@@ -123,6 +131,7 @@ export interface FileRoutesByTo {
   '/stores': typeof AuthenticatedStoresRoute
   '/users': typeof AuthenticatedUsersRoute
   '/': typeof AuthenticatedIndexRoute
+  '/billing/pricing': typeof AuthenticatedBillingPricingRoute
   '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/billing': typeof AuthenticatedBillingIndexRoute
   '/sellers': typeof AuthenticatedSellersIndexRoute
@@ -140,6 +149,7 @@ export interface FileRoutesById {
   '/_authenticated/stores': typeof AuthenticatedStoresRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/billing/pricing': typeof AuthenticatedBillingPricingRoute
   '/_authenticated/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/_authenticated/billing/': typeof AuthenticatedBillingIndexRoute
   '/_authenticated/sellers/': typeof AuthenticatedSellersIndexRoute
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/sellers'
     | '/stores'
     | '/users'
+    | '/billing/pricing'
     | '/sellers/$sellerId'
     | '/billing/'
     | '/sellers/'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/stores'
     | '/users'
     | '/'
+    | '/billing/pricing'
     | '/sellers/$sellerId'
     | '/billing'
     | '/sellers'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stores'
     | '/_authenticated/users'
     | '/_authenticated/'
+    | '/_authenticated/billing/pricing'
     | '/_authenticated/sellers/$sellerId'
     | '/_authenticated/billing/'
     | '/_authenticated/sellers/'
@@ -296,14 +309,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSellersSellerIdRouteImport
       parentRoute: typeof AuthenticatedSellersRoute
     }
+    '/_authenticated/billing/pricing': {
+      id: '/_authenticated/billing/pricing'
+      path: '/pricing'
+      fullPath: '/billing/pricing'
+      preLoaderRoute: typeof AuthenticatedBillingPricingRouteImport
+      parentRoute: typeof AuthenticatedBillingRoute
+    }
   }
 }
 
 interface AuthenticatedBillingRouteChildren {
+  AuthenticatedBillingPricingRoute: typeof AuthenticatedBillingPricingRoute
   AuthenticatedBillingIndexRoute: typeof AuthenticatedBillingIndexRoute
 }
 
 const AuthenticatedBillingRouteChildren: AuthenticatedBillingRouteChildren = {
+  AuthenticatedBillingPricingRoute: AuthenticatedBillingPricingRoute,
   AuthenticatedBillingIndexRoute: AuthenticatedBillingIndexRoute,
 }
 

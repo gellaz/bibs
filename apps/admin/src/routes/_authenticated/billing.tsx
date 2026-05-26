@@ -30,8 +30,8 @@ function BillingLayout() {
 					<TabsTrigger value="overview" asChild>
 						<Link to="/billing">Overview</Link>
 					</TabsTrigger>
-					<TabsTrigger value="pricing" disabled>
-						Pricing
+					<TabsTrigger value="pricing" asChild>
+						<Link to="/billing/pricing">Pricing</Link>
 					</TabsTrigger>
 					<TabsTrigger value="subscriptions" disabled>
 						Abbonamenti
