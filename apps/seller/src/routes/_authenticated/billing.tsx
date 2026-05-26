@@ -25,7 +25,7 @@ import {
 } from "@bibs/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { MoreVerticalIcon } from "lucide-react";
+import { Download, MoreVerticalIcon } from "lucide-react";
 import { SectionHeader } from "@/components/section-header";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import { api } from "@/lib/api";
@@ -69,6 +69,16 @@ function formatDate(d: Date | string, short = false): string {
 		: dateFormatter.format(new Date(d));
 }
 
+const invoiceDateFormatter = new Intl.DateTimeFormat("it-IT", {
+	day: "numeric",
+	month: "short",
+	year: "numeric",
+});
+
+function formatInvoiceDate(d: Date | string): string {
+	return invoiceDateFormatter.format(new Date(d));
+}
+
 function BillingPage() {
 	const queryClient = useQueryClient();
 
@@ -87,6 +97,17 @@ function BillingPage() {
 			const r = await api().seller.billing.subscriptions.get();
 			if (r.error) throw new Error((r.error.value as any)?.message);
 			return r.data?.data ?? [];
+		},
+	});
+
+	const { data: invoicesPage, isLoading: invoicesLoading } = useQuery({
+		queryKey: ["seller", "billing", "invoices"],
+		queryFn: async () => {
+			const r = await api().seller.billing.invoices.get({
+				query: { limit: 25 },
+			});
+			if (r.error) throw new Error((r.error.value as any)?.message);
+			return r.data?.data;
 		},
 	});
 
@@ -270,6 +291,62 @@ function BillingPage() {
 										</TableRow>
 									);
 								})}
+							</TableBody>
+						</Table>
+					)}
+				</CardContent>
+			</Card>
+			<Card>
+				<CardHeader>
+					<CardTitle>Storico fatture</CardTitle>
+				</CardHeader>
+				<CardContent>
+					{invoicesLoading ? (
+						<Spinner />
+					) : !invoicesPage || invoicesPage.data.length === 0 ? (
+						<p className="text-muted-foreground text-sm">
+							Nessuna fattura ancora.
+						</p>
+					) : (
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Data</TableHead>
+									<TableHead>Descrizione</TableHead>
+									<TableHead>Importo</TableHead>
+									<TableHead>Stato</TableHead>
+									<TableHead>PDF</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{invoicesPage.data.map((inv) => (
+									<TableRow key={inv.id}>
+										<TableCell>{formatInvoiceDate(inv.createdAt)}</TableCell>
+										<TableCell>{inv.description ?? "—"}</TableCell>
+										<TableCell>{formatEuro(inv.amountPaidCents)}</TableCell>
+										<TableCell>
+											<Badge
+												variant={
+													inv.status === "paid" ? "default" : "destructive"
+												}
+											>
+												{inv.status ?? "—"}
+											</Badge>
+										</TableCell>
+										<TableCell>
+											{inv.invoicePdfUrl && (
+												<a
+													href={inv.invoicePdfUrl}
+													target="_blank"
+													rel="noopener noreferrer"
+													aria-label="Scarica fattura"
+												>
+													<Download className="h-4 w-4" />
+												</a>
+											)}
+										</TableCell>
+									</TableRow>
+								))}
 							</TableBody>
 						</Table>
 					)}

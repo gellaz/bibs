@@ -1,5 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import type Stripe from "stripe";
 import { db } from "@/db";
+import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import {
 	type StoreSubscriptionStatus,
@@ -95,6 +97,48 @@ export async function listBillingSubscriptions(
 			),
 		)
 		.orderBy(asc(store.name));
+}
+
+interface ListInvoicesParams {
+	sellerProfileId: string;
+	limit: number;
+	startingAfter: string | undefined;
+}
+
+function getSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
+	// Stripe v22: subscription ID lives at invoice.parent.subscription_details.subscription
+	const fromParent = invoice.parent?.subscription_details?.subscription;
+	if (fromParent && typeof fromParent === "string") return fromParent;
+	return null;
+}
+
+export async function listInvoices(params: ListInvoicesParams) {
+	const profile = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.id, params.sellerProfileId),
+	});
+	if (!profile?.stripeCustomerId) {
+		throw new ServiceError(404, "Nessun Customer Stripe per questo seller");
+	}
+
+	const list = await stripe.invoices.list({
+		customer: profile.stripeCustomerId,
+		limit: Math.min(params.limit, 100),
+		...(params.startingAfter ? { starting_after: params.startingAfter } : {}),
+	});
+
+	return {
+		data: list.data.map((inv) => ({
+			id: inv.id,
+			createdAt: new Date(inv.created * 1000),
+			amountPaidCents: inv.amount_paid,
+			currency: inv.currency.toUpperCase(),
+			status: inv.status ?? null,
+			invoicePdfUrl: inv.invoice_pdf ?? null,
+			stripeSubscriptionId: getSubscriptionIdFromInvoice(inv),
+			description: inv.lines.data[0]?.description ?? null,
+		})),
+		hasMore: list.has_more,
+	};
 }
 
 export async function createPortalSession(params: {

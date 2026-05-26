@@ -7,6 +7,7 @@ import {
 	createPortalSession,
 	getBillingSummary,
 	listBillingSubscriptions,
+	listInvoices,
 } from "../services/billing";
 
 const SummarySchema = t.Object({
@@ -36,6 +37,22 @@ const SubscriptionRowSchema = t.Object({
 });
 
 const PortalSchema = t.Object({ url: t.String() });
+
+const InvoiceSchema = t.Object({
+	id: t.String(),
+	createdAt: t.Date(),
+	amountPaidCents: t.Integer(),
+	currency: t.String(),
+	status: t.Nullable(t.String()),
+	invoicePdfUrl: t.Nullable(t.String()),
+	stripeSubscriptionId: t.Nullable(t.String()),
+	description: t.Nullable(t.String()),
+});
+
+const InvoicesPageSchema = t.Object({
+	data: t.Array(InvoiceSchema),
+	hasMore: t.Boolean(),
+});
 
 export const billingRoutes = new Elysia({ prefix: "/billing" })
 	.get(
@@ -87,6 +104,31 @@ export const billingRoutes = new Elysia({ prefix: "/billing" })
 				summary: "Customer Portal session",
 				description:
 					"Crea una sessione di Stripe Customer Portal e ritorna l'URL.",
+				tags: ["Seller - Billing"],
+			},
+		},
+	)
+	.get(
+		"/invoices",
+		async (ctx) => {
+			const { sellerProfile: sp, query } = withSeller(ctx);
+			const data = await listInvoices({
+				sellerProfileId: sp.id,
+				limit: query.limit ?? 25,
+				startingAfter: query.startingAfter,
+			});
+			return ok(data);
+		},
+		{
+			query: t.Object({
+				limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
+				startingAfter: t.Optional(t.String()),
+			}),
+			response: withErrors({ 200: okRes(InvoicesPageSchema) }),
+			detail: {
+				summary: "Storico fatture (Stripe lazy)",
+				description:
+					"Recupera le fatture dal Customer Stripe. Max 100/req, paging via starting_after.",
 				tags: ["Seller - Billing"],
 			},
 		},
