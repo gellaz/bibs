@@ -1,6 +1,7 @@
 import { cron, Patterns } from "@elysiajs/cron";
 import { Elysia } from "elysia";
 import { runAutoCancelSuspended } from "@/jobs/auto-cancel-suspended-stores";
+import { runExpirePending } from "@/jobs/expire-pending-store-creations";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
 import { logger } from "@/lib/logger";
 
@@ -42,6 +43,29 @@ export const cronJobs = new Elysia({ name: "cron-jobs" })
 					logger.error(
 						{ err: error },
 						"Errore durante auto-cancel subscription sospese",
+					);
+				}
+			},
+		}),
+	)
+	.use(
+		cron({
+			name: "expirePendingStoreCreations",
+			// Hourly
+			pattern: "0 * * * *",
+			async run() {
+				try {
+					const result = await runExpirePending();
+					if (result.expired > 0) {
+						logger.info(
+							{ expired: result.expired },
+							"Pending store creations scaduti via cron",
+						);
+					}
+				} catch (error) {
+					logger.error(
+						{ err: error },
+						"Errore durante expire pending store creations",
 					);
 				}
 			},
