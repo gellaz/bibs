@@ -87,6 +87,10 @@ const app = new Elysia()
 						description: "Gestione categorie e verifica venditori",
 					},
 					{
+						name: "Admin - Billing",
+						description: "Billing aggregato lato admin",
+					},
+					{
 						name: "Seller - Billing",
 						description: "Billing, abbonamenti e Customer Portal",
 					},

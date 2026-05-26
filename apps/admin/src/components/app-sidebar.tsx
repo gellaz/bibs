@@ -32,7 +32,7 @@ const navItems = [
 	{ title: "Negozi", to: "/stores" as const, icon: StoreIcon },
 	{ title: "Articoli", to: "/products" as const, icon: PackageIcon },
 	{ title: "Incassi", to: "/collections" as const, icon: WalletIcon },
-	{ title: "Pagamenti", to: "/payments" as const, icon: CreditCardIcon },
+	{ title: "Billing", to: "/billing" as const, icon: CreditCardIcon },
 	{
 		title: "Configurazioni",
 		to: "/configurations" as const,
