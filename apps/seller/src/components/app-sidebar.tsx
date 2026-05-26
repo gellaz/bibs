@@ -13,6 +13,7 @@ import {
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+	ArchiveIcon,
 	CreditCardIcon,
 	HomeIcon,
 	PackageIcon,
@@ -45,7 +46,13 @@ const navItems = [
 		title: "Impostazioni negozio",
 		to: "/store" as const,
 		icon: SettingsIcon,
-		match: (p: string) => p.startsWith("/store"),
+		match: (p: string) => p === "/store" || p.startsWith("/store/edit"),
+	},
+	{
+		title: "Archivio",
+		to: "/store/archived" as const,
+		icon: ArchiveIcon,
+		match: (p: string) => p.startsWith("/store/archived"),
 	},
 	{
 		title: "Billing",

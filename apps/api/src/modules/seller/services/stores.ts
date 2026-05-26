@@ -1,5 +1,5 @@
 import type { Static } from "@sinclair/typebox";
-import { and, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
 	storePhoneNumber as storePhoneNumberTable,
@@ -277,4 +277,48 @@ export async function reactivateStoreSubscription(
 		cancel_at_period_end: false,
 	});
 	return { status: "active" };
+}
+
+interface ListArchivedParams {
+	sellerProfileId: string;
+	page: number;
+	limit: number;
+}
+
+export async function listArchivedStores(params: ListArchivedParams) {
+	const limit = Math.min(params.limit, 100);
+	const offset = (params.page - 1) * limit;
+
+	const baseWhere = and(
+		eq(storeTable.sellerProfileId, params.sellerProfileId),
+		isNotNull(storeTable.deletedAt),
+	);
+
+	const data = await db
+		.select({
+			id: storeTable.id,
+			name: storeTable.name,
+			addressLine1: storeTable.addressLine1,
+			city: storeTable.city,
+			createdAt: storeTable.createdAt,
+			deletedAt: storeTable.deletedAt,
+			canceledAt: storeSubscription.canceledAt,
+			cancelReason: storeSubscription.cancelReason,
+		})
+		.from(storeTable)
+		.leftJoin(storeSubscription, eq(storeSubscription.storeId, storeTable.id))
+		.where(baseWhere)
+		.orderBy(desc(storeTable.deletedAt))
+		.limit(limit)
+		.offset(offset);
+
+	const [{ value: total } = { value: 0 }] = await db
+		.select({ value: count() })
+		.from(storeTable)
+		.where(baseWhere);
+
+	return {
+		data,
+		pagination: { page: params.page, limit, total },
+	};
 }

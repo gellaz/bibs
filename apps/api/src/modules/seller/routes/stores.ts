@@ -14,10 +14,22 @@ import { requireOwner, withSeller } from "../context";
 import {
 	cancelStoreSubscription,
 	createStore,
+	listArchivedStores,
 	listStores,
 	reactivateStoreSubscription,
 	updateStore,
 } from "../services/stores";
+
+const ArchivedStoreSchema = t.Object({
+	id: t.String(),
+	name: t.String(),
+	addressLine1: t.String(),
+	city: t.String(),
+	createdAt: t.Date(),
+	deletedAt: t.Nullable(t.Date()),
+	canceledAt: t.Nullable(t.Date()),
+	cancelReason: t.Nullable(t.String()),
+});
 
 export const storesRoutes = new Elysia()
 	.get(
@@ -226,6 +238,42 @@ export const storesRoutes = new Elysia()
 			detail: {
 				summary: "Annulla la cancellazione in corso",
 				description: "Solo per status='canceling' prima del period end.",
+				tags: ["Seller - Stores"],
+			},
+		},
+	)
+	.get(
+		"/stores/archived",
+		async (ctx) => {
+			const { sellerProfile: sp, query } = withSeller(ctx);
+			const data = await listArchivedStores({
+				sellerProfileId: sp.id,
+				page: query.page ?? 1,
+				limit: query.limit ?? 25,
+			});
+			return ok(data);
+		},
+		{
+			query: t.Object({
+				page: t.Optional(t.Integer({ minimum: 1 })),
+				limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
+			}),
+			response: withErrors({
+				200: okRes(
+					t.Object({
+						data: t.Array(ArchivedStoreSchema),
+						pagination: t.Object({
+							page: t.Integer(),
+							limit: t.Integer(),
+							total: t.Integer(),
+						}),
+					}),
+				),
+			}),
+			detail: {
+				summary: "Lista negozi archiviati del seller",
+				description:
+					"Negozi con deletedAt impostato. Include canceledAt e cancelReason via join su store_subscriptions.",
 				tags: ["Seller - Stores"],
 			},
 		},
