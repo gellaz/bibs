@@ -90,14 +90,12 @@ const stageOrder: readonly OnboardingStatus[] = [
 	"pending_personal",
 	"pending_document",
 	"pending_company",
-	"pending_store",
-	"pending_payment",
 	"pending_review",
 	"active",
 ];
 
 function getStageIndex(status: OnboardingStatus): number {
-	if (status === "rejected") return 6; // rejected = same data as pending_review
+	if (status === "rejected") return 4; // rejected = same data as pending_review
 	return stageOrder.indexOf(status);
 }
 
@@ -154,9 +152,7 @@ interface StatusConfig {
 
 const statusDistribution: readonly StatusConfig[] = [
 	{ status: "active", count: 55, vatStatus: "verified" },
-	{ status: "pending_review", count: 25, vatStatus: "pending" },
-	{ status: "pending_payment", count: 15, vatStatus: "pending" },
-	{ status: "pending_store", count: 12, vatStatus: "pending" },
+	{ status: "pending_review", count: 52, vatStatus: "pending" }, // 25 + 15 (ex pending_payment) + 12 (ex pending_store)
 	{ status: "pending_company", count: 10, vatStatus: "pending" },
 	{ status: "pending_document", count: 10, vatStatus: "pending" },
 	{ status: "pending_personal", count: 8, vatStatus: "pending" },
@@ -201,7 +197,7 @@ function generateSellersSeedData(): SellerSeedData[] {
 			const hasPersonal = stage >= 2;
 			const hasDocument = stage >= 3;
 			const hasStore = stage >= 5;
-			const hasPayment = stage >= 6;
+			const hasPayment = stage >= 4;
 
 			const businessName =
 				legalForm === "Ditta Individuale"
@@ -333,7 +329,7 @@ export async function seedSellers() {
 		})),
 	);
 
-	// Phase 4: Batch insert stores (for sellers at pending_payment+)
+	// Phase 4: Batch insert stores (for active sellers — store creation is post-activation)
 	const storeEntries = created
 		.map(({ data }, i) =>
 			data.store
