@@ -2,34 +2,22 @@ import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
 import {
-	EmployeeInvitationSchema,
 	okRes,
 	SellerProfileSchema,
-	StoreImageSchema,
-	StoreSchema,
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import {
 	CompanyBody,
 	DocumentBody,
-	OnboardingStoreBody,
-	PaymentBody,
 	PersonalInfoBody,
-	TeamInviteBody,
 } from "@/lib/schemas/forms";
 import { withSellerAuth } from "../context";
 import {
-	completeTeam,
-	createOnboardingStore,
 	getOnboardingStatus,
 	goBack,
-	inviteTeamMember,
-	listOnboardingInvitations,
-	skipOnboardingStore,
 	updateCompany,
 	updateDocument,
-	updatePayment,
 	updatePersonalInfo,
 } from "../services/onboarding";
 
@@ -137,92 +125,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			detail: {
 				summary: "Step 3: Dati aziendali",
 				description:
-					"Inserisce le informazioni aziendali / societarie. Richiede onboardingStatus = 'pending_company'.",
-				tags: ["Seller - Onboarding"],
-			},
-		},
-	)
-	.post(
-		"/store",
-		async (ctx) => {
-			const { user, body, store: ctxStore } = withSellerAuth(ctx);
-			const pino = getLogger(ctxStore);
-
-			const images = body.images
-				? Array.isArray(body.images)
-					? body.images
-					: [body.images]
-				: undefined;
-
-			const data = await createOnboardingStore({
-				userId: user.id,
-				...body,
-				images,
-			});
-
-			pino.info(
-				{
-					userId: user.id,
-					storeId: data.store.id,
-					storeName: data.store.name,
-					imageCount: images?.length ?? 0,
-					action: "onboarding_store",
-				},
-				"Seller first store created",
-			);
-
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				...OnboardingStoreBody.properties,
-				images: t.Optional(
-					t.Files({
-						type: "image",
-						maxSize: "5m",
-						description: "Foto del negozio (max 5MB ciascuna, opzionale)",
-					}),
-				),
-			}),
-			response: withErrors({
-				200: okRes(
-					t.Object({
-						profile: SellerProfileSchema,
-						store: t.Object({
-							...StoreSchema.properties,
-							images: t.Optional(t.Array(StoreImageSchema)),
-						}),
-					}),
-				),
-			}),
-			detail: {
-				summary: "Step 4: Primo negozio",
-				description:
-					"Crea il primo negozio del venditore con eventuali foto. Richiede onboardingStatus = 'pending_store'. Se useCompanyAddress=true, l'indirizzo viene copiato dall'azienda.",
-				tags: ["Seller - Onboarding"],
-			},
-		},
-	)
-	.post(
-		"/skip-store",
-		async (ctx) => {
-			const { user, store } = withSellerAuth(ctx);
-			const pino = getLogger(store);
-			const data = await skipOnboardingStore(user.id);
-
-			pino.info(
-				{ userId: user.id, action: "onboarding_skip_store" },
-				"Seller skipped store creation during onboarding",
-			);
-
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
-			detail: {
-				summary: "Step 4b: Salta negozio",
-				description:
-					"Salta la creazione del negozio durante l'onboarding. Il venditore potrà creare un negozio in un secondo momento. Richiede onboardingStatus = 'pending_store'.",
+					"Inserisce le informazioni aziendali / societarie. Richiede onboardingStatus = 'pending_company'. Dopo questo step l'onboarding passa in revisione admin.",
 				tags: ["Seller - Onboarding"],
 			},
 		},
@@ -251,108 +154,6 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 				summary: "Torna indietro",
 				description:
 					"Riporta l'onboarding allo step precedente. Eventuali dati inseriti nello step corrente vengono rimossi.",
-				tags: ["Seller - Onboarding"],
-			},
-		},
-	)
-	.get(
-		"/team",
-		async (ctx) => {
-			const { user } = withSellerAuth(ctx);
-			const data = await listOnboardingInvitations(user.id);
-			return ok(data);
-		},
-		{
-			response: withErrors({
-				200: okRes(t.Array(EmployeeInvitationSchema)),
-			}),
-			detail: {
-				summary: "Lista inviti team",
-				description:
-					"Restituisce la lista degli inviti inviati durante l'onboarding.",
-				tags: ["Seller - Onboarding"],
-			},
-		},
-	)
-	.post(
-		"/team/invite",
-		async (ctx) => {
-			const { user, body, store } = withSellerAuth(ctx);
-			const pino = getLogger(store);
-			const data = await inviteTeamMember(user.id, body.email, body.storeIds);
-
-			pino.info(
-				{
-					userId: user.id,
-					invitedEmail: body.email,
-					action: "onboarding_team_invite",
-				},
-				"Employee invitation sent during onboarding",
-			);
-
-			return ok(data);
-		},
-		{
-			body: TeamInviteBody,
-			response: withConflictErrors({
-				200: okRes(EmployeeInvitationSchema),
-			}),
-			detail: {
-				summary: "Step 6: Invita collaboratore",
-				description:
-					"Invia un invito email a un collaboratore. Richiede onboardingStatus = 'pending_team'. L'invitato riceverà un link per creare la password.",
-				tags: ["Seller - Onboarding"],
-			},
-		},
-	)
-	.post(
-		"/team/complete",
-		async (ctx) => {
-			const { user, store } = withSellerAuth(ctx);
-			const pino = getLogger(store);
-			const data = await completeTeam(user.id);
-
-			pino.info(
-				{ userId: user.id, action: "onboarding_team_complete" },
-				"Seller completed team step",
-			);
-
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
-			detail: {
-				summary: "Step 6: Completa team",
-				description:
-					"Completa lo step team e avanza a pending_review. Richiede onboardingStatus = 'pending_team'. Può essere chiamato anche senza aver invitato nessuno (skip).",
-				tags: ["Seller - Onboarding"],
-			},
-		},
-	)
-	.patch(
-		"/payment",
-		async (ctx) => {
-			const { user, store } = withSellerAuth(ctx);
-			const pino = getLogger(store);
-			const data = await updatePayment({
-				userId: user.id,
-				stripeAccountId: (ctx as any).body?.stripeAccountId,
-			});
-
-			pino.info(
-				{ userId: user.id, action: "onboarding_payment" },
-				"Seller payment method configured",
-			);
-
-			return ok(data);
-		},
-		{
-			body: PaymentBody,
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
-			detail: {
-				summary: "Step 5: Metodo di pagamento",
-				description:
-					"Configura il metodo di pagamento del venditore. Richiede onboardingStatus = 'pending_payment'. Dopo questo step l'onboarding passa in revisione admin.",
 				tags: ["Seller - Onboarding"],
 			},
 		},
