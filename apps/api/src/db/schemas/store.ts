@@ -13,6 +13,7 @@ import { storeProduct } from "./product";
 import { sellerProfile } from "./seller";
 import { storeCategory } from "./store-category";
 import { storeImage } from "./store-image";
+import { storeSubscription } from "./store-subscription";
 
 export const store = pgTable(
 	"stores",
@@ -88,6 +89,10 @@ export const storeRelations = relations(store, ({ one, many }) => ({
 	category: one(storeCategory, {
 		fields: [store.categoryId],
 		references: [storeCategory.id],
+	}),
+	subscription: one(storeSubscription, {
+		fields: [store.id],
+		references: [storeSubscription.storeId],
 	}),
 	storeProducts: many(storeProduct),
 	phoneNumbers: many(storePhoneNumber),
