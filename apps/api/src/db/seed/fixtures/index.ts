@@ -2,6 +2,7 @@ import { seedAdmins } from "./admins";
 import { seedBrands } from "./brands";
 import { seedCustomers } from "./customers";
 import { seedExtraStores } from "./extra-stores";
+import { seedPricingConfig } from "./pricing-config";
 import { seedProducts } from "./products";
 import { seedSellers } from "./sellers";
 import { seedStoreImages } from "./store-images";
@@ -13,6 +14,7 @@ import { seedTeam } from "./team";
  * Depends on better-auth (uses `auth.api.signUpEmail`). Not for production.
  */
 export async function seedFixtures() {
+	await seedPricingConfig();
 	await seedAdmins();
 	await seedCustomers();
 	await seedSellers();
