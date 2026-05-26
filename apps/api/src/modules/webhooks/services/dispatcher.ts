@@ -7,6 +7,8 @@ import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
 import { handleCheckoutCompleted } from "./handlers/checkout-completed";
+import { handleSubscriptionDeleted } from "./handlers/subscription-deleted";
+import { handleSubscriptionUpdated } from "./handlers/subscription-updated";
 
 interface HandleWebhookParams {
 	payload: string;
@@ -67,6 +69,10 @@ async function dispatch(event: Stripe.Event): Promise<void> {
 	switch (event.type) {
 		case "checkout.session.completed":
 			return handleCheckoutCompleted(event);
+		case "customer.subscription.updated":
+			return handleSubscriptionUpdated(event);
+		case "customer.subscription.deleted":
+			return handleSubscriptionDeleted(event);
 		default:
 			logger.info(
 				{ eventId: event.id, type: event.type },
