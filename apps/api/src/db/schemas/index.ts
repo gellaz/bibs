@@ -11,6 +11,7 @@ export * from "./order";
 export * from "./organization";
 export * from "./payment-method";
 export * from "./points";
+export * from "./pricing-config";
 export * from "./product";
 export * from "./product-audit-log";
 export * from "./product-image";
