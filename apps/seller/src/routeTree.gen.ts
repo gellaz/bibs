@@ -29,11 +29,8 @@ import { Route as AuthenticatedPromotionsNewRouteImport } from './routes/_authen
 import { Route as AuthenticatedPromotionsDiscountIdRouteImport } from './routes/_authenticated/promotions/$discountId'
 import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenticated/products/new'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products/$productId'
-import { Route as AuthenticatedOnboardingTeamRouteImport } from './routes/_authenticated/onboarding/team'
-import { Route as AuthenticatedOnboardingStoreRouteImport } from './routes/_authenticated/onboarding/store'
 import { Route as AuthenticatedOnboardingPersonalInfoRouteImport } from './routes/_authenticated/onboarding/personal-info'
 import { Route as AuthenticatedOnboardingPendingRouteImport } from './routes/_authenticated/onboarding/pending'
-import { Route as AuthenticatedOnboardingPaymentRouteImport } from './routes/_authenticated/onboarding/payment'
 import { Route as AuthenticatedOnboardingDocumentRouteImport } from './routes/_authenticated/onboarding/document'
 import { Route as AuthenticatedOnboardingCompanyRouteImport } from './routes/_authenticated/onboarding/company'
 
@@ -142,18 +139,6 @@ const AuthenticatedProductsProductIdRoute =
     path: '/$productId',
     getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
-const AuthenticatedOnboardingTeamRoute =
-  AuthenticatedOnboardingTeamRouteImport.update({
-    id: '/onboarding/team',
-    path: '/onboarding/team',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedOnboardingStoreRoute =
-  AuthenticatedOnboardingStoreRouteImport.update({
-    id: '/onboarding/store',
-    path: '/onboarding/store',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedOnboardingPersonalInfoRoute =
   AuthenticatedOnboardingPersonalInfoRouteImport.update({
     id: '/onboarding/personal-info',
@@ -164,12 +149,6 @@ const AuthenticatedOnboardingPendingRoute =
   AuthenticatedOnboardingPendingRouteImport.update({
     id: '/onboarding/pending',
     path: '/onboarding/pending',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedOnboardingPaymentRoute =
-  AuthenticatedOnboardingPaymentRouteImport.update({
-    id: '/onboarding/payment',
-    path: '/onboarding/payment',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedOnboardingDocumentRoute =
@@ -198,11 +177,8 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/onboarding/company': typeof AuthenticatedOnboardingCompanyRoute
   '/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
-  '/onboarding/payment': typeof AuthenticatedOnboardingPaymentRoute
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
-  '/onboarding/store': typeof AuthenticatedOnboardingStoreRoute
-  '/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -222,11 +198,8 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/onboarding/company': typeof AuthenticatedOnboardingCompanyRoute
   '/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
-  '/onboarding/payment': typeof AuthenticatedOnboardingPaymentRoute
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
-  '/onboarding/store': typeof AuthenticatedOnboardingStoreRoute
-  '/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -252,11 +225,8 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/onboarding/company': typeof AuthenticatedOnboardingCompanyRoute
   '/_authenticated/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
-  '/_authenticated/onboarding/payment': typeof AuthenticatedOnboardingPaymentRoute
   '/_authenticated/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/_authenticated/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
-  '/_authenticated/onboarding/store': typeof AuthenticatedOnboardingStoreRoute
-  '/_authenticated/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
   '/_authenticated/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -282,11 +252,8 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/onboarding/company'
     | '/onboarding/document'
-    | '/onboarding/payment'
     | '/onboarding/pending'
     | '/onboarding/personal-info'
-    | '/onboarding/store'
-    | '/onboarding/team'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
@@ -306,11 +273,8 @@ export interface FileRouteTypes {
     | '/'
     | '/onboarding/company'
     | '/onboarding/document'
-    | '/onboarding/payment'
     | '/onboarding/pending'
     | '/onboarding/personal-info'
-    | '/onboarding/store'
-    | '/onboarding/team'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
@@ -335,11 +299,8 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/onboarding/company'
     | '/_authenticated/onboarding/document'
-    | '/_authenticated/onboarding/payment'
     | '/_authenticated/onboarding/pending'
     | '/_authenticated/onboarding/personal-info'
-    | '/_authenticated/onboarding/store'
-    | '/_authenticated/onboarding/team'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/new'
     | '/_authenticated/promotions/$discountId'
@@ -501,20 +462,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductsProductIdRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
     }
-    '/_authenticated/onboarding/team': {
-      id: '/_authenticated/onboarding/team'
-      path: '/onboarding/team'
-      fullPath: '/onboarding/team'
-      preLoaderRoute: typeof AuthenticatedOnboardingTeamRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/onboarding/store': {
-      id: '/_authenticated/onboarding/store'
-      path: '/onboarding/store'
-      fullPath: '/onboarding/store'
-      preLoaderRoute: typeof AuthenticatedOnboardingStoreRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/onboarding/personal-info': {
       id: '/_authenticated/onboarding/personal-info'
       path: '/onboarding/personal-info'
@@ -527,13 +474,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/pending'
       fullPath: '/onboarding/pending'
       preLoaderRoute: typeof AuthenticatedOnboardingPendingRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/onboarding/payment': {
-      id: '/_authenticated/onboarding/payment'
-      path: '/onboarding/payment'
-      fullPath: '/onboarding/payment'
-      preLoaderRoute: typeof AuthenticatedOnboardingPaymentRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/onboarding/document': {
@@ -622,11 +562,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedOnboardingCompanyRoute: typeof AuthenticatedOnboardingCompanyRoute
   AuthenticatedOnboardingDocumentRoute: typeof AuthenticatedOnboardingDocumentRoute
-  AuthenticatedOnboardingPaymentRoute: typeof AuthenticatedOnboardingPaymentRoute
   AuthenticatedOnboardingPendingRoute: typeof AuthenticatedOnboardingPendingRoute
   AuthenticatedOnboardingPersonalInfoRoute: typeof AuthenticatedOnboardingPersonalInfoRoute
-  AuthenticatedOnboardingStoreRoute: typeof AuthenticatedOnboardingStoreRoute
-  AuthenticatedOnboardingTeamRoute: typeof AuthenticatedOnboardingTeamRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -638,12 +575,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedOnboardingCompanyRoute: AuthenticatedOnboardingCompanyRoute,
   AuthenticatedOnboardingDocumentRoute: AuthenticatedOnboardingDocumentRoute,
-  AuthenticatedOnboardingPaymentRoute: AuthenticatedOnboardingPaymentRoute,
   AuthenticatedOnboardingPendingRoute: AuthenticatedOnboardingPendingRoute,
   AuthenticatedOnboardingPersonalInfoRoute:
     AuthenticatedOnboardingPersonalInfoRoute,
-  AuthenticatedOnboardingStoreRoute: AuthenticatedOnboardingStoreRoute,
-  AuthenticatedOnboardingTeamRoute: AuthenticatedOnboardingTeamRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

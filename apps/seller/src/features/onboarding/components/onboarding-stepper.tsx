@@ -9,9 +9,7 @@ const STEPS = [
 	{ key: "pending_personal", label: "Anagrafica" },
 	{ key: "pending_document", label: "Documento" },
 	{ key: "pending_company", label: "Azienda" },
-	{ key: "pending_store", label: "Negozio" },
-	{ key: "pending_team", label: "Team" },
-	{ key: "pending_payment", label: "Pagamento" },
+	{ key: "pending_review", label: "In revisione" },
 ] as const;
 
 type OnboardingStatus =
@@ -19,9 +17,6 @@ type OnboardingStatus =
 	| "pending_personal"
 	| "pending_document"
 	| "pending_company"
-	| "pending_store"
-	| "pending_payment"
-	| "pending_team"
 	| "pending_review"
 	| "active"
 	| "rejected";
