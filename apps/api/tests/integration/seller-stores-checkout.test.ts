@@ -29,6 +29,7 @@ const sessionCreate = mock(async () => ({
 const sessionRetrieve = mock(async () => ({
 	id: "cs_FAKE",
 	url: "https://stripe.test/checkout/cs_FAKE",
+	status: "open",
 }));
 
 mock.module("@/lib/stripe", () => ({
@@ -119,6 +120,16 @@ describe("createCheckoutSession", () => {
 			sellerProfileId: profile.id,
 			body: VALID_BODY,
 		});
+
+		sessionRetrieve.mockImplementationOnce(
+			async () =>
+				({
+					id: "cs_FAKE",
+					url: "https://stripe.test/checkout/cs_FAKE",
+					status: "open",
+				}) as any,
+		);
+
 		const r2 = await createCheckoutSession({
 			sellerProfileId: profile.id,
 			body: VALID_BODY,
@@ -126,6 +137,53 @@ describe("createCheckoutSession", () => {
 
 		expect(r1.pendingStoreCreationId).toBe(r2.pendingStoreCreationId);
 		expect(sessionCreate).toHaveBeenCalledTimes(1);
+	});
+
+	it("creates a fresh session if the existing one is expired in Stripe", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+
+		// First call: create normally
+		const first = await createCheckoutSession({
+			sellerProfileId: profile.id,
+			body: VALID_BODY,
+		});
+		expect(sessionCreate).toHaveBeenCalledTimes(1);
+
+		// Now simulate the session being expired in Stripe
+		sessionRetrieve.mockImplementationOnce(
+			async () =>
+				({
+					id: "cs_FAKE",
+					url: "https://stripe.test/checkout/cs_EXPIRED",
+					status: "expired",
+				}) as any,
+		);
+		// The new Stripe session must have a different ID to avoid the unique constraint
+		sessionCreate.mockImplementationOnce(async () => ({
+			id: "cs_FAKE_2",
+			url: "https://stripe.test/checkout/cs_FAKE_2",
+		}));
+
+		// Second call: should mark existing pending as expired, create new session
+		const second = await createCheckoutSession({
+			sellerProfileId: profile.id,
+			body: VALID_BODY,
+		});
+
+		expect(second.pendingStoreCreationId).not.toBe(
+			first.pendingStoreCreationId,
+		);
+		expect(sessionCreate).toHaveBeenCalledTimes(2);
+
+		// Verify the original pending is now expired
+		const oldPending = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, first.pendingStoreCreationId))
+			.then((r) => r[0]);
+		expect(oldPending.status).toBe("expired");
 	});
 
 	it("caches the stripeCustomerId on the seller profile", async () => {

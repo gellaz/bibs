@@ -51,10 +51,17 @@ export async function createCheckoutSession(
 		const session = await stripe.checkout.sessions.retrieve(
 			existing.stripeCheckoutSessionId,
 		);
-		return {
-			checkoutUrl: session.url ?? "",
-			pendingStoreCreationId: existing.id,
-		};
+		if (session.status === "open") {
+			return {
+				checkoutUrl: session.url ?? "",
+				pendingStoreCreationId: existing.id,
+			};
+		}
+		// Session is expired or otherwise unusable — expire the pending and fall through to create a fresh one
+		await db
+			.update(pendingStoreCreation)
+			.set({ status: "expired" })
+			.where(eq(pendingStoreCreation.id, existing.id));
 	}
 
 	const pricing = await getActivePricing();
