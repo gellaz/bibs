@@ -33,6 +33,7 @@ import { Route as AuthenticatedOnboardingPersonalInfoRouteImport } from './route
 import { Route as AuthenticatedOnboardingPendingRouteImport } from './routes/_authenticated/onboarding/pending'
 import { Route as AuthenticatedOnboardingDocumentRouteImport } from './routes/_authenticated/onboarding/document'
 import { Route as AuthenticatedOnboardingCompanyRouteImport } from './routes/_authenticated/onboarding/company'
+import { Route as AuthenticatedStoreNewProcessingRouteImport } from './routes/_authenticated/store/new.processing'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -163,6 +164,12 @@ const AuthenticatedOnboardingCompanyRoute =
     path: '/onboarding/company',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedStoreNewProcessingRoute =
+  AuthenticatedStoreNewProcessingRouteImport.update({
+    id: '/processing',
+    path: '/processing',
+    getParentRoute: () => AuthenticatedStoreNewRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -183,11 +190,12 @@ export interface FileRoutesByFullPath {
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
-  '/store/new': typeof AuthenticatedStoreNewRoute
+  '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/store/': typeof AuthenticatedStoreIndexRoute
   '/team/': typeof AuthenticatedTeamIndexRoute
+  '/store/new/processing': typeof AuthenticatedStoreNewProcessingRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -204,11 +212,12 @@ export interface FileRoutesByTo {
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
-  '/store/new': typeof AuthenticatedStoreNewRoute
+  '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
   '/products': typeof AuthenticatedProductsIndexRoute
   '/promotions': typeof AuthenticatedPromotionsIndexRoute
   '/store': typeof AuthenticatedStoreIndexRoute
   '/team': typeof AuthenticatedTeamIndexRoute
+  '/store/new/processing': typeof AuthenticatedStoreNewProcessingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -231,11 +240,12 @@ export interface FileRoutesById {
   '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
   '/_authenticated/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/_authenticated/promotions/new': typeof AuthenticatedPromotionsNewRoute
-  '/_authenticated/store/new': typeof AuthenticatedStoreNewRoute
+  '/_authenticated/store/new': typeof AuthenticatedStoreNewRouteWithChildren
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/_authenticated/store/': typeof AuthenticatedStoreIndexRoute
   '/_authenticated/team/': typeof AuthenticatedTeamIndexRoute
+  '/_authenticated/store/new/processing': typeof AuthenticatedStoreNewProcessingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/promotions/'
     | '/store/'
     | '/team/'
+    | '/store/new/processing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/promotions'
     | '/store'
     | '/team'
+    | '/store/new/processing'
   id:
     | '__root__'
     | '/_authenticated'
@@ -310,6 +322,7 @@ export interface FileRouteTypes {
     | '/_authenticated/promotions/'
     | '/_authenticated/store/'
     | '/_authenticated/team/'
+    | '/_authenticated/store/new/processing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -490,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOnboardingCompanyRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/store/new/processing': {
+      id: '/_authenticated/store/new/processing'
+      path: '/processing'
+      fullPath: '/store/new/processing'
+      preLoaderRoute: typeof AuthenticatedStoreNewProcessingRouteImport
+      parentRoute: typeof AuthenticatedStoreNewRoute
+    }
   }
 }
 
@@ -529,13 +549,26 @@ const AuthenticatedPromotionsRouteWithChildren =
     AuthenticatedPromotionsRouteChildren,
   )
 
+interface AuthenticatedStoreNewRouteChildren {
+  AuthenticatedStoreNewProcessingRoute: typeof AuthenticatedStoreNewProcessingRoute
+}
+
+const AuthenticatedStoreNewRouteChildren: AuthenticatedStoreNewRouteChildren = {
+  AuthenticatedStoreNewProcessingRoute: AuthenticatedStoreNewProcessingRoute,
+}
+
+const AuthenticatedStoreNewRouteWithChildren =
+  AuthenticatedStoreNewRoute._addFileChildren(
+    AuthenticatedStoreNewRouteChildren,
+  )
+
 interface AuthenticatedStoreRouteChildren {
-  AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRoute
+  AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRouteWithChildren
   AuthenticatedStoreIndexRoute: typeof AuthenticatedStoreIndexRoute
 }
 
 const AuthenticatedStoreRouteChildren: AuthenticatedStoreRouteChildren = {
-  AuthenticatedStoreNewRoute: AuthenticatedStoreNewRoute,
+  AuthenticatedStoreNewRoute: AuthenticatedStoreNewRouteWithChildren,
   AuthenticatedStoreIndexRoute: AuthenticatedStoreIndexRoute,
 }
 
