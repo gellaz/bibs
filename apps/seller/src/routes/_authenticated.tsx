@@ -14,6 +14,7 @@ import {
 import { useEffect } from "react";
 import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { AppSidebar } from "@/components/app-sidebar";
+import { StoreBillingBanner } from "@/components/store-billing-banner";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
@@ -171,6 +172,9 @@ function AuthenticatedLayout() {
 						<AppBreadcrumb />
 					</header>
 					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+						<div className="mb-4 empty:hidden">
+							<StoreBillingBanner />
+						</div>
 						<Outlet />
 					</div>
 				</SidebarInset>
@@ -227,6 +231,9 @@ function EmployeeStoreGate({
 						<AppBreadcrumb />
 					</header>
 					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+						<div className="mb-4 empty:hidden">
+							<StoreBillingBanner />
+						</div>
 						<Outlet />
 					</div>
 				</SidebarInset>
