@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import type { VatStatus } from "@/db/schemas/organization";
 import { organization } from "@/db/schemas/organization";
-import { paymentMethod } from "@/db/schemas/payment-method";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
@@ -139,7 +138,6 @@ export interface SellerSeedData {
 		lat: number;
 		lng: number;
 	} | null;
-	hasPayment: boolean;
 }
 
 // ── Status distribution (150 sellers total) ───────────────
@@ -151,14 +149,17 @@ interface StatusConfig {
 }
 
 const statusDistribution: readonly StatusConfig[] = [
-	{ status: "active", count: 55, vatStatus: "verified" },
-	{ status: "pending_review", count: 52, vatStatus: "pending" }, // 25 + 15 (ex pending_payment) + 12 (ex pending_store)
+	{ status: "active", count: 55, vatStatus: "verified" }, // first 50 get a store; last 5 active-no-store (empty state test)
+	{ status: "pending_review", count: 52, vatStatus: "pending" },
 	{ status: "pending_company", count: 10, vatStatus: "pending" },
 	{ status: "pending_document", count: 10, vatStatus: "pending" },
 	{ status: "pending_personal", count: 8, vatStatus: "pending" },
 	{ status: "pending_email", count: 8, vatStatus: "pending" },
 	{ status: "rejected", count: 7, vatStatus: "rejected" },
 ];
+
+/** Among the 55 active sellers, the first N get a store; the rest stay store-less. */
+const ACTIVE_WITH_STORE_COUNT = 50;
 
 // ── Generator ─────────────────────────────────────────────
 
@@ -196,8 +197,8 @@ function generateSellersSeedData(): SellerSeedData[] {
 
 			const hasPersonal = stage >= 2;
 			const hasDocument = stage >= 3;
-			const hasStore = stage >= 5;
-			const hasPayment = stage >= 4;
+			const hasStore =
+				config.status === "active" && i < ACTIVE_WITH_STORE_COUNT;
 
 			const businessName =
 				legalForm === "Ditta Individuale"
@@ -248,7 +249,6 @@ function generateSellersSeedData(): SellerSeedData[] {
 							lng: storeCity.lng + (idx % 7) * 0.001,
 						}
 					: null,
-				hasPayment,
 			});
 
 			idx++;
@@ -303,12 +303,18 @@ export async function seedSellers() {
 	if (created.length === 0) return;
 
 	// Phase 2: Batch insert seller profiles
+	// Active sellers get a fake stripeCustomerId so the billing UI (Customer Portal CTA)
+	// renders without 404. The id won't resolve in real Stripe, but seed data is dev-only.
 	const profiles = await db
 		.insert(sellerProfile)
 		.values(
 			created.map(({ userId, data }) => ({
 				userId,
 				onboardingStatus: data.onboardingStatus,
+				stripeCustomerId:
+					data.onboardingStatus === "active"
+						? `cus_seed_${userId.slice(0, 16)}`
+						: null,
 				...data.profileFields,
 			})),
 		)
@@ -349,22 +355,6 @@ export async function seedSellers() {
 
 	if (storeEntries.length > 0) {
 		await db.insert(store).values(storeEntries);
-	}
-
-	// Phase 5: Batch insert payment methods (for sellers at pending_review+)
-	const paymentEntries = created
-		.map(({ data }, i) =>
-			data.hasPayment
-				? {
-						sellerProfileId: profiles[i].id,
-						stripeAccountId: `acct_test_${profiles[i].id.slice(0, 8)}`,
-					}
-				: null,
-		)
-		.filter((e): e is NonNullable<typeof e> => e !== null);
-
-	if (paymentEntries.length > 0) {
-		await db.insert(paymentMethod).values(paymentEntries);
 	}
 
 	console.log(`  ✓ ${created.length} sellers seeded`);
