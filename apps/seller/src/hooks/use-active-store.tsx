@@ -20,7 +20,7 @@ interface Store {
 	province: string | null;
 }
 
-interface Subscription {
+export interface Subscription {
 	storeId: string;
 	storeName: string;
 	status: string;

@@ -3,7 +3,7 @@ import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangleIcon, CalendarIcon, LockIcon } from "lucide-react";
-import { useActiveStore } from "@/hooks/use-active-store";
+import { type Subscription, useActiveStore } from "@/hooks/use-active-store";
 import { api } from "@/lib/api";
 
 export function StoreBillingBanner() {
@@ -32,7 +32,24 @@ export function StoreBillingBanner() {
 			return r.data?.data;
 		},
 		onSuccess: () => {
-			void qc.invalidateQueries({ queryKey: ["seller", "billing"] });
+			// Optimistically flip the local subscription cache to 'active' so the banner
+			// disappears immediately. The DB is updated by Stripe's customer.subscription.updated
+			// webhook (~100-500ms later); a delayed refetch reconciles the cache with the
+			// authoritative DB state once the webhook lands.
+			if (activeStore) {
+				qc.setQueryData<Subscription[] | undefined>(
+					["seller", "billing", "subscriptions"],
+					(old) =>
+						old?.map((s) =>
+							s.storeId === activeStore.id
+								? { ...s, status: "active", cancelAtPeriodEnd: false }
+								: s,
+						),
+				);
+			}
+			setTimeout(() => {
+				void qc.invalidateQueries({ queryKey: ["seller", "billing"] });
+			}, 1500);
 			toast.success("Cancellazione annullata");
 		},
 		onError: (e: Error) => toast.error(e.message),
