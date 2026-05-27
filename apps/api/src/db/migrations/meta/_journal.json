@@ -50,6 +50,41 @@
       "when": 1779054950475,
       "tag": "0006_sharp_vulture",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779811828237,
+      "tag": "0007_lucky_madrox",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779812384483,
+      "tag": "0008_ordinary_elektra",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779812590558,
+      "tag": "0009_cute_rumiko_fujikawa",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779814526506,
+      "tag": "0010_flawless_redwing",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779814807956,
+      "tag": "0011_cute_slyde",
+      "breakpoints": true
     }
   ]
 }

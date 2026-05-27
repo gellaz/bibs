@@ -19,6 +19,9 @@ const EnvSchema = t.Object({
 	EMAIL_FROM: t.Optional(t.String()),
 	CUSTOMER_APP_URL: t.Optional(t.String()),
 	SELLER_APP_URL: t.Optional(t.String()),
+	STRIPE_SECRET_KEY: t.String(),
+	STRIPE_WEBHOOK_SECRET: t.Optional(t.String()),
+	STRIPE_DEV_PRICE_ID: t.Optional(t.String()),
 });
 
 if (!Value.Check(EnvSchema, process.env)) {
@@ -48,4 +51,7 @@ export const env = {
 	EMAIL_FROM: process.env.EMAIL_FROM,
 	CUSTOMER_APP_URL: process.env.CUSTOMER_APP_URL ?? "http://localhost:3001",
 	SELLER_APP_URL: process.env.SELLER_APP_URL ?? "http://localhost:3002",
+	STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY!,
+	STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+	STRIPE_DEV_PRICE_ID: process.env.STRIPE_DEV_PRICE_ID,
 } as const;

@@ -1,9 +1,5 @@
-import type { OpeningHoursSchema } from "@bibs/api/schemas";
-import type { Static } from "@sinclair/typebox";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-
-type OpeningHours = Static<typeof OpeningHoursSchema>;
 
 /**
  * Hook to fetch the current onboarding status and data.
@@ -129,53 +125,6 @@ export function useUpdateCompany() {
 }
 
 /**
- * Hook for Step 4: Store creation (with optional images)
- */
-export function useCreateStore() {
-	return useOnboardingMutation(
-		async (params: {
-			name: string;
-			description?: string;
-			addressLine1: string;
-			province?: string;
-			city: string;
-			zipCode: string;
-			categoryId?: string;
-			openingHours?: OpeningHours;
-			useCompanyAddress?: boolean;
-			images?: File[];
-		}) => {
-			const response = await api().seller.onboarding.store.post(params);
-			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante la creazione del negozio";
-				throw new Error(errorMsg);
-			}
-			return response.data;
-		},
-	);
-}
-
-/**
- * Hook for Step 4b: Skip store creation
- */
-export function useSkipStore() {
-	return useOnboardingMutation(async () => {
-		const response = await api().seller.onboarding["skip-store"].post();
-		if (response.error) {
-			const errorMsg =
-				typeof response.error.value === "string"
-					? response.error.value
-					: "Errore durante il salto del negozio";
-			throw new Error(errorMsg);
-		}
-		return response.data;
-	});
-}
-
-/**
  * Hook to go back to the previous onboarding step.
  */
 export function useGoBack() {
@@ -186,88 +135,6 @@ export function useGoBack() {
 				typeof response.error.value === "string"
 					? response.error.value
 					: "Errore durante il ritorno allo step precedente";
-			throw new Error(errorMsg);
-		}
-		return response.data;
-	});
-}
-
-/**
- * Hook to fetch onboarding team invitations.
- */
-export function useOnboardingInvitations() {
-	return useQuery({
-		queryKey: ["seller", "onboarding", "team"],
-		queryFn: async () => {
-			const response = await api().seller.onboarding.team.get();
-
-			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante il caricamento degli inviti";
-				throw new Error(errorMsg);
-			}
-
-			return response.data.data;
-		},
-	});
-}
-
-/**
- * Hook for Step 6: Invite team member
- */
-export function useInviteTeamMember() {
-	const queryClient = useQueryClient();
-
-	return useMutation({
-		mutationFn: async (params: { email: string; storeIds: string[] }) => {
-			const response = await api().seller.onboarding.team.invite.post(params);
-			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante l'invio dell'invito";
-				throw new Error(errorMsg);
-			}
-			return response.data;
-		},
-		onSuccess: () => {
-			void queryClient.invalidateQueries({
-				queryKey: ["seller", "onboarding", "team"],
-			});
-		},
-	});
-}
-
-/**
- * Hook for Step 6: Complete team step
- */
-export function useCompleteTeam() {
-	return useOnboardingMutation(async () => {
-		const response = await api().seller.onboarding.team.complete.post();
-		if (response.error) {
-			const errorMsg =
-				typeof response.error.value === "string"
-					? response.error.value
-					: "Errore durante il completamento dello step team";
-			throw new Error(errorMsg);
-		}
-		return response.data;
-	});
-}
-
-/**
- * Hook for Step 5: Payment
- */
-export function useUpdatePayment() {
-	return useOnboardingMutation(async (params: { stripeAccountId?: string }) => {
-		const response = await api().seller.onboarding.payment.patch(params);
-		if (response.error) {
-			const errorMsg =
-				typeof response.error.value === "string"
-					? response.error.value
-					: "Errore durante la configurazione del pagamento";
 			throw new Error(errorMsg);
 		}
 		return response.data;

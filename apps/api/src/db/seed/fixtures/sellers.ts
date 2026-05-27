@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import type { VatStatus } from "@/db/schemas/organization";
 import { organization } from "@/db/schemas/organization";
-import { paymentMethod } from "@/db/schemas/payment-method";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
@@ -90,14 +89,12 @@ const stageOrder: readonly OnboardingStatus[] = [
 	"pending_personal",
 	"pending_document",
 	"pending_company",
-	"pending_store",
-	"pending_payment",
 	"pending_review",
 	"active",
 ];
 
 function getStageIndex(status: OnboardingStatus): number {
-	if (status === "rejected") return 6; // rejected = same data as pending_review
+	if (status === "rejected") return 4; // rejected = same data as pending_review
 	return stageOrder.indexOf(status);
 }
 
@@ -141,7 +138,6 @@ export interface SellerSeedData {
 		lat: number;
 		lng: number;
 	} | null;
-	hasPayment: boolean;
 }
 
 // ── Status distribution (150 sellers total) ───────────────
@@ -153,16 +149,17 @@ interface StatusConfig {
 }
 
 const statusDistribution: readonly StatusConfig[] = [
-	{ status: "active", count: 55, vatStatus: "verified" },
-	{ status: "pending_review", count: 25, vatStatus: "pending" },
-	{ status: "pending_payment", count: 15, vatStatus: "pending" },
-	{ status: "pending_store", count: 12, vatStatus: "pending" },
+	{ status: "active", count: 55, vatStatus: "verified" }, // first 50 get a store; last 5 active-no-store (empty state test)
+	{ status: "pending_review", count: 52, vatStatus: "pending" },
 	{ status: "pending_company", count: 10, vatStatus: "pending" },
 	{ status: "pending_document", count: 10, vatStatus: "pending" },
 	{ status: "pending_personal", count: 8, vatStatus: "pending" },
 	{ status: "pending_email", count: 8, vatStatus: "pending" },
 	{ status: "rejected", count: 7, vatStatus: "rejected" },
 ];
+
+/** Among the 55 active sellers, the first N get a store; the rest stay store-less. */
+const ACTIVE_WITH_STORE_COUNT = 50;
 
 // ── Generator ─────────────────────────────────────────────
 
@@ -200,8 +197,8 @@ function generateSellersSeedData(): SellerSeedData[] {
 
 			const hasPersonal = stage >= 2;
 			const hasDocument = stage >= 3;
-			const hasStore = stage >= 5;
-			const hasPayment = stage >= 6;
+			const hasStore =
+				config.status === "active" && i < ACTIVE_WITH_STORE_COUNT;
 
 			const businessName =
 				legalForm === "Ditta Individuale"
@@ -252,7 +249,6 @@ function generateSellersSeedData(): SellerSeedData[] {
 							lng: storeCity.lng + (idx % 7) * 0.001,
 						}
 					: null,
-				hasPayment,
 			});
 
 			idx++;
@@ -307,6 +303,9 @@ export async function seedSellers() {
 	if (created.length === 0) return;
 
 	// Phase 2: Batch insert seller profiles
+	// We don't seed stripeCustomerId — the first time the seller creates a store
+	// via Checkout (or hits the Customer Portal endpoint), getOrCreateStripeCustomer
+	// will provision a real Stripe Customer. Fake ids here would 404 on every API call.
 	const profiles = await db
 		.insert(sellerProfile)
 		.values(
@@ -333,7 +332,7 @@ export async function seedSellers() {
 		})),
 	);
 
-	// Phase 4: Batch insert stores (for sellers at pending_payment+)
+	// Phase 4: Batch insert stores (for active sellers — store creation is post-activation)
 	const storeEntries = created
 		.map(({ data }, i) =>
 			data.store
@@ -353,22 +352,6 @@ export async function seedSellers() {
 
 	if (storeEntries.length > 0) {
 		await db.insert(store).values(storeEntries);
-	}
-
-	// Phase 5: Batch insert payment methods (for sellers at pending_review+)
-	const paymentEntries = created
-		.map(({ data }, i) =>
-			data.hasPayment
-				? {
-						sellerProfileId: profiles[i].id,
-						stripeAccountId: `acct_test_${profiles[i].id.slice(0, 8)}`,
-					}
-				: null,
-		)
-		.filter((e): e is NonNullable<typeof e> => e !== null);
-
-	if (paymentEntries.length > 0) {
-		await db.insert(paymentMethod).values(paymentEntries);
 	}
 
 	console.log(`  ✓ ${created.length} sellers seeded`);

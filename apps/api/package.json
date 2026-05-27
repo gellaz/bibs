@@ -14,6 +14,7 @@
 		"db:studio": "drizzle-kit studio",
 		"db:clean": "rm -rf src/db/migrations && echo 'Migrations removed'",
 		"db:seed": "bun run src/scripts/seed.ts",
+		"stripe:bootstrap": "bun run src/scripts/stripe-bootstrap.ts",
 		"create-admin": "bun run src/scripts/create-admin.ts"
 	},
 	"dependencies": {
@@ -28,7 +29,8 @@
 		"logixlysia": "^6.5.0",
 		"pg": "catalog:",
 		"pino": "^10.3.1",
-		"sharp": "catalog:"
+		"sharp": "catalog:",
+		"stripe": "catalog:"
 	},
 	"devDependencies": {
 		"@types/pg": "catalog:",

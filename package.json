@@ -67,6 +67,7 @@
 		"react-hook-form": "^7.76.1",
 		"react-resizable-panels": "^4.11.2",
 		"sharp": "^0.34.5",
+		"stripe": "^22.1.0",
 		"tailwindcss": "^4.3.0",
 		"vite": "^8.0.14",
 		"vitest": "^4.1.7",

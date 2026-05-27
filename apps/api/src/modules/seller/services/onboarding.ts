@@ -1,25 +1,11 @@
-import type { Static } from "@sinclair/typebox";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
-import {
-	employeeInvitation,
-	employeeInvitationStores,
-} from "@/db/schemas/employee-invitation";
 import { organization } from "@/db/schemas/organization";
-import { paymentMethod } from "@/db/schemas/payment-method";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
-import { store } from "@/db/schemas/store";
-import { storeImage } from "@/db/schemas/store-image";
-import { config } from "@/lib/config";
-import { sendEmail } from "@/lib/email";
-import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
-import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
-
-type OpeningHours = Static<typeof OpeningHoursSchema>;
 
 // ── Helpers ─────────────────────────────────
 
@@ -35,13 +21,8 @@ function assertStatus(current: OnboardingStatus, expected: OnboardingStatus) {
 const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
 	pending_document: "pending_personal",
 	pending_company: "pending_document",
-	pending_store: "pending_company",
-	pending_team: "pending_store",
-	pending_payment: "pending_team",
+	pending_review: "pending_company",
 };
-
-/** Invitation token validity: 7 days */
-const INVITATION_EXPIRY_DAYS = 7;
 
 // ── GET status ──────────────────────────────
 
@@ -184,149 +165,12 @@ export async function updateCompany(params: CompanyParams) {
 
 		const [updated] = await tx
 			.update(sellerProfile)
-			.set({ onboardingStatus: "pending_store" })
+			.set({ onboardingStatus: "pending_review" })
 			.where(eq(sellerProfile.userId, userId))
 			.returning();
 
 		return updated;
 	});
-}
-
-// ── Step 4: Store ───────────────────────────
-
-interface StoreParams {
-	userId: string;
-	name: string;
-	description?: string;
-	addressLine1: string;
-	province?: string;
-	city: string;
-	zipCode: string;
-	categoryId?: string;
-	openingHours?: OpeningHours;
-	useCompanyAddress?: boolean;
-	images?: File[];
-}
-
-export async function createOnboardingStore(params: StoreParams) {
-	const { userId, useCompanyAddress, images, ...data } = params;
-
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-		with: { organization: true },
-	});
-
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
-	assertStatus(profile.onboardingStatus, "pending_store");
-
-	// Validate image count
-	if (images && images.length > config.maxImagesPerStore) {
-		throw new ServiceError(
-			400,
-			`Maximum ${config.maxImagesPerStore} images per store (uploading: ${images.length})`,
-		);
-	}
-
-	let storeAddress = {
-		addressLine1: data.addressLine1,
-		city: data.city,
-		zipCode: data.zipCode,
-		province: data.province,
-	};
-
-	// Copy address from organization if flag is set
-	if (useCompanyAddress && profile.organization) {
-		storeAddress = {
-			addressLine1: profile.organization.addressLine1,
-			city: profile.organization.city,
-			zipCode: profile.organization.zipCode,
-			province: profile.organization.province ?? undefined,
-		};
-	}
-
-	// Upload images to S3 (before the transaction, so we can clean up on failure)
-	const uploaded: { key: string; url: string; position: number }[] = [];
-	if (images && images.length > 0) {
-		try {
-			await Promise.all(
-				images.map(async (file, i) => {
-					const ext = file.name?.split(".").pop() ?? "jpg";
-					// Use a temporary prefix; we don't have storeId yet
-					const tempKey = `stores/pending-${profile.id}/${crypto.randomUUID()}.${ext}`;
-					await s3.write(tempKey, file);
-					uploaded.push({ key: tempKey, url: publicUrl(tempKey), position: i });
-				}),
-			);
-		} catch (err) {
-			await Promise.allSettled(uploaded.map((u) => s3.delete(u.key)));
-			throw err;
-		}
-	}
-
-	try {
-		return await db.transaction(async (tx) => {
-			const [newStore] = await tx
-				.insert(store)
-				.values({
-					sellerProfileId: profile.id,
-					name: data.name,
-					description: data.description,
-					...storeAddress,
-					categoryId: data.categoryId,
-					openingHours: data.openingHours,
-				})
-				.returning();
-
-			// Insert image records if any were uploaded
-			if (uploaded.length > 0) {
-				await tx.insert(storeImage).values(
-					uploaded.map((u) => ({
-						storeId: newStore.id,
-						...u,
-					})),
-				);
-			}
-
-			const [updated] = await tx
-				.update(sellerProfile)
-				.set({ onboardingStatus: "pending_team" })
-				.where(eq(sellerProfile.userId, userId))
-				.returning();
-
-			// Re-fetch store with images for response
-			const storeWithImages = await tx.query.store.findFirst({
-				where: eq(store.id, newStore.id),
-				with: { images: true },
-			});
-
-			return { profile: updated, store: storeWithImages ?? newStore };
-		});
-	} catch (err) {
-		// Transaction failed — cleanup S3 files (best-effort)
-		if (uploaded.length > 0) {
-			await Promise.allSettled(uploaded.map((u) => s3.delete(u.key)));
-		}
-		throw err;
-	}
-}
-
-// ── Step 4b: Skip store ─────────────────────
-
-export async function skipOnboardingStore(userId: string) {
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-	});
-
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
-	assertStatus(profile.onboardingStatus, "pending_store");
-
-	const [updated] = await db
-		.update(sellerProfile)
-		.set({ onboardingStatus: "pending_team" })
-		.where(eq(sellerProfile.userId, userId))
-		.returning();
-
-	return updated;
 }
 
 // ── Go back ─────────────────────────────────
@@ -348,18 +192,10 @@ export async function goBack(userId: string) {
 
 	return db.transaction(async (tx) => {
 		// Clean up rows inserted by the step we're reverting from
-		if (profile.onboardingStatus === "pending_store") {
+		if (profile.onboardingStatus === "pending_review") {
 			await tx
 				.delete(organization)
 				.where(eq(organization.sellerProfileId, profile.id));
-		}
-		if (profile.onboardingStatus === "pending_team") {
-			await tx.delete(store).where(eq(store.sellerProfileId, profile.id));
-		}
-		if (profile.onboardingStatus === "pending_payment") {
-			await tx
-				.delete(paymentMethod)
-				.where(eq(paymentMethod.sellerProfileId, profile.id));
 		}
 
 		const [updated] = await tx
@@ -370,161 +206,4 @@ export async function goBack(userId: string) {
 
 		return updated;
 	});
-}
-
-// ── Step 5: Payment ─────────────────────────
-
-interface PaymentParams {
-	userId: string;
-	stripeAccountId?: string;
-}
-
-export async function updatePayment(params: PaymentParams) {
-	const { userId, stripeAccountId } = params;
-
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-	});
-
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
-	assertStatus(profile.onboardingStatus, "pending_payment");
-
-	return db.transaction(async (tx) => {
-		await tx.insert(paymentMethod).values({
-			sellerProfileId: profile.id,
-			stripeAccountId: stripeAccountId ?? null,
-		});
-
-		const [updated] = await tx
-			.update(sellerProfile)
-			.set({ onboardingStatus: "pending_review" })
-			.where(eq(sellerProfile.userId, userId))
-			.returning();
-
-		return updated;
-	});
-}
-
-// ── Step 5: Team
-
-export async function inviteTeamMember(
-	userId: string,
-	email: string,
-	storeIds: string[],
-) {
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-		with: { organization: true },
-	});
-
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
-	assertStatus(profile.onboardingStatus, "pending_team");
-
-	// Validate storeIds belong to this seller's stores
-	if (storeIds.length === 0) {
-		throw new ServiceError(400, "Almeno un negozio deve essere selezionato");
-	}
-	const valid = await db
-		.select({ id: store.id })
-		.from(store)
-		.where(
-			and(inArray(store.id, storeIds), eq(store.sellerProfileId, profile.id)),
-		);
-	if (valid.length !== storeIds.length) {
-		throw new ServiceError(
-			404,
-			"Uno o più negozi non appartengono al tuo profilo",
-		);
-	}
-
-	// Check if this email was already invited for this seller
-	const existing = await db.query.employeeInvitation.findFirst({
-		where: and(
-			eq(employeeInvitation.sellerProfileId, profile.id),
-			eq(employeeInvitation.email, email),
-			eq(employeeInvitation.status, "pending"),
-		),
-	});
-	if (existing) {
-		throw new ServiceError(409, "Questo indirizzo email è già stato invitato");
-	}
-
-	// Check if email is already registered as a user
-	const existingUser = await db.query.user.findFirst({
-		where: eq(user.email, email),
-	});
-	if (existingUser) {
-		throw new ServiceError(
-			409,
-			"Questo indirizzo email è già registrato nella piattaforma",
-		);
-	}
-
-	const expiresAt = new Date();
-	expiresAt.setDate(expiresAt.getDate() + INVITATION_EXPIRY_DAYS);
-
-	const invitation = await db.transaction(async (tx) => {
-		const [inv] = await tx
-			.insert(employeeInvitation)
-			.values({ sellerProfileId: profile.id, email, expiresAt })
-			.returning();
-		await tx
-			.insert(employeeInvitationStores)
-			.values(storeIds.map((storeId) => ({ invitationId: inv.id, storeId })));
-		return inv;
-	});
-
-	// Send invitation email
-	const businessName = profile.organization?.businessName ?? "bibs";
-	const inviteUrl = `${env.SELLER_APP_URL}/invite/${invitation.invitationToken}`;
-
-	await sendEmail({
-		to: email,
-		subject: `${businessName} ti ha invitato a collaborare su bibs`,
-		html: [
-			`<p>Ciao,</p>`,
-			`<p><strong>${businessName}</strong> ti ha invitato a collaborare come membro del team su bibs.</p>`,
-			`<p>Clicca sul link seguente per creare la tua password e accedere:</p>`,
-			`<p><a href="${inviteUrl}">${inviteUrl}</a></p>`,
-			`<p>Il link scade tra ${INVITATION_EXPIRY_DAYS} giorni.</p>`,
-			`<p>Se non conosci ${businessName} o non ti aspettavi questo invito, puoi ignorare questa email.</p>`,
-		].join(""),
-	});
-
-	return { ...invitation, storeIds };
-}
-
-export async function listOnboardingInvitations(userId: string) {
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-	});
-
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
-
-	const invitations = await db.query.employeeInvitation.findMany({
-		where: eq(employeeInvitation.sellerProfileId, profile.id),
-		with: { storeAssignments: { columns: { storeId: true } } },
-		orderBy: (inv, { desc }) => [desc(inv.createdAt)],
-	});
-	return invitations.map((i) => ({
-		...i,
-		storeIds: i.storeAssignments.map((a) => a.storeId),
-	}));
-}
-
-export async function completeTeam(userId: string) {
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-	});
-
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
-	assertStatus(profile.onboardingStatus, "pending_team");
-
-	const [updated] = await db
-		.update(sellerProfile)
-		.set({ onboardingStatus: "pending_payment" })
-		.where(eq(sellerProfile.userId, userId))
-		.returning();
-
-	return updated;
 }

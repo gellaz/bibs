@@ -19,9 +19,6 @@ export const onboardingStatuses = [
 	"pending_personal",
 	"pending_document",
 	"pending_company",
-	"pending_store",
-	"pending_team",
-	"pending_payment",
 	"pending_review",
 	"active",
 	"rejected",
@@ -63,6 +60,7 @@ export const sellerProfile = pgTable(
 		documentImageUrl: text("document_image_url"),
 
 		vatChangeBlocked: boolean("vat_change_blocked").default(false).notNull(),
+		stripeCustomerId: text("stripe_customer_id").unique(),
 
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()

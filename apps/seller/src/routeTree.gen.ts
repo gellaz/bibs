@@ -20,22 +20,22 @@ import { Route as AuthenticatedStoreRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedTeamIndexRouteImport } from './routes/_authenticated/team/index'
 import { Route as AuthenticatedStoreIndexRouteImport } from './routes/_authenticated/store/index'
 import { Route as AuthenticatedPromotionsIndexRouteImport } from './routes/_authenticated/promotions/index'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
 import { Route as AuthenticatedStoreNewRouteImport } from './routes/_authenticated/store/new'
+import { Route as AuthenticatedStoreArchivedRouteImport } from './routes/_authenticated/store/archived'
 import { Route as AuthenticatedPromotionsNewRouteImport } from './routes/_authenticated/promotions/new'
 import { Route as AuthenticatedPromotionsDiscountIdRouteImport } from './routes/_authenticated/promotions/$discountId'
 import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenticated/products/new'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products/$productId'
-import { Route as AuthenticatedOnboardingTeamRouteImport } from './routes/_authenticated/onboarding/team'
-import { Route as AuthenticatedOnboardingStoreRouteImport } from './routes/_authenticated/onboarding/store'
 import { Route as AuthenticatedOnboardingPersonalInfoRouteImport } from './routes/_authenticated/onboarding/personal-info'
 import { Route as AuthenticatedOnboardingPendingRouteImport } from './routes/_authenticated/onboarding/pending'
-import { Route as AuthenticatedOnboardingPaymentRouteImport } from './routes/_authenticated/onboarding/payment'
 import { Route as AuthenticatedOnboardingDocumentRouteImport } from './routes/_authenticated/onboarding/document'
 import { Route as AuthenticatedOnboardingCompanyRouteImport } from './routes/_authenticated/onboarding/company'
+import { Route as AuthenticatedStoreNewProcessingRouteImport } from './routes/_authenticated/store/new.processing'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -91,6 +91,11 @@ const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedTeamIndexRoute = AuthenticatedTeamIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -118,6 +123,12 @@ const AuthenticatedStoreNewRoute = AuthenticatedStoreNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedStoreRoute,
 } as any)
+const AuthenticatedStoreArchivedRoute =
+  AuthenticatedStoreArchivedRouteImport.update({
+    id: '/archived',
+    path: '/archived',
+    getParentRoute: () => AuthenticatedStoreRoute,
+  } as any)
 const AuthenticatedPromotionsNewRoute =
   AuthenticatedPromotionsNewRouteImport.update({
     id: '/new',
@@ -142,18 +153,6 @@ const AuthenticatedProductsProductIdRoute =
     path: '/$productId',
     getParentRoute: () => AuthenticatedProductsRoute,
   } as any)
-const AuthenticatedOnboardingTeamRoute =
-  AuthenticatedOnboardingTeamRouteImport.update({
-    id: '/onboarding/team',
-    path: '/onboarding/team',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedOnboardingStoreRoute =
-  AuthenticatedOnboardingStoreRouteImport.update({
-    id: '/onboarding/store',
-    path: '/onboarding/store',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedOnboardingPersonalInfoRoute =
   AuthenticatedOnboardingPersonalInfoRouteImport.update({
     id: '/onboarding/personal-info',
@@ -164,12 +163,6 @@ const AuthenticatedOnboardingPendingRoute =
   AuthenticatedOnboardingPendingRouteImport.update({
     id: '/onboarding/pending',
     path: '/onboarding/pending',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedOnboardingPaymentRoute =
-  AuthenticatedOnboardingPaymentRouteImport.update({
-    id: '/onboarding/payment',
-    path: '/onboarding/payment',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedOnboardingDocumentRoute =
@@ -184,12 +177,19 @@ const AuthenticatedOnboardingCompanyRoute =
     path: '/onboarding/company',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedStoreNewProcessingRoute =
+  AuthenticatedStoreNewProcessingRouteImport.update({
+    id: '/processing',
+    path: '/processing',
+    getParentRoute: () => AuthenticatedStoreNewRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/promotions': typeof AuthenticatedPromotionsRouteWithChildren
@@ -198,44 +198,43 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/onboarding/company': typeof AuthenticatedOnboardingCompanyRoute
   '/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
-  '/onboarding/payment': typeof AuthenticatedOnboardingPaymentRoute
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
-  '/onboarding/store': typeof AuthenticatedOnboardingStoreRoute
-  '/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
-  '/store/new': typeof AuthenticatedStoreNewRoute
+  '/store/archived': typeof AuthenticatedStoreArchivedRoute
+  '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/store/': typeof AuthenticatedStoreIndexRoute
   '/team/': typeof AuthenticatedTeamIndexRoute
+  '/store/new/processing': typeof AuthenticatedStoreNewProcessingRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AuthenticatedIndexRoute
   '/onboarding/company': typeof AuthenticatedOnboardingCompanyRoute
   '/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
-  '/onboarding/payment': typeof AuthenticatedOnboardingPaymentRoute
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
-  '/onboarding/store': typeof AuthenticatedOnboardingStoreRoute
-  '/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
-  '/store/new': typeof AuthenticatedStoreNewRoute
+  '/store/archived': typeof AuthenticatedStoreArchivedRoute
+  '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
   '/products': typeof AuthenticatedProductsIndexRoute
   '/promotions': typeof AuthenticatedPromotionsIndexRoute
   '/store': typeof AuthenticatedStoreIndexRoute
   '/team': typeof AuthenticatedTeamIndexRoute
+  '/store/new/processing': typeof AuthenticatedStoreNewProcessingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -243,6 +242,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRouteWithChildren
@@ -252,20 +252,19 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/onboarding/company': typeof AuthenticatedOnboardingCompanyRoute
   '/_authenticated/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
-  '/_authenticated/onboarding/payment': typeof AuthenticatedOnboardingPaymentRoute
   '/_authenticated/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/_authenticated/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
-  '/_authenticated/onboarding/store': typeof AuthenticatedOnboardingStoreRoute
-  '/_authenticated/onboarding/team': typeof AuthenticatedOnboardingTeamRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
   '/_authenticated/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/_authenticated/promotions/new': typeof AuthenticatedPromotionsNewRoute
-  '/_authenticated/store/new': typeof AuthenticatedStoreNewRoute
+  '/_authenticated/store/archived': typeof AuthenticatedStoreArchivedRoute
+  '/_authenticated/store/new': typeof AuthenticatedStoreNewRouteWithChildren
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/_authenticated/store/': typeof AuthenticatedStoreIndexRoute
   '/_authenticated/team/': typeof AuthenticatedTeamIndexRoute
+  '/_authenticated/store/new/processing': typeof AuthenticatedStoreNewProcessingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -274,6 +273,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/verify-email'
+    | '/billing'
     | '/products'
     | '/profile'
     | '/promotions'
@@ -282,50 +282,50 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/onboarding/company'
     | '/onboarding/document'
-    | '/onboarding/payment'
     | '/onboarding/pending'
     | '/onboarding/personal-info'
-    | '/onboarding/store'
-    | '/onboarding/team'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
     | '/promotions/new'
+    | '/store/archived'
     | '/store/new'
     | '/products/'
     | '/promotions/'
     | '/store/'
     | '/team/'
+    | '/store/new/processing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/register'
     | '/verify-email'
+    | '/billing'
     | '/profile'
     | '/invite/$token'
     | '/'
     | '/onboarding/company'
     | '/onboarding/document'
-    | '/onboarding/payment'
     | '/onboarding/pending'
     | '/onboarding/personal-info'
-    | '/onboarding/store'
-    | '/onboarding/team'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
     | '/promotions/new'
+    | '/store/archived'
     | '/store/new'
     | '/products'
     | '/promotions'
     | '/store'
     | '/team'
+    | '/store/new/processing'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/register'
     | '/verify-email'
+    | '/_authenticated/billing'
     | '/_authenticated/products'
     | '/_authenticated/profile'
     | '/_authenticated/promotions'
@@ -335,20 +335,19 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/onboarding/company'
     | '/_authenticated/onboarding/document'
-    | '/_authenticated/onboarding/payment'
     | '/_authenticated/onboarding/pending'
     | '/_authenticated/onboarding/personal-info'
-    | '/_authenticated/onboarding/store'
-    | '/_authenticated/onboarding/team'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/new'
     | '/_authenticated/promotions/$discountId'
     | '/_authenticated/promotions/new'
+    | '/_authenticated/store/archived'
     | '/_authenticated/store/new'
     | '/_authenticated/products/'
     | '/_authenticated/promotions/'
     | '/_authenticated/store/'
     | '/_authenticated/team/'
+    | '/_authenticated/store/new/processing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -438,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/team/': {
       id: '/_authenticated/team/'
       path: '/'
@@ -473,6 +479,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreNewRouteImport
       parentRoute: typeof AuthenticatedStoreRoute
     }
+    '/_authenticated/store/archived': {
+      id: '/_authenticated/store/archived'
+      path: '/archived'
+      fullPath: '/store/archived'
+      preLoaderRoute: typeof AuthenticatedStoreArchivedRouteImport
+      parentRoute: typeof AuthenticatedStoreRoute
+    }
     '/_authenticated/promotions/new': {
       id: '/_authenticated/promotions/new'
       path: '/new'
@@ -501,20 +514,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProductsProductIdRouteImport
       parentRoute: typeof AuthenticatedProductsRoute
     }
-    '/_authenticated/onboarding/team': {
-      id: '/_authenticated/onboarding/team'
-      path: '/onboarding/team'
-      fullPath: '/onboarding/team'
-      preLoaderRoute: typeof AuthenticatedOnboardingTeamRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/onboarding/store': {
-      id: '/_authenticated/onboarding/store'
-      path: '/onboarding/store'
-      fullPath: '/onboarding/store'
-      preLoaderRoute: typeof AuthenticatedOnboardingStoreRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/onboarding/personal-info': {
       id: '/_authenticated/onboarding/personal-info'
       path: '/onboarding/personal-info'
@@ -527,13 +526,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/pending'
       fullPath: '/onboarding/pending'
       preLoaderRoute: typeof AuthenticatedOnboardingPendingRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/onboarding/payment': {
-      id: '/_authenticated/onboarding/payment'
-      path: '/onboarding/payment'
-      fullPath: '/onboarding/payment'
-      preLoaderRoute: typeof AuthenticatedOnboardingPaymentRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/onboarding/document': {
@@ -549,6 +541,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding/company'
       preLoaderRoute: typeof AuthenticatedOnboardingCompanyRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/store/new/processing': {
+      id: '/_authenticated/store/new/processing'
+      path: '/processing'
+      fullPath: '/store/new/processing'
+      preLoaderRoute: typeof AuthenticatedStoreNewProcessingRouteImport
+      parentRoute: typeof AuthenticatedStoreNewRoute
     }
   }
 }
@@ -589,13 +588,28 @@ const AuthenticatedPromotionsRouteWithChildren =
     AuthenticatedPromotionsRouteChildren,
   )
 
+interface AuthenticatedStoreNewRouteChildren {
+  AuthenticatedStoreNewProcessingRoute: typeof AuthenticatedStoreNewProcessingRoute
+}
+
+const AuthenticatedStoreNewRouteChildren: AuthenticatedStoreNewRouteChildren = {
+  AuthenticatedStoreNewProcessingRoute: AuthenticatedStoreNewProcessingRoute,
+}
+
+const AuthenticatedStoreNewRouteWithChildren =
+  AuthenticatedStoreNewRoute._addFileChildren(
+    AuthenticatedStoreNewRouteChildren,
+  )
+
 interface AuthenticatedStoreRouteChildren {
-  AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRoute
+  AuthenticatedStoreArchivedRoute: typeof AuthenticatedStoreArchivedRoute
+  AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRouteWithChildren
   AuthenticatedStoreIndexRoute: typeof AuthenticatedStoreIndexRoute
 }
 
 const AuthenticatedStoreRouteChildren: AuthenticatedStoreRouteChildren = {
-  AuthenticatedStoreNewRoute: AuthenticatedStoreNewRoute,
+  AuthenticatedStoreArchivedRoute: AuthenticatedStoreArchivedRoute,
+  AuthenticatedStoreNewRoute: AuthenticatedStoreNewRouteWithChildren,
   AuthenticatedStoreIndexRoute: AuthenticatedStoreIndexRoute,
 }
 
@@ -614,6 +628,7 @@ const AuthenticatedTeamRouteWithChildren =
   AuthenticatedTeamRoute._addFileChildren(AuthenticatedTeamRouteChildren)
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRouteWithChildren
@@ -622,14 +637,12 @@ interface AuthenticatedRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedOnboardingCompanyRoute: typeof AuthenticatedOnboardingCompanyRoute
   AuthenticatedOnboardingDocumentRoute: typeof AuthenticatedOnboardingDocumentRoute
-  AuthenticatedOnboardingPaymentRoute: typeof AuthenticatedOnboardingPaymentRoute
   AuthenticatedOnboardingPendingRoute: typeof AuthenticatedOnboardingPendingRoute
   AuthenticatedOnboardingPersonalInfoRoute: typeof AuthenticatedOnboardingPersonalInfoRoute
-  AuthenticatedOnboardingStoreRoute: typeof AuthenticatedOnboardingStoreRoute
-  AuthenticatedOnboardingTeamRoute: typeof AuthenticatedOnboardingTeamRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRouteWithChildren,
@@ -638,12 +651,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedOnboardingCompanyRoute: AuthenticatedOnboardingCompanyRoute,
   AuthenticatedOnboardingDocumentRoute: AuthenticatedOnboardingDocumentRoute,
-  AuthenticatedOnboardingPaymentRoute: AuthenticatedOnboardingPaymentRoute,
   AuthenticatedOnboardingPendingRoute: AuthenticatedOnboardingPendingRoute,
   AuthenticatedOnboardingPersonalInfoRoute:
     AuthenticatedOnboardingPersonalInfoRoute,
-  AuthenticatedOnboardingStoreRoute: AuthenticatedOnboardingStoreRoute,
-  AuthenticatedOnboardingTeamRoute: AuthenticatedOnboardingTeamRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

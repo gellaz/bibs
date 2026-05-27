@@ -14,22 +14,21 @@ import {
 import { useEffect } from "react";
 import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { AppSidebar } from "@/components/app-sidebar";
+import { StoreBillingBanner } from "@/components/store-billing-banner";
+import type { OnboardingStatus } from "@/db/schemas/seller";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
 import { useStores } from "@/hooks/use-stores";
 import { authClient } from "@/lib/auth-client";
 
 /** Map onboarding status → route the user should be on */
-const ONBOARDING_ROUTES: Record<string, string> = {
+const ONBOARDING_ROUTES: Partial<Record<OnboardingStatus, string>> = {
 	pending_email: "/onboarding/pending",
 	pending_personal: "/onboarding/personal-info",
 	pending_document: "/onboarding/document",
 	pending_company: "/onboarding/company",
-	pending_store: "/onboarding/store",
-	pending_payment: "/onboarding/payment",
-	pending_team: "/onboarding/team",
 	pending_review: "/onboarding/pending",
-	rejected: "/onboarding/pending",
+	rejected: "/onboarding/pending", // no /rejected route yet — show pending page
 };
 
 export const Route = createFileRoute("/_authenticated")({
@@ -173,6 +172,9 @@ function AuthenticatedLayout() {
 						<AppBreadcrumb />
 					</header>
 					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+						<div className="mb-4 empty:hidden">
+							<StoreBillingBanner />
+						</div>
 						<Outlet />
 					</div>
 				</SidebarInset>
@@ -229,6 +231,9 @@ function EmployeeStoreGate({
 						<AppBreadcrumb />
 					</header>
 					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+						<div className="mb-4 empty:hidden">
+							<StoreBillingBanner />
+						</div>
 						<Outlet />
 					</div>
 				</SidebarInset>

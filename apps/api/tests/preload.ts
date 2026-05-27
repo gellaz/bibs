@@ -11,3 +11,6 @@ process.env.S3_ACCESS_KEY = "minioadmin";
 process.env.S3_SECRET_KEY = "minioadmin";
 process.env.S3_BUCKET = "bibs-test";
 process.env.NODE_ENV = "test";
+process.env.STRIPE_SECRET_KEY = "sk_test_FAKE";
+process.env.STRIPE_WEBHOOK_SECRET = "whsec_FAKE";
+process.env.STRIPE_DEV_PRICE_ID = "price_FAKE";

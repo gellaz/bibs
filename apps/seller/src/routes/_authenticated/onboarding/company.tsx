@@ -58,7 +58,7 @@ function CompanyPage() {
 		setApiError("");
 		try {
 			await mutation.mutateAsync(data);
-			void navigate({ to: "/onboarding/store" });
+			void navigate({ to: "/onboarding/pending" });
 		} catch (err) {
 			setApiError(
 				err instanceof Error ? err.message : "Errore durante il salvataggio",

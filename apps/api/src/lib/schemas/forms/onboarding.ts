@@ -1,5 +1,4 @@
 import { Type } from "@sinclair/typebox";
-import { OpeningHoursSchema } from "./opening-hours";
 
 // ── Step 1: Personal Info ───────────────────
 
@@ -135,57 +134,7 @@ export const CompanyBody = Type.Object({
 	}),
 });
 
-// ── Step 4: Store ───────────────────────────
-
-export const OnboardingStoreBody = Type.Object({
-	name: Type.String({
-		minLength: 1,
-		maxLength: 100,
-		description: "Nome del negozio",
-		error: "Il nome del negozio è obbligatorio",
-	}),
-	description: Type.Optional(
-		Type.String({
-			maxLength: 1000,
-			description: "Descrizione del negozio",
-		}),
-	),
-	addressLine1: Type.String({
-		minLength: 1,
-		maxLength: 200,
-		description: "Indirizzo negozio",
-		error: "L'indirizzo è obbligatorio",
-	}),
-	province: Type.Optional(
-		Type.String({
-			minLength: 2,
-			maxLength: 5,
-			description: "Provincia (sigla)",
-		}),
-	),
-	city: Type.String({
-		minLength: 1,
-		maxLength: 100,
-		description: "Città",
-		error: "La città è obbligatoria",
-	}),
-	zipCode: Type.String({
-		pattern: "^\\d{5}$",
-		description: "CAP (5 cifre)",
-		error: "Il CAP deve essere di 5 cifre",
-	}),
-	categoryId: Type.Optional(
-		Type.String({ description: "ID categoria negozio" }),
-	),
-	openingHours: Type.Optional(OpeningHoursSchema),
-	useCompanyAddress: Type.Optional(
-		Type.Boolean({
-			description: "Se true, copia l'indirizzo dall'azienda registrata",
-		}),
-	),
-});
-
-// ── Step 6: Team ────────────────────────────
+// ── Team invite (used by employees module) ──
 
 export const TeamInviteBody = Type.Object({
 	email: Type.String({
@@ -218,15 +167,4 @@ export const AcceptInviteBody = Type.Object({
 		description: "Conferma password",
 		error: "La conferma password deve avere almeno 8 caratteri",
 	}),
-});
-
-// ── Step 5: Payment ─────────────────────────
-
-export const PaymentBody = Type.Object({
-	stripeAccountId: Type.Optional(
-		Type.String({
-			pattern: "^acct_[a-zA-Z0-9]+$",
-			description: "ID dell'account Stripe Connect",
-		}),
-	),
 });
