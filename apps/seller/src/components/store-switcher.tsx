@@ -26,18 +26,25 @@ export function StoreSwitcher() {
 	}
 
 	const otherStores = stores.filter((s) => s.id !== activeStore?.id);
-	const isMultiStore = stores.length > 1;
 
-	// Single-store + non-owner: no dropdown needed, render a quiet label.
-	if (!isMultiStore && !isOwner) {
+	// Non-owner with a single store: no dropdown (can't add stores, no others to switch to).
+	if (stores.length === 1 && !isOwner) {
 		return (
 			<SidebarMenu>
 				<SidebarMenuItem>
 					<div className="flex items-center gap-2 px-2 py-1.5 text-sm">
-						<StoreIcon className="size-4 shrink-0 text-muted-foreground" />
-						<span className="truncate font-medium">
-							{activeStore?.name ?? ""}
-						</span>
+						<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+							<StoreIcon className="size-4" />
+						</div>
+						<div className="grid flex-1 text-left text-sm leading-tight">
+							<span className="truncate font-medium">
+								{activeStore?.name ?? ""}
+							</span>
+							<span className="truncate text-xs text-muted-foreground">
+								{activeStore?.city}
+								{activeStore?.province ? ` (${activeStore.province})` : ""}
+							</span>
+						</div>
 					</div>
 				</SidebarMenuItem>
 			</SidebarMenu>
@@ -50,26 +57,20 @@ export function StoreSwitcher() {
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<SidebarMenuButton
-							size={isMultiStore ? "lg" : "default"}
+							size="lg"
 							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
 						>
-							{isMultiStore ? (
-								<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-									<StoreIcon className="size-4" />
-								</div>
-							) : (
-								<StoreIcon className="size-4 shrink-0 text-muted-foreground" />
-							)}
+							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+								<StoreIcon className="size-4" />
+							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-medium">
 									{activeStore?.name ?? "Seleziona negozio"}
 								</span>
-								{isMultiStore && (
-									<span className="truncate text-xs text-muted-foreground">
-										{activeStore?.city}
-										{activeStore?.province ? ` (${activeStore.province})` : ""}
-									</span>
-								)}
+								<span className="truncate text-xs text-muted-foreground">
+									{activeStore?.city}
+									{activeStore?.province ? ` (${activeStore.province})` : ""}
+								</span>
 							</div>
 							<ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground" />
 						</SidebarMenuButton>

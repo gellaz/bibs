@@ -1,3 +1,4 @@
+import { Button } from "@bibs/ui/components/button";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -6,6 +7,7 @@ import {
 	ChevronRight,
 	Clock,
 	Package,
+	Plus,
 	Star,
 	Store,
 	Tag,
@@ -96,7 +98,11 @@ const URGENCY_DOT: Record<Urgency, string> = {
 };
 
 function Dashboard() {
-	const { activeStore } = useActiveStore();
+	const { activeStore, stores, isLoading } = useActiveStore();
+
+	if (!isLoading && stores.length === 0) {
+		return <EmptyStoresState />;
+	}
 
 	return (
 		<div className="mx-auto max-w-5xl space-y-10">
@@ -109,6 +115,35 @@ function Dashboard() {
 			<StatsStrip />
 
 			<ActionsList />
+		</div>
+	);
+}
+
+function EmptyStoresState() {
+	return (
+		<div className="mx-auto flex max-w-xl flex-col items-center justify-center gap-6 py-24 text-center">
+			<div
+				aria-hidden
+				className="flex size-16 items-center justify-center rounded-2xl bg-cobalt-soft text-cobalt-deep"
+			>
+				<Store className="size-8" />
+			</div>
+			<div className="space-y-2">
+				<h1 className="font-display text-3xl font-bold tracking-tight">
+					Apri il tuo primo negozio
+				</h1>
+				<p className="text-muted-foreground">
+					Per iniziare a vendere su bibs devi attivare il tuo primo punto
+					vendita. L'abbonamento mensile parte solo dopo che confermi il
+					pagamento.
+				</p>
+			</div>
+			<Button asChild size="lg">
+				<Link to="/store/new">
+					<Plus className="size-4" />
+					Aggiungi il primo negozio
+				</Link>
+			</Button>
 		</div>
 	);
 }
