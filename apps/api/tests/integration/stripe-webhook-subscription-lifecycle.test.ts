@@ -25,7 +25,7 @@ let currentEvent: any = null;
 
 mock.module("@/lib/stripe", () => ({
 	stripe: {
-		webhooks: { constructEvent: () => currentEvent },
+		webhooks: { constructEventAsync: async () => currentEvent },
 	},
 }));
 

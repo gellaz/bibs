@@ -30,7 +30,7 @@ const constructEvent = mock(() => ({
 
 mock.module("@/lib/stripe", () => ({
 	stripe: {
-		webhooks: { constructEvent },
+		webhooks: { constructEventAsync: constructEvent },
 	},
 }));
 

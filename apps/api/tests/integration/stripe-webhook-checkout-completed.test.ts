@@ -54,7 +54,7 @@ const constructEvent = mock(() => ({
 mock.module("@/lib/stripe", () => ({
 	stripe: {
 		subscriptions: { retrieve: subRetrieve },
-		webhooks: { constructEvent },
+		webhooks: { constructEventAsync: constructEvent },
 	},
 }));
 

@@ -11,8 +11,11 @@ export const stripeWebhookRoutes = new Elysia().post(
 			return { error: "missing signature" };
 		}
 
-		const payload =
-			typeof ctx.body === "string" ? ctx.body : JSON.stringify(ctx.body);
+		// Read the raw body directly from the underlying Request, bypassing any
+		// Elysia body parsing. Stripe's HMAC verifies the EXACT bytes that were
+		// signed — any re-serialization (even JSON.stringify on a parsed object)
+		// changes whitespace/key order and breaks the signature.
+		const payload = await ctx.request.text();
 
 		try {
 			await handleStripeWebhook({ payload, signature });
@@ -31,7 +34,8 @@ export const stripeWebhookRoutes = new Elysia().post(
 		}
 	},
 	{
-		parse: "text",
+		// Disable Elysia body parsing entirely — we read the raw text ourselves.
+		parse: "none",
 		detail: {
 			summary: "Webhook Stripe",
 			description:

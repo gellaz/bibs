@@ -26,13 +26,16 @@ export async function handleStripeWebhook(
 		throw new ServiceError(500, "STRIPE_WEBHOOK_SECRET not configured");
 	}
 
+	// Use the async variant: Bun's runtime only exposes Web SubtleCrypto, which
+	// the Stripe SDK can't use synchronously (constructEvent throws
+	// CryptoProviderOnlySupportsAsyncError on Bun/Edge/Workers).
 	let event: Stripe.Event;
 	try {
-		event = stripe.webhooks.constructEvent(
+		event = (await stripe.webhooks.constructEventAsync(
 			payload,
 			signature,
 			env.STRIPE_WEBHOOK_SECRET,
-		) as Stripe.Event;
+		)) as Stripe.Event;
 	} catch (err) {
 		logger.warn({ err }, "Stripe webhook signature verification failed");
 		throw new ServiceError(400, "Invalid Stripe signature");
