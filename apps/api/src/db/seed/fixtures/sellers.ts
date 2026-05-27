@@ -303,18 +303,15 @@ export async function seedSellers() {
 	if (created.length === 0) return;
 
 	// Phase 2: Batch insert seller profiles
-	// Active sellers get a fake stripeCustomerId so the billing UI (Customer Portal CTA)
-	// renders without 404. The id won't resolve in real Stripe, but seed data is dev-only.
+	// We don't seed stripeCustomerId — the first time the seller creates a store
+	// via Checkout (or hits the Customer Portal endpoint), getOrCreateStripeCustomer
+	// will provision a real Stripe Customer. Fake ids here would 404 on every API call.
 	const profiles = await db
 		.insert(sellerProfile)
 		.values(
 			created.map(({ userId, data }) => ({
 				userId,
 				onboardingStatus: data.onboardingStatus,
-				stripeCustomerId:
-					data.onboardingStatus === "active"
-						? `cus_seed_${userId.slice(0, 16)}`
-						: null,
 				...data.profileFields,
 			})),
 		)

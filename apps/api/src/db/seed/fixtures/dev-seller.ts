@@ -53,14 +53,16 @@ export async function seedDevSeller() {
 		})
 		.where(eq(user.id, u.id));
 
-	// Phase 2: seller_profile (active, with fake stripeCustomerId)
+	// Phase 2: seller_profile (active, NO stripeCustomerId — first Checkout will provision)
+	// We keep the same fake id on the seeded subscription rows below as DB-display data,
+	// but the seller_profile itself stays null so getOrCreateStripeCustomer creates a real
+	// Stripe Customer the first time the seller adds a new store via Checkout.
 	const stripeCustomerId = `cus_seed_dev_${u.id.slice(0, 12)}`;
 	const [profile] = await db
 		.insert(sellerProfile)
 		.values({
 			userId: u.id,
 			onboardingStatus: "active",
-			stripeCustomerId,
 			firstName: "Dev",
 			lastName: "Seller",
 			citizenship: "IT",
