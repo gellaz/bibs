@@ -28,7 +28,7 @@
 		"db:reset": "docker compose down -v && docker compose up -d --wait && bun run db:migrate && bun run db:seed"
 	},
 	"catalog": {
-		"@aws-sdk/client-s3": "^3.1053.0",
+		"@aws-sdk/client-s3": "^3.1054.0",
 		"@elysiajs/eden": "^1.4.9",
 		"@hookform/resolvers": "^5.4.0",
 		"@inlang/paraglide-js": "^2.18.1",
