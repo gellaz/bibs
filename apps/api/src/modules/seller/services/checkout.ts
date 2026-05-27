@@ -72,39 +72,60 @@ export async function createCheckoutSession(
 		Date.now() + pricing.pendingCreationExpiryHours * 60 * 60 * 1000,
 	);
 
-	const [pending] = await db
-		.insert(pendingStoreCreation)
-		.values({
-			sellerProfileId,
-			formData: body,
-			feeAmountCents: pricing.storeMonthlyFeeCents,
-			currency: pricing.currency,
-			status: "open",
-			expiresAt,
-		})
-		.returning();
+	// If there's an orphan pending (open, no Stripe session — left over from a previous
+	// attempt that exploded mid-flight), reuse the row instead of inserting a new one,
+	// otherwise the partial unique index on (seller_profile_id WHERE status='open') trips.
+	const orphan =
+		existing && !existing.stripeCheckoutSessionId ? existing : null;
+
+	let pendingId: string;
+	if (orphan) {
+		await db
+			.update(pendingStoreCreation)
+			.set({
+				formData: body,
+				feeAmountCents: pricing.storeMonthlyFeeCents,
+				currency: pricing.currency,
+				expiresAt,
+			})
+			.where(eq(pendingStoreCreation.id, orphan.id));
+		pendingId = orphan.id;
+	} else {
+		const [pending] = await db
+			.insert(pendingStoreCreation)
+			.values({
+				sellerProfileId,
+				formData: body,
+				feeAmountCents: pricing.storeMonthlyFeeCents,
+				currency: pricing.currency,
+				status: "open",
+				expiresAt,
+			})
+			.returning();
+		pendingId = pending.id;
+	}
 
 	const session = await stripe.checkout.sessions.create({
 		mode: "subscription",
 		customer: customerId,
 		line_items: [{ price: pricing.stripePriceId, quantity: 1 }],
 		payment_method_collection: "if_required",
-		metadata: { pendingStoreCreationId: pending.id },
+		metadata: { pendingStoreCreationId: pendingId },
 		subscription_data: {
-			metadata: { pendingStoreCreationId: pending.id },
+			metadata: { pendingStoreCreationId: pendingId },
 		},
 		success_url: `${env.SELLER_APP_URL}/store/new/processing?session_id={CHECKOUT_SESSION_ID}`,
-		cancel_url: `${env.SELLER_APP_URL}/store/new?cancel=${pending.id}`,
+		cancel_url: `${env.SELLER_APP_URL}/store/new?cancel=${pendingId}`,
 	});
 
 	await db
 		.update(pendingStoreCreation)
 		.set({ stripeCheckoutSessionId: session.id })
-		.where(eq(pendingStoreCreation.id, pending.id));
+		.where(eq(pendingStoreCreation.id, pendingId));
 
 	return {
 		checkoutUrl: session.url ?? "",
-		pendingStoreCreationId: pending.id,
+		pendingStoreCreationId: pendingId,
 	};
 }
 
