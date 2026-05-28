@@ -27,7 +27,7 @@
 - `apps/api/src/db/schemas/store.ts` — drop `city`, `province`; add `municipalityId text NOT NULL FK`.
 - `apps/api/src/db/schemas/address.ts` (`customerAddress`) — drop `city`, `province`; add `municipalityId text NOT NULL FK`.
 - `apps/api/src/db/schemas/seller.ts` — drop `residenceCity`, `documentIssuedMunicipality`; add `residenceMunicipalityId text NULL FK`, `documentIssuedMunicipalityId text NULL FK`.
-- `apps/api/src/lib/schemas/locations.ts` (o file equivalente che esporta `MunicipalitySchema`) — aggiungere `MunicipalityCompactSchema` `{ id, name, provinciaAcronym }`.
+- `apps/api/src/lib/schemas/locations.ts` (o file equivalente che esporta `MunicipalitySchema`) — aggiungere `MunicipalityCompactSchema` `{ id, name, provinceAcronym }`.
 - `apps/api/src/modules/locations/services/locations.ts` — aggiungere `listAllMunicipalities()`.
 - `apps/api/src/modules/locations/routes/locations.ts` — aggiungere route `GET /municipalities/all`.
 - `apps/api/src/modules/sellers/services/onboarding.ts` (e/o services correlati) — scrivere `municipalityId` invece di `city`/`province`; reads con JOIN su `municipality`+`province`.
@@ -83,7 +83,7 @@ export const MunicipalityCompactSchema = t.Object(
 	{
 		id: t.String({ description: "ID del comune (UUID)" }),
 		name: t.String({ description: "Nome del comune" }),
-		provinciaAcronym: t.String({
+		provinceAcronym: t.String({
 			minLength: 2,
 			maxLength: 2,
 			description: "Sigla provincia (2 lettere)",
@@ -141,16 +141,16 @@ describe("listAllMunicipalities", () => {
 		expect(data.length).toBeLessThan(8500);
 	});
 
-	it("returns the compact shape { id, name, provinciaAcronym }", async () => {
+	it("returns the compact shape { id, name, provinceAcronym }", async () => {
 		const data = await listAllMunicipalities();
 		const first = data[0];
 		expect(first).toBeDefined();
 		expect(Object.keys(first!).sort()).toEqual([
 			"id",
 			"name",
-			"provinciaAcronym",
+			"provinceAcronym",
 		]);
-		expect(first!.provinciaAcronym).toHaveLength(2);
+		expect(first!.provinceAcronym).toHaveLength(2);
 	});
 
 	it("returns items sorted by name ASC", async () => {
@@ -161,11 +161,11 @@ describe("listAllMunicipalities", () => {
 		}
 	});
 
-	it("provinciaAcronym is uppercase", async () => {
+	it("provinceAcronym is uppercase", async () => {
 		const data = await listAllMunicipalities();
 		const sample = data.slice(0, 20);
 		for (const m of sample) {
-			expect(m.provinciaAcronym).toBe(m.provinciaAcronym.toUpperCase());
+			expect(m.provinceAcronym).toBe(m.provinceAcronym.toUpperCase());
 		}
 	});
 });
@@ -199,7 +199,7 @@ export async function listAllMunicipalities() {
 		.select({
 			id: municipality.id,
 			name: municipality.name,
-			provinciaAcronym: province.acronym,
+			provinceAcronym: province.acronym,
 		})
 		.from(municipality)
 		.innerJoin(province, eq(municipality.provinceId, province.id))
@@ -295,7 +295,7 @@ In un altro:
 curl -i http://localhost:3000/locations/municipalities/all | head -20
 ```
 
-Expected: header `cache-control: public, max-age=86400, stale-while-revalidate=604800` + body JSON che inizia con `{"data":[{"id":"…","name":"Abano Terme","provinciaAcronym":"PD"},…`.
+Expected: header `cache-control: public, max-age=86400, stale-while-revalidate=604800` + body JSON che inizia con `{"data":[{"id":"…","name":"Abano Terme","provinceAcronym":"PD"},…`.
 
 Chiudi il server con Ctrl+C.
 
@@ -344,7 +344,7 @@ import {
 export type MunicipalityOption = {
 	id: string;
 	name: string;
-	provinciaAcronym: string;
+	provinceAcronym: string;
 };
 
 export type MunicipalityComboboxProps = {
@@ -374,7 +374,7 @@ type Indexed = MunicipalityOption & { searchKey: string };
 function indexMunicipalities(list: MunicipalityOption[]): Indexed[] {
 	return list.map((m) => ({
 		...m,
-		searchKey: `${normalize(m.name)} (${m.provinciaAcronym.toLowerCase()})`,
+		searchKey: `${normalize(m.name)} (${m.provinceAcronym.toLowerCase()})`,
 	}));
 }
 
@@ -438,7 +438,7 @@ function MunicipalityCombobox({
 		<Combobox
 			items={items}
 			itemToStringLabel={(item: MunicipalityOption) =>
-				`${item.name} (${item.provinciaAcronym})`
+				`${item.name} (${item.provinceAcronym})`
 			}
 			itemToStringValue={(item: MunicipalityOption) => item.id}
 			value={selected}
@@ -459,7 +459,7 @@ function MunicipalityCombobox({
 				<ComboboxList>
 					{items.map((item) => (
 						<ComboboxItem key={item.id} value={item}>
-							{item.name} ({item.provinciaAcronym})
+							{item.name} ({item.provinceAcronym})
 						</ComboboxItem>
 					))}
 				</ComboboxList>
@@ -939,12 +939,12 @@ return {
 	municipality: {
 		id: org.municipality.id,
 		name: org.municipality.name,
-		provinciaAcronym: org.municipality.province.acronym,
+		provinceAcronym: org.municipality.province.acronym,
 	},
 };
 ```
 
-Riadatta la response schema della route corrispondente per esporre `municipality: { id, name, provinciaAcronym }` invece di `city`/`province`. Verifica il file route:
+Riadatta la response schema della route corrispondente per esporre `municipality: { id, name, provinceAcronym }` invece di `city`/`province`. Verifica il file route:
 
 ```bash
 grep -rln "organization" apps/api/src/modules/sellers/routes
@@ -1019,7 +1019,7 @@ const result = await db.query.store.findFirst({
 });
 ```
 
-Se la query mappa già `result.city` → `data.city`, sostituisci con il flatten `municipality: { id, name, provinciaAcronym }`.
+Se la query mappa già `result.city` → `data.city`, sostituisci con il flatten `municipality: { id, name, provinceAcronym }`.
 
 - [ ] **Step 4: Aggiorna response schemas route stores**
 
@@ -1101,14 +1101,14 @@ return {
 		? {
 				id: profile.residenceMunicipality.id,
 				name: profile.residenceMunicipality.name,
-				provinciaAcronym: profile.residenceMunicipality.province.acronym,
+				provinceAcronym: profile.residenceMunicipality.province.acronym,
 			}
 		: null,
 	documentIssuedMunicipality: profile.documentIssuedMunicipality
 		? {
 				id: profile.documentIssuedMunicipality.id,
 				name: profile.documentIssuedMunicipality.name,
-				provinciaAcronym:
+				provinceAcronym:
 					profile.documentIssuedMunicipality.province.acronym,
 			}
 		: null,
@@ -1883,8 +1883,8 @@ Solo se serve.
 
 **Type consistency:**
 - `municipalityId: text` (FK) in tutti gli schemi Drizzle (Task 5).
-- `MunicipalityCompactSchema = { id, name, provinciaAcronym }` consistentemente nel backend (Task 1) e nei response (Task 7-9).
-- `MunicipalityOption = { id, name, provinciaAcronym }` nel frontend (Task 4) coincide via Eden Treaty.
+- `MunicipalityCompactSchema = { id, name, provinceAcronym }` consistentemente nel backend (Task 1) e nei response (Task 7-9).
+- `MunicipalityOption = { id, name, provinceAcronym }` nel frontend (Task 4) coincide via Eden Treaty.
 - `municipalitiesQueryOptions()` consistente come queryKey `['municipalities', 'all']` (Task 12, 13, 14, 15).
 - `residenceMunicipalityId`, `documentIssuedMunicipalityId` consistentemente nominati in Drizzle (Task 5), TypeBox forms (Task 10) e form components (Task 16).
 

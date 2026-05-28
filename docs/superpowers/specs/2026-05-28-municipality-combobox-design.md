@@ -31,7 +31,7 @@ Obiettivo: sostituire ovunque la coppia testuale `city`/`province` con una FK `m
 │ apps/api                                                    │
 │                                                             │
 │  GET /locations/municipalities/all                          │
-│    → { data: [{ id, name, provinciaAcronym }] }             │
+│    → { data: [{ id, name, provinceAcronym }] }             │
 │    → cache HTTP 24h + ETag                                  │
 │                                                             │
 │  Schema DB:                                                 │
@@ -80,7 +80,7 @@ Obiettivo: sostituire ovunque la coppia testuale `city`/`province` con una FK `m
   data: Array<{
     id: string            // uuid
     name: string          // "Milano"
-    provinciaAcronym: string  // "MI", 2 char
+    provinceAcronym: string  // "MI", 2 char
   }>
 }
 ```
@@ -137,7 +137,7 @@ Tutti i service che oggi leggono/scrivono `city`/`province` su `organization`, `
   municipality: {
     id: string
     name: string
-    provinciaAcronym: string
+    provinceAcronym: string
   }
   ```
 
@@ -158,7 +158,7 @@ File: `packages/ui/src/components/municipality-combobox.tsx`.
 **Props**:
 
 ```tsx
-type MunicipalityOption = { id: string; name: string; provinciaAcronym: string }
+type MunicipalityOption = { id: string; name: string; provinceAcronym: string }
 
 type MunicipalityComboboxProps = {
   value: string | null
@@ -288,7 +288,7 @@ Eliminare le chiavi obsolete legate a `city`/`province` testuali nei 3 form.
 - Test in `apps/api/src/modules/locations/services/locations.test.ts`:
   - `listAllMunicipalities` ritorna count == numero righe `municipality`.
   - Ordering ASC su `name`.
-  - Ogni elemento ha esattamente `{ id, name, provinciaAcronym }` (no extra fields).
+  - Ogni elemento ha esattamente `{ id, name, provinceAcronym }` (no extra fields).
   - Sigla provincia esiste sempre (no NULL).
 - Test route: `GET /locations/municipalities/all` ritorna `Cache-Control` e `ETag` corretti.
 
