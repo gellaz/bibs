@@ -12,6 +12,8 @@
 
 **Branch:** `feat/municipality-combobox` (già creato).
 
+**Stato implementazione:** ✅ Tutti i 17 task completati (+ 1 task ad-hoc T10.5 customer addresses). 29 commit su branch, typecheck 0 errori, lint pulito, 110 unit + 371 integration test verdi. Pronto per PR / merge.
+
 ---
 
 ## File Structure

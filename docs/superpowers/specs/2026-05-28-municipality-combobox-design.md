@@ -1,7 +1,7 @@
 # Municipality Combobox — Design
 
 **Data**: 2026-05-28
-**Stato**: Approvato in brainstorming, pronto per writing-plans
+**Stato**: Implementato — branch `feat/municipality-combobox` ready to merge (typecheck/lint/test verdi)
 **Owner**: Marco Gelli
 
 ---
@@ -32,7 +32,7 @@ Obiettivo: sostituire ovunque la coppia testuale `city`/`province` con una FK `m
 │                                                             │
 │  GET /locations/municipalities/all                          │
 │    → { data: [{ id, name, provinceAcronym }] }             │
-│    → cache HTTP 24h + ETag                                  │
+│    → cache HTTP 24h (Cache-Control + SWR)                   │
 │                                                             │
 │  Schema DB:                                                 │
 │    organization, store, customerAddress, sellerProfile      │
@@ -44,7 +44,7 @@ Obiettivo: sostituire ovunque la coppia testuale `city`/`province` con una FK `m
 ┌─────────────────────────────────────────────────────────────┐
 │ apps/seller (admin/customer: stesso pattern quando serve)   │
 │                                                             │
-│  src/lib/hooks/use-municipalities.ts                        │
+│  src/hooks/use-municipalities.ts                        │
 │    → useQuery(['municipalities','all'], staleTime:Infinity) │
 │                                                             │
 │  src/routes/.../onboarding/company.tsx                      │
@@ -199,7 +199,7 @@ Niente multiselect. Niente "create new".
 
 ### 5.2 Hook per app
 
-`apps/seller/src/lib/hooks/use-municipalities.ts`:
+`apps/seller/src/hooks/use-municipalities.ts`:
 
 ```ts
 export const municipalitiesQueryOptions = () =>
@@ -289,7 +289,7 @@ Eliminare le chiavi obsolete legate a `city`/`province` testuali nei 3 form.
   - Ordering ASC su `name`.
   - Ogni elemento ha esattamente `{ id, name, provinceAcronym }` (no extra fields).
   - Sigla provincia esiste sempre (no NULL).
-- Test route: `GET /locations/municipalities/all` ritorna `Cache-Control` e `ETag` corretti.
+- Test route: `GET /locations/municipalities/all` ritorna `Cache-Control` corretto.
 
 ### 6.2 Typecheck cross-workspace
 
