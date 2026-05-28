@@ -15,9 +15,8 @@ const STORAGE_KEY = "bibs-seller-active-store";
 interface Store {
 	id: string;
 	name: string;
-	city: string;
 	addressLine1: string;
-	province: string | null;
+	municipality: { name: string; provinceAcronym: string } | null;
 }
 
 export interface Subscription {

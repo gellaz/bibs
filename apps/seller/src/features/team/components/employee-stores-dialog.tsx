@@ -121,10 +121,9 @@ export function EmployeeStoresDialog({
 										<span className="truncate text-sm font-medium">
 											{s.name}
 										</span>
-										{s.city && (
+										{s.municipality && (
 											<span className="truncate text-muted-foreground text-xs">
-												{s.city}
-												{s.province ? `, ${s.province}` : ""}
+												{s.municipality.name} ({s.municipality.provinceAcronym})
 											</span>
 										)}
 									</div>

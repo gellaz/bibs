@@ -16,7 +16,11 @@ interface StoreProduct {
 	id: string;
 	storeId: string;
 	stock: number;
-	store: { id: string; name: string; city: string };
+	store: {
+		id: string;
+		name: string;
+		municipality: { name: string; provinceAcronym: string } | null;
+	};
 }
 
 interface Props {
@@ -96,7 +100,10 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 							{activeRow.store.name}
 						</p>
 						<p className="text-muted-foreground truncate text-xs">
-							{activeRow.store.city}
+							{activeRow.store.municipality?.name}
+							{activeRow.store.municipality
+								? ` (${activeRow.store.municipality.provinceAcronym})`
+								: ""}
 						</p>
 					</div>
 					<StockEditorCell

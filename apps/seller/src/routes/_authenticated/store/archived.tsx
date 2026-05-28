@@ -85,7 +85,7 @@ function ArchivedPage() {
 									<TableRow key={r.id}>
 										<TableCell>{r.name}</TableCell>
 										<TableCell>
-											{r.addressLine1}, {r.city}
+											{r.addressLine1}, {r.municipality.name}
 										</TableCell>
 										<TableCell>{formatDate(r.createdAt)}</TableCell>
 										<TableCell>
