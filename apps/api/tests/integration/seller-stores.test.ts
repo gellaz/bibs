@@ -36,9 +36,15 @@ import {
 	updateStore,
 } from "@/modules/seller/services/stores";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestSeller, createTestStore } from "../helpers/fixtures";
+import {
+	createTestMunicipality,
+	createTestSeller,
+	createTestStore,
+} from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+let municipalityId: string;
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -50,6 +56,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
 	await truncateAll(getTestDb());
+	// Recreate a test municipality after each truncation so store-creation calls have a valid FK
+	municipalityId = (await createTestMunicipality(getTestDb())).id;
 });
 
 // ── listStores ────────────────────────────────────────────────────────────────
@@ -74,21 +82,21 @@ describe("listStores", () => {
 			sellerProfileId: sellerA.profile.id,
 			name: "A1",
 			addressLine1: "Via A",
-			city: "Milano",
+			municipalityId,
 			zipCode: "20100",
 		});
 		await createStore({
 			sellerProfileId: sellerA.profile.id,
 			name: "A2",
 			addressLine1: "Via A2",
-			city: "Milano",
+			municipalityId,
 			zipCode: "20101",
 		});
 		await createStore({
 			sellerProfileId: sellerB.profile.id,
 			name: "B1",
 			addressLine1: "Via B",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 		});
 
@@ -134,14 +142,14 @@ describe("listStores", () => {
 			sellerProfileId: seller.profile.id,
 			name: "Keep",
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 		});
 		await createStore({
 			sellerProfileId: seller.profile.id,
 			name: "Delete",
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00101",
 		});
 
@@ -173,7 +181,7 @@ describe("createStore", () => {
 			sellerProfileId: seller.profile.id,
 			name: "Negozio",
 			addressLine1: "Via Dante 1",
-			city: "Milano",
+			municipalityId,
 			zipCode: "20121",
 			phoneNumbers: [
 				{ label: "Principale", number: "0212345678" },
@@ -193,7 +201,7 @@ describe("createStore", () => {
 			sellerProfileId: seller.profile.id,
 			name: "Basic",
 			addressLine1: "Via 1",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 		});
 
@@ -211,7 +219,7 @@ describe("updateStore", () => {
 			sellerProfileId: seller.profile.id,
 			name: "Old",
 			addressLine1: "Via Vecchia",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 		});
 
@@ -233,7 +241,7 @@ describe("updateStore", () => {
 			sellerProfileId: seller.profile.id,
 			name: "S",
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 			phoneNumbers: [{ number: "111111111" }, { number: "222222222" }],
 		});
@@ -256,7 +264,7 @@ describe("updateStore", () => {
 			sellerProfileId: owner.profile.id,
 			name: "S",
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 		});
 
@@ -280,7 +288,7 @@ describe("deleteStore", () => {
 			sellerProfileId: seller.profile.id,
 			name: "S",
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 		});
 
