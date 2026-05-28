@@ -576,9 +576,9 @@ export const MunicipalitySchema = t.Object({
 
 export const MunicipalityCompactSchema = t.Object(
 	{
-		id: t.String({ description: "ID del comune (UUID)" }),
+		id: t.String({ description: "Identificatore univoco del comune" }),
 		name: t.String({ description: "Nome del comune" }),
-		provinciaAcronym: t.String({
+		provinceAcronym: t.String({
 			minLength: 2,
 			maxLength: 2,
 			description: "Sigla provincia (2 lettere)",
