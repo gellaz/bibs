@@ -81,6 +81,14 @@ export async function listSellers(params: ListSellersParams) {
 						},
 					},
 				},
+				residenceMunicipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+				documentIssuedMunicipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
 			},
 			limit,
 			offset,
@@ -90,11 +98,33 @@ export async function listSellers(params: ListSellersParams) {
 	]);
 
 	const data = rawData.map((profile) => {
-		const { organization: org, ...rest } = profile;
-		if (!org) return { ...rest, organization: null };
+		const {
+			organization: org,
+			residenceMunicipality,
+			documentIssuedMunicipality,
+			...rest
+		} = profile;
+		const profileWithMunicipalities = {
+			...rest,
+			residenceMunicipality: residenceMunicipality
+				? {
+						id: residenceMunicipality.id,
+						name: residenceMunicipality.name,
+						provinceAcronym: residenceMunicipality.province.acronym,
+					}
+				: null,
+			documentIssuedMunicipality: documentIssuedMunicipality
+				? {
+						id: documentIssuedMunicipality.id,
+						name: documentIssuedMunicipality.name,
+						provinceAcronym: documentIssuedMunicipality.province.acronym,
+					}
+				: null,
+		};
+		if (!org) return { ...profileWithMunicipalities, organization: null };
 		const { municipality, ...orgRest } = org;
 		return {
-			...rest,
+			...profileWithMunicipalities,
 			organization: {
 				...orgRest,
 				municipality: {
@@ -109,38 +139,75 @@ export async function listSellers(params: ListSellersParams) {
 	return { data, pagination: { page, limit, total } };
 }
 
+async function fetchProfileWithMunicipalities(sellerId: string) {
+	const raw = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.id, sellerId),
+		with: {
+			residenceMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+			documentIssuedMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+		},
+	});
+
+	if (!raw) return null;
+
+	const { residenceMunicipality, documentIssuedMunicipality, ...rest } = raw;
+	return {
+		...rest,
+		residenceMunicipality: residenceMunicipality
+			? {
+					id: residenceMunicipality.id,
+					name: residenceMunicipality.name,
+					provinceAcronym: residenceMunicipality.province.acronym,
+				}
+			: null,
+		documentIssuedMunicipality: documentIssuedMunicipality
+			? {
+					id: documentIssuedMunicipality.id,
+					name: documentIssuedMunicipality.name,
+					provinceAcronym: documentIssuedMunicipality.province.acronym,
+				}
+			: null,
+	};
+}
+
 export async function verifySeller(sellerId: string) {
-	const [updated] = await db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		await tx
 			.update(organization)
 			.set({ vatStatus: "verified" })
 			.where(eq(organization.sellerProfileId, sellerId));
 
-		return tx
+		await tx
 			.update(sellerProfile)
 			.set({ onboardingStatus: "active" })
-			.where(eq(sellerProfile.id, sellerId))
-			.returning();
+			.where(eq(sellerProfile.id, sellerId));
 	});
 
+	const updated = await fetchProfileWithMunicipalities(sellerId);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
 
 export async function rejectSeller(sellerId: string) {
-	const [updated] = await db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		await tx
 			.update(organization)
 			.set({ vatStatus: "rejected" })
 			.where(eq(organization.sellerProfileId, sellerId));
 
-		return tx
+		await tx
 			.update(sellerProfile)
 			.set({ onboardingStatus: "rejected" })
-			.where(eq(sellerProfile.id, sellerId))
-			.returning();
+			.where(eq(sellerProfile.id, sellerId));
 	});
 
+	const updated = await fetchProfileWithMunicipalities(sellerId);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
@@ -191,16 +258,46 @@ export async function getSellerDetail(sellerId: string) {
 					},
 				},
 			},
+			residenceMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+			documentIssuedMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
 		},
 	});
 
 	if (!raw) throw new ServiceError(404, "Seller profile not found");
 
-	const { organization: org, ...rest } = raw;
-	if (!org) return { ...rest, organization: null };
+	const {
+		organization: org,
+		residenceMunicipality,
+		documentIssuedMunicipality,
+		...rest
+	} = raw;
+	const profileWithMunicipalities = {
+		...rest,
+		residenceMunicipality: residenceMunicipality
+			? {
+					id: residenceMunicipality.id,
+					name: residenceMunicipality.name,
+					provinceAcronym: residenceMunicipality.province.acronym,
+				}
+			: null,
+		documentIssuedMunicipality: documentIssuedMunicipality
+			? {
+					id: documentIssuedMunicipality.id,
+					name: documentIssuedMunicipality.name,
+					provinceAcronym: documentIssuedMunicipality.province.acronym,
+				}
+			: null,
+	};
+	if (!org) return { ...profileWithMunicipalities, organization: null };
 	const { municipality, ...orgRest } = org;
 	return {
-		...rest,
+		...profileWithMunicipalities,
 		organization: {
 			...orgRest,
 			municipality: {
@@ -237,6 +334,14 @@ export async function listPendingChanges(params: ListPendingChangesParams) {
 								},
 							},
 						},
+						residenceMunicipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+						documentIssuedMunicipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
 					},
 				},
 			},
@@ -252,17 +357,39 @@ export async function listPendingChanges(params: ListPendingChangesParams) {
 
 	const data = rawData.map((change) => {
 		const { sellerProfile: sp, ...changeRest } = change;
-		const { organization: org, ...spRest } = sp;
+		const {
+			organization: org,
+			residenceMunicipality,
+			documentIssuedMunicipality,
+			...spRest
+		} = sp;
+		const spWithMunicipalities = {
+			...spRest,
+			residenceMunicipality: residenceMunicipality
+				? {
+						id: residenceMunicipality.id,
+						name: residenceMunicipality.name,
+						provinceAcronym: residenceMunicipality.province.acronym,
+					}
+				: null,
+			documentIssuedMunicipality: documentIssuedMunicipality
+				? {
+						id: documentIssuedMunicipality.id,
+						name: documentIssuedMunicipality.name,
+						provinceAcronym: documentIssuedMunicipality.province.acronym,
+					}
+				: null,
+		};
 		if (!org)
 			return {
 				...changeRest,
-				sellerProfile: { ...spRest, organization: null },
+				sellerProfile: { ...spWithMunicipalities, organization: null },
 			};
 		const { municipality, ...orgRest } = org;
 		return {
 			...changeRest,
 			sellerProfile: {
-				...spRest,
+				...spWithMunicipalities,
 				organization: {
 					...orgRest,
 					municipality: {
@@ -318,8 +445,8 @@ export async function approveChange(changeId: string, adminUserId: string) {
 				.set({
 					documentNumber: changeData.documentNumber as string,
 					documentExpiry: changeData.documentExpiry as string,
-					documentIssuedMunicipality:
-						changeData.documentIssuedMunicipality as string,
+					documentIssuedMunicipalityId:
+						changeData.documentIssuedMunicipalityId as string,
 					...(changeData.documentImageKey
 						? {
 								documentImageKey: changeData.documentImageKey as string,

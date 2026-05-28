@@ -10,6 +10,43 @@ import { getEmployeeAssignedStoreIds } from "./access";
 
 // ── Helpers ─────────────────────────────────
 
+async function fetchProfileWithMunicipalities(sellerProfileId: string) {
+	const raw = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.id, sellerProfileId),
+		with: {
+			residenceMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+			documentIssuedMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+		},
+	});
+
+	if (!raw) return null;
+
+	const { residenceMunicipality, documentIssuedMunicipality, ...rest } = raw;
+	return {
+		...rest,
+		residenceMunicipality: residenceMunicipality
+			? {
+					id: residenceMunicipality.id,
+					name: residenceMunicipality.name,
+					provinceAcronym: residenceMunicipality.province.acronym,
+				}
+			: null,
+		documentIssuedMunicipality: documentIssuedMunicipality
+			? {
+					id: documentIssuedMunicipality.id,
+					name: documentIssuedMunicipality.name,
+					provinceAcronym: documentIssuedMunicipality.province.acronym,
+				}
+			: null,
+	};
+}
+
 function assertActive(onboardingStatus: string) {
 	if (onboardingStatus !== "active") {
 		throw new ServiceError(
@@ -45,12 +82,45 @@ interface GetSellerSettingsParams {
 export async function getSellerSettings(params: GetSellerSettingsParams) {
 	const { sellerProfileId, userId, isOwner } = params;
 
-	const profile = await db.query.sellerProfile.findFirst({
+	const rawProfile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerProfileId),
-		with: { changes: true },
+		with: {
+			changes: true,
+			residenceMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+			documentIssuedMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+		},
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!rawProfile) throw new ServiceError(404, "Seller profile not found");
+
+	const {
+		residenceMunicipality: rawResidenceMunicipality,
+		documentIssuedMunicipality: rawDocumentIssuedMunicipality,
+		...profileRest
+	} = rawProfile;
+	const profile = {
+		...profileRest,
+		residenceMunicipality: rawResidenceMunicipality
+			? {
+					id: rawResidenceMunicipality.id,
+					name: rawResidenceMunicipality.name,
+					provinceAcronym: rawResidenceMunicipality.province.acronym,
+				}
+			: null,
+		documentIssuedMunicipality: rawDocumentIssuedMunicipality
+			? {
+					id: rawDocumentIssuedMunicipality.id,
+					name: rawDocumentIssuedMunicipality.name,
+					provinceAcronym: rawDocumentIssuedMunicipality.province.acronym,
+				}
+			: null,
+	};
 
 	const [orgRaw, payment] = await Promise.all([
 		db.query.organization.findFirst({
@@ -112,7 +182,7 @@ interface PersonalSettingsParams {
 	birthCountry: string;
 	birthDate: string;
 	residenceCountry: string;
-	residenceCity: string;
+	residenceMunicipalityId: string;
 	residenceAddress: string;
 	residenceZipCode: string;
 }
@@ -127,7 +197,7 @@ export async function updatePersonalSettings(params: PersonalSettingsParams) {
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 	assertActive(profile.onboardingStatus);
 
-	return db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		await tx
 			.update(user)
 			.set({
@@ -138,14 +208,15 @@ export async function updatePersonalSettings(params: PersonalSettingsParams) {
 			})
 			.where(eq(user.id, userId));
 
-		const [updated] = await tx
+		await tx
 			.update(sellerProfile)
 			.set(data)
-			.where(eq(sellerProfile.id, sellerProfileId))
-			.returning();
-
-		return updated;
+			.where(eq(sellerProfile.id, sellerProfileId));
 	});
+
+	const updated = await fetchProfileWithMunicipalities(sellerProfileId);
+	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	return updated;
 }
 
 interface CompanySettingsParams {
@@ -263,7 +334,7 @@ interface DocumentChangeParams {
 	sellerProfileId: string;
 	documentNumber: string;
 	documentExpiry: string;
-	documentIssuedMunicipality: string;
+	documentIssuedMunicipalityId: string;
 	documentImage?: File;
 }
 

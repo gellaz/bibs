@@ -130,6 +130,19 @@ export const ProductCategoryWithMacroSchema = t.Object({
 	macroCategory: ProductMacroCategorySchema,
 });
 
+export const MunicipalityCompactSchema = t.Object(
+	{
+		id: t.String({ description: "Identificatore univoco del comune" }),
+		name: t.String({ description: "Nome del comune" }),
+		provinceAcronym: t.String({
+			minLength: 2,
+			maxLength: 2,
+			description: "Sigla provincia (2 lettere)",
+		}),
+	},
+	{ description: "Comune in formato compatto per liste precaricate" },
+);
+
 export const SellerProfileSchema = t.Object({
 	id: t.String(),
 	userId: t.String(),
@@ -153,14 +166,16 @@ export const SellerProfileSchema = t.Object({
 		t.String({ description: "Data di nascita (YYYY-MM-DD)" }),
 	),
 	residenceCountry: t.Nullable(t.String()),
-	residenceCity: t.Nullable(t.String()),
+	residenceMunicipalityId: t.Nullable(t.String()),
+	residenceMunicipality: t.Nullable(MunicipalityCompactSchema),
 	residenceAddress: t.Nullable(t.String()),
 	residenceZipCode: t.Nullable(t.String()),
 	documentNumber: t.Nullable(t.String()),
 	documentExpiry: t.Nullable(
 		t.String({ description: "Scadenza documento (YYYY-MM-DD)" }),
 	),
-	documentIssuedMunicipality: t.Nullable(t.String()),
+	documentIssuedMunicipalityId: t.Nullable(t.String()),
+	documentIssuedMunicipality: t.Nullable(MunicipalityCompactSchema),
 	documentImageUrl: t.Nullable(t.String()),
 	vatChangeBlocked: t.Boolean({
 		description:
@@ -168,19 +183,6 @@ export const SellerProfileSchema = t.Object({
 	}),
 	createdAt: t.Date(),
 });
-
-export const MunicipalityCompactSchema = t.Object(
-	{
-		id: t.String({ description: "Identificatore univoco del comune" }),
-		name: t.String({ description: "Nome del comune" }),
-		provinceAcronym: t.String({
-			minLength: 2,
-			maxLength: 2,
-			description: "Sigla provincia (2 lettere)",
-		}),
-	},
-	{ description: "Comune in formato compatto per liste precaricate" },
-);
 
 export const OrganizationSchema = t.Object({
 	id: t.String(),

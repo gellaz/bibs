@@ -18,6 +18,43 @@ function assertStatus(current: OnboardingStatus, expected: OnboardingStatus) {
 	}
 }
 
+async function fetchProfileWithMunicipalities(userId: string) {
+	const raw = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.userId, userId),
+		with: {
+			residenceMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+			documentIssuedMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+		},
+	});
+
+	if (!raw) return null;
+
+	const { residenceMunicipality, documentIssuedMunicipality, ...rest } = raw;
+	return {
+		...rest,
+		residenceMunicipality: residenceMunicipality
+			? {
+					id: residenceMunicipality.id,
+					name: residenceMunicipality.name,
+					provinceAcronym: residenceMunicipality.province.acronym,
+				}
+			: null,
+		documentIssuedMunicipality: documentIssuedMunicipality
+			? {
+					id: documentIssuedMunicipality.id,
+					name: documentIssuedMunicipality.name,
+					provinceAcronym: documentIssuedMunicipality.province.acronym,
+				}
+			: null,
+	};
+}
+
 const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
 	pending_document: "pending_personal",
 	pending_company: "pending_document",
@@ -27,10 +64,7 @@ const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
 // ── GET status ──────────────────────────────
 
 export async function getOnboardingStatus(userId: string) {
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-		with: { organization: true },
-	});
+	const profile = await fetchProfileWithMunicipalities(userId);
 
 	if (!profile) {
 		throw new ServiceError(404, "Seller profile not found");
@@ -49,7 +83,7 @@ interface PersonalInfoParams {
 	birthCountry: string;
 	birthDate: string;
 	residenceCountry: string;
-	residenceCity: string;
+	residenceMunicipalityId: string;
 	residenceAddress: string;
 	residenceZipCode: string;
 }
@@ -64,7 +98,7 @@ export async function updatePersonalInfo(params: PersonalInfoParams) {
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 	assertStatus(profile.onboardingStatus, "pending_personal");
 
-	return db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		// Save firstName/lastName/birthDate on the user table (shared across all roles)
 		await tx
 			.update(user)
@@ -77,14 +111,15 @@ export async function updatePersonalInfo(params: PersonalInfoParams) {
 			.where(eq(user.id, userId));
 
 		// Save all fields (including seller-specific ones) on seller_profiles
-		const [updated] = await tx
+		await tx
 			.update(sellerProfile)
 			.set({ ...data, onboardingStatus: "pending_document" })
-			.where(eq(sellerProfile.userId, userId))
-			.returning();
-
-		return updated;
+			.where(eq(sellerProfile.userId, userId));
 	});
+
+	const updated = await fetchProfileWithMunicipalities(userId);
+	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	return updated;
 }
 
 // ── Step 2: Document ────────────────────────
@@ -93,7 +128,7 @@ interface DocumentParams {
 	userId: string;
 	documentNumber: string;
 	documentExpiry: string;
-	documentIssuedMunicipality: string;
+	documentIssuedMunicipalityId: string;
 	documentImage: File;
 }
 
@@ -112,7 +147,7 @@ export async function updateDocument(params: DocumentParams) {
 	await s3.write(key, documentImage);
 	const url = publicUrl(key);
 
-	const [updated] = await db
+	await db
 		.update(sellerProfile)
 		.set({
 			...data,
@@ -120,9 +155,10 @@ export async function updateDocument(params: DocumentParams) {
 			documentImageUrl: url,
 			onboardingStatus: "pending_company",
 		})
-		.where(eq(sellerProfile.userId, userId))
-		.returning();
+		.where(eq(sellerProfile.userId, userId));
 
+	const updated = await fetchProfileWithMunicipalities(userId);
+	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
 
@@ -149,7 +185,7 @@ export async function updateCompany(params: CompanyParams) {
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 	assertStatus(profile.onboardingStatus, "pending_company");
 
-	return db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		await tx.insert(organization).values({
 			sellerProfileId: profile.id,
 			businessName: data.businessName,
@@ -161,14 +197,15 @@ export async function updateCompany(params: CompanyParams) {
 			zipCode: data.zipCode,
 		});
 
-		const [updated] = await tx
+		await tx
 			.update(sellerProfile)
 			.set({ onboardingStatus: "pending_review" })
-			.where(eq(sellerProfile.userId, userId))
-			.returning();
-
-		return updated;
+			.where(eq(sellerProfile.userId, userId));
 	});
+
+	const updated = await fetchProfileWithMunicipalities(userId);
+	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	return updated;
 }
 
 // ── Go back ─────────────────────────────────
@@ -188,7 +225,7 @@ export async function goBack(userId: string) {
 		);
 	}
 
-	return db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		// Clean up rows inserted by the step we're reverting from
 		if (profile.onboardingStatus === "pending_review") {
 			await tx
@@ -196,12 +233,13 @@ export async function goBack(userId: string) {
 				.where(eq(organization.sellerProfileId, profile.id));
 		}
 
-		const [updated] = await tx
+		await tx
 			.update(sellerProfile)
 			.set({ onboardingStatus: previousStatus })
-			.where(eq(sellerProfile.userId, userId))
-			.returning();
-
-		return updated;
+			.where(eq(sellerProfile.userId, userId));
 	});
+
+	const updated = await fetchProfileWithMunicipalities(userId);
+	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	return updated;
 }

@@ -160,7 +160,7 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 				sellerProfileId: sp.id,
 				documentNumber: ctx.body.documentNumber,
 				documentExpiry: ctx.body.documentExpiry,
-				documentIssuedMunicipality: ctx.body.documentIssuedMunicipality,
+				documentIssuedMunicipalityId: ctx.body.documentIssuedMunicipalityId,
 				documentImage: (ctx as any).body?.documentImage,
 			});
 

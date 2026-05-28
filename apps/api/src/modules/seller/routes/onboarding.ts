@@ -73,7 +73,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 				userId: user.id,
 				documentNumber: body.documentNumber,
 				documentExpiry: body.documentExpiry,
-				documentIssuedMunicipality: body.documentIssuedMunicipality,
+				documentIssuedMunicipalityId: body.documentIssuedMunicipalityId,
 				documentImage: body.documentImage,
 			});
 
