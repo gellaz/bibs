@@ -11,6 +11,7 @@ import {
 import { user } from "./auth";
 import { storeEmployee } from "./employee";
 import { employeeInvitation } from "./employee-invitation";
+import { municipality } from "./location";
 import { organization } from "./organization";
 import { sellerProfileChange } from "./seller-profile-change";
 
@@ -48,14 +49,19 @@ export const sellerProfile = pgTable(
 		birthCountry: text("birth_country"),
 		birthDate: date("birth_date", { mode: "string" }),
 		residenceCountry: text("residence_country"),
-		residenceCity: text("residence_city"),
+		residenceMunicipalityId: text("residence_municipality_id").references(
+			() => municipality.id,
+			{ onDelete: "restrict" },
+		),
 		residenceAddress: text("residence_address"),
 		residenceZipCode: text("residence_zip_code"),
 
 		// ── Documento identità ────────────────────
 		documentNumber: text("document_number"),
 		documentExpiry: date("document_expiry", { mode: "string" }),
-		documentIssuedMunicipality: text("document_issued_municipality"),
+		documentIssuedMunicipalityId: text(
+			"document_issued_municipality_id",
+		).references(() => municipality.id, { onDelete: "restrict" }),
 		documentImageKey: text("document_image_key"),
 		documentImageUrl: text("document_image_url"),
 
@@ -72,6 +78,12 @@ export const sellerProfile = pgTable(
 	},
 	(table) => [
 		index("seller_profile_onboarding_status_idx").on(table.onboardingStatus),
+		index("seller_profile_residence_municipality_idx").on(
+			table.residenceMunicipalityId,
+		),
+		index("seller_profile_document_municipality_idx").on(
+			table.documentIssuedMunicipalityId,
+		),
 	],
 );
 
@@ -83,6 +95,16 @@ export const sellerProfileRelations = relations(
 			references: [user.id],
 		}),
 		organization: one(organization),
+		residenceMunicipality: one(municipality, {
+			fields: [sellerProfile.residenceMunicipalityId],
+			references: [municipality.id],
+			relationName: "residenceMunicipality",
+		}),
+		documentIssuedMunicipality: one(municipality, {
+			fields: [sellerProfile.documentIssuedMunicipalityId],
+			references: [municipality.id],
+			relationName: "documentIssuedMunicipality",
+		}),
 		employees: many(storeEmployee),
 		invitations: many(employeeInvitation),
 		changes: many(sellerProfileChange),

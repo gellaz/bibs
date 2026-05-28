@@ -9,6 +9,7 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { municipality } from "./location";
 import { storeProduct } from "./product";
 import { sellerProfile } from "./seller";
 import { storeCategory } from "./store-category";
@@ -28,9 +29,10 @@ export const store = pgTable(
 		description: text("description"),
 		addressLine1: text("address_line1").notNull(),
 		addressLine2: text("address_line2"),
-		city: text("city").notNull(),
+		municipalityId: text("municipality_id")
+			.notNull()
+			.references(() => municipality.id, { onDelete: "restrict" }),
 		zipCode: text("zip_code").notNull(),
-		province: text("province"),
 		country: varchar("country", { length: 2 }).notNull().default("IT"),
 		location: geometry("location", { type: "point", mode: "xy", srid: 4326 }),
 		categoryId: text("category_id").references(() => storeCategory.id, {
@@ -56,6 +58,7 @@ export const store = pgTable(
 	(t) => [
 		index("store_location_idx").using("gist", t.location),
 		index("store_seller_profile_id_idx").on(t.sellerProfileId),
+		index("store_municipality_id_idx").on(t.municipalityId),
 		index("store_active_idx")
 			.on(t.sellerProfileId)
 			.where(sql`${t.deletedAt} IS NULL`),
@@ -85,6 +88,10 @@ export const storeRelations = relations(store, ({ one, many }) => ({
 	sellerProfile: one(sellerProfile, {
 		fields: [store.sellerProfileId],
 		references: [sellerProfile.id],
+	}),
+	municipality: one(municipality, {
+		fields: [store.municipalityId],
+		references: [municipality.id],
 	}),
 	category: one(storeCategory, {
 		fields: [store.categoryId],
