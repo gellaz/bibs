@@ -19,7 +19,7 @@
 ### Backend (apps/api)
 
 **Create:**
-- `apps/api/tests/modules/locations.test.ts` — test unit per `listAllMunicipalities` (count, ordering, shape).
+- `apps/api/tests/integration/locations.test.ts` — test unit per `listAllMunicipalities` (count, ordering, shape).
 - `apps/api/src/db/migrations/XXXX_municipality_fk.sql` — generato da `bun run db:generate` dopo aver modificato gli schemi TS.
 
 **Modify:**
@@ -124,11 +124,11 @@ git commit -m "feat(api): add MunicipalityCompactSchema TypeBox"
 
 **Files:**
 - Modify: `apps/api/src/modules/locations/services/locations.ts`
-- Create: `apps/api/tests/modules/locations.test.ts`
+- Create: `apps/api/tests/integration/locations.test.ts`
 
 - [ ] **Step 1: Scrivi il test failing**
 
-Crea `apps/api/tests/modules/locations.test.ts`:
+Crea `apps/api/tests/integration/locations.test.ts`:
 
 ```ts
 import { describe, expect, it } from "bun:test";
@@ -174,7 +174,7 @@ describe("listAllMunicipalities", () => {
 - [ ] **Step 2: Run test → FAIL**
 
 ```bash
-cd apps/api && bun test tests/modules/locations.test.ts
+cd apps/api && bun test tests/integration/locations.test.ts
 ```
 
 Expected: FAIL with `listAllMunicipalities is not exported` o simile.
@@ -210,7 +210,7 @@ export async function listAllMunicipalities() {
 - [ ] **Step 4: Run test → PASS**
 
 ```bash
-cd apps/api && bun test tests/modules/locations.test.ts
+cd apps/api && bun test tests/integration/locations.test.ts
 ```
 
 Expected: 4 PASS. Se fallisce per `province.acronym` ordering vs `it.localeCompare`, controlla che il seed sia stato eseguito (`bun run infra:reset && bun run db:migrate && bun run db:seed` da root).
@@ -218,7 +218,7 @@ Expected: 4 PASS. Se fallisce per `province.acronym` ordering vs `it.localeCompa
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/src/modules/locations/services/locations.ts apps/api/tests/modules/locations.test.ts
+git add apps/api/src/modules/locations/services/locations.ts apps/api/tests/integration/locations.test.ts
 git commit -m "feat(api): listAllMunicipalities service + test"
 ```
 
