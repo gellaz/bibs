@@ -88,8 +88,7 @@ Obiettivo: sostituire ovunque la coppia testuale `city`/`province` con una FK `m
 **Comportamento**:
 - `ORDER BY name ASC` deterministico.
 - INNER JOIN su `province` per leggere `acronym`.
-- Cache HTTP: `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`.
-- ETag generato da hash di `(count, max(updated_at))` per cache busting quando (raramente) i comuni cambiano.
+- Cache HTTP: `Cache-Control: public, max-age=86400, stale-while-revalidate=604800`. Niente ETag — `staleTime: Infinity` lato TanStack Query rende la rivalidazione conditional un'ottimizzazione marginale, e nessun altro endpoint del repo introduce ETag (eviterebbe un pattern one-off).
 
 **Service** (`apps/api/src/modules/locations/services/locations.ts`): nuovo metodo `listAllMunicipalities(db)`. Una sola select+join, niente count.
 
