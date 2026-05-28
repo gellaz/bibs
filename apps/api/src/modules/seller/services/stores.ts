@@ -2,6 +2,10 @@ import type { Static } from "@sinclair/typebox";
 import { and, count, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import {
+	municipality as municipalityTable,
+	province as provinceTable,
+} from "@/db/schemas/location";
+import {
 	storePhoneNumber as storePhoneNumberTable,
 	store as storeTable,
 } from "@/db/schemas/store";
@@ -38,15 +42,32 @@ export async function listStores(params: ListStoresParams) {
 			: undefined,
 	);
 
-	const [data, [{ total }]] = await Promise.all([
+	const [rawData, [{ total }]] = await Promise.all([
 		db.query.store.findMany({
 			where,
 			limit,
 			offset,
-			with: { phoneNumbers: true, category: true, images: true },
+			with: {
+				phoneNumbers: true,
+				category: true,
+				images: true,
+				municipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+			},
 		}),
 		db.select({ total: count() }).from(storeTable).where(where),
 	]);
+
+	const data = rawData.map(({ municipality, ...rest }) => ({
+		...rest,
+		municipality: {
+			id: municipality.id,
+			name: municipality.name,
+			provinceAcronym: municipality.province.acronym,
+		},
+	}));
 
 	return { data, pagination: { page, limit, total } };
 }
@@ -57,9 +78,8 @@ interface CreateStoreParams {
 	description?: string;
 	addressLine1: string;
 	addressLine2?: string;
-	city: string;
+	municipalityId: string;
 	zipCode: string;
-	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
 	categoryId?: string;
@@ -85,13 +105,29 @@ export async function createStore(params: CreateStoreParams) {
 			await tx.insert(storePhoneNumberTable).values(phoneValues);
 		}
 
-		const store = await tx.query.store.findFirst({
+		const raw = await tx.query.store.findFirst({
 			where: eq(storeTable.id, created.id),
-			with: { phoneNumbers: true, category: true, images: true },
+			with: {
+				phoneNumbers: true,
+				category: true,
+				images: true,
+				municipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+			},
 		});
 
-		if (!store) throw new ServiceError(500, "Failed to retrieve created store");
-		return store;
+		if (!raw) throw new ServiceError(500, "Failed to retrieve created store");
+		const { municipality, ...rest } = raw;
+		return {
+			...rest,
+			municipality: {
+				id: municipality.id,
+				name: municipality.name,
+				provinceAcronym: municipality.province.acronym,
+			},
+		};
 	});
 }
 
@@ -102,9 +138,8 @@ interface UpdateStoreParams {
 	description?: string;
 	addressLine1?: string;
 	addressLine2?: string;
-	city?: string;
+	municipalityId?: string;
 	zipCode?: string;
-	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
 	categoryId?: string | null;
@@ -164,13 +199,30 @@ export async function updateStore(params: UpdateStoreParams) {
 			}
 		}
 
-		const store = await tx.query.store.findFirst({
+		const rawUpdated = await tx.query.store.findFirst({
 			where: eq(storeTable.id, storeId),
-			with: { phoneNumbers: true, category: true, images: true },
+			with: {
+				phoneNumbers: true,
+				category: true,
+				images: true,
+				municipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+			},
 		});
 
-		if (!store) throw new ServiceError(500, "Failed to retrieve updated store");
-		return store;
+		if (!rawUpdated)
+			throw new ServiceError(500, "Failed to retrieve updated store");
+		const { municipality, ...updatedRest } = rawUpdated;
+		return {
+			...updatedRest,
+			municipality: {
+				id: municipality.id,
+				name: municipality.name,
+				provinceAcronym: municipality.province.acronym,
+			},
+		};
 	});
 }
 
@@ -299,18 +351,39 @@ export async function listArchivedStores(params: ListArchivedParams) {
 			id: storeTable.id,
 			name: storeTable.name,
 			addressLine1: storeTable.addressLine1,
-			city: storeTable.city,
+			municipalityId: storeTable.municipalityId,
+			municipalityName: municipalityTable.name,
+			provinceAcronym: provinceTable.acronym,
 			createdAt: storeTable.createdAt,
 			deletedAt: storeTable.deletedAt,
 			canceledAt: storeSubscription.canceledAt,
 			cancelReason: storeSubscription.cancelReason,
 		})
 		.from(storeTable)
+		.innerJoin(
+			municipalityTable,
+			eq(municipalityTable.id, storeTable.municipalityId),
+		)
+		.innerJoin(
+			provinceTable,
+			eq(provinceTable.id, municipalityTable.provinceId),
+		)
 		.leftJoin(storeSubscription, eq(storeSubscription.storeId, storeTable.id))
 		.where(baseWhere)
 		.orderBy(desc(storeTable.deletedAt))
 		.limit(limit)
 		.offset(offset);
+
+	const mappedData = data.map(
+		({ municipalityName, provinceAcronym, ...row }) => ({
+			...row,
+			municipality: {
+				id: row.municipalityId,
+				name: municipalityName,
+				provinceAcronym,
+			},
+		}),
+	);
 
 	const [{ value: total } = { value: 0 }] = await db
 		.select({ value: count() })
@@ -318,7 +391,7 @@ export async function listArchivedStores(params: ListArchivedParams) {
 		.where(baseWhere);
 
 	return {
-		data,
+		data: mappedData,
 		pagination: { page: params.page, limit, total },
 	};
 }

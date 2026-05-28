@@ -62,9 +62,8 @@ export async function handleCheckoutCompleted(
 				description: (formData.description as string | undefined) ?? null,
 				addressLine1: formData.addressLine1 as string,
 				addressLine2: (formData.addressLine2 as string | undefined) ?? null,
-				city: formData.city as string,
+				municipalityId: formData.municipalityId as string,
 				zipCode: formData.zipCode as string,
-				province: (formData.province as string | undefined) ?? null,
 				country: (formData.country as string) ?? "IT",
 				categoryId: (formData.categoryId as string | undefined) ?? null,
 				openingHours:

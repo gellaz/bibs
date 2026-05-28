@@ -5,6 +5,7 @@ import {
 	EmployeeInvitationSchema,
 	EmployeeSchema,
 	EmployeeWithUserSchema,
+	MunicipalityCompactSchema,
 	OkMessage,
 	okRes,
 	withConflictErrors,
@@ -27,8 +28,8 @@ import {
 const StoreMinimalSchema = t.Object({
 	id: t.String(),
 	name: t.String(),
-	city: t.String(),
-	province: t.Nullable(t.String()),
+	municipalityId: t.String(),
+	municipality: MunicipalityCompactSchema,
 });
 
 const EmployeesListResponse = t.Object({
