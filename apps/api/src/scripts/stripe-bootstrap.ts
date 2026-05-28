@@ -17,7 +17,7 @@ if (!secret) {
 	process.exit(1);
 }
 
-const stripe = new Stripe(secret, { apiVersion: "2026-04-22.dahlia" });
+const stripe = new Stripe(secret, { apiVersion: "2026-05-27.dahlia" });
 
 const PRODUCT_METADATA_KEY = "bibs_role";
 const PRODUCT_METADATA_VALUE = "store_monthly_fee";
