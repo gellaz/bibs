@@ -7,7 +7,16 @@ import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { auth } from "@/lib/auth";
-import { cities, firstNames, lastNames, pick, streets } from "./utils";
+import {
+	firstNames,
+	getSeedMunicipalityIds,
+	lastNames,
+	pick,
+	SEED_MUNICIPALITIES,
+	SEED_MUNICIPALITY_COORDS,
+	type SeedMunicipalityHandle,
+	streets,
+} from "./utils";
 
 // ── Legal forms ───────────────────────────────────────────
 
@@ -98,6 +107,20 @@ function getStageIndex(status: OnboardingStatus): number {
 	return stageOrder.indexOf(status);
 }
 
+// ── Helpers ───────────────────────────────────────────────
+
+const seedHandles = Object.keys(
+	SEED_MUNICIPALITIES,
+) as SeedMunicipalityHandle[];
+
+function pickHandle(
+	idx: number,
+	stride = 1,
+	offset = 0,
+): SeedMunicipalityHandle {
+	return seedHandles[(idx * stride + offset) % seedHandles.length];
+}
+
 // ── Types ─────────────────────────────────────────────────
 
 export interface SellerSeedData {
@@ -113,28 +136,26 @@ export interface SellerSeedData {
 		birthCountry: string | null;
 		birthDate: string | null;
 		residenceCountry: string | null;
-		residenceCity: string | null;
+		residenceMunicipalityHandle: SeedMunicipalityHandle | null;
 		residenceAddress: string | null;
 		residenceZipCode: string | null;
 		documentNumber: string | null;
 		documentExpiry: string | null;
-		documentIssuedMunicipality: string | null;
+		documentIssuedMunicipalityHandle: SeedMunicipalityHandle | null;
 	};
 	org: {
 		businessName: string;
 		legalForm: string;
 		addressLine1: string;
-		city: string;
+		municipalityHandle: SeedMunicipalityHandle;
 		zipCode: string;
-		province: string;
 	};
 	store: {
 		name: string;
 		description: string;
 		addressLine1: string;
-		city: string;
+		municipalityHandle: SeedMunicipalityHandle;
 		zipCode: string;
-		province: string;
 		lat: number;
 		lng: number;
 	} | null;
@@ -171,9 +192,9 @@ function generateSellersSeedData(): SellerSeedData[] {
 		for (let i = 0; i < config.count; i++) {
 			const firstName = pick(firstNames, idx, 1);
 			const lastName = pick(lastNames, idx, 3, 7);
-			const residenceCity = pick(cities, idx, 2, 5);
-			const orgCity = pick(cities, idx, 3, 11);
-			const storeCity = pick(cities, idx, 5, 3);
+			const residenceHandle = pickHandle(idx, 2, 5);
+			const orgHandle = pickHandle(idx, 3, 11);
+			const storeHandle = pickHandle(idx, 5, 3);
 			const street = pick(streets, idx, 7, 13);
 			const orgStreet = pick(streets, idx, 11, 17);
 			const storeStreet = pick(streets, idx, 13, 19);
@@ -207,6 +228,10 @@ function generateSellersSeedData(): SellerSeedData[] {
 						? `Cooperativa ${businessPrefix} ${lastName}`
 						: `${businessPrefix} ${lastName}`;
 
+			const residenceCoords = SEED_MUNICIPALITY_COORDS[residenceHandle];
+			const storeCoords = SEED_MUNICIPALITY_COORDS[storeHandle];
+			const orgCoords = SEED_MUNICIPALITY_COORDS[orgHandle];
+
 			sellers.push({
 				email: `seller${idx + 1}@test.com`,
 				name: `${firstName} ${lastName}`,
@@ -220,33 +245,33 @@ function generateSellersSeedData(): SellerSeedData[] {
 					birthCountry: hasPersonal ? "IT" : null,
 					birthDate: hasPersonal ? birthDate : null,
 					residenceCountry: hasPersonal ? "IT" : null,
-					residenceCity: hasPersonal ? residenceCity.name : null,
+					residenceMunicipalityHandle: hasPersonal ? residenceHandle : null,
 					residenceAddress: hasPersonal ? `${street}, ${streetNum}` : null,
-					residenceZipCode: hasPersonal ? residenceCity.zip : null,
+					residenceZipCode: hasPersonal ? residenceCoords.zip : null,
 					documentNumber: hasDocument
 						? `AX${String(idx + 1).padStart(7, "0")}`
 						: null,
 					documentExpiry: hasDocument ? documentExpiry : null,
-					documentIssuedMunicipality: hasDocument ? residenceCity.name : null,
+					documentIssuedMunicipalityHandle: hasDocument
+						? residenceHandle
+						: null,
 				},
 				org: {
 					businessName,
 					legalForm,
 					addressLine1: `${orgStreet}, ${(idx % 200) + 1}`,
-					city: orgCity.name,
-					zipCode: orgCity.zip,
-					province: orgCity.province,
+					municipalityHandle: orgHandle,
+					zipCode: orgCoords.zip,
 				},
 				store: hasStore
 					? {
 							name: makeStoreName(businessPrefix, lastName, idx),
 							description: storeDesc,
 							addressLine1: `${storeStreet}, ${(idx % 150) + 1}`,
-							city: storeCity.name,
-							zipCode: storeCity.zip,
-							province: storeCity.province,
-							lat: storeCity.lat + (idx % 10) * 0.001,
-							lng: storeCity.lng + (idx % 7) * 0.001,
+							municipalityHandle: storeHandle,
+							zipCode: storeCoords.zip,
+							lat: storeCoords.lat + (idx % 10) * 0.001,
+							lng: storeCoords.lng + (idx % 7) * 0.001,
 						}
 					: null,
 			});
@@ -271,6 +296,9 @@ export async function seedSellers() {
 
 	const sellersData = generateSellersSeedData();
 	console.log(`  👥 Seeding ${sellersData.length} sellers...`);
+
+	// Resolve municipality IDs once for all handles
+	const municipalityIds = await getSeedMunicipalityIds();
 
 	// Phase 1: Create users via auth (sequential — password hashing)
 	const created: Array<{ userId: string; data: SellerSeedData }> = [];
@@ -312,7 +340,23 @@ export async function seedSellers() {
 			created.map(({ userId, data }) => ({
 				userId,
 				onboardingStatus: data.onboardingStatus,
-				...data.profileFields,
+				firstName: data.profileFields.firstName,
+				lastName: data.profileFields.lastName,
+				citizenship: data.profileFields.citizenship,
+				birthCountry: data.profileFields.birthCountry,
+				birthDate: data.profileFields.birthDate,
+				residenceCountry: data.profileFields.residenceCountry,
+				residenceMunicipalityId: data.profileFields.residenceMunicipalityHandle
+					? municipalityIds[data.profileFields.residenceMunicipalityHandle]
+					: null,
+				residenceAddress: data.profileFields.residenceAddress,
+				residenceZipCode: data.profileFields.residenceZipCode,
+				documentNumber: data.profileFields.documentNumber,
+				documentExpiry: data.profileFields.documentExpiry,
+				documentIssuedMunicipalityId: data.profileFields
+					.documentIssuedMunicipalityHandle
+					? municipalityIds[data.profileFields.documentIssuedMunicipalityHandle]
+					: null,
 			})),
 		)
 		.returning({ id: sellerProfile.id });
@@ -325,9 +369,8 @@ export async function seedSellers() {
 			vatNumber: data.vatNumber,
 			legalForm: data.org.legalForm,
 			addressLine1: data.org.addressLine1,
-			city: data.org.city,
+			municipalityId: municipalityIds[data.org.municipalityHandle],
 			zipCode: data.org.zipCode,
-			province: data.org.province,
 			vatStatus: data.vatStatus,
 		})),
 	);
@@ -341,9 +384,8 @@ export async function seedSellers() {
 						name: data.store.name,
 						description: data.store.description,
 						addressLine1: data.store.addressLine1,
-						city: data.store.city,
+						municipalityId: municipalityIds[data.store.municipalityHandle],
 						zipCode: data.store.zipCode,
-						province: data.store.province,
 						location: { x: data.store.lng, y: data.store.lat },
 					}
 				: null,
