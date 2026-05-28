@@ -2,6 +2,7 @@ import { PersonalInfoBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import {
 	Select,
 	SelectContent,
@@ -17,6 +18,10 @@ import { useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import { useCountries } from "@/hooks/use-countries";
+import {
+	municipalitiesQueryOptions,
+	useMunicipalities,
+} from "@/hooks/use-municipalities";
 import { useUpdatePersonalInfo } from "@/hooks/use-onboarding";
 
 type PersonalInfoFormData = Static<typeof PersonalInfoBody>;
@@ -25,6 +30,8 @@ const compiledSchema = TypeCompiler.Compile(PersonalInfoBody);
 export const Route = createFileRoute(
 	"/_authenticated/onboarding/personal-info",
 )({
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	component: PersonalInfoPage,
 });
 
@@ -32,6 +39,11 @@ function PersonalInfoPage() {
 	const navigate = useNavigate();
 	const mutation = useUpdatePersonalInfo();
 	const { data: countries = [] } = useCountries();
+	const {
+		data: municipalities,
+		isLoading: municipalitiesLoading,
+		isError: municipalitiesError,
+	} = useMunicipalities();
 	const [apiError, setApiError] = useState("");
 
 	const {
@@ -180,28 +192,38 @@ function PersonalInfoPage() {
 					<FieldError errors={[errors.residenceAddress]} />
 				</Field>
 
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Field data-invalid={!!errors.residenceCity}>
-						<FieldLabel htmlFor="residenceCity">Città</FieldLabel>
-						<Input
-							id="residenceCity"
-							placeholder="Roma"
-							{...register("residenceCity")}
-						/>
-						<FieldError errors={[errors.residenceCity]} />
-					</Field>
+				<Field data-invalid={!!errors.residenceMunicipalityId}>
+					<FieldLabel htmlFor="residenceMunicipalityId">
+						Comune di residenza
+					</FieldLabel>
+					<Controller
+						control={control}
+						name="residenceMunicipalityId"
+						render={({ field }) => (
+							<MunicipalityCombobox
+								id="residenceMunicipalityId"
+								value={field.value ?? null}
+								onChange={field.onChange}
+								municipalities={municipalities}
+								loading={municipalitiesLoading}
+								error={municipalitiesError}
+								aria-invalid={!!errors.residenceMunicipalityId}
+							/>
+						)}
+					/>
+					<FieldError errors={[errors.residenceMunicipalityId]} />
+				</Field>
 
-					<Field data-invalid={!!errors.residenceZipCode}>
-						<FieldLabel htmlFor="residenceZipCode">CAP</FieldLabel>
-						<Input
-							id="residenceZipCode"
-							placeholder="00100"
-							maxLength={5}
-							{...register("residenceZipCode")}
-						/>
-						<FieldError errors={[errors.residenceZipCode]} />
-					</Field>
-				</div>
+				<Field data-invalid={!!errors.residenceZipCode}>
+					<FieldLabel htmlFor="residenceZipCode">CAP</FieldLabel>
+					<Input
+						id="residenceZipCode"
+						placeholder="00100"
+						maxLength={5}
+						{...register("residenceZipCode")}
+					/>
+					<FieldError errors={[errors.residenceZipCode]} />
+				</Field>
 
 				<Button type="submit" disabled={isSubmitting} className="w-full mt-2">
 					{isSubmitting ? "Salvataggio..." : "Continua"}

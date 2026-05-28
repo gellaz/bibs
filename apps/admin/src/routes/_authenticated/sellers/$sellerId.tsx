@@ -217,8 +217,9 @@ function SellerDetailPage() {
 								value={formatAddress(
 									seller.residenceAddress,
 									seller.residenceZipCode,
-									seller.residenceCity,
+									seller.residenceMunicipality?.name ?? null,
 									seller.residenceCountry,
+									seller.residenceMunicipality?.provinceAcronym ?? null,
 								)}
 							/>
 						</Section>
@@ -231,7 +232,11 @@ function SellerDetailPage() {
 							/>
 							<Field
 								label="Comune di rilascio"
-								value={seller.documentIssuedMunicipality}
+								value={
+									seller.documentIssuedMunicipality
+										? `${seller.documentIssuedMunicipality.name} (${seller.documentIssuedMunicipality.provinceAcronym})`
+										: null
+								}
 							/>
 							{seller.documentImageUrl && (
 								<div className="grid grid-cols-1 gap-x-3 px-4 py-1 sm:grid-cols-[140px_1fr] sm:py-0.5">
@@ -274,9 +279,9 @@ function SellerDetailPage() {
 									value={formatAddress(
 										seller.organization.addressLine1,
 										seller.organization.zipCode,
-										seller.organization.city,
+										seller.organization.municipality.name,
 										seller.organization.country,
-										seller.organization.province,
+										seller.organization.municipality.provinceAcronym,
 									)}
 								/>
 							</Section>
