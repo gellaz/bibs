@@ -33,14 +33,14 @@ export const AddressFieldsRequired = {
 	addressLine2: t.Optional(
 		t.String({ maxLength: 200, description: "Indirizzo (riga 2)" }),
 	),
-	city: t.String({ minLength: 1, maxLength: 100, description: "Città" }),
+	municipalityId: t.String({
+		minLength: 1,
+		description: "ID del comune",
+	}),
 	zipCode: t.String({
 		pattern: "^\\d{5}$",
 		description: "CAP italiano (5 cifre)",
 	}),
-	province: t.Optional(
-		t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" }),
-	),
 	country: t.Optional(
 		t.String({
 			minLength: 2,
@@ -63,14 +63,11 @@ export const AddressFieldsOptional = {
 	addressLine2: t.Optional(
 		t.String({ maxLength: 200, description: "Indirizzo (riga 2)" }),
 	),
-	city: t.Optional(
-		t.String({ minLength: 1, maxLength: 100, description: "Città" }),
+	municipalityId: t.Optional(
+		t.String({ minLength: 1, description: "ID del comune" }),
 	),
 	zipCode: t.Optional(
 		t.String({ pattern: "^\\d{5}$", description: "CAP italiano (5 cifre)" }),
-	),
-	province: t.Optional(
-		t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" }),
 	),
 	country: t.Optional(
 		t.String({ minLength: 2, maxLength: 2, description: "Codice paese" }),
@@ -501,9 +498,9 @@ export const CustomerAddressSchema = t.Object({
 	phone: t.Nullable(t.String({ description: "Numero di telefono" })),
 	addressLine1: t.String({ description: "Indirizzo (riga 1)" }),
 	addressLine2: t.Nullable(t.String({ description: "Indirizzo (riga 2)" })),
-	city: t.String({ description: "Città" }),
+	municipalityId: t.String({ description: "ID del comune" }),
+	municipality: MunicipalityCompactSchema,
 	zipCode: t.String({ description: "CAP" }),
-	province: t.Nullable(t.String({ description: "Provincia (sigla)" })),
 	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
 	location: t.Nullable(PointXY),
 	isDefault: t.Boolean({ description: "Se è l'indirizzo predefinito" }),

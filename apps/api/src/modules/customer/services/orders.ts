@@ -43,7 +43,14 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 						},
 					},
 				},
-				shippingAddress: true,
+				shippingAddress: {
+					with: {
+						municipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+					},
+				},
 			},
 			orderBy: (o, { desc }) => [desc(o.createdAt)],
 			limit,
@@ -52,7 +59,7 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 		db.select({ total: count() }).from(order).where(where),
 	]);
 
-	const data = rawData.map(({ store, ...rest }) => ({
+	const data = rawData.map(({ store, shippingAddress, ...rest }) => ({
 		...rest,
 		store: {
 			...store,
@@ -62,6 +69,19 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 				provinceAcronym: store.municipality.province.acronym,
 			},
 		},
+		shippingAddress: shippingAddress
+			? (() => {
+					const { municipality, ...addrRest } = shippingAddress;
+					return {
+						...addrRest,
+						municipality: {
+							id: municipality.id,
+							name: municipality.name,
+							provinceAcronym: municipality.province.acronym,
+						},
+					};
+				})()
+			: null,
 	}));
 
 	return { data, pagination: { page, limit, total } };
@@ -90,12 +110,19 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 					},
 				},
 			},
-			shippingAddress: true,
+			shippingAddress: {
+				with: {
+					municipality: {
+						columns: { id: true, name: true },
+						with: { province: { columns: { acronym: true } } },
+					},
+				},
+			},
 		},
 	});
 
 	if (!found) throw new ServiceError(404, "Order not found");
-	const { store, ...foundRest } = found;
+	const { store, shippingAddress, ...foundRest } = found;
 	return {
 		...foundRest,
 		store: {
@@ -106,6 +133,19 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 				provinceAcronym: store.municipality.province.acronym,
 			},
 		},
+		shippingAddress: shippingAddress
+			? (() => {
+					const { municipality, ...addrRest } = shippingAddress;
+					return {
+						...addrRest,
+						municipality: {
+							id: municipality.id,
+							name: municipality.name,
+							provinceAcronym: municipality.province.acronym,
+						},
+					};
+				})()
+			: null,
 	};
 }
 

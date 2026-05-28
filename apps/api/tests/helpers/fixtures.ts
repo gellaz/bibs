@@ -6,6 +6,7 @@ import { productCategory } from "@/db/schemas/category";
 import { customerProfile } from "@/db/schemas/customer";
 import type { DiscountStatus } from "@/db/schemas/discount";
 import { discount, discountProduct } from "@/db/schemas/discount";
+import { municipality, province, region } from "@/db/schemas/location";
 import { organization } from "@/db/schemas/organization";
 import {
 	product,
@@ -71,6 +72,64 @@ export async function createTestSeller(
 	return { user: newUser, profile };
 }
 
+// ── Location ──────────────────────────────────────────────────────────────────
+
+/** Creates a minimal region → province → municipality chain for tests. */
+export async function createTestMunicipality(
+	db: DrizzleTestDb,
+	params: {
+		regionName?: string;
+		provinceName?: string;
+		provinceAcronym?: string;
+		municipalityName?: string;
+	} = {},
+) {
+	const unique = crypto.randomUUID().slice(0, 6);
+
+	// Use or create region
+	const regionName = params.regionName ?? `Test Region ${unique}`;
+	let testRegion = await db.query.region.findFirst({
+		where: eq(region.name, regionName),
+	});
+	if (!testRegion) {
+		[testRegion] = await db
+			.insert(region)
+			.values({ name: regionName, istatCode: unique.slice(0, 2) })
+			.returning();
+	}
+
+	// Use or create province
+	const provinceName = params.provinceName ?? `Test Province ${unique}`;
+	const acronym = (params.provinceAcronym ?? unique.slice(0, 2)).toUpperCase();
+	let testProvince = await db.query.province.findFirst({
+		where: eq(province.name, provinceName),
+	});
+	if (!testProvince) {
+		[testProvince] = await db
+			.insert(province)
+			.values({
+				name: provinceName,
+				acronym,
+				istatCode: unique.slice(0, 3),
+				regionId: testRegion.id,
+			})
+			.returning();
+	}
+
+	// Create municipality
+	const municipalityName = params.municipalityName ?? `Test City ${unique}`;
+	const [testMunicipality] = await db
+		.insert(municipality)
+		.values({
+			name: municipalityName,
+			istatCode: unique,
+			provinceId: testProvince.id,
+		})
+		.returning();
+
+	return testMunicipality;
+}
+
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export async function createTestStore(
@@ -78,6 +137,7 @@ export async function createTestStore(
 	sellerProfileId: string,
 	params: {
 		name?: string;
+		municipalityId?: string;
 		/** longitude (x) */
 		lng?: number;
 		/** latitude (y) */
@@ -87,13 +147,16 @@ export async function createTestStore(
 	const lng = params.lng ?? 12.4964; // Rome
 	const lat = params.lat ?? 41.9028;
 
+	const municipalityId =
+		params.municipalityId ?? (await createTestMunicipality(db)).id;
+
 	const [newStore] = await db
 		.insert(store)
 		.values({
 			sellerProfileId,
 			name: params.name ?? "Test Store",
 			addressLine1: "Via Roma 1",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
 			country: "IT",
 			// Raw SQL needed for PostGIS geometry column
@@ -220,9 +283,12 @@ export async function createTestOrganization(
 		vatNumber?: string;
 		legalForm?: string;
 		vatStatus?: "pending" | "verified" | "rejected";
+		municipalityId?: string;
 	} = {},
 ) {
 	const unique = crypto.randomUUID().slice(0, 8);
+	const municipalityId =
+		params.municipalityId ?? (await createTestMunicipality(db)).id;
 	const [org] = await db
 		.insert(organization)
 		.values({
@@ -233,9 +299,8 @@ export async function createTestOrganization(
 				`IT${unique.replace(/\D/g, "").padEnd(11, "0").slice(0, 11)}`,
 			legalForm: params.legalForm ?? "SRL",
 			addressLine1: "Via Roma 1",
-			city: "Roma",
+			municipalityId,
 			zipCode: "00100",
-			province: "RM",
 			vatStatus: params.vatStatus ?? "pending",
 		})
 		.returning();
@@ -251,18 +316,20 @@ export async function createTestCustomerAddress(
 	params: {
 		label?: string;
 		addressLine1?: string;
-		city?: string;
+		municipalityId?: string;
 		zipCode?: string;
 		isDefault?: boolean;
 	} = {},
 ) {
+	const municipalityId =
+		params.municipalityId ?? (await createTestMunicipality(db)).id;
 	const [addr] = await db
 		.insert(customerAddress)
 		.values({
 			customerProfileId,
 			label: params.label ?? "Casa",
 			addressLine1: params.addressLine1 ?? "Via Roma 1",
-			city: params.city ?? "Roma",
+			municipalityId,
 			zipCode: params.zipCode ?? "00100",
 			country: "IT",
 			isDefault: params.isDefault ?? false,
