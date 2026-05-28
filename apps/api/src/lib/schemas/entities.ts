@@ -574,6 +574,19 @@ export const MunicipalitySchema = t.Object({
 	updatedAt: t.Date(),
 });
 
+export const MunicipalityCompactSchema = t.Object(
+	{
+		id: t.String({ description: "ID del comune (UUID)" }),
+		name: t.String({ description: "Nome del comune" }),
+		provinciaAcronym: t.String({
+			minLength: 2,
+			maxLength: 2,
+			description: "Sigla provincia (2 lettere)",
+		}),
+	},
+	{ description: "Comune in formato compatto per liste precaricate" },
+);
+
 export const SellerProfileChangeSchema = t.Object({
 	id: t.String(),
 	sellerProfileId: t.String(),
