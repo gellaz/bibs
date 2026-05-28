@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { municipality, province } from "@/db/schemas/location";
 import { COUNTRIES } from "@/lib/countries";
@@ -42,4 +42,16 @@ export async function listMunicipalities(params: ListMunicipalitiesParams) {
 	]);
 
 	return { data, pagination: { page, limit, total } };
+}
+
+export async function listAllMunicipalities() {
+	return db
+		.select({
+			id: municipality.id,
+			name: municipality.name,
+			provinceAcronym: province.acronym,
+		})
+		.from(municipality)
+		.innerJoin(province, eq(municipality.provinceId, province.id))
+		.orderBy(asc(municipality.name));
 }
