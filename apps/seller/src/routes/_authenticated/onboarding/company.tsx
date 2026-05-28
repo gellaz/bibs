@@ -7,6 +7,7 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import {
 	NativeSelect,
 	NativeSelectOption,
@@ -16,8 +17,12 @@ import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { type SubmitHandler, useForm } from "react-hook-form";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
+import {
+	municipalitiesQueryOptions,
+	useMunicipalities,
+} from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateCompany } from "@/hooks/use-onboarding";
 
 type CompanyFormData = Static<typeof CompanyBody>;
@@ -36,6 +41,8 @@ const LEGAL_FORMS = [
 ];
 
 export const Route = createFileRoute("/_authenticated/onboarding/company")({
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	component: CompanyPage,
 });
 
@@ -48,11 +55,18 @@ function CompanyPage() {
 	const {
 		register,
 		handleSubmit,
+		control,
 		formState: { errors, isSubmitting },
 	} = useForm<CompanyFormData>({
 		resolver: typeboxResolver(compiledSchema),
 		defaultValues: { country: "IT" },
 	});
+
+	const {
+		data: municipalities,
+		isLoading: municipalitiesLoading,
+		isError: municipalitiesError,
+	} = useMunicipalities();
 
 	const onSubmit: SubmitHandler<CompanyFormData> = async (data) => {
 		setApiError("");
@@ -128,24 +142,25 @@ function CompanyPage() {
 					<FieldError errors={[errors.addressLine1]} />
 				</Field>
 
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<Field data-invalid={!!errors.city}>
-						<FieldLabel htmlFor="city">Città</FieldLabel>
-						<Input id="city" placeholder="Roma" {...register("city")} />
-						<FieldError errors={[errors.city]} />
-					</Field>
-
-					<Field data-invalid={!!errors.province}>
-						<FieldLabel htmlFor="province">Provincia</FieldLabel>
-						<Input
-							id="province"
-							placeholder="RM"
-							maxLength={2}
-							{...register("province")}
-						/>
-						<FieldError errors={[errors.province]} />
-					</Field>
-				</div>
+				<Field data-invalid={!!errors.municipalityId}>
+					<FieldLabel htmlFor="municipalityId">Comune</FieldLabel>
+					<Controller
+						control={control}
+						name="municipalityId"
+						render={({ field }) => (
+							<MunicipalityCombobox
+								id="municipalityId"
+								value={field.value ?? null}
+								onChange={field.onChange}
+								municipalities={municipalities}
+								loading={municipalitiesLoading}
+								error={municipalitiesError}
+								aria-invalid={!!errors.municipalityId}
+							/>
+						)}
+					/>
+					<FieldError errors={[errors.municipalityId]} />
+				</Field>
 
 				<Field data-invalid={!!errors.zipCode}>
 					<FieldLabel htmlFor="zipCode">CAP</FieldLabel>
