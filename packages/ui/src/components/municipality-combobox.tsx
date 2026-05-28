@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import * as React from "react";
 import {
 	Combobox,
@@ -103,6 +104,19 @@ function MunicipalityCombobox({
 			? "Caricamento comuni…"
 			: placeholder;
 
+	React.useEffect(() => {
+		if (
+			value &&
+			municipalities &&
+			!municipalities.find((m) => m.id === value) &&
+			(import.meta as { env?: { DEV?: boolean } }).env?.DEV
+		) {
+			console.warn(
+				`[MunicipalityCombobox] value "${value}" not found in municipalities list`,
+			);
+		}
+	}, [value, municipalities]);
+
 	return (
 		<Combobox
 			items={items}
@@ -127,8 +141,18 @@ function MunicipalityCombobox({
 				disabled={triggerDisabled}
 				aria-invalid={ariaProps["aria-invalid"]}
 				aria-describedby={ariaProps["aria-describedby"]}
-				showClear={!!selected}
-			/>
+				showClear={!isLoading && !!selected}
+				showTrigger={!isLoading}
+			>
+				{isLoading ? (
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+					>
+						<Loader2 className="size-4 animate-spin text-muted-foreground" />
+					</div>
+				) : null}
+			</ComboboxInput>
 			<ComboboxContent>
 				<ComboboxList>
 					{items.map((item) => (
