@@ -8,12 +8,14 @@ import {
 } from "@bibs/ui/components/card";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import { toast } from "@bibs/ui/components/sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { type SubmitHandler, useForm } from "react-hook-form";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
+import { useMunicipalities } from "@/hooks/use-municipalities";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
 import { api } from "@/lib/api";
 import { VatChangeDialog } from "./vat-change-dialog";
@@ -23,8 +25,7 @@ const schema = z.object({
 	legalForm: z.string().min(1, "Forma giuridica obbligatoria"),
 	addressLine1: z.string().min(1, "Indirizzo obbligatorio"),
 	zipCode: z.string().regex(/^\d{5}$/, "CAP deve essere 5 cifre"),
-	city: z.string().min(1, "Città obbligatoria"),
-	province: z.string().optional(),
+	municipalityId: z.string().min(1, "Comune obbligatorio"),
 	country: z.string().min(2).max(2),
 });
 type Form = z.infer<typeof schema>;
@@ -38,7 +39,13 @@ export function BusinessInfoCard({ readOnly }: Props) {
 	const org = data?.organization;
 	const qc = useQueryClient();
 
-	const { register, handleSubmit, reset, formState } = useForm<Form>({
+	const {
+		data: municipalities,
+		isLoading: municipalitiesLoading,
+		isError: municipalitiesError,
+	} = useMunicipalities();
+
+	const { register, handleSubmit, reset, control, formState } = useForm<Form>({
 		resolver: zodResolver(schema),
 	});
 
@@ -49,8 +56,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 				legalForm: org.legalForm,
 				addressLine1: org.addressLine1,
 				zipCode: org.zipCode,
-				city: org.city,
-				province: org.province ?? "",
+				municipalityId: org.municipalityId ?? "",
 				country: org.country ?? "IT",
 			});
 		}
@@ -139,7 +145,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 						<FieldError errors={[formState.errors.addressLine1]} />
 					</Field>
 
-					<div className="grid grid-cols-3 gap-4">
+					<div className="grid grid-cols-2 gap-4">
 						<Field data-invalid={!!formState.errors.zipCode}>
 							<FieldLabel htmlFor="zipCode" required={!readOnly}>
 								CAP
@@ -151,20 +157,28 @@ export function BusinessInfoCard({ readOnly }: Props) {
 							/>
 							<FieldError errors={[formState.errors.zipCode]} />
 						</Field>
-						<Field data-invalid={!!formState.errors.city}>
-							<FieldLabel htmlFor="city" required={!readOnly}>
-								Città
+
+						<Field data-invalid={!!formState.errors.municipalityId}>
+							<FieldLabel htmlFor="municipalityId" required={!readOnly}>
+								Comune
 							</FieldLabel>
-							<Input id="city" disabled={readOnly} {...register("city")} />
-							<FieldError errors={[formState.errors.city]} />
-						</Field>
-						<Field>
-							<FieldLabel htmlFor="province">Provincia</FieldLabel>
-							<Input
-								id="province"
-								disabled={readOnly}
-								{...register("province")}
+							<Controller
+								control={control}
+								name="municipalityId"
+								render={({ field }) => (
+									<MunicipalityCombobox
+										id="municipalityId"
+										value={field.value ?? null}
+										onChange={field.onChange}
+										municipalities={municipalities}
+										loading={municipalitiesLoading}
+										error={municipalitiesError}
+										disabled={readOnly}
+										aria-invalid={!!formState.errors.municipalityId}
+									/>
+								)}
 							/>
+							<FieldError errors={[formState.errors.municipalityId]} />
 						</Field>
 					</div>
 

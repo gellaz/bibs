@@ -2,8 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BusinessInfoCard } from "@/features/profile/components/business-info-card";
 import { PersonalInfoCard } from "@/features/profile/components/personal-info-card";
 import { useIsOwner } from "@/hooks/use-is-owner";
+import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 
 export const Route = createFileRoute("/_authenticated/profile")({
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	component: ProfilePage,
 });
 
