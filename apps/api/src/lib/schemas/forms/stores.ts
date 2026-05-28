@@ -44,24 +44,16 @@ export const CreateStoreBody = Type.Object({
 	addressLine2: Type.Optional(
 		Type.String({ maxLength: 200, description: "Indirizzo (riga 2)" }),
 	),
-	city: Type.String({
+	municipalityId: Type.String({
 		minLength: 1,
-		maxLength: 100,
-		description: "Città",
-		error: "La città è obbligatoria",
+		description: "ID del comune del negozio",
+		error: "Il comune è obbligatorio",
 	}),
 	zipCode: Type.String({
 		pattern: "^\\d{5}$",
 		description: "CAP italiano (5 cifre)",
 		error: "Il CAP deve essere di 5 cifre",
 	}),
-	province: Type.Optional(
-		Type.String({
-			minLength: 2,
-			maxLength: 5,
-			description: "Provincia (sigla)",
-		}),
-	),
 	country: Type.Optional(
 		Type.String({
 			minLength: 2,
