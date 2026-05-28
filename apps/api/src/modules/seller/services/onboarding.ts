@@ -64,6 +64,9 @@ const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
 // ── GET status ──────────────────────────────
 
 export async function getOnboardingStatus(userId: string) {
+	// fetchProfileWithMunicipalities intentionally omits the `organization` relation:
+	// SellerProfileSchema (the route's response shape) does not expose it, so the
+	// FE never had access to it from this endpoint. No data loss.
 	const profile = await fetchProfileWithMunicipalities(userId);
 
 	if (!profile) {
