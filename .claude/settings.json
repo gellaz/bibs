@@ -1,12 +1,5 @@
 {
 	"$schema": "https://json.schemastore.org/claude-code-settings.json",
-	"enabledPlugins": {
-		"superpowers@claude-plugins-official": true,
-		"commit-commands@claude-plugins-official": true,
-		"frontend-design@claude-plugins-official": true,
-		"chrome-devtools-mcp@claude-plugins-official": true,
-		"claude-md-management@claude-plugins-official": true
-	},
 	"permissions": {
 		"allow": [
 			"Bash(bun install)",
@@ -69,5 +62,13 @@
 				]
 			}
 		]
+	},
+	"enabledPlugins": {
+		"superpowers@claude-plugins-official": true,
+		"commit-commands@claude-plugins-official": true,
+		"frontend-design@claude-plugins-official": true,
+		"chrome-devtools-mcp@claude-plugins-official": true,
+		"claude-md-management@claude-plugins-official": true,
+		"stripe@claude-plugins-official": true
 	}
 }
