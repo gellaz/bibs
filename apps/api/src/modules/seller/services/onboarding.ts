@@ -135,8 +135,7 @@ interface CompanyParams {
 	legalForm: string;
 	addressLine1: string;
 	country?: string;
-	province?: string;
-	city: string;
+	municipalityId: string;
 	zipCode: string;
 }
 
@@ -158,8 +157,7 @@ export async function updateCompany(params: CompanyParams) {
 			legalForm: data.legalForm,
 			addressLine1: data.addressLine1,
 			country: data.country ?? "IT",
-			province: data.province,
-			city: data.city,
+			municipalityId: data.municipalityId,
 			zipCode: data.zipCode,
 		});
 

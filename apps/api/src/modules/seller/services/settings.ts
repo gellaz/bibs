@@ -47,17 +47,28 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 
 	const profile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerProfileId),
-		with: { organization: true, changes: true },
+		with: { changes: true },
 	});
 
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 
-	const payment = await db.query.paymentMethod.findFirst({
-		where: and(
-			eq(paymentMethod.sellerProfileId, sellerProfileId),
-			eq(paymentMethod.isDefault, true),
-		),
-	});
+	const [orgRaw, payment] = await Promise.all([
+		db.query.organization.findFirst({
+			where: eq(organization.sellerProfileId, sellerProfileId),
+			with: {
+				municipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+			},
+		}),
+		db.query.paymentMethod.findFirst({
+			where: and(
+				eq(paymentMethod.sellerProfileId, sellerProfileId),
+				eq(paymentMethod.isDefault, true),
+			),
+		}),
+	]);
 
 	const pendingChanges = (profile.changes ?? []).filter(
 		(c) => c.status === "pending",
@@ -67,9 +78,23 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 		? null
 		: await getEmployeeAssignedStoreIds(userId, sellerProfileId);
 
+	const org = orgRaw
+		? (() => {
+				const { municipality, ...rest } = orgRaw;
+				return {
+					...rest,
+					municipality: {
+						id: municipality.id,
+						name: municipality.name,
+						provinceAcronym: municipality.province.acronym,
+					},
+				};
+			})()
+		: null;
+
 	return {
 		profile,
-		organization: profile.organization ?? null,
+		organization: org,
 		paymentMethod: payment ?? null,
 		pendingChanges,
 		assignedStoreIds,
@@ -129,8 +154,7 @@ interface CompanySettingsParams {
 	legalForm: string;
 	addressLine1: string;
 	country?: string;
-	province?: string;
-	city: string;
+	municipalityId: string;
 	zipCode: string;
 }
 
@@ -157,14 +181,35 @@ export async function updateCompanySettings(params: CompanySettingsParams) {
 			legalForm: data.legalForm,
 			addressLine1: data.addressLine1,
 			country: data.country ?? org.country,
-			province: data.province,
-			city: data.city,
+			municipalityId: data.municipalityId,
 			zipCode: data.zipCode,
 		})
 		.where(eq(organization.sellerProfileId, sellerProfileId))
 		.returning();
 
-	return updated;
+	// Re-fetch with municipality join so the response includes the compact shape
+	const result = await db.query.organization.findFirst({
+		where: eq(organization.id, updated.id),
+		with: {
+			municipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+		},
+	});
+
+	if (!result)
+		throw new ServiceError(404, "Organization not found after update");
+
+	const { municipality, ...rest } = result;
+	return {
+		...rest,
+		municipality: {
+			id: municipality.id,
+			name: municipality.name,
+			provinceAcronym: municipality.province.acronym,
+		},
+	};
 }
 
 // ── Livello 2: Change requests ──────────────

@@ -169,6 +169,19 @@ export const SellerProfileSchema = t.Object({
 	createdAt: t.Date(),
 });
 
+export const MunicipalityCompactSchema = t.Object(
+	{
+		id: t.String({ description: "Identificatore univoco del comune" }),
+		name: t.String({ description: "Nome del comune" }),
+		provinceAcronym: t.String({
+			minLength: 2,
+			maxLength: 2,
+			description: "Sigla provincia (2 lettere)",
+		}),
+	},
+	{ description: "Comune in formato compatto per liste precaricate" },
+);
+
 export const OrganizationSchema = t.Object({
 	id: t.String(),
 	sellerProfileId: t.String(),
@@ -177,8 +190,8 @@ export const OrganizationSchema = t.Object({
 	legalForm: t.String({ description: "Forma giuridica" }),
 	addressLine1: t.String({ description: "Indirizzo sede legale" }),
 	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
-	province: t.Nullable(t.String({ description: "Provincia" })),
-	city: t.String({ description: "Città" }),
+	municipalityId: t.String({ description: "ID comune sede legale" }),
+	municipality: MunicipalityCompactSchema,
 	zipCode: t.String({ description: "CAP" }),
 	vatStatus: t.Union(
 		[t.Literal("pending"), t.Literal("verified"), t.Literal("rejected")],
@@ -573,19 +586,6 @@ export const MunicipalitySchema = t.Object({
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
 });
-
-export const MunicipalityCompactSchema = t.Object(
-	{
-		id: t.String({ description: "Identificatore univoco del comune" }),
-		name: t.String({ description: "Nome del comune" }),
-		provinceAcronym: t.String({
-			minLength: 2,
-			maxLength: 2,
-			description: "Sigla provincia (2 lettere)",
-		}),
-	},
-	{ description: "Comune in formato compatto per liste precaricate" },
-);
 
 export const SellerProfileChangeSchema = t.Object({
 	id: t.String(),
