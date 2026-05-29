@@ -152,44 +152,34 @@ function AuthenticatedLayout() {
 		return <EmployeeStoreGate navigate={navigate} />;
 	}
 
-	// If seller is still onboarding, render outlet without sidebar — but only
-	// when already on an /onboarding/* path. Otherwise the useEffect above is
-	// still queueing the navigate(), and rendering the matched route now would
-	// hit components (e.g. Dashboard) that require ActiveStoreProvider, which is
-	// not mounted during onboarding.
-	if (
-		role === "seller" &&
-		onboarding &&
-		onboarding.onboardingStatus !== "active"
-	) {
-		if (!location.pathname.startsWith("/onboarding")) {
-			return (
-				<div className="flex h-screen items-center justify-center">
-					<Spinner className="size-8" />
-				</div>
-			);
-		}
-		return <Outlet />;
-	}
+	// Always mount ActiveStoreProvider so any component calling useActiveStore()
+	// degrades gracefully (stores=[], activeStore=null) — including during the
+	// brief render window before the onboarding-redirect useEffect commits.
+	const isOnboarding =
+		role === "seller" && onboarding && onboarding.onboardingStatus !== "active";
 
 	return (
 		<ActiveStoreProvider>
-			<SidebarProvider>
-				<AppSidebar />
-				<SidebarInset>
-					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
-						<SidebarTrigger className="-ml-1" />
-						<div aria-hidden className="h-4 w-px bg-border" />
-						<AppBreadcrumb />
-					</header>
-					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
-						<div className="mb-4 empty:hidden">
-							<StoreBillingBanner />
+			{isOnboarding ? (
+				<Outlet />
+			) : (
+				<SidebarProvider>
+					<AppSidebar />
+					<SidebarInset>
+						<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
+							<SidebarTrigger className="-ml-1" />
+							<div aria-hidden className="h-4 w-px bg-border" />
+							<AppBreadcrumb />
+						</header>
+						<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+							<div className="mb-4 empty:hidden">
+								<StoreBillingBanner />
+							</div>
+							<Outlet />
 						</div>
-						<Outlet />
-					</div>
-				</SidebarInset>
-			</SidebarProvider>
+					</SidebarInset>
+				</SidebarProvider>
+			)}
 		</ActiveStoreProvider>
 	);
 }
