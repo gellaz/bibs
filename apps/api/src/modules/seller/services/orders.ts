@@ -49,22 +49,35 @@ export async function transitionOrder(
 		existing.type as OrderType,
 	);
 
-	// Completion requires awarding loyalty points in a transaction
+	const fromStatus = existing.status as OrderStatus;
+
+	// Completion requires awarding loyalty points in a transaction.
 	if (toStatus === "completed") {
-		const [updated] = await db.transaction(async (tx) => {
+		const updated = await db.transaction(async (tx) => {
+			// Compare-and-swap: only the transaction that still observes the order
+			// in its expected status wins. A concurrent completion finds 0 rows and
+			// aborts, so points are awarded exactly once.
+			const [claimed] = await tx
+				.update(order)
+				.set({ status: "completed" })
+				.where(and(eq(order.id, orderId), eq(order.status, fromStatus)))
+				.returning();
+			if (!claimed)
+				throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
 			const pointsEarned = await awardPoints(tx, {
 				customerProfileId: existing.customerProfileId,
 				orderId,
 				totalCents: toCents(existing.total),
 			});
 
-			const [upd] = await tx
+			if (pointsEarned === 0) return claimed;
+			const [withPoints] = await tx
 				.update(order)
-				.set({ status: "completed", pointsEarned })
+				.set({ pointsEarned })
 				.where(eq(order.id, orderId))
 				.returning();
-
-			return [upd];
+			return withPoints;
 		});
 
 		return updated;
@@ -73,8 +86,9 @@ export async function transitionOrder(
 	const [updated] = await db
 		.update(order)
 		.set({ status: toStatus })
-		.where(eq(order.id, orderId))
+		.where(and(eq(order.id, orderId), eq(order.status, fromStatus)))
 		.returning();
+	if (!updated) throw new ServiceError(409, "L'ordine è già stato aggiornato");
 
 	return updated;
 }
