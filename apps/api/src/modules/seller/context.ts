@@ -1,7 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { product } from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import type { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
@@ -121,6 +121,32 @@ export async function ensureStoreAccess(
 	);
 	if (!assigned.includes(storeId)) {
 		throw new ServiceError(403, "Accesso negato a questo negozio");
+	}
+}
+
+/**
+ * Product-level sibling of {@link ensureStoreAccess}.
+ * Owner: 404 se il prodotto non appartiene al seller (qualunque store, anche
+ * non assegnato a nessuno).
+ * Employee: 404 se non è del seller; 403 se il prodotto non è in stock in
+ * nessuno degli store assegnati al chiamante.
+ */
+export async function ensureProductAccess(
+	productId: string,
+	ctx: AccessCtx,
+): Promise<void> {
+	await ensureProductOwnership(productId, ctx.sellerProfileId);
+	if (ctx.isOwner) return;
+	const assigned = await getEmployeeAssignedStoreIds(
+		ctx.userId,
+		ctx.sellerProfileId,
+	);
+	const rows = await db.query.storeProduct.findMany({
+		where: eq(storeProduct.productId, productId),
+		columns: { storeId: true },
+	});
+	if (!rows.some((r) => assigned.includes(r.storeId))) {
+		throw new ServiceError(403, "Accesso negato a questo prodotto");
 	}
 }
 

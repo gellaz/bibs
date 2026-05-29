@@ -18,7 +18,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
-import { withSeller } from "../context";
+import { requireOwner, withSeller } from "../context";
 import {
 	addProductsToDiscount,
 	archiveDiscount,
@@ -35,7 +35,8 @@ export const discountsRoutes = new Elysia()
 	.get(
 		"/discounts",
 		async (ctx) => {
-			const { sellerProfile: sp, query } = withSeller(ctx);
+			const { sellerProfile: sp, query, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const result = await listDiscounts({
 				sellerProfileId: sp.id,
 				page: query.page,
@@ -59,7 +60,8 @@ export const discountsRoutes = new Elysia()
 	.get(
 		"/discounts/:discountId",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const d = await getDiscountById({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
@@ -87,7 +89,8 @@ export const discountsRoutes = new Elysia()
 	.get(
 		"/discounts/:discountId/products",
 		async (ctx) => {
-			const { sellerProfile: sp, params, query } = withSeller(ctx);
+			const { sellerProfile: sp, params, query, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const out = await getDiscountProducts({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
@@ -111,7 +114,8 @@ export const discountsRoutes = new Elysia()
 	.post(
 		"/discounts",
 		async (ctx) => {
-			const { sellerProfile: sp, body, user, store } = withSeller(ctx);
+			const { sellerProfile: sp, body, user, store, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const pino = getLogger(store);
 			const d = await createDiscount({
 				sellerProfileId: sp.id,
@@ -154,7 +158,8 @@ export const discountsRoutes = new Elysia()
 	.patch(
 		"/discounts/:discountId",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body } = withSeller(ctx);
+			const { sellerProfile: sp, params, body, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const out = await updateDiscount({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
@@ -177,7 +182,8 @@ export const discountsRoutes = new Elysia()
 	.post(
 		"/discounts/:discountId/pause",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const out = await pauseDiscount({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
@@ -198,7 +204,8 @@ export const discountsRoutes = new Elysia()
 	.post(
 		"/discounts/:discountId/archive",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const out = await archiveDiscount({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
@@ -218,7 +225,8 @@ export const discountsRoutes = new Elysia()
 	.post(
 		"/discounts/:discountId/products",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body } = withSeller(ctx);
+			const { sellerProfile: sp, params, body, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const out = await addProductsToDiscount({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
@@ -241,7 +249,8 @@ export const discountsRoutes = new Elysia()
 	.delete(
 		"/discounts/:discountId/products",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body } = withSeller(ctx);
+			const { sellerProfile: sp, params, body, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const out = await removeProductsFromDiscount({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
@@ -263,7 +272,8 @@ export const discountsRoutes = new Elysia()
 	.delete(
 		"/discounts/:discountId/products/:productId",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			await removeProductsFromDiscount({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,

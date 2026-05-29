@@ -4,18 +4,21 @@ import { productImage } from "@/db/schemas/product-image";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
-import { ensureProductOwnership } from "../context";
+import { ensureProductAccess } from "../context";
 
 interface UploadProductImagesParams {
 	productId: string;
 	sellerProfileId: string;
+	userId: string;
+	isOwner: boolean;
 	files: File[];
 	position?: number;
 }
 
 export async function uploadProductImages(params: UploadProductImagesParams) {
-	const { productId, sellerProfileId, files, position } = params;
-	await ensureProductOwnership(productId, sellerProfileId);
+	const { productId, sellerProfileId, userId, isOwner, files, position } =
+		params;
+	await ensureProductAccess(productId, { userId, sellerProfileId, isOwner });
 
 	// Enforce max images per product
 	const [{ current }] = await db
@@ -63,12 +66,14 @@ export async function uploadProductImages(params: UploadProductImagesParams) {
 interface DeleteProductImageParams {
 	productId: string;
 	sellerProfileId: string;
+	userId: string;
+	isOwner: boolean;
 	imageId: string;
 }
 
 export async function deleteProductImage(params: DeleteProductImageParams) {
-	const { productId, sellerProfileId, imageId } = params;
-	await ensureProductOwnership(productId, sellerProfileId);
+	const { productId, sellerProfileId, userId, isOwner, imageId } = params;
+	await ensureProductAccess(productId, { userId, sellerProfileId, isOwner });
 
 	const img = await db.query.productImage.findFirst({
 		where: and(
