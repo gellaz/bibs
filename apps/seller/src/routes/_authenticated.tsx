@@ -159,7 +159,7 @@ function AuthenticatedLayout() {
 		role === "seller" && onboarding && onboarding.onboardingStatus !== "active";
 
 	return (
-		<ActiveStoreProvider>
+		<ActiveStoreProvider enabled={!isOnboarding}>
 			{isOnboarding ? (
 				<Outlet />
 			) : (

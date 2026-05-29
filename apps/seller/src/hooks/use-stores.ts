@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
  * Hook to fetch the seller's stores.
  * Uses a high limit to fetch all stores at once (sellers typically have few stores).
  */
-export function useStores() {
+export function useStores({ enabled = true }: { enabled?: boolean } = {}) {
 	return useQuery({
 		queryKey: ["stores"],
 		queryFn: async () => {
@@ -21,5 +21,6 @@ export function useStores() {
 
 			return response.data.data;
 		},
+		enabled,
 	});
 }

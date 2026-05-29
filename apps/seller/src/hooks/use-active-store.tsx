@@ -47,10 +47,16 @@ const ActiveStoreContext = createContext<ActiveStoreContextValue | null>(null);
 
 export function ActiveStoreProvider({
 	children,
+	enabled = true,
 }: {
 	children: React.ReactNode;
+	/**
+	 * Whether to fetch stores + subscriptions. Set false during onboarding to
+	 * avoid 403s — the backend rejects /seller/* until onboarding is complete.
+	 */
+	enabled?: boolean;
 }) {
-	const { data: stores, isLoading } = useStores();
+	const { data: stores, isLoading } = useStores({ enabled });
 	const [activeStoreId, setActiveStoreIdState] = useState<string | null>(() => {
 		if (typeof window === "undefined") return null;
 		return window.localStorage.getItem(STORAGE_KEY);
@@ -63,6 +69,7 @@ export function ActiveStoreProvider({
 			if (r.error) throw new Error((r.error.value as any)?.message);
 			return (r.data?.data ?? []) as Subscription[];
 		},
+		enabled,
 	});
 
 	const setActiveStoreId = useCallback((storeId: string) => {
