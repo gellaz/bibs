@@ -152,12 +152,23 @@ function AuthenticatedLayout() {
 		return <EmployeeStoreGate navigate={navigate} />;
 	}
 
-	// If seller is still onboarding, render outlet without sidebar
+	// If seller is still onboarding, render outlet without sidebar — but only
+	// when already on an /onboarding/* path. Otherwise the useEffect above is
+	// still queueing the navigate(), and rendering the matched route now would
+	// hit components (e.g. Dashboard) that require ActiveStoreProvider, which is
+	// not mounted during onboarding.
 	if (
 		role === "seller" &&
 		onboarding &&
 		onboarding.onboardingStatus !== "active"
 	) {
+		if (!location.pathname.startsWith("/onboarding")) {
+			return (
+				<div className="flex h-screen items-center justify-center">
+					<Spinner className="size-8" />
+				</div>
+			);
+		}
 		return <Outlet />;
 	}
 
