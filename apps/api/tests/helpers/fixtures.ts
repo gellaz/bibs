@@ -74,6 +74,15 @@ export async function createTestSeller(
 
 // ── Location ──────────────────────────────────────────────────────────────────
 
+// Monotonic counter for municipality ISTAT codes. The columns are tiny
+// (region varchar(2), province acronym varchar(2) / istat varchar(3),
+// municipality varchar(6)) and unique, so random per-call codes collided across
+// the suite. truncateAll() wipes the location tables between tests, so a shared
+// region/province (find-or-create by a fixed name) only ever has one row alive
+// at a time and its fixed codes can never collide; only the municipality varies
+// per call, via this base36 counter (6 chars → ~2.1B values, no overflow).
+let municipalitySeq = 0;
+
 /** Creates a minimal region → province → municipality chain for tests. */
 export async function createTestMunicipality(
 	db: DrizzleTestDb,
@@ -84,23 +93,22 @@ export async function createTestMunicipality(
 		municipalityName?: string;
 	} = {},
 ) {
-	const unique = crypto.randomUUID().slice(0, 6);
-
-	// Use or create region
-	const regionName = params.regionName ?? `Test Region ${unique}`;
+	// Shared region (find-or-create). Fixed ISTAT is safe: only one lives at a
+	// time thanks to truncateAll between tests.
+	const regionName = params.regionName ?? "Test Region";
 	let testRegion = await db.query.region.findFirst({
 		where: eq(region.name, regionName),
 	});
 	if (!testRegion) {
 		[testRegion] = await db
 			.insert(region)
-			.values({ name: regionName, istatCode: unique.slice(0, 2) })
+			.values({ name: regionName, istatCode: "00" })
 			.returning();
 	}
 
-	// Use or create province
-	const provinceName = params.provinceName ?? `Test Province ${unique}`;
-	const acronym = (params.provinceAcronym ?? unique.slice(0, 2)).toUpperCase();
+	// Shared province (find-or-create).
+	const provinceName = params.provinceName ?? "Test Province";
+	const acronym = (params.provinceAcronym ?? "TT").toUpperCase();
 	let testProvince = await db.query.province.findFirst({
 		where: eq(province.name, provinceName),
 	});
@@ -110,19 +118,21 @@ export async function createTestMunicipality(
 			.values({
 				name: provinceName,
 				acronym,
-				istatCode: unique.slice(0, 3),
+				istatCode: "000",
 				regionId: testRegion.id,
 			})
 			.returning();
 	}
 
-	// Create municipality
-	const municipalityName = params.municipalityName ?? `Test City ${unique}`;
+	// Municipality: unique per call via a monotonic base36 ISTAT code.
+	municipalitySeq += 1;
+	const istatCode = municipalitySeq.toString(36).padStart(6, "0").slice(-6);
+	const municipalityName = params.municipalityName ?? `Test City ${istatCode}`;
 	const [testMunicipality] = await db
 		.insert(municipality)
 		.values({
 			name: municipalityName,
-			istatCode: unique,
+			istatCode,
 			provinceId: testProvince.id,
 		})
 		.returning();
