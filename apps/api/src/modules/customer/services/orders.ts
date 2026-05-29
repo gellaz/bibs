@@ -1,5 +1,6 @@
 import { and, count, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { customerAddress } from "@/db/schemas/address";
 import { customerProfile } from "@/db/schemas/customer";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order, orderItem } from "@/db/schemas/order";
@@ -188,6 +189,22 @@ export async function createOrder(params: CreateOrderParams) {
 			400,
 			"Shipping address is required for delivery orders",
 		);
+	}
+
+	// IDOR guard: the shipping address must belong to the ordering customer.
+	// The FK alone only proves existence, not ownership.
+	if (type === "pay_deliver" && shippingAddressId) {
+		const [addr] = await db
+			.select({ id: customerAddress.id })
+			.from(customerAddress)
+			.where(
+				and(
+					eq(customerAddress.id, shippingAddressId),
+					eq(customerAddress.customerProfileId, customerProfileId),
+				),
+			)
+			.limit(1);
+		if (!addr) throw new ServiceError(404, "Shipping address not found");
 	}
 
 	return db.transaction(async (tx) => {

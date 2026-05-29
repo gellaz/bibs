@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { storeSubscriptionStatuses } from "@/db/schemas/store-subscription";
 import { ok } from "@/lib/responses";
 import { okRes, withErrors } from "@/lib/schemas";
-import { withSeller } from "../context";
+import { requireOwner, withSeller } from "../context";
 import {
 	createPortalSession,
 	getBillingSummary,
@@ -58,7 +58,8 @@ export const billingRoutes = new Elysia({ prefix: "/billing" })
 	.get(
 		"/summary",
 		async (ctx) => {
-			const { sellerProfile: sp } = withSeller(ctx);
+			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const data = await getBillingSummary({ sellerProfileId: sp.id });
 			return ok(data);
 		},
@@ -75,7 +76,8 @@ export const billingRoutes = new Elysia({ prefix: "/billing" })
 	.get(
 		"/subscriptions",
 		async (ctx) => {
-			const { sellerProfile: sp } = withSeller(ctx);
+			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const data = await listBillingSubscriptions({ sellerProfileId: sp.id });
 			return ok(data) as any;
 		},
@@ -91,7 +93,8 @@ export const billingRoutes = new Elysia({ prefix: "/billing" })
 	.post(
 		"/portal",
 		async (ctx) => {
-			const { sellerProfile: sp } = withSeller(ctx);
+			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const data = await createPortalSession({
 				sellerProfileId: sp.id,
 				stripeCustomerId: sp.stripeCustomerId ?? null,
@@ -111,7 +114,8 @@ export const billingRoutes = new Elysia({ prefix: "/billing" })
 	.get(
 		"/invoices",
 		async (ctx) => {
-			const { sellerProfile: sp, query } = withSeller(ctx);
+			const { sellerProfile: sp, query, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const data = await listInvoices({
 				sellerProfileId: sp.id,
 				limit: query.limit ?? 25,

@@ -76,6 +76,13 @@ export type SortOrder = "asc" | "desc";
 interface ListProductsParams {
 	sellerProfileId: string;
 	storeId?: string;
+	/**
+	 * When set (employee callers without an explicit storeId), restricts the
+	 * result to products stocked in one of these stores. An empty array means
+	 * "no accessible stores" → no products. Ignored when `storeId` is provided
+	 * (that path is already store-scoped via the join + ensureStoreAccess).
+	 */
+	restrictToStoreIds?: string[];
 	page?: number;
 	limit?: number;
 	statusFilter?: ProductStatus;
@@ -95,6 +102,7 @@ export async function listProducts(params: ListProductsParams) {
 	const {
 		sellerProfileId,
 		storeId,
+		restrictToStoreIds,
 		statusFilter = "active",
 		brandId,
 		productCategoryIds,
@@ -120,6 +128,19 @@ export async function listProducts(params: ListProductsParams) {
 
 	if (storeId) {
 		conditions.push(eq(storeProduct.storeId, storeId));
+	} else if (restrictToStoreIds) {
+		// Employee seller-wide view: limit to products stocked in an accessible store.
+		if (restrictToStoreIds.length === 0) {
+			conditions.push(sql`false`);
+		} else {
+			const storeIdList = sql.join(
+				restrictToStoreIds.map((id) => sql`${id}`),
+				sql`, `,
+			);
+			conditions.push(
+				sql`EXISTS (SELECT 1 FROM store_products sp WHERE sp.product_id = ${product.id} AND sp.store_id IN (${storeIdList}))`,
+			);
+		}
 	}
 
 	if (inStock) {
@@ -322,14 +343,27 @@ interface ListCategoriesInUseParams {
 	sellerProfileId: string;
 	storeId?: string;
 	statusFilter?: ProductStatus;
+	/** Employee scoping mirror of {@link ListProductsParams.restrictToStoreIds}. */
+	restrictToStoreIds?: string[];
 }
 
 export async function listCategoriesInUse(params: ListCategoriesInUseParams) {
-	const { sellerProfileId, storeId, statusFilter } = params;
+	const { sellerProfileId, storeId, statusFilter, restrictToStoreIds } = params;
 
 	const conditions = [eq(product.sellerProfileId, sellerProfileId)];
 	if (statusFilter) conditions.push(eq(product.status, statusFilter));
-	if (storeId) conditions.push(eq(storeProduct.storeId, storeId));
+	if (storeId) {
+		conditions.push(eq(storeProduct.storeId, storeId));
+	} else if (restrictToStoreIds) {
+		if (restrictToStoreIds.length === 0) return [];
+		const storeIdList = sql.join(
+			restrictToStoreIds.map((id) => sql`${id}`),
+			sql`, `,
+		);
+		conditions.push(
+			sql`EXISTS (SELECT 1 FROM store_products sp WHERE sp.product_id = ${product.id} AND sp.store_id IN (${storeIdList}))`,
+		);
+	}
 
 	const baseQuery = storeId
 		? db

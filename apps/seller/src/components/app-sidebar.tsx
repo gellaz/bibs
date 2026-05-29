@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { NavUser } from "@/components/nav-user";
 import { StoreSwitcher } from "@/components/store-switcher";
+import { useIsOwner } from "@/hooks/use-is-owner";
 
 const navItems = [
 	{
@@ -59,11 +60,18 @@ const navItems = [
 		to: "/billing" as const,
 		icon: CreditCardIcon,
 		match: (p: string) => p.startsWith("/billing"),
+		ownerOnly: true,
 	},
 ];
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const isOwner = useIsOwner();
+	// Owner-only destinations (billing) are hidden from employees, mirroring the
+	// requireOwner guard the API enforces on those endpoints.
+	const visibleItems = navItems.filter(
+		(item) => isOwner || !("ownerOnly" in item),
+	);
 
 	return (
 		<Sidebar collapsible="icon" {...props}>
@@ -76,7 +84,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					<SidebarGroupLabel>Navigazione</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{navItems.map((item) => {
+							{visibleItems.map((item) => {
 								const isActive = item.match(pathname);
 								return (
 									<SidebarMenuItem key={item.title}>

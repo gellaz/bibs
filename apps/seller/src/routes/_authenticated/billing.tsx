@@ -24,10 +24,12 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, MoreVerticalIcon } from "lucide-react";
+import { useEffect } from "react";
 import { SectionHeader } from "@/components/section-header";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/billing")({
@@ -81,9 +83,19 @@ function formatInvoiceDate(d: Date | string): string {
 
 function BillingPage() {
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
+	const isOwner = useIsOwner();
+
+	// Billing is owner-only (the API enforces requireOwner on every endpoint).
+	// Employees who deep-link here are redirected home; queries stay disabled so
+	// they never fire a request that would 403.
+	useEffect(() => {
+		if (!isOwner) void navigate({ to: "/" });
+	}, [isOwner, navigate]);
 
 	const { data: summary, isLoading: summaryLoading } = useQuery({
 		queryKey: ["seller", "billing", "summary"],
+		enabled: isOwner,
 		queryFn: async () => {
 			const r = await api().seller.billing.summary.get();
 			if (r.error) throw new Error((r.error.value as any)?.message);
@@ -93,6 +105,7 @@ function BillingPage() {
 
 	const { data: subs, isLoading: subsLoading } = useQuery({
 		queryKey: ["seller", "billing", "subscriptions"],
+		enabled: isOwner,
 		queryFn: async () => {
 			const r = await api().seller.billing.subscriptions.get();
 			if (r.error) throw new Error((r.error.value as any)?.message);
@@ -102,6 +115,7 @@ function BillingPage() {
 
 	const { data: invoicesPage, isLoading: invoicesLoading } = useQuery({
 		queryKey: ["seller", "billing", "invoices"],
+		enabled: isOwner,
 		queryFn: async () => {
 			const r = await api().seller.billing.invoices.get({
 				query: { limit: 25 },
