@@ -162,6 +162,37 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 			})()
 		: null;
 
+	// Employees reach this endpoint (the profile page shows business info
+	// read-only), but must never receive the owner's personal/identity-document
+	// PII, the owner's payment method, or the owner's pending change requests.
+	if (!isOwner) {
+		return {
+			profile: {
+				...profile,
+				changes: [],
+				firstName: null,
+				lastName: null,
+				citizenship: null,
+				birthCountry: null,
+				birthDate: null,
+				residenceCountry: null,
+				residenceMunicipalityId: null,
+				residenceMunicipality: null,
+				residenceAddress: null,
+				residenceZipCode: null,
+				documentNumber: null,
+				documentExpiry: null,
+				documentIssuedMunicipalityId: null,
+				documentIssuedMunicipality: null,
+				documentImageUrl: null,
+			},
+			organization: org,
+			paymentMethod: null,
+			pendingChanges: [],
+			assignedStoreIds,
+		};
+	}
+
 	return {
 		profile,
 		organization: org,

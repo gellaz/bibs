@@ -42,7 +42,13 @@ export const productsRoutes = new Elysia()
 	.get(
 		"/products",
 		async (ctx) => {
-			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
+			const {
+				sellerProfile: sp,
+				query,
+				isOwner,
+				user,
+				getAccessibleStoreIds,
+			} = withSeller(ctx);
 			if (query.storeId) {
 				await ensureStoreAccess(query.storeId, {
 					userId: user.id,
@@ -50,9 +56,14 @@ export const productsRoutes = new Elysia()
 					isOwner,
 				});
 			}
+			// Employees without an explicit storeId must only see products in
+			// their assigned stores (owners see the whole catalog).
+			const restrictToStoreIds =
+				!query.storeId && !isOwner ? await getAccessibleStoreIds() : undefined;
 			const result = await listProducts({
 				sellerProfileId: sp.id,
 				storeId: query.storeId,
+				restrictToStoreIds,
 				page: query.page,
 				limit: query.limit,
 				statusFilter: query.statusFilter,
@@ -188,7 +199,13 @@ export const productsRoutes = new Elysia()
 	.get(
 		"/products/categories-in-use",
 		async (ctx) => {
-			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
+			const {
+				sellerProfile: sp,
+				query,
+				isOwner,
+				user,
+				getAccessibleStoreIds,
+			} = withSeller(ctx);
 			if (query.storeId) {
 				await ensureStoreAccess(query.storeId, {
 					userId: user.id,
@@ -196,10 +213,13 @@ export const productsRoutes = new Elysia()
 					isOwner,
 				});
 			}
+			const restrictToStoreIds =
+				!query.storeId && !isOwner ? await getAccessibleStoreIds() : undefined;
 			const data = await listCategoriesInUse({
 				sellerProfileId: sp.id,
 				storeId: query.storeId,
 				statusFilter: query.statusFilter,
+				restrictToStoreIds,
 			});
 			return ok(data);
 		},
