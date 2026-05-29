@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { env } from "@/lib/env";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
 import {
@@ -100,8 +101,13 @@ export const locationsRoutes = new Elysia()
 		"/municipalities/all",
 		async ({ set }) => {
 			const data = await listAllMunicipalities();
+			// In production: aggressive cache (lista immutabile). In dev: no cache
+			// così un db:reset rigenera correttamente gli UUID lato client senza
+			// rischiare FK violations da cache HTTP stale.
 			set.headers["cache-control"] =
-				"public, max-age=86400, stale-while-revalidate=604800";
+				env.NODE_ENV === "production"
+					? "public, max-age=86400, stale-while-revalidate=604800"
+					: "no-store";
 			return ok(data);
 		},
 		{
