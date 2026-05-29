@@ -415,7 +415,16 @@ export async function pickupOrder(params: {
 			throw new ServiceError(400, "Reservation has expired");
 		}
 
-		// Award points
+		// Compare-and-swap: claim the completion before awarding points, so two
+		// concurrent pickups can't both award loyalty points.
+		const [claimed] = await tx
+			.update(order)
+			.set({ status: "completed" })
+			.where(and(eq(order.id, existing.id), eq(order.status, existing.status)))
+			.returning();
+		if (!claimed)
+			throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
 		const pointsEarned = await awardPoints(tx, {
 			customerProfileId,
 			orderId: existing.id,
@@ -423,9 +432,10 @@ export async function pickupOrder(params: {
 			description: "Earned points from order pickup",
 		});
 
+		if (pointsEarned === 0) return claimed;
 		const [updated] = await tx
 			.update(order)
-			.set({ status: "completed", pointsEarned })
+			.set({ pointsEarned })
 			.where(eq(order.id, existing.id))
 			.returning();
 
@@ -456,13 +466,17 @@ export async function cancelOrder(params: {
 			existing.type as OrderType,
 		);
 
-		await refundStockAndPoints(tx, existing);
-
+		// Compare-and-swap before refunding, so two concurrent cancels can't both
+		// refund the spent points.
 		const [updated] = await tx
 			.update(order)
 			.set({ status: "cancelled" })
-			.where(eq(order.id, existing.id))
+			.where(and(eq(order.id, existing.id), eq(order.status, existing.status)))
 			.returning();
+		if (!updated)
+			throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
+		await refundStockAndPoints(tx, existing);
 
 		return updated;
 	});
