@@ -68,7 +68,7 @@ import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { handleStripeWebhook } from "@/modules/webhooks/services/dispatcher";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestSeller } from "../helpers/fixtures";
+import { createTestMunicipality, createTestSeller } from "../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -78,17 +78,22 @@ afterAll(async () => {
 	await teardownTestContainer();
 });
 
+let municipalityId: string;
+
 beforeEach(async () => {
 	await truncateAll(getTestDb());
+	municipalityId = (await createTestMunicipality(getTestDb())).id;
 });
 
-const FORM_DATA = {
-	name: "Test Store",
-	addressLine1: "Via Roma 1",
-	city: "Milano",
-	zipCode: "20100",
-	country: "IT",
-};
+function buildFormData() {
+	return {
+		name: "Test Store",
+		addressLine1: "Via Roma 1",
+		municipalityId,
+		zipCode: "20100",
+		country: "IT",
+	};
+}
 
 function patchEventWithPendingId(pendingId: string) {
 	constructEvent.mockImplementation(() => ({
@@ -116,7 +121,7 @@ describe("handleCheckoutCompleted", () => {
 			.insert(pendingStoreCreation)
 			.values({
 				sellerProfileId: profile.id,
-				formData: FORM_DATA,
+				formData: buildFormData(),
 				stripeCheckoutSessionId: "cs_FAKE",
 				feeAmountCents: 2900,
 				currency: "EUR",
@@ -156,7 +161,7 @@ describe("handleCheckoutCompleted", () => {
 			.insert(pendingStoreCreation)
 			.values({
 				sellerProfileId: profile.id,
-				formData: FORM_DATA,
+				formData: buildFormData(),
 				stripeCheckoutSessionId: "cs_FAKE",
 				feeAmountCents: 2900,
 				currency: "EUR",

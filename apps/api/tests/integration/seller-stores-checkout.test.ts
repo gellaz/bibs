@@ -82,7 +82,7 @@ beforeEach(async () => {
 const VALID_BODY = {
 	name: "Pasticceria Test",
 	addressLine1: "Via Roma 1",
-	city: "Milano",
+	municipalityId: "00000000-0000-0000-0000-000000000001",
 	zipCode: "20100",
 };
 

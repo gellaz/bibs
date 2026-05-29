@@ -6,6 +6,10 @@ import {
 	employeeInvitation,
 	employeeInvitationStores,
 } from "@/db/schemas/employee-invitation";
+import {
+	municipality as municipalityTable,
+	province as provinceTable,
+} from "@/db/schemas/location";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { sendEmail } from "@/lib/email";
@@ -264,16 +268,34 @@ export async function getEmployeeStores(params: EmployeeStoresParams) {
 	});
 	if (!emp) throw new ServiceError(404, "Employee not found");
 
-	return db
+	const rows = await db
 		.select({
 			id: storeTable.id,
 			name: storeTable.name,
-			city: storeTable.city,
-			province: storeTable.province,
+			municipalityId: storeTable.municipalityId,
+			municipalityName: municipalityTable.name,
+			provinceAcronym: provinceTable.acronym,
 		})
 		.from(storeEmployeeStores)
 		.innerJoin(storeTable, eq(storeEmployeeStores.storeId, storeTable.id))
+		.innerJoin(
+			municipalityTable,
+			eq(municipalityTable.id, storeTable.municipalityId),
+		)
+		.innerJoin(
+			provinceTable,
+			eq(provinceTable.id, municipalityTable.provinceId),
+		)
 		.where(eq(storeEmployeeStores.storeEmployeeId, params.employeeId));
+
+	return rows.map(({ municipalityName, provinceAcronym, ...row }) => ({
+		...row,
+		municipality: {
+			id: row.municipalityId,
+			name: municipalityName,
+			provinceAcronym,
+		},
+	}));
 }
 
 interface SetEmployeeStoresParams extends EmployeeStoresParams {

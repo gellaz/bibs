@@ -152,33 +152,34 @@ function AuthenticatedLayout() {
 		return <EmployeeStoreGate navigate={navigate} />;
 	}
 
-	// If seller is still onboarding, render outlet without sidebar
-	if (
-		role === "seller" &&
-		onboarding &&
-		onboarding.onboardingStatus !== "active"
-	) {
-		return <Outlet />;
-	}
+	// Always mount ActiveStoreProvider so any component calling useActiveStore()
+	// degrades gracefully (stores=[], activeStore=null) — including during the
+	// brief render window before the onboarding-redirect useEffect commits.
+	const isOnboarding =
+		role === "seller" && onboarding && onboarding.onboardingStatus !== "active";
 
 	return (
-		<ActiveStoreProvider>
-			<SidebarProvider>
-				<AppSidebar />
-				<SidebarInset>
-					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
-						<SidebarTrigger className="-ml-1" />
-						<div aria-hidden className="h-4 w-px bg-border" />
-						<AppBreadcrumb />
-					</header>
-					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
-						<div className="mb-4 empty:hidden">
-							<StoreBillingBanner />
+		<ActiveStoreProvider enabled={!isOnboarding}>
+			{isOnboarding ? (
+				<Outlet />
+			) : (
+				<SidebarProvider>
+					<AppSidebar />
+					<SidebarInset>
+						<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
+							<SidebarTrigger className="-ml-1" />
+							<div aria-hidden className="h-4 w-px bg-border" />
+							<AppBreadcrumb />
+						</header>
+						<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+							<div className="mb-4 empty:hidden">
+								<StoreBillingBanner />
+							</div>
+							<Outlet />
 						</div>
-						<Outlet />
-					</div>
-				</SidebarInset>
-			</SidebarProvider>
+					</SidebarInset>
+				</SidebarProvider>
+			)}
 		</ActiveStoreProvider>
 	);
 }

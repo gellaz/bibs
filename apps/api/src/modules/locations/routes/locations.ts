@@ -1,8 +1,10 @@
 import { Elysia, t } from "elysia";
+import { env } from "@/lib/env";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
 import {
 	CountrySchema,
+	MunicipalityCompactSchema,
 	MunicipalitySchema,
 	okPageRes,
 	okRes,
@@ -11,6 +13,7 @@ import {
 	withErrors,
 } from "@/lib/schemas";
 import {
+	listAllMunicipalities,
 	listCountries,
 	listMunicipalities,
 	listProvinces,
@@ -90,6 +93,29 @@ export const locationsRoutes = new Elysia()
 				summary: "Lista comuni",
 				description:
 					"Restituisce la lista paginata dei comuni, con filtro opzionale per provincia.",
+				tags: ["Locations"],
+			},
+		},
+	)
+	.get(
+		"/municipalities/all",
+		async ({ set }) => {
+			const data = await listAllMunicipalities();
+			// In production: aggressive cache (lista immutabile). In dev: no cache
+			// così un db:reset rigenera correttamente gli UUID lato client senza
+			// rischiare FK violations da cache HTTP stale.
+			set.headers["cache-control"] =
+				env.NODE_ENV === "production"
+					? "public, max-age=86400, stale-while-revalidate=604800"
+					: "no-store";
+			return ok(data);
+		},
+		{
+			response: withErrors({ 200: okRes(t.Array(MunicipalityCompactSchema)) }),
+			detail: {
+				summary: "Lista completa comuni (formato compatto)",
+				description:
+					"Restituisce l'elenco di TUTTI i comuni italiani con sigla provincia, in formato compatto e ordinati per nome. Endpoint pensato per precaricamento client-side; risposta cacheable 24h.",
 				tags: ["Locations"],
 			},
 		},

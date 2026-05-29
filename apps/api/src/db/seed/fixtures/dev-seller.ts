@@ -7,6 +7,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { auth } from "@/lib/auth";
+import { getSeedMunicipalityIds } from "./utils";
 
 const DEV_EMAIL = "seller@dev.bibs";
 const DEV_PASSWORD = "password123";
@@ -37,6 +38,10 @@ export async function seedDevSeller() {
 	}
 
 	console.log(`  👤 Seeding dev seller ${DEV_EMAIL}...`);
+
+	// Resolve municipality IDs (only need Milano)
+	const municipalityIds = await getSeedMunicipalityIds();
+	const milanoId = municipalityIds.milano;
 
 	// Phase 1: auth user
 	const { user: u } = await auth.api.signUpEmail({
@@ -69,12 +74,12 @@ export async function seedDevSeller() {
 			birthCountry: "IT",
 			birthDate: "1985-06-15",
 			residenceCountry: "IT",
-			residenceCity: "Milano",
+			residenceMunicipalityId: milanoId,
 			residenceAddress: "Via Dev 1",
 			residenceZipCode: "20121",
 			documentNumber: "AX0000001",
 			documentExpiry: "2030-12-31",
-			documentIssuedMunicipality: "Milano",
+			documentIssuedMunicipalityId: milanoId,
 		})
 		.returning({ id: sellerProfile.id });
 
@@ -85,9 +90,8 @@ export async function seedDevSeller() {
 		vatNumber: "12345678901",
 		legalForm: "SRL",
 		addressLine1: "Via Dev 1",
-		city: "Milano",
+		municipalityId: milanoId,
 		zipCode: "20121",
-		province: "MI",
 		vatStatus: "verified",
 	});
 
@@ -100,9 +104,8 @@ export async function seedDevSeller() {
 				name: "Bottega Dev",
 				description: "Negozio principale per smoke test",
 				addressLine1: "Via Dev 1",
-				city: "Milano",
+				municipalityId: milanoId,
 				zipCode: "20121",
-				province: "MI",
 				location: { x: 9.18814, y: 45.46796 },
 			},
 			{
@@ -110,9 +113,8 @@ export async function seedDevSeller() {
 				name: "Bottega Dev Centro",
 				description: "Secondo punto vendita per testare multi-store",
 				addressLine1: "Via Dev 42",
-				city: "Milano",
+				municipalityId: milanoId,
 				zipCode: "20122",
-				province: "MI",
 				location: { x: 9.19014, y: 45.46426 },
 			},
 		])

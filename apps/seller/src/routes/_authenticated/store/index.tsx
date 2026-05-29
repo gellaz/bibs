@@ -16,9 +16,12 @@ import {
 } from "@/features/stores/components/store-form";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
+import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/store/")({
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	component: StoreSettingsPage,
 });
 
@@ -198,9 +201,8 @@ function StoreSettingsPage() {
 					description: store.description ?? "",
 					addressLine1: store.addressLine1,
 					addressLine2: store.addressLine2 ?? "",
-					city: store.city,
+					municipalityId: store.municipalityId,
 					zipCode: store.zipCode,
-					province: store.province ?? "",
 					websiteUrl: store.websiteUrl ?? "",
 					openingHours: (store.openingHours as never) ?? undefined,
 					phoneNumbers: store.phoneNumbers.map((p) => ({

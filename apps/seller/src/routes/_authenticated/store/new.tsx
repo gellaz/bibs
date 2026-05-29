@@ -7,6 +7,7 @@ import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
+import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
@@ -16,6 +17,8 @@ export const Route = createFileRoute("/_authenticated/store/new")({
 		({
 			cancel: typeof search.cancel === "string" ? search.cancel : undefined,
 		}) as { cancel?: string },
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	beforeLoad: async () => {
 		const session = await authClient.getSession();
 		if (session.data?.user.role !== "seller") {

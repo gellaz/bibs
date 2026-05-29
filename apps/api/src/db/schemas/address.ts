@@ -10,6 +10,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import { customerProfile } from "./customer";
+import { municipality } from "./location";
 
 export const customerAddress = pgTable(
 	"customer_addresses",
@@ -22,9 +23,10 @@ export const customerAddress = pgTable(
 		phone: text("phone"),
 		addressLine1: text("address_line1").notNull(),
 		addressLine2: text("address_line2"),
-		city: text("city").notNull(),
+		municipalityId: text("municipality_id")
+			.notNull()
+			.references(() => municipality.id, { onDelete: "restrict" }),
 		zipCode: text("zip_code").notNull(),
-		province: text("province"),
 		country: varchar("country", { length: 2 }).notNull().default("IT"),
 		location: geometry("location", { type: "point", mode: "xy", srid: 4326 }),
 		isDefault: boolean("is_default").notNull().default(false),
@@ -42,6 +44,7 @@ export const customerAddress = pgTable(
 	(t) => [
 		index("customer_address_location_idx").using("gist", t.location),
 		index("customer_address_profile_id_idx").on(t.customerProfileId),
+		index("customer_address_municipality_id_idx").on(t.municipalityId),
 		uniqueIndex("customer_address_single_default_idx")
 			.on(t.customerProfileId)
 			.where(sql`${t.isDefault} = true`),
@@ -54,6 +57,10 @@ export const customerAddressRelations = relations(
 		customerProfile: one(customerProfile, {
 			fields: [customerAddress.customerProfileId],
 			references: [customerProfile.id],
+		}),
+		municipality: one(municipality, {
+			fields: [customerAddress.municipalityId],
+			references: [municipality.id],
 		}),
 	}),
 );

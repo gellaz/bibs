@@ -54,7 +54,7 @@ export const addressesRoutes = new Elysia()
 					userId: user.id,
 					customerProfileId: cp.id,
 					addressId: data.id,
-					city: data.city,
+					municipalityId: data.municipalityId,
 					isDefault: data.isDefault,
 					action: "address_created",
 				},

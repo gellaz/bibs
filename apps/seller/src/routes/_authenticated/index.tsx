@@ -109,7 +109,7 @@ function Dashboard() {
 			<Hero
 				name={activeStore?.name ?? "Il tuo negozio"}
 				address={activeStore?.addressLine1 ?? ""}
-				city={activeStore?.city ?? ""}
+				municipality={activeStore?.municipality?.name ?? ""}
 			/>
 
 			<StatsStrip />
@@ -151,13 +151,13 @@ function EmptyStoresState() {
 function Hero({
 	name,
 	address,
-	city,
+	municipality,
 }: {
 	name: string;
 	address: string;
-	city: string;
+	municipality: string;
 }) {
-	const subtitle = [address, city].filter(Boolean).join(" · ");
+	const subtitle = [address, municipality].filter(Boolean).join(" · ");
 
 	return (
 		<header className="flex items-center gap-5">

@@ -33,14 +33,14 @@ export const AddressFieldsRequired = {
 	addressLine2: t.Optional(
 		t.String({ maxLength: 200, description: "Indirizzo (riga 2)" }),
 	),
-	city: t.String({ minLength: 1, maxLength: 100, description: "Città" }),
+	municipalityId: t.String({
+		minLength: 1,
+		description: "ID del comune",
+	}),
 	zipCode: t.String({
 		pattern: "^\\d{5}$",
 		description: "CAP italiano (5 cifre)",
 	}),
-	province: t.Optional(
-		t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" }),
-	),
 	country: t.Optional(
 		t.String({
 			minLength: 2,
@@ -63,14 +63,11 @@ export const AddressFieldsOptional = {
 	addressLine2: t.Optional(
 		t.String({ maxLength: 200, description: "Indirizzo (riga 2)" }),
 	),
-	city: t.Optional(
-		t.String({ minLength: 1, maxLength: 100, description: "Città" }),
+	municipalityId: t.Optional(
+		t.String({ minLength: 1, description: "ID del comune" }),
 	),
 	zipCode: t.Optional(
 		t.String({ pattern: "^\\d{5}$", description: "CAP italiano (5 cifre)" }),
-	),
-	province: t.Optional(
-		t.String({ minLength: 2, maxLength: 5, description: "Provincia (sigla)" }),
 	),
 	country: t.Optional(
 		t.String({ minLength: 2, maxLength: 2, description: "Codice paese" }),
@@ -130,6 +127,19 @@ export const ProductCategoryWithMacroSchema = t.Object({
 	macroCategory: ProductMacroCategorySchema,
 });
 
+export const MunicipalityCompactSchema = t.Object(
+	{
+		id: t.String({ description: "Identificatore univoco del comune" }),
+		name: t.String({ description: "Nome del comune" }),
+		provinceAcronym: t.String({
+			minLength: 2,
+			maxLength: 2,
+			description: "Sigla provincia (2 lettere)",
+		}),
+	},
+	{ description: "Comune in formato compatto per liste precaricate" },
+);
+
 export const SellerProfileSchema = t.Object({
 	id: t.String(),
 	userId: t.String(),
@@ -153,14 +163,16 @@ export const SellerProfileSchema = t.Object({
 		t.String({ description: "Data di nascita (YYYY-MM-DD)" }),
 	),
 	residenceCountry: t.Nullable(t.String()),
-	residenceCity: t.Nullable(t.String()),
+	residenceMunicipalityId: t.Nullable(t.String()),
+	residenceMunicipality: t.Nullable(MunicipalityCompactSchema),
 	residenceAddress: t.Nullable(t.String()),
 	residenceZipCode: t.Nullable(t.String()),
 	documentNumber: t.Nullable(t.String()),
 	documentExpiry: t.Nullable(
 		t.String({ description: "Scadenza documento (YYYY-MM-DD)" }),
 	),
-	documentIssuedMunicipality: t.Nullable(t.String()),
+	documentIssuedMunicipalityId: t.Nullable(t.String()),
+	documentIssuedMunicipality: t.Nullable(MunicipalityCompactSchema),
 	documentImageUrl: t.Nullable(t.String()),
 	vatChangeBlocked: t.Boolean({
 		description:
@@ -177,8 +189,8 @@ export const OrganizationSchema = t.Object({
 	legalForm: t.String({ description: "Forma giuridica" }),
 	addressLine1: t.String({ description: "Indirizzo sede legale" }),
 	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
-	province: t.Nullable(t.String({ description: "Provincia" })),
-	city: t.String({ description: "Città" }),
+	municipalityId: t.String({ description: "ID comune sede legale" }),
+	municipality: MunicipalityCompactSchema,
 	zipCode: t.String({ description: "CAP" }),
 	vatStatus: t.Union(
 		[t.Literal("pending"), t.Literal("verified"), t.Literal("rejected")],
@@ -221,9 +233,9 @@ export const StoreSchema = t.Object({
 	description: t.Nullable(t.String({ description: "Descrizione del negozio" })),
 	addressLine1: t.String({ description: "Indirizzo (riga 1)" }),
 	addressLine2: t.Nullable(t.String({ description: "Indirizzo (riga 2)" })),
-	city: t.String({ description: "Città" }),
+	municipalityId: t.String({ description: "ID comune del negozio" }),
+	municipality: MunicipalityCompactSchema,
 	zipCode: t.String({ description: "CAP" }),
-	province: t.Nullable(t.String({ description: "Provincia (sigla)" })),
 	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
 	location: t.Nullable(PointXY),
 	categoryId: t.Nullable(t.String({ description: "ID categoria negozio" })),
@@ -486,9 +498,9 @@ export const CustomerAddressSchema = t.Object({
 	phone: t.Nullable(t.String({ description: "Numero di telefono" })),
 	addressLine1: t.String({ description: "Indirizzo (riga 1)" }),
 	addressLine2: t.Nullable(t.String({ description: "Indirizzo (riga 2)" })),
-	city: t.String({ description: "Città" }),
+	municipalityId: t.String({ description: "ID del comune" }),
+	municipality: MunicipalityCompactSchema,
 	zipCode: t.String({ description: "CAP" }),
-	province: t.Nullable(t.String({ description: "Provincia (sigla)" })),
 	country: t.String({ description: "Codice paese ISO 3166-1 alpha-2" }),
 	location: t.Nullable(PointXY),
 	isDefault: t.Boolean({ description: "Se è l'indirizzo predefinito" }),

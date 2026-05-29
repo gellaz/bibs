@@ -263,7 +263,7 @@ export async function listProducts(params: ListProductsParams) {
 	const [{ total }] = await countQuery;
 
 	// Fetch full products with relations using the page's product IDs.
-	const data =
+	const rawData =
 		productIds.length === 0
 			? []
 			: await db.query.product.findMany({
@@ -273,12 +273,37 @@ export async function listProducts(params: ListProductsParams) {
 							with: { category: { with: { macroCategory: true } } },
 						},
 						storeProducts: {
-							with: { store: { columns: { location: false } } },
+							with: {
+								store: {
+									columns: { location: false },
+									with: {
+										municipality: {
+											columns: { id: true, name: true },
+											with: { province: { columns: { acronym: true } } },
+										},
+									},
+								},
+							},
 						},
 						images: { orderBy: (img, { asc }) => [asc(img.position)] },
 						brand: true,
 					},
 				});
+
+	const data = rawData.map((p) => ({
+		...p,
+		storeProducts: p.storeProducts.map(({ store, ...sp }) => ({
+			...sp,
+			store: {
+				...store,
+				municipality: {
+					id: store.municipality.id,
+					name: store.municipality.name,
+					provinceAcronym: store.municipality.province.acronym,
+				},
+			},
+		})),
+	}));
 
 	// Sort data to preserve the order from productIds (the JOIN-paginated order).
 	const indexById = new Map(productIds.map((id, idx) => [id, idx]));
@@ -388,7 +413,19 @@ export async function getProduct(params: GetProductParams) {
 			productCategoryAssignments: {
 				with: { category: { with: { macroCategory: true } } },
 			},
-			storeProducts: { with: { store: { columns: { location: false } } } },
+			storeProducts: {
+				with: {
+					store: {
+						columns: { location: false },
+						with: {
+							municipality: {
+								columns: { id: true, name: true },
+								with: { province: { columns: { acronym: true } } },
+							},
+						},
+					},
+				},
+			},
 			images: { orderBy: (img, { asc }) => [asc(img.position)] },
 			brand: true,
 		},
@@ -402,7 +439,20 @@ export async function getProduct(params: GetProductParams) {
 	);
 	if (!accessible) throw new ServiceError(404, "Product not found");
 
-	return found;
+	return {
+		...found,
+		storeProducts: found.storeProducts.map(({ store, ...sp }) => ({
+			...sp,
+			store: {
+				...store,
+				municipality: {
+					id: store.municipality.id,
+					name: store.municipality.name,
+					provinceAcronym: store.municipality.province.acronym,
+				},
+			},
+		})),
+	};
 }
 
 // ── createProduct ─────────────────────────────────────────────────────────────

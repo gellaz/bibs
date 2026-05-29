@@ -41,8 +41,10 @@ export function StoreSwitcher() {
 								{activeStore?.name ?? ""}
 							</span>
 							<span className="truncate text-xs text-muted-foreground">
-								{activeStore?.city}
-								{activeStore?.province ? ` (${activeStore.province})` : ""}
+								{activeStore?.municipality?.name}
+								{activeStore?.municipality
+									? ` (${activeStore.municipality.provinceAcronym})`
+									: ""}
 							</span>
 						</div>
 					</div>
@@ -68,8 +70,10 @@ export function StoreSwitcher() {
 									{activeStore?.name ?? "Seleziona negozio"}
 								</span>
 								<span className="truncate text-xs text-muted-foreground">
-									{activeStore?.city}
-									{activeStore?.province ? ` (${activeStore.province})` : ""}
+									{activeStore?.municipality?.name}
+									{activeStore?.municipality
+										? ` (${activeStore.municipality.provinceAcronym})`
+										: ""}
 								</span>
 							</div>
 							<ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground" />
@@ -87,8 +91,10 @@ export function StoreSwitcher() {
 									{activeStore.name}
 								</div>
 								<div className="mt-0.5 truncate text-xs text-muted-foreground">
-									{activeStore.city}
-									{activeStore.province ? ` (${activeStore.province})` : ""}
+									{activeStore.municipality?.name}
+									{activeStore.municipality
+										? ` (${activeStore.municipality.provinceAcronym})`
+										: ""}
 								</div>
 							</div>
 						)}
@@ -110,8 +116,10 @@ export function StoreSwitcher() {
 										<div className="flex min-w-0 flex-1 flex-col">
 											<span className="truncate">{store.name}</span>
 											<span className="truncate text-xs text-muted-foreground">
-												{store.city}
-												{store.province ? ` (${store.province})` : ""}
+												{store.municipality?.name}
+												{store.municipality
+													? ` (${store.municipality.provinceAcronym})`
+													: ""}
 											</span>
 										</div>
 									</DropdownMenuItem>

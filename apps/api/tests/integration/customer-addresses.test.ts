@@ -36,7 +36,10 @@ import {
 	updateAddress,
 } from "@/modules/customer/services/addresses";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestCustomer } from "../helpers/fixtures";
+import {
+	createTestCustomer,
+	createTestMunicipality,
+} from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -71,23 +74,24 @@ describe("listAddresses", () => {
 		const db = getTestDb();
 		const a = await createTestCustomer(db, { email: "a@test.com" });
 		const b = await createTestCustomer(db, { email: "b@test.com" });
+		const mun = await createTestMunicipality(db);
 
 		await createAddress({
 			customerProfileId: a.profile.id,
 			addressLine1: "Via A",
-			city: "Milano",
+			municipalityId: mun.id,
 			zipCode: "20100",
 		});
 		await createAddress({
 			customerProfileId: a.profile.id,
 			addressLine1: "Via A2",
-			city: "Milano",
+			municipalityId: mun.id,
 			zipCode: "20101",
 		});
 		await createAddress({
 			customerProfileId: b.profile.id,
 			addressLine1: "Via B",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00100",
 		});
 
@@ -108,12 +112,13 @@ describe("createAddress", () => {
 	it("creates an address with default isDefault=false", async () => {
 		const db = getTestDb();
 		const customer = await createTestCustomer(db);
+		const mun = await createTestMunicipality(db);
 
 		const created = await createAddress({
 			customerProfileId: customer.profile.id,
 			label: "Casa",
 			addressLine1: "Via Dante 1",
-			city: "Milano",
+			municipalityId: mun.id,
 			zipCode: "20121",
 		});
 
@@ -124,11 +129,12 @@ describe("createAddress", () => {
 	it("unsets previous default when creating a new isDefault address", async () => {
 		const db = getTestDb();
 		const customer = await createTestCustomer(db);
+		const mun = await createTestMunicipality(db);
 
 		await createAddress({
 			customerProfileId: customer.profile.id,
 			addressLine1: "Via 1",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00100",
 			isDefault: true,
 		});
@@ -136,7 +142,7 @@ describe("createAddress", () => {
 		const second = await createAddress({
 			customerProfileId: customer.profile.id,
 			addressLine1: "Via 2",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00101",
 			isDefault: true,
 		});
@@ -156,11 +162,12 @@ describe("updateAddress", () => {
 	it("updates label and address fields", async () => {
 		const db = getTestDb();
 		const customer = await createTestCustomer(db);
+		const mun = await createTestMunicipality(db);
 		const addr = await createAddress({
 			customerProfileId: customer.profile.id,
 			label: "Old",
 			addressLine1: "Via Vecchia",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00100",
 		});
 
@@ -178,17 +185,18 @@ describe("updateAddress", () => {
 	it("unsets previous default when promoting another to default", async () => {
 		const db = getTestDb();
 		const customer = await createTestCustomer(db);
+		const mun = await createTestMunicipality(db);
 		const first = await createAddress({
 			customerProfileId: customer.profile.id,
 			addressLine1: "Via 1",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00100",
 			isDefault: true,
 		});
 		const second = await createAddress({
 			customerProfileId: customer.profile.id,
 			addressLine1: "Via 2",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00101",
 		});
 
@@ -215,10 +223,11 @@ describe("updateAddress", () => {
 		const db = getTestDb();
 		const owner = await createTestCustomer(db, { email: "owner@test.com" });
 		const other = await createTestCustomer(db, { email: "other@test.com" });
+		const mun = await createTestMunicipality(db);
 		const addr = await createAddress({
 			customerProfileId: owner.profile.id,
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00100",
 		});
 
@@ -238,10 +247,11 @@ describe("deleteAddress", () => {
 	it("deletes an owned address", async () => {
 		const db = getTestDb();
 		const customer = await createTestCustomer(db);
+		const mun = await createTestMunicipality(db);
 		const addr = await createAddress({
 			customerProfileId: customer.profile.id,
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00100",
 		});
 
@@ -262,10 +272,11 @@ describe("deleteAddress", () => {
 		const db = getTestDb();
 		const owner = await createTestCustomer(db, { email: "owner@test.com" });
 		const other = await createTestCustomer(db, { email: "other@test.com" });
+		const mun = await createTestMunicipality(db);
 		const addr = await createAddress({
 			customerProfileId: owner.profile.id,
 			addressLine1: "Via",
-			city: "Roma",
+			municipalityId: mun.id,
 			zipCode: "00100",
 		});
 

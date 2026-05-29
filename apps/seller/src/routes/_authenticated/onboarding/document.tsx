@@ -12,19 +12,26 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { type SubmitHandler, useForm } from "react-hook-form";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
+import {
+	municipalitiesQueryOptions,
+	useMunicipalities,
+} from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateDocument } from "@/hooks/use-onboarding";
 
 type DocumentFormData = Static<typeof DocumentBody>;
 const compiledSchema = TypeCompiler.Compile(DocumentBody);
 
 export const Route = createFileRoute("/_authenticated/onboarding/document")({
+	loader: ({ context }) =>
+		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	component: DocumentPage,
 });
 
@@ -32,6 +39,11 @@ function DocumentPage() {
 	const navigate = useNavigate();
 	const mutation = useUpdateDocument();
 	const goBackMutation = useGoBack();
+	const {
+		data: municipalities,
+		isLoading: municipalitiesLoading,
+		isError: municipalitiesError,
+	} = useMunicipalities();
 	const [apiError, setApiError] = useState("");
 	const [documentImage, setDocumentImage] = useState<File | null>(null);
 	const [fileError, setFileError] = useState("");
@@ -39,6 +51,7 @@ function DocumentPage() {
 	const {
 		register,
 		handleSubmit,
+		control,
 		formState: { errors, isSubmitting },
 	} = useForm<DocumentFormData>({
 		resolver: typeboxResolver(compiledSchema),
@@ -97,16 +110,26 @@ function DocumentPage() {
 					<FieldError errors={[errors.documentExpiry]} />
 				</Field>
 
-				<Field data-invalid={!!errors.documentIssuedMunicipality}>
-					<FieldLabel htmlFor="documentIssuedMunicipality">
-						Comune di rilascio
+				<Field data-invalid={!!errors.documentIssuedMunicipalityId}>
+					<FieldLabel htmlFor="documentIssuedMunicipalityId">
+						Comune di emissione documento
 					</FieldLabel>
-					<Input
-						id="documentIssuedMunicipality"
-						placeholder="Roma"
-						{...register("documentIssuedMunicipality")}
+					<Controller
+						control={control}
+						name="documentIssuedMunicipalityId"
+						render={({ field }) => (
+							<MunicipalityCombobox
+								id="documentIssuedMunicipalityId"
+								value={field.value ?? null}
+								onChange={field.onChange}
+								municipalities={municipalities}
+								loading={municipalitiesLoading}
+								error={municipalitiesError}
+								aria-invalid={!!errors.documentIssuedMunicipalityId}
+							/>
+						)}
 					/>
-					<FieldError errors={[errors.documentIssuedMunicipality]} />
+					<FieldError errors={[errors.documentIssuedMunicipalityId]} />
 				</Field>
 
 				<Field data-invalid={!!fileError}>

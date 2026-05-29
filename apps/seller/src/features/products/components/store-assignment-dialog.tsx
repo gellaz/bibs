@@ -104,9 +104,12 @@ export function StoreAssignmentDialog({
 										onCheckedChange={() => toggle(store.id)}
 									/>
 									<span className="text-sm">{store.name}</span>
-									<span className="text-muted-foreground text-xs">
-										— {store.city}
-									</span>
+									{store.municipality && (
+										<span className="text-muted-foreground text-xs">
+											— {store.municipality.name} (
+											{store.municipality.provinceAcronym})
+										</span>
+									)}
 								</label>
 							))}
 						</div>

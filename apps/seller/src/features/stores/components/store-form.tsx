@@ -3,6 +3,7 @@ import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
+import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import { Separator } from "@bibs/ui/components/separator";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
@@ -12,7 +13,13 @@ import "@/lib/typebox-formats";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { type SubmitHandler, useFieldArray, useForm } from "react-hook-form";
+import {
+	Controller,
+	type SubmitHandler,
+	useFieldArray,
+	useForm,
+} from "react-hook-form";
+import { useMunicipalities } from "@/hooks/use-municipalities";
 import {
 	DEFAULT_OPENING_HOURS,
 	OpeningHoursEditor,
@@ -95,9 +102,8 @@ export function StoreForm({
 			description: "",
 			addressLine1: "",
 			addressLine2: "",
-			city: "",
+			municipalityId: "",
 			zipCode: "",
-			province: "",
 			websiteUrl: "",
 			phoneNumbers: [],
 			...defaultValues,
@@ -114,12 +120,17 @@ export function StoreForm({
 		name: "phoneNumbers",
 	});
 
+	const {
+		data: municipalities,
+		isLoading: municipalitiesLoading,
+		isError: municipalitiesError,
+	} = useMunicipalities();
+
 	const onFormSubmit: SubmitHandler<StoreFormData> = (data) => {
 		const cleaned: StoreFormData = {
 			...data,
 			description: data.description || undefined,
 			addressLine2: data.addressLine2 || undefined,
-			province: data.province || undefined,
 			websiteUrl: data.websiteUrl || undefined,
 			openingHours: openingHours.length > 0 ? openingHours : undefined,
 			phoneNumbers:
@@ -196,17 +207,26 @@ export function StoreForm({
 				</Field>
 
 				<div className="grid grid-cols-[1fr_auto] gap-4">
-					<Field data-invalid={!!errors.city}>
-						<FieldLabel htmlFor="store-city" required>
-							Città
+					<Field data-invalid={!!errors.municipalityId}>
+						<FieldLabel htmlFor="municipalityId" required>
+							Comune
 						</FieldLabel>
-						<Input
-							id="store-city"
-							placeholder="Milano"
-							disabled={readOnly}
-							{...register("city")}
+						<Controller
+							control={control}
+							name="municipalityId"
+							render={({ field }) => (
+								<MunicipalityCombobox
+									id="municipalityId"
+									value={field.value ?? null}
+									onChange={field.onChange}
+									municipalities={municipalities}
+									loading={municipalitiesLoading}
+									error={municipalitiesError}
+									aria-invalid={!!errors.municipalityId}
+								/>
+							)}
 						/>
-						<FieldError errors={[errors.city]} />
+						<FieldError errors={[errors.municipalityId]} />
 					</Field>
 					<Field data-invalid={!!errors.zipCode} className="w-32">
 						<FieldLabel htmlFor="store-zip" required>
@@ -223,20 +243,6 @@ export function StoreForm({
 						<FieldError errors={[errors.zipCode]} />
 					</Field>
 				</div>
-
-				<Field data-invalid={!!errors.province} className="w-32">
-					<FieldLabel htmlFor="store-province">Provincia</FieldLabel>
-					<Input
-						id="store-province"
-						placeholder="MI"
-						maxLength={2}
-						disabled={readOnly}
-						{...register("province", {
-							setValueAs: (v: string) => v || undefined,
-						})}
-					/>
-					<FieldError errors={[errors.province]} />
-				</Field>
 			</FormSection>
 
 			<Separator />

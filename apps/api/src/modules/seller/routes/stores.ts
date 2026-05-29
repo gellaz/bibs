@@ -4,6 +4,7 @@ import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
 import {
 	AddressFieldsOptional,
+	MunicipalityCompactSchema,
 	okPageRes,
 	okRes,
 	StoreWithPhonesSchema,
@@ -24,7 +25,8 @@ const ArchivedStoreSchema = t.Object({
 	id: t.String(),
 	name: t.String(),
 	addressLine1: t.String(),
-	city: t.String(),
+	municipalityId: t.String(),
+	municipality: MunicipalityCompactSchema,
 	createdAt: t.Date(),
 	deletedAt: t.Nullable(t.Date()),
 	canceledAt: t.Nullable(t.Date()),

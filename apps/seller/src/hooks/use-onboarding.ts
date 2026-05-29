@@ -54,7 +54,7 @@ export function useUpdatePersonalInfo() {
 			birthCountry: string;
 			birthDate: string;
 			residenceCountry: string;
-			residenceCity: string;
+			residenceMunicipalityId: string;
 			residenceAddress: string;
 			residenceZipCode: string;
 		}) => {
@@ -80,7 +80,7 @@ export function useUpdateDocument() {
 		async (params: {
 			documentNumber: string;
 			documentExpiry: string;
-			documentIssuedMunicipality: string;
+			documentIssuedMunicipalityId: string;
 			documentImage: File;
 		}) => {
 			const response = await api().seller.onboarding.document.patch(params);
@@ -107,8 +107,7 @@ export function useUpdateCompany() {
 			legalForm: string;
 			addressLine1: string;
 			country?: string;
-			province?: string;
-			city: string;
+			municipalityId: string;
 			zipCode: string;
 		}) => {
 			const response = await api().seller.onboarding.company.patch(params);

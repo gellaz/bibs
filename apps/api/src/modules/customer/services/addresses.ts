@@ -4,6 +4,37 @@ import { customerAddress } from "@/db/schemas/address";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 
+function reshapeAddress<
+	T extends {
+		municipality: {
+			id: string;
+			name: string;
+			province: { acronym: string };
+		};
+	},
+>(
+	addr: T,
+): Omit<T, "municipality"> & {
+	municipality: { id: string; name: string; provinceAcronym: string };
+} {
+	const { municipality, ...rest } = addr;
+	return {
+		...rest,
+		municipality: {
+			id: municipality.id,
+			name: municipality.name,
+			provinceAcronym: municipality.province.acronym,
+		},
+	};
+}
+
+const municipalityWith = {
+	municipality: {
+		columns: { id: true as const, name: true as const },
+		with: { province: { columns: { acronym: true as const } } },
+	},
+} as const;
+
 interface ListAddressesParams {
 	customerProfileId: string;
 	page?: number;
@@ -14,9 +45,10 @@ export async function listAddresses(params: ListAddressesParams) {
 	const { customerProfileId } = params;
 	const { page, limit, offset } = parsePagination(params);
 
-	const [data, [{ total }]] = await Promise.all([
+	const [raw, [{ total }]] = await Promise.all([
 		db.query.customerAddress.findMany({
 			where: eq(customerAddress.customerProfileId, customerProfileId),
+			with: municipalityWith,
 			limit,
 			offset,
 		}),
@@ -25,6 +57,8 @@ export async function listAddresses(params: ListAddressesParams) {
 			.from(customerAddress)
 			.where(eq(customerAddress.customerProfileId, customerProfileId)),
 	]);
+
+	const data = raw.map(reshapeAddress);
 
 	return { data, pagination: { page, limit, total } };
 }
@@ -36,9 +70,8 @@ interface CreateAddressParams {
 	phone?: string;
 	addressLine1: string;
 	addressLine2?: string;
-	city: string;
+	municipalityId: string;
 	zipCode: string;
-	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
 	isDefault?: boolean;
@@ -47,7 +80,7 @@ interface CreateAddressParams {
 export async function createAddress(params: CreateAddressParams) {
 	const { customerProfileId, isDefault = false, ...addressData } = params;
 
-	const [created] = await db.transaction(async (tx) => {
+	const created = await db.transaction(async (tx) => {
 		if (isDefault) {
 			await tx
 				.update(customerAddress)
@@ -55,7 +88,7 @@ export async function createAddress(params: CreateAddressParams) {
 				.where(eq(customerAddress.customerProfileId, customerProfileId));
 		}
 
-		return tx
+		const [inserted] = await tx
 			.insert(customerAddress)
 			.values({
 				customerProfileId,
@@ -63,9 +96,17 @@ export async function createAddress(params: CreateAddressParams) {
 				isDefault,
 			})
 			.returning();
+
+		return inserted;
 	});
 
-	return created;
+	const addr = await db.query.customerAddress.findFirst({
+		where: eq(customerAddress.id, created.id),
+		with: municipalityWith,
+	});
+
+	if (!addr) throw new ServiceError(500, "Address not found after insert");
+	return reshapeAddress(addr);
 }
 
 interface UpdateAddressParams {
@@ -76,9 +117,8 @@ interface UpdateAddressParams {
 	phone?: string;
 	addressLine1?: string;
 	addressLine2?: string;
-	city?: string;
+	municipalityId?: string;
 	zipCode?: string;
-	province?: string;
 	country?: string;
 	location?: { x: number; y: number };
 	isDefault?: boolean;
@@ -87,7 +127,7 @@ interface UpdateAddressParams {
 export async function updateAddress(params: UpdateAddressParams) {
 	const { addressId, customerProfileId, ...data } = params;
 
-	const [updated] = await db.transaction(async (tx) => {
+	const updated = await db.transaction(async (tx) => {
 		if (data.isDefault) {
 			await tx
 				.update(customerAddress)
@@ -95,7 +135,7 @@ export async function updateAddress(params: UpdateAddressParams) {
 				.where(eq(customerAddress.customerProfileId, customerProfileId));
 		}
 
-		return tx
+		const [result] = await tx
 			.update(customerAddress)
 			.set(data)
 			.where(
@@ -105,10 +145,19 @@ export async function updateAddress(params: UpdateAddressParams) {
 				),
 			)
 			.returning();
+
+		return result;
 	});
 
 	if (!updated) throw new ServiceError(404, "Address not found");
-	return updated;
+
+	const addr = await db.query.customerAddress.findFirst({
+		where: eq(customerAddress.id, updated.id),
+		with: municipalityWith,
+	});
+
+	if (!addr) throw new ServiceError(500, "Address not found after update");
+	return reshapeAddress(addr);
 }
 
 interface DeleteAddressParams {

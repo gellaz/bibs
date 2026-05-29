@@ -38,11 +38,10 @@ export const PersonalInfoBody = Type.Object({
 		description: "Paese di residenza (codice ISO alpha-2)",
 		error: "Seleziona il paese di residenza",
 	}),
-	residenceCity: Type.String({
+	residenceMunicipalityId: Type.String({
 		minLength: 1,
-		maxLength: 100,
-		description: "Città di residenza",
-		error: "La città di residenza è obbligatoria",
+		description: "ID del comune di residenza",
+		error: "Il comune di residenza è obbligatorio",
 	}),
 	residenceAddress: Type.String({
 		minLength: 1,
@@ -73,11 +72,10 @@ export const DocumentBody = Type.Object({
 		description: "Scadenza documento (YYYY-MM-DD)",
 		error: "Formato data non valido (AAAA-MM-GG)",
 	}),
-	documentIssuedMunicipality: Type.String({
+	documentIssuedMunicipalityId: Type.String({
 		minLength: 1,
-		maxLength: 100,
-		description: "Comune di rilascio",
-		error: "Il comune di rilascio è obbligatorio",
+		description: "ID del comune di emissione del documento",
+		error: "Il comune di emissione è obbligatorio",
 	}),
 });
 
@@ -114,18 +112,10 @@ export const CompanyBody = Type.Object({
 			description: "Codice paese ISO alpha-2 (default: IT)",
 		}),
 	),
-	province: Type.Optional(
-		Type.String({
-			minLength: 2,
-			maxLength: 5,
-			description: "Provincia (sigla)",
-		}),
-	),
-	city: Type.String({
+	municipalityId: Type.String({
 		minLength: 1,
-		maxLength: 100,
-		description: "Città",
-		error: "La città è obbligatoria",
+		description: "ID del comune della sede legale",
+		error: "Il comune è obbligatorio",
 	}),
 	zipCode: Type.String({
 		pattern: "^\\d{5}$",

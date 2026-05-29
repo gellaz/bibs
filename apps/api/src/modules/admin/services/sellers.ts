@@ -68,10 +68,28 @@ export async function listSellers(params: ListSellersParams) {
 			? sellerProfile.firstName
 			: sellerProfile.createdAt;
 
-	const [data, [{ total }]] = await Promise.all([
+	const [rawData, [{ total }]] = await Promise.all([
 		db.query.sellerProfile.findMany({
 			where,
-			with: { user: true, organization: true },
+			with: {
+				user: true,
+				organization: {
+					with: {
+						municipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+					},
+				},
+				residenceMunicipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+				documentIssuedMunicipality: {
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+			},
 			limit,
 			offset,
 			orderBy: sortDir(sortCol),
@@ -79,41 +97,117 @@ export async function listSellers(params: ListSellersParams) {
 		db.select({ total: count() }).from(sellerProfile).where(where),
 	]);
 
+	const data = rawData.map((profile) => {
+		const {
+			organization: org,
+			residenceMunicipality,
+			documentIssuedMunicipality,
+			...rest
+		} = profile;
+		const profileWithMunicipalities = {
+			...rest,
+			residenceMunicipality: residenceMunicipality
+				? {
+						id: residenceMunicipality.id,
+						name: residenceMunicipality.name,
+						provinceAcronym: residenceMunicipality.province.acronym,
+					}
+				: null,
+			documentIssuedMunicipality: documentIssuedMunicipality
+				? {
+						id: documentIssuedMunicipality.id,
+						name: documentIssuedMunicipality.name,
+						provinceAcronym: documentIssuedMunicipality.province.acronym,
+					}
+				: null,
+		};
+		if (!org) return { ...profileWithMunicipalities, organization: null };
+		const { municipality, ...orgRest } = org;
+		return {
+			...profileWithMunicipalities,
+			organization: {
+				...orgRest,
+				municipality: {
+					id: municipality.id,
+					name: municipality.name,
+					provinceAcronym: municipality.province.acronym,
+				},
+			},
+		};
+	});
+
 	return { data, pagination: { page, limit, total } };
 }
 
+async function fetchProfileWithMunicipalities(sellerId: string) {
+	const raw = await db.query.sellerProfile.findFirst({
+		where: eq(sellerProfile.id, sellerId),
+		with: {
+			residenceMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+			documentIssuedMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+		},
+	});
+
+	if (!raw) return null;
+
+	const { residenceMunicipality, documentIssuedMunicipality, ...rest } = raw;
+	return {
+		...rest,
+		residenceMunicipality: residenceMunicipality
+			? {
+					id: residenceMunicipality.id,
+					name: residenceMunicipality.name,
+					provinceAcronym: residenceMunicipality.province.acronym,
+				}
+			: null,
+		documentIssuedMunicipality: documentIssuedMunicipality
+			? {
+					id: documentIssuedMunicipality.id,
+					name: documentIssuedMunicipality.name,
+					provinceAcronym: documentIssuedMunicipality.province.acronym,
+				}
+			: null,
+	};
+}
+
 export async function verifySeller(sellerId: string) {
-	const [updated] = await db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		await tx
 			.update(organization)
 			.set({ vatStatus: "verified" })
 			.where(eq(organization.sellerProfileId, sellerId));
 
-		return tx
+		await tx
 			.update(sellerProfile)
 			.set({ onboardingStatus: "active" })
-			.where(eq(sellerProfile.id, sellerId))
-			.returning();
+			.where(eq(sellerProfile.id, sellerId));
 	});
 
+	const updated = await fetchProfileWithMunicipalities(sellerId);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
 
 export async function rejectSeller(sellerId: string) {
-	const [updated] = await db.transaction(async (tx) => {
+	await db.transaction(async (tx) => {
 		await tx
 			.update(organization)
 			.set({ vatStatus: "rejected" })
 			.where(eq(organization.sellerProfileId, sellerId));
 
-		return tx
+		await tx
 			.update(sellerProfile)
 			.set({ onboardingStatus: "rejected" })
-			.where(eq(sellerProfile.id, sellerId))
-			.returning();
+			.where(eq(sellerProfile.id, sellerId));
 	});
 
+	const updated = await fetchProfileWithMunicipalities(sellerId);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
@@ -152,13 +246,67 @@ export async function countSellersByStatus(): Promise<SellerStatusCounts> {
 // ── Seller detail ───────────────────────────
 
 export async function getSellerDetail(sellerId: string) {
-	const data = await db.query.sellerProfile.findFirst({
+	const raw = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerId),
-		with: { user: true, organization: true },
+		with: {
+			user: true,
+			organization: {
+				with: {
+					municipality: {
+						columns: { id: true, name: true },
+						with: { province: { columns: { acronym: true } } },
+					},
+				},
+			},
+			residenceMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+			documentIssuedMunicipality: {
+				columns: { id: true, name: true },
+				with: { province: { columns: { acronym: true } } },
+			},
+		},
 	});
 
-	if (!data) throw new ServiceError(404, "Seller profile not found");
-	return data;
+	if (!raw) throw new ServiceError(404, "Seller profile not found");
+
+	const {
+		organization: org,
+		residenceMunicipality,
+		documentIssuedMunicipality,
+		...rest
+	} = raw;
+	const profileWithMunicipalities = {
+		...rest,
+		residenceMunicipality: residenceMunicipality
+			? {
+					id: residenceMunicipality.id,
+					name: residenceMunicipality.name,
+					provinceAcronym: residenceMunicipality.province.acronym,
+				}
+			: null,
+		documentIssuedMunicipality: documentIssuedMunicipality
+			? {
+					id: documentIssuedMunicipality.id,
+					name: documentIssuedMunicipality.name,
+					provinceAcronym: documentIssuedMunicipality.province.acronym,
+				}
+			: null,
+	};
+	if (!org) return { ...profileWithMunicipalities, organization: null };
+	const { municipality, ...orgRest } = org;
+	return {
+		...profileWithMunicipalities,
+		organization: {
+			...orgRest,
+			municipality: {
+				id: municipality.id,
+				name: municipality.name,
+				provinceAcronym: municipality.province.acronym,
+			},
+		},
+	};
 }
 
 // ── Change requests ─────────────────────────
@@ -171,12 +319,30 @@ interface ListPendingChangesParams {
 export async function listPendingChanges(params: ListPendingChangesParams) {
 	const { page, limit, offset } = parsePagination(params);
 
-	const [data, [{ total }]] = await Promise.all([
+	const [rawData, [{ total }]] = await Promise.all([
 		db.query.sellerProfileChange.findMany({
 			where: eq(sellerProfileChange.status, "pending"),
 			with: {
 				sellerProfile: {
-					with: { user: true, organization: true },
+					with: {
+						user: true,
+						organization: {
+							with: {
+								municipality: {
+									columns: { id: true, name: true },
+									with: { province: { columns: { acronym: true } } },
+								},
+							},
+						},
+						residenceMunicipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+						documentIssuedMunicipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+					},
 				},
 			},
 			limit,
@@ -188,6 +354,53 @@ export async function listPendingChanges(params: ListPendingChangesParams) {
 			.from(sellerProfileChange)
 			.where(eq(sellerProfileChange.status, "pending")),
 	]);
+
+	const data = rawData.map((change) => {
+		const { sellerProfile: sp, ...changeRest } = change;
+		const {
+			organization: org,
+			residenceMunicipality,
+			documentIssuedMunicipality,
+			...spRest
+		} = sp;
+		const spWithMunicipalities = {
+			...spRest,
+			residenceMunicipality: residenceMunicipality
+				? {
+						id: residenceMunicipality.id,
+						name: residenceMunicipality.name,
+						provinceAcronym: residenceMunicipality.province.acronym,
+					}
+				: null,
+			documentIssuedMunicipality: documentIssuedMunicipality
+				? {
+						id: documentIssuedMunicipality.id,
+						name: documentIssuedMunicipality.name,
+						provinceAcronym: documentIssuedMunicipality.province.acronym,
+					}
+				: null,
+		};
+		if (!org)
+			return {
+				...changeRest,
+				sellerProfile: { ...spWithMunicipalities, organization: null },
+			};
+		const { municipality, ...orgRest } = org;
+		return {
+			...changeRest,
+			sellerProfile: {
+				...spWithMunicipalities,
+				organization: {
+					...orgRest,
+					municipality: {
+						id: municipality.id,
+						name: municipality.name,
+						provinceAcronym: municipality.province.acronym,
+					},
+				},
+			},
+		};
+	});
 
 	return { data, pagination: { page, limit, total } };
 }
@@ -232,8 +445,8 @@ export async function approveChange(changeId: string, adminUserId: string) {
 				.set({
 					documentNumber: changeData.documentNumber as string,
 					documentExpiry: changeData.documentExpiry as string,
-					documentIssuedMunicipality:
-						changeData.documentIssuedMunicipality as string,
+					documentIssuedMunicipalityId:
+						changeData.documentIssuedMunicipalityId as string,
 					...(changeData.documentImageKey
 						? {
 								documentImageKey: changeData.documentImageKey as string,

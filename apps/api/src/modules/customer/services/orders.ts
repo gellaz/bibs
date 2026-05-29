@@ -30,13 +30,27 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 
 	const where = and(...conditions);
 
-	const [data, [{ total }]] = await Promise.all([
+	const [rawData, [{ total }]] = await Promise.all([
 		db.query.order.findMany({
 			where,
 			with: {
 				items: { with: { storeProduct: { with: { product: true } } } },
-				store: true,
-				shippingAddress: true,
+				store: {
+					with: {
+						municipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+					},
+				},
+				shippingAddress: {
+					with: {
+						municipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+					},
+				},
 			},
 			orderBy: (o, { desc }) => [desc(o.createdAt)],
 			limit,
@@ -44,6 +58,31 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 		}),
 		db.select({ total: count() }).from(order).where(where),
 	]);
+
+	const data = rawData.map(({ store, shippingAddress, ...rest }) => ({
+		...rest,
+		store: {
+			...store,
+			municipality: {
+				id: store.municipality.id,
+				name: store.municipality.name,
+				provinceAcronym: store.municipality.province.acronym,
+			},
+		},
+		shippingAddress: shippingAddress
+			? (() => {
+					const { municipality, ...addrRest } = shippingAddress;
+					return {
+						...addrRest,
+						municipality: {
+							id: municipality.id,
+							name: municipality.name,
+							provinceAcronym: municipality.province.acronym,
+						},
+					};
+				})()
+			: null,
+	}));
 
 	return { data, pagination: { page, limit, total } };
 }
@@ -63,13 +102,51 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 		),
 		with: {
 			items: { with: { storeProduct: { with: { product: true } } } },
-			store: true,
-			shippingAddress: true,
+			store: {
+				with: {
+					municipality: {
+						columns: { id: true, name: true },
+						with: { province: { columns: { acronym: true } } },
+					},
+				},
+			},
+			shippingAddress: {
+				with: {
+					municipality: {
+						columns: { id: true, name: true },
+						with: { province: { columns: { acronym: true } } },
+					},
+				},
+			},
 		},
 	});
 
 	if (!found) throw new ServiceError(404, "Order not found");
-	return found;
+	const { store, shippingAddress, ...foundRest } = found;
+	return {
+		...foundRest,
+		store: {
+			...store,
+			municipality: {
+				id: store.municipality.id,
+				name: store.municipality.name,
+				provinceAcronym: store.municipality.province.acronym,
+			},
+		},
+		shippingAddress: shippingAddress
+			? (() => {
+					const { municipality, ...addrRest } = shippingAddress;
+					return {
+						...addrRest,
+						municipality: {
+							id: municipality.id,
+							name: municipality.name,
+							provinceAcronym: municipality.province.acronym,
+						},
+					};
+				})()
+			: null,
+	};
 }
 
 interface CreateOrderParams {

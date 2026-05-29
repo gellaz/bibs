@@ -17,7 +17,7 @@ export async function findSellerOrder(
 ) {
 	const existing = await db.query.order.findFirst({
 		where: eq(order.id, orderId),
-		with: { store: true },
+		with: { store: { columns: { sellerProfileId: true } } },
 	});
 
 	if (!existing || existing.store.sellerProfileId !== sellerProfileId)
@@ -100,13 +100,20 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 
 	const where = and(...conditions);
 
-	const [data, [{ total }]] = await Promise.all([
+	const [rawData, [{ total }]] = await Promise.all([
 		db.query.order.findMany({
 			where,
 			with: {
 				items: { with: { storeProduct: { with: { product: true } } } },
 				customerProfile: { with: { user: true } },
-				store: true,
+				store: {
+					with: {
+						municipality: {
+							columns: { id: true, name: true },
+							with: { province: { columns: { acronym: true } } },
+						},
+					},
+				},
 			},
 			orderBy: (o, { desc }) => [desc(o.createdAt)],
 			limit,
@@ -114,6 +121,18 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 		}),
 		db.select({ total: count() }).from(order).where(where),
 	]);
+
+	const data = rawData.map(({ store, ...rest }) => ({
+		...rest,
+		store: {
+			...store,
+			municipality: {
+				id: store.municipality.id,
+				name: store.municipality.name,
+				provinceAcronym: store.municipality.province.acronym,
+			},
+		},
+	}));
 
 	return { data, pagination: { page, limit, total } };
 }
@@ -131,7 +150,14 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 		with: {
 			items: { with: { storeProduct: { with: { product: true } } } },
 			customerProfile: { with: { user: true } },
-			store: true,
+			store: {
+				with: {
+					municipality: {
+						columns: { id: true, name: true },
+						with: { province: { columns: { acronym: true } } },
+					},
+				},
+			},
 			shippingAddress: true,
 		},
 	});
@@ -139,5 +165,16 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 	if (!found || !storeIds.includes(found.storeId))
 		throw new ServiceError(404, "Order not found");
 
-	return found;
+	const { store, ...foundRest } = found;
+	return {
+		...foundRest,
+		store: {
+			...store,
+			municipality: {
+				id: store.municipality.id,
+				name: store.municipality.name,
+				provinceAcronym: store.municipality.province.acronym,
+			},
+		},
+	};
 }
