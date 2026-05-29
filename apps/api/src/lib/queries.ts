@@ -101,9 +101,19 @@ export const ProductSearchQuery = t.Object({
 		t.String({ description: "Testo di ricerca (full-text italiano)" }),
 	),
 	categoryId: t.Optional(t.String({ description: "Filtra per ID categoria" })),
-	lat: t.Optional(t.Number({ description: "Latitudine del punto di ricerca" })),
+	lat: t.Optional(
+		t.Number({
+			minimum: -90,
+			maximum: 90,
+			description: "Latitudine del punto di ricerca",
+		}),
+	),
 	lng: t.Optional(
-		t.Number({ description: "Longitudine del punto di ricerca" }),
+		t.Number({
+			minimum: -180,
+			maximum: 180,
+			description: "Longitudine del punto di ricerca",
+		}),
 	),
 	radius: t.Optional(
 		t.Number({
