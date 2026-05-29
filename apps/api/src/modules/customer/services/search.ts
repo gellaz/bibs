@@ -49,13 +49,14 @@ export async function searchProducts(params: SearchParams) {
 		);
 	}
 
-	// Must have stock in at least one store (+ optional geo filter)
+	// Must have stock in at least one active (non-deleted) store (+ optional geo filter)
 	conditions.push(
 		sql`EXISTS (
       SELECT 1 FROM ${storeProduct}
       INNER JOIN ${store} ON ${store.id} = ${storeProduct.storeId}
       WHERE ${storeProduct.productId} = ${product.id}
       AND ${storeProduct.stock} > 0
+      AND ${store.deletedAt} IS NULL
       ${
 				lat !== undefined && lng !== undefined
 					? sql`AND ST_DWithin(
@@ -82,6 +83,7 @@ export async function searchProducts(params: SearchParams) {
           INNER JOIN ${store} ON ${store.id} = ${storeProduct.storeId}
           WHERE ${storeProduct.productId} = ${product.id}
           AND ${storeProduct.stock} > 0
+          AND ${store.deletedAt} IS NULL
         )`
 		: sql`0`;
 
@@ -93,8 +95,13 @@ export async function searchProducts(params: SearchParams) {
         )`
 		: sql`0`;
 
-	// Order by: text relevance first (desc), then distance (asc)
-	const orderExpr = q ? sql`rank DESC, distance ASC` : sql`distance ASC`;
+	// Order by: text relevance first (desc), then distance (asc), with a stable
+	// tiebreaker (createdAt desc, id asc) so pagination is deterministic even when
+	// many rows share the same rank/distance (e.g. no-query, no-geo where distance
+	// is a constant 0).
+	const orderExpr = q
+		? sql`rank DESC, distance ASC, ${product.createdAt} DESC, ${product.id} ASC`
+		: sql`distance ASC, ${product.createdAt} DESC, ${product.id} ASC`;
 
 	const [data, [{ total }]] = await Promise.all([
 		db
