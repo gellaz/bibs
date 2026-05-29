@@ -4,18 +4,20 @@ import { storeImage } from "@/db/schemas/store-image";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
-import { ensureStoreOwnership } from "../context";
+import { ensureStoreAccess } from "../context";
 
 interface UploadStoreImagesParams {
 	storeId: string;
 	sellerProfileId: string;
+	userId: string;
+	isOwner: boolean;
 	files: File[];
 	position?: number;
 }
 
 export async function uploadStoreImages(params: UploadStoreImagesParams) {
-	const { storeId, sellerProfileId, files, position } = params;
-	await ensureStoreOwnership(storeId, sellerProfileId);
+	const { storeId, sellerProfileId, userId, isOwner, files, position } = params;
+	await ensureStoreAccess(storeId, { userId, sellerProfileId, isOwner });
 
 	// Enforce max images per store
 	const [{ current }] = await db
@@ -67,12 +69,14 @@ export async function uploadStoreImages(params: UploadStoreImagesParams) {
 interface DeleteStoreImageParams {
 	storeId: string;
 	sellerProfileId: string;
+	userId: string;
+	isOwner: boolean;
 	imageId: string;
 }
 
 export async function deleteStoreImage(params: DeleteStoreImageParams) {
-	const { storeId, sellerProfileId, imageId } = params;
-	await ensureStoreOwnership(storeId, sellerProfileId);
+	const { storeId, sellerProfileId, userId, isOwner, imageId } = params;
+	await ensureStoreAccess(storeId, { userId, sellerProfileId, isOwner });
 
 	const img = await db.query.storeImage.findFirst({
 		where: and(eq(storeImage.id, imageId), eq(storeImage.storeId, storeId)),

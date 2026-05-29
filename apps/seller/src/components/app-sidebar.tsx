@@ -42,6 +42,7 @@ const navItems = [
 		to: "/promotions" as const,
 		icon: TagIcon,
 		match: (p: string) => p.startsWith("/promotions"),
+		ownerOnly: true,
 	},
 	{
 		title: "Impostazioni negozio",

@@ -14,13 +14,22 @@ export const imagesRoutes = new Elysia()
 	.post(
 		"/products/:productId/images",
 		async (ctx) => {
-			const { sellerProfile: sp, params, body, user, store } = withSeller(ctx);
+			const {
+				sellerProfile: sp,
+				params,
+				body,
+				user,
+				store,
+				isOwner,
+			} = withSeller(ctx);
 			const pino = getLogger(store);
 
 			const files = Array.isArray(body.files) ? body.files : [body.files];
 			const data = await uploadProductImages({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				userId: user.id,
+				isOwner,
 				files,
 				position: body.position,
 			});
@@ -67,10 +76,12 @@ export const imagesRoutes = new Elysia()
 	.delete(
 		"/products/:productId/images/:imageId",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const { sellerProfile: sp, params, user, isOwner } = withSeller(ctx);
 			await deleteProductImage({
 				productId: params.productId,
 				sellerProfileId: sp.id,
+				userId: user.id,
+				isOwner,
 				imageId: params.imageId,
 			});
 			return okMessage("Image deleted");
