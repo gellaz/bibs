@@ -11,6 +11,7 @@ import {
 	withErrors,
 } from "@/lib/schemas";
 import { CreateStoreBody } from "@/lib/schemas/forms";
+import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
 import { requireOwner, withSeller } from "../context";
 import {
 	cancelStoreSubscription,
@@ -126,25 +127,7 @@ export const storesRoutes = new Elysia()
 				categoryId: t.Optional(
 					t.Nullable(t.String({ description: "ID categoria negozio" })),
 				),
-				openingHours: t.Optional(
-					t.Nullable(
-						t.Array(
-							t.Object({
-								dayOfWeek: t.Integer({
-									minimum: 0,
-									maximum: 6,
-								}),
-								slots: t.Array(
-									t.Object({
-										open: t.String(),
-										close: t.String(),
-									}),
-								),
-							}),
-							{ description: "Orari di apertura" },
-						),
-					),
-				),
+				openingHours: t.Optional(t.Nullable(OpeningHoursSchema)),
 				websiteUrl: t.Optional(
 					t.String({
 						format: "uri",
