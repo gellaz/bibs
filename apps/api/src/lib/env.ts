@@ -15,6 +15,7 @@ const EnvSchema = t.Object({
 	PORT: t.Optional(t.String()),
 	ALLOWED_ORIGINS: t.Optional(t.String()),
 	NODE_ENV: t.Optional(t.String()),
+	TRUST_PROXY: t.Optional(t.String()),
 	RESEND_API_KEY: t.Optional(t.String()),
 	EMAIL_FROM: t.Optional(t.String()),
 	CUSTOMER_APP_URL: t.Optional(t.String()),
@@ -47,6 +48,8 @@ export const env = {
 	PORT: process.env.PORT ?? "3000",
 	ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS,
 	NODE_ENV: process.env.NODE_ENV ?? "development",
+	// Only trust client-supplied X-Forwarded-For when behind a known reverse proxy.
+	TRUST_PROXY: process.env.TRUST_PROXY ?? "false",
 	RESEND_API_KEY: process.env.RESEND_API_KEY,
 	EMAIL_FROM: process.env.EMAIL_FROM,
 	CUSTOMER_APP_URL: process.env.CUSTOMER_APP_URL ?? "http://localhost:3001",

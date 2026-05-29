@@ -1,4 +1,6 @@
+import { APIError } from "better-auth";
 import { Elysia } from "elysia";
+import { apiErrorToServiceError } from "@/lib/auth-errors";
 import { PendingVerificationError, ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { errorBody } from "@/lib/responses";
@@ -28,26 +30,36 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 		const pathname = new URL(request.url).pathname;
 		const { method } = request;
 
-		if (error instanceof ServiceError) {
-			const logLevel = error.status >= 500 ? "error" : "warn";
+		// better-auth's server-side auth.api.* calls (signInEmail / signUpEmail /
+		// sendVerificationEmail) throw an APIError on failure. Normalize it to a
+		// ServiceError so it gets the same 4xx envelope instead of falling through
+		// to the catch-all 500 below.
+		const normalized =
+			error instanceof APIError ? apiErrorToServiceError(error) : error;
+
+		if (normalized instanceof ServiceError) {
+			const logLevel = normalized.status >= 500 ? "error" : "warn";
 			pino[logLevel](
 				{
-					errorCode: error.code,
-					errorMessage: error.message,
-					statusCode: error.status,
+					errorCode: normalized.code,
+					errorMessage: normalized.message,
+					statusCode: normalized.status,
 					path: pathname,
 					method,
 				},
-				`ServiceError: ${error.message}`,
+				`ServiceError: ${normalized.message}`,
 			);
 
 			// Le sottoclassi (PendingVerificationError, EmailAlreadyRegisteredError)
 			// possono esporre campi extra serializzabili nel body della response.
-			const body = errorBody(error.code, error.message);
-			if (error instanceof PendingVerificationError) {
-				return status(error.status, { ...body, resentAt: error.resentAt });
+			const body = errorBody(normalized.code, normalized.message);
+			if (normalized instanceof PendingVerificationError) {
+				return status(normalized.status, {
+					...body,
+					resentAt: normalized.resentAt,
+				});
 			}
-			return status(error.status, body);
+			return status(normalized.status, body);
 		}
 
 		// Postgres constraint violations → mapped to a precise 4xx instead of 500.

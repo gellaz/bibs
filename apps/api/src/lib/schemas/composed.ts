@@ -40,6 +40,40 @@ export const SellerProfileWithUserSchema = t.Object({
 	organization: t.Nullable(OrganizationSchema),
 });
 
+// ── Auth: registration / sign-in success payloads ──────────
+// These endpoints return RAW DB rows: seller profiles without the joined
+// municipality objects, and organizations without the joined municipality.
+const RawSellerProfileSchema = t.Omit(SellerProfileSchema, [
+	"residenceMunicipality",
+	"documentIssuedMunicipality",
+]);
+const RawOrganizationSchema = t.Omit(OrganizationSchema, ["municipality"]);
+
+// `token` may be absent/null when email verification is required (no session).
+const AuthToken = t.Optional(t.Nullable(t.String()));
+
+export const RegisterCustomerResult = t.Object({
+	user: UserSchema,
+	profile: CustomerProfileSchema,
+	token: AuthToken,
+});
+
+export const RegisterSellerResult = t.Object({
+	user: UserSchema,
+	profile: RawSellerProfileSchema,
+	token: AuthToken,
+});
+
+export const SignInResult = t.Object({
+	user: UserSchema,
+	profiles: t.Object({
+		customer: t.Nullable(CustomerProfileSchema),
+		seller: t.Nullable(RawSellerProfileSchema),
+	}),
+	organization: t.Nullable(RawOrganizationSchema),
+	token: AuthToken,
+});
+
 // Employee + user
 export const EmployeeWithUserSchema = t.Object({
 	...EmployeeSchema.properties,

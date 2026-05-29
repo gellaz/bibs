@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { Logger } from "pino";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
@@ -32,6 +33,11 @@ type ExistingDecision =
 /**
  * Decide come gestire un eventuale `user` esistente con la stessa email durante
  * un signup. Niente side-effect: ritorna la decisione, il chiamante esegue.
+ *
+ * NB: distinguere `verified-conflict` da `pending-resend` rivela se un'email è
+ * registrata (scelta di prodotto deliberata: alimenta la UX del banner "Re-invia").
+ * Indebolisce la protezione anti-enumeration di better-auth; il rate limiter sui
+ * route /register/* (vedi plugins/rate-limit.ts) ne limita lo sfruttamento di massa.
  */
 export function decideExistingUser(
 	row: UserRow | undefined | null,
@@ -51,6 +57,37 @@ function callbackURLForRole(role: "seller" | "customer"): string {
 		: `${env.CUSTOMER_APP_URL}/login`;
 }
 
+/** Deletes a user row; FK cascade removes account/session/profile. */
+async function deleteUserById(userId: string): Promise<void> {
+	await db.delete(user).where(eq(user.id, userId));
+}
+
+/**
+ * Runs the post-signup provisioning work. If it throws, deletes the just-created
+ * user (signUpEmail commits the user+account row before this runs) and rethrows
+ * the original error — a failed rollback is logged but never masks the cause.
+ */
+export async function provisionOrRollback<T>(
+	userId: string,
+	work: () => Promise<T>,
+	rollback: (userId: string) => Promise<void>,
+	logger?: Logger,
+): Promise<T> {
+	try {
+		return await work();
+	} catch (err) {
+		try {
+			await rollback(userId);
+		} catch (cleanupErr) {
+			logger?.error(
+				{ cleanupErr, userId },
+				"Failed to delete orphaned user after a failed signup transaction",
+			);
+		}
+		throw err;
+	}
+}
+
 // ── Shared registration helper ──────────────
 
 interface RegisterUserParams<T> {
@@ -58,6 +95,7 @@ interface RegisterUserParams<T> {
 	password: string;
 	role: string;
 	callbackURL: string;
+	logger?: Logger;
 	createProfile: (
 		tx: PgTransaction<any, any, any>,
 		userId: string,
@@ -65,7 +103,7 @@ interface RegisterUserParams<T> {
 }
 
 async function registerUser<T>(params: RegisterUserParams<T>) {
-	const { email, password, role, callbackURL, createProfile } = params;
+	const { email, password, role, callbackURL, createProfile, logger } = params;
 	const name = email.split("@")[0];
 
 	const existing = await db.query.user.findFirst({
@@ -88,10 +126,10 @@ async function registerUser<T>(params: RegisterUserParams<T>) {
 					body: { email, callbackURL },
 				});
 			} catch (err) {
-				console.error("sendVerificationEmail failed on pending re-signup", {
-					err,
-					email,
-				});
+				logger?.warn(
+					{ err, email },
+					"sendVerificationEmail failed on pending re-signup",
+				);
 			}
 			throw new PendingVerificationError(resentAt);
 		}
@@ -100,7 +138,7 @@ async function registerUser<T>(params: RegisterUserParams<T>) {
 			// Vecchio account abbandonato → DELETE + signup nuovo.
 			// session/account/sellerProfile/customerProfile cadono via FK cascade
 			// (verification table non ha FK su user — record orfani sono time-expired).
-			await db.delete(user).where(eq(user.id, decision.user.id));
+			await deleteUserById(decision.user.id);
 			break;
 		}
 
@@ -112,18 +150,43 @@ async function registerUser<T>(params: RegisterUserParams<T>) {
 		body: { name, email, password },
 	});
 
-	const profile = await db.transaction(async (tx) => {
-		await tx.update(user).set({ role }).where(eq(user.id, newUser.id));
+	// signUpEmail already committed the user+account row; if the role/profile
+	// transaction fails, roll the user back so the email isn't blocked by the
+	// pending-resend path for up to 7 days.
+	const profile = await provisionOrRollback(
+		newUser.id,
+		() =>
+			db.transaction(async (tx) => {
+				await tx.update(user).set({ role }).where(eq(user.id, newUser.id));
 
-		return createProfile(tx, newUser.id);
-	});
+				return createProfile(tx, newUser.id);
+			}),
+		deleteUserById,
+		logger,
+	);
 
-	await auth.api.sendVerificationEmail({
-		body: { email, callbackURL },
+	// Best-effort: a failed verification email must not turn a committed signup
+	// into a 500 — the pending-resend flow re-sends on the next attempt.
+	try {
+		await auth.api.sendVerificationEmail({
+			body: { email, callbackURL },
+		});
+	} catch (err) {
+		logger?.warn({ err, email }, "sendVerificationEmail failed after signup");
+	}
+
+	// Re-read the row instead of returning signUpEmail's better-auth User (whose
+	// fields are optional and don't match UserSchema): the committed DB row is the
+	// canonical, fully-populated shape — same pattern signIn uses.
+	const userRecord = await db.query.user.findFirst({
+		where: eq(user.id, newUser.id),
 	});
+	if (!userRecord) {
+		throw new ServiceError(500, "Utente non trovato dopo la registrazione");
+	}
 
 	return {
-		user: { ...newUser, role },
+		user: userRecord,
 		profile,
 		token,
 	};
@@ -136,11 +199,15 @@ interface RegisterParams {
 	password: string;
 }
 
-export async function registerCustomer(params: RegisterParams) {
+export async function registerCustomer(
+	params: RegisterParams,
+	logger?: Logger,
+) {
 	return registerUser({
 		...params,
 		role: "customer",
 		callbackURL: callbackURLForRole("customer"),
+		logger,
 		async createProfile(tx, userId) {
 			const [profile] = await tx
 				.insert(customerProfile)
@@ -151,11 +218,12 @@ export async function registerCustomer(params: RegisterParams) {
 	});
 }
 
-export async function registerSeller(params: RegisterParams) {
+export async function registerSeller(params: RegisterParams, logger?: Logger) {
 	return registerUser({
 		...params,
 		role: "seller",
 		callbackURL: callbackURLForRole("seller"),
+		logger,
 		async createProfile(tx, userId) {
 			const [profile] = await tx
 				.insert(sellerProfile)
@@ -173,7 +241,10 @@ interface AcceptInviteParams {
 	password: string;
 }
 
-export async function acceptInvite(params: AcceptInviteParams) {
+export async function acceptInvite(
+	params: AcceptInviteParams,
+	logger?: Logger,
+) {
 	const { token, password } = params;
 
 	// Find the invitation by token
@@ -211,46 +282,54 @@ export async function acceptInvite(params: AcceptInviteParams) {
 		body: { name, email: invitation.email, password },
 	});
 
-	// Set role, verify email, create employee record, mark invitation
-	await db.transaction(async (tx) => {
-		await tx
-			.update(user)
-			.set({ role: "employee", emailVerified: true })
-			.where(eq(user.id, newUser.id));
+	// As in registerUser: signUpEmail already committed the user row. If the
+	// employee/role transaction fails, roll the user back — otherwise the hard
+	// 409 guard above would block this email from ever reusing the invite.
+	await provisionOrRollback(
+		newUser.id,
+		() =>
+			db.transaction(async (tx) => {
+				await tx
+					.update(user)
+					.set({ role: "employee", emailVerified: true })
+					.where(eq(user.id, newUser.id));
 
-		const [createdEmployee] = await tx
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: invitation.sellerProfileId,
-				userId: newUser.id,
-			})
-			.returning();
+				const [createdEmployee] = await tx
+					.insert(storeEmployee)
+					.values({
+						sellerProfileId: invitation.sellerProfileId,
+						userId: newUser.id,
+					})
+					.returning();
 
-		// Propagate store assignments from the invitation,
-		// INNER JOIN with store table so deleted stores are silently dropped.
-		const invitedStores = await tx
-			.select({ storeId: employeeInvitationStores.storeId })
-			.from(employeeInvitationStores)
-			.innerJoin(
-				storeTable,
-				eq(employeeInvitationStores.storeId, storeTable.id),
-			)
-			.where(eq(employeeInvitationStores.invitationId, invitation.id));
+				// Propagate store assignments from the invitation,
+				// INNER JOIN with store table so deleted stores are silently dropped.
+				const invitedStores = await tx
+					.select({ storeId: employeeInvitationStores.storeId })
+					.from(employeeInvitationStores)
+					.innerJoin(
+						storeTable,
+						eq(employeeInvitationStores.storeId, storeTable.id),
+					)
+					.where(eq(employeeInvitationStores.invitationId, invitation.id));
 
-		if (invitedStores.length > 0) {
-			await tx.insert(storeEmployeeStores).values(
-				invitedStores.map((s) => ({
-					storeEmployeeId: createdEmployee.id,
-					storeId: s.storeId,
-				})),
-			);
-		}
+				if (invitedStores.length > 0) {
+					await tx.insert(storeEmployeeStores).values(
+						invitedStores.map((s) => ({
+							storeEmployeeId: createdEmployee.id,
+							storeId: s.storeId,
+						})),
+					);
+				}
 
-		await tx
-			.update(employeeInvitation)
-			.set({ status: "accepted" })
-			.where(eq(employeeInvitation.id, invitation.id));
-	});
+				await tx
+					.update(employeeInvitation)
+					.set({ status: "accepted" })
+					.where(eq(employeeInvitation.id, invitation.id));
+			}),
+		deleteUserById,
+		logger,
+	);
 
 	return { message: "Account creato con successo. Ora puoi accedere." };
 }
@@ -263,13 +342,12 @@ interface SignInParams {
 export async function signIn(params: SignInParams) {
 	const { email, password } = params;
 
+	// auth.api.signInEmail throws an APIError on invalid credentials (401) or an
+	// unverified email (403). It never resolves with a falsy user, so there is no
+	// guard here: the global error handler maps the APIError to the right 4xx.
 	const result = await auth.api.signInEmail({
 		body: { email, password },
 	});
-
-	if (!result.user) {
-		throw new ServiceError(401, "Invalid credentials");
-	}
 
 	const userRecord = await db.query.user.findFirst({
 		where: eq(user.id, result.user.id),

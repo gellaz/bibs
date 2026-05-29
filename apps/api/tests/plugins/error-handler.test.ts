@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { APIError } from "better-auth";
 import { Elysia } from "elysia";
 import { ServiceError } from "@/lib/errors";
 import { errorHandler } from "@/plugins/error-handler";
@@ -76,6 +77,24 @@ const app = new Elysia()
 		throw Object.assign(new Error("new row violates check constraint"), {
 			code: "23514",
 			constraint: "customer_points_non_negative",
+		});
+	})
+	.get("/api-error-unverified", () => {
+		// better-auth signInEmail throws this when requireEmailVerification is on.
+		throw new APIError("FORBIDDEN", {
+			code: "EMAIL_NOT_VERIFIED",
+			message: "Email not verified",
+		});
+	})
+	.get("/api-error-bad-credentials", () => {
+		throw new APIError("UNAUTHORIZED", {
+			code: "INVALID_EMAIL_OR_PASSWORD",
+			message: "Invalid email or password",
+		});
+	})
+	.get("/api-error-internal", () => {
+		throw new APIError("INTERNAL_SERVER_ERROR", {
+			message: "leaky internal detail",
 		});
 	})
 	.get("/ok", () => ({ success: true, data: "ok" }));
@@ -178,6 +197,41 @@ describe("errorHandler — pg constraint violations", () => {
 		expect(res.status).toBe(400);
 		const body = await json(res);
 		expect(body.error).toBe("BAD_REQUEST");
+	});
+});
+
+describe("errorHandler — better-auth APIError", () => {
+	it("maps an unverified-email APIError to 403 with an actionable message (not 500)", async () => {
+		const res = await app.handle(
+			new Request("http://localhost/api-error-unverified"),
+		);
+		expect(res.status).toBe(403);
+		const body = await json(res);
+		expect(body.success).toBe(false);
+		expect(body.error).toBe("FORBIDDEN");
+		expect(body.message).toBe(
+			"Devi verificare la tua email prima di accedere.",
+		);
+	});
+
+	it("maps an invalid-credentials APIError to 401 (not 500)", async () => {
+		const res = await app.handle(
+			new Request("http://localhost/api-error-bad-credentials"),
+		);
+		expect(res.status).toBe(401);
+		const body = await json(res);
+		expect(body.error).toBe("UNAUTHORIZED");
+		expect(body.message).toBe("Email o password non corretti.");
+	});
+
+	it("maps a 5xx APIError to 500 without leaking the internal message", async () => {
+		const res = await app.handle(
+			new Request("http://localhost/api-error-internal"),
+		);
+		expect(res.status).toBe(500);
+		const body = await json(res);
+		expect(body.error).toBe("INTERNAL_ERROR");
+		expect(body.message).not.toBe("leaky internal detail");
 	});
 });
 
