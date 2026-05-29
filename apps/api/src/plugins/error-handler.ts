@@ -3,22 +3,22 @@ import { PendingVerificationError, ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { errorBody } from "@/lib/responses";
 
+interface PgError {
+	code?: string;
+	constraint?: string;
+	detail?: string;
+}
+
 /**
  * Unwraps a possibly-wrapped error to find the underlying pg DatabaseError.
  * Drizzle wraps query errors in DrizzleQueryError with the original pg error
  * in `.cause`, so we need to dig one level deeper.
  */
-function unwrapPgError(error: unknown): { code?: string; constraint?: string } {
+function unwrapPgError(error: unknown): PgError {
 	if (error instanceof Error && error.cause != null) {
-		return error.cause as { code?: string; constraint?: string };
+		return error.cause as PgError;
 	}
-	return error as { code?: string; constraint?: string };
-}
-
-/** Checks if an error is a pg unique_violation (code 23505). */
-function isUniqueViolation(error: unknown): boolean {
-	const pg = unwrapPgError(error);
-	return pg.code === "23505";
+	return error as PgError;
 }
 
 export const errorHandler = new Elysia({ name: "error-handler" }).onError(
@@ -50,9 +50,11 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 			return status(error.status, body);
 		}
 
-		// Postgres unique constraint violation → 409 Conflict
-		if (isUniqueViolation(error)) {
-			const pg = unwrapPgError(error);
+		// Postgres constraint violations → mapped to a precise 4xx instead of 500.
+		const pg = unwrapPgError(error);
+
+		// 23505 unique_violation → 409 Conflict
+		if (pg.code === "23505") {
 			pino.warn(
 				{
 					errorCode: "CONFLICT",
@@ -69,6 +71,49 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 					: "A record with the same value already exists";
 
 			return status(409, errorBody("CONFLICT", message));
+		}
+
+		// 23503 foreign_key_violation. A blocked delete/update of a still-referenced
+		// row is a 409 (resource in use); referencing a non-existent row is a 400
+		// (the client sent an invalid id, e.g. a bad municipalityId / addressId).
+		if (pg.code === "23503") {
+			const stillReferenced =
+				pg.detail?.includes("is still referenced") === true;
+			pino.warn(
+				{
+					errorCode: stillReferenced ? "CONFLICT" : "BAD_REQUEST",
+					constraint: pg.constraint,
+					path: pathname,
+					method,
+				},
+				"Foreign key violation",
+			);
+			return stillReferenced
+				? status(
+						409,
+						errorBody(
+							"CONFLICT",
+							"Risorsa ancora in uso: impossibile completare l'operazione",
+						),
+					)
+				: status(400, errorBody("BAD_REQUEST", "Riferimento non valido"));
+		}
+
+		// 23514 check_violation → 400 (the submitted data violates a constraint)
+		if (pg.code === "23514") {
+			pino.warn(
+				{
+					errorCode: "BAD_REQUEST",
+					constraint: pg.constraint,
+					path: pathname,
+					method,
+				},
+				"Check constraint violation",
+			);
+			return status(
+				400,
+				errorBody("BAD_REQUEST", "Valore non valido per questa operazione"),
+			);
 		}
 
 		if (code === "VALIDATION") {

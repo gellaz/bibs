@@ -40,6 +40,44 @@ const app = new Elysia()
 		});
 		throw err;
 	})
+	.get("/fk-missing", () => {
+		// INSERT/UPDATE referencing a row that does not exist → client sent a bad id.
+		throw Object.assign(
+			new Error("insert or update violates foreign key constraint"),
+			{
+				code: "23503",
+				constraint: "customer_addresses_municipality_id_fk",
+				detail:
+					'Key (municipality_id)=(nope) is not present in table "municipalities".',
+			},
+		);
+	})
+	.get("/fk-referenced", () => {
+		// DELETE/UPDATE of a parent still referenced by children (onDelete restrict).
+		throw Object.assign(
+			new Error("update or delete violates foreign key constraint"),
+			{
+				code: "23503",
+				constraint: "provinces_region_id_fk",
+				detail: 'Key (id)=(r1) is still referenced from table "provinces".',
+			},
+		);
+	})
+	.get("/fk-wrapped", () => {
+		// Mirrors Drizzle wrapping the pg error in DrizzleQueryError.cause.
+		const pg = Object.assign(new Error("fk"), {
+			code: "23503",
+			detail:
+				'Key (shipping_address_id)=(x) is not present in table "customer_addresses".',
+		});
+		throw Object.assign(new Error("Failed query"), { cause: pg });
+	})
+	.get("/check-violation", () => {
+		throw Object.assign(new Error("new row violates check constraint"), {
+			code: "23514",
+			constraint: "customer_points_non_negative",
+		});
+	})
 	.get("/ok", () => ({ success: true, data: "ok" }));
 
 async function json(res: Response) {
@@ -107,6 +145,39 @@ describe("errorHandler — unhandled errors", () => {
 		const body = await json(res);
 		expect(body.success).toBe(false);
 		expect(body.error).toBe("CONFLICT");
+	});
+});
+
+describe("errorHandler — pg constraint violations", () => {
+	it("maps a foreign key violation on a missing reference to 400", async () => {
+		const res = await app.handle(new Request("http://localhost/fk-missing"));
+		expect(res.status).toBe(400);
+		const body = await json(res);
+		expect(body.success).toBe(false);
+		expect(body.error).toBe("BAD_REQUEST");
+	});
+
+	it("maps a foreign key violation on a still-referenced row to 409", async () => {
+		const res = await app.handle(new Request("http://localhost/fk-referenced"));
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.error).toBe("CONFLICT");
+	});
+
+	it("unwraps a DrizzleQueryError-wrapped FK violation (400)", async () => {
+		const res = await app.handle(new Request("http://localhost/fk-wrapped"));
+		expect(res.status).toBe(400);
+		const body = await json(res);
+		expect(body.error).toBe("BAD_REQUEST");
+	});
+
+	it("maps a check constraint violation to 400", async () => {
+		const res = await app.handle(
+			new Request("http://localhost/check-violation"),
+		);
+		expect(res.status).toBe(400);
+		const body = await json(res);
+		expect(body.error).toBe("BAD_REQUEST");
 	});
 });
 
