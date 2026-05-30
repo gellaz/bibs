@@ -31,6 +31,7 @@ import {
 } from "@bibs/ui/components/dropdown-menu";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
+import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { cn } from "@bibs/ui/lib/utils";
@@ -139,6 +140,13 @@ function useCancelInvitation() {
 			void queryClient.invalidateQueries({
 				queryKey: ["employee-invitations"],
 			});
+		},
+		onError: (err) => {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Errore durante l'annullamento dell'invito",
+			);
 		},
 	});
 }
@@ -375,11 +383,21 @@ function EmployeeActions({
 		removeMutation.isPending;
 
 	async function handleConfirm() {
-		if (confirmAction === "ban") await banMutation.mutateAsync(employeeId);
-		if (confirmAction === "unban") await unbanMutation.mutateAsync(employeeId);
-		if (confirmAction === "remove")
-			await removeMutation.mutateAsync(employeeId);
-		setConfirmAction(null);
+		try {
+			if (confirmAction === "ban") await banMutation.mutateAsync(employeeId);
+			if (confirmAction === "unban")
+				await unbanMutation.mutateAsync(employeeId);
+			if (confirmAction === "remove")
+				await removeMutation.mutateAsync(employeeId);
+		} catch (err) {
+			// Surface the failure instead of an unhandled rejection, and ensure the
+			// dialog still closes (finally) rather than getting stuck open.
+			toast.error(
+				err instanceof Error ? err.message : "Operazione non riuscita",
+			);
+		} finally {
+			setConfirmAction(null);
+		}
 	}
 
 	const confirmMessages: Record<
@@ -548,7 +566,11 @@ function TeamPage() {
 
 	const rows = useMemo<TeamRow[]>(() => {
 		const out: TeamRow[] = [];
-		if (owner) {
+		// The owner row and pending invitations are not part of the server-paginated
+		// employee list (pagination.total counts employees only). Inject them on the
+		// first page only — otherwise they re-appear on every page and the visible
+		// row count can exceed `limit`.
+		if (page === 1 && owner) {
 			out.push({
 				kind: "owner",
 				id: `owner-${owner.id}`,
@@ -564,7 +586,7 @@ function TeamPage() {
 				isSelf: currentUserId === e.userId,
 			});
 		}
-		if (isOwner) {
+		if (page === 1 && isOwner) {
 			for (const inv of pendingInvitations) {
 				out.push({
 					kind: "invitation",
@@ -574,7 +596,7 @@ function TeamPage() {
 			}
 		}
 		return out;
-	}, [owner, data?.data, currentUserId, isOwner, pendingInvitations]);
+	}, [page, owner, data?.data, currentUserId, isOwner, pendingInvitations]);
 
 	const columns = useMemo<ColumnDef<TeamRow>[]>(() => {
 		const cols: ColumnDef<TeamRow>[] = [
@@ -741,7 +763,7 @@ function TeamPage() {
 						variant="ghost"
 						size="icon-sm"
 						disabled={cancelMutation.isPending}
-						onClick={() => void cancelMutation.mutateAsync(r.invitation.id)}
+						onClick={() => cancelMutation.mutate(r.invitation.id)}
 						title="Annulla invito"
 					>
 						<XIcon />

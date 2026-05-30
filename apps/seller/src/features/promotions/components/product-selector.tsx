@@ -72,8 +72,28 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 		Map<string, NormalizedProduct>
 	>(new Map());
 
+	// Server-side full-text search. The API's buildPrefixTsquery runs a search only
+	// when the input has ≥2 chars AND at least one token survives stripping to
+	// [\p{L}\p{N}_]; otherwise it returns the unfiltered list. Mirror that gate here
+	// so the "all" view only trusts (un-re-filters) the server result when the server
+	// actually searched — pure-punctuation input falls back to the client filter
+	// instead of silently showing the whole catalog. When active, the server reaches
+	// products beyond the first 100 page.
+	const trimmedSearch = debouncedSearch.trim();
+	const serverQ =
+		trimmedSearch.length >= 2 && /[\p{L}\p{N}_]/u.test(trimmedSearch)
+			? trimmedSearch
+			: undefined;
+
 	const libraryQuery = useQuery({
-		queryKey: ["product-selector", "library", minPrice, maxPrice, inStock],
+		queryKey: [
+			"product-selector",
+			"library",
+			minPrice,
+			maxPrice,
+			inStock,
+			serverQ,
+		],
 		queryFn: async () => {
 			const res = await api().seller.products.get({
 				query: {
@@ -83,6 +103,7 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 					minPrice: minPrice || undefined,
 					maxPrice: maxPrice || undefined,
 					inStock: inStock || undefined,
+					q: serverQ,
 				},
 			});
 			if (res.error) throw new Error(res.error.value?.message || "Errore");
@@ -173,7 +194,10 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 		const matchesQ = (row: NormalizedProduct) =>
 			!q || row.name.toLowerCase().includes(q);
 		if (view === "all") {
-			return allRows.filter(matchesQ);
+			// When server-side search is active the API already returned the relevant
+			// rows (prefix/fuzzy matching, broader than a literal substring) — trust it
+			// rather than re-filtering, which would drop legitimate fuzzy matches.
+			return serverQ ? allRows : allRows.filter(matchesQ);
 		}
 		// "included" view: derive from includedIds × productCache so that
 		// included products show even if they don't match the current price filters
@@ -203,6 +227,7 @@ export function ProductSelector({ mode }: ProductSelectorProps) {
 		includedIds,
 		productCache,
 		debouncedSearch,
+		serverQ,
 		mode,
 		includedQuery.data,
 	]);
