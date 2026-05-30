@@ -20,7 +20,18 @@ import {
 } from "./product-image-dropzone";
 
 // storeId is injected by the route at submit time — exclude it from form validation.
-const CreateProductFormBody = Type.Omit(CreateProductBody, ["storeId"]);
+// price uses a looser pattern than the API's strict `^\d+\.\d{2}$`: a seller may
+// type `9` or `9.9` in the number input, and onFormSubmit normalizes the value to
+// exactly two decimals before it is sent on. Validating against the strict pattern
+// here would reject those valid inputs outright (the normalization never runs).
+const CreateProductFormBody = Type.Object({
+	...Type.Omit(CreateProductBody, ["storeId", "price"]).properties,
+	price: Type.String({
+		pattern: "^\\d+(\\.\\d{1,2})?$",
+		description: "Prezzo (max 2 decimali, es. '9', '9.9' o '9.99')",
+		error: "Inserisci un prezzo valido (max 2 decimali)",
+	}),
+});
 type ProductFormData = Static<typeof CreateProductFormBody>;
 const compiledSchema = TypeCompiler.Compile(CreateProductFormBody);
 
@@ -209,10 +220,10 @@ export function ProductForm({
 	};
 
 	const onFormSubmit: SubmitHandler<ProductFormData> = (data) => {
+		// data.price is validated to `^\d+(\.\d{1,2})?$`; normalize to exactly two
+		// decimals (e.g. `9` → `9.00`, `9.9` → `9.90`) for the strict API schema.
 		const price = data.price.includes(".")
-			? data.price
-					.replace(/^(\d+\.\d{0,2}).*$/, "$1")
-					.padEnd(data.price.indexOf(".") + 3, "0")
+			? data.price.padEnd(data.price.indexOf(".") + 3, "0")
 			: `${data.price}.00`;
 		onSubmit({
 			...data,

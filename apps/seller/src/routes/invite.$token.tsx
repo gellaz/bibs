@@ -50,11 +50,13 @@ function AcceptInvitePage() {
 			});
 
 			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante la creazione dell'account";
-				setApiError(errorMsg);
+				// The API error envelope is always an object { success, error, message };
+				// surface the server's message (e.g. expired token, password mismatch)
+				// instead of always collapsing to the generic fallback.
+				const value = response.error.value as { message?: string } | null;
+				setApiError(
+					value?.message ?? "Errore durante la creazione dell'account",
+				);
 				return;
 			}
 

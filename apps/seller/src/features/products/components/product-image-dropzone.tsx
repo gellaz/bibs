@@ -243,8 +243,7 @@ function SortableImageItem({
 		zIndex: isDragging ? 10 : undefined,
 	};
 
-	const src =
-		item.type === "existing" ? item.url : URL.createObjectURL(item.file);
+	const src = useImageSrc(item);
 
 	return (
 		<div
@@ -282,4 +281,27 @@ function SortableImageItem({
 			</button>
 		</div>
 	);
+}
+
+/**
+ * Resolves the preview src for an image item. For local files it creates a single
+ * object URL per File and revokes it on unmount / file change — calling
+ * URL.createObjectURL inline in the render body would leak a fresh blob URL on
+ * every re-render (drag, hover, reorder), pinning memory for the document lifetime.
+ */
+function useImageSrc(item: ImageItem): string | undefined {
+	const file = item.type === "new" ? item.file : null;
+	const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!file) {
+			setObjectUrl(null);
+			return;
+		}
+		const url = URL.createObjectURL(file);
+		setObjectUrl(url);
+		return () => URL.revokeObjectURL(url);
+	}, [file]);
+
+	return item.type === "existing" ? item.url : (objectUrl ?? undefined);
 }
