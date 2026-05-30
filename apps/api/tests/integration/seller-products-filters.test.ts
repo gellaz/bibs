@@ -211,6 +211,67 @@ describe("listProducts with new filters", () => {
 	});
 });
 
+describe("inStock is scoped to the queried store", () => {
+	it("esclude un prodotto con stock solo in un ALTRO negozio (storeId)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const storeA = await createTestStore(db, seller.profile.id);
+		const storeB = await createTestStore(db, seller.profile.id, { name: "B" });
+		const product = await createTestProduct(db, seller.profile.id, {
+			name: "P",
+		});
+		await createTestStoreProduct(db, storeA.id, product.id, { stock: 0 });
+		await createTestStoreProduct(db, storeB.id, product.id, { stock: 5 });
+
+		const out = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: storeA.id,
+			inStock: true,
+		});
+		// Esaurito in storeA → non deve comparire nella vista in-stock di storeA.
+		expect(out.data.map((p) => p.id)).toEqual([]);
+	});
+
+	it("include un prodotto con stock nel negozio interrogato (storeId)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const storeA = await createTestStore(db, seller.profile.id);
+		const storeB = await createTestStore(db, seller.profile.id, { name: "B" });
+		const product = await createTestProduct(db, seller.profile.id, {
+			name: "P",
+		});
+		await createTestStoreProduct(db, storeA.id, product.id, { stock: 4 });
+		await createTestStoreProduct(db, storeB.id, product.id, { stock: 0 });
+
+		const out = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: storeA.id,
+			inStock: true,
+		});
+		expect(out.data.map((p) => p.id)).toEqual([product.id]);
+	});
+
+	it("scopa inStock ai restrictToStoreIds (vista seller-wide dipendente)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const storeA = await createTestStore(db, seller.profile.id);
+		const storeB = await createTestStore(db, seller.profile.id, { name: "B" });
+		const product = await createTestProduct(db, seller.profile.id, {
+			name: "P",
+		});
+		// In stock solo in storeB, che il dipendente NON può vedere.
+		await createTestStoreProduct(db, storeA.id, product.id, { stock: 0 });
+		await createTestStoreProduct(db, storeB.id, product.id, { stock: 5 });
+
+		const out = await listProducts({
+			sellerProfileId: seller.profile.id,
+			restrictToStoreIds: [storeA.id],
+			inStock: true,
+		});
+		expect(out.data.map((p) => p.id)).toEqual([]);
+	});
+});
+
 describe("sort by stock", () => {
 	it("ordina per stock crescente", async () => {
 		const db = getTestDb();

@@ -144,9 +144,26 @@ export async function listProducts(params: ListProductsParams) {
 	}
 
 	if (inStock) {
-		conditions.push(
-			sql`EXISTS (SELECT 1 FROM store_products sp WHERE sp.product_id = ${product.id} AND sp.stock > 0)`,
-		);
+		// inStock must reflect the SAME store scope as the rest of the query:
+		// otherwise a product out of stock in the queried store still passes
+		// because it has stock in some other (possibly inaccessible) store.
+		if (storeId) {
+			conditions.push(
+				sql`EXISTS (SELECT 1 FROM store_products sp WHERE sp.product_id = ${product.id} AND sp.store_id = ${storeId} AND sp.stock > 0)`,
+			);
+		} else if (restrictToStoreIds && restrictToStoreIds.length > 0) {
+			const storeIdList = sql.join(
+				restrictToStoreIds.map((id) => sql`${id}`),
+				sql`, `,
+			);
+			conditions.push(
+				sql`EXISTS (SELECT 1 FROM store_products sp WHERE sp.product_id = ${product.id} AND sp.store_id IN (${storeIdList}) AND sp.stock > 0)`,
+			);
+		} else {
+			conditions.push(
+				sql`EXISTS (SELECT 1 FROM store_products sp WHERE sp.product_id = ${product.id} AND sp.stock > 0)`,
+			);
+		}
 	}
 
 	if (productCategoryIds && productCategoryIds.length > 0) {
@@ -911,7 +928,20 @@ interface BulkUpdateParams {
 
 interface BulkResult {
 	succeeded: string[];
-	failed: { productId: string; reason: "not_found" | "no_access" }[];
+	failed: {
+		productId: string;
+		reason: "not_found" | "no_access" | "ean_conflict";
+	}[];
+}
+
+/** Walks the error cause chain to detect a pg unique_violation (23505). */
+function isUniqueViolation(err: unknown): boolean {
+	let cur: unknown = err;
+	for (let depth = 0; depth < 4 && cur != null; depth++) {
+		if ((cur as { code?: string }).code === "23505") return true;
+		cur = (cur as { cause?: unknown }).cause;
+	}
+	return false;
 }
 
 export async function bulkUpdateProductStatus(
@@ -971,14 +1001,33 @@ export async function bulkUpdateProductStatus(
 			(id) => previousStatusByProduct.get(id) !== status,
 		);
 
-		if (toUpdate.length > 0) {
-			await tx
-				.update(product)
-				.set({ status, updatedAt: new Date() })
-				.where(inArray(product.id, toUpdate));
+		// 3b. Apply each change in its own savepoint so a single EAN unique
+		//     violation (e.g. restoring a trashed product whose EAN is already
+		//     held by an active one — trashed rows are excluded from the partial
+		//     unique index) isolates to that product instead of aborting the
+		//     whole batch.
+		const updatedIds: string[] = [];
+		for (const id of toUpdate) {
+			try {
+				await tx.transaction(async (sp) => {
+					await sp
+						.update(product)
+						.set({ status, updatedAt: new Date() })
+						.where(eq(product.id, id));
+				});
+				updatedIds.push(id);
+			} catch (err) {
+				if (isUniqueViolation(err)) {
+					failed.push({ productId: id, reason: "ean_conflict" });
+				} else {
+					throw err;
+				}
+			}
+		}
 
-			// 4. Audit batch
-			const entries = toUpdate.map((id) => {
+		// 4. Audit only the products that were actually updated.
+		if (updatedIds.length > 0) {
+			const entries = updatedIds.map((id) => {
 				const prev = previousStatusByProduct.get(id) as ProductStatus;
 				const action = deriveAuditAction(prev, status);
 				return {
@@ -994,7 +1043,14 @@ export async function bulkUpdateProductStatus(
 			await recordProductAuditBatch(entries, tx);
 		}
 
-		return { succeeded: accessibleArr, failed };
+		// succeeded = accessible products minus those that hit an EAN conflict
+		// (includes no-op transitions whose status already matched the target).
+		const conflicted = new Set(
+			failed.filter((f) => f.reason === "ean_conflict").map((f) => f.productId),
+		);
+		const succeeded = accessibleArr.filter((id) => !conflicted.has(id));
+
+		return { succeeded, failed };
 	});
 }
 

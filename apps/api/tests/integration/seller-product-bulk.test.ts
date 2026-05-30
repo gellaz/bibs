@@ -26,6 +26,8 @@ mock.module("@/lib/s3", () => ({
 	s3: { delete: mock(async () => {}) },
 }));
 
+import { eq } from "drizzle-orm";
+import { product } from "@/db/schemas/product";
 import {
 	bulkDeletePermanent,
 	bulkUpdateProductStatus,
@@ -135,6 +137,62 @@ describe("bulkUpdateProductStatus", () => {
 		const audit = await db.query.productAuditLog.findMany();
 		expect(audit).toHaveLength(1);
 		expect(audit[0].productId).toBe(pActive.id);
+	});
+
+	it("isola un restore in conflitto di EAN senza abortire il resto del batch", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+
+		// Un prodotto attivo possiede già l'EAN 12345678.
+		const pActive = await createTestProduct(db, seller.profile.id, {
+			name: "Active",
+		});
+		await db
+			.update(product)
+			.set({ ean: "12345678" })
+			.where(eq(product.id, pActive.id));
+		await createTestStoreProduct(db, store.id, pActive.id);
+
+		// Un prodotto trashed condivide lo stesso EAN (consentito: i trashed sono
+		// esclusi dall'indice unico parziale).
+		const pCollide = await createTestProduct(db, seller.profile.id, {
+			name: "Collide",
+			status: "trashed",
+		});
+		await db
+			.update(product)
+			.set({ ean: "12345678" })
+			.where(eq(product.id, pCollide.id));
+		await createTestStoreProduct(db, store.id, pCollide.id);
+
+		// Un prodotto trashed senza conflitti.
+		const pOk = await createTestProduct(db, seller.profile.id, {
+			name: "Ok",
+			status: "trashed",
+		});
+		await createTestStoreProduct(db, store.id, pOk.id);
+
+		const result = await bulkUpdateProductStatus({
+			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [store.id],
+			actorUserId: seller.user.id,
+			productIds: [pCollide.id, pOk.id],
+			status: "active",
+		});
+
+		// Il restore in conflitto è isolato; quello pulito va comunque a buon fine.
+		expect(result.succeeded).toEqual([pOk.id]);
+		expect(result.failed).toEqual([
+			{ productId: pCollide.id, reason: "ean_conflict" },
+		]);
+
+		// pOk effettivamente ripristinato, pCollide ancora trashed.
+		const fresh = await db.query.product.findMany();
+		const byId = new Map(fresh.map((p) => [p.id, p.status]));
+		expect(byId.get(pOk.id)).toBe("active");
+		expect(byId.get(pCollide.id)).toBe("trashed");
+		expect(byId.get(pActive.id)).toBe("active");
 	});
 });
 

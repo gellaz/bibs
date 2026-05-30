@@ -15,7 +15,7 @@ interface AssignProductToStoresParams {
 export async function assignProductToStores(
 	params: AssignProductToStoresParams,
 ) {
-	const { productId, sellerProfileId, storeIds, stock = 0 } = params;
+	const { productId, sellerProfileId, storeIds, stock } = params;
 	await ensureProductOwnership(productId, sellerProfileId);
 
 	const sellerStores = await db.query.store.findMany({
@@ -33,12 +33,21 @@ export async function assignProductToStores(
 			storeIds.map((storeId) => ({
 				productId,
 				storeId,
-				stock,
+				stock: stock ?? 0,
 			})),
 		)
 		.onConflictDoUpdate({
 			target: [storeProduct.productId, storeProduct.storeId],
-			set: { stock: sql`excluded.stock` },
+			// Re-assigning a product to a store it's already linked to must not
+			// silently wipe its inventory: only overwrite stock when an explicit
+			// value was provided, otherwise preserve the existing row's stock.
+			// (Stock is otherwise managed via updateStock / adjustStock.)
+			set: {
+				stock:
+					stock === undefined
+						? sql`${storeProduct.stock}`
+						: sql`excluded.stock`,
+			},
 		})
 		.returning();
 
