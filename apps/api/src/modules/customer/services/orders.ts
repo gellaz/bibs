@@ -7,7 +7,7 @@ import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
 import { config } from "@/lib/config";
-import { ServiceError } from "@/lib/errors";
+import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
 import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
@@ -207,7 +207,9 @@ export async function createOrder(params: CreateOrderParams) {
 		if (!addr) throw new ServiceError(404, "Shipping address not found");
 	}
 
-	return db.transaction(async (tx) => {
+	// Created eagerly so the idempotency .catch below can be attached
+	// synchronously (no reindent of the transaction body).
+	const pendingOrder = db.transaction(async (tx) => {
 		// Verify stock availability and calculate total (in cents to avoid float errors)
 		let totalCents = 0;
 		const resolvedItems: {
@@ -373,6 +375,21 @@ export async function createOrder(params: CreateOrderParams) {
 		}
 
 		return newOrder;
+	});
+
+	return pendingOrder.catch(async (err: unknown) => {
+		// Idempotency race: a concurrent caller inserted the same idempotencyKey
+		// between our pre-tx findFirst above and this transaction's INSERT, so the
+		// order_idempotency_key_idx unique index rejected our duplicate. Honor the
+		// idempotency contract by returning the order that won the race instead of
+		// surfacing a generic 409. Any other error (or a missing row) is rethrown.
+		if (idempotencyKey && isUniqueViolation(err)) {
+			const existing = await db.query.order.findFirst({
+				where: eq(order.idempotencyKey, idempotencyKey),
+			});
+			if (existing) return existing;
+		}
+		throw err;
 	});
 }
 

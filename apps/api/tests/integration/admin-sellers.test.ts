@@ -27,13 +27,22 @@ mock.module("@/db", () => ({
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
 import { eq } from "drizzle-orm";
+import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
+import { paymentMethod } from "@/db/schemas/payment-method";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
+import {
+	type ChangeStatus,
+	type ChangeType,
+	sellerProfileChange,
+} from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import {
+	approveChange,
 	countSellersByStatus,
 	getSellerDetail,
 	listSellers,
+	rejectChange,
 	rejectSeller,
 	verifySeller,
 } from "@/modules/admin/services/sellers";
@@ -70,6 +79,43 @@ async function createSellerAtStatus(
 		.where(eq(sellerProfile.id, seller.profile.id));
 	await createTestOrganization(db, seller.profile.id, { vatStatus });
 	return seller;
+}
+
+// ── Helpers for approveChange / rejectChange ──────────────────────────────────
+
+/** Inserts an admin user row and returns its id (valid FK for reviewedBy). */
+async function seedAdmin(email: string): Promise<string> {
+	const id = crypto.randomUUID();
+	await getTestDb().insert(user).values({
+		id,
+		name: "Admin",
+		email,
+		emailVerified: true,
+		role: "admin",
+		createdAt: new Date(),
+		updatedAt: new Date(),
+	});
+	return id;
+}
+
+async function seedChange(params: {
+	sellerProfileId: string;
+	changeType: ChangeType;
+	changeData: Record<string, unknown>;
+	status?: ChangeStatus;
+	reviewedBy?: string | null;
+}) {
+	const [row] = await getTestDb()
+		.insert(sellerProfileChange)
+		.values({
+			sellerProfileId: params.sellerProfileId,
+			changeType: params.changeType,
+			changeData: params.changeData,
+			status: params.status ?? "pending",
+			reviewedBy: params.reviewedBy ?? null,
+		})
+		.returning();
+	return row;
 }
 
 // ── listSellers ───────────────────────────────────────────────────────────────
@@ -216,5 +262,181 @@ describe("getSellerDetail", () => {
 		await expect(getSellerDetail(crypto.randomUUID())).rejects.toBeInstanceOf(
 			ServiceError,
 		);
+	});
+});
+
+// ── approveChange ─────────────────────────────────────────────────────────────
+
+describe("approveChange", () => {
+	it("applies VAT side effects once and flips the change to approved", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "vat-ok@test.com" });
+		await db
+			.update(sellerProfile)
+			.set({ vatChangeBlocked: true })
+			.where(eq(sellerProfile.id, seller.profile.id));
+		await createTestOrganization(db, seller.profile.id, {
+			vatStatus: "pending",
+			vatNumber: "IT00000000000",
+		});
+		const adminId = await seedAdmin("vat-ok-admin@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "vat",
+			changeData: { vatNumber: "IT99999999999" },
+		});
+
+		const updated = await approveChange(change.id, adminId);
+
+		expect(updated.status).toBe("approved");
+		expect(updated.reviewedBy).toBe(adminId);
+		expect(updated.reviewedAt).toBeInstanceOf(Date);
+
+		const [org] = await db
+			.select()
+			.from(organization)
+			.where(eq(organization.sellerProfileId, seller.profile.id));
+		expect(org.vatNumber).toBe("IT99999999999");
+		expect(org.vatStatus).toBe("verified");
+
+		const [profile] = await db
+			.select()
+			.from(sellerProfile)
+			.where(eq(sellerProfile.id, seller.profile.id));
+		expect(profile.vatChangeBlocked).toBe(false);
+	});
+
+	it("inserts a default payment method on a payment change", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "pay-ok@test.com" });
+		const adminId = await seedAdmin("pay-ok-admin@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "payment",
+			changeData: { stripeAccountId: "acct_NEW" },
+		});
+
+		const updated = await approveChange(change.id, adminId);
+		expect(updated.status).toBe("approved");
+
+		const pms = await db
+			.select()
+			.from(paymentMethod)
+			.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
+		expect(pms).toHaveLength(1);
+		expect(pms[0].stripeAccountId).toBe("acct_NEW");
+		expect(pms[0].isDefault).toBe(true);
+	});
+
+	it("throws 400 and does NOT re-apply side effects when already approved", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "vat-dup@test.com" });
+		await db
+			.update(sellerProfile)
+			.set({ vatChangeBlocked: true })
+			.where(eq(sellerProfile.id, seller.profile.id));
+		// Sentinel org values that must remain untouched.
+		await createTestOrganization(db, seller.profile.id, {
+			vatStatus: "rejected",
+			vatNumber: "IT00000000000",
+		});
+		const firstAdmin = await seedAdmin("dup-first@test.com");
+		const secondAdmin = await seedAdmin("dup-second@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "vat",
+			changeData: { vatNumber: "IT11111111111" },
+			status: "approved",
+			reviewedBy: firstAdmin,
+		});
+
+		await expect(approveChange(change.id, secondAdmin)).rejects.toMatchObject({
+			status: 400,
+		});
+
+		// Side effects NOT re-applied — sentinels unchanged.
+		const [org] = await db
+			.select()
+			.from(organization)
+			.where(eq(organization.sellerProfileId, seller.profile.id));
+		expect(org.vatNumber).toBe("IT00000000000");
+		expect(org.vatStatus).toBe("rejected");
+		const [profile] = await db
+			.select()
+			.from(sellerProfile)
+			.where(eq(sellerProfile.id, seller.profile.id));
+		expect(profile.vatChangeBlocked).toBe(true);
+		// The CAS missed, so reviewedBy was not overwritten by the second admin.
+		const [row] = await db
+			.select()
+			.from(sellerProfileChange)
+			.where(eq(sellerProfileChange.id, change.id));
+		expect(row.reviewedBy).toBe(firstAdmin);
+	});
+
+	it("throws 404 when the change does not exist", async () => {
+		const adminId = await seedAdmin("missing-admin@test.com");
+		await expect(
+			approveChange(crypto.randomUUID(), adminId),
+		).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+// ── rejectChange ──────────────────────────────────────────────────────────────
+
+describe("rejectChange", () => {
+	it("flips to rejected, stores the reason, and unblocks VAT once", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "rej-ok@test.com" });
+		await db
+			.update(sellerProfile)
+			.set({ vatChangeBlocked: true })
+			.where(eq(sellerProfile.id, seller.profile.id));
+		const adminId = await seedAdmin("rej-ok-admin@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "vat",
+			changeData: { vatNumber: "IT22222222222" },
+		});
+
+		const updated = await rejectChange({
+			changeId: change.id,
+			adminUserId: adminId,
+			reason: "documenti illeggibili",
+		});
+
+		expect(updated.status).toBe("rejected");
+		expect(updated.rejectionReason).toBe("documenti illeggibili");
+		expect(updated.reviewedBy).toBe(adminId);
+
+		const [profile] = await db
+			.select()
+			.from(sellerProfile)
+			.where(eq(sellerProfile.id, seller.profile.id));
+		expect(profile.vatChangeBlocked).toBe(false);
+	});
+
+	it("throws 400 when the change is already rejected", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "rej-dup@test.com" });
+		const firstAdmin = await seedAdmin("rej-first@test.com");
+		const secondAdmin = await seedAdmin("rej-second@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "vat",
+			changeData: { vatNumber: "IT33333333333" },
+			status: "rejected",
+			reviewedBy: firstAdmin,
+		});
+
+		await expect(
+			rejectChange({ changeId: change.id, adminUserId: secondAdmin }),
+		).rejects.toMatchObject({ status: 400 });
+
+		const [row] = await db
+			.select()
+			.from(sellerProfileChange)
+			.where(eq(sellerProfileChange.id, change.id));
+		expect(row.reviewedBy).toBe(firstAdmin);
 	});
 });

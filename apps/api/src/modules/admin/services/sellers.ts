@@ -415,13 +415,35 @@ export async function approveChange(changeId: string, adminUserId: string) {
 	});
 
 	if (!change) throw new ServiceError(404, "Change request not found");
-	if (change.status !== "pending") {
-		throw new ServiceError(400, "Change request is not pending");
-	}
 
 	const changeData = change.changeData as ApplyChangeData;
 
 	return db.transaction(async (tx) => {
+		// Atomic compare-and-swap gate: flip pending -> approved guarded by the
+		// current status, INSIDE the transaction. A concurrent approver blocks on
+		// this row lock, then re-reads status != 'pending', gets 0 rows back and
+		// rolls back with a 400 — so the side effects below run exactly once.
+		// (The serialized test harness can't reproduce the race; correctness here
+		// rests on the row-locking guarded UPDATE.)
+		const [updated] = await tx
+			.update(sellerProfileChange)
+			.set({
+				status: "approved",
+				reviewedBy: adminUserId,
+				reviewedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(sellerProfileChange.id, changeId),
+					eq(sellerProfileChange.status, "pending"),
+				),
+			)
+			.returning();
+
+		if (!updated) {
+			throw new ServiceError(400, "Change request is not pending");
+		}
+
 		// Apply the change based on type
 		if (change.changeType === "vat") {
 			await tx
@@ -479,17 +501,6 @@ export async function approveChange(changeId: string, adminUserId: string) {
 			}
 		}
 
-		// Mark change as approved
-		const [updated] = await tx
-			.update(sellerProfileChange)
-			.set({
-				status: "approved",
-				reviewedBy: adminUserId,
-				reviewedAt: new Date(),
-			})
-			.where(eq(sellerProfileChange.id, changeId))
-			.returning();
-
 		return updated;
 	});
 }
@@ -508,19 +519,11 @@ export async function rejectChange(params: RejectChangeParams) {
 	});
 
 	if (!change) throw new ServiceError(404, "Change request not found");
-	if (change.status !== "pending") {
-		throw new ServiceError(400, "Change request is not pending");
-	}
 
 	return db.transaction(async (tx) => {
-		// If it was a VAT change, unblock new orders
-		if (change.changeType === "vat") {
-			await tx
-				.update(sellerProfile)
-				.set({ vatChangeBlocked: false })
-				.where(eq(sellerProfile.id, change.sellerProfileId));
-		}
-
+		// Atomic compare-and-swap gate (see approveChange): flip pending ->
+		// rejected guarded by the current status inside the transaction so a
+		// concurrent reviewer can't double-apply the VAT unblock below.
 		const [updated] = await tx
 			.update(sellerProfileChange)
 			.set({
@@ -529,8 +532,25 @@ export async function rejectChange(params: RejectChangeParams) {
 				reviewedAt: new Date(),
 				rejectionReason: reason ?? null,
 			})
-			.where(eq(sellerProfileChange.id, changeId))
+			.where(
+				and(
+					eq(sellerProfileChange.id, changeId),
+					eq(sellerProfileChange.status, "pending"),
+				),
+			)
 			.returning();
+
+		if (!updated) {
+			throw new ServiceError(400, "Change request is not pending");
+		}
+
+		// If it was a VAT change, unblock new orders
+		if (change.changeType === "vat") {
+			await tx
+				.update(sellerProfile)
+				.set({ vatChangeBlocked: false })
+				.where(eq(sellerProfile.id, change.sellerProfileId));
+		}
 
 		return updated;
 	});

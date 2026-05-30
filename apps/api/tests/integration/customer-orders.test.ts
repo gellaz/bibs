@@ -354,6 +354,16 @@ describe("createOrder — idempotency", () => {
 			.where(eq(order.customerProfileId, customer.profile.id));
 		expect(orders).toHaveLength(1);
 	});
+
+	// NOTE: the in-tx catch/refetch path (two concurrent callers both pass the
+	// pre-tx findFirst, one wins the INSERT and the other gets a 23505 on
+	// order_idempotency_key_idx → we re-fetch by key and return the winner
+	// instead of surfacing a 409) is CONCURRENCY-ONLY. It cannot be reproduced
+	// as a deterministic RED test here: the testcontainer harness serializes
+	// transactions, and a sequential second call always hits the pre-tx
+	// findFirst fast-path above before ever entering the transaction. The
+	// fast-path is covered by the test above; the catch path is covered by
+	// design + the isUniqueViolation unit tests in tests/lib/errors.test.ts.
 });
 
 // ── cancelOrder ───────────────────────────────────────────────────────────────

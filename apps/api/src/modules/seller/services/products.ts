@@ -11,7 +11,7 @@ import {
 } from "@/db/schemas/product";
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
-import { ServiceError } from "@/lib/errors";
+import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
@@ -932,16 +932,6 @@ interface BulkResult {
 		productId: string;
 		reason: "not_found" | "no_access" | "ean_conflict";
 	}[];
-}
-
-/** Walks the error cause chain to detect a pg unique_violation (23505). */
-function isUniqueViolation(err: unknown): boolean {
-	let cur: unknown = err;
-	for (let depth = 0; depth < 4 && cur != null; depth++) {
-		if ((cur as { code?: string }).code === "23505") return true;
-		cur = (cur as { cause?: unknown }).cause;
-	}
-	return false;
 }
 
 export async function bulkUpdateProductStatus(

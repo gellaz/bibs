@@ -288,21 +288,39 @@ export async function cancelStoreSubscription(
 	switch (sub.status) {
 		case "active":
 		case "past_due": {
-			await db
-				.update(storeSubscription)
-				.set({ cancelReason: "seller_canceled" })
-				.where(eq(storeSubscription.id, sub.id));
+			// Stripe first: persist cancelReason only after Stripe confirms the
+			// mutation. If Stripe throws, the DB write below never runs, so the
+			// row never ends up flagged 'seller_canceled' while the subscription
+			// is still live in Stripe (mirrors reactivateStoreSubscription).
 			await stripe.subscriptions.update(sub.stripeSubscriptionId, {
 				cancel_at_period_end: true,
 			});
-			return { status: "canceling", effectiveAt: sub.currentPeriodEnd };
-		}
-		case "suspended": {
 			await db
 				.update(storeSubscription)
 				.set({ cancelReason: "seller_canceled" })
 				.where(eq(storeSubscription.id, sub.id));
-			await stripe.subscriptions.cancel(sub.stripeSubscriptionId);
+			return { status: "canceling", effectiveAt: sub.currentPeriodEnd };
+		}
+		case "suspended": {
+			// Immediate cancel — DB-first here (unlike the branch above): write the
+			// reason BEFORE the Stripe call so the resulting subscription.deleted
+			// webhook, which defaults a missing reason to 'payment_failed_auto'
+			// (see subscription-deleted.ts), preserves the 'seller_canceled'
+			// attribution. To still satisfy 918 (no stale reason on a live sub) we
+			// revert the reason if the Stripe cancel fails.
+			await db
+				.update(storeSubscription)
+				.set({ cancelReason: "seller_canceled" })
+				.where(eq(storeSubscription.id, sub.id));
+			try {
+				await stripe.subscriptions.cancel(sub.stripeSubscriptionId);
+			} catch (err) {
+				await db
+					.update(storeSubscription)
+					.set({ cancelReason: sub.cancelReason })
+					.where(eq(storeSubscription.id, sub.id));
+				throw err;
+			}
 			return { status: "canceled", effectiveAt: new Date() };
 		}
 		case "canceling": {
