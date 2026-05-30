@@ -304,7 +304,11 @@ export const BulkStatusResult = t.Object({
 	failed: t.Array(
 		t.Object({
 			productId: t.String(),
-			reason: t.Union([t.Literal("not_found"), t.Literal("no_access")]),
+			reason: t.Union([
+				t.Literal("not_found"),
+				t.Literal("no_access"),
+				t.Literal("ean_conflict"),
+			]),
 		}),
 	),
 });

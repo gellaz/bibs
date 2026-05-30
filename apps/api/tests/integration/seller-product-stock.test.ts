@@ -28,7 +28,11 @@ mock.module("@/lib/s3", () => ({
 
 import { and, eq } from "drizzle-orm";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
-import { adjustStock, bulkAdjustStock } from "@/modules/seller/services/stock";
+import {
+	adjustStock,
+	assignProductToStores,
+	bulkAdjustStock,
+} from "@/modules/seller/services/stock";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestProduct,
@@ -319,5 +323,103 @@ describe("bulkAdjustStock", () => {
 		expect(result.failed).toEqual([
 			{ productId: product.id, reason: "not_found" },
 		]);
+	});
+});
+
+describe("assignProductToStores — stock preservation", () => {
+	it("preserva lo stock esistente ri-assegnando senza stock esplicito", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const product = await createTestProduct(db, seller.profile.id);
+		await createTestStoreProduct(db, store.id, product.id, { stock: 5 });
+
+		await assignProductToStores({
+			productId: product.id,
+			sellerProfileId: seller.profile.id,
+			storeIds: [store.id],
+			// nessuno stock → NON deve azzerare lo stock esistente
+		});
+
+		const fresh = await db.query.storeProduct.findFirst({
+			where: and(
+				eq(storeProductTable.productId, product.id),
+				eq(storeProductTable.storeId, store.id),
+			),
+		});
+		expect(fresh?.stock).toBe(5);
+	});
+
+	it("imposta lo stock iniziale per un negozio appena assegnato", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const product = await createTestProduct(db, seller.profile.id);
+
+		const rows = await assignProductToStores({
+			productId: product.id,
+			sellerProfileId: seller.profile.id,
+			storeIds: [store.id],
+			stock: 7,
+		});
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0].stock).toBe(7);
+	});
+
+	it("applica uno stock esplicito anche su un link esistente (override intenzionale)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const product = await createTestProduct(db, seller.profile.id);
+		await createTestStoreProduct(db, store.id, product.id, { stock: 5 });
+
+		await assignProductToStores({
+			productId: product.id,
+			sellerProfileId: seller.profile.id,
+			storeIds: [store.id],
+			stock: 20,
+		});
+
+		const fresh = await db.query.storeProduct.findFirst({
+			where: and(
+				eq(storeProductTable.productId, product.id),
+				eq(storeProductTable.storeId, store.id),
+			),
+		});
+		expect(fresh?.stock).toBe(20);
+	});
+
+	it("preserva lo stock del negozio già collegato e inizializza quello nuovo", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const storeA = await createTestStore(db, seller.profile.id);
+		const storeB = await createTestStore(db, seller.profile.id, {
+			name: "Store B",
+		});
+		const product = await createTestProduct(db, seller.profile.id);
+		await createTestStoreProduct(db, storeA.id, product.id, { stock: 8 });
+
+		await assignProductToStores({
+			productId: product.id,
+			sellerProfileId: seller.profile.id,
+			storeIds: [storeA.id, storeB.id],
+			// nessuno stock → A preservato a 8, B inizializzato a 0
+		});
+
+		const a = await db.query.storeProduct.findFirst({
+			where: and(
+				eq(storeProductTable.productId, product.id),
+				eq(storeProductTable.storeId, storeA.id),
+			),
+		});
+		const b = await db.query.storeProduct.findFirst({
+			where: and(
+				eq(storeProductTable.productId, product.id),
+				eq(storeProductTable.storeId, storeB.id),
+			),
+		});
+		expect(a?.stock).toBe(8);
+		expect(b?.stock).toBe(0);
 	});
 });

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order } from "@/db/schemas/order";
 import { ServiceError } from "@/lib/errors";
+import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
 import { toCents } from "@/lib/money";
 import { awardPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
@@ -53,6 +54,19 @@ export async function transitionOrder(
 
 	// Completion requires awarding loyalty points in a transaction.
 	if (toStatus === "completed") {
+		// A reserve_pickup whose reservation window has lapsed must expire
+		// (refund stock + spent points), never complete-and-award. Mirrors the
+		// customer pickup path; reuses the shared expire helper, which is
+		// compare-and-swap guarded so a concurrent expiry can't double-refund.
+		if (
+			existing.type === "reserve_pickup" &&
+			existing.reservationExpiresAt &&
+			existing.reservationExpiresAt < new Date()
+		) {
+			await expireSingleReservation(orderId);
+			throw new ServiceError(400, "Reservation has expired");
+		}
+
 		const updated = await db.transaction(async (tx) => {
 			// Compare-and-swap: only the transaction that still observes the order
 			// in its expected status wins. A concurrent completion finds 0 rows and

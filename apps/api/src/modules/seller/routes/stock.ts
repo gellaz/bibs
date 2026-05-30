@@ -53,7 +53,8 @@ export const stockRoutes = new Elysia()
 				stock: t.Optional(
 					t.Number({
 						minimum: 0,
-						description: "Quantità iniziale di stock (default: 0)",
+						description:
+							"Stock iniziale per i negozi appena collegati (default: 0). Se omesso, lo stock dei negozi già collegati viene preservato; se valorizzato, sovrascrive anche i link esistenti.",
 					}),
 				),
 			}),

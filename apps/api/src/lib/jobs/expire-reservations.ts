@@ -25,10 +25,25 @@ export async function expireSingleReservation(
 
 		if (!existing) return false;
 
-		await tx
+		// Compare-and-swap: only the transaction that actually flips the order
+		// out of confirmed/ready_for_pickup performs the refund. Under READ
+		// COMMITTED two concurrent expirers (cron sweep, seller completion,
+		// customer pickup) can both pass the SELECT above; the status-guarded
+		// UPDATE makes the loser claim 0 rows and skip the refund, preventing
+		// double restock / double point-refund (the point_transaction unique
+		// index only backstops orders that actually spent points).
+		const [claimed] = await tx
 			.update(order)
 			.set({ status: "expired" })
-			.where(eq(order.id, existing.id));
+			.where(
+				and(
+					eq(order.id, existing.id),
+					inArray(order.status, ["confirmed", "ready_for_pickup"]),
+				),
+			)
+			.returning();
+
+		if (!claimed) return false;
 
 		await refundStockAndPoints(tx, existing);
 

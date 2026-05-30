@@ -41,7 +41,11 @@ export async function uploadProductImages(params: UploadProductImagesParams) {
 				const ext = file.name?.split(".").pop() ?? "jpg";
 				const key = `products/${productId}/${crypto.randomUUID()}.${ext}`;
 				await s3.write(key, file);
-				uploaded.push({ key, url: publicUrl(key), position: position ?? i });
+				uploaded.push({
+					key,
+					url: publicUrl(key),
+					position: position ?? current + i,
+				});
 			}),
 		);
 	} catch (err) {

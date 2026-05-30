@@ -405,12 +405,19 @@ export async function pickupOrder(params: {
 			existing.reservationExpiresAt &&
 			existing.reservationExpiresAt < new Date()
 		) {
-			await tx
+			// Compare-and-swap so a concurrent expirer (cron sweep / seller
+			// completion) can't double-refund: only refund if we claim the flip.
+			const [claimed] = await tx
 				.update(order)
 				.set({ status: "expired" })
-				.where(eq(order.id, existing.id));
+				.where(
+					and(eq(order.id, existing.id), eq(order.status, existing.status)),
+				)
+				.returning();
 
-			await refundStockAndPoints(tx, existing);
+			if (claimed) {
+				await refundStockAndPoints(tx, existing);
+			}
 
 			throw new ServiceError(400, "Reservation has expired");
 		}
