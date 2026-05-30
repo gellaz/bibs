@@ -9,6 +9,7 @@ import {
 	OkMessage,
 	okPageRes,
 	okRes,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { withCustomer } from "../context";
@@ -86,7 +87,7 @@ export const addressesRoutes = new Elysia()
 					t.Boolean({ description: "Imposta come indirizzo predefinito" }),
 				),
 			}),
-			response: withErrors({ 200: okRes(CustomerAddressSchema) }),
+			response: withConflictErrors({ 200: okRes(CustomerAddressSchema) }),
 			detail: {
 				summary: "Crea indirizzo",
 				description:
@@ -129,7 +130,7 @@ export const addressesRoutes = new Elysia()
 					t.Boolean({ description: "Imposta come predefinito" }),
 				),
 			}),
-			response: withErrors({ 200: okRes(CustomerAddressSchema) }),
+			response: withConflictErrors({ 200: okRes(CustomerAddressSchema) }),
 			detail: {
 				summary: "Aggiorna indirizzo",
 				description:

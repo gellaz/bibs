@@ -35,6 +35,19 @@ describe("toCents", () => {
 		expect(toCents("9.999")).toBe(999);
 		expect(toCents("0.019")).toBe(1);
 	});
+
+	it("applies the sign to the whole magnitude for negative decimals", () => {
+		// Regression: the sign lives only on the whole part, so a per-part sum
+		// previously ADDED the fractional cents (toCents("-5.50") === -450).
+		expect(toCents("-5.50")).toBe(-550);
+		expect(toCents("-9.99")).toBe(-999);
+		expect(toCents("-0.01")).toBe(-1);
+		expect(toCents("-0.1")).toBe(-10);
+	});
+
+	it("handles a negative whole number", () => {
+		expect(toCents("-5")).toBe(-500);
+	});
 });
 
 describe("fromCents", () => {
@@ -75,6 +88,10 @@ describe("toCents / fromCents round-trip", () => {
 		"9.99",
 		"100.00",
 		"999.99",
+		"-0.01",
+		"-5.50",
+		"-9.99",
+		"-100.00",
 	])("round-trips %s", (price) => {
 		expect(fromCents(toCents(price))).toBe(price);
 	});

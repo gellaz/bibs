@@ -338,7 +338,7 @@ export const productsRoutes = new Elysia()
 		},
 		{
 			body: CreateProductBody,
-			response: withErrors({ 200: okRes(ProductSchema) }),
+			response: withConflictErrors({ 200: okRes(ProductSchema) }),
 			detail: {
 				summary: "Crea prodotto",
 				description:
@@ -418,7 +418,7 @@ export const productsRoutes = new Elysia()
 					}),
 				),
 			}),
-			response: withErrors({ 200: okRes(ProductSchema) }),
+			response: withConflictErrors({ 200: okRes(ProductSchema) }),
 			detail: {
 				summary: "Aggiorna prodotto",
 				description:
@@ -510,7 +510,7 @@ export const productsRoutes = new Elysia()
 				productId: t.String({ description: "ID del prodotto" }),
 			}),
 			body: ProductStatusBody,
-			response: withErrors({ 200: okRes(ProductSchema) }),
+			response: withConflictErrors({ 200: okRes(ProductSchema) }),
 			detail: {
 				summary: "Aggiorna stato prodotto",
 				description:

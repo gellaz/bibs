@@ -5,6 +5,7 @@ import {
 	OkMessage,
 	okRes,
 	StoreCategorySchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { withAdmin } from "../context";
@@ -42,7 +43,7 @@ export const storeCategoriesWriteRoutes = new Elysia()
 					description: "Nome della categoria negozio",
 				}),
 			}),
-			response: withErrors({ 200: okRes(StoreCategorySchema) }),
+			response: withConflictErrors({ 200: okRes(StoreCategorySchema) }),
 			detail: {
 				summary: "Crea categoria negozio",
 				description:
@@ -84,7 +85,7 @@ export const storeCategoriesWriteRoutes = new Elysia()
 					description: "Nuovo nome della categoria negozio",
 				}),
 			}),
-			response: withErrors({ 200: okRes(StoreCategorySchema) }),
+			response: withConflictErrors({ 200: okRes(StoreCategorySchema) }),
 			detail: {
 				summary: "Aggiorna categoria negozio",
 				description: "Aggiorna il nome di una categoria negozio esistente.",

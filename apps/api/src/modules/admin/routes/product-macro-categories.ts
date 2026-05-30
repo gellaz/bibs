@@ -6,7 +6,6 @@ import {
 	okRes,
 	ProductMacroCategorySchema,
 	withConflictErrors,
-	withErrors,
 } from "@/lib/schemas";
 import { withAdmin } from "../context";
 import {
@@ -43,7 +42,7 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 					description: "Nome della macro categoria",
 				}),
 			}),
-			response: withErrors({ 200: okRes(ProductMacroCategorySchema) }),
+			response: withConflictErrors({ 200: okRes(ProductMacroCategorySchema) }),
 			detail: {
 				summary: "Crea macro categoria prodotto",
 				description:
@@ -87,7 +86,7 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 					description: "Nuovo nome della macro categoria",
 				}),
 			}),
-			response: withErrors({ 200: okRes(ProductMacroCategorySchema) }),
+			response: withConflictErrors({ 200: okRes(ProductMacroCategorySchema) }),
 			detail: {
 				summary: "Aggiorna macro categoria prodotto",
 				description:

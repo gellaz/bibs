@@ -6,6 +6,7 @@ import {
 	okPageRes,
 	okRes,
 	SellerProfileChangeSchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { SellerProfileChangeWithSellerSchema } from "@/lib/schemas/composed";
@@ -62,7 +63,7 @@ export const sellerChangesRoutes = new Elysia()
 					description: "ID della richiesta di modifica",
 				}),
 			}),
-			response: withErrors({ 200: okRes(SellerProfileChangeSchema) }),
+			response: withConflictErrors({ 200: okRes(SellerProfileChangeSchema) }),
 			detail: {
 				summary: "Approva richiesta di modifica",
 				description:

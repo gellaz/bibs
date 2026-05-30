@@ -5,6 +5,7 @@ import {
 	OkMessage,
 	okRes,
 	ProductCategorySchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { withAdmin } from "../context";
@@ -50,7 +51,7 @@ export const productCategoriesWriteRoutes = new Elysia()
 					description: "ID della macro categoria di appartenenza",
 				}),
 			}),
-			response: withErrors({ 200: okRes(ProductCategorySchema) }),
+			response: withConflictErrors({ 200: okRes(ProductCategorySchema) }),
 			detail: {
 				summary: "Crea categoria prodotto",
 				description:
@@ -104,7 +105,7 @@ export const productCategoriesWriteRoutes = new Elysia()
 					}),
 				),
 			}),
-			response: withErrors({ 200: okRes(ProductCategorySchema) }),
+			response: withConflictErrors({ 200: okRes(ProductCategorySchema) }),
 			detail: {
 				summary: "Aggiorna categoria prodotto",
 				description:

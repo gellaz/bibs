@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { ok } from "@/lib/responses";
-import { okRes, withErrors } from "@/lib/schemas";
+import { okRes, withConflictErrors, withErrors } from "@/lib/schemas";
 import { withAdmin } from "../context";
 import {
 	getBillingOverview,
@@ -132,7 +132,7 @@ export const adminBillingRoutes = new Elysia({ prefix: "/billing" })
 				pendingCreationExpiryHours: t.Integer({ minimum: 1, maximum: 168 }),
 				productId: t.String(),
 			}),
-			response: withErrors({
+			response: withConflictErrors({
 				200: okRes(t.Object({ newPriceId: t.String() })),
 			}),
 			detail: {

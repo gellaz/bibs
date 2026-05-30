@@ -1,7 +1,12 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
-import { okRes, SellerProfileSchema, withErrors } from "@/lib/schemas";
+import {
+	okRes,
+	SellerProfileSchema,
+	withConflictErrors,
+	withErrors,
+} from "@/lib/schemas";
 import { withSellerAuth } from "../context";
 import { getSellerProfile, updateSellerVat } from "../services/profile";
 
@@ -62,7 +67,7 @@ export const profileRoutes = new Elysia()
 					description: "Partita IVA italiana (11 cifre)",
 				}),
 			}),
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
+			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Aggiorna partita IVA",
 				description:

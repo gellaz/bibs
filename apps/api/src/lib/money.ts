@@ -3,9 +3,15 @@
  * Avoids floating-point arithmetic errors.
  */
 export function toCents(price: string): number {
-	const [whole = "0", frac = "0"] = price.split(".");
+	// Detect the sign once and apply it to the whole magnitude: the sign lives only
+	// on the whole part, so computing it per-part would ADD the fractional cents for
+	// a negative value (e.g. "-5.50" → -450 instead of -550). Mirrors fromCents,
+	// keeping the two helpers exact inverses across negatives.
+	const negative = price.trim().startsWith("-");
+	const [whole = "0", frac = "0"] = price.replace("-", "").split(".");
 	const paddedFrac = frac.padEnd(2, "0").slice(0, 2);
-	return parseInt(whole, 10) * 100 + parseInt(paddedFrac, 10);
+	const magnitude = parseInt(whole, 10) * 100 + parseInt(paddedFrac, 10);
+	return negative ? -magnitude : magnitude;
 }
 
 /**
