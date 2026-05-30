@@ -35,7 +35,9 @@ function StoreSettingsPage() {
 	const handleNameChange = useCallback((value: string) => setName(value), []);
 	const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
 	const [newFiles, setNewFiles] = useState<File[]>([]);
-	const [imagesInitialized, setImagesInitialized] = useState(false);
+	const [imagesStoreId, setImagesStoreId] = useState<string | undefined>(
+		undefined,
+	);
 
 	const storeId = activeStore?.id;
 
@@ -62,11 +64,19 @@ function StoreSettingsPage() {
 		enabled: !!storeId,
 	});
 
-	if (store && !imagesInitialized) {
+	// Re-derive image state whenever the active store changes. The store is
+	// switched in place (StoreSwitcher only mutates context — no navigation), so
+	// without this the dropzone would keep showing the previous store's images
+	// and any queued uploads.
+	if (store && imagesStoreId !== storeId) {
 		setExistingImages(
 			(store.images ?? []).map((img) => ({ id: img.id, url: img.url })),
 		);
-		setImagesInitialized(true);
+		setNewFiles([]);
+		// Clear the typed-name override so the header falls back to the newly
+		// selected store's name (the keyed StoreForm re-emits it on remount).
+		setName("");
+		setImagesStoreId(storeId);
 	}
 
 	const deleteImageMutation = useMutation({
@@ -196,6 +206,7 @@ function StoreSettingsPage() {
 			)}
 
 			<StoreForm
+				key={activeStore.id}
 				defaultValues={{
 					name: store.name,
 					description: store.description ?? "",

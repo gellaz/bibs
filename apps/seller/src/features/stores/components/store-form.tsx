@@ -33,6 +33,22 @@ interface DaySchedule {
 	slots: { open: string; close: string }[];
 }
 
+/**
+ * Canonical serialization of opening hours for change detection. Days are
+ * sorted and slot keys normalized so toggling a day on/off or differing key
+ * order can't produce a false "dirty" reading.
+ */
+function serializeOpeningHours(hours: DaySchedule[]): string {
+	return JSON.stringify(
+		[...hours]
+			.sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+			.map((d) => ({
+				dayOfWeek: d.dayOfWeek,
+				slots: d.slots.map((s) => ({ open: s.open, close: s.close })),
+			})),
+	);
+}
+
 interface StoreFormProps {
 	onSubmit: (data: StoreFormData) => void;
 	onCancel: () => void;
@@ -80,7 +96,10 @@ export function StoreForm({
 	onNameChange,
 	readOnly = false,
 }: StoreFormProps) {
-	const [openingHours, setOpeningHours] = useState<DaySchedule[]>(
+	// openingHours is kept outside react-hook-form, so RHF's isDirty does not
+	// react to changes here. Snapshot the value at mount and diff against it so
+	// opening-hours-only edits can still enable Save (see store form audit).
+	const [initialOpeningHours] = useState<DaySchedule[]>(
 		() =>
 			(defaultValues?.openingHours as DaySchedule[] | undefined) ??
 			DEFAULT_OPENING_HOURS.map((d) => ({
@@ -88,6 +107,8 @@ export function StoreForm({
 				slots: d.slots.map((s) => ({ ...s })),
 			})),
 	);
+	const [openingHours, setOpeningHours] =
+		useState<DaySchedule[]>(initialOpeningHours);
 
 	const {
 		register,
@@ -114,6 +135,10 @@ export function StoreForm({
 	useEffect(() => {
 		onNameChange?.(nameValue);
 	}, [nameValue, onNameChange]);
+
+	const openingHoursDirty =
+		serializeOpeningHours(openingHours) !==
+		serializeOpeningHours(initialOpeningHours);
 
 	const { fields, append, remove } = useFieldArray({
 		control,
@@ -345,7 +370,10 @@ export function StoreForm({
 						<Button type="button" variant="outline" onClick={onCancel}>
 							Annulla
 						</Button>
-						<Button type="submit" disabled={isPending || !isDirty}>
+						<Button
+							type="submit"
+							disabled={isPending || (!isDirty && !openingHoursDirty)}
+						>
 							{isPending ? pendingLabel : submitLabel}
 						</Button>
 					</div>
