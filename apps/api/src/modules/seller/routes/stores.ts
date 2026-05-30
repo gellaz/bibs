@@ -8,6 +8,7 @@ import {
 	okPageRes,
 	okRes,
 	StoreWithPhonesSchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { CreateStoreBody } from "@/lib/schemas/forms";
@@ -217,7 +218,7 @@ export const storesRoutes = new Elysia()
 			params: t.Object({
 				storeId: t.String({ description: "ID del negozio" }),
 			}),
-			response: withErrors({
+			response: withConflictErrors({
 				200: okRes(t.Object({ status: t.Literal("active") })),
 			}),
 			detail: {

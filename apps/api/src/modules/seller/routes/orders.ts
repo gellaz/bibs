@@ -6,6 +6,7 @@ import {
 	okPageRes,
 	okRes,
 	SellerOrderWithRelationsSchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { ensureStoreAccess, withSeller } from "../context";
@@ -89,7 +90,7 @@ export const ordersRoutes = new Elysia()
 			params: t.Object({
 				orderId: t.String({ description: "ID dell'ordine" }),
 			}),
-			response: withErrors({ 200: okRes(OrderSchema) }),
+			response: withConflictErrors({ 200: okRes(OrderSchema) }),
 			detail: {
 				summary: "Segna ordine come pronto",
 				description:
@@ -116,7 +117,7 @@ export const ordersRoutes = new Elysia()
 			params: t.Object({
 				orderId: t.String({ description: "ID dell'ordine" }),
 			}),
-			response: withErrors({ 200: okRes(OrderSchema) }),
+			response: withConflictErrors({ 200: okRes(OrderSchema) }),
 			detail: {
 				summary: "Spedisci ordine",
 				description:
@@ -143,7 +144,7 @@ export const ordersRoutes = new Elysia()
 			params: t.Object({
 				orderId: t.String({ description: "ID dell'ordine" }),
 			}),
-			response: withErrors({ 200: okRes(OrderSchema) }),
+			response: withConflictErrors({ 200: okRes(OrderSchema) }),
 			detail: {
 				summary: "Completa ordine",
 				description:

@@ -1,7 +1,11 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
-import { CsvImportResultSchema, okRes, withErrors } from "@/lib/schemas";
+import {
+	CsvImportResultSchema,
+	okRes,
+	withConflictErrors,
+} from "@/lib/schemas";
 import { withAdmin } from "../context";
 import {
 	importProductCategoriesFromCsv,
@@ -36,7 +40,7 @@ export const categoryImportsRoutes = new Elysia()
 					description: "File CSV con le categorie prodotto da importare",
 				}),
 			}),
-			response: withErrors({ 200: okRes(CsvImportResultSchema) }),
+			response: withConflictErrors({ 200: okRes(CsvImportResultSchema) }),
 			detail: {
 				summary: "Importa categorie prodotto da CSV",
 				description:
@@ -72,7 +76,7 @@ export const categoryImportsRoutes = new Elysia()
 					description: "File CSV con le categorie negozio da importare",
 				}),
 			}),
-			response: withErrors({ 200: okRes(CsvImportResultSchema) }),
+			response: withConflictErrors({ 200: okRes(CsvImportResultSchema) }),
 			detail: {
 				summary: "Importa categorie negozio da CSV",
 				description:
