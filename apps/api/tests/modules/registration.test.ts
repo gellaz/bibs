@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 import { Elysia } from "elysia";
 
 // ── Mock service layer ────────────────────────────────────────────────────────
@@ -49,10 +49,25 @@ const mockRegisterCustomer = mock(
 const mockRegisterSeller = mock(
 	async (_body: { email: string; password: string }) => ({
 		user: mockSellerUser,
+		// Full raw seller-profile row, matching the RegisterSellerResult schema.
 		profile: {
 			id: "prof-2",
 			userId: mockSellerUser.id,
 			onboardingStatus: "pending_email",
+			firstName: null,
+			lastName: null,
+			citizenship: null,
+			birthCountry: null,
+			birthDate: null,
+			residenceCountry: null,
+			residenceMunicipalityId: null,
+			residenceAddress: null,
+			residenceZipCode: null,
+			documentNumber: null,
+			documentExpiry: null,
+			documentIssuedMunicipalityId: null,
+			documentImageUrl: null,
+			vatChangeBlocked: false,
 			createdAt: now,
 		},
 		token: "mock-token-seller",
@@ -89,6 +104,7 @@ import {
 } from "@/lib/errors";
 import { registration } from "@/modules/registration";
 import { errorHandler } from "@/plugins/error-handler";
+import { __clearRateLimitStores } from "@/plugins/rate-limit";
 import { requestId } from "@/plugins/request-id";
 
 // Provides store.pino, which logixlysia normally injects in production.
@@ -122,6 +138,12 @@ function post(path: string, body: unknown) {
 async function json(res: Response) {
 	return res.json() as Promise<Record<string, unknown>>;
 }
+
+// Each test starts with fresh rate-limit buckets so the per-route limiter never
+// makes assertions depend on how many prior cases hit the same endpoint/email.
+beforeEach(() => {
+	__clearRateLimitStores();
+});
 
 // ── Tests: POST /register/customer ───────────────────────────────────────────
 

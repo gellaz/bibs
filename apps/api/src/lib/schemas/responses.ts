@@ -87,6 +87,12 @@ export const ValidationError = t.Object({
 	message: t.String({ description: "Messaggio di errore leggibile" }),
 });
 
+export const TooManyRequestsError = t.Object({
+	success: t.Literal(false),
+	error: t.Literal("TOO_MANY_REQUESTS"),
+	message: t.String({ description: "Messaggio di errore leggibile" }),
+});
+
 export const InternalError = t.Object({
 	success: t.Literal(false),
 	error: t.Literal("INTERNAL_ERROR"),
@@ -102,6 +108,7 @@ export const ErrorResponse = t.Union(
 		NotFoundError,
 		ConflictError,
 		ValidationError,
+		TooManyRequestsError,
 		InternalError,
 	],
 	{ description: "Risposta di errore standard" },

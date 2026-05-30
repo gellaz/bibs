@@ -2,14 +2,27 @@ import { Elysia, t } from "elysia";
 import { ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas";
+import {
+	OkMessage,
+	okRes,
+	RegisterCustomerResult,
+	RegisterSellerResult,
+	SignInResult,
+	TooManyRequestsError,
+	withConflictErrors,
+	withErrors,
+} from "@/lib/schemas";
 import { AcceptInviteBody } from "@/lib/schemas/forms";
+import { rateLimit } from "@/plugins/rate-limit";
 import {
 	acceptInvite,
 	registerCustomer,
 	registerSeller,
 	signIn,
 } from "./services";
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
 
 export const registration = new Elysia({
 	prefix: "/register",
@@ -19,7 +32,7 @@ export const registration = new Elysia({
 		"/customer",
 		async ({ body, store }) => {
 			const pino = getLogger(store);
-			const data = await registerCustomer(body);
+			const data = await registerCustomer(body, pino);
 
 			pino.info(
 				{
@@ -41,7 +54,19 @@ export const registration = new Elysia({
 					description: "Password (minimo 8, massimo 128 caratteri)",
 				}),
 			}),
-			response: withConflictErrors({ 200: okRes(t.Any()) }),
+			beforeHandle: rateLimit({
+				name: "register-customer",
+				limits: [
+					{ by: "ip", window: HOUR, max: 10 },
+					// Bound verification-email resends per target address, even if the
+					// source IP rotates.
+					{ by: "email", window: HOUR, max: 3 },
+				],
+			}),
+			response: withConflictErrors({
+				200: okRes(RegisterCustomerResult),
+				429: TooManyRequestsError,
+			}),
 			detail: {
 				summary: "Registrazione cliente",
 				description:
@@ -53,7 +78,7 @@ export const registration = new Elysia({
 		"/seller",
 		async ({ body, store }) => {
 			const pino = getLogger(store);
-			const data = await registerSeller(body);
+			const data = await registerSeller(body, pino);
 
 			pino.info(
 				{
@@ -75,7 +100,17 @@ export const registration = new Elysia({
 					description: "Password (minimo 8, massimo 128 caratteri)",
 				}),
 			}),
-			response: withConflictErrors({ 200: okRes(t.Any()) }),
+			beforeHandle: rateLimit({
+				name: "register-seller",
+				limits: [
+					{ by: "ip", window: HOUR, max: 10 },
+					{ by: "email", window: HOUR, max: 3 },
+				],
+			}),
+			response: withConflictErrors({
+				200: okRes(RegisterSellerResult),
+				429: TooManyRequestsError,
+			}),
 			detail: {
 				summary: "Registrazione venditore",
 				description:
@@ -92,10 +127,13 @@ export const registration = new Elysia({
 				throw new ServiceError(400, "Le password non coincidono");
 			}
 
-			const result = await acceptInvite({
-				token: body.token,
-				password: body.password,
-			});
+			const result = await acceptInvite(
+				{
+					token: body.token,
+					password: body.password,
+				},
+				pino,
+			);
 
 			pino.info(
 				{ token: body.token, action: "employee_invite_accepted" },
@@ -105,8 +143,15 @@ export const registration = new Elysia({
 			return okMessage(result.message);
 		},
 		{
+			beforeHandle: rateLimit({
+				name: "accept-invite",
+				limits: [{ by: "ip", window: HOUR, max: 20 }],
+			}),
 			body: AcceptInviteBody,
-			response: withConflictErrors({ 200: OkMessage }),
+			response: withConflictErrors({
+				200: OkMessage,
+				429: TooManyRequestsError,
+			}),
 			detail: {
 				summary: "Accetta invito dipendente",
 				description:
@@ -135,9 +180,20 @@ export const registration = new Elysia({
 			return ok(data);
 		},
 		{
+			beforeHandle: rateLimit({
+				name: "sign-in",
+				limits: [
+					{ by: "ip", window: 15 * MINUTE, max: 30 },
+					{ by: "email", window: 15 * MINUTE, max: 10 },
+				],
+			}),
 			body: t.Object({
 				email: t.String({ format: "email", description: "Indirizzo email" }),
 				password: t.String({ description: "Password" }),
+			}),
+			response: withErrors({
+				200: okRes(SignInResult),
+				429: TooManyRequestsError,
 			}),
 			detail: {
 				summary: "Login",

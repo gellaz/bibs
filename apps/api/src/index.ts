@@ -4,6 +4,7 @@ import { Elysia } from "elysia";
 import logixlysia from "logixlysia";
 import { db } from "@/db";
 import { OpenAPI } from "@/lib/auth";
+import { isOriginAllowed } from "@/lib/cors";
 import { env } from "@/lib/env";
 import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
@@ -40,16 +41,11 @@ const app = new Elysia()
 	)
 	.use(
 		cors({
-			origin: (request) => {
-				const origin = request.headers.get("origin");
-				// In sviluppo, accetta localhost su qualsiasi porta
-				if (origin?.match(/^http:\/\/localhost(:\d+)?$/)) {
-					return true;
-				}
-				// In produzione, specifica i domini autorizzati
-				const allowedOrigins = env.ALLOWED_ORIGINS?.split(",") || [];
-				return allowedOrigins.includes(origin || "");
-			},
+			origin: (request) =>
+				isOriginAllowed(request.headers.get("origin"), {
+					nodeEnv: env.NODE_ENV,
+					allowedOrigins: env.ALLOWED_ORIGINS,
+				}),
 			methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 			credentials: true,
 			allowedHeaders: ["Content-Type", "Authorization"],
