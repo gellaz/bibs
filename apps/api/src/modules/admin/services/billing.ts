@@ -9,6 +9,7 @@ import {
 	storeSubscription,
 } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
 
 export async function getBillingOverview() {
@@ -89,21 +90,38 @@ export async function updatePricing(params: UpdatePricingParams) {
 		recurring: { interval: "month" },
 	});
 
-	await db.transaction(async (tx) => {
-		await tx
-			.update(pricingConfig)
-			.set({ isActive: false })
-			.where(eq(pricingConfig.isActive, true));
-		await tx.insert(pricingConfig).values({
-			storeMonthlyFeeCents: params.storeMonthlyFeeCents,
-			currency: params.currency,
-			stripePriceId: newPrice.id,
-			suspendedAutoCancelDays: params.suspendedAutoCancelDays,
-			pendingCreationExpiryHours: params.pendingCreationExpiryHours,
-			isActive: true,
-			createdByUserId: params.adminUserId,
+	try {
+		await db.transaction(async (tx) => {
+			await tx
+				.update(pricingConfig)
+				.set({ isActive: false })
+				.where(eq(pricingConfig.isActive, true));
+			await tx.insert(pricingConfig).values({
+				storeMonthlyFeeCents: params.storeMonthlyFeeCents,
+				currency: params.currency,
+				stripePriceId: newPrice.id,
+				suspendedAutoCancelDays: params.suspendedAutoCancelDays,
+				pendingCreationExpiryHours: params.pendingCreationExpiryHours,
+				isActive: true,
+				createdByUserId: params.adminUserId,
+			});
 		});
-	});
+	} catch (err) {
+		// Compensazione: il Price Stripe è già stato creato ma la transazione DB
+		// è fallita, quindi nessuna riga pricing_config lo referenzia. Disattiviamo
+		// il Price orfano per non lasciare un prezzo fatturabile pendente. La
+		// compensazione è best-effort: se fallisce logghiamo ma NON mascheriamo
+		// l'errore originale, che resta l'unico propagato al global error-handler.
+		try {
+			await stripe.prices.update(newPrice.id, { active: false });
+		} catch (cleanupErr) {
+			logger.error(
+				{ priceId: newPrice.id, err: cleanupErr },
+				"Compensazione Stripe fallita: Price orfano non disattivato",
+			);
+		}
+		throw err;
+	}
 
 	return { newPriceId: newPrice.id };
 }

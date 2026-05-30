@@ -63,3 +63,17 @@ export class PendingVerificationError extends ServiceError {
 		this.name = "PendingVerificationError";
 	}
 }
+
+/**
+ * Walks the error cause chain to detect a pg unique_violation (23505).
+ * Drizzle wraps the original pg error in `.cause`, sometimes more than one
+ * level deep, so we follow the chain up to a small fixed depth.
+ */
+export function isUniqueViolation(err: unknown): boolean {
+	let cur: unknown = err;
+	for (let depth = 0; depth < 4 && cur != null; depth++) {
+		if ((cur as { code?: string }).code === "23505") return true;
+		cur = (cur as { cause?: unknown }).cause;
+	}
+	return false;
+}

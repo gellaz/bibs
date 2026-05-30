@@ -119,6 +119,40 @@ describe("cancelStoreSubscription", () => {
 			cancelStoreSubscription({ sellerProfileId, storeId }),
 		).rejects.toBeInstanceOf(ServiceError);
 	});
+
+	it("active → Stripe update rejects → cancelReason is NOT persisted", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("active");
+		// One-shot rejection; the resolving default is restored afterward.
+		subUpdate.mockRejectedValueOnce(new Error("stripe down"));
+
+		await expect(
+			cancelStoreSubscription({ sellerProfileId, storeId }),
+		).rejects.toThrow();
+
+		const updated = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, sub.id))
+			.then((r) => r[0]);
+		// Stripe ran first and failed, so the DB write never happened.
+		expect(updated.cancelReason).toBeNull();
+	});
+
+	it("suspended → Stripe cancel rejects → cancelReason is NOT persisted", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("suspended");
+		subCancel.mockRejectedValueOnce(new Error("stripe down"));
+
+		await expect(
+			cancelStoreSubscription({ sellerProfileId, storeId }),
+		).rejects.toThrow();
+
+		const updated = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, sub.id))
+			.then((r) => r[0]);
+		expect(updated.cancelReason).toBeNull();
+	});
 });
 
 describe("reactivateStoreSubscription", () => {
