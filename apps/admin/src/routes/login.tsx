@@ -7,7 +7,7 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/login-form";
 import type { LoginFormData } from "@/features/auth/schemas/login";
 import { authClient } from "@/lib/auth-client";
@@ -23,10 +23,11 @@ function LoginPage() {
 	const { data: session } = authClient.useSession();
 
 	// Se già autenticato come admin, redirect alla dashboard
-	if (session?.user?.role === "admin") {
-		void navigate({ to: "/" });
-		return null;
-	}
+	useEffect(() => {
+		if (session?.user?.role === "admin") {
+			void navigate({ to: "/" });
+		}
+	}, [session, navigate]);
 
 	async function handleSubmit(data: LoginFormData) {
 		setError("");
@@ -50,6 +51,10 @@ function LoginPage() {
 		} catch {
 			setError("Errore durante il login. Riprova.");
 		}
+	}
+
+	if (session?.user?.role === "admin") {
+		return null;
 	}
 
 	return (

@@ -17,7 +17,7 @@ import { Input } from "@bibs/ui/components/input";
 import { PasswordInput } from "@bibs/ui/components/password-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
@@ -53,10 +53,6 @@ function RegisterPage() {
 	} | null>(null);
 
 	const { data: session } = authClient.useSession();
-	if (session?.user) {
-		void navigate({ to: "/" });
-		return null;
-	}
 
 	const {
 		register,
@@ -65,6 +61,12 @@ function RegisterPage() {
 	} = useForm<RegisterFormData>({
 		resolver: zodResolver(registerSchema),
 	});
+
+	useEffect(() => {
+		if (session?.user) {
+			void navigate({ to: "/" });
+		}
+	}, [session, navigate]);
 
 	const onSubmit: SubmitHandler<RegisterFormData> = async (data) => {
 		setError("");
@@ -99,6 +101,10 @@ function RegisterPage() {
 			setError("Errore durante la registrazione. Riprova.");
 		}
 	};
+
+	if (session?.user) {
+		return null;
+	}
 
 	return (
 		<div className="flex min-h-screen items-center justify-center px-4">
