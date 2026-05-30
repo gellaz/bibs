@@ -7,7 +7,7 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
 import { RegisterForm } from "@/features/auth/components/register-form";
 import type { RegisterFormData } from "@/features/auth/schemas/register";
@@ -28,10 +28,11 @@ function RegisterPage() {
 
 	const { data: session } = authClient.useSession();
 
-	if (session?.user) {
-		void navigate({ to: "/" });
-		return null;
-	}
+	useEffect(() => {
+		if (session?.user) {
+			void navigate({ to: "/" });
+		}
+	}, [session, navigate]);
 
 	async function handleSubmit(data: RegisterFormData) {
 		setError("");
@@ -67,6 +68,10 @@ function RegisterPage() {
 		} catch {
 			setError("Errore durante la registrazione. Riprova.");
 		}
+	}
+
+	if (session?.user) {
+		return null;
 	}
 
 	return (

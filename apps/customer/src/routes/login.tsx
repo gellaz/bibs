@@ -11,7 +11,7 @@ import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { PasswordInput } from "@bibs/ui/components/password-input";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/login")({
@@ -28,10 +28,11 @@ function LoginPage() {
 
 	const { data: session } = authClient.useSession();
 
-	if (session?.user) {
-		void navigate({ to: "/" });
-		return null;
-	}
+	useEffect(() => {
+		if (session?.user) {
+			void navigate({ to: "/" });
+		}
+	}, [session, navigate]);
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
@@ -60,6 +61,10 @@ function LoginPage() {
 		} finally {
 			setLoading(false);
 		}
+	}
+
+	if (session?.user) {
+		return null;
 	}
 
 	return (
