@@ -37,6 +37,7 @@ const fakeSubscription = {
 };
 
 const subRetrieve = mock(async () => fakeSubscription);
+const subCancel = mock(async () => ({ id: "sub_FAKE", status: "canceled" }));
 const constructEvent = mock(() => ({
 	id: "evt_CHECKOUT_OK",
 	type: "checkout.session.completed",
@@ -53,7 +54,7 @@ const constructEvent = mock(() => ({
 
 mock.module("@/lib/stripe", () => ({
 	stripe: {
-		subscriptions: { retrieve: subRetrieve },
+		subscriptions: { retrieve: subRetrieve, cancel: subCancel },
 		webhooks: { constructEventAsync: constructEvent },
 	},
 }));
@@ -82,6 +83,8 @@ let municipalityId: string;
 
 beforeEach(async () => {
 	await truncateAll(getTestDb());
+	subCancel.mockClear();
+	subRetrieve.mockClear();
 	municipalityId = (await createTestMunicipality(getTestDb())).id;
 });
 
@@ -178,5 +181,229 @@ describe("handleCheckoutCompleted", () => {
 
 		const stores = await getTestDb().select().from(store);
 		expect(stores).toHaveLength(1);
+	});
+
+	it("revives an expired pending: a paid checkout after pending expiry still creates the store + subscription", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+
+		const [pending] = await getTestDb()
+			.insert(pendingStoreCreation)
+			.values({
+				sellerProfileId: profile.id,
+				formData: buildFormData(),
+				stripeCheckoutSessionId: "cs_FAKE",
+				feeAmountCents: 2900,
+				currency: "EUR",
+				// The expire-pending cron already flipped this to 'expired'…
+				status: "expired",
+				expiresAt: new Date(Date.now() - 3600_000),
+			})
+			.returning();
+
+		patchEventWithPendingId(pending.id);
+
+		// …but the paid checkout.session.completed lands afterwards.
+		await handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" });
+
+		const stores = await getTestDb().select().from(store);
+		expect(stores).toHaveLength(1);
+		expect(stores[0].name).toBe("Test Store");
+
+		const subs = await getTestDb().select().from(storeSubscription);
+		expect(subs).toHaveLength(1);
+		expect(subs[0].stripeSubscriptionId).toBe("sub_FAKE");
+		expect(subs[0].status).toBe("active");
+
+		const updated = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, pending.id))
+			.then((r) => r[0]);
+		expect(updated.status).toBe("consumed");
+		// Payment honored — the live subscription is NOT canceled.
+		expect(subCancel).not.toHaveBeenCalled();
+	});
+
+	it("cancels the orphaned subscription when the pending row no longer exists", async () => {
+		patchEventWithPendingId("nonexistent-pending-id");
+
+		await handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" });
+
+		const stores = await getTestDb().select().from(store);
+		expect(stores).toHaveLength(0);
+		const subs = await getTestDb().select().from(storeSubscription);
+		expect(subs).toHaveLength(0);
+
+		expect(subCancel).toHaveBeenCalledTimes(1);
+		expect(subCancel).toHaveBeenCalledWith("sub_FAKE");
+	});
+
+	it("is idempotent on the existingSub guard: a sub already provisioned short-circuits even with a still-open pending", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+
+		const [existingStore] = await getTestDb()
+			.insert(store)
+			.values({
+				sellerProfileId: profile.id,
+				name: "Existing Store",
+				addressLine1: "Via Roma 1",
+				municipalityId,
+				zipCode: "20100",
+			})
+			.returning();
+
+		await getTestDb()
+			.insert(storeSubscription)
+			.values({
+				storeId: existingStore.id,
+				stripeSubscriptionId: "sub_FAKE",
+				stripeCustomerId: "cus_FAKE",
+				stripePriceId: "price_FAKE",
+				feeAmountCents: 2900,
+				currency: "EUR",
+				status: "active",
+				currentPeriodEnd: new Date(Date.now() + 30 * 86400_000),
+			});
+
+		// Pending is still 'open' (NOT consumed), so only the existingSub guard — not
+		// the consumed-status guard — can produce the idempotent skip.
+		const [pending] = await getTestDb()
+			.insert(pendingStoreCreation)
+			.values({
+				sellerProfileId: profile.id,
+				formData: buildFormData(),
+				stripeCheckoutSessionId: "cs_FAKE",
+				feeAmountCents: 2900,
+				currency: "EUR",
+				status: "open",
+				expiresAt: new Date(Date.now() + 86400_000),
+			})
+			.returning();
+
+		patchEventWithPendingId(pending.id);
+
+		await handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" });
+
+		const stores = await getTestDb().select().from(store);
+		expect(stores).toHaveLength(1);
+		const subs = await getTestDb().select().from(storeSubscription);
+		expect(subs).toHaveLength(1);
+		expect(subCancel).not.toHaveBeenCalled();
+
+		// The open pending must be left completely untouched by the early return.
+		const after = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, pending.id))
+			.then((r) => r[0]);
+		expect(after.status).toBe("open");
+		expect(after.consumedAt).toBeNull();
+	});
+
+	it("revives a canceled pending too (not just expired)", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+
+		const [pending] = await getTestDb()
+			.insert(pendingStoreCreation)
+			.values({
+				sellerProfileId: profile.id,
+				formData: buildFormData(),
+				stripeCheckoutSessionId: "cs_FAKE",
+				feeAmountCents: 2900,
+				currency: "EUR",
+				status: "canceled",
+				expiresAt: new Date(Date.now() - 3600_000),
+			})
+			.returning();
+
+		patchEventWithPendingId(pending.id);
+		await handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" });
+
+		const stores = await getTestDb().select().from(store);
+		expect(stores).toHaveLength(1);
+		const subs = await getTestDb().select().from(storeSubscription);
+		expect(subs).toHaveLength(1);
+
+		const updated = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, pending.id))
+			.then((r) => r[0]);
+		expect(updated.status).toBe("consumed");
+		expect(subCancel).not.toHaveBeenCalled();
+	});
+
+	it("does NOT cancel when the orphaned subscription is already terminal", async () => {
+		subRetrieve.mockImplementationOnce(
+			async () => ({ ...fakeSubscription, status: "canceled" }) as any,
+		);
+		patchEventWithPendingId("nonexistent-pending-id");
+
+		await handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" });
+
+		expect(subCancel).not.toHaveBeenCalled();
+		const stores = await getTestDb().select().from(store);
+		expect(stores).toHaveLength(0);
+	});
+
+	it("re-throws (keeps the event reprocessable) if canceling the orphaned subscription fails", async () => {
+		subCancel.mockImplementationOnce(async () => {
+			throw new Error("stripe down");
+		});
+		patchEventWithPendingId("nonexistent-pending-id");
+
+		await expect(
+			handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" }),
+		).rejects.toThrow();
+
+		expect(subCancel).toHaveBeenCalledTimes(1);
+	});
+
+	it("throws before any write when the paid subscription has no usable line item", async () => {
+		subRetrieve.mockImplementationOnce(
+			async () => ({ ...fakeSubscription, items: { data: [] } }) as any,
+		);
+
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+		const [pending] = await getTestDb()
+			.insert(pendingStoreCreation)
+			.values({
+				sellerProfileId: profile.id,
+				formData: buildFormData(),
+				stripeCheckoutSessionId: "cs_FAKE",
+				feeAmountCents: 2900,
+				currency: "EUR",
+				status: "open",
+				expiresAt: new Date(Date.now() + 86400_000),
+			})
+			.returning();
+
+		patchEventWithPendingId(pending.id);
+
+		await expect(
+			handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" }),
+		).rejects.toThrow();
+
+		// No partial writes: no store, no subscription, pending still 'open'.
+		const stores = await getTestDb().select().from(store);
+		expect(stores).toHaveLength(0);
+		const subs = await getTestDb().select().from(storeSubscription);
+		expect(subs).toHaveLength(0);
+		expect(subCancel).not.toHaveBeenCalled();
+
+		const after = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, pending.id))
+			.then((r) => r[0]);
+		expect(after.status).toBe("open");
 	});
 });

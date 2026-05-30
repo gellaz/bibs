@@ -111,6 +111,104 @@ describe("createCheckoutSession", () => {
 		expect(pending.stripeCheckoutSessionId).toBe("cs_FAKE");
 	});
 
+	it("sets the Stripe session to expire before the pending row (prevents orphan subscriptions)", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+
+		const result = await createCheckoutSession({
+			sellerProfileId: profile.id,
+			body: VALID_BODY,
+		});
+
+		const pending = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, result.pendingStoreCreationId))
+			.then((r) => r[0]);
+
+		const createArgs = (sessionCreate.mock.calls[0] as any)?.[0] as
+			| { expires_at?: number }
+			| undefined;
+		expect(typeof createArgs?.expires_at).toBe("number");
+
+		const sessionExpiryMs = (createArgs?.expires_at as number) * 1000;
+		// Strictly before the pending → a paid completion can never arrive after the
+		// expire-pending cron has expired the pending (no orphan subscription).
+		expect(sessionExpiryMs).toBeLessThan(pending.expiresAt.getTime());
+
+		// …and within Stripe's [30min, 24h] window.
+		const now = Date.now();
+		expect(sessionExpiryMs).toBeGreaterThan(now + 30 * 60 * 1000);
+		expect(sessionExpiryMs).toBeLessThanOrEqual(now + 24 * 60 * 60 * 1000);
+	});
+
+	it("keeps session < pending at the minimum TTL (session floored to Stripe's 30min+ window)", async () => {
+		await getTestDb()
+			.update(pricingConfig)
+			.set({ pendingCreationExpiryHours: 1 })
+			.where(eq(pricingConfig.isActive, true));
+
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+		const result = await createCheckoutSession({
+			sellerProfileId: profile.id,
+			body: VALID_BODY,
+		});
+
+		const pending = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, result.pendingStoreCreationId))
+			.then((r) => r[0]);
+
+		const createArgs = (sessionCreate.mock.calls[0] as any)?.[0] as
+			| { expires_at?: number }
+			| undefined;
+		const sessionExpiryMs = (createArgs?.expires_at as number) * 1000;
+		const now = Date.now();
+
+		// Session is clamped UP to the 35min floor (above Stripe's 30min minimum) and
+		// the pending is self-corrected to outlive it.
+		expect(sessionExpiryMs).toBeGreaterThan(now + 30 * 60 * 1000);
+		expect(sessionExpiryMs).toBeLessThan(pending.expiresAt.getTime());
+	});
+
+	it("caps session under Stripe's 24h ceiling at a large TTL, still < pending", async () => {
+		await getTestDb()
+			.update(pricingConfig)
+			.set({ pendingCreationExpiryHours: 48 })
+			.where(eq(pricingConfig.isActive, true));
+
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+		const result = await createCheckoutSession({
+			sellerProfileId: profile.id,
+			body: VALID_BODY,
+		});
+
+		const pending = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, result.pendingStoreCreationId))
+			.then((r) => r[0]);
+
+		const createArgs = (sessionCreate.mock.calls[0] as any)?.[0] as
+			| { expires_at?: number }
+			| undefined;
+		const sessionExpiryMs = (createArgs?.expires_at as number) * 1000;
+		const now = Date.now();
+
+		// Session capped at ≤ 24h (Stripe ceiling) while the pending stretches to ~48h.
+		expect(sessionExpiryMs).toBeLessThanOrEqual(now + 24 * 60 * 60 * 1000);
+		expect(sessionExpiryMs).toBeLessThan(pending.expiresAt.getTime());
+		expect(pending.expiresAt.getTime()).toBeGreaterThan(
+			now + 24 * 60 * 60 * 1000,
+		);
+	});
+
 	it("returns the existing pending if seller already has one open (idempotent)", async () => {
 		const { profile } = await createTestSeller(getTestDb(), {
 			email: "a@b.it",

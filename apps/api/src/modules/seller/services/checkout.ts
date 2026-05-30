@@ -12,6 +12,17 @@ import { getOrCreateStripeCustomer } from "@/modules/billing/services/customer";
 
 type CreateStoreInput = Static<typeof CreateStoreBody>;
 
+// The Stripe Checkout Session must expire strictly BEFORE the pending row, so a
+// paid `checkout.session.completed` can never land after the expire-pending cron
+// has flipped the pending to 'expired' — which would otherwise orphan a live,
+// billing subscription with no store. Stripe bounds session expiry to [30min, 24h];
+// we keep a 1h safety margin and stay clear of both ends of that window.
+const SESSION_SAFETY_MARGIN_SECONDS = 60 * 60;
+// Generous slack over Stripe's hard 30min floor so a slow DB round-trip or host
+// clock skew between computing this and the create call can't push us under it.
+const STRIPE_SESSION_MIN_SECONDS = 35 * 60;
+const STRIPE_SESSION_MAX_SECONDS = 23 * 60 * 60; // safely under Stripe's 24h ceiling
+
 interface CreateCheckoutParams {
 	sellerProfileId: string;
 	body: CreateStoreInput;
@@ -67,10 +78,27 @@ export async function createCheckoutSession(
 	const pricing = await getActivePricing();
 	const customerId = await getOrCreateStripeCustomer(sellerProfileId);
 
-	// Compute expiry: now + pendingCreationExpiryHours hours
-	const expiresAt = new Date(
-		Date.now() + pricing.pendingCreationExpiryHours * 60 * 60 * 1000,
+	// Derive the Stripe session expiry from the configured pending TTL, clamped to
+	// Stripe's valid window, then make the pending always outlive that session by the
+	// safety margin (self-correcting even if pendingCreationExpiryHours is small).
+	const nowMs = Date.now();
+	const pendingTtlSeconds = pricing.pendingCreationExpiryHours * 60 * 60;
+	const sessionTtlSeconds = Math.min(
+		Math.max(
+			pendingTtlSeconds - SESSION_SAFETY_MARGIN_SECONDS,
+			STRIPE_SESSION_MIN_SECONDS,
+		),
+		STRIPE_SESSION_MAX_SECONDS,
 	);
+	const expiresAt = new Date(
+		nowMs +
+			Math.max(
+				pendingTtlSeconds,
+				sessionTtlSeconds + SESSION_SAFETY_MARGIN_SECONDS,
+			) *
+				1000,
+	);
+	const sessionExpiresAt = Math.floor(nowMs / 1000) + sessionTtlSeconds;
 
 	// If there's an orphan pending (open, no Stripe session — left over from a previous
 	// attempt that exploded mid-flight), reuse the row instead of inserting a new one,
@@ -110,6 +138,7 @@ export async function createCheckoutSession(
 		customer: customerId,
 		line_items: [{ price: pricing.stripePriceId, quantity: 1 }],
 		payment_method_collection: "if_required",
+		expires_at: sessionExpiresAt,
 		metadata: { pendingStoreCreationId: pendingId },
 		subscription_data: {
 			metadata: { pendingStoreCreationId: pendingId },
