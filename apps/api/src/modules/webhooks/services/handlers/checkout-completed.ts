@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { pendingStoreCreation } from "@/db/schemas/pending-store-creation";
 import { store, storePhoneNumber } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
 
@@ -36,24 +37,91 @@ export async function handleCheckoutCompleted(
 
 	const sub = await stripe.subscriptions.retrieve(session.subscription);
 
-	await db.transaction(async (tx) => {
-		const pending = await tx.query.pendingStoreCreation.findFirst({
-			where: and(
-				eq(pendingStoreCreation.id, pendingId),
-				eq(pendingStoreCreation.status, "open"),
-			),
-		});
+	// Idempotency: if this subscription is already provisioned, there's nothing to
+	// do. Guards against event replay and any path that already created the store.
+	const existingSub = await db.query.storeSubscription.findFirst({
+		where: eq(storeSubscription.stripeSubscriptionId, sub.id),
+	});
+	if (existingSub) {
+		logger.info(
+			{ pendingId, sessionId: session.id, stripeSubscriptionId: sub.id },
+			"Subscription already provisioned, skipping (idempotent)",
+		);
+		return;
+	}
 
-		if (!pending) {
-			logger.info(
-				{ pendingId, sessionId: session.id },
-				"Pending already consumed or missing, skipping (idempotent)",
+	const pending = await db.query.pendingStoreCreation.findFirst({
+		where: eq(pendingStoreCreation.id, pendingId),
+	});
+
+	// The pending row is gone (e.g. the seller profile was deleted → cascade), so we
+	// have no form data to build a store from and cannot honor the payment. Cancel
+	// the now-orphaned live subscription so the seller is not billed for nothing.
+	if (!pending) {
+		// If Stripe already has it in a terminal state, there is nothing to cancel.
+		if (sub.status === "canceled" || sub.status === "incomplete_expired") {
+			logger.warn(
+				{
+					pendingId,
+					sessionId: session.id,
+					stripeSubscriptionId: sub.id,
+					status: sub.status,
+				},
+				"Paid checkout for a missing pending, but subscription is already terminal; nothing to cancel",
 			);
 			return;
 		}
+		logger.error(
+			{ pendingId, sessionId: session.id, stripeSubscriptionId: sub.id },
+			"Paid checkout for a missing pending; canceling orphaned subscription",
+		);
+		try {
+			await stripe.subscriptions.cancel(sub.id);
+		} catch (err) {
+			// Re-throw so the event stays reprocessable (processedAt is left null) rather
+			// than silently stranding a still-live, billing subscription.
+			logger.error(
+				{ err, stripeSubscriptionId: sub.id },
+				"Failed to cancel orphaned subscription; it is still live and billing — manual action required",
+			);
+			throw err;
+		}
+		return;
+	}
 
-		const formData = pending.formData as Record<string, unknown>;
+	// Already provisioned via a prior delivery or the resume path → truly idempotent.
+	if (pending.status === "consumed") {
+		logger.info(
+			{ pendingId, sessionId: session.id },
+			"Pending already consumed, skipping (idempotent)",
+		);
+		return;
+	}
 
+	// status is 'open' (happy path) or 'expired'/'canceled' (the expire-pending cron
+	// raced a paid checkout). In every case the seller paid, so honor the payment and
+	// create the store from the saved form data — reviving an expired/canceled pending.
+	if (pending.status !== "open") {
+		logger.warn(
+			{ pendingId, sessionId: session.id, status: pending.status },
+			"Paid checkout completed after pending was no longer open; reviving and creating the store",
+		);
+	}
+
+	const firstItem = sub.items.data[0];
+	if (!firstItem?.price?.id) {
+		// A paid subscription with no usable line item is anomalous and we cannot build
+		// a valid storeSubscription row (stripePriceId is NOT NULL). Surface loudly for
+		// manual handling rather than writing a half-built row.
+		throw new ServiceError(
+			500,
+			`Stripe subscription ${sub.id} has no usable line item; cannot provision store for pending ${pendingId}`,
+		);
+	}
+
+	const formData = pending.formData as Record<string, unknown>;
+
+	await db.transaction(async (tx) => {
 		const [createdStore] = await tx
 			.insert(store)
 			.values({
@@ -77,7 +145,6 @@ export async function handleCheckoutCompleted(
 			})
 			.returning();
 
-		const firstItem = sub.items.data[0];
 		await tx.insert(storeSubscription).values({
 			storeId: createdStore.id,
 			stripeSubscriptionId: sub.id,
