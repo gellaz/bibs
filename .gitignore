@@ -44,6 +44,7 @@ logs/
 .claude/settings.local.json
 .claude/.credentials*
 .claude/worktrees/
+.claude/scheduled_tasks*
 
 # skills.sh symlinks for agents we don't ship (we only commit .claude/skills/ and
 # the universal source in .agents/skills/)
