@@ -20,6 +20,7 @@ import {
 	StoreSchema,
 	UserSchema,
 } from "./entities";
+import { OpenStatusSchema } from "./holidays";
 
 // ────────────────────────────────────────────
 // Composed schemas (nested relations)
@@ -31,6 +32,7 @@ export const StoreWithPhonesSchema = t.Object({
 	phoneNumbers: t.Array(StorePhoneNumberSchema),
 	category: t.Nullable(StoreCategorySchema),
 	images: t.Array(StoreImageSchema),
+	openStatus: t.Optional(t.Nullable(OpenStatusSchema)),
 });
 
 // Seller profile + user + organization (admin pending list)
