@@ -116,6 +116,20 @@ describe("admin holiday-definitions service", () => {
 		expect(remaining).toHaveLength(0);
 	});
 
+	it("rejects a duplicate definition (same shape)", async () => {
+		const adminId = await seedAdmin("dup@test.com");
+		await createHolidayDefinition(
+			{ type: "fixed", name: "Natale", month: 12, day: 25 },
+			adminId,
+		);
+		await expect(
+			createHolidayDefinition(
+				{ type: "fixed", name: "Natale (doppione)", month: 12, day: 25 },
+				adminId,
+			),
+		).rejects.toThrow();
+	});
+
 	it("preview resolves active defs to concrete dates for a year", async () => {
 		const adminId = await seedAdmin("a4@test.com");
 		await createHolidayDefinition(

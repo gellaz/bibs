@@ -8,7 +8,7 @@ import {
 	pgTable,
 	text,
 	timestamp,
-	uniqueIndex,
+	unique,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth";
 import { storeHolidayOptout } from "./store-holiday-optout";
@@ -61,13 +61,9 @@ export const holidayDefinition = pgTable(
 			sql`${t.day} IS NULL OR (${t.day} BETWEEN 1 AND 31)`,
 		),
 		// Prevent duplicate definitions of the same shape.
-		uniqueIndex("holiday_definition_unique_idx").on(
-			t.type,
-			t.month,
-			t.day,
-			t.easterOffsetDays,
-			t.oneOffDate,
-		),
+		unique("holiday_definition_unique_idx")
+			.on(t.type, t.month, t.day, t.easterOffsetDays, t.oneOffDate)
+			.nullsNotDistinct(),
 	],
 );
 
