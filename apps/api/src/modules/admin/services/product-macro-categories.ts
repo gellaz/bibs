@@ -4,6 +4,7 @@ import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
+import type { VatRate } from "@/lib/vat";
 
 interface ListProductMacroCategoriesParams {
 	page?: number;
@@ -40,10 +41,18 @@ export async function listProductMacroCategories(
 	return { data, pagination: { page, limit, total } };
 }
 
-export async function createProductMacroCategory(name: string) {
+export async function createProductMacroCategory(params: {
+	name: string;
+	suggestedVatRate?: VatRate;
+}) {
 	const [created] = await db
 		.insert(productMacroCategory)
-		.values({ name })
+		.values({
+			name: params.name,
+			...(params.suggestedVatRate
+				? { suggestedVatRate: params.suggestedVatRate }
+				: {}),
+		})
 		.returning();
 
 	return created;
@@ -52,16 +61,20 @@ export async function createProductMacroCategory(name: string) {
 interface UpdateProductMacroCategoryParams {
 	macroCategoryId: string;
 	name: string;
+	suggestedVatRate?: VatRate;
 }
 
 export async function updateProductMacroCategory(
 	params: UpdateProductMacroCategoryParams,
 ) {
-	const { macroCategoryId, name } = params;
+	const { macroCategoryId, name, suggestedVatRate } = params;
 
 	const [updated] = await db
 		.update(productMacroCategory)
-		.set({ name })
+		.set({
+			name,
+			...(suggestedVatRate ? { suggestedVatRate } : {}),
+		})
 		.where(eq(productMacroCategory.id, macroCategoryId))
 		.returning();
 
