@@ -28,7 +28,7 @@
 		"db:reset": "docker compose down -v && docker compose up -d --wait && bun run db:migrate && bun run db:seed"
 	},
 	"catalog": {
-		"@aws-sdk/client-s3": "^3.1055.0",
+		"@aws-sdk/client-s3": "^3.1057.0",
 		"@elysiajs/eden": "^1.4.9",
 		"@hookform/resolvers": "^5.4.0",
 		"@inlang/paraglide-js": "^2.18.1",
@@ -56,15 +56,15 @@
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^6.0.2",
 		"babel-plugin-react-compiler": "^1.0.0",
-		"better-auth": "1.6.11",
+		"better-auth": "1.6.13",
 		"elysia": "1.4.28",
 		"jsdom": "^28.1.0",
-		"lucide-react": "^1.16.0",
+		"lucide-react": "^1.17.0",
 		"pg": "^8.21.0",
 		"react": "^19.2.6",
 		"react-dom": "^19.2.6",
 		"react-easy-crop": "^5.5.7",
-		"react-hook-form": "^7.76.1",
+		"react-hook-form": "^7.77.0",
 		"react-resizable-panels": "^4.11.2",
 		"sharp": "^0.34.5",
 		"stripe": "^22.2.0",
@@ -76,7 +76,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.16",
 		"concurrently": "^9.2.1",
-		"lefthook": "^2.1.8",
+		"lefthook": "^2.1.9",
 		"typescript": "^6.0.3"
 	}
 }
