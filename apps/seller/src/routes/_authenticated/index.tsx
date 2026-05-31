@@ -1,5 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
 import { cn } from "@bibs/ui/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertTriangle,
@@ -13,6 +14,7 @@ import {
 	Tag,
 } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
+import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: Dashboard,
@@ -74,14 +76,6 @@ const ACTIONS: ActionItem[] = [
 		icon: Tag,
 	},
 	{
-		id: "hours-holiday",
-		urgency: "low",
-		title: "Domenica 25/05 — apertura non impostata",
-		subtitle: "Festa della Repubblica, il default è chiuso",
-		href: "/store",
-		icon: Clock,
-	},
-	{
 		id: "reviews-new",
 		urgency: "low",
 		title: "2 nuove recensioni",
@@ -99,6 +93,42 @@ const URGENCY_DOT: Record<Urgency, string> = {
 
 function Dashboard() {
 	const { activeStore, stores, isLoading } = useActiveStore();
+	const { data: storeList } = useQuery({
+		queryKey: ["stores"],
+		queryFn: async () => {
+			const res = await api().seller.stores.get({
+				query: { page: 1, limit: 100 },
+			});
+			if (res.error) return null;
+			return res.data;
+		},
+	});
+	const openStatus =
+		storeList?.data.find((s) => s.id === activeStore?.id)?.openStatus ?? null;
+
+	const hoursAction: ActionItem | null =
+		openStatus && !openStatus.isOpen
+			? {
+					id: "hours-status",
+					urgency: openStatus.status === "closed_holiday" ? "medium" : "low",
+					title:
+						openStatus.status === "closed_holiday"
+							? "Oggi il negozio è chiuso"
+							: "Negozio chiuso ora",
+					subtitle:
+						openStatus.status === "closed_holiday"
+							? "Festività o chiusura programmata"
+							: openStatus.opensAt
+								? `Riapre il ${openStatus.opensAt.date} alle ${openStatus.opensAt.time}`
+								: "Nessun orario impostato",
+					href: "/store/closures",
+					icon: Clock,
+				}
+			: null;
+
+	const actions: ActionItem[] = hoursAction
+		? [...ACTIONS, hoursAction]
+		: ACTIONS;
 
 	if (!isLoading && stores.length === 0) {
 		return <EmptyStoresState />;
@@ -114,7 +144,7 @@ function Dashboard() {
 
 			<StatsStrip />
 
-			<ActionsList />
+			<ActionsList actions={actions} />
 		</div>
 	);
 }
@@ -202,7 +232,7 @@ function StatsStrip() {
 	);
 }
 
-function ActionsList() {
+function ActionsList({ actions }: { actions: ActionItem[] }) {
 	return (
 		<section className="space-y-3">
 			<div className="flex items-baseline justify-between gap-3">
@@ -210,11 +240,11 @@ function ActionsList() {
 					Da gestire oggi
 				</h2>
 				<span className="font-mono text-xs text-muted-foreground">
-					{ACTIONS.length} voci
+					{actions.length} voci
 				</span>
 			</div>
 			<ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
-				{ACTIONS.map((a) => {
+				{actions.map((a) => {
 					const Icon = a.icon;
 					return (
 						<li key={a.id}>
