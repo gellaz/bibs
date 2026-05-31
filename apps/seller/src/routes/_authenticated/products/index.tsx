@@ -11,7 +11,11 @@ import {
 	InputGroupInput,
 } from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import { formatPriceEur, Price } from "@bibs/ui/components/price";
+import {
+	formatPriceEur,
+	Price,
+	scorporoDisplay,
+} from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -370,9 +374,10 @@ function ProductsListPage() {
 					menuLabel: "Prezzo",
 				},
 				cell: ({ row }) => {
-					const gross = Number.parseFloat(row.original.price);
-					const rate = Number(row.original.vatRate);
-					const net = Number.isFinite(gross) ? gross / (1 + rate / 100) : NaN;
+					const { net } = scorporoDisplay(
+						row.original.price,
+						Number(row.original.vatRate),
+					);
 					return (
 						<div className="flex flex-col leading-tight">
 							<Price value={row.original.price} />
@@ -392,11 +397,8 @@ function ProductsListPage() {
 					menuLabel: "IVA",
 				},
 				cell: ({ row }) => {
-					const gross = Number.parseFloat(row.original.price);
 					const rate = Number(row.original.vatRate);
-					const vat = Number.isFinite(gross)
-						? gross - gross / (1 + rate / 100)
-						: NaN;
+					const { vat } = scorporoDisplay(row.original.price, rate);
 					return (
 						<div className="flex items-center gap-1.5 tabular-nums">
 							<span>{formatPriceEur(vat)}</span>
