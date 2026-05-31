@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useStores } from "@/hooks/use-stores";
+import { toYMD } from "@/lib/date";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: Dashboard,
@@ -109,7 +110,7 @@ function Dashboard() {
 						openStatus.status === "closed_holiday"
 							? "Festività o chiusura programmata"
 							: openStatus.opensAt
-								? `Riapre il ${openStatus.opensAt.date} alle ${openStatus.opensAt.time}`
+								? `Riapre il ${toYMD(openStatus.opensAt.date)} alle ${openStatus.opensAt.time}`
 								: "Nessun orario impostato",
 					href: "/store/closures",
 					icon: Clock,

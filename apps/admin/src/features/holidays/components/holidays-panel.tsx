@@ -33,6 +33,7 @@ import { useMemo, useState } from "react";
 import { HolidayForm } from "@/features/holidays/components/holiday-form";
 import { MONTHS } from "@/features/holidays/schemas/holiday";
 import { api } from "@/lib/api";
+import { toYMD } from "@/lib/date";
 
 interface HolidayDefinition {
 	id: string;
@@ -63,7 +64,7 @@ function describeHoliday(h: HolidayDefinition): string {
 		return `Pasqua ${h.easterOffsetDays! > 0 ? "+" : ""}${h.easterOffsetDays} giorni`;
 	}
 	if (h.type === "one_off" && h.oneOffDate) {
-		const [y, mo, d] = h.oneOffDate.split("-").map(Number);
+		const [y, mo, d] = toYMD(h.oneOffDate).split("-").map(Number);
 		return new Date(y, mo - 1, d).toLocaleDateString("it-IT", {
 			day: "numeric",
 			month: "short",
@@ -335,10 +336,10 @@ export function HolidaysPanel({
 				<ul className="grid grid-cols-2 gap-x-6 gap-y-1 md:grid-cols-3">
 					{(previewData ?? []).map((p) => (
 						<li
-							key={`${p.definitionId}-${p.date}`}
+							key={`${p.definitionId}-${toYMD(p.date)}`}
 							className="text-sm text-muted-foreground"
 						>
-							<span className="font-mono">{p.date}</span> — {p.name}
+							<span className="font-mono">{toYMD(p.date)}</span> — {p.name}
 						</li>
 					))}
 				</ul>
