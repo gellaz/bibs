@@ -2,6 +2,14 @@ import { CreateProductBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@bibs/ui/components/select";
 import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
@@ -10,7 +18,7 @@ import { type Static, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
-import { type SubmitHandler, useForm } from "react-hook-form";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { api } from "@/lib/api";
 import { BrandCombobox, type BrandComboboxValue } from "./brand-combobox";
 import { ProductCategoriesPicker } from "./product-categories-picker";
@@ -46,6 +54,7 @@ export interface ProductFormDefaultValues {
 	name: string;
 	description?: string | null;
 	price: string;
+	vatRate?: string;
 	categoryIds: string[];
 	ean?: string | null;
 	brandId?: string | null;
@@ -86,6 +95,7 @@ export function ProductForm({
 		setValue,
 		watch,
 		getValues,
+		control,
 		formState: { errors, isDirty },
 	} = useForm<ProductFormData>({
 		resolver: typeboxResolver(compiledSchema),
@@ -93,6 +103,7 @@ export function ProductForm({
 			name: defaultValues?.name ?? "",
 			description: defaultValues?.description ?? "",
 			price: defaultValues?.price ?? "",
+			vatRate: (defaultValues?.vatRate as ProductFormData["vatRate"]) ?? "22",
 			categoryIds: defaultValues?.categoryIds ?? [],
 			ean: defaultValues?.ean ?? undefined,
 			brandId: defaultValues?.brandId ?? undefined,
@@ -199,10 +210,15 @@ export function ProductForm({
 		setValue("categoryIds", next, { shouldValidate: true, shouldDirty: true });
 	};
 
-	const onMacroChange = (next: string | null) => {
+	const onMacroChange = (next: string | null, suggestedVatRate?: string) => {
 		const hadCategories = selectedCategories.length > 0;
 		setMacroCategoryId(next);
 		setValue("categoryIds", [], { shouldValidate: true, shouldDirty: true });
+		if (suggestedVatRate) {
+			setValue("vatRate", suggestedVatRate as ProductFormData["vatRate"], {
+				shouldDirty: true,
+			});
+		}
 		if (hadCategories && next !== macroCategoryId) {
 			toast.info("Categorie resettate per via del cambio di macrocategoria");
 		}
@@ -315,6 +331,40 @@ export function ProductForm({
 					/>
 					<FieldError errors={[errors.price]} />
 				</Field>
+
+				<Field>
+					<FieldLabel htmlFor="product-vat-rate">Aliquota IVA</FieldLabel>
+					<Controller
+						control={control}
+						name="vatRate"
+						render={({ field }) => (
+							<Select value={field.value} onValueChange={field.onChange}>
+								<SelectTrigger id="product-vat-rate" className="w-full">
+									<SelectValue placeholder="22%" />
+								</SelectTrigger>
+								<SelectContent>
+									{["22", "10", "5", "4", "0"].map((r) => (
+										<SelectItem key={r} value={r}>
+											{r}%
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
+					/>
+				</Field>
+
+				{(() => {
+					const rate = Number(watch("vatRate"));
+					const { net, vat } = scorporoDisplay(watch("price") ?? "", rate);
+					if (!Number.isFinite(net)) return null;
+					return (
+						<p className="text-muted-foreground text-xs sm:col-span-2">
+							Imponibile {formatPriceEur(net)} · IVA {formatPriceEur(vat)} (
+							{rate}%) — il prezzo è IVA inclusa.
+						</p>
+					);
+				})()}
 
 				<Field className="sm:col-span-2">
 					<FieldLabel>Brand</FieldLabel>

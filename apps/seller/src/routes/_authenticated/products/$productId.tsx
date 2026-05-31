@@ -86,6 +86,7 @@ function EditProductPage() {
 					name: formData.name,
 					description: formData.description,
 					price: formData.price,
+					vatRate: formData.vatRate,
 					categoryIds: formData.categoryIds,
 					imageOrder: formData.imageOrder,
 					ean: formData.ean ?? null,
@@ -160,6 +161,7 @@ function EditProductPage() {
 					name: product.name,
 					description: product.description,
 					price: product.price,
+					vatRate: product.vatRate,
 					categoryIds: product.productCategoryAssignments.map(
 						(a) => a.productCategoryId,
 					),
