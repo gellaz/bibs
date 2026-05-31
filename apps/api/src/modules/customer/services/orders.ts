@@ -12,6 +12,7 @@ import { fromCents, toCents } from "@/lib/money";
 import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
+import { buildCastelletto, scorporo } from "@/lib/vat";
 
 interface ListCustomerOrdersParams {
 	customerProfileId: string;
@@ -221,6 +222,8 @@ export async function createOrder(params: CreateOrderParams) {
 			productImageUrl: string | null;
 			quantity: number;
 			unitPrice: string;
+			vatRate: string;
+			vatAmount: string;
 		}[] = [];
 
 		for (const item of items) {
@@ -253,7 +256,9 @@ export async function createOrder(params: CreateOrderParams) {
 					`Insufficient stock for ${sp.product.name}`,
 				);
 
-			totalCents += toCents(sp.product.price) * item.quantity;
+			const lineGrossCents = toCents(sp.product.price) * item.quantity;
+			totalCents += lineGrossCents;
+			const { vatCents } = scorporo(lineGrossCents, Number(sp.product.vatRate));
 			resolvedItems.push({
 				storeProductId: sp.id,
 				productId: sp.product.id,
@@ -263,8 +268,20 @@ export async function createOrder(params: CreateOrderParams) {
 				productImageUrl: sp.product.images[0]?.url ?? null,
 				quantity: item.quantity,
 				unitPrice: sp.product.price,
+				vatRate: sp.product.vatRate,
+				vatAmount: fromCents(vatCents),
 			});
 		}
+
+		// Castelletto IVA: scorporo per-aliquota sui lordi di riga (PRIMA dello
+		// sconto punti — l'apportionment dello sconto punti tra aliquote è demandato
+		// al futuro layer di fatturazione).
+		const vatBreakdown = buildCastelletto(
+			resolvedItems.map((it) => ({
+				grossCents: toCents(it.unitPrice) * it.quantity,
+				rate: Number(it.vatRate),
+			})),
+		);
 
 		// Points discount (all in cents)
 		let discountCents = 0;
@@ -303,6 +320,7 @@ export async function createOrder(params: CreateOrderParams) {
 				pointsEarned: 0,
 				pointsSpent: actualPointsSpent,
 				idempotencyKey: idempotencyKey ?? null,
+				vatBreakdown,
 			})
 			.returning();
 
@@ -318,6 +336,8 @@ export async function createOrder(params: CreateOrderParams) {
 				productImageUrl: item.productImageUrl,
 				quantity: item.quantity,
 				unitPrice: item.unitPrice,
+				vatRate: item.vatRate,
+				vatAmount: item.vatAmount,
 			})),
 		);
 
