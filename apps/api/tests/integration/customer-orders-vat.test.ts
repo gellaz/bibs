@@ -22,7 +22,7 @@ mock.module("@/db", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { order, orderItem } from "@/db/schemas/order";
+import { orderItem } from "@/db/schemas/order";
 import { product as productTable } from "@/db/schemas/product";
 import { createOrder } from "@/modules/customer/services/orders";
 import { truncateAll } from "../helpers/cleanup";
