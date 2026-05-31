@@ -35,6 +35,9 @@ export const product = pgTable(
 			onDelete: "set null",
 		}),
 		price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+		vatRate: text("vat_rate", { enum: ["22", "10", "5", "4", "0"] })
+			.default("22")
+			.notNull(),
 		status: text("status", { enum: productStatuses })
 			.default("active")
 			.notNull(),
@@ -56,6 +59,10 @@ export const product = pgTable(
       )`,
 		),
 		check("product_price_non_negative", sql`${table.price} >= 0`),
+		check(
+			"product_vat_rate_valid",
+			sql`${table.vatRate} IN ('22','10','5','4','0')`,
+		),
 		uniqueIndex("product_seller_ean_unique")
 			.on(table.sellerProfileId, table.ean)
 			.where(sql`${table.ean} IS NOT NULL AND ${table.status} != 'trashed'`),

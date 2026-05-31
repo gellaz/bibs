@@ -3,6 +3,7 @@ import {
 	check,
 	index,
 	integer,
+	jsonb,
 	numeric,
 	pgTable,
 	text,
@@ -55,6 +56,10 @@ export const order = pgTable(
 			{ onDelete: "set null" },
 		),
 		shippingCost: numeric("shipping_cost", { precision: 10, scale: 2 }),
+		vatBreakdown:
+			jsonb("vat_breakdown").$type<
+				Array<{ rate: number; taxableAmount: string; taxAmount: string }>
+			>(),
 		reservationExpiresAt: timestamp("reservation_expires_at", {
 			withTimezone: true,
 		}),
@@ -135,6 +140,10 @@ export const orderItem = pgTable(
 		// === esistenti invariati ===
 		quantity: integer("quantity").notNull(),
 		unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+
+		// === snapshot fiscale IVA (NUOVO) — nullable: ordini storici restano NULL ===
+		vatRate: numeric("vat_rate", { precision: 5, scale: 2 }),
+		vatAmount: numeric("vat_amount", { precision: 10, scale: 2 }),
 	},
 	(table) => [
 		index("order_item_order_id_idx").on(table.orderId),
@@ -142,6 +151,10 @@ export const orderItem = pgTable(
 		index("order_item_product_id_idx").on(table.productId),
 		check("order_item_quantity_positive", sql`${table.quantity} > 0`),
 		check("order_item_unit_price_non_negative", sql`${table.unitPrice} >= 0`),
+		check(
+			"order_item_vat_amount_non_negative",
+			sql`${table.vatAmount} IS NULL OR ${table.vatAmount} >= 0`,
+		),
 	],
 );
 
