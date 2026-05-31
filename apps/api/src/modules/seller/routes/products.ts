@@ -21,7 +21,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
-import { CreateProductBody } from "@/lib/schemas/forms";
+import { CreateProductBody, VatRateSchema } from "@/lib/schemas/forms";
 import { ensureStoreAccess, withSeller } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
@@ -393,6 +393,7 @@ export const productsRoutes = new Elysia()
 						description: "Prezzo (formato decimale, es. '9.99')",
 					}),
 				),
+				vatRate: t.Optional(VatRateSchema),
 				imageOrder: t.Optional(
 					t.Array(t.String(), {
 						description:
