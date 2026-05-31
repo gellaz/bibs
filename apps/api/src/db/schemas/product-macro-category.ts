@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import { check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { DEFAULT_VAT_RATE, VAT_RATES } from "@/lib/vat";
 import { productCategory } from "./category";
 
 export const productMacroCategory = pgTable(
@@ -9,10 +10,8 @@ export const productMacroCategory = pgTable(
 			.primaryKey()
 			.$defaultFn(() => crypto.randomUUID()),
 		name: text("name").notNull().unique(),
-		suggestedVatRate: text("suggested_vat_rate", {
-			enum: ["22", "10", "5", "4", "0"],
-		})
-			.default("22")
+		suggestedVatRate: text("suggested_vat_rate", { enum: VAT_RATES })
+			.default(DEFAULT_VAT_RATE)
 			.notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()

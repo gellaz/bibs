@@ -11,6 +11,7 @@ import {
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import type { CastellettoLine } from "@/lib/vat";
 import { customerAddress } from "./address";
 import { customerProfile } from "./customer";
 import { product, storeProduct } from "./product";
@@ -56,10 +57,7 @@ export const order = pgTable(
 			{ onDelete: "set null" },
 		),
 		shippingCost: numeric("shipping_cost", { precision: 10, scale: 2 }),
-		vatBreakdown:
-			jsonb("vat_breakdown").$type<
-				Array<{ rate: number; taxableAmount: string; taxAmount: string }>
-			>(),
+		vatBreakdown: jsonb("vat_breakdown").$type<CastellettoLine[]>(),
 		reservationExpiresAt: timestamp("reservation_expires_at", {
 			withTimezone: true,
 		}),

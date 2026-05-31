@@ -10,6 +10,7 @@ import {
 	timestamp,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { DEFAULT_VAT_RATE, VAT_RATES } from "@/lib/vat";
 import { brand } from "./brand";
 import { productCategory } from "./category";
 import { productImage } from "./product-image";
@@ -35,8 +36,8 @@ export const product = pgTable(
 			onDelete: "set null",
 		}),
 		price: numeric("price", { precision: 10, scale: 2 }).notNull(),
-		vatRate: text("vat_rate", { enum: ["22", "10", "5", "4", "0"] })
-			.default("22")
+		vatRate: text("vat_rate", { enum: VAT_RATES })
+			.default(DEFAULT_VAT_RATE)
 			.notNull(),
 		status: text("status", { enum: productStatuses })
 			.default("active")
