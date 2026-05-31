@@ -38,7 +38,8 @@ function serialize(optOutIds: string[], custom: CustomClosure[]): string {
 }
 
 function formatDate(ymd: string): string {
-	return new Date(ymd).toLocaleDateString("it-IT", {
+	const [y, m, d] = ymd.split("-").map(Number);
+	return new Date(y, m - 1, d).toLocaleDateString("it-IT", {
 		day: "numeric",
 		month: "short",
 		year: "numeric",

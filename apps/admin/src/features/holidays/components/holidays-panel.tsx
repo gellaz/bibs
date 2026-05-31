@@ -63,7 +63,8 @@ function describeHoliday(h: HolidayDefinition): string {
 		return `Pasqua ${h.easterOffsetDays! > 0 ? "+" : ""}${h.easterOffsetDays} giorni`;
 	}
 	if (h.type === "one_off" && h.oneOffDate) {
-		return new Date(h.oneOffDate).toLocaleDateString("it-IT", {
+		const [y, mo, d] = h.oneOffDate.split("-").map(Number);
+		return new Date(y, mo - 1, d).toLocaleDateString("it-IT", {
 			day: "numeric",
 			month: "short",
 			year: "numeric",
