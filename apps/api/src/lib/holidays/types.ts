@@ -12,8 +12,8 @@ export interface HolidayDef {
 
 export interface CustomClosure {
 	startDate: string; // "YYYY-MM-DD"
-	endDate?: string | null;
-	note?: string | null;
+	endDate?: string;
+	note?: string;
 }
 
 export interface OpeningHoursDay {
