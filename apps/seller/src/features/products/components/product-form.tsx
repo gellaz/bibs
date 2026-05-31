@@ -54,7 +54,7 @@ export interface ProductFormDefaultValues {
 	name: string;
 	description?: string | null;
 	price: string;
-	vatRate?: string;
+	vatRate?: "22" | "10" | "5" | "4" | "0";
 	categoryIds: string[];
 	ean?: string | null;
 	brandId?: string | null;
@@ -103,7 +103,7 @@ export function ProductForm({
 			name: defaultValues?.name ?? "",
 			description: defaultValues?.description ?? "",
 			price: defaultValues?.price ?? "",
-			vatRate: (defaultValues?.vatRate as ProductFormData["vatRate"]) ?? "22",
+			vatRate: defaultValues?.vatRate ?? "22",
 			categoryIds: defaultValues?.categoryIds ?? [],
 			ean: defaultValues?.ean ?? undefined,
 			brandId: defaultValues?.brandId ?? undefined,
@@ -210,14 +210,15 @@ export function ProductForm({
 		setValue("categoryIds", next, { shouldValidate: true, shouldDirty: true });
 	};
 
-	const onMacroChange = (next: string | null, suggestedVatRate?: string) => {
+	const onMacroChange = (
+		next: string | null,
+		suggestedVatRate?: "22" | "10" | "5" | "4" | "0",
+	) => {
 		const hadCategories = selectedCategories.length > 0;
 		setMacroCategoryId(next);
 		setValue("categoryIds", [], { shouldValidate: true, shouldDirty: true });
 		if (suggestedVatRate) {
-			setValue("vatRate", suggestedVatRate as ProductFormData["vatRate"], {
-				shouldDirty: true,
-			});
+			setValue("vatRate", suggestedVatRate, { shouldDirty: true });
 		}
 		if (hadCategories && next !== macroCategoryId) {
 			toast.info("Categorie resettate per via del cambio di macrocategoria");

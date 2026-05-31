@@ -29,12 +29,13 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { LayersIcon, PencilIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ProductMacroCategoryForm } from "@/features/product-macro-categories/components/product-macro-category-form";
+import type { ProductMacroCategoryFormData } from "@/features/product-macro-categories/schemas/product-macro-category";
 import { api } from "@/lib/api";
 
 interface ProductMacroCategory {
 	id: string;
 	name: string;
-	suggestedVatRate: string;
+	suggestedVatRate: ProductMacroCategoryFormData["suggestedVatRate"];
 	createdAt: Date | string;
 	updatedAt: Date | string;
 }
@@ -135,15 +136,13 @@ export function ProductMacroCategoriesPanel({
 	};
 
 	const createMutation = useMutation({
-		mutationFn: async (input: { name: string; suggestedVatRate: string }) => {
+		mutationFn: async (input: {
+			name: string;
+			suggestedVatRate: ProductMacroCategoryFormData["suggestedVatRate"];
+		}) => {
 			const response = await api().admin["product-macro-categories"].post({
 				name: input.name,
-				suggestedVatRate: input.suggestedVatRate as
-					| "22"
-					| "10"
-					| "5"
-					| "4"
-					| "0",
+				suggestedVatRate: input.suggestedVatRate,
 			});
 			if (response.error) {
 				throw new Error(
@@ -167,18 +166,13 @@ export function ProductMacroCategoriesPanel({
 		mutationFn: async (input: {
 			id: string;
 			name: string;
-			suggestedVatRate: string;
+			suggestedVatRate: ProductMacroCategoryFormData["suggestedVatRate"];
 		}) => {
 			const response = await api()
 				.admin["product-macro-categories"]({ macroCategoryId: input.id })
 				.patch({
 					name: input.name,
-					suggestedVatRate: input.suggestedVatRate as
-						| "22"
-						| "10"
-						| "5"
-						| "4"
-						| "0",
+					suggestedVatRate: input.suggestedVatRate,
 				});
 			if (response.error) {
 				throw new Error(
@@ -425,12 +419,7 @@ export function ProductMacroCategoriesPanel({
 							selectedMacro
 								? {
 										name: selectedMacro.name,
-										suggestedVatRate: selectedMacro.suggestedVatRate as
-											| "22"
-											| "10"
-											| "5"
-											| "4"
-											| "0",
+										suggestedVatRate: selectedMacro.suggestedVatRate,
 									}
 								: undefined
 						}

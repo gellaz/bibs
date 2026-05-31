@@ -96,9 +96,18 @@ export const UserSchema = t.Object({
 export const ProductMacroCategorySchema = t.Object({
 	id: t.String(),
 	name: t.String({ description: "Nome della macro categoria prodotto" }),
-	suggestedVatRate: t.String({
-		description: "Aliquota IVA suggerita (%) per i prodotti di questa macro",
-	}),
+	suggestedVatRate: t.Union(
+		[
+			t.Literal("22"),
+			t.Literal("10"),
+			t.Literal("5"),
+			t.Literal("4"),
+			t.Literal("0"),
+		],
+		{
+			description: "Aliquota IVA suggerita (%) per i prodotti di questa macro",
+		},
+	),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
 });
@@ -271,9 +280,16 @@ export const ProductSchema = t.Object({
 	name: t.String(),
 	description: t.Nullable(t.String()),
 	price: t.String({ description: "Prezzo in formato decimale (es. '9.99')" }),
-	vatRate: t.String({
-		description: "Aliquota IVA del prodotto (%): 22, 10, 5, 4 o 0",
-	}),
+	vatRate: t.Union(
+		[
+			t.Literal("22"),
+			t.Literal("10"),
+			t.Literal("5"),
+			t.Literal("4"),
+			t.Literal("0"),
+		],
+		{ description: "Aliquota IVA del prodotto (%): 22, 10, 5, 4 o 0" },
+	),
 	status: t.Union(
 		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
 		{

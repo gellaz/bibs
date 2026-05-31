@@ -28,7 +28,10 @@ import { api } from "@/lib/api";
 interface ProductCategoriesPickerProps {
 	macroCategoryId: string | null;
 	categoryIds: string[];
-	onMacroChange: (macroId: string | null, suggestedVatRate?: string) => void;
+	onMacroChange: (
+		macroId: string | null,
+		suggestedVatRate?: "22" | "10" | "5" | "4" | "0",
+	) => void;
 	onToggleCategory: (categoryId: string) => void;
 	required?: boolean;
 }
