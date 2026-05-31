@@ -11,7 +11,7 @@ import {
 	InputGroupInput,
 } from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import { Price } from "@bibs/ui/components/price";
+import { formatPriceEur, Price } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -112,6 +112,7 @@ export const Route = createFileRoute("/_authenticated/products/")({
 const INITIAL_COLUMN_VISIBILITY = {
 	brand: false,
 	ean: false,
+	vat: false,
 };
 
 const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
@@ -368,7 +369,41 @@ function ProductsListPage() {
 					cellClassName: "text-sm",
 					menuLabel: "Prezzo",
 				},
-				cell: ({ row }) => <Price value={row.original.price} />,
+				cell: ({ row }) => {
+					const gross = Number.parseFloat(row.original.price);
+					const rate = Number(row.original.vatRate);
+					const net = Number.isFinite(gross) ? gross / (1 + rate / 100) : NaN;
+					return (
+						<div className="flex flex-col leading-tight">
+							<Price value={row.original.price} />
+							<span className="text-muted-foreground text-xs tabular-nums">
+								netto {formatPriceEur(net)}
+							</span>
+						</div>
+					);
+				},
+			},
+			{
+				id: "vat",
+				header: "IVA",
+				meta: {
+					headerClassName: "w-[12%]",
+					cellClassName: "text-sm",
+					menuLabel: "IVA",
+				},
+				cell: ({ row }) => {
+					const gross = Number.parseFloat(row.original.price);
+					const rate = Number(row.original.vatRate);
+					const vat = Number.isFinite(gross)
+						? gross - gross / (1 + rate / 100)
+						: NaN;
+					return (
+						<div className="flex items-center gap-1.5 tabular-nums">
+							<span>{formatPriceEur(vat)}</span>
+							<Badge variant="secondary">{rate}%</Badge>
+						</div>
+					);
+				},
 			},
 			{
 				id: "stock",
