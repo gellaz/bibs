@@ -13,6 +13,7 @@ import { municipality } from "./location";
 import { storeProduct } from "./product";
 import { sellerProfile } from "./seller";
 import { storeCategory } from "./store-category";
+import { storeHolidayOptout } from "./store-holiday-optout";
 import { storeImage } from "./store-image";
 import { storeSubscription } from "./store-subscription";
 
@@ -44,6 +45,10 @@ export const store = pgTable(
 					dayOfWeek: number;
 					slots: Array<{ open: string; close: string }>;
 				}>
+			>(),
+		closures:
+			jsonb("closures").$type<
+				Array<{ startDate: string; endDate?: string; note?: string }>
 			>(),
 		websiteUrl: text("website_url"),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -104,6 +109,7 @@ export const storeRelations = relations(store, ({ one, many }) => ({
 	storeProducts: many(storeProduct),
 	phoneNumbers: many(storePhoneNumber),
 	images: many(storeImage),
+	holidayOptOuts: many(storeHolidayOptout),
 }));
 
 export const storePhoneNumberRelations = relations(

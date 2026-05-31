@@ -3,7 +3,7 @@ import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import {
@@ -18,6 +18,7 @@ import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/store/")({
 	loader: ({ context }) =>
@@ -230,6 +231,15 @@ function StoreSettingsPage() {
 				onNameChange={handleNameChange}
 				readOnly={!isOwner}
 			/>
+
+			{isOwner && (
+				<Link
+					to="/store/closures"
+					className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+				>
+					{m["store.closures.link"]()} →
+				</Link>
+			)}
 
 			{isOwner &&
 				activeStore &&

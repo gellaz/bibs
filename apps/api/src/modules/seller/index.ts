@@ -9,6 +9,7 @@ import { getAccessibleStoreIdsFor, getSellerStoreIds } from "./context";
 import { billingRoutes } from "./routes/billing";
 import { brandsRoutes } from "./routes/brands";
 import { checkoutRoutes } from "./routes/checkout";
+import { closuresRoutes } from "./routes/closures";
 import { discountsRoutes } from "./routes/discounts";
 import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
@@ -119,6 +120,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 				// Mount all sub-route plugins
 				.use(billingRoutes)
 				.use(storesRoutes)
+				.use(closuresRoutes)
 				.use(checkoutRoutes)
 				.use(productsRoutes)
 				.use(brandsRoutes)

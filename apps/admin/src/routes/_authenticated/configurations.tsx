@@ -5,6 +5,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
 import { ProductCategoriesPanel } from "@/features/product-categories/components/product-categories-panel";
 import { ProductMacroCategoriesPanel } from "@/features/product-macro-categories/components/product-macro-categories-panel";
 import { StoreCategoriesPanel } from "@/features/store-categories/components/store-categories-panel";
@@ -47,6 +48,11 @@ function ConfigurationsPage() {
 			label: "Categorie Negozio",
 			count: countsData?.storeCategories ?? null,
 		},
+		{
+			value: "holidays",
+			label: "Festività",
+			count: null,
+		},
 	];
 
 	const handleTabChange = (value: string) => {
@@ -64,7 +70,9 @@ function ConfigurationsPage() {
 			<TabNav tabs={tabs} activeTab={tab} onTabChange={handleTabChange}>
 				<Button onClick={() => setCreateOpen(true)}>
 					<PlusIcon />
-					<span>Nuova Categoria</span>
+					<span>
+						{tab === "holidays" ? "Nuova Festività" : "Nuova Categoria"}
+					</span>
 				</Button>
 			</TabNav>
 
@@ -82,6 +90,12 @@ function ConfigurationsPage() {
 			)}
 			{tab === "store-categories" && (
 				<StoreCategoriesPanel
+					createOpen={createOpen}
+					onCreateOpenChange={setCreateOpen}
+				/>
+			)}
+			{tab === "holidays" && (
+				<HolidaysPanel
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>
