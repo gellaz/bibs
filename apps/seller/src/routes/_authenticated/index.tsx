@@ -1,6 +1,5 @@
 import { Button } from "@bibs/ui/components/button";
 import { cn } from "@bibs/ui/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	AlertTriangle,
@@ -14,7 +13,7 @@ import {
 	Tag,
 } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api } from "@/lib/api";
+import { useStores } from "@/hooks/use-stores";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: Dashboard,
@@ -93,18 +92,9 @@ const URGENCY_DOT: Record<Urgency, string> = {
 
 function Dashboard() {
 	const { activeStore, stores, isLoading } = useActiveStore();
-	const { data: storeList } = useQuery({
-		queryKey: ["stores"],
-		queryFn: async () => {
-			const res = await api().seller.stores.get({
-				query: { page: 1, limit: 100 },
-			});
-			if (res.error) return null;
-			return res.data;
-		},
-	});
+	const { data: storesList } = useStores();
 	const openStatus =
-		storeList?.data.find((s) => s.id === activeStore?.id)?.openStatus ?? null;
+		storesList?.find((s) => s.id === activeStore?.id)?.openStatus ?? null;
 
 	const hoursAction: ActionItem | null =
 		openStatus && !openStatus.isOpen
