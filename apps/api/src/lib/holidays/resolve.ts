@@ -51,9 +51,12 @@ export function resolveStoreClosedDates(
 	}
 
 	for (const c of input.customClosures) {
-		for (const ymd of expandRange(c.startDate, c.endDate)) {
-			if (ymd >= window.from && ymd <= window.to) closed.add(ymd);
-		}
+		// Clip the range to the window BEFORE expanding, so a far-future endDate
+		// can't materialize an enormous array on the hot path (listStores).
+		const rawEnd = c.endDate ?? c.startDate;
+		const start = c.startDate > window.from ? c.startDate : window.from;
+		const end = rawEnd < window.to ? rawEnd : window.to;
+		for (const ymd of expandRange(start, end)) closed.add(ymd);
 	}
 
 	return closed;

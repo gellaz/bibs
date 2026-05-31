@@ -81,6 +81,22 @@ describe("resolveStoreClosedDates", () => {
 		expect(closed.has("2026-04-06")).toBe(true);
 	});
 
+	it("clips an unbounded custom range to the window before expanding", () => {
+		const closed = resolveStoreClosedDates(
+			{
+				activeDefs: [],
+				optOutIds: [],
+				customClosures: [{ startDate: "2000-01-01", endDate: "9999-12-31" }],
+			},
+			{ from: "2026-05-01", to: "2026-05-03" },
+		);
+		expect([...closed].sort()).toEqual([
+			"2026-05-01",
+			"2026-05-02",
+			"2026-05-03",
+		]);
+	});
+
 	it("custom closures (ranges) are unioned and clipped to the window", () => {
 		const closed = resolveStoreClosedDates(
 			{
