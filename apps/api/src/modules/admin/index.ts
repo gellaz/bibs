@@ -4,6 +4,7 @@ import { betterAuth } from "@/plugins/better-auth";
 import { adminBillingRoutes } from "./routes/billing";
 import { categoryImportsRoutes } from "./routes/category-imports";
 import { configurationsRoutes } from "./routes/configurations";
+import { holidayDefinitionsRoutes } from "./routes/holiday-definitions";
 import { productCategoriesWriteRoutes } from "./routes/product-categories";
 import { productMacroCategoriesWriteRoutes } from "./routes/product-macro-categories";
 import { sellerChangesRoutes } from "./routes/seller-changes";
@@ -30,6 +31,7 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				.use(productCategoriesWriteRoutes)
 				.use(configurationsRoutes)
 				.use(storeCategoriesWriteRoutes)
+				.use(holidayDefinitionsRoutes)
 				.use(categoryImportsRoutes)
 				.use(sellersRoutes)
 				.use(sellerChangesRoutes)
