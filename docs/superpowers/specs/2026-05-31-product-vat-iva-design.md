@@ -133,8 +133,11 @@ buildCastelletto(lines):                            // lines: { grossCents, rate
 - **Live scorporo preview** under the price input: `Imponibile 8,19 € · IVA 1,80 €`, recomputed as price/rate change.
 - Reuse `formatPriceEur` from `packages/ui/src/components/price.tsx`.
 
-### 6.3 Seller order view
-- **Castelletto IVA** summary (imponibile/imposta per rate) under the order total, from `order.vatBreakdown`.
+### 6.3 Seller order view — DEFERRED (no view exists yet)
+- The seller app has **no orders page** today (`apps/seller/src/routes/_authenticated/` has no `orders/`), although the API
+  seller-order endpoint + `SellerOrderWithRelationsSchema` exist. The castelletto **data** is exposed on `OrderSchema`
+  (`vatBreakdown`) and therefore on both seller/customer order schemas; the seller-facing **display** of it is deferred to
+  whenever the seller orders page is built. No UI work for this in v1.
 
 ---
 
@@ -178,4 +181,5 @@ buildCastelletto(lines):                            // lines: { grossCents, rate
 - `apps/api/src/db/seed/base/categories.ts` (+ macro seed values)
 - `apps/seller/src/routes/_authenticated/products/index.tsx`
 - `apps/seller/src/features/products/components/product-form.tsx`
-- seller order view component + `apps/admin` macro-category form
+- `apps/admin/src/features/product-macro-categories/components/product-macro-category-form.tsx` + its zod schema + panel wiring
+- (deferred) seller order-view castelletto display — no seller orders page exists yet
