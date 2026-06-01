@@ -9,7 +9,6 @@ import {
 	SelectValue,
 } from "@bibs/ui/components/select";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type ProductMacroCategoryFormData,
@@ -33,22 +32,24 @@ export function ProductMacroCategoryForm({
 	submitLabel,
 	pendingLabel,
 }: ProductMacroCategoryFormProps) {
+	// `defaultValues` initialises the form once on mount. The dialog that hosts
+	// this form unmounts its content on close (Radix Dialog), so each open
+	// re-mounts with fresh values — no `reset()` effect needed. A previous
+	// `useEffect(() => reset(defaultValues), [defaultValues])` was harmful: the
+	// parent passes a NEW `defaultValues` object every render, so the effect
+	// re-ran and clobbered the controlled <Select> mid-interaction (its
+	// onValueChange never stuck). Keep this form free of that effect; if the
+	// hosting dialog ever switches to forceMount, key the form on the macro id
+	// instead of reintroducing a reset effect.
 	const {
 		register,
 		handleSubmit,
 		control,
-		reset,
 		formState: { errors },
 	} = useForm<ProductMacroCategoryFormData>({
 		resolver: zodResolver(productMacroCategoryFormSchema),
 		defaultValues: defaultValues ?? { name: "", suggestedVatRate: "22" },
 	});
-
-	useEffect(() => {
-		if (defaultValues) {
-			reset(defaultValues);
-		}
-	}, [defaultValues, reset]);
 
 	const onFormSubmit: SubmitHandler<ProductMacroCategoryFormData> = (data) => {
 		onSubmit(data);
