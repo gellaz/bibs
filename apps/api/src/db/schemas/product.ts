@@ -10,6 +10,7 @@ import {
 	timestamp,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { DEFAULT_VAT_RATE, VAT_RATES } from "@/lib/vat";
 import { brand } from "./brand";
 import { productCategory } from "./category";
 import { productImage } from "./product-image";
@@ -35,6 +36,9 @@ export const product = pgTable(
 			onDelete: "set null",
 		}),
 		price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+		vatRate: text("vat_rate", { enum: VAT_RATES })
+			.default(DEFAULT_VAT_RATE)
+			.notNull(),
 		status: text("status", { enum: productStatuses })
 			.default("active")
 			.notNull(),
@@ -56,6 +60,10 @@ export const product = pgTable(
       )`,
 		),
 		check("product_price_non_negative", sql`${table.price} >= 0`),
+		check(
+			"product_vat_rate_valid",
+			sql`${table.vatRate} IN ('22','10','5','4','0')`,
+		),
 		uniqueIndex("product_seller_ean_unique")
 			.on(table.sellerProfileId, table.ean)
 			.where(sql`${table.ean} IS NOT NULL AND ${table.status} != 'trashed'`),

@@ -96,6 +96,18 @@ export const UserSchema = t.Object({
 export const ProductMacroCategorySchema = t.Object({
 	id: t.String(),
 	name: t.String({ description: "Nome della macro categoria prodotto" }),
+	suggestedVatRate: t.Union(
+		[
+			t.Literal("22"),
+			t.Literal("10"),
+			t.Literal("5"),
+			t.Literal("4"),
+			t.Literal("0"),
+		],
+		{
+			description: "Aliquota IVA suggerita (%) per i prodotti di questa macro",
+		},
+	),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
 });
@@ -268,6 +280,16 @@ export const ProductSchema = t.Object({
 	name: t.String(),
 	description: t.Nullable(t.String()),
 	price: t.String({ description: "Prezzo in formato decimale (es. '9.99')" }),
+	vatRate: t.Union(
+		[
+			t.Literal("22"),
+			t.Literal("10"),
+			t.Literal("5"),
+			t.Literal("4"),
+			t.Literal("0"),
+		],
+		{ description: "Aliquota IVA del prodotto (%): 22, 10, 5, 4 o 0" },
+	),
 	status: t.Union(
 		[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
 		{
@@ -439,6 +461,16 @@ export const OrderSchema = t.Object({
 	shippingCost: t.Nullable(
 		t.String({ description: "Costo di spedizione in formato decimale" }),
 	),
+	vatBreakdown: t.Nullable(
+		t.Array(
+			t.Object({
+				rate: t.Number({ description: "Aliquota IVA (%)" }),
+				taxableAmount: t.String({ description: "Imponibile (netto)" }),
+				taxAmount: t.String({ description: "Imposta (IVA)" }),
+			}),
+			{ description: "Castelletto IVA per aliquota. NULL per ordini storici" },
+		),
+	),
 	reservationExpiresAt: t.Nullable(
 		t.Date({ description: "Scadenza della prenotazione per reserve_pickup" }),
 	),
@@ -484,6 +516,17 @@ export const OrderItemSchema = t.Object({
 	unitPrice: t.String({
 		description: "Prezzo unitario al momento dell'ordine",
 	}),
+	vatRate: t.Nullable(
+		t.String({
+			description:
+				"Snapshot aliquota IVA applicata (%). NULL per ordini storici",
+		}),
+	),
+	vatAmount: t.Nullable(
+		t.String({
+			description: "IVA della riga (display). NULL per ordini storici",
+		}),
+	),
 });
 
 export const CustomerProfileSchema = t.Object({

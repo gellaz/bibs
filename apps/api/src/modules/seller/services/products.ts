@@ -14,6 +14,7 @@ import { productImage } from "@/db/schemas/product-image";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
+import type { VatRate } from "@/lib/vat";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
 
 // ── Brand resolution helper ───────────────────────────────────────────────────
@@ -514,6 +515,7 @@ interface CreateProductParams {
 	name: string;
 	description?: string;
 	price: string;
+	vatRate?: VatRate;
 	categoryIds?: string[];
 	ean?: string;
 	brandId?: string;
@@ -608,6 +610,7 @@ interface UpdateProductParams {
 	name?: string;
 	description?: string;
 	price?: string;
+	vatRate?: VatRate;
 	ean?: string | null;
 	brandId?: string | null;
 	brandName?: string;

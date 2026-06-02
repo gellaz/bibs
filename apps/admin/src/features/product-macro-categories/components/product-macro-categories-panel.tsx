@@ -29,11 +29,13 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { LayersIcon, PencilIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ProductMacroCategoryForm } from "@/features/product-macro-categories/components/product-macro-category-form";
+import type { ProductMacroCategoryFormData } from "@/features/product-macro-categories/schemas/product-macro-category";
 import { api } from "@/lib/api";
 
 interface ProductMacroCategory {
 	id: string;
 	name: string;
+	suggestedVatRate: ProductMacroCategoryFormData["suggestedVatRate"];
 	createdAt: Date | string;
 	updatedAt: Date | string;
 }
@@ -134,9 +136,13 @@ export function ProductMacroCategoriesPanel({
 	};
 
 	const createMutation = useMutation({
-		mutationFn: async (name: string) => {
+		mutationFn: async (input: {
+			name: string;
+			suggestedVatRate: ProductMacroCategoryFormData["suggestedVatRate"];
+		}) => {
 			const response = await api().admin["product-macro-categories"].post({
-				name,
+				name: input.name,
+				suggestedVatRate: input.suggestedVatRate,
 			});
 			if (response.error) {
 				throw new Error(
@@ -157,10 +163,17 @@ export function ProductMacroCategoriesPanel({
 	});
 
 	const updateMutation = useMutation({
-		mutationFn: async ({ id, name }: { id: string; name: string }) => {
+		mutationFn: async (input: {
+			id: string;
+			name: string;
+			suggestedVatRate: ProductMacroCategoryFormData["suggestedVatRate"];
+		}) => {
 			const response = await api()
-				.admin["product-macro-categories"]({ macroCategoryId: id })
-				.patch({ name });
+				.admin["product-macro-categories"]({ macroCategoryId: input.id })
+				.patch({
+					name: input.name,
+					suggestedVatRate: input.suggestedVatRate,
+				});
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message ||
@@ -234,6 +247,16 @@ export function ProductMacroCategoriesPanel({
 					</SortableHeadButton>
 				),
 				cell: ({ row }) => row.original.name,
+			},
+			{
+				id: "suggestedVatRate",
+				meta: {
+					menuLabel: "IVA suggerita",
+					headerClassName: "w-[20%]",
+					cellClassName: "text-sm tabular-nums",
+				},
+				header: () => "IVA suggerita",
+				cell: ({ row }) => `${row.original.suggestedVatRate}%`,
 			},
 			{
 				id: "createdAt",
@@ -374,7 +397,7 @@ export function ProductMacroCategoriesPanel({
 						</DialogDescription>
 					</DialogHeader>
 					<ProductMacroCategoryForm
-						onSubmit={(data) => createMutation.mutate(data.name)}
+						onSubmit={(data) => createMutation.mutate(data)}
 						onCancel={() => onCreateOpenChange(false)}
 						isPending={createMutation.isPending}
 						submitLabel="Crea"
@@ -393,13 +416,19 @@ export function ProductMacroCategoriesPanel({
 					</DialogHeader>
 					<ProductMacroCategoryForm
 						defaultValues={
-							selectedMacro ? { name: selectedMacro.name } : undefined
+							selectedMacro
+								? {
+										name: selectedMacro.name,
+										suggestedVatRate: selectedMacro.suggestedVatRate,
+									}
+								: undefined
 						}
 						onSubmit={(data) => {
 							if (selectedMacro) {
 								updateMutation.mutate({
 									id: selectedMacro.id,
 									name: data.name,
+									suggestedVatRate: data.suggestedVatRate,
 								});
 							}
 						}}

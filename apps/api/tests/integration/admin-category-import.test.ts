@@ -282,9 +282,11 @@ describe("deleteProductMacroCategory", () => {
 
 describe("createProductMacroCategory", () => {
 	it("creates a macro and rejects duplicate names via unique constraint", async () => {
-		const m1 = await createProductMacroCategory("Elettronica");
+		const m1 = await createProductMacroCategory({ name: "Elettronica" });
 		expect(m1.name).toBe("Elettronica");
 
-		await expect(createProductMacroCategory("Elettronica")).rejects.toThrow();
+		await expect(
+			createProductMacroCategory({ name: "Elettronica" }),
+		).rejects.toThrow();
 	});
 });

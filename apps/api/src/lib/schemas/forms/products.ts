@@ -1,5 +1,17 @@
 import { Type } from "@sinclair/typebox";
 
+// Aliquote IVA accettate (vedi VAT_RATES in @/lib/vat). Stringhe percentuali.
+export const VatRateSchema = Type.Union(
+	[
+		Type.Literal("22"),
+		Type.Literal("10"),
+		Type.Literal("5"),
+		Type.Literal("4"),
+		Type.Literal("0"),
+	],
+	{ description: "Aliquota IVA (%): 22, 10, 5, 4 o 0", default: "22" },
+);
+
 export const CreateProductBody = Type.Object({
 	name: Type.String({
 		minLength: 1,
@@ -18,6 +30,7 @@ export const CreateProductBody = Type.Object({
 		description: "Prezzo (formato decimale, es. '9.99')",
 		error: "Il prezzo deve essere nel formato 0.00",
 	}),
+	vatRate: Type.Optional(VatRateSchema),
 	categoryIds: Type.Optional(
 		Type.Array(Type.String({ description: "ID categoria" }), {
 			description:

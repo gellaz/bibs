@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { count } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
@@ -46,4 +46,17 @@ export async function seedProductCategories() {
 	console.log(
 		`     ✓ ${result.created} product categories (skipped: ${result.skipped}, failed: ${result.failed})`,
 	);
+
+	// Aliquote IVA suggerite: la maggior parte resta al default 22%; solo i macro
+	// merceologici tipicamente ad aliquota ridotta vengono impostati qui.
+	const VAT_BY_MACRO: Record<string, "10" | "4"> = {
+		"Alimentari e bevande": "10",
+		"Libri e media": "4",
+	};
+	for (const [name, rate] of Object.entries(VAT_BY_MACRO)) {
+		await db
+			.update(productMacroCategory)
+			.set({ suggestedVatRate: rate })
+			.where(eq(productMacroCategory.name, name));
+	}
 }

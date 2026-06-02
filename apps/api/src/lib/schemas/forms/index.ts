@@ -6,7 +6,7 @@ export {
 	TeamInviteBody,
 } from "./onboarding";
 export { OpeningHoursSchema } from "./opening-hours";
-export { CreateProductBody } from "./products";
+export { CreateProductBody, VatRateSchema } from "./products";
 export {
 	CompanySettingsBody,
 	DocumentChangeBody,

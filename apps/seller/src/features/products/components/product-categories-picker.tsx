@@ -28,7 +28,10 @@ import { api } from "@/lib/api";
 interface ProductCategoriesPickerProps {
 	macroCategoryId: string | null;
 	categoryIds: string[];
-	onMacroChange: (macroId: string | null) => void;
+	onMacroChange: (
+		macroId: string | null,
+		suggestedVatRate?: "22" | "10" | "5" | "4" | "0",
+	) => void;
 	onToggleCategory: (categoryId: string) => void;
 	required?: boolean;
 }
@@ -80,7 +83,12 @@ export function ProductCategoriesPicker({
 				<Label>Macrocategoria{required && " *"}</Label>
 				<Select
 					value={macroCategoryId ?? ""}
-					onValueChange={(v) => onMacroChange(v || null)}
+					onValueChange={(v) =>
+						onMacroChange(
+							v || null,
+							macros.find((m) => m.id === v)?.suggestedVatRate,
+						)
+					}
 				>
 					<SelectTrigger className="w-full">
 						<SelectValue placeholder="Seleziona una macrocategoria" />

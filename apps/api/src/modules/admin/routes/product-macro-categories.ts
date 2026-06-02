@@ -7,6 +7,7 @@ import {
 	ProductMacroCategorySchema,
 	withConflictErrors,
 } from "@/lib/schemas";
+import { VatRateSchema } from "@/lib/schemas/forms";
 import { withAdmin } from "../context";
 import {
 	createProductMacroCategory,
@@ -20,7 +21,10 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 		async (ctx) => {
 			const { body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await createProductMacroCategory(body.name);
+			const data = await createProductMacroCategory({
+				name: body.name,
+				suggestedVatRate: body.suggestedVatRate,
+			});
 
 			pino.info(
 				{
@@ -41,6 +45,7 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 					maxLength: 100,
 					description: "Nome della macro categoria",
 				}),
+				suggestedVatRate: t.Optional(VatRateSchema),
 			}),
 			response: withConflictErrors({ 200: okRes(ProductMacroCategorySchema) }),
 			detail: {
@@ -59,6 +64,7 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 			const data = await updateProductMacroCategory({
 				macroCategoryId: params.macroCategoryId,
 				name: body.name,
+				suggestedVatRate: body.suggestedVatRate,
 			});
 
 			pino.info(
@@ -85,6 +91,7 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 					maxLength: 100,
 					description: "Nuovo nome della macro categoria",
 				}),
+				suggestedVatRate: t.Optional(VatRateSchema),
 			}),
 			response: withConflictErrors({ 200: okRes(ProductMacroCategorySchema) }),
 			detail: {
