@@ -29,6 +29,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
+import { EmptyState } from "@bibs/ui/components/empty-state";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
@@ -813,28 +814,25 @@ function TeamPage() {
 					if (r.kind === "invitation") return "text-muted-foreground/80";
 					return "";
 				}}
+				hideHeaderWhenEmpty
 				emptyState={
-					<div className="flex flex-col items-center gap-3">
-						<UsersIcon className="text-muted-foreground/40 size-8" />
-						<div>
-							<p className="text-muted-foreground font-medium">
-								Nessun membro nel team
-							</p>
-							<p className="text-muted-foreground/60 text-sm">
-								Invita collaboratori per gestire insieme il tuo negozio
-							</p>
-						</div>
-						{isOwner && (
-							<InviteEmployeeDialog
-								trigger={
-									<Button size="sm" className="mt-1">
-										<SendIcon />
-										Invita il primo collaboratore
-									</Button>
-								}
-							/>
-						)}
-					</div>
+					<EmptyState
+						icon={UsersIcon}
+						title="Nessun membro nel team"
+						description="Invita collaboratori per gestire insieme il tuo negozio."
+						action={
+							isOwner ? (
+								<InviteEmployeeDialog
+									trigger={
+										<Button>
+											<SendIcon />
+											Invita il primo collaboratore
+										</Button>
+									}
+								/>
+							) : undefined
+						}
+					/>
 				}
 			/>
 

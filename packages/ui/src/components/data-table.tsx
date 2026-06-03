@@ -101,6 +101,14 @@ interface DataTableProps<TData> {
 	 * Caller controls icon and copy; the cell handles `colSpan` and centering.
 	 */
 	emptyState?: ReactNode;
+	/**
+	 * When the table has zero rows, render `emptyState` in place of the whole
+	 * table (header included). Use for first-run emptiness — no search/filter
+	 * active — where a header has nothing to sort or select. Keep it `false`
+	 * for filter-produced emptiness so the table structure stays put while
+	 * the user adjusts the query.
+	 */
+	hideHeaderWhenEmpty?: boolean;
 	/** Extra class for each row. Function form receives the TanStack row. */
 	rowClassName?: string | ((row: Row<TData>) => string);
 	/** Class on the rounded card wrapper around the table. */
@@ -140,6 +148,7 @@ export function DataTable<TData>({
 	getRowId,
 	isLoading,
 	emptyState,
+	hideHeaderWhenEmpty,
 	rowClassName,
 	containerClassName,
 	manualSorting,
@@ -209,6 +218,19 @@ export function DataTable<TData>({
 
 	const rows = table.getRowModel().rows;
 	const visibleColumnCount = table.getVisibleLeafColumns().length;
+
+	if (rows.length === 0 && hideHeaderWhenEmpty) {
+		return (
+			<div
+				className={cn(
+					"bg-card flex items-center justify-center rounded-lg border shadow-sm",
+					containerClassName,
+				)}
+			>
+				{emptyState}
+			</div>
+		);
+	}
 
 	return (
 		<div

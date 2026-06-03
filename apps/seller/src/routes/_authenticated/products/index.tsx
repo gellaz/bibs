@@ -4,6 +4,7 @@ import { Checkbox } from "@bibs/ui/components/checkbox";
 import { CopyButton } from "@bibs/ui/components/copy-button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
 import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
+import { EmptyState } from "@bibs/ui/components/empty-state";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -261,6 +262,19 @@ function ProductsListPage() {
 				: statusFilter === "disabled"
 					? m.products_empty_disabled()
 					: m.products_empty_trashed();
+
+	// Vista "pulita" del catalogo: tab Attivi senza ricerca né filtri. Se è
+	// vuota il negozio non ha davvero prodotti: empty state ricco con CTA al
+	// posto dell'intera tabella (header compreso). Con filtri attivi invece
+	// l'header resta, così la struttura non salta mentre l'utente aggiusta
+	// la query.
+	const isPristineCatalogView =
+		Boolean(activeStore) &&
+		statusFilter === "active" &&
+		effectiveRouteQ.length === 0 &&
+		(categoryIds?.length ?? 0) === 0 &&
+		!minPrice &&
+		!maxPrice;
 
 	const columns = useMemo<ColumnDef<Product>[]>(
 		() => [
@@ -596,7 +610,7 @@ function ProductsListPage() {
 				<Button asChild>
 					<Link to="/products/new">
 						<PlusIcon />
-						<span>Nuovo Prodotto</span>
+						<span>{m.products_new_cta()}</span>
 					</Link>
 				</Button>
 			</div>
@@ -686,11 +700,25 @@ function ProductsListPage() {
 						? "bg-primary/10 hover:bg-primary/10 [&>td:not(:first-child):not(:last-child)]:opacity-60"
 						: ""
 				}
+				hideHeaderWhenEmpty={isPristineCatalogView}
 				emptyState={
-					<div className="flex flex-col items-center gap-2">
-						<PackageIcon className="text-muted-foreground/40 size-8" />
-						<p className="text-muted-foreground font-medium">{emptyMessage}</p>
-					</div>
+					isPristineCatalogView ? (
+						<EmptyState
+							icon={PackageIcon}
+							title={m.products_empty_catalog()}
+							description={m.products_empty_catalog_description()}
+							action={
+								<Button asChild>
+									<Link to="/products/new">
+										<PlusIcon />
+										<span>{m.products_new_cta()}</span>
+									</Link>
+								</Button>
+							}
+						/>
+					) : (
+						<EmptyState icon={PackageIcon} title={emptyMessage} />
+					)
 				}
 			/>
 

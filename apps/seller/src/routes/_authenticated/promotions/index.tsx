@@ -294,6 +294,7 @@ function PromotionsListPage() {
 				storageKey="seller.promotions.columns"
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				hideHeaderWhenEmpty={state === "all"}
 				emptyState={
 					state === "all" ? (
 						<EmptyState
