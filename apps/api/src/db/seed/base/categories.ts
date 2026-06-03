@@ -10,10 +10,10 @@ import {
 	importStoreCategoriesFromCsv,
 } from "@/modules/admin/services/category-import";
 
-// CSV files live at the repo root and are committed alongside the code.
-const REPO_ROOT = resolve(import.meta.dir, "../../../../../..");
-const PRODUCT_CATEGORIES_CSV = resolve(REPO_ROOT, "product_categories.csv");
-const STORE_CATEGORIES_CSV = resolve(REPO_ROOT, "store_categories.csv");
+// CSV files live next to the seed code in `../data` and are committed alongside it.
+const DATA_DIR = resolve(import.meta.dir, "../data");
+const PRODUCT_CATEGORIES_CSV = resolve(DATA_DIR, "product_categories.csv");
+const STORE_CATEGORIES_CSV = resolve(DATA_DIR, "store_categories.csv");
 
 export async function seedStoreCategories() {
 	const [{ total }] = await db.select({ total: count() }).from(storeCategory);
