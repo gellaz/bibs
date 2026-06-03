@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 import { EntityFormHeader } from "@/components/entity-form-header";
+import { FormSection } from "@/components/form-section";
 import {
 	type ExistingImage,
 	ProductForm,
@@ -12,6 +13,7 @@ import {
 } from "@/features/products/components/product-form";
 import { ProductStockManager } from "@/features/products/components/product-stock-manager";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products/$productId")({
 	component: EditProductPage,
@@ -148,7 +150,7 @@ function EditProductPage() {
 	const macroCategoryId = firstAssignment?.category.macroCategoryId ?? null;
 
 	return (
-		<div className="mx-auto max-w-2xl space-y-6">
+		<div className="mx-auto w-full max-w-7xl space-y-10">
 			<EntityFormHeader
 				mode="edit"
 				title={name || product.name}
@@ -182,10 +184,15 @@ function EditProductPage() {
 
 			<Separator />
 
-			<ProductStockManager
-				productId={productId}
-				storeProducts={product.storeProducts}
-			/>
+			<FormSection
+				title={m.products_stock_manager_heading()}
+				description={m.products_stock_manager_subtitle()}
+			>
+				<ProductStockManager
+					productId={productId}
+					storeProducts={product.storeProducts}
+				/>
+			</FormSection>
 		</div>
 	);
 }

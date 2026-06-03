@@ -3,7 +3,6 @@ import {
 	DropzoneContent,
 	DropzoneEmptyState,
 } from "@bibs/ui/components/dropzone";
-import { Label } from "@bibs/ui/components/label";
 import {
 	closestCenter,
 	DndContext,
@@ -19,7 +18,7 @@ import {
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripIcon, StarIcon, XIcon } from "lucide-react";
+import { GripIcon, StarIcon, UploadIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 export interface ExistingImage {
@@ -167,14 +166,6 @@ export function ProductImageDropzone({
 
 	return (
 		<div className="space-y-2">
-			<Label>
-				Immagini
-				{totalCount > 0 && (
-					<span className="ml-1 text-xs font-normal text-muted-foreground">
-						({totalCount}/{maxFiles})
-					</span>
-				)}
-			</Label>
 			<Dropzone
 				src={files.length > 0 ? files : undefined}
 				onDrop={onDrop}
@@ -182,8 +173,30 @@ export function ProductImageDropzone({
 				maxSize={maxSize}
 				accept={{ "image/*": [".png", ".jpg", ".jpeg", ".webp"] }}
 			>
-				<DropzoneContent />
-				<DropzoneEmptyState />
+				<DropzoneContent>
+					<div className="flex flex-col items-center justify-center">
+						<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+							<UploadIcon className="size-4" />
+						</div>
+						<p className="my-2 text-sm font-medium">Aggiungi altre immagini</p>
+						<p className="text-muted-foreground text-xs">
+							Trascina o clicca per aggiungere
+						</p>
+					</div>
+				</DropzoneContent>
+				<DropzoneEmptyState>
+					<div className="flex flex-col items-center justify-center">
+						<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+							<UploadIcon className="size-4" />
+						</div>
+						<p className="my-2 text-sm font-medium">
+							Trascina le immagini o clicca per caricare
+						</p>
+						<p className="text-muted-foreground text-xs">
+							JPG, PNG o WEBP — max {Math.round(maxSize / (1024 * 1024))} MB
+						</p>
+					</div>
+				</DropzoneEmptyState>
 			</Dropzone>
 			{items.length > 0 && (
 				<DndContext
@@ -214,6 +227,11 @@ export function ProductImageDropzone({
 						</div>
 					</SortableContext>
 				</DndContext>
+			)}
+			{totalCount > 0 && (
+				<p className="text-muted-foreground text-xs">
+					{totalCount} di {maxFiles} · la prima è la copertina
+				</p>
 			)}
 		</div>
 	);

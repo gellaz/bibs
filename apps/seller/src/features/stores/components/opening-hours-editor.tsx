@@ -139,11 +139,11 @@ export function OpeningHoursEditor({
 					return (
 						<div
 							key={dayOfWeek}
-							className={`px-3 py-2.5 lg:py-2 transition-colors ${
+							className={`px-3 py-2.5 @xl:py-2 transition-colors ${
 								isActive ? "bg-background" : "bg-muted/30"
 							}`}
 						>
-							<div className="flex flex-col lg:flex-row lg:items-center gap-2 lg:gap-3">
+							<div className="flex flex-col @xl:flex-row @xl:items-center gap-2 @xl:gap-3">
 								{/* Badge + day name */}
 								<div className="flex items-center gap-2.5 shrink-0">
 									<button
@@ -164,13 +164,13 @@ export function OpeningHoursEditor({
 
 								{/* Time slots */}
 								{isActive && (
-									<div className="flex flex-col lg:flex-row lg:flex-wrap gap-2 lg:gap-3 pl-16.5 lg:pl-0">
+									<div className="flex flex-col @xl:flex-row @xl:flex-wrap gap-2 @xl:gap-3 pl-16.5 @xl:pl-0">
 										{schedule.slots.map((slot, slotIndex) => (
 											<div
 												key={slotIndex}
 												className="flex items-center gap-1.5"
 											>
-												<span className="text-xs text-muted-foreground w-12 shrink-0 lg:hidden">
+												<span className="text-xs text-muted-foreground w-12 shrink-0 @xl:hidden">
 													Dalle
 												</span>
 												<Input
@@ -185,12 +185,12 @@ export function OpeningHoursEditor({
 														)
 													}
 													disabled={readOnly}
-													className="h-7 w-28 lg:w-24 text-sm tabular-nums"
+													className="h-7 w-28 @xl:w-24 text-sm tabular-nums"
 												/>
-												<span className="text-xs text-muted-foreground shrink-0 text-center lg:hidden w-8">
+												<span className="text-xs text-muted-foreground shrink-0 text-center @xl:hidden w-8">
 													alle
 												</span>
-												<span className="hidden lg:inline text-xs text-muted-foreground">
+												<span className="hidden @xl:inline text-xs text-muted-foreground">
 													–
 												</span>
 												<Input
@@ -205,7 +205,7 @@ export function OpeningHoursEditor({
 														)
 													}
 													disabled={readOnly}
-													className="h-7 w-28 lg:w-24 text-sm tabular-nums"
+													className="h-7 w-28 @xl:w-24 text-sm tabular-nums"
 												/>
 												{schedule.slots.length > 1 && !readOnly && (
 													<button
@@ -228,7 +228,7 @@ export function OpeningHoursEditor({
 									<button
 										type="button"
 										onClick={() => addSlot(dayOfWeek)}
-										className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors shrink-0 self-start lg:self-auto ml-16.5 lg:ml-0"
+										className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors shrink-0 self-start @xl:self-auto ml-16.5 @xl:ml-0"
 									>
 										<PlusCircleIcon className="size-3.5" />
 										Aggiungi fascia

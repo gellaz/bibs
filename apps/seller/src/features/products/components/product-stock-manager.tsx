@@ -83,15 +83,6 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 
 	return (
 		<div className="space-y-3">
-			<div>
-				<p className="text-sm font-medium">
-					{m.products_stock_manager_heading()}
-				</p>
-				<p className="text-muted-foreground text-xs">
-					{m.products_stock_manager_subtitle()}
-				</p>
-			</div>
-
 			{activeRow ? (
 				<div className="flex items-center gap-3 rounded-lg border px-3 py-2">
 					<StoreIcon className="text-muted-foreground size-4 shrink-0" />

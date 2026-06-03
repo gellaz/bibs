@@ -17,6 +17,7 @@ import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { UploadIcon } from "lucide-react";
 import { useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
@@ -145,8 +146,27 @@ function DocumentPage() {
 						}}
 						onError={(err) => setFileError(err.message)}
 					>
-						<DropzoneContent />
-						<DropzoneEmptyState />
+						<DropzoneContent>
+							<div className="flex flex-col items-center justify-center">
+								<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+									<UploadIcon className="size-4" />
+								</div>
+								<p className="my-2 text-sm font-medium">Foto caricata</p>
+								<p className="text-muted-foreground text-xs">
+									Clicca o trascina per sostituire
+								</p>
+							</div>
+						</DropzoneContent>
+						<DropzoneEmptyState>
+							<div className="flex flex-col items-center justify-center">
+								<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+									<UploadIcon className="size-4" />
+								</div>
+								<p className="my-2 text-sm font-medium">
+									Trascina la foto o clicca per caricare
+								</p>
+							</div>
+						</DropzoneEmptyState>
 					</Dropzone>
 					<FieldDescription>JPG, PNG o WebP — max 10 MB</FieldDescription>
 					{fileError && <p className="text-sm text-destructive">{fileError}</p>}

@@ -11,7 +11,6 @@ import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import "@/lib/typebox-formats";
 import { PlusIcon, Trash2Icon } from "lucide-react";
-import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
 	Controller,
@@ -19,6 +18,7 @@ import {
 	useFieldArray,
 	useForm,
 } from "react-hook-form";
+import { FormSection } from "@/components/form-section";
 import { useMunicipalities } from "@/hooks/use-municipalities";
 import {
 	DEFAULT_OPENING_HOURS,
@@ -58,32 +58,6 @@ interface StoreFormProps {
 	pendingLabel?: string;
 	onNameChange?: (name: string) => void;
 	readOnly?: boolean;
-}
-
-function FormSection({
-	title,
-	description,
-	children,
-}: {
-	title: string;
-	description?: string;
-	children: ReactNode;
-}) {
-	return (
-		<section className="grid gap-6 md:grid-cols-[18rem_1fr] md:gap-12">
-			<header className="space-y-1.5">
-				<h2 className="font-display text-base font-semibold tracking-tight text-foreground">
-					{title}
-				</h2>
-				{description && (
-					<p className="text-sm leading-relaxed text-muted-foreground">
-						{description}
-					</p>
-				)}
-			</header>
-			<div className="space-y-4">{children}</div>
-		</section>
-	);
 }
 
 export function StoreForm({
