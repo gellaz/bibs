@@ -6,6 +6,8 @@ import {
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
+	AlertDialogMedia,
+	type AlertDialogMediaVariant,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
 import { AvatarBadge } from "@bibs/ui/components/avatar";
@@ -402,22 +404,29 @@ function EmployeeActions({
 
 	const confirmMessages: Record<
 		string,
-		{ title: string; description: string }
+		{
+			title: string;
+			description: string;
+			variant: AlertDialogMediaVariant;
+		}
 	> = {
 		ban: {
 			title: "Sospendere questo dipendente?",
 			description:
 				"Il dipendente non potrà più accedere al pannello seller fino alla riabilitazione.",
+			variant: "warning",
 		},
 		unban: {
 			title: "Riabilitare questo dipendente?",
 			description:
 				"Il dipendente potrà nuovamente accedere al pannello seller.",
+			variant: "info",
 		},
 		remove: {
 			title: "Rimuovere questo dipendente?",
 			description:
 				"Il dipendente verrà rimosso dal team. Questa operazione non è reversibile.",
+			variant: "destructive",
 		},
 	};
 
@@ -482,6 +491,11 @@ function EmployeeActions({
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
+						{confirmAction && (
+							<AlertDialogMedia
+								variant={confirmMessages[confirmAction].variant}
+							/>
+						)}
 						<AlertDialogTitle>
 							{confirmAction && confirmMessages[confirmAction].title}
 						</AlertDialogTitle>

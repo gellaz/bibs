@@ -18,6 +18,7 @@
 	"products_bulk_selected": "{count} selected",
 	"products_bulk_clear_selection": "Clear selection",
 	"products_confirm_delete_title": "Delete {count} products permanently?",
+	"products_confirm_delete_title_one": "Delete this product permanently?",
 	"products_confirm_delete_description": "This action is irreversible. Associated images will be deleted. Your order history is preserved and will continue to show the product name and details at the time of purchase.",
 	"products_confirm_delete_action": "Delete permanently",
 	"products_confirm_delete_cancel": "Cancel",

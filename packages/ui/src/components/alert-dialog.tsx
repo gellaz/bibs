@@ -1,9 +1,34 @@
 "use client";
 
+import { InfoIcon, OctagonAlertIcon, TriangleAlertIcon } from "lucide-react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import type * as React from "react";
 import { Button } from "~/components/button";
 import { cn } from "~/lib/utils";
+
+// Icona e tinta fissate per tipo, non scelte dal call-site (stessa filosofia
+// di EmptyState): ogni dialogo di conferma parla la stessa lingua visiva.
+// Le tre forme (ottagono / triangolo / cerchio) distinguono il tipo anche
+// senza colore.
+const MEDIA_VARIANTS = {
+	/** Azione irreversibile: eliminazione, rimozione definitiva. */
+	destructive: {
+		icon: OctagonAlertIcon,
+		className: "bg-destructive/10 text-destructive",
+	},
+	/** Cambia stato senza distruggere dati: sospendi, archivia, disabilita. */
+	warning: {
+		icon: TriangleAlertIcon,
+		className: "bg-warning/15 text-warning",
+	},
+	/** Conferma neutra o riattivazione. */
+	info: {
+		icon: InfoIcon,
+		className: "bg-cobalt-soft text-cobalt-deep",
+	},
+} as const;
+
+export type AlertDialogMediaVariant = keyof typeof MEDIA_VARIANTS;
 
 function AlertDialog({
 	...props
@@ -100,17 +125,24 @@ function AlertDialogFooter({
 
 function AlertDialogMedia({
 	className,
+	variant,
+	children,
 	...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { variant?: AlertDialogMediaVariant }) {
+	const config = variant ? MEDIA_VARIANTS[variant] : undefined;
+	const Icon = config?.icon;
 	return (
 		<div
 			data-slot="alert-dialog-media"
 			className={cn(
 				"bg-muted mb-2 inline-flex size-10 items-center justify-center rounded-md sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-6",
+				config?.className,
 				className,
 			)}
 			{...props}
-		/>
+		>
+			{Icon ? <Icon aria-hidden /> : children}
+		</div>
 	);
 }
 

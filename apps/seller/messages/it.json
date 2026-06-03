@@ -18,6 +18,7 @@
 	"products_bulk_selected": "{count} selezionati",
 	"products_bulk_clear_selection": "Annulla selezione",
 	"products_confirm_delete_title": "Eliminare definitivamente {count} prodotti?",
+	"products_confirm_delete_title_one": "Eliminare definitivamente questo prodotto?",
 	"products_confirm_delete_description": "Questa azione è irreversibile. Le immagini associate verranno cancellate. I tuoi ordini storici sono protetti e continueranno a mostrare il nome e i dettagli al momento dell'acquisto.",
 	"products_confirm_delete_action": "Elimina definitivamente",
 	"products_confirm_delete_cancel": "Annulla",
