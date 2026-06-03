@@ -2,9 +2,13 @@ import { Button } from "@bibs/ui/components/button";
 import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { StoreIcon } from "lucide-react";
 import { useCallback, useState } from "react";
+import { EntityFormHeader } from "@/components/entity-form-header";
+import { FormSection } from "@/components/form-section";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import {
 	type ExistingImage,
@@ -153,89 +157,94 @@ function StoreSettingsPage() {
 		);
 	}
 
+	const storeForm = (
+		<StoreForm
+			key={activeStore.id}
+			defaultValues={{
+				name: store.name,
+				description: store.description ?? "",
+				addressLine1: store.addressLine1,
+				addressLine2: store.addressLine2 ?? "",
+				municipalityId: store.municipalityId,
+				zipCode: store.zipCode,
+				websiteUrl: store.websiteUrl ?? "",
+				openingHours: (store.openingHours as never) ?? undefined,
+				phoneNumbers: store.phoneNumbers.map((p) => ({
+					label: p.label ?? "",
+					number: p.number,
+					position: p.position,
+				})),
+			}}
+			onSubmit={(data) => updateMutation.mutate(data)}
+			onCancel={() => {}}
+			isPending={updateMutation.isPending}
+			submitLabel="Salva Modifiche"
+			pendingLabel="Salvataggio..."
+			onNameChange={handleNameChange}
+			readOnly={!isOwner}
+		/>
+	);
+
 	return (
-		<div className="mx-auto max-w-5xl space-y-10">
-			<header className="space-y-1">
-				<h1 className="font-display text-2xl font-semibold tracking-tight">
-					{name || store.name || (
-						<span className="text-muted-foreground">Impostazioni negozio</span>
-					)}
-				</h1>
-				<p className="text-muted-foreground text-sm">
-					{isOwner
-						? "Modifica le informazioni del negozio attivo."
-						: "Informazioni del negozio (sola lettura)."}
-				</p>
-			</header>
-
-			{isOwner && (
-				<>
-					<section className="grid gap-6 md:grid-cols-[18rem_1fr] md:gap-12">
-						<div className="space-y-1.5">
-							<h2 className="font-display text-base font-semibold tracking-tight text-foreground">
-								Vetrina
-							</h2>
-							<p className="text-sm leading-relaxed text-muted-foreground">
-								Le foto del negozio che i clienti vedono per primi. Fino a{" "}
-								{MAX_STORE_IMAGES}, riordinabili.
-							</p>
-						</div>
-						<ProductImageDropzone
-							files={newFiles}
-							onDrop={(accepted) =>
-								setNewFiles((prev) => [
-									...prev,
-									...accepted.slice(
-										0,
-										MAX_STORE_IMAGES - existingImages.length - prev.length,
-									),
-								])
-							}
-							onRemoveFile={(index) =>
-								setNewFiles((prev) => prev.filter((_, i) => i !== index))
-							}
-							onReorderFiles={setNewFiles}
-							existingImages={existingImages}
-							onDeleteExisting={(imageId) =>
-								deleteImageMutation.mutate(imageId)
-							}
-							maxFiles={MAX_STORE_IMAGES}
-						/>
-					</section>
-					<Separator />
-				</>
+		<div
+			className={cn(
+				"mx-auto w-full space-y-10",
+				isOwner ? "max-w-7xl" : "max-w-3xl",
 			)}
-
-			<StoreForm
-				key={activeStore.id}
-				defaultValues={{
-					name: store.name,
-					description: store.description ?? "",
-					addressLine1: store.addressLine1,
-					addressLine2: store.addressLine2 ?? "",
-					municipalityId: store.municipalityId,
-					zipCode: store.zipCode,
-					websiteUrl: store.websiteUrl ?? "",
-					openingHours: (store.openingHours as never) ?? undefined,
-					phoneNumbers: store.phoneNumbers.map((p) => ({
-						label: p.label ?? "",
-						number: p.number,
-						position: p.position,
-					})),
-				}}
-				onSubmit={(data) => updateMutation.mutate(data)}
-				onCancel={() => {}}
-				isPending={updateMutation.isPending}
-				submitLabel="Salva Modifiche"
-				pendingLabel="Salvataggio..."
-				onNameChange={handleNameChange}
-				readOnly={!isOwner}
+		>
+			<EntityFormHeader
+				icon={StoreIcon}
+				title={name || store.name}
+				placeholder="Impostazioni negozio"
+				subtitle={
+					isOwner
+						? "Modifica le informazioni del negozio attivo."
+						: "Informazioni del negozio (sola lettura)."
+				}
 			/>
+
+			{isOwner ? (
+				<div className="@container">
+					<div className="grid gap-x-10 gap-y-8 @2xl:grid-cols-[minmax(0,1fr)_18rem]">
+						<div className="min-w-0">{storeForm}</div>
+						<div className="space-y-8">
+							<FormSection
+								title="Vetrina"
+								description={`Le foto che i clienti vedono per primi. Fino a ${MAX_STORE_IMAGES}, riordinabili.`}
+							>
+								<ProductImageDropzone
+									files={newFiles}
+									onDrop={(accepted) =>
+										setNewFiles((prev) => [
+											...prev,
+											...accepted.slice(
+												0,
+												MAX_STORE_IMAGES - existingImages.length - prev.length,
+											),
+										])
+									}
+									onRemoveFile={(index) =>
+										setNewFiles((prev) => prev.filter((_, i) => i !== index))
+									}
+									onReorderFiles={setNewFiles}
+									existingImages={existingImages}
+									onDeleteExisting={(imageId) =>
+										deleteImageMutation.mutate(imageId)
+									}
+									maxFiles={MAX_STORE_IMAGES}
+								/>
+							</FormSection>
+						</div>
+					</div>
+				</div>
+			) : (
+				storeForm
+			)}
 
 			{isOwner && (
 				<Link
 					to="/store/closures"
-					className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+					className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
 				>
 					{m["store.closures.link"]()} →
 				</Link>
@@ -248,16 +257,11 @@ function StoreSettingsPage() {
 				activeSubscription.status !== "canceling" && (
 					<>
 						<Separator />
-						<section className="grid gap-6 md:grid-cols-[18rem_1fr] md:gap-12">
-							<div className="space-y-1.5">
-								<h2 className="font-display text-base font-semibold tracking-tight text-destructive">
-									Zona di pericolo
-								</h2>
-								<p className="text-sm leading-relaxed text-muted-foreground">
-									Cancellare il negozio interrompe la subscription mensile e
-									archivia i dati al termine del ciclo già pagato.
-								</p>
-							</div>
+						<FormSection
+							title="Zona di pericolo"
+							description="Cancellare il negozio interrompe la subscription mensile e archivia i dati al termine del ciclo già pagato."
+							tone="destructive"
+						>
 							<div className="rounded-lg border border-destructive/30 p-4">
 								<h3 className="text-sm font-semibold text-destructive">
 									Cancella questo negozio
@@ -284,7 +288,7 @@ function StoreSettingsPage() {
 									}
 								/>
 							</div>
-						</section>
+						</FormSection>
 					</>
 				)}
 		</div>

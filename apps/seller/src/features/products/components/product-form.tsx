@@ -10,7 +10,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@bibs/ui/components/select";
-import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
@@ -19,6 +18,7 @@ import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import { FormSection } from "@/components/form-section";
 import { api } from "@/lib/api";
 import { BrandCombobox, type BrandComboboxValue } from "./brand-combobox";
 import { ProductCategoriesPicker } from "./product-categories-picker";
@@ -257,147 +257,173 @@ export function ProductForm({
 			: null;
 
 	return (
-		<form onSubmit={handleSubmit(onFormSubmit)} className="space-y-5">
-			<div className="grid gap-4 sm:grid-cols-2">
-				<Field data-invalid={!!errors.ean} className="sm:col-span-2">
-					<FieldLabel htmlFor="product-ean">EAN</FieldLabel>
-					<Input
-						id="product-ean"
-						placeholder="8 o 13 cifre"
-						inputMode="numeric"
-						{...register("ean")}
-					/>
-					<FieldError errors={[errors.ean]} />
-					{showLookupBanner && (
-						<div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50 p-2 text-sm">
-							<span className="flex-1 text-blue-900">
-								Trovato un prodotto esistente per questo EAN.
-							</span>
-							<Button
-								type="button"
-								size="sm"
-								variant="outline"
-								onClick={() => applyLookup(hasAnyDirty)}
-							>
-								{hasAnyDirty ? "Compila campi (sovrascrive)" : "Compila campi"}
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								variant="ghost"
-								onClick={() => setLookupDismissed(true)}
-							>
-								Ignora
-							</Button>
-						</div>
-					)}
-				</Field>
+		<form onSubmit={handleSubmit(onFormSubmit)} className="@container">
+			<div className="grid gap-x-10 gap-y-8 @2xl:grid-cols-[minmax(0,1fr)_18rem]">
+				{/* Main column: the editable data */}
+				<div className="space-y-8">
+					<FormSection
+						title="Dettagli"
+						description="Le informazioni che identificano il prodotto."
+						grid
+					>
+						<Field className="col-span-full" data-invalid={!!errors.name}>
+							<FieldLabel htmlFor="product-name" required>
+								Nome
+							</FieldLabel>
+							<Input
+								id="product-name"
+								placeholder={isEdit ? undefined : "Es. Pizza Margherita"}
+								autoFocus={!isEdit}
+								{...register("name")}
+							/>
+							<FieldError errors={[errors.name]} />
+						</Field>
 
-				<Field data-invalid={!!errors.name} className="sm:col-span-2">
-					<FieldLabel htmlFor="product-name" required>
-						Nome
-					</FieldLabel>
-					<Input
-						id="product-name"
-						placeholder={isEdit ? undefined : "Es. Pizza Margherita"}
-						autoFocus={!isEdit}
-						{...register("name")}
-					/>
-					<FieldError errors={[errors.name]} />
-				</Field>
+						<Field data-invalid={!!errors.ean}>
+							<FieldLabel htmlFor="product-ean">EAN</FieldLabel>
+							<Input
+								id="product-ean"
+								placeholder="8 o 13 cifre"
+								inputMode="numeric"
+								{...register("ean")}
+							/>
+							<FieldError errors={[errors.ean]} />
+							{showLookupBanner && (
+								<div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-cobalt/20 bg-cobalt-soft p-2 text-sm">
+									<span className="flex-1 text-cobalt-deep">
+										Trovato un prodotto esistente per questo EAN.
+									</span>
+									<Button
+										type="button"
+										size="sm"
+										variant="outline"
+										onClick={() => applyLookup(hasAnyDirty)}
+									>
+										{hasAnyDirty
+											? "Compila campi (sovrascrive)"
+											: "Compila campi"}
+									</Button>
+									<Button
+										type="button"
+										size="sm"
+										variant="ghost"
+										onClick={() => setLookupDismissed(true)}
+									>
+										Ignora
+									</Button>
+								</div>
+							)}
+						</Field>
 
-				<Field className="sm:col-span-2">
-					<FieldLabel htmlFor="product-description">Descrizione</FieldLabel>
-					<Textarea
-						id="product-description"
-						placeholder={
-							isEdit ? undefined : "Descrizione del prodotto (opzionale)"
-						}
-						rows={2}
-						{...register("description")}
-					/>
-				</Field>
+						<Field>
+							<FieldLabel>Brand</FieldLabel>
+							<BrandCombobox value={brandValue} onChange={onBrandChange} />
+						</Field>
 
-				<Field data-invalid={!!errors.price}>
-					<FieldLabel htmlFor="product-price" required>
-						Prezzo (€)
-					</FieldLabel>
-					<Input
-						id="product-price"
-						type="number"
-						step="0.01"
-						min="0.01"
-						placeholder={isEdit ? undefined : "9.99"}
-						{...register("price")}
-					/>
-					<FieldError errors={[errors.price]} />
-				</Field>
+						<Field className="col-span-full">
+							<FieldLabel htmlFor="product-description">Descrizione</FieldLabel>
+							<Textarea
+								id="product-description"
+								placeholder={
+									isEdit ? undefined : "Descrizione del prodotto (opzionale)"
+								}
+								rows={2}
+								{...register("description")}
+							/>
+						</Field>
+					</FormSection>
 
-				<Field>
-					<FieldLabel htmlFor="product-vat-rate">Aliquota IVA</FieldLabel>
-					<Controller
-						control={control}
-						name="vatRate"
-						render={({ field }) => (
-							<Select value={field.value} onValueChange={field.onChange}>
-								<SelectTrigger id="product-vat-rate" className="w-full">
-									<SelectValue placeholder="22%" />
-								</SelectTrigger>
-								<SelectContent>
-									{["22", "10", "5", "4", "0"].map((r) => (
-										<SelectItem key={r} value={r}>
-											{r}%
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						)}
-					/>
-				</Field>
+					<FormSection
+						title="Prezzo e IVA"
+						description="Prezzo finale per il cliente, IVA inclusa."
+						grid
+					>
+						<Field data-invalid={!!errors.price}>
+							<FieldLabel htmlFor="product-price" required>
+								Prezzo (€)
+							</FieldLabel>
+							<Input
+								id="product-price"
+								type="number"
+								step="0.01"
+								min="0.01"
+								placeholder={isEdit ? undefined : "9.99"}
+								{...register("price")}
+							/>
+							<FieldError errors={[errors.price]} />
+						</Field>
 
-				{(() => {
-					const rate = Number(watch("vatRate"));
-					const { net, vat } = scorporoDisplay(watch("price") ?? "", rate);
-					if (!Number.isFinite(net)) return null;
-					return (
-						<p className="text-muted-foreground text-xs sm:col-span-2">
-							Imponibile {formatPriceEur(net)} · IVA {formatPriceEur(vat)} (
-							{rate}%) — il prezzo è IVA inclusa.
-						</p>
-					);
-				})()}
+						<Field>
+							<FieldLabel htmlFor="product-vat-rate">Aliquota IVA</FieldLabel>
+							<Controller
+								control={control}
+								name="vatRate"
+								render={({ field }) => (
+									<Select value={field.value} onValueChange={field.onChange}>
+										<SelectTrigger id="product-vat-rate" className="w-full">
+											<SelectValue placeholder="22%" />
+										</SelectTrigger>
+										<SelectContent>
+											{["22", "10", "5", "4", "0"].map((r) => (
+												<SelectItem key={r} value={r}>
+													{r}%
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								)}
+							/>
+						</Field>
 
-				<Field className="sm:col-span-2">
-					<FieldLabel>Brand</FieldLabel>
-					<BrandCombobox value={brandValue} onChange={onBrandChange} />
-				</Field>
+						{(() => {
+							const rate = Number(watch("vatRate"));
+							const { net, vat } = scorporoDisplay(watch("price") ?? "", rate);
+							if (!Number.isFinite(net)) return null;
+							return (
+								<p className="col-span-full text-muted-foreground text-xs">
+									Imponibile {formatPriceEur(net)} · IVA {formatPriceEur(vat)} (
+									{rate}%) — il prezzo è IVA inclusa.
+								</p>
+							);
+						})()}
+					</FormSection>
+
+					<FormSection
+						title="Catalogo"
+						description="Dove i clienti trovano il prodotto nel negozio."
+					>
+						<Field data-invalid={!!errors.categoryIds}>
+							<ProductCategoriesPicker
+								macroCategoryId={macroCategoryId}
+								categoryIds={selectedCategories ?? []}
+								onMacroChange={onMacroChange}
+								onToggleCategory={toggleCategory}
+							/>
+							<FieldError errors={[errors.categoryIds]} />
+						</Field>
+					</FormSection>
+				</div>
+
+				{/* Aside column: media */}
+				<div className="space-y-8">
+					<FormSection
+						title="Immagini"
+						description="Le foto che il cliente vede per prime."
+					>
+						<ProductImageDropzone
+							files={files}
+							onDrop={handleDrop}
+							onRemoveFile={removeFile}
+							onReorderFiles={reorderFiles}
+							existingImages={existingImages}
+							onDeleteExisting={onDeleteExisting}
+							onReorderExisting={setImageOrder}
+						/>
+					</FormSection>
+				</div>
 			</div>
 
-			<Separator />
-
-			<Field data-invalid={!!errors.categoryIds}>
-				<ProductCategoriesPicker
-					macroCategoryId={macroCategoryId}
-					categoryIds={selectedCategories ?? []}
-					onMacroChange={onMacroChange}
-					onToggleCategory={toggleCategory}
-				/>
-				<FieldError errors={[errors.categoryIds]} />
-			</Field>
-
-			<Separator />
-
-			<ProductImageDropzone
-				files={files}
-				onDrop={handleDrop}
-				onRemoveFile={removeFile}
-				onReorderFiles={reorderFiles}
-				existingImages={existingImages}
-				onDeleteExisting={onDeleteExisting}
-				onReorderExisting={setImageOrder}
-			/>
-
-			<div className="flex justify-end gap-3 pt-2">
+			<div className="mt-8 flex justify-end gap-3 border-t pt-5">
 				<Button type="button" variant="outline" onClick={onCancel}>
 					Annulla
 				</Button>

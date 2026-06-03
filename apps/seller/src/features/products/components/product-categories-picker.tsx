@@ -78,7 +78,7 @@ export function ProductCategoriesPicker({
 	);
 
 	return (
-		<div className="space-y-4">
+		<div className="@container grid gap-4 @md:grid-cols-2">
 			<div className="space-y-2">
 				<Label>Macrocategoria{required && " *"}</Label>
 				<Select
