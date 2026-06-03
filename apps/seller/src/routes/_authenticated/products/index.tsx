@@ -1,7 +1,7 @@
 import { Badge } from "@bibs/ui/components/badge";
-import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { CopyButton } from "@bibs/ui/components/copy-button";
+import { CreateButton } from "@bibs/ui/components/create-button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
 import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
 import { EmptyState } from "@bibs/ui/components/empty-state";
@@ -18,7 +18,6 @@ import {
 	scorporoDisplay,
 } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
-import { CreateIcon } from "@bibs/ui/icons";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -613,12 +612,9 @@ function ProductsListPage() {
 							: "Seleziona un negozio per visualizzare il catalogo."}
 					</p>
 				</div>
-				<Button asChild>
-					<Link to="/products/new">
-						<CreateIcon />
-						<span>{m.products_new_cta()}</span>
-					</Link>
-				</Button>
+				<CreateButton asChild>
+					<Link to="/products/new">{m.products_new_cta()}</Link>
+				</CreateButton>
 			</div>
 
 			{activeStore && (
@@ -713,12 +709,9 @@ function ProductsListPage() {
 							title={m.products_empty_catalog()}
 							description={m.products_empty_catalog_description()}
 							action={
-								<Button asChild>
-									<Link to="/products/new">
-										<CreateIcon />
-										<span>{m.products_new_cta()}</span>
-									</Link>
-								</Button>
+								<CreateButton asChild>
+									<Link to="/products/new">{m.products_new_cta()}</Link>
+								</CreateButton>
 							}
 						/>
 					) : (

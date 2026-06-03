@@ -1,5 +1,6 @@
 import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
+import { CreateButton } from "@bibs/ui/components/create-button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
 import { DataTable } from "@bibs/ui/components/data-table";
 import {
@@ -12,7 +13,6 @@ import { EmptyState } from "@bibs/ui/components/empty-state";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
-import { CreateIcon } from "@bibs/ui/icons";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreVerticalIcon } from "lucide-react";
@@ -271,12 +271,9 @@ function PromotionsListPage() {
 						{m.promotions_page_subtitle()}
 					</p>
 				</div>
-				<Button asChild>
-					<Link to="/promotions/new">
-						<CreateIcon />
-						<span>{m.promotions_new_cta()}</span>
-					</Link>
-				</Button>
+				<CreateButton asChild>
+					<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
+				</CreateButton>
 			</div>
 
 			<div className="shrink-0">
@@ -305,12 +302,9 @@ function PromotionsListPage() {
 							title={EMPTY_MESSAGE.all()}
 							description={m.promotions_empty_all_description()}
 							action={
-								<Button asChild>
-									<Link to="/promotions/new">
-										<CreateIcon />
-										<span>{m.promotions_new_cta()}</span>
-									</Link>
-								</Button>
+								<CreateButton asChild>
+									<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
+								</CreateButton>
 							}
 						/>
 					) : (
