@@ -192,8 +192,8 @@ export function BulkStockAdjustDialog({
 					</Tabs>
 
 					{/* Stesso vocabolario dello stepper nella colonna Stock della
-					    tabella, in formato grande da dialogo. */}
-					<div className="border-input bg-background mx-auto flex h-11 w-fit items-stretch overflow-hidden rounded-lg border shadow-xs">
+					    tabella, in formato grande da dialogo: è il protagonista. */}
+					<div className="border-input bg-background focus-within:border-ring focus-within:ring-ring/30 mx-auto mt-1 flex h-12 w-fit items-stretch overflow-hidden rounded-lg border shadow-xs transition-[color,box-shadow] focus-within:ring-2">
 						<button
 							type="button"
 							onClick={() => step(-1)}
@@ -201,7 +201,7 @@ export function BulkStockAdjustDialog({
 								mutation.isPending || (!Number.isNaN(parsed) && parsed <= min)
 							}
 							aria-label={m.products_stock_decrement_aria()}
-							className="text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70 border-input focus-visible:ring-ring/50 flex w-11 items-center justify-center border-r transition-colors outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-40"
+							className="text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70 border-input flex w-12 items-center justify-center border-r transition-colors outline-none disabled:pointer-events-none disabled:opacity-40"
 						>
 							<MinusIcon className="size-4" />
 						</button>
@@ -216,7 +216,7 @@ export function BulkStockAdjustDialog({
 							onFocus={(e) => e.currentTarget.select()}
 							disabled={mutation.isPending}
 							aria-label={m.products_bulk_adjust_field_quantity()}
-							className="caret-ring w-24 bg-transparent text-center text-lg font-semibold tabular-nums outline-none disabled:cursor-not-allowed"
+							className="caret-ring w-28 bg-transparent text-center text-2xl font-semibold tabular-nums outline-none disabled:cursor-not-allowed"
 						/>
 						<button
 							type="button"
@@ -225,35 +225,40 @@ export function BulkStockAdjustDialog({
 								mutation.isPending || (!Number.isNaN(parsed) && parsed >= max)
 							}
 							aria-label={m.products_stock_increment_aria()}
-							className="text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70 border-input focus-visible:ring-ring/50 flex w-11 items-center justify-center border-l transition-colors outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-40"
+							className="text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/70 border-input flex w-12 items-center justify-center border-l transition-colors outline-none disabled:pointer-events-none disabled:opacity-40"
 						>
 							<PlusIcon className="size-4" />
 						</button>
 					</div>
 
-					<p
-						className={
-							valueValid
-								? "text-muted-foreground text-center text-sm text-balance"
-								: "text-destructive text-center text-sm text-balance"
-						}
-					>
-						{effectLine}
-					</p>
-
-					{showZeroWarning && (
-						<div className="border-warning/40 bg-warning/10 flex items-start gap-2 rounded-md border px-3 py-2 text-sm">
-							<TriangleAlertIcon
-								aria-hidden
-								className="text-warning mt-0.5 size-4 shrink-0"
-							/>
-							<span>
-								{m.products_bulk_adjust_warning_zero({
-									count: productIds.length,
-								})}
-							</span>
-						</div>
-					)}
+					{/* Message-zone ad altezza fissa: UN solo messaggio per volta
+					    (effetto, hint di range o warning zero) e il dialogo non
+					    cambia mai dimensione tra stati e mode. */}
+					<div className="flex min-h-12 items-center justify-center">
+						{showZeroWarning ? (
+							<div className="border-warning/40 bg-warning/10 flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm">
+								<TriangleAlertIcon
+									aria-hidden
+									className="text-warning size-4 shrink-0"
+								/>
+								<span>
+									{m.products_bulk_adjust_warning_zero({
+										count: productIds.length,
+									})}
+								</span>
+							</div>
+						) : (
+							<p
+								className={
+									valueValid
+										? "text-muted-foreground text-center text-sm text-balance"
+										: "text-destructive text-center text-sm text-balance"
+								}
+							>
+								{effectLine}
+							</p>
+						)}
+					</div>
 
 					<DialogFooter>
 						<Button
