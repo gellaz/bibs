@@ -697,11 +697,7 @@ function ProductsListPage() {
 				isLoading={isLoading}
 				manualSorting={{ sorting, onSortingChange }}
 				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
-				rowClassName={(row) =>
-					selection.isSelected(row.original.id)
-						? "bg-primary/10 hover:bg-primary/10 [&>td:not(:first-child):not(:last-child)]:opacity-60"
-						: ""
-				}
+				isRowSelected={(row) => selection.isSelected(row.original.id)}
 				hideHeaderWhenEmpty={!hasSearchOrFilters}
 				emptyState={
 					isPristineCatalogView ? (
