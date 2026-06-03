@@ -14,9 +14,9 @@ import {
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
 	ArchiveIcon,
+	BoxesIcon,
 	CreditCardIcon,
 	HomeIcon,
-	PackageIcon,
 	SettingsIcon,
 	TagIcon,
 } from "lucide-react";
@@ -32,9 +32,11 @@ const navItems = [
 		match: (p: string) => p === "/",
 	},
 	{
+		// BoxesIcon = la sezione catalogo (tanti prodotti); PackageIcon resta
+		// al singolo collo: placeholder immagine riga e azione "Adegua stock".
 		title: "Prodotti",
 		to: "/products" as const,
-		icon: PackageIcon,
+		icon: BoxesIcon,
 		match: (p: string) => p.startsWith("/products"),
 	},
 	{
