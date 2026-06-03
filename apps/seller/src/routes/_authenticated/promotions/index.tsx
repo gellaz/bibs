@@ -12,9 +12,10 @@ import { EmptyState } from "@bibs/ui/components/empty-state";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { CreateIcon } from "@bibs/ui/icons";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreVerticalIcon, PlusIcon } from "lucide-react";
+import { MoreVerticalIcon } from "lucide-react";
 import { useMemo } from "react";
 import { PromotionStateBadge } from "@/features/promotions/components/promotion-state-badge";
 import {
@@ -272,7 +273,7 @@ function PromotionsListPage() {
 				</div>
 				<Button asChild>
 					<Link to="/promotions/new">
-						<PlusIcon />
+						<CreateIcon />
 						<span>{m.promotions_new_cta()}</span>
 					</Link>
 				</Button>
@@ -306,7 +307,7 @@ function PromotionsListPage() {
 							action={
 								<Button asChild>
 									<Link to="/promotions/new">
-										<PlusIcon />
+										<CreateIcon />
 										<span>{m.promotions_new_cta()}</span>
 									</Link>
 								</Button>

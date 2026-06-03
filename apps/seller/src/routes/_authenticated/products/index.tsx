@@ -18,10 +18,11 @@ import {
 	scorporoDisplay,
 } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { CreateIcon } from "@bibs/ui/icons";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { PackageIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
+import { PackageIcon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
 import { ProductRowActions } from "@/features/products/components/product-row-actions";
@@ -614,7 +615,7 @@ function ProductsListPage() {
 				</div>
 				<Button asChild>
 					<Link to="/products/new">
-						<PlusIcon />
+						<CreateIcon />
 						<span>{m.products_new_cta()}</span>
 					</Link>
 				</Button>
@@ -714,7 +715,7 @@ function ProductsListPage() {
 							action={
 								<Button asChild>
 									<Link to="/products/new">
-										<PlusIcon />
+										<CreateIcon />
 										<span>{m.products_new_cta()}</span>
 									</Link>
 								</Button>
