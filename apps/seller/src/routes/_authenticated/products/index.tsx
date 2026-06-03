@@ -254,27 +254,32 @@ function ProductsListPage() {
 			search: (prev) => ({ ...prev, statusFilter: next, page: 1 }),
 		});
 
+	// Ricerca o filtri attivi: il vuoto è "nessun risultato", non un catalogo
+	// vuoto. L'header resta (la struttura non salta mentre l'utente aggiusta
+	// la query) e l'icona è quella di no-results.
+	const hasSearchOrFilters =
+		effectiveRouteQ.length > 0 ||
+		(categoryIds?.length ?? 0) > 0 ||
+		Boolean(minPrice) ||
+		Boolean(maxPrice);
+
 	const emptyMessage =
 		effectiveRouteQ.length > 0
 			? m.products_search_no_results({ query: effectiveRouteQ })
-			: statusFilter === "active"
-				? m.products_empty_active()
-				: statusFilter === "disabled"
-					? m.products_empty_disabled()
-					: m.products_empty_trashed();
+			: hasSearchOrFilters
+				? m.products_filter_no_results()
+				: statusFilter === "active"
+					? m.products_empty_active()
+					: statusFilter === "disabled"
+						? m.products_empty_disabled()
+						: m.products_empty_trashed();
 
 	// Vista "pulita" del catalogo: tab Attivi senza ricerca né filtri. Se è
-	// vuota il negozio non ha davvero prodotti: empty state ricco con CTA al
-	// posto dell'intera tabella (header compreso). Con filtri attivi invece
-	// l'header resta, così la struttura non salta mentre l'utente aggiusta
-	// la query.
+	// vuota il negozio non ha davvero prodotti: empty state ricco con CTA.
+	// Gli altri tab vuoti (Disabilitati, Cestino) ricevono lo stesso
+	// trattamento header-nascosto ma solo con il titolo.
 	const isPristineCatalogView =
-		Boolean(activeStore) &&
-		statusFilter === "active" &&
-		effectiveRouteQ.length === 0 &&
-		(categoryIds?.length ?? 0) === 0 &&
-		!minPrice &&
-		!maxPrice;
+		Boolean(activeStore) && statusFilter === "active" && !hasSearchOrFilters;
 
 	const columns = useMemo<ColumnDef<Product>[]>(
 		() => [
@@ -700,11 +705,10 @@ function ProductsListPage() {
 						? "bg-primary/10 hover:bg-primary/10 [&>td:not(:first-child):not(:last-child)]:opacity-60"
 						: ""
 				}
-				hideHeaderWhenEmpty={isPristineCatalogView}
+				hideHeaderWhenEmpty={!hasSearchOrFilters}
 				emptyState={
 					isPristineCatalogView ? (
 						<EmptyState
-							icon={PackageIcon}
 							title={m.products_empty_catalog()}
 							description={m.products_empty_catalog_description()}
 							action={
@@ -717,7 +721,10 @@ function ProductsListPage() {
 							}
 						/>
 					) : (
-						<EmptyState icon={PackageIcon} title={emptyMessage} />
+						<EmptyState
+							variant={hasSearchOrFilters ? "no-results" : "empty"}
+							title={emptyMessage}
+						/>
 					)
 				}
 			/>

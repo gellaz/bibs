@@ -10,7 +10,7 @@
 		"dev": "vite dev --port 3002",
 		"build": "vite build",
 		"preview": "vite preview",
-		"paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide",
+		"paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url baseLocale",
 		"pretypecheck": "bun run paraglide:compile",
 		"typecheck": "tsc --noEmit",
 		"format": "biome format",

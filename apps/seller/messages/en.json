@@ -33,6 +33,7 @@
 	"products_new_cta": "New Product",
 	"products_search_placeholder": "Search by name, description, EAN or brand…",
 	"products_search_no_results": "No products found for «{query}».",
+	"products_filter_no_results": "No products match the filters.",
 	"products_search_clear": "Clear search",
 	"products_stock_column_header": "Stock",
 	"products_action_add_to_store": "Add to another store",

@@ -14,7 +14,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreVerticalIcon, PlusIcon, TagIcon } from "lucide-react";
+import { MoreVerticalIcon, PlusIcon } from "lucide-react";
 import { useMemo } from "react";
 import { PromotionStateBadge } from "@/features/promotions/components/promotion-state-badge";
 import {
@@ -260,8 +260,8 @@ function PromotionsListPage() {
 	);
 
 	return (
-		<div className="space-y-4">
-			<div className="flex items-center justify-between">
+		<div className="flex h-full min-w-0 flex-col gap-4">
+			<div className="flex shrink-0 items-center justify-between">
 				<div>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
 						{m.promotions_page_title()}
@@ -278,10 +278,12 @@ function PromotionsListPage() {
 				</Button>
 			</div>
 
-			<PromotionStateTabs value={state} onChange={goToTab} />
+			<div className="shrink-0">
+				<PromotionStateTabs value={state} onChange={goToTab} />
+			</div>
 
 			{error && (
-				<div className="bg-destructive/10 border-destructive/20 text-destructive rounded-lg border p-4">
+				<div className="bg-destructive/10 border-destructive/20 text-destructive shrink-0 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
@@ -294,11 +296,11 @@ function PromotionsListPage() {
 				storageKey="seller.promotions.columns"
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
-				hideHeaderWhenEmpty={state === "all"}
+				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
+				hideHeaderWhenEmpty
 				emptyState={
 					state === "all" ? (
 						<EmptyState
-							icon={TagIcon}
 							title={EMPTY_MESSAGE.all()}
 							description={m.promotions_empty_all_description()}
 							action={
@@ -311,7 +313,7 @@ function PromotionsListPage() {
 							}
 						/>
 					) : (
-						<EmptyState icon={TagIcon} title={EMPTY_MESSAGE[state]()} />
+						<EmptyState title={EMPTY_MESSAGE[state]()} />
 					)
 				}
 			/>
@@ -324,7 +326,7 @@ function PromotionsListPage() {
 					const rangeStart = (page - 1) * limit + 1;
 					const rangeEnd = Math.min(page * limit, total);
 					return (
-						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
 							<p className="text-muted-foreground text-sm tabular-nums">
 								{rangeStart}–{rangeEnd} di {total}
 							</p>

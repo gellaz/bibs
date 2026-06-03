@@ -47,7 +47,6 @@ import {
 	ShieldBanIcon,
 	ShieldCheckIcon,
 	Trash2Icon,
-	UsersIcon,
 	XIcon,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -778,8 +777,8 @@ function TeamPage() {
 	}, [isOwner, cancelMutation]);
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
+		<div className="flex h-full min-w-0 flex-col gap-6">
+			<div className="flex shrink-0 items-center justify-between">
 				<div>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
 						Team
@@ -794,7 +793,7 @@ function TeamPage() {
 			</div>
 
 			{error && (
-				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
+				<div className="bg-destructive/10 text-destructive border-destructive/20 shrink-0 rounded-lg border p-4">
 					<p className="text-sm">
 						Errore nel caricamento: {(error as Error).message}
 					</p>
@@ -807,6 +806,7 @@ function TeamPage() {
 				storageKey="seller.team.columns"
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
 				rowClassName={(row) => {
 					const r = row.original;
 					if (r.kind === "owner")
@@ -817,7 +817,6 @@ function TeamPage() {
 				hideHeaderWhenEmpty
 				emptyState={
 					<EmptyState
-						icon={UsersIcon}
 						title="Nessun membro nel team"
 						description="Invita collaboratori per gestire insieme il tuo negozio."
 						action={
@@ -837,7 +836,7 @@ function TeamPage() {
 			/>
 
 			{totalPages > 1 && (
-				<div className="flex items-center justify-between">
+				<div className="flex shrink-0 items-center justify-between">
 					<DataPagination
 						page={page}
 						totalPages={totalPages}

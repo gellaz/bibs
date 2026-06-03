@@ -1,9 +1,18 @@
-import type { LucideIcon } from "lucide-react";
+import { CircleDashedIcon, SearchXIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "~/lib/utils";
 
+// L'icona è fissata per variante, non scelta dal call-site: ogni superficie
+// vuota parla la stessa lingua visiva in tutta l'app.
+const VARIANT_ICON = {
+	/** Vuoto genuino: non esiste ancora niente in questa vista. */
+	empty: CircleDashedIcon,
+	/** Una ricerca o un filtro non ha prodotto risultati. */
+	"no-results": SearchXIcon,
+} as const;
+
 export interface EmptyStateProps {
-	icon: LucideIcon;
+	variant?: keyof typeof VARIANT_ICON;
 	title: string;
 	description?: string;
 	/** Primary call to action. Pass a fully-rendered Button (or Button-as-Link). */
@@ -14,13 +23,14 @@ export interface EmptyStateProps {
 }
 
 export function EmptyState({
-	icon: Icon,
+	variant = "empty",
 	title,
 	description,
 	action,
 	secondary,
 	className,
 }: EmptyStateProps) {
+	const Icon = VARIANT_ICON[variant];
 	return (
 		<div
 			data-slot="empty-state"
