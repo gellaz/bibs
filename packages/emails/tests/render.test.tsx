@@ -30,6 +30,24 @@ describe("renderEmployeeInviteEmail", () => {
 		);
 		expect(html).toContain("Libreria Esempio");
 		expect(html).toContain("https://example.test/invite/tok-456");
-		expect(html).toContain("7");
+		// "Il link scade tra 7 giorni." — react-email wraps JSX expressions in
+		// <!-- --> comment nodes, so the number is never contiguous with the
+		// surrounding text. Assert the two contiguous chunks on either side.
+		expect(html).toContain("scade tra ");
+		expect(html).toContain(" giorni.");
+	});
+});
+
+describe("renderVerificationEmail — HTML escaping", () => {
+	it("escapes special chars in URL and name", async () => {
+		const { html } = await renderVerificationEmail({
+			name: "Mario <b>Rossi</b>",
+			verifyUrl: "https://example.test/verify?a=1&b=2",
+		});
+
+		// & in the href must be entity-encoded
+		expect(html).toContain("&amp;");
+		// raw HTML tag in name must NOT appear unescaped
+		expect(html).not.toContain("<b>Rossi</b>");
 	});
 });

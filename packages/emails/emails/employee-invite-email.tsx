@@ -13,7 +13,7 @@ export default function EmployeeInviteEmail({
 }: EmployeeInviteEmailProps) {
 	return (
 		<Html lang="it">
-			<Body>
+			<Body lang="it">
 				<Text>Ciao,</Text>
 				<Text>
 					<strong>{businessName}</strong> ti ha invitato a collaborare come

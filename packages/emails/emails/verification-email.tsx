@@ -11,7 +11,7 @@ export default function VerificationEmail({
 }: VerificationEmailProps) {
 	return (
 		<Html lang="it">
-			<Body>
+			<Body lang="it">
 				<Text>Ciao {name},</Text>
 				<Text>Clicca sul link per verificare il tuo indirizzo email:</Text>
 				<Text>
