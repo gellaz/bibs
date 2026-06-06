@@ -18,7 +18,7 @@ authentication (email/password, RBAC via admin plugin). An OpenAPI spec is auto-
 - `bun test` — run all tests (unit + integration)
 - `bun run test:unit` — run unit tests only (`tests/unit/`)
 - `bun run test:integration` — run integration tests only (`tests/integration/`, 180s timeout)
-- `bun run infra:up` — start PostGIS (5432) and MinIO (9000/9001) containers
+- `bun run infra:up` — start PostGIS (5432), MinIO (9000/9001) and Mailpit (8025/1025) containers
 - `bun run infra:down` — stop and remove containers
 - `bun run infra:reset` — stop containers and delete volumes (full reset)
 - `bun run db:generate` — generate Drizzle migration files from schema changes
@@ -92,11 +92,12 @@ Optional: `PORT` (default `3000`), `ALLOWED_ORIGINS`, `NODE_ENV` (default `devel
 
 ### Email — `src/lib/email.ts`
 
-Email sending via **Resend** in production, logging-only in development:
+Email sending via **Resend** in production, Mailpit in development:
 
-- In dev: logs the email content to Pino (no external service needed)
+- In dev: delivers to the local Mailpit catcher (web UI on :8025); falls back to logging if Mailpit is down
 - In production: sends via Resend API using `RESEND_API_KEY`
-- Used for email verification during seller onboarding
+- Used for email verification during seller onboarding and employee invites
+- Templates live in `packages/emails` (`@bibs/emails`); see `packages/emails/src/index.tsx`. Preview them with `bun run dev:emails` (port 3004); `@react-email/ui` is a devDependency of `packages/emails`, so the preview server boots non-interactively on fresh clones.
 
 ### Config & Errors — `src/lib/config.ts`, `src/lib/errors.ts`, `src/lib/responses.ts`
 
@@ -593,6 +594,7 @@ Use `logger` from `src/lib/logger.ts` for non-request contexts (cron jobs, start
 
 - **bibs-postgis** — PostgreSQL 18 + PostGIS 3.6 (custom Dockerfile in `docker/postgis/`)
 - **bibs-minio** — MinIO object storage for product images
+- **bibs-mailpit** — Mailpit dev email catcher (SMTP 1025, web UI + API 8025)
 
 Environment variables in `.env` (see `.env.example`). Validated at startup by `src/lib/env.ts`.
 
@@ -609,7 +611,8 @@ Optional:
 - Seed test data separately with `bun run db:seed`
 - `ALLOWED_ORIGINS` — comma-separated list of allowed CORS origins (production only; localhost auto-allowed in dev)
 - `NODE_ENV` — `development` (default) or `production` (affects log level)
-- `RESEND_API_KEY` — Resend API key for sending emails (production only; in dev emails are logged)
+- `RESEND_API_KEY` — Resend API key for sending emails (production only; in dev emails are delivered to Mailpit, falling back to the log)
+- `MAILPIT_URL` — Mailpit base URL for dev email delivery (default `http://localhost:8025`)
 - `EMAIL_FROM` — sender address for emails (default `Bibs <noreply@bibs.it>`)
 - `CUSTOMER_APP_URL` — customer frontend URL (default `http://localhost:3001`)
 - `SELLER_APP_URL` — seller frontend URL (default `http://localhost:3002`)
@@ -634,6 +637,18 @@ bun test            # all tests
 bun run test:unit   # unit only
 bun run test:integration  # integration only (requires Docker)
 ```
+
+### Dev emails (Mailpit)
+
+In development every `sendEmail()` call is delivered to the local Mailpit container — web UI at <http://localhost:8025> (history, HTML rendering, clickable links).
+
+For browser/E2E flows (e.g. Playwright) retrieve emails via Mailpit's REST API — plain fetch, no client library:
+
+- Latest email: `GET http://localhost:8025/api/v1/message/latest`
+- By recipient: `GET http://localhost:8025/api/v1/search?query=to:"user@example.com"`
+- Clear inbox (test isolation): `DELETE http://localhost:8025/api/v1/messages`
+
+The verification link can be extracted from the `HTML` field of the message response.
 
 ## API Documentation
 

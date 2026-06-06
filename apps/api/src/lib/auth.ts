@@ -1,3 +1,4 @@
+import { renderVerificationEmail } from "@bibs/emails";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, openAPI } from "better-auth/plugins";
@@ -76,11 +77,11 @@ export const auth = betterAuth({
 			fixed.pathname = `/auth${fixed.pathname}`;
 			const verifyUrl = fixed.toString();
 
-			await sendEmail({
-				to: user.email,
-				subject: "Verifica la tua email su bibs",
-				html: `<p>Ciao ${user.name},</p><p>Clicca sul link per verificare il tuo indirizzo email:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`,
+			const { subject, html } = await renderVerificationEmail({
+				name: user.name,
+				verifyUrl,
 			});
+			await sendEmail({ to: user.email, subject, html });
 		},
 		afterEmailVerification: async (user) => {
 			// For sellers: advance onboarding from pending_email → pending_personal

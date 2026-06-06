@@ -1,0 +1,14 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"isolatedModules": true,
+		"types": ["bun-types"]
+	},
+	"include": ["src/**/*", "emails/**/*", "tests/**/*"],
+	"exclude": ["node_modules"]
+}
