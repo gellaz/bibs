@@ -4,7 +4,7 @@
 		"target": "ES2021",
 		"module": "ES2022",
 		"moduleResolution": "bundler",
-		"jsx": "react-jsx",
+		"jsx": "react-jsx", // only for type-checking @bibs/emails' .tsx export — the API itself has no JSX
 		"paths": {
 			"@/*": ["./src/*"]
 		},

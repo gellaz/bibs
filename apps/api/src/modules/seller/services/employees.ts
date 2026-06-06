@@ -16,6 +16,7 @@ import { store as storeTable } from "@/db/schemas/store";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { parsePagination } from "@/lib/pagination";
 
 /** Invitation token validity: 7 days */
@@ -136,16 +137,21 @@ export async function inviteEmployee(
 		return inv;
 	});
 
-	// Send invitation email
-	const businessName = profile.organization?.businessName ?? "bibs";
-	const inviteUrl = `${env.SELLER_APP_URL}/invite/${invitation.invitationToken}`;
+	// Best-effort: a failed invite email (render or send) must not turn a
+	// committed invitation into a 500 — the seller can resend from the UI.
+	try {
+		const businessName = profile.organization?.businessName ?? "bibs";
+		const inviteUrl = `${env.SELLER_APP_URL}/invite/${invitation.invitationToken}`;
 
-	const { subject, html } = await renderEmployeeInviteEmail({
-		businessName,
-		inviteUrl,
-		expiryDays: INVITATION_EXPIRY_DAYS,
-	});
-	await sendEmail({ to: email, subject, html });
+		const { subject, html } = await renderEmployeeInviteEmail({
+			businessName,
+			inviteUrl,
+			expiryDays: INVITATION_EXPIRY_DAYS,
+		});
+		await sendEmail({ to: email, subject, html });
+	} catch (err) {
+		logger.warn({ err, email }, "invite email failed after invitation commit");
+	}
 
 	return { ...invitation, storeIds };
 }

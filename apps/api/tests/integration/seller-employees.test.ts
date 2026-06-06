@@ -22,8 +22,9 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+let sendEmailImpl: () => Promise<void> = async () => {};
 mock.module("@/lib/email", () => ({
-	sendEmail: async () => {},
+	sendEmail: () => sendEmailImpl(),
 }));
 
 import { eq } from "drizzle-orm";
@@ -117,6 +118,31 @@ describe("inviteEmployee with storeIds", () => {
 		await expect(
 			inviteEmployee(profileA.id, "n@test.com", [sB.id]),
 		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("swallows email failures after the invitation is committed", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const sA = await createTestStore(db, profile.id);
+
+		sendEmailImpl = async () => {
+			throw new Error("smtp down");
+		};
+		try {
+			const inv = await inviteEmployee(profile.id, "best-effort@test.com", [
+				sA.id,
+			]);
+			// Email failure must not throw: the invitation still resolves and persists.
+			expect(inv.storeIds).toEqual([sA.id]);
+
+			const rows = await db
+				.select()
+				.from(employeeInvitationStores)
+				.where(eq(employeeInvitationStores.invitationId, inv.id));
+			expect(rows.map((r) => r.storeId)).toEqual([sA.id]);
+		} finally {
+			sendEmailImpl = async () => {};
+		}
 	});
 });
 
