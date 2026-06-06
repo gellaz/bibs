@@ -30,11 +30,10 @@ describe("renderEmployeeInviteEmail", () => {
 		);
 		expect(html).toContain("Libreria Esempio");
 		expect(html).toContain("https://example.test/invite/tok-456");
-		// "Il link scade tra 7 giorni." — react-email wraps JSX expressions in
-		// <!-- --> comment nodes, so the number is never contiguous with the
-		// surrounding text. Assert the two contiguous chunks on either side.
-		expect(html).toContain("scade tra ");
-		expect(html).toContain(" giorni.");
+		// react-email wraps JSX interpolations in <!-- --> comment nodes; strip
+		// them before asserting so the number is contiguous with its surrounding copy.
+		const normalized = html.replaceAll("<!-- -->", "");
+		expect(normalized).toContain("Il link scade tra 7 giorni.");
 	});
 });
 
