@@ -6,6 +6,7 @@ import {
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
+	AlertDialogMedia,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
 import { useProductMutations } from "@/features/products/hooks/use-product-mutations";
@@ -44,10 +45,13 @@ export function ConfirmPermanentDeleteDialog({
 		<AlertDialog open={open} onOpenChange={onOpenChange}>
 			<AlertDialogContent>
 				<AlertDialogHeader>
+					<AlertDialogMedia variant="destructive" />
 					<AlertDialogTitle>
-						{m.products_confirm_delete_title({
-							count: productIds.length,
-						})}
+						{productIds.length === 1
+							? m.products_confirm_delete_title_one()
+							: m.products_confirm_delete_title({
+									count: productIds.length,
+								})}
 					</AlertDialogTitle>
 					<AlertDialogDescription>
 						{m.products_confirm_delete_description()}

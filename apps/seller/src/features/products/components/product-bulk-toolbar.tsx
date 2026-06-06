@@ -63,15 +63,14 @@ export function ProductBulkToolbar({
 				<div className="ml-auto flex gap-2">
 					{statusFilter === "active" && (
 						<>
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={() => setAdjustOpen(true)}
-							>
+							{/* Le varianti seguono i colori dei badge nelle tab di stato:
+							    warning = Disabilitati, destructive = Cestino, success =
+							    ritorno ad Attivi. L'azione neutra (stock) resta primary. */}
+							<Button size="sm" onClick={() => setAdjustOpen(true)}>
 								<PackageIcon className="size-4" />
 								{m.products_bulk_adjust_stock_button()}
 							</Button>
-							<Button size="sm" onClick={apply("disabled")}>
+							<Button size="sm" variant="warning" onClick={apply("disabled")}>
 								<EyeOffIcon className="size-4" />
 								{m.products_action_disable()}
 							</Button>
@@ -87,7 +86,7 @@ export function ProductBulkToolbar({
 					)}
 					{statusFilter === "disabled" && (
 						<>
-							<Button size="sm" onClick={apply("active")}>
+							<Button size="sm" variant="success" onClick={apply("active")}>
 								<EyeIcon className="size-4" />
 								{m.products_action_enable()}
 							</Button>
@@ -103,7 +102,7 @@ export function ProductBulkToolbar({
 					)}
 					{statusFilter === "trashed" && (
 						<>
-							<Button size="sm" onClick={apply("active")}>
+							<Button size="sm" variant="success" onClick={apply("active")}>
 								<RotateCcwIcon className="size-4" />
 								{m.products_action_restore()}
 							</Button>

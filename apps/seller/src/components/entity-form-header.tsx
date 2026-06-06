@@ -1,8 +1,9 @@
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { CreateIcon } from "@bibs/ui/icons";
+import { PencilIcon } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
 
 export interface EntityFormHeaderProps {
-	/** Drives the default icon (Plus / Pencil) when `icon` is not supplied. */
+	/** Drives the default icon (Create / Pencil) when `icon` is not supplied. */
 	mode?: "create" | "edit";
 	/** Explicit icon, overriding the `mode` default (e.g. a settings surface). */
 	icon?: ComponentType<{ className?: string }>;
@@ -22,7 +23,7 @@ export function EntityFormHeader({
 	badge,
 	menu,
 }: EntityFormHeaderProps) {
-	const Icon = icon ?? (mode === "create" ? PlusIcon : PencilIcon);
+	const Icon = icon ?? (mode === "create" ? CreateIcon : PencilIcon);
 	const hasTitle = title != null && title.trim() !== "";
 
 	return (

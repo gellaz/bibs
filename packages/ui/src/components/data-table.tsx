@@ -73,9 +73,11 @@ function stickyCellClass(sticky: "left" | "right" | undefined) {
 	// Bg SOLIDI (no /50 alpha) cosi' il contenuto in scroll non traspare
 	// mai sotto le sticky cells. Su hover sono leggermente piu' sature
 	// di muted/50 (default del TR primitive sulle altre celle), trade-off
-	// accettato in cambio della no-transparency garantita.
+	// accettato in cambio della no-transparency garantita. Selected =
+	// cobalt-soft (solido), in pari col TR primitive; il compound
+	// selected+hover impedisce al group-hover muted di vincere.
 	const stateBg =
-		"bg-card group-hover:bg-muted group-data-[state=selected]:bg-muted";
+		"bg-card group-hover:bg-muted group-data-[state=selected]:bg-cobalt-soft group-data-[state=selected]:group-hover:bg-cobalt-soft";
 	if (sticky === "left") return cn("sticky left-0 z-10", SHADOW_RIGHT, stateBg);
 	if (sticky === "right")
 		return cn("sticky right-0 z-10", SHADOW_LEFT, stateBg);
@@ -101,6 +103,21 @@ interface DataTableProps<TData> {
 	 * Caller controls icon and copy; the cell handles `colSpan` and centering.
 	 */
 	emptyState?: ReactNode;
+	/**
+	 * When the table has zero rows, render `emptyState` in place of the whole
+	 * table (header included). Use for first-run emptiness — no search/filter
+	 * active — where a header has nothing to sort or select. Keep it `false`
+	 * for filter-produced emptiness so the table structure stays put while
+	 * the user adjusts the query.
+	 */
+	hideHeaderWhenEmpty?: boolean;
+	/**
+	 * Marks rows as selected when selection lives outside TanStack (e.g. a
+	 * custom selection hook). Selected rows get `data-state="selected"` and
+	 * the system tint (cobalt) on row and sticky cells — no per-call-site
+	 * background classes needed.
+	 */
+	isRowSelected?: (row: Row<TData>) => boolean;
 	/** Extra class for each row. Function form receives the TanStack row. */
 	rowClassName?: string | ((row: Row<TData>) => string);
 	/** Class on the rounded card wrapper around the table. */
@@ -140,6 +157,8 @@ export function DataTable<TData>({
 	getRowId,
 	isLoading,
 	emptyState,
+	hideHeaderWhenEmpty,
+	isRowSelected,
 	rowClassName,
 	containerClassName,
 	manualSorting,
@@ -210,6 +229,19 @@ export function DataTable<TData>({
 	const rows = table.getRowModel().rows;
 	const visibleColumnCount = table.getVisibleLeafColumns().length;
 
+	if (rows.length === 0 && hideHeaderWhenEmpty) {
+		return (
+			<div
+				className={cn(
+					"bg-card flex items-center justify-center rounded-lg border shadow-sm",
+					containerClassName,
+				)}
+			>
+				{emptyState}
+			</div>
+		);
+	}
+
 	return (
 		<div
 			ref={wrapperRef}
@@ -272,7 +304,11 @@ export function DataTable<TData>({
 							return (
 								<TableRow
 									key={row.id}
-									data-state={row.getIsSelected() ? "selected" : undefined}
+									data-state={
+										(isRowSelected?.(row) ?? row.getIsSelected())
+											? "selected"
+											: undefined
+									}
 									className={cn("group", extraClass)}
 								>
 									{row.getVisibleCells().map((cell) => {

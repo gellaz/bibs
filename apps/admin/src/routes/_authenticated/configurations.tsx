@@ -1,8 +1,7 @@
-import { Button } from "@bibs/ui/components/button";
+import { CreateButton } from "@bibs/ui/components/create-button";
 import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
@@ -68,12 +67,9 @@ function ConfigurationsPage() {
 			/>
 
 			<TabNav tabs={tabs} activeTab={tab} onTabChange={handleTabChange}>
-				<Button onClick={() => setCreateOpen(true)}>
-					<PlusIcon />
-					<span>
-						{tab === "holidays" ? "Nuova Festività" : "Nuova Categoria"}
-					</span>
-				</Button>
+				<CreateButton onClick={() => setCreateOpen(true)}>
+					{tab === "holidays" ? "Nuova Festività" : "Nuova Categoria"}
+				</CreateButton>
 			</TabNav>
 
 			{tab === "product-macro-categories" && (

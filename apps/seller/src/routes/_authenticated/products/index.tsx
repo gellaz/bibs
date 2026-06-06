@@ -1,9 +1,10 @@
 import { Badge } from "@bibs/ui/components/badge";
-import { Button } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { CopyButton } from "@bibs/ui/components/copy-button";
+import { CreateButton } from "@bibs/ui/components/create-button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
 import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
+import { EmptyState } from "@bibs/ui/components/empty-state";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -20,7 +21,7 @@ import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
-import { PackageIcon, PlusIcon, SearchIcon, XIcon } from "lucide-react";
+import { PackageIcon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
 import { ProductRowActions } from "@/features/products/components/product-row-actions";
@@ -253,14 +254,32 @@ function ProductsListPage() {
 			search: (prev) => ({ ...prev, statusFilter: next, page: 1 }),
 		});
 
+	// Ricerca o filtri attivi: il vuoto è "nessun risultato", non un catalogo
+	// vuoto. L'header resta (la struttura non salta mentre l'utente aggiusta
+	// la query) e l'icona è quella di no-results.
+	const hasSearchOrFilters =
+		effectiveRouteQ.length > 0 ||
+		(categoryIds?.length ?? 0) > 0 ||
+		Boolean(minPrice) ||
+		Boolean(maxPrice);
+
 	const emptyMessage =
 		effectiveRouteQ.length > 0
 			? m.products_search_no_results({ query: effectiveRouteQ })
-			: statusFilter === "active"
-				? m.products_empty_active()
-				: statusFilter === "disabled"
-					? m.products_empty_disabled()
-					: m.products_empty_trashed();
+			: hasSearchOrFilters
+				? m.products_filter_no_results()
+				: statusFilter === "active"
+					? m.products_empty_active()
+					: statusFilter === "disabled"
+						? m.products_empty_disabled()
+						: m.products_empty_trashed();
+
+	// Vista "pulita" del catalogo: tab Attivi senza ricerca né filtri. Se è
+	// vuota il negozio non ha davvero prodotti: empty state ricco con CTA.
+	// Gli altri tab vuoti (Disabilitati, Cestino) ricevono lo stesso
+	// trattamento header-nascosto ma solo con il titolo.
+	const isPristineCatalogView =
+		Boolean(activeStore) && statusFilter === "active" && !hasSearchOrFilters;
 
 	const columns = useMemo<ColumnDef<Product>[]>(
 		() => [
@@ -593,12 +612,9 @@ function ProductsListPage() {
 							: "Seleziona un negozio per visualizzare il catalogo."}
 					</p>
 				</div>
-				<Button asChild>
-					<Link to="/products/new">
-						<PlusIcon />
-						<span>Nuovo Prodotto</span>
-					</Link>
-				</Button>
+				<CreateButton asChild>
+					<Link to="/products/new">{m.products_new_cta()}</Link>
+				</CreateButton>
 			</div>
 
 			{activeStore && (
@@ -681,16 +697,25 @@ function ProductsListPage() {
 				isLoading={isLoading}
 				manualSorting={{ sorting, onSortingChange }}
 				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
-				rowClassName={(row) =>
-					selection.isSelected(row.original.id)
-						? "bg-primary/10 hover:bg-primary/10 [&>td:not(:first-child):not(:last-child)]:opacity-60"
-						: ""
-				}
+				isRowSelected={(row) => selection.isSelected(row.original.id)}
+				hideHeaderWhenEmpty={!hasSearchOrFilters}
 				emptyState={
-					<div className="flex flex-col items-center gap-2">
-						<PackageIcon className="text-muted-foreground/40 size-8" />
-						<p className="text-muted-foreground font-medium">{emptyMessage}</p>
-					</div>
+					isPristineCatalogView ? (
+						<EmptyState
+							title={m.products_empty_catalog()}
+							description={m.products_empty_catalog_description()}
+							action={
+								<CreateButton asChild>
+									<Link to="/products/new">{m.products_new_cta()}</Link>
+								</CreateButton>
+							}
+						/>
+					) : (
+						<EmptyState
+							variant={hasSearchOrFilters ? "no-results" : "empty"}
+							title={emptyMessage}
+						/>
+					)
 				}
 			/>
 

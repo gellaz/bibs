@@ -11,8 +11,9 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
+import { CreateIcon } from "@bibs/ui/icons";
 import { Link } from "@tanstack/react-router";
-import { ChevronsUpDownIcon, PlusIcon, StoreIcon } from "lucide-react";
+import { ChevronsUpDownIcon, StoreIcon } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
 
@@ -138,7 +139,7 @@ export function StoreSwitcher() {
 										className="mx-1 gap-2 rounded-md px-2 py-2"
 									>
 										<Link to="/store/new">
-											<PlusIcon className="size-4" />
+											<CreateIcon className="size-4" />
 											<span>Aggiungi negozio</span>
 										</Link>
 									</DropdownMenuItem>

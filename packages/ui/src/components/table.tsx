@@ -57,7 +57,11 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 		<tr
 			data-slot="table-row"
 			className={cn(
-				"hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+				// Selezione = cobalt (accent del product register, vedi DESIGN.md):
+				// solo tinta di fondo, il contenuto resta a piena opacità. Il
+				// compound selected:hover blocca l'hover muted sulle righe
+				// selezionate (cascade non deterministica tra le due utility).
+				"hover:bg-muted/50 data-[state=selected]:bg-cobalt-soft data-[state=selected]:hover:bg-cobalt-soft border-b transition-colors",
 				className,
 			)}
 			{...props}

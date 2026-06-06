@@ -6,6 +6,7 @@ import {
 	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
+	AlertDialogMedia,
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@bibs/ui/components/alert-dialog";
@@ -61,6 +62,9 @@ export function CancelStoreDialog({
 			<AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
 			<AlertDialogContent>
 				<AlertDialogHeader>
+					{/* Sospeso → archiviazione immediata e definitiva (destructive);
+					    attivo → cancellazione programmata a fine periodo (warning). */}
+					<AlertDialogMedia variant={isSuspended ? "destructive" : "warning"} />
 					<AlertDialogTitle>
 						{isSuspended
 							? `Cancellare definitivamente "${storeName}"?`
