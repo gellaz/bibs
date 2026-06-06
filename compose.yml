@@ -44,6 +44,22 @@ services:
     # this service as ready when it reaches the "running" state, which is good
     # enough for local dev (the API retries S3 on startup).
 
+  bibs-mailpit:
+    image: axllent/mailpit:v1.30
+    container_name: bibs-mailpit
+    ports:
+      - "8025:8025" # web UI + REST API
+      - "1025:1025" # SMTP (non usato dal nostro path HTTP, esposto per tool futuri)
+    environment:
+      # Default = file temporaneo auto-cancellato; con MP_DATABASE la posta
+      # sopravvive ai restart (e `infra:reset` la pulisce insieme a DB e MinIO).
+      - MP_DATABASE=/data/mailpit.db
+    volumes:
+      - bibs-mailpit-data:/data
+    # Healthcheck built-in nell'immagine (HEALTHCHECK CMD ["/mailpit", "readyz"]):
+    # `docker compose up --wait` lo rispetta senza config extra.
+
 volumes:
   bibs-postgis-data:
   bibs-minio-data:
+  bibs-mailpit-data:
