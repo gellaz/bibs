@@ -13,7 +13,8 @@
 			"**/*.js",
 			"**/*.jsx",
 			"**/*.json",
-			"!**/.agents"
+			"!**/.agents",
+			"!**/.claude/skills"
 		]
 	},
 	"overrides": [

@@ -31,12 +31,6 @@
 			"skillPath": "better-auth/emailAndPassword/SKILL.md",
 			"computedHash": "747d7f73bd9e2ec5317b8ef88dc70f97df716d00e3d02de4051feebaa48b062d"
 		},
-		"impeccable": {
-			"source": "pbakaus/impeccable",
-			"sourceType": "github",
-			"skillPath": ".agents/skills/impeccable/SKILL.md",
-			"computedHash": "15ca2efbf646ed89e85f56470d2a6bbe96268134b7e1e2ce9908ecf3d672119c"
-		},
 		"organization-best-practices": {
 			"source": "better-auth/skills",
 			"sourceType": "github",
@@ -47,7 +41,7 @@
 			"source": "shadcn/ui",
 			"sourceType": "github",
 			"skillPath": "skills/shadcn/SKILL.md",
-			"computedHash": "80a6226e78f6d1fe464214ae0ef449d49d8ffaa3e7704f011e9b418c678ad4d1"
+			"computedHash": "8f8bcc9024aa068245fac646d654a18c80280e4b06112ccd3e691a8c96cd66bd"
 		},
 		"tanstack-integration-best-practices": {
 			"source": "deckardger/tanstack-agent-skills",
