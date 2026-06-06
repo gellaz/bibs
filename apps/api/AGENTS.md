@@ -649,7 +649,7 @@ For browser/E2E flows (e.g. Playwright) retrieve emails via Mailpit's REST API â
 
 The verification link can be extracted from the `HTML` field of the message response.
 
-The preview server dependency (`@react-email/ui`) is a pinned devDependency of `packages/emails`, so `bun run dev:emails` boots non-interactively on fresh clones.
+The preview server dependency (`@react-email/ui`) is a devDependency of `packages/emails`, so `bun run dev:emails` boots non-interactively on fresh clones.
 
 ## API Documentation
 
