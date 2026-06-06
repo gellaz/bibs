@@ -12,6 +12,7 @@ const DEFAULT_MAILPIT_URL = "http://localhost:8025";
 /** Maps our params to Mailpit's PascalCase `POST /api/v1/send` JSON body. */
 export function toMailpitPayload({ to, subject, html }: SendEmailParams) {
 	return {
+		// Dev-only: From is cosmetic in Mailpit; the prod path honors env.EMAIL_FROM.
 		From: { Email: "noreply@bibs.it", Name: "bibs" },
 		To: [{ Email: to }],
 		Subject: subject,
@@ -38,7 +39,10 @@ export async function sendEmailToMailpit(
 		if (!res.ok) throw new Error(`Mailpit responded ${res.status}`);
 		return true;
 	} catch (err) {
-		logger.warn({ err }, "⚠️ Mailpit unreachable — falling back to log output");
+		logger.warn(
+			{ err },
+			"⚠️ Mailpit delivery failed — falling back to log output",
+		);
 		return false;
 	}
 }
