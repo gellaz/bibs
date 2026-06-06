@@ -37,7 +37,7 @@ To refresh strategic or visual context: `$impeccable teach` (PRODUCT) or `$impec
 - `bun run lint` — lint all workspaces (Biome)
 - `bun run lint:fix` — lint and auto-fix (Biome)
 - `bun run format` — format all files (Biome)
-- `bun run infra:up` / `infra:down` / `infra:reset` — manage Docker services (PostGIS + MinIO)
+- `bun run infra:up` / `infra:down` / `infra:reset` — manage Docker services (PostGIS + MinIO + Mailpit)
 - `bun run db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle database commands
 
 ## Git Hooks (Lefthook)
@@ -271,6 +271,7 @@ bun add -d package-name
 
 - **bibs-postgis** — PostgreSQL 18 + PostGIS 3.6 (port 5432)
 - **bibs-minio** — MinIO object storage (ports 9000/9001)
+- **bibs-mailpit** — Mailpit dev email catcher (SMTP 1025, web UI + API **8025**)
 
 Dev server ports:
 
@@ -278,6 +279,8 @@ Dev server ports:
 - **Customer**: 3001
 - **Seller**: 3002
 - **Admin**: 3003
+- **Mailpit UI**: 8025 (dev emails — verification links land here)
+- **Email preview** (`bun run dev:emails`): 3004
 
 Environment variables are per-app (e.g. `apps/api/.env`, `apps/admin/.env.local`). See each app's `.env.example`.
 
