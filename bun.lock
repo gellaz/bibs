@@ -59,6 +59,7 @@
       "version": "1.0.50",
       "dependencies": {
         "@aws-sdk/client-s3": "catalog:",
+        "@bibs/emails": "workspace:*",
         "@elysiajs/cors": "^1.4.2",
         "@elysiajs/cron": "^1.4.2",
         "@elysiajs/openapi": "^1.4.15",
