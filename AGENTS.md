@@ -279,8 +279,8 @@ Dev server ports:
 - **Customer**: 3001
 - **Seller**: 3002
 - **Admin**: 3003
-- **Mailpit UI**: 8025 (dev emails — verification links land here)
-- **Email preview** (`bun run dev:emails`): 3004
+- **Email preview** (dev:emails): 3004
+- **Mailpit UI**: 8025
 
 Environment variables are per-app (e.g. `apps/api/.env`, `apps/admin/.env.local`). See each app's `.env.example`.
 

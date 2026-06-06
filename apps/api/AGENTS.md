@@ -97,7 +97,7 @@ Email sending via **Resend** in production, Mailpit in development:
 - In dev: delivers to the local Mailpit catcher (web UI on :8025); falls back to logging if Mailpit is down
 - In production: sends via Resend API using `RESEND_API_KEY`
 - Used for email verification during seller onboarding and employee invites
-- Templates live in `packages/emails` (`@bibs/emails`); see `packages/emails/src/index.tsx`
+- Templates live in `packages/emails` (`@bibs/emails`); see `packages/emails/src/index.tsx`. Preview them with `bun run dev:emails` (port 3004); `@react-email/ui` is a devDependency of `packages/emails`, so the preview server boots non-interactively on fresh clones.
 
 ### Config & Errors — `src/lib/config.ts`, `src/lib/errors.ts`, `src/lib/responses.ts`
 
@@ -594,6 +594,7 @@ Use `logger` from `src/lib/logger.ts` for non-request contexts (cron jobs, start
 
 - **bibs-postgis** — PostgreSQL 18 + PostGIS 3.6 (custom Dockerfile in `docker/postgis/`)
 - **bibs-minio** — MinIO object storage for product images
+- **bibs-mailpit** — Mailpit dev email catcher (SMTP 1025, web UI + API 8025)
 
 Environment variables in `.env` (see `.env.example`). Validated at startup by `src/lib/env.ts`.
 
@@ -639,7 +640,7 @@ bun run test:integration  # integration only (requires Docker)
 
 ### Dev emails (Mailpit)
 
-In development every `sendEmail()` call is delivered to the local Mailpit container — web UI at <http://localhost:8025> (history, HTML rendering, clickable links). Templates live in `packages/emails` (react-email); preview them with `bun run dev:emails` (port 3004).
+In development every `sendEmail()` call is delivered to the local Mailpit container — web UI at <http://localhost:8025> (history, HTML rendering, clickable links).
 
 For browser/E2E flows (e.g. Playwright) retrieve emails via Mailpit's REST API — plain fetch, no client library:
 
@@ -648,8 +649,6 @@ For browser/E2E flows (e.g. Playwright) retrieve emails via Mailpit's REST API �
 - Clear inbox (test isolation): `DELETE http://localhost:8025/api/v1/messages`
 
 The verification link can be extracted from the `HTML` field of the message response.
-
-The preview server dependency (`@react-email/ui`) is a devDependency of `packages/emails`, so `bun run dev:emails` boots non-interactively on fresh clones.
 
 ## API Documentation
 
