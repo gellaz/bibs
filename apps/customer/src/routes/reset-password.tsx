@@ -42,6 +42,10 @@ function ResetPasswordPage() {
 			setFormError(m.auth_reset_password_too_short());
 			return;
 		}
+		if (password.length > 128) {
+			setFormError(m.auth_reset_password_too_long());
+			return;
+		}
 		if (password !== confirmPassword) {
 			setFormError(m.auth_reset_password_mismatch());
 			return;
@@ -54,7 +58,14 @@ function ResetPasswordPage() {
 				token,
 			});
 			if (res.error) {
-				setFormError(m.auth_reset_password_invalid_token());
+				// Solo gli errori di token mostrano la copy "link non valido";
+				// gli altri (es. PASSWORD_TOO_LONG lato server) mostrano il
+				// messaggio reale o il fallback generico.
+				setFormError(
+					res.error.code === "INVALID_TOKEN"
+						? m.auth_reset_password_invalid_token()
+						: (res.error.message ?? m.auth_generic_error()),
+				);
 				return;
 			}
 			toast.success(m.auth_reset_password_success_toast());

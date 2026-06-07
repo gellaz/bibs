@@ -30,7 +30,9 @@
 	"auth_reset_password_submitting": "Invio in corso...",
 	"auth_reset_password_too_short": "La password deve avere almeno 8 caratteri",
 	"auth_reset_password_mismatch": "Le password non corrispondono",
+	"auth_reset_password_too_long": "La password può avere al massimo 128 caratteri",
 	"auth_reset_password_invalid_token": "Link non valido o scaduto.",
 	"auth_reset_password_request_new": "Richiedi un nuovo link",
-	"auth_reset_password_success_toast": "Password aggiornata. Accedi con la nuova password."
+	"auth_reset_password_success_toast": "Password aggiornata. Accedi con la nuova password.",
+	"auth_forgot_password_rate_limited": "Troppi tentativi. Riprova più tardi."
 }

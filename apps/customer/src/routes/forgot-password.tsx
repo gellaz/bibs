@@ -39,10 +39,16 @@ function ForgotPasswordPage() {
 		if (!email || sending || cooldownActive) return;
 		setSending(true);
 		try {
-			await authClient.requestPasswordReset({
+			const res = await authClient.requestPasswordReset({
 				email,
 				redirectTo: `${window.location.origin}/reset-password`,
 			});
+			if (res.error?.status === 429) {
+				toast.error(m.auth_forgot_password_rate_limited());
+				return;
+			}
+			// Anti-enumeration: ogni altro esito (successo o errore non-429)
+			// è indistinguibile — stessa risposta di "email inviata".
 			setLastSentAt(Date.now());
 			setSentOnce(true);
 			toast.success(m.auth_forgot_password_sent_toast());
