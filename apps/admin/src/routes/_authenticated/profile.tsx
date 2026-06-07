@@ -48,12 +48,16 @@ function ProfilePage() {
 	const onSubmit = async (data: {
 		firstName: string;
 		lastName: string;
-		birthDate?: string;
+		birthDate: string | null;
 	}) => {
 		const { error } = await authClient.updateUser({
 			firstName: data.firstName,
 			lastName: data.lastName,
-			birthDate: data.birthDate,
+			// better-auth tipizza i campi additional come string|undefined ma
+			// accetta e persiste null quando la chiave è presente nel body
+			// (parseInputData scrive data[key] così com'è). Il cast esprime il
+			// clear esplicito che il tipo inferito non sa rappresentare.
+			birthDate: data.birthDate as unknown as string | undefined,
 			name: `${data.firstName} ${data.lastName}`,
 		});
 		return { error: error?.message };
