@@ -63,7 +63,7 @@ async function seedSubs(
 }
 
 describe("getBillingOverview", () => {
-	it("aggregates MRR over billable subs and counts by state", async () => {
+	it("aggregates MRR over active subs, at-risk over past_due+canceling, counts by state", async () => {
 		const { profile: a } = await createTestSeller(getTestDb(), {
 			email: "a@b.it",
 		});
