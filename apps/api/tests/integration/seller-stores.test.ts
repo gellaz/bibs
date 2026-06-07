@@ -358,6 +358,28 @@ describe("updateStore", () => {
 		).rejects.toMatchObject({ status: 400 });
 	});
 
+	it("clears websiteUrl when null is passed", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+		await db
+			.update(storeTable)
+			.set({ websiteUrl: "https://esempio.it" })
+			.where(eq(storeTable.id, testStore.id));
+
+		await updateStore({
+			storeId: testStore.id,
+			sellerProfileId: seller.profile.id,
+			websiteUrl: null,
+		});
+
+		const [row] = await db
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, testStore.id));
+		expect(row.websiteUrl).toBeNull();
+	});
+
 	it("persists a valid multi-slot week", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);

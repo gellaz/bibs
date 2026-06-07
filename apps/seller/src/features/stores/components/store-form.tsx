@@ -157,7 +157,9 @@ export function StoreForm({
 			...data,
 			description: data.description || undefined,
 			addressLine2: data.addressLine2 || undefined,
-			websiteUrl: data.websiteUrl || undefined,
+			// null (non undefined): Eden non serializza undefined e il clear del
+			// sito non arriverebbe mai al server — stessa classe di bug degli orari.
+			websiteUrl: data.websiteUrl || null,
 			// [] (tutti i giorni chiusi) deve viaggiare come null: Eden non
 			// serializza undefined e il PATCH non vedrebbe mai il clear.
 			openingHours: openingHours.length > 0 ? openingHours : null,
