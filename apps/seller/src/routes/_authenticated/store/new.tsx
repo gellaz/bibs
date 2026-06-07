@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { EntityFormHeader } from "@/components/entity-form-header";
+import { FormSection } from "@/components/form-section";
 import {
 	StoreForm,
 	type StoreFormData,
@@ -94,7 +95,10 @@ function NewStorePage() {
 	}
 
 	return (
-		<div className="mx-auto max-w-2xl space-y-6">
+		// w-full obbligatorio: il wrapper è flex-item del layout e le FormSection
+		// figlie sono @container (zero contributo intrinseco) — senza, mx-auto
+		// va in shrink-to-fit e la pagina collassa a ~280px (vedi PR #84).
+		<div className="mx-auto w-full max-w-7xl space-y-10">
 			<EntityFormHeader
 				mode="create"
 				title={name}
@@ -102,15 +106,66 @@ function NewStorePage() {
 				subtitle="Aggiungi un nuovo punto vendita"
 			/>
 
-			<StoreForm
-				onSubmit={(data) => createMutation.mutate(data)}
-				onCancel={() => void navigate({ to: "/store" })}
-				isPending={createMutation.isPending}
-				onNameChange={handleNameChange}
-				defaultValues={prefillData ?? undefined}
-				submitLabel={m["store.new.continue_to_payment"]()}
-				pendingLabel={m["store.new.continue_to_payment"]()}
-			/>
+			<div className="@container">
+				<div className="grid gap-x-10 gap-y-8 @2xl:grid-cols-[minmax(0,1fr)_18rem]">
+					<div className="min-w-0">
+						<StoreForm
+							onSubmit={(data) => createMutation.mutate(data)}
+							onCancel={() => void navigate({ to: "/store" })}
+							isPending={createMutation.isPending}
+							onNameChange={handleNameChange}
+							defaultValues={prefillData ?? undefined}
+							submitLabel={m["store.new.continue_to_payment"]()}
+							pendingLabel={m["store.new.continue_to_payment"]()}
+						/>
+					</div>
+					<div className="space-y-8">
+						<FormSection
+							title="Come funziona"
+							description="Dalla compilazione all'apertura su bibs."
+						>
+							<ol className="space-y-4 text-sm">
+								<li className="flex gap-3">
+									<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
+										1
+									</span>
+									<div>
+										<p className="font-medium">Compili i dati del negozio</p>
+										<p className="text-muted-foreground">
+											Indirizzo, orari e contatti restano modificabili anche
+											dopo.
+										</p>
+									</div>
+								</li>
+								<li className="flex gap-3">
+									<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
+										2
+									</span>
+									<div>
+										<p className="font-medium">Attivi l'abbonamento</p>
+										<p className="text-muted-foreground">
+											Canone mensile per punto vendita, pagamento gestito da
+											Stripe.
+										</p>
+									</div>
+								</li>
+								<li className="flex gap-3">
+									<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
+										3
+									</span>
+									<div>
+										<p className="font-medium">Il negozio è subito attivo</p>
+										<p className="text-muted-foreground">
+											Foto vetrina e prodotti si caricano dalle impostazioni del
+											negozio.
+										</p>
+									</div>
+								</li>
+							</ol>
+						</FormSection>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }
