@@ -6,6 +6,7 @@ import { pricingConfig } from "@/db/schemas/pricing-config";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
+import { validateOpeningHours } from "@/lib/opening-hours";
 import type { CreateStoreBody } from "@/lib/schemas/forms";
 import { stripe } from "@/lib/stripe";
 import { getOrCreateStripeCustomer } from "@/modules/billing/services/customer";
@@ -50,6 +51,11 @@ export async function createCheckoutSession(
 	params: CreateCheckoutParams,
 ): Promise<CreateCheckoutResult> {
 	const { sellerProfileId, body } = params;
+
+	if (Array.isArray(body.openingHours)) {
+		const hoursError = validateOpeningHours(body.openingHours);
+		if (hoursError) throw new ServiceError(400, hoursError);
+	}
 
 	// Idempotent: if there's already an "open" pending for this seller, return its session
 	const existing = await db.query.pendingStoreCreation.findFirst({

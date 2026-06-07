@@ -11,7 +11,7 @@ import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import "@/lib/typebox-formats";
 import { PlusIcon, Trash2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	Controller,
 	type SubmitHandler,
@@ -20,18 +20,15 @@ import {
 } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
 import { useMunicipalities } from "@/hooks/use-municipalities";
+import { validateOpeningHours } from "../lib/validate-opening-hours";
 import {
+	type DaySchedule,
 	DEFAULT_OPENING_HOURS,
 	OpeningHoursEditor,
 } from "./opening-hours-editor";
 
 export type StoreFormData = Static<typeof CreateStoreBody>;
 const compiledSchema = TypeCompiler.Compile(CreateStoreBody);
-
-interface DaySchedule {
-	dayOfWeek: number;
-	slots: { open: string; close: string }[];
-}
 
 /**
  * Canonical serialization of opening hours for change detection. Days are
@@ -58,6 +55,7 @@ interface StoreFormProps {
 	pendingLabel?: string;
 	onNameChange?: (name: string) => void;
 	readOnly?: boolean;
+	lastSavedAt?: number;
 }
 
 export function StoreForm({
@@ -69,11 +67,12 @@ export function StoreForm({
 	pendingLabel = "Creazione...",
 	onNameChange,
 	readOnly = false,
+	lastSavedAt,
 }: StoreFormProps) {
 	// openingHours is kept outside react-hook-form, so RHF's isDirty does not
 	// react to changes here. Snapshot the value at mount and diff against it so
 	// opening-hours-only edits can still enable Save (see store form audit).
-	const [initialOpeningHours] = useState<DaySchedule[]>(
+	const [initialOpeningHours, setInitialOpeningHours] = useState<DaySchedule[]>(
 		() =>
 			(defaultValues?.openingHours as DaySchedule[] | undefined) ??
 			DEFAULT_OPENING_HOURS.map((d) => ({
@@ -89,6 +88,8 @@ export function StoreForm({
 		handleSubmit,
 		control,
 		watch,
+		reset,
+		getValues,
 		formState: { errors, isDirty },
 	} = useForm<StoreFormData>({
 		resolver: typeboxResolver(compiledSchema),
@@ -99,7 +100,10 @@ export function StoreForm({
 			addressLine2: "",
 			municipalityId: "",
 			zipCode: "",
-			websiteUrl: "",
+			// undefined (non ""): lo schema è Optional + format uri, quindi ""
+			// presente NON valida; e il default deve combaciare col setValueAs
+			// (""→undefined) per non generare phantom isDirty.
+			websiteUrl: undefined,
 			phoneNumbers: [],
 			...defaultValues,
 		},
@@ -114,6 +118,28 @@ export function StoreForm({
 		serializeOpeningHours(openingHours) !==
 		serializeOpeningHours(initialOpeningHours);
 
+	const hoursErrors = useMemo(
+		() => validateOpeningHours(openingHours),
+		[openingHours],
+	);
+	const hoursInvalid = Object.keys(hoursErrors).length > 0;
+
+	// Re-baseline dopo un save riuscito: i valori correnti diventano i nuovi
+	// default (isDirty→false) e lo snapshot orari viene riallineato, così il
+	// bottone Salva si disabilita finché non c'è una nuova modifica.
+	// Intentionally depends ONLY on lastSavedAt: adding openingHours would
+	// re-baseline on every edit and kill dirty-detection entirely.
+	useEffect(() => {
+		if (!lastSavedAt) return;
+		reset(getValues());
+		setInitialOpeningHours(
+			openingHours.map((d) => ({
+				...d,
+				slots: d.slots.map((s) => ({ ...s })),
+			})),
+		);
+	}, [lastSavedAt]);
+
 	const { fields, append, remove } = useFieldArray({
 		control,
 		name: "phoneNumbers",
@@ -126,12 +152,17 @@ export function StoreForm({
 	} = useMunicipalities();
 
 	const onFormSubmit: SubmitHandler<StoreFormData> = (data) => {
+		if (hoursInvalid) return;
 		const cleaned: StoreFormData = {
 			...data,
 			description: data.description || undefined,
 			addressLine2: data.addressLine2 || undefined,
-			websiteUrl: data.websiteUrl || undefined,
-			openingHours: openingHours.length > 0 ? openingHours : undefined,
+			// null (non undefined): Eden non serializza undefined e il clear del
+			// sito non arriverebbe mai al server — stessa classe di bug degli orari.
+			websiteUrl: data.websiteUrl || null,
+			// [] (tutti i giorni chiusi) deve viaggiare come null: Eden non
+			// serializza undefined e il PATCH non vedrebbe mai il clear.
+			openingHours: openingHours.length > 0 ? openingHours : null,
 			phoneNumbers:
 				data.phoneNumbers && data.phoneNumbers.length > 0
 					? data.phoneNumbers.map((p, idx) => ({
@@ -254,6 +285,7 @@ export function StoreForm({
 					value={openingHours}
 					onChange={setOpeningHours}
 					readOnly={readOnly}
+					dayErrors={hoursErrors}
 				/>
 			</FormSection>
 
@@ -330,7 +362,10 @@ export function StoreForm({
 						placeholder="https://esempio.it (opzionale)"
 						disabled={readOnly}
 						{...register("websiteUrl", {
-							setValueAs: (v: string) => v || undefined,
+							// Load-bearing: ""→undefined fa passare la validazione
+							// (Optional + format uri rifiuta "" presente) E allinea il
+							// valore al default undefined (niente phantom isDirty).
+							setValueAs: (v) => v || undefined,
 						})}
 					/>
 					<FieldError errors={[errors.websiteUrl]} />
@@ -346,7 +381,9 @@ export function StoreForm({
 						</Button>
 						<Button
 							type="submit"
-							disabled={isPending || (!isDirty && !openingHoursDirty)}
+							disabled={
+								isPending || (!isDirty && !openingHoursDirty) || hoursInvalid
+							}
 						>
 							{isPending ? pendingLabel : submitLabel}
 						</Button>
