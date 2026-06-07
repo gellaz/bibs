@@ -11,16 +11,21 @@ This file provides guidance when working with the **bibs** monorepo.
 - `apps/seller/` — Seller back-office (TanStack Start + React 19), port **3002**
 - `apps/admin/` — Admin back-office (TanStack Start + React 19), port **3003**
 - `packages/ui/` — Shared UI component library (`@bibs/ui`) — shadcn/ui (radix-nova style) + Radix UI + Tailwind CSS v4
+- `packages/emails/` — Transactional email templates (`@bibs/emails`, react-email); preview server on port **3004**
+
+Cross-app architecture (type flow, API patterns, data model, frontend stack):
+[docs/architecture.md](docs/architecture.md). Stripe billing dev runbook:
+[docs/stripe-billing.md](docs/stripe-billing.md).
 
 ## Design Context
 
 Strategic and visual context for any agent doing UI / brand work lives at the repo root and is loaded automatically by the `impeccable` skill:
 
 - **[PRODUCT.md](PRODUCT.md)** — register, mission, vision, users (shoppers, merchants, civic partners, admins), brand personality, anti-references, the 5 design principles, accessibility baseline. Source of truth for *who* and *why*.
-- **[DESIGN.md](DESIGN.md)** — visual system: Creative North Star ("The Open Hand"), color tokens (Ink + Cream + Saffron palette in OKLCH), typography (Geist + Bricolage Grotesque), elevation, components, do's and don'ts. Source of truth for *how it looks*. Frontmatter is normative.
+- **[DESIGN.md](DESIGN.md)** — visual system: Creative North Star ("The Open Hand"), color tokens (Ink + Cream + Saffron palette in OKLCH), typography (Geist + Satoshi), elevation, components, do's and don'ts. Source of truth for *how it looks*. Frontmatter is normative.
 - **[.impeccable/design.json](.impeccable/design.json)** — sidecar with full HTML/CSS for canonical components and signature patterns (Reward Pill, Civic Pill, Distance Pill, Shopkeeper's Window, Market Square). Used by the impeccable live panel and as a reference for new component code.
 
-Note: the codebase as of writing carries the default shadcn radix-nova preset (cyan-sky `--primary`, neutral grayscale, Geist-only). DESIGN.md prescribes the brand-aligned target (navy Ink + warm Cream + Saffron, Bricolage Grotesque display). New work follows DESIGN.md; existing screens migrate opportunistically, not in a big-bang refactor.
+The ui package tokens (`packages/ui/src/styles/globals.css`) are aligned to DESIGN.md — navy Ink + warm Cream OKLCH values, saffron/cobalt per-register accents, Satoshi as the display face. New work follows DESIGN.md directly; no migration debt remains from a legacy default preset.
 
 To refresh strategic or visual context: `$impeccable teach` (PRODUCT) or `$impeccable document` (DESIGN). To start any new feature: `$impeccable craft <feature>`.
 
@@ -39,6 +44,9 @@ To refresh strategic or visual context: `$impeccable teach` (PRODUCT) or `$impec
 - `bun run format` — format all files (Biome)
 - `bun run infra:up` / `infra:down` / `infra:reset` — manage Docker services (PostGIS + MinIO + Mailpit)
 - `bun run db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle database commands
+- `bun run db:seed` / `db:reset` — seed test data / full wipe + migrate + seed
+- `bun run dev:emails` — react-email preview server (port 3004)
+- `bun run skills:update` — refresh checked-in agent skills
 
 ## Git Hooks (Lefthook)
 
@@ -55,11 +63,8 @@ To reinstall hooks manually (e.g. after cloning without running `bun install`):
 bunx lefthook install
 ```
 
-To skip hooks in exceptional cases:
-
-```bash
-git commit --no-verify -m "..."
-```
+Skipping hooks (`git commit --no-verify`) is reserved for exceptional cases and —
+per the [Hard Rules](#hard-rules) — requires explicit user confirmation first.
 
 ## Continuous Integration
 
@@ -112,7 +117,8 @@ Key files in each frontend app:
 - `@/*` → `./src/*` (via `package.json` imports field)
 - `~/*` → `../../packages/ui/src/*` (via `tsconfig.json` paths + Vite alias)
 
-See `apps/api/REACT_INTEGRATION.md` for the complete Eden Treaty integration guide with examples.
+Eden Treaty integration (concepts, error handling, gotchas) is documented in
+[docs/architecture.md](docs/architecture.md#frontend--api-integration-eden-treaty).
 
 ## Dependency Management
 
@@ -283,6 +289,53 @@ Dev server ports:
 - **Mailpit UI**: 8025
 
 Environment variables are per-app (e.g. `apps/api/.env`, `apps/admin/.env.local`). See each app's `.env.example`.
+
+## Hard Rules
+
+Do **not** do any of the following without explicit user confirmation:
+
+- `git commit --no-verify` / any bypass of Lefthook (Biome pre-commit + commit-msg validation are load-bearing).
+- `bun run db:push` on any branch that will be shared — always go through `db:generate` + review diff + `db:migrate`.
+- `bun run db:seed` on a DB you haven't just reset — it assumes a clean schema.
+- `bun run infra:reset` / `db:reset` — they delete the local dev volumes.
+- Edit `.env` / `.env.local` files (only `.env.example` is fair game).
+- Edit `bun.lock` by hand — let `bun install` / `bun add` manage it.
+- `git push --force` to `main` or to any branch with an open PR.
+- Introduce dependencies outside the root `catalog:` when they are shared across workspaces.
+
+## Verification Before Completion
+
+Before claiming a task is done, run (in the affected scope):
+
+```bash
+bun run typecheck   # always — catalog propagates types across 3 frontends via Eden Treaty
+bun run lint        # Biome
+bun run test        # when touching apps/api or packages/emails
+```
+
+UI changes: start the relevant dev server and exercise the feature in a browser —
+type-check alone does not verify UI. API changes: check `/openapi` reflects the
+change and the Eden clients still typecheck from root. Drizzle schema changes:
+`bun run db:generate`, then **read the generated SQL** before `bun run db:migrate`.
+
+## Writing New API Endpoints (Elysia)
+
+When adding a route under `apps/api/src/`, follow the existing pattern:
+
+1. Schema in `apps/api/src/lib/schemas/` (TypeBox, Italian `description`), re-exported from `index.ts`.
+2. Response via `okRes()` / `okPageRes()` helpers (see `responses.ts`).
+3. Errors via `withErrors()` / `withConflictErrors()`, with `ServiceError` for business errors. Let the global `errorHandler` do its job — don't try/catch for envelope shaping.
+4. Auth: set `{ auth: true }` on the route config and use the `auth` macro instead of reading headers manually.
+5. OpenAPI description on every route (Italian, consistent with the rest of the spec).
+6. Handle pg unique violations implicitly via the global handler (`23505 → 409`).
+
+## Writing New Frontend Routes (TanStack Start)
+
+- File-based routing in `src/routes/`. Auth-guarded routes go under `_authenticated/`.
+- i18n via Paraglide — add strings to `messages/*.json`, never hard-code user-facing copy.
+- Data fetching via Eden Treaty + TanStack Query (`src/lib/api.ts`). Types come from the API — no manual DTOs.
+- Forms: `react-hook-form` + `@hookform/resolvers` + Zod (or TypeBox through the shared schemas).
+- UI primitives from `@bibs/ui` (`~/` alias), not raw Radix or hand-rolled shadcn copies.
 
 ## Commit Conventions
 
