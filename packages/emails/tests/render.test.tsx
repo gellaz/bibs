@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
 	renderEmployeeInviteEmail,
+	renderResetPasswordEmail,
 	renderVerificationEmail,
 } from "../src/index";
 
@@ -34,6 +35,30 @@ describe("renderEmployeeInviteEmail", () => {
 		// them before asserting so the number is contiguous with its surrounding copy.
 		const normalized = html.replaceAll("<!-- -->", "");
 		expect(normalized).toContain("Il link scade tra 7 giorni.");
+	});
+});
+
+describe("renderResetPasswordEmail", () => {
+	it("renders subject, greeting and reset url", async () => {
+		const { subject, html } = await renderResetPasswordEmail({
+			name: "Mario Rossi",
+			resetUrl:
+				"http://localhost:3000/auth/api/reset-password/tok123?callbackURL=http%3A%2F%2Flocalhost%3A3001%2Freset-password",
+		});
+		expect(subject).toBe("Reimposta la tua password su bibs");
+		// react-email 6 inserts <!-- --> comment nodes around interpolations
+		const normalized = html.replaceAll("<!-- -->", "");
+		expect(normalized).toContain("Ciao Mario Rossi");
+		expect(normalized).toContain("/auth/api/reset-password/tok123");
+	});
+
+	it("escapes HTML in the name", async () => {
+		const { html } = await renderResetPasswordEmail({
+			name: "Mario <b>&</b> Rossi",
+			resetUrl: "http://localhost:3000/auth/api/reset-password/tok",
+		});
+		expect(html).toContain("&amp;");
+		expect(html).not.toContain("<b>&</b>");
 	});
 });
 

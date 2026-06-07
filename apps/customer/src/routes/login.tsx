@@ -13,6 +13,7 @@ import { PasswordInput } from "@bibs/ui/components/password-input";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/login")({
 	component: LoginPage,
@@ -123,6 +124,12 @@ function LoginPage() {
 						<Button type="submit" disabled={loading} className="w-full">
 							{loading ? "Accesso in corso..." : "Accedi"}
 						</Button>
+						<Link
+							to="/forgot-password"
+							className="text-center text-sm text-muted-foreground hover:underline"
+						>
+							{m.auth_login_forgot_password()}
+						</Link>
 					</form>
 
 					<p className="mt-4 text-center text-sm text-muted-foreground">

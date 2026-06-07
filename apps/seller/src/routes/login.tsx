@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/login-form";
 import type { LoginFormData } from "@/features/auth/schemas/login";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/login")({
 	component: LoginPage,
@@ -83,6 +84,12 @@ function LoginPage() {
 						</div>
 					)}
 					<LoginForm onSubmit={handleSubmit} apiError={error} />
+					<Link
+						to="/forgot-password"
+						className="mt-2 block text-center text-sm text-muted-foreground hover:underline"
+					>
+						{m.auth_login_forgot_password()}
+					</Link>
 					<p className="mt-4 text-center text-sm text-muted-foreground">
 						Non hai un account?{" "}
 						<Link to="/register" className="text-primary underline">

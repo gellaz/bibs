@@ -1,4 +1,7 @@
-import { renderVerificationEmail } from "@bibs/emails";
+import {
+	renderResetPasswordEmail,
+	renderVerificationEmail,
+} from "@bibs/emails";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, openAPI } from "better-auth/plugins";
@@ -20,6 +23,14 @@ export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: "pg",
 	}),
+	advanced: {
+		ipAddress: {
+			// The betterAuth plugin OVERWRITES x-forwarded-for with Bun's socket
+			// peer address (and strips x-real-ip), so this header is trusted by
+			// construction and the rate-limiter keys by real IP even in direct dev.
+			ipAddressHeaders: ["x-forwarded-for"],
+		},
+	},
 	user: {
 		additionalFields: {
 			firstName: {
@@ -51,6 +62,26 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true,
 		requireEmailVerification: true,
+		// Il token di reset scade in 1h (default better-auth). Revochiamo le
+		// sessioni attive al reset così un eventuale attaccante con una sessione
+		// rubata viene disconnesso quando l'utente reimposta la password.
+		revokeSessionsOnPasswordReset: true,
+		sendResetPassword: async ({ user, url }) => {
+			// better-auth generates URLs using basePath "/api", but the handler
+			// is mounted at "/auth" in Elysia, so the public path is "/auth/api/..."
+			const fixed = new URL(url);
+			fixed.pathname = `/auth${fixed.pathname}`;
+			const resetUrl = fixed.toString();
+
+			const { subject, html } = await renderResetPasswordEmail({
+				name: user.name,
+				resetUrl,
+			});
+			// Eventuali errori qui vengono inghiottiti dal wrapper background-task
+			// di better-auth (la risposta resta 200 anti-enumeration); i fallimenti
+			// di invio emergono solo nei log.
+			await sendEmail({ to: user.email, subject, html });
+		},
 	},
 	// better-auth's own limiter is off in dev by default; the frontends sign in
 	// via the native /auth/api/sign-in/email endpoint (better-auth client), which
@@ -65,7 +96,10 @@ export const auth = betterAuth({
 			"/sign-in/email": { window: 60, max: 10 },
 			"/sign-up/email": { window: 3600, max: 5 },
 			"/send-verification-email": { window: 3600, max: 5 },
-			"/forget-password": { window: 3600, max: 5 },
+			// "/forget-password" era il nome pre-1.x: la route reale è
+			// /request-password-reset (match per uguaglianza esatta del path).
+			"/request-password-reset": { window: 3600, max: 5 },
+			"/reset-password": { window: 3600, max: 10 },
 		},
 	},
 	emailVerification: {

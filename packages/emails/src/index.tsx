@@ -2,6 +2,9 @@ import { render } from "react-email";
 import EmployeeInviteEmail, {
 	type EmployeeInviteEmailProps,
 } from "../emails/employee-invite-email";
+import ResetPasswordEmail, {
+	type ResetPasswordEmailProps,
+} from "../emails/reset-password-email";
 import VerificationEmail, {
 	type VerificationEmailProps,
 } from "../emails/verification-email";
@@ -21,6 +24,16 @@ export async function renderVerificationEmail(
 	};
 }
 
+/** Email di reimpostazione password. */
+export async function renderResetPasswordEmail(
+	props: ResetPasswordEmailProps,
+): Promise<RenderedEmail> {
+	return {
+		subject: "Reimposta la tua password su bibs",
+		html: await render(<ResetPasswordEmail {...props} />),
+	};
+}
+
 /** Invito di un dipendente a unirsi al team di un venditore. */
 export async function renderEmployeeInviteEmail(
 	props: EmployeeInviteEmailProps,
@@ -31,4 +44,8 @@ export async function renderEmployeeInviteEmail(
 	};
 }
 
-export type { EmployeeInviteEmailProps, VerificationEmailProps };
+export type {
+	EmployeeInviteEmailProps,
+	ResetPasswordEmailProps,
+	VerificationEmailProps,
+};
