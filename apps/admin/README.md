@@ -1,104 +1,41 @@
 # @bibs/admin
 
-Admin back-office for **bibs** — manage categories, verify sellers, and monitor the marketplace.
+Admin back-office for **bibs** — platform operations.
 
-## Tech Stack
+**Implemented today:** platform taxonomies (product macro-categories, product
+categories, store categories) with CSV bulk import, and Italian holiday definitions
+(all under `configurations`); seller verification; billing oversight (MRR overview,
+subscription list, pricing configuration); user management. Routes for stores,
+products, and collections exist as placeholders and are not yet functional.
 
-- **Framework** — [TanStack Start](https://tanstack.com/start) (SSR + file-based routing)
-- **UI** — React 19 + [Tailwind CSS v4](https://tailwindcss.com/) + [@bibs/ui](../../packages/ui/) (shadcn/ui
-  radix-nova)
-- **API client** — [Eden Treaty](https://elysiajs.com/eden/treaty) (type-safe, from `@bibs/api`)
-- **Auth** — [better-auth](https://www.better-auth.com/) React client
-- **Data fetching** — [TanStack Query](https://tanstack.com/query) + TanStack Router loaders
-- **i18n** — [Paraglide JS](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) (localized routing, `messages/`)
-- **Env** — [T3Env](https://env.t3.gg/) (`src/env.ts`)
-- **Testing** — [Vitest](https://vitest.dev/) + Testing Library
-- **Linting** — [Biome](https://biomejs.dev/)
+## Stack
 
-## Getting Started
+TanStack Start (SSR) + React 19 + TanStack Query + Eden Treaty + better-auth +
+Paraglide (it/en) + Tailwind v4 + [@bibs/ui](../../packages/ui/). The shared frontend
+architecture — routing conventions, data fetching, auth, aliases, gotchas — is
+documented once in [docs/architecture.md](../../docs/architecture.md).
+
+## Getting started
 
 ```bash
-# From the monorepo root
-bun install
-bun run infra:up
-bun run db:migrate
-
-# Start the admin app only
-bun run dev:admin
+# from the monorepo root
+bun install && bun run infra:up && bun run db:migrate && bun run db:seed
+bun run dev:admin    # http://localhost:3003
 ```
-
-The app is available at `http://localhost:3003`.
 
 ## Scripts
 
-| Script              | Description                       |
-|---------------------|-----------------------------------|
-| `bun run dev`       | Start Vite dev server (port 3003) |
-| `bun run build`     | Production build                  |
-| `bun run preview`   | Preview production build          |
-| `bun run typecheck` | TypeScript check (`tsc --noEmit`) |
-| `bun run test`      | Run tests (Vitest)                |
-| `bun run lint`      | Lint (Biome)                      |
-| `bun run format`    | Format (Biome)                    |
-| `bun run check`     | Lint + format check (Biome)       |
+`dev` (port 3003) · `build` · `preview` · `typecheck` · `lint` · `format` · `check`
 
-## Project Structure
+## Environment
 
-```text
-src/
-├── env.ts                          # T3Env — typed environment variables
-├── router.tsx                      # TanStack Router setup
-├── routeTree.gen.ts                # Auto-generated route tree
-├── styles.css                      # Global styles (Tailwind import)
-├── components/
-│   ├── app-sidebar.tsx             # Main sidebar navigation
-│   ├── LocaleSwitcher.tsx          # Language switcher (it/en)
-│   └── ThemeToggle.tsx             # Light/dark theme toggle
-├── integrations/
-│   ├── better-auth/
-│   │   └── header-user.tsx         # User avatar/menu in header
-│   └── tanstack-query/
-│       ├── devtools.tsx            # React Query devtools
-│       └── root-provider.tsx       # QueryClient provider
-├── lib/
-│   ├── api.ts                      # Eden Treaty client (isomorphic)
-│   └── auth-client.ts             # better-auth React client
-├── paraglide/                      # Auto-generated i18n (do not edit)
-└── routes/
-    ├── __root.tsx                  # Root layout (head, providers, devtools)
-    ├── _authenticated.tsx          # Auth guard layout
-    ├── _authenticated/index.tsx    # Dashboard (home page)
-    └── login.tsx                   # Login page
-```
+No env file is needed to boot: `VITE_API_URL` defaults to `http://localhost:3000`.
+To override it (or the optional `VITE_APP_TITLE` / `SERVER_URL`), copy `.env.example`
+to `.env.local`. The `BETTER_AUTH_*` lines in `.env.example` belong to the API's
+`.env` — the admin app does not read them.
 
-## Environment Variables
+## Routes & i18n
 
-Copy `.env.example` to `.env.local`:
-
-```bash
-# Required
-VITE_API_URL=http://localhost:3000
-
-# Optional
-# VITE_APP_TITLE=Bibs Admin
-# SERVER_URL=http://localhost:3003
-
-# Better Auth (needed for SSR auth)
-BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_SECRET=  # Generate: bunx --bun @better-auth/cli secret
-```
-
-## Path Aliases
-
-- `@/*` → `./src/*` (via `package.json` imports field)
-- `~/*` → `../../packages/ui/src/*` (via `tsconfig.json` paths + Vite alias)
-
-## i18n
-
-Translations live in `messages/`. Paraglide auto-generates `src/paraglide/` on dev/build. Supported locales: `it` (
-base), `en`.
-
-## API Integration
-
-Uses **Eden Treaty** for type-safe calls to the Elysia backend. See [REACT_INTEGRATION.md](../api/REACT_INTEGRATION.md)
-for the complete guide.
+File-based routes in `src/routes/` (auth-guarded ones under `_authenticated/`) — the
+directory is the source of truth, intentionally not mirrored here. Translations in
+`messages/{it,en}.json`; `src/paraglide/` is generated, never edited.
