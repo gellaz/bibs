@@ -46,11 +46,9 @@ export function PendingVerificationBannerConnected({
 	};
 
 	const onForgotPassword = () => {
-		// La route /forgot-password non esiste ancora (out of scope dello spec).
-		// Il link punta al placeholder per quando la feature arriverà.
 		void navigate({
-			to: "/forgot-password" as any,
-			search: { email } as any,
+			to: "/forgot-password",
+			search: { email },
 		});
 	};
 
