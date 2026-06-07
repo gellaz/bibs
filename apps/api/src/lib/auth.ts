@@ -23,6 +23,13 @@ export const auth = betterAuth({
 	database: drizzleAdapter(db, {
 		provider: "pg",
 	}),
+	advanced: {
+		ipAddress: {
+			// The betterAuth plugin injects x-forwarded-for from Bun's socket so
+			// the rate-limiter can key by real IP even in direct (non-proxied) dev.
+			ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
+		},
+	},
 	user: {
 		additionalFields: {
 			firstName: {
