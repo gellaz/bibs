@@ -514,8 +514,23 @@ export const OrderItemSchema = t.Object({
 	),
 	quantity: t.Number({ minimum: 1, description: "Quantità ordinata" }),
 	unitPrice: t.String({
-		description: "Prezzo unitario al momento dell'ordine",
+		description:
+			"Prezzo unitario effettivamente addebitato al momento dell'ordine (già scontato se uno sconto era attivo)",
 	}),
+	listPrice: t.Nullable(
+		t.String({
+			description:
+				"Snapshot prezzo di listino al momento dell'ordine. NULL per ordini storici",
+		}),
+	),
+	discountPercent: t.Nullable(
+		t.Number({
+			minimum: 1,
+			maximum: 99,
+			description:
+				"Percentuale sconto venditore applicata alla riga. NULL se nessuno sconto era attivo",
+		}),
+	),
 	vatRate: t.Nullable(
 		t.String({
 			description:

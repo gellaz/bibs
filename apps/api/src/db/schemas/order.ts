@@ -139,6 +139,10 @@ export const orderItem = pgTable(
 		quantity: integer("quantity").notNull(),
 		unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
 
+		// === snapshot sconto venditore (NULL su ordini storici / nessuno sconto) ===
+		listPrice: numeric("list_price", { precision: 10, scale: 2 }),
+		discountPercent: integer("discount_percent"),
+
 		// === snapshot fiscale IVA (NUOVO) — nullable: ordini storici restano NULL ===
 		vatRate: numeric("vat_rate", { precision: 5, scale: 2 }),
 		vatAmount: numeric("vat_amount", { precision: 10, scale: 2 }),
@@ -152,6 +156,14 @@ export const orderItem = pgTable(
 		check(
 			"order_item_vat_amount_non_negative",
 			sql`${table.vatAmount} IS NULL OR ${table.vatAmount} >= 0`,
+		),
+		check(
+			"order_item_list_price_non_negative",
+			sql`${table.listPrice} IS NULL OR ${table.listPrice} >= 0`,
+		),
+		check(
+			"order_item_discount_percent_range",
+			sql`${table.discountPercent} IS NULL OR ${table.discountPercent} BETWEEN 1 AND 99`,
 		),
 	],
 );
