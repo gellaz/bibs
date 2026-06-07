@@ -100,7 +100,10 @@ export function StoreForm({
 			addressLine2: "",
 			municipalityId: "",
 			zipCode: "",
-			websiteUrl: "",
+			// undefined (non ""): lo schema è Optional + format uri, quindi ""
+			// presente NON valida; e il default deve combaciare col setValueAs
+			// (""→undefined) per non generare phantom isDirty.
+			websiteUrl: undefined,
 			phoneNumbers: [],
 			...defaultValues,
 		},
@@ -356,7 +359,12 @@ export function StoreForm({
 						type="url"
 						placeholder="https://esempio.it (opzionale)"
 						disabled={readOnly}
-						{...register("websiteUrl")}
+						{...register("websiteUrl", {
+							// Load-bearing: ""→undefined fa passare la validazione
+							// (Optional + format uri rifiuta "" presente) E allinea il
+							// valore al default undefined (niente phantom isDirty).
+							setValueAs: (v) => v || undefined,
+						})}
 					/>
 					<FieldError errors={[errors.websiteUrl]} />
 				</Field>

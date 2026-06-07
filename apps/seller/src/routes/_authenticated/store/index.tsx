@@ -169,7 +169,9 @@ function StoreSettingsPage() {
 				addressLine2: store.addressLine2 ?? "",
 				municipalityId: store.municipalityId,
 				zipCode: store.zipCode,
-				websiteUrl: store.websiteUrl ?? "",
+				// undefined (non ""): "" presente fallirebbe il format uri dello
+				// schema Optional — vedi il default in store-form.tsx.
+				websiteUrl: store.websiteUrl ?? undefined,
 				// null a DB = nessun orario impostato → l'editor parte con tutti i
 				// giorni chiusi (lo stato VERO), non con i default di comodo che
 				// altrimenti verrebbero persistiti da un save non correlato.
