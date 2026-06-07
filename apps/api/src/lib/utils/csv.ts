@@ -1,51 +1,79 @@
 import { ServiceError } from "@/lib/errors";
 
-function parseCsvLine(line: string): string[] {
-	const fields: string[] = [];
+/**
+ * Parser CSV minimale ma corretto rispetto ai campi quotati multi-riga
+ * (RFC 4180): le virgolette possono contenere newline, virgole e `""` escapate.
+ * Comportamenti preservati dai consumer (product-import, category-import):
+ * header lowercased, campi trimmati, righe vuote saltate, input vuoto → 400.
+ */
+export function parseCsv(text: string): {
+	headers: string[];
+	rows: string[][];
+} {
+	const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+	const records: string[][] = [];
+	let fields: string[] = [];
 	let current = "";
 	let inQuotes = false;
+	// True se il record corrente ha contenuto "reale" (virgolette, virgole o
+	// caratteri non-whitespace): replica il vecchio filtro delle righe bianche
+	// SENZA scartare il caso `"   "` (campo quotato di soli spazi, che i
+	// consumer segnalano come errore di riga).
+	let recordHasContent = false;
 
-	for (let i = 0; i < line.length; i++) {
-		const char = line[i];
+	const endField = () => {
+		fields.push(current.trim());
+		current = "";
+	};
+	const endRecord = () => {
+		endField();
+		if (recordHasContent) records.push(fields);
+		fields = [];
+		recordHasContent = false;
+	};
+
+	for (let i = 0; i < normalized.length; i++) {
+		const char = normalized[i];
 		if (inQuotes) {
 			if (char === '"') {
-				if (i + 1 < line.length && line[i + 1] === '"') {
+				if (normalized[i + 1] === '"') {
 					current += '"';
 					i++;
 				} else {
 					inQuotes = false;
 				}
 			} else {
+				// dentro le virgolette TUTTO è contenuto, newline inclusi
 				current += char;
 			}
-		} else if (char === '"') {
+		} else if (char === '"' && current.trim() === "") {
+			// Quote-mode SOLO a inizio campo (whitespace iniziale tollerato):
+			// una virgoletta a metà campo non quotato (es. `Monitor 27"`) è un
+			// carattere letterale, come nei parser lenient standard — il vecchio
+			// parser apriva il quote-mode a metà campo corrompendo la riga.
 			inQuotes = true;
+			recordHasContent = true;
 		} else if (char === ",") {
-			fields.push(current.trim());
-			current = "";
+			endField();
+			recordHasContent = true;
+		} else if (char === "\n") {
+			endRecord();
 		} else {
+			if (char !== " " && char !== "\t") recordHasContent = true;
 			current += char;
 		}
 	}
-	fields.push(current.trim());
-	return fields;
-}
+	if (inQuotes) {
+		throw new ServiceError(400, "Unterminated quoted field in CSV");
+	}
+	endRecord();
 
-export function parseCsv(text: string): {
-	headers: string[];
-	rows: string[][];
-} {
-	const lines = text
-		.replace(/\r\n/g, "\n")
-		.replace(/\r/g, "\n")
-		.split("\n")
-		.filter((l) => l.trim() !== "");
-
-	if (lines.length === 0) {
+	if (records.length === 0) {
 		throw new ServiceError(400, "CSV file is empty");
 	}
 
-	const headers = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
-	const rows = lines.slice(1).map(parseCsvLine);
+	const headers = records[0].map((h) => h.toLowerCase());
+	const rows = records.slice(1);
 	return { headers, rows };
 }
