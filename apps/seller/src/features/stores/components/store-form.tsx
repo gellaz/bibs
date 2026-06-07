@@ -48,7 +48,8 @@ function serializeOpeningHours(hours: DaySchedule[]): string {
 
 interface StoreFormProps {
 	onSubmit: (data: StoreFormData) => void;
-	onCancel: () => void;
+	/** Se assente, il bottone Annulla non viene mostrato (primo negozio). */
+	onCancel?: () => void;
 	isPending: boolean;
 	defaultValues?: Partial<StoreFormData>;
 	submitLabel?: string;
@@ -376,9 +377,11 @@ export function StoreForm({
 				<>
 					<Separator />
 					<div className="flex justify-end gap-3">
-						<Button type="button" variant="outline" onClick={onCancel}>
-							Annulla
-						</Button>
+						{onCancel && (
+							<Button type="button" variant="outline" onClick={onCancel}>
+								Annulla
+							</Button>
+						)}
 						<Button
 							type="submit"
 							disabled={
