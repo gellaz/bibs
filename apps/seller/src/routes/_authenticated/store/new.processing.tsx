@@ -54,9 +54,12 @@ function ProcessingPage() {
 	useEffect(() => {
 		if (data?.status === "ready" && data.storeId) {
 			setActiveStoreId(data.storeId);
-			void qc.invalidateQueries({ queryKey: ["stores"] });
-			toast.success(m["store.processing.success"]());
-			void navigate({ to: "/" });
+			// Await del refetch: il FirstStoreGate sceglie il layout su ["stores"],
+			// navigare con dati stale rimbalzerebbe la home su /store/new.
+			void qc.invalidateQueries({ queryKey: ["stores"] }).then(() => {
+				toast.success(m["store.processing.success"]());
+				void navigate({ to: "/" });
+			});
 		}
 	}, [data, navigate, qc, setActiveStoreId]);
 
