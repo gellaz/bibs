@@ -70,3 +70,22 @@ describe("parseCsv", () => {
 		expect(() => parseCsv('name\n"never closed')).toThrow(ServiceError);
 	});
 });
+
+describe("parseCsv — lenient stray quotes (quote-mode only at field start)", () => {
+	it("treats a quote mid-field as a literal character", () => {
+		const { rows } = parseCsv('name,price\nMonitor 27",199.00\nO"Brien,5.00');
+		expect(rows).toEqual([
+			['Monitor 27"', "199.00"],
+			['O"Brien', "5.00"],
+		]);
+	});
+
+	it("still opens quote-mode after leading whitespace", () => {
+		const { rows } = parseCsv('a,b\nfoo, "x, y"');
+		expect(rows).toEqual([["foo", "x, y"]]);
+	});
+
+	it("still rejects a genuinely unterminated quoted field", () => {
+		expect(() => parseCsv('name\n"never closed')).toThrow(ServiceError);
+	});
+});

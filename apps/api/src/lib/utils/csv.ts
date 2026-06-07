@@ -47,7 +47,11 @@ export function parseCsv(text: string): {
 				// dentro le virgolette TUTTO è contenuto, newline inclusi
 				current += char;
 			}
-		} else if (char === '"') {
+		} else if (char === '"' && current.trim() === "") {
+			// Quote-mode SOLO a inizio campo (whitespace iniziale tollerato):
+			// una virgoletta a metà campo non quotato (es. `Monitor 27"`) è un
+			// carattere letterale, come nei parser lenient standard — il vecchio
+			// parser apriva il quote-mode a metà campo corrompendo la riga.
 			inQuotes = true;
 			recordHasContent = true;
 		} else if (char === ",") {
