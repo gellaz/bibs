@@ -71,7 +71,7 @@ export const CreateStoreBody = Type.Object({
 			description: "URL del sito web",
 		}),
 	),
-	openingHours: Type.Optional(OpeningHoursSchema),
+	openingHours: Type.Optional(Type.Union([OpeningHoursSchema, Type.Null()])),
 	phoneNumbers: Type.Optional(
 		Type.Array(PhoneNumber, {
 			description: "Numeri di telefono del negozio",

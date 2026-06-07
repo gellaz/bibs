@@ -19,6 +19,7 @@ import {
 	getOpenStatus,
 	resolveStoreClosedDates,
 } from "@/lib/holidays";
+import { validateOpeningHours } from "@/lib/opening-hours";
 import { parsePagination } from "@/lib/pagination";
 import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
 import { stripe } from "@/lib/stripe";
@@ -149,6 +150,11 @@ interface CreateStoreParams {
 export async function createStore(params: CreateStoreParams) {
 	const { phoneNumbers, ...storeData } = params;
 
+	if (Array.isArray(storeData.openingHours)) {
+		const hoursError = validateOpeningHours(storeData.openingHours);
+		if (hoursError) throw new ServiceError(400, hoursError);
+	}
+
 	return db.transaction(async (tx) => {
 		const [created] = await tx.insert(storeTable).values(storeData).returning();
 
@@ -208,6 +214,11 @@ interface UpdateStoreParams {
 
 export async function updateStore(params: UpdateStoreParams) {
 	const { storeId, sellerProfileId, phoneNumbers, ...data } = params;
+
+	if (Array.isArray(data.openingHours)) {
+		const hoursError = validateOpeningHours(data.openingHours);
+		if (hoursError) throw new ServiceError(400, hoursError);
+	}
 
 	return db.transaction(async (tx) => {
 		// Only issue the UPDATE if there are plain store columns to change.
