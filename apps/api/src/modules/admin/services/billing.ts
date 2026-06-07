@@ -23,6 +23,7 @@ export async function getBillingOverview() {
 		.groupBy(storeSubscription.status);
 
 	let mrrCents = 0;
+	let atRiskCents = 0;
 	let activeStoresCount = 0;
 	let pastDueCount = 0;
 	let cancelingCount = 0;
@@ -34,10 +35,10 @@ export async function getBillingOverview() {
 			mrrCents += r.sumCents;
 		} else if (r.status === "past_due") {
 			pastDueCount = r.count;
-			mrrCents += r.sumCents;
+			atRiskCents += r.sumCents;
 		} else if (r.status === "canceling") {
 			cancelingCount = r.count;
-			mrrCents += r.sumCents;
+			atRiskCents += r.sumCents;
 		} else if (r.status === "suspended") {
 			suspendedCount = r.count;
 		}
@@ -45,6 +46,7 @@ export async function getBillingOverview() {
 
 	return {
 		mrrCents,
+		atRiskCents,
 		activeStoresCount,
 		pastDueCount,
 		cancelingCount,

@@ -58,13 +58,16 @@ export async function getBillingSummary(params: SellerScope) {
 
 	const totalMonthlyCents = rows.reduce((sum, r) => sum + r.feeAmountCents, 0);
 	const activeStoresCount = rows.length;
+	// Solo 'active' rinnova davvero: 'canceling' termina a currentPeriodEnd,
+	// 'past_due' ha già fallito il rinnovo. rows è già in ASC per periodEnd.
+	const renewing = rows.filter((r) => r.status === "active");
 	const nextRenewal =
-		rows.length > 0
+		renewing.length > 0
 			? {
-					storeId: rows[0].storeId,
-					storeName: rows[0].storeName,
-					date: rows[0].currentPeriodEnd,
-					amountCents: rows[0].feeAmountCents,
+					storeId: renewing[0].storeId,
+					storeName: renewing[0].storeName,
+					date: renewing[0].currentPeriodEnd,
+					amountCents: renewing[0].feeAmountCents,
 				}
 			: null;
 

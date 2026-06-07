@@ -84,9 +84,28 @@ describe("getBillingSummary", () => {
 
 		expect(summary.activeStoresCount).toBe(3);
 		expect(summary.totalMonthlyCents).toBe(2900 * 3);
+		// nextRenewal = il primo rinnovo che AVVERRÀ davvero: solo 'active' rinnova.
+		// canceling termina a fine periodo, past_due ha già fallito il rinnovo.
 		expect(summary.nextRenewal?.date.toISOString()).toBe(
-			new Date("2027-01-05").toISOString(),
+			new Date("2027-01-24").toISOString(),
 		);
+		expect(summary.nextRenewal?.storeId).toBeDefined();
+	});
+
+	it("returns nextRenewal null when no sub will actually renew", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "norenew@b.it",
+		});
+		await seedSubs(profile.id, [
+			{ status: "past_due", fee: 2900, periodEnd: new Date("2027-01-10") },
+			{ status: "canceling", fee: 2900, periodEnd: new Date("2027-01-05") },
+		]);
+
+		const summary = await getBillingSummary({ sellerProfileId: profile.id });
+
+		expect(summary.activeStoresCount).toBe(2); // billable set unchanged
+		expect(summary.totalMonthlyCents).toBe(2900 * 2);
+		expect(summary.nextRenewal).toBeNull();
 	});
 
 	it("returns zeroes for sellers with no active subscriptions", async () => {
