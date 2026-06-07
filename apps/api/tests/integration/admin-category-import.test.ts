@@ -235,6 +235,13 @@ describe("importStoreCategoriesFromCsv", () => {
 		expect(result.errors[0].row).toBe(3);
 		expect(result.created).toBe(2);
 	});
+
+	it("imports a quoted multi-line name without misaligning following rows", async () => {
+		const csv = ["name", '"Casa\ne Giardino"', "Barbiere"].join("\n");
+		const result = await importStoreCategoriesFromCsv(csv);
+		expect(result.created).toBe(2);
+		expect(result.failed).toBe(0);
+	});
 });
 
 // ── deleteProductMacroCategory (RESTRICT) ─────────────────────────────────────
