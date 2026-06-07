@@ -525,6 +525,8 @@ export const OrderItemSchema = t.Object({
 	),
 	discountPercent: t.Nullable(
 		t.Number({
+			minimum: 1,
+			maximum: 99,
 			description:
 				"Percentuale sconto venditore applicata alla riga. NULL se nessuno sconto era attivo",
 		}),

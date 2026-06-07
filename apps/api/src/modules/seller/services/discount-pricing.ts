@@ -1,5 +1,8 @@
 import { sql } from "drizzle-orm";
+import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
+
+type DbExecutor = typeof db | PgTransaction<any, any, any>;
 
 export interface ActiveDiscountInfo {
 	discountId: string;
@@ -19,8 +22,9 @@ export interface ActiveDiscountInfo {
  */
 export async function getBestActiveDiscount(
 	productId: string,
+	executor: DbExecutor = db,
 ): Promise<ActiveDiscountInfo | null> {
-	const result = await db.execute<{
+	const result = await executor.execute<{
 		discount_id: string;
 		title: string;
 		percent: number;
@@ -65,10 +69,11 @@ export async function getBestActiveDiscount(
  */
 export async function getBestActiveDiscounts(
 	productIds: string[],
+	executor: DbExecutor = db,
 ): Promise<Map<string, ActiveDiscountInfo>> {
 	if (productIds.length === 0) return new Map();
 
-	const result = await db.execute<{
+	const result = await executor.execute<{
 		product_id: string;
 		discount_id: string;
 		title: string;
