@@ -49,7 +49,7 @@ export interface PersonalInfoCardProps {
 	onSubmit: (data: {
 		firstName: string;
 		lastName: string;
-		birthDate?: string;
+		birthDate: string | null;
 	}) => Promise<{ error?: string }>;
 	onUploadAvatar: (file: File) => Promise<void>;
 	onRemoveAvatar: () => Promise<void>;
@@ -108,7 +108,9 @@ export function PersonalInfoCard({
 			const result = await onSubmit({
 				firstName: firstName.trim(),
 				lastName: lastName.trim(),
-				birthDate: birthDate || undefined,
+				// null = chiave PRESENTE nel payload → better-auth scrive il clear.
+				// undefined verrebbe omesso dal JSON e il vecchio valore resterebbe.
+				birthDate: birthDate.trim() === "" ? null : birthDate,
 			});
 			if (result.error) {
 				setApiError(result.error);
