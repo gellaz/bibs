@@ -78,10 +78,10 @@ Each module under `src/modules/` is an Elysia plugin (`context.ts` guard + `rout
 
 | Module | Prefix | Owns |
 |---|---|---|
-| `registration/` | `/register` | customer/seller sign-up, unified sign-in, password reset, employee-invite acceptance |
+| `registration/` | `/register` | customer/seller sign-up, unified sign-in, employee-invite acceptance (password reset is better-auth's native flow) |
 | `admin/` | `/admin` | category CRUD + bulk imports, seller verification, profile-change review, holiday definitions, pricing configuration |
 | `seller/` | `/seller` | onboarding stepper; stores, images, opening hours, closures; products, brands, stock (incl. CSV import); discounts; orders; employees + invitations; profile/settings change requests; billing + Stripe checkout |
-| `customer/` | `/customer` | geo search (PostGIS), addresses, orders, loyalty points |
+| `customer/` | `/customer` | geo search (PostGIS), profile, addresses, orders, loyalty points |
 | `me/` | `/me` | cross-role endpoints for any authenticated user (avatar today) — anything role-independent goes here, never duplicated per role |
 | `locations/` | `/locations` | Italian regions / provinces / municipalities (public) |
 | `product-categories.ts`, `product-macro-categories.ts`, `store-categories.ts` | — | public taxonomy listings (single-file modules, routes at `/product-categories`, `/product-macro-categories`, `/store-categories`) |
