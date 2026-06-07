@@ -25,9 +25,10 @@ export const auth = betterAuth({
 	}),
 	advanced: {
 		ipAddress: {
-			// The betterAuth plugin injects x-forwarded-for from Bun's socket so
-			// the rate-limiter can key by real IP even in direct (non-proxied) dev.
-			ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
+			// The betterAuth plugin OVERWRITES x-forwarded-for with Bun's socket
+			// peer address (and strips x-real-ip), so this header is trusted by
+			// construction and the rate-limiter keys by real IP even in direct dev.
+			ipAddressHeaders: ["x-forwarded-for"],
 		},
 	},
 	user: {
