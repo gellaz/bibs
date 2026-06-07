@@ -172,6 +172,7 @@
 	"store.new.continue_to_payment": "Continua al pagamento",
 	"store.new.checkout_error": "Errore avvio pagamento",
 	"store.new.generic_error": "Errore durante la creazione",
+	"store.new.prefill_error": "Non è stato possibile recuperare i dati inseriti in precedenza. Il form riparte vuoto.",
 	"store.processing.title": "Sto creando il tuo negozio…",
 	"store.processing.body": "Il pagamento è stato ricevuto. Attendi qualche secondo mentre attiviamo il negozio.",
 	"store.processing.timeout": "Il processo sta richiedendo più del previsto. Riceverai una mail quando il negozio sarà pronto. Puoi ricaricare la pagina o tornare in seguito.",
