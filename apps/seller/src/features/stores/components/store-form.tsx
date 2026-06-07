@@ -11,7 +11,7 @@ import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import "@/lib/typebox-formats";
 import { PlusIcon, Trash2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	Controller,
 	type SubmitHandler,
@@ -20,18 +20,15 @@ import {
 } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
 import { useMunicipalities } from "@/hooks/use-municipalities";
+import { validateOpeningHours } from "../lib/validate-opening-hours";
 import {
+	type DaySchedule,
 	DEFAULT_OPENING_HOURS,
 	OpeningHoursEditor,
 } from "./opening-hours-editor";
 
 export type StoreFormData = Static<typeof CreateStoreBody>;
 const compiledSchema = TypeCompiler.Compile(CreateStoreBody);
-
-interface DaySchedule {
-	dayOfWeek: number;
-	slots: { open: string; close: string }[];
-}
 
 /**
  * Canonical serialization of opening hours for change detection. Days are
@@ -118,6 +115,12 @@ export function StoreForm({
 		serializeOpeningHours(openingHours) !==
 		serializeOpeningHours(initialOpeningHours);
 
+	const hoursErrors = useMemo(
+		() => validateOpeningHours(openingHours),
+		[openingHours],
+	);
+	const hoursInvalid = Object.keys(hoursErrors).length > 0;
+
 	// Re-baseline dopo un save riuscito: i valori correnti diventano i nuovi
 	// default (isDirty→false) e lo snapshot orari viene riallineato, così il
 	// bottone Salva si disabilita finché non c'è una nuova modifica.
@@ -146,6 +149,7 @@ export function StoreForm({
 	} = useMunicipalities();
 
 	const onFormSubmit: SubmitHandler<StoreFormData> = (data) => {
+		if (hoursInvalid) return;
 		const cleaned: StoreFormData = {
 			...data,
 			description: data.description || undefined,
@@ -276,6 +280,7 @@ export function StoreForm({
 					value={openingHours}
 					onChange={setOpeningHours}
 					readOnly={readOnly}
+					dayErrors={hoursErrors}
 				/>
 			</FormSection>
 
@@ -366,7 +371,9 @@ export function StoreForm({
 						</Button>
 						<Button
 							type="submit"
-							disabled={isPending || (!isDirty && !openingHoursDirty)}
+							disabled={
+								isPending || (!isDirty && !openingHoursDirty) || hoursInvalid
+							}
 						>
 							{isPending ? pendingLabel : submitLabel}
 						</Button>

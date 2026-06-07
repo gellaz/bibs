@@ -175,5 +175,7 @@
 	"store.closures.saving": "Salvataggio…",
 	"store.closures.saved": "Chiusure aggiornate",
 	"store.closures.error": "Errore nel salvataggio delle chiusure",
-	"store.closures.no_store": "Nessun negozio selezionato."
+	"store.closures.no_store": "Nessun negozio selezionato.",
+	"store.form.hours_invalid_slot": "L'orario di chiusura deve essere successivo all'apertura",
+	"store.form.hours_overlap": "Le fasce orarie si sovrappongono"
 }
