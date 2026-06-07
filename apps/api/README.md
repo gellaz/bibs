@@ -1,466 +1,187 @@
-# bibs-elysia
+# @bibs/api
 
-Backend API for **bibs** — a local-commerce marketplace that connects customers with nearby stores. Sellers manage
-products, stores and employees; customers search products by location, place orders (in-store, pickup or delivery) and
-earn loyalty points.
+Backend API for **bibs**. Sellers manage stores, products and orders and pay a monthly
+per-store subscription (Stripe); customers search by location, order (in-store pickup
+or delivery) and earn loyalty points; admins curate taxonomies and verify sellers.
 
-## Tech Stack
+System overview and patterns: [docs/architecture.md](../../docs/architecture.md).
+Stripe local-dev runbook: [docs/stripe-billing.md](../../docs/stripe-billing.md).
 
-- **Runtime** — [Bun](https://bun.sh)
-- **Web framework** — [Elysia](https://elysiajs.com)
-- **Database** — PostgreSQL 18 + PostGIS 3.6 (via Docker)
-- **ORM** — [Drizzle ORM](https://orm.drizzle.team) (node-postgres driver)
-- **Auth** — [better-auth](https://www.better-auth.com) (email/password, RBAC with admin plugin)
-- **Object storage** — MinIO (S3-compatible, via Bun's native S3 API)
-- **API docs** — OpenAPI spec auto-generated via `@elysiajs/openapi`
+## Tech stack
 
-## Prerequisites
+- **Runtime** [Bun](https://bun.sh) · **Framework** [Elysia](https://elysiajs.com)
+- **DB** PostgreSQL 18 + PostGIS 3.6 (Docker) · **ORM** [Drizzle](https://orm.drizzle.team)
+- **Auth** [better-auth](https://www.better-auth.com) (email/password, RBAC admin plugin)
+- **Storage** MinIO via Bun's native S3 client · **Payments** Stripe (subscriptions)
+- **Email** Mailpit in dev via `src/lib/email.ts`, templates in `packages/emails`
+- **Docs** OpenAPI auto-generated — Scalar UI at `/openapi`, JSON at `/openapi/json`
 
-- [Bun](https://bun.sh) >= 1.x
-- [Docker](https://docs.docker.com/get-docker/) & Docker Compose
+## Getting started
 
-## Getting Started
+From the **monorepo root**:
 
-1. **Clone & install**
+```bash
+bun install
+cp apps/api/.env.example apps/api/.env   # defaults work; set a real BETTER_AUTH_SECRET
+bun run infra:up        # PostGIS + MinIO + Mailpit
+bun run db:migrate
+bun run db:seed
+bun run dev:api         # http://localhost:3000
+```
 
-   ```bash
-   git clone <repo-url> && cd bibs-elysia
-   bun install
-   ```
+Generate the auth secret with `bunx --bun @better-auth/cli secret`.
 
-2. **Start infrastructure**
+### Environment variables
 
-   ```bash
-   bun run infra:up
-   ```
+`src/lib/env.ts` validates everything at boot and exits with a clear message if a
+required variable is missing. See [.env.example](./.env.example) for the full annotated
+list. Highlights:
 
-   This starts:
-    - **bibs-postgis** — PostgreSQL + PostGIS on port `5432`
-    - **bibs-minio** — MinIO on ports `9000` (API) / `9001` (console) — used for product image storage
-
-3. **Configure environment**
-
-   A `.env` file is expected at the project root:
-
-   Copy `.env.example` to `.env` and adjust values as needed:
-
-   ```env
-   DATABASE_URL=postgresql://pgadmin:P4ssword!@localhost:5432/bibs-db
-   BETTER_AUTH_SECRET=<random-secret>
-   BETTER_AUTH_URL=http://localhost:3000
-   PORT=3000              # optional — defaults to 3000
-   S3_ENDPOINT=http://localhost:9000
-   S3_ACCESS_KEY=minioadmin
-   S3_SECRET_KEY=P4ssword!
-   S3_BUCKET=bibs-images
-   # ALLOWED_ORIGINS=https://yourdomain.com  # production only
-   ```
-
-   Environment variables are validated at startup via TypeBox (`src/lib/env.ts`). The server
-   exits immediately with a clear error if any required variable is missing.
-
-4. **Apply database migrations**
-
-   ```bash
-   bun run db:migrate
-   ```
-
-5. **Start the dev server**
-
-   ```bash
-   bun run dev
-   ```
-
-   The API is available at `http://localhost:3000`.
-
-   **OpenAPI documentation**:
-    - Scalar UI (default): `http://localhost:3000/openapi`
-    - JSON spec: `http://localhost:3000/openapi/json`
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | yes | pool tuning via optional `DATABASE_POOL_MAX`, `DATABASE_IDLE_TIMEOUT_MS`, `DATABASE_CONNECTION_TIMEOUT_MS` |
+| `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | yes | |
+| `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | yes | MinIO in dev; bucket auto-created at startup |
+| `STRIPE_SECRET_KEY` | yes | test-mode key is fine; see the [runbook](../../docs/stripe-billing.md) |
+| `STRIPE_WEBHOOK_SECRET` | no | required only to receive webhooks (i.e. to complete a checkout) |
+| `STRIPE_DEV_PRICE_ID` | no | created by `bun run stripe:bootstrap` |
+| `MAILPIT_URL` | no | defaults to `http://localhost:8025` |
+| `ALLOWED_ORIGINS`, `TRUST_PROXY` | no | production CORS / proxy hardening |
 
 ## Scripts
 
-| Command               | Description                                          |
-|-----------------------|------------------------------------------------------|
-| `bun run dev`         | Start dev server with watch mode (port 3000)         |
-| `bun run build`       | Bundle the project into `dist/` (target Bun)         |
-| `bun run typecheck`   | Run TypeScript type checking (`tsc --noEmit`)        |
-| `bun run infra:up`    | Start Docker containers (PostGIS + MinIO)            |
-| `bun run infra:down`  | Stop Docker containers                               |
-| `bun run infra:reset` | Stop containers and delete volumes (full reset)      |
-| `bun run db:generate` | Generate Drizzle migration files from schema changes |
-| `bun run db:migrate`  | Apply pending migrations                             |
-| `bun run db:push`     | Push schema directly to DB (skip migration files)    |
-| `bun run db:studio`   | Open Drizzle Studio to browse the database           |
-| `bun run db:seed`     | Seed the database with test data                     |
-| `bun run db:clean`    | Delete all migration files (`src/db/migrations/`)    |
+| Command | Description |
+|---|---|
+| `bun run dev` | Dev server with watch mode (port 3000) |
+| `bun run test` | Unit + integration (integration uses testcontainers; Docker required) |
+| `bun run test:unit` / `test:integration` | Split runs |
+| `bun run typecheck` | `tsc --noEmit` |
+| `bun run db:generate` / `db:migrate` / `db:push` / `db:studio` / `db:seed` | Drizzle |
+| `bun run db:clean` | Delete all migration files |
+| `bun run stripe:bootstrap` | Create the dev Stripe Product+Price (idempotent) |
+| `bun run create-admin` | Interactive admin-user creation |
 
-## Project Structure
+Run these from `apps/api/`; from the monorepo root use
+`bun run --cwd apps/api <script>`. `bun run db:reset` (root-level) does a full
+wipe + migrate + seed in one shot.
 
-```text
-src/
-├── index.ts                  # Entrypoint — mounts plugins & modules
-├── plugins/
-│   ├── better-auth.ts        # Elysia plugin: auth handler + `auth` macro
-│   ├── error-handler.ts      # Global error handler (ServiceError, validation, pg unique)
-│   ├── request-id.ts         # X-Request-Id header (set in derive, covers errors too)
-│   └── cron.ts               # Cron jobs (reservation expiry every 10 min)
-├── lib/
-│   ├── auth.ts               # better-auth config (Drizzle adapter, admin plugin, RBAC)
-│   ├── env.ts                # TypeBox-validated environment variables
-│   ├── config.ts             # Business constants (points, reservation hours, pagination)
-│   ├── errors.ts             # ServiceError class with typed HTTP status codes
-│   ├── responses.ts          # Response helpers: ok(), okPage(), okMessage(), errorBody()
-│   ├── schemas/              # TypeBox schemas (split into submodules)
-│   │   ├── index.ts          # Barrel re-export
-│   │   ├── entities.ts       # Entity schemas (User, Product, Order, etc.) + field groups
-│   │   ├── composed.ts       # Composed schemas with nested relations
-│   │   └── responses.ts      # Response envelopes, error schemas, withErrors()
-│   ├── permissions.ts        # Access-control roles: admin, customer, seller, employee
-│   ├── s3.ts                 # Bun S3Client for MinIO (upload, delete, publicUrl)
-│   ├── logger.ts             # Pino logger config (logixlysia + standalone logger)
-│   ├── money.ts              # Cents ↔ decimal conversion (toCents / fromCents)
-│   ├── order-state-machine.ts # Order status transition rules per order type
-│   ├── order-helpers.ts      # Shared helpers: refundStockAndPoints()
-│   ├── pagination.ts         # Reusable pagination query schema & parser
-│   └── jobs/
-│       └── expire-reservations.ts  # Single + bulk reservation expiry with stock refund (driven by cron)
-├── modules/
-│   ├── registration/         # POST /register/customer, /seller, /sign-in
-│   ├── admin/                # /admin/* — category CRUD, seller verification
-│   │   ├── context.ts        # Admin guard context & type helpers
-│   │   ├── routes/            # Route definitions
-│   │   └── services/          # Business logic
-│   ├── seller/               # /seller/* — stores, products, stock, orders, employees
-│   │   ├── context.ts        # Seller guard context, ownership checks, lazy storeIds
-│   │   ├── routes/            # Route definitions
-│   │   └── services/          # Business logic
-│   └── customer/             # /customer/* — search, addresses, orders, points
-│       ├── context.ts        # Customer guard context & type helpers
-│       ├── routes/            # Route definitions
-│       └── services/          # Business logic
-└── db/
-    ├── index.ts              # Singleton Drizzle client
-    ├── seed/                 # Database seed (bun run db:seed)
-    │   ├── index.ts          # Composes seedBase() then seedFixtures()
-    │   ├── base/             # Reference data — idempotent, prod-safe, no auth dependency
-    │   │   ├── index.ts      # seedBase() — locations + categories
-    │   │   ├── locations.ts  # Italian regions, provinces, municipalities
-    │   │   ├── categories.ts # Store & product category seeding
-    │   │   ├── fetch-locations.ts # Standalone: refresh location JSON from GitHub
-    │   │   └── *.json        # Generated location data committed to repo
-    │   └── fixtures/         # Test users — depend on better-auth, dev/staging only
-    │       ├── index.ts      # seedFixtures() — admins + customers + sellers
-    │       ├── admins.ts     # Admin test users
-    │       ├── customers.ts  # Bulk customer generation (~300)
-    │       ├── sellers.ts    # Bulk seller generation (~150)
-    │       └── utils.ts      # Shared fixture data (names, cities, streets)
-    ├── schemas/              # Drizzle table definitions & relations
-    │   ├── index.ts          # Barrel export
-    │   ├── auth.ts           # user, session, account, verification
-    │   ├── customer.ts       # customer_profiles (points balance)
-    │   ├── seller.ts         # seller_profiles (VAT verification flow)
-    │   ├── store.ts          # stores (PostGIS location with GiST index)
-    │   ├── category.ts       # product_categories
-    │   ├── product.ts        # products, product_classifications, store_products
-    │   ├── product-image.ts  # product_images (S3/MinIO keys & URLs)
-    │   ├── address.ts        # customer_addresses (PostGIS location)
-    │   ├── employee.ts       # store_employees
-    │   ├── order.ts          # orders, order_items
-    │   └── points.ts         # point_transactions
-    └── migrations/           # Auto-generated SQL migrations
-```
+## Modules
 
-## Database Schema
+One Elysia plugin per domain under `src/modules/` (`context.ts` guard + `routes/` +
+`services/`). The domain map and shared patterns (response envelope, error contract,
+auth macro) are documented in [docs/architecture.md](../../docs/architecture.md); the
+authoritative route list is the OpenAPI spec at `http://localhost:3000/openapi`.
 
-Entity relationships (simplified):
+In one line each: `registration` (sign-up/sign-in/password-reset/invites), `admin`
+(taxonomies, seller verification, change review, holidays, pricing), `seller`
+(onboarding, stores, catalog, stock, discounts, orders, team, settings,
+billing/checkout), `customer` (geo search, addresses, orders, points), `me`
+(cross-role endpoints — avatar today), `locations` (Italian geo data), public
+taxonomy listings, `webhooks` (Stripe).
 
-```mermaid
-erDiagram
-    user ||--o| customer_profile : has
-    user ||--o| seller_profile : has
-    user ||--o{ session : has
-    user ||--o{ account : has
+## Orders, points, reservations
 
-    seller_profile ||--o{ store : owns
-    seller_profile ||--o{ product : creates
-    seller_profile ||--o{ store_employee : employs
-    store_employee }o--|| user : "is a"
+Four order types: **direct** (in-store, completes immediately — no state-machine
+transitions required), **reserve_pickup** (stock held 48 h), **pay_pickup** and
+**pay_deliver** (fixed €5.00 shipping). Status transitions for the non-direct types are
+enforced by `src/lib/order-state-machine.ts`; not every transition is valid for every
+type.
 
-    product ||--o{ product_classification : classified_by
-    product_classification }o--|| product_category : references
-    product ||--o{ store_product : "stocked in"
-    product ||--o{ product_image : has
-    store ||--o{ store_product : stocks
+Order creation (single transaction): stock check → totals in integer cents → optional
+points discount (100 points = €1, capped at order total) → insert order + items (with
+VAT snapshot) → atomic stock decrement (`SET stock = stock - N WHERE stock >= N`, 409
+on race) → points deduction. Cancellation refunds stock and points; completion awards
+points on the final total.
 
-    customer_profile ||--o{ customer_address : has
-    customer_profile ||--o{ order : places
-    customer_profile ||--o{ point_transaction : tracks
+`reserve_pickup` orders expire after 48 h: a cron (`src/plugins/cron.ts`) runs
+`expireReservations()` **every minute** — single source of truth, resilient to
+restarts; worst-case latency between configured expiry and the status flip is ~60 s.
 
-    order ||--o{ order_item : contains
-    order }o--|| store : "fulfilled by"
-    order }o--o| customer_address : "shipped to"
-    order_item }o--|| store_product : references
-    point_transaction }o--o| order : "linked to"
-```
+VAT is gross-inclusive (*scorporo*): products carry a `vatRate`, order items snapshot
+it, orders store the VAT breakdown. Pure logic in `src/lib/vat.ts`.
 
-Key relationships:
+## Authentication
 
-- A **user** can have both a `customer_profile` and a `seller_profile` (dual role)
-- **Products** belong to a seller but are stocked per-store via `store_product` (each with its own `stock` count)
-- **Products ↔ Categories** is many-to-many via `product_classification`
-- **Orders** reference a `store`, a `customer_profile`, and optionally a `customer_address` (for delivery)
-- **Order items** reference `store_product` (not `product` directly) to track which store fulfilled each item
-- **Point transactions** are linked to orders and track earned/redeemed/refunded points
+Four roles via better-auth's admin plugin: **admin**, **seller**, **employee**,
+**customer**. Sessions are HTTP-only cookies (bearer token also supported). Custom
+unified endpoints under `/register/*` (sign-up creates the right profile; sign-in
+returns user + both profiles); better-auth's own endpoints live under `/auth/api/*`.
+Routes opt in with `{ auth: true }`.
 
-## Logging
+Seller onboarding is a status ladder on `seller_profiles`:
+`pending_email → pending_personal → pending_document → pending_company →
+pending_review → active | rejected`. Admins review at `pending_review`. Store creation
+(and its Stripe checkout) is a post-activation step — see the
+[runbook](../../docs/stripe-billing.md).
 
-Structured logging with **logixlysia** (Elysia plugin) + **Pino**:
+## Seed data
 
-- **Request logging** — automatic HTTP request/response logging with method, path, status, duration, IP
-- **Structured JSON** — machine-readable log format with Pino
-- **File rotation** — logs to `logs/app.log` with daily rotation, 100 MB max, 30-day retention, gzip compression
-- **Standalone logger** — `src/lib/logger.ts` exports a `logger` instance for non-request contexts (cron jobs, startup,
-  timers)
-- **Sensitive data redaction** — automatically redacts `password`, `token`, `apiKey`, `secret`, `authorization` fields
+`bun run db:seed` (or `bun run db:reset` from the monorepo root for wipe + migrate +
+seed) creates:
 
-## Health Check & Graceful Shutdown
+| Account | Password | Use it for |
+|---|---|---|
+| **`seller@dev.bibs`** | `password123` | the primary dev account: fully onboarded, 2 stores — skips onboarding entirely. Subscriptions are seeded only when `STRIPE_DEV_PRICE_ID` is set (see the [runbook](../../docs/stripe-billing.md)) |
+| `admin1–3@test.com` | `password123` | admin back-office |
+| `customer1–300@test.com` | `password123` | bulk customers |
+| `seller1–150@test.com` | `password123` | bulk sellers spread across all onboarding statuses — counts in `src/db/seed/fixtures/sellers.ts` (`statusDistribution`) |
+| `employee1–45@test.com` | `password123` | employees distributed across seller stores |
 
-- `GET /health` — verifies database connectivity; returns `200 { status: "ok" }` or `503 { status: "unhealthy" }`. Use
-  as liveness/readiness probe.
-- **Graceful shutdown** — on `SIGTERM`/`SIGINT`, the server stops accepting requests, clears all reservation timers,
-  closes the database connection pool, then exits.
+Store subscriptions are seeded in a realistic state mix (active / past_due / canceling
+/ suspended / canceled) so billing UI can be exercised without Stripe — details in the
+[runbook](../../docs/stripe-billing.md#seed-provided-states-no-stripe-needed).
 
-## Authentication & Authorization
-
-### Roles
-
-Four roles exist with role-based access control via better-auth's **admin** plugin:
-
-- **admin** — full access; manages categories and verifies sellers
-- **seller** — manages own stores, products, stock, orders and employees (requires verified VAT)
-- **employee** — read/write access to the seller's products and orders (no store/employee management)
-- **customer** — search products, manage addresses, place orders, earn/redeem loyalty points
-
-### Custom Endpoints
-
-Custom authentication endpoints provide unified registration/login:
-
-- `POST /register/customer` — register + create customer profile
-- `POST /register/seller` — register + create seller profile (VAT pending)
-- `POST /register/sign-in` — login, returns user + both profiles (if exist)
-- `GET /user` — get current authenticated user
-
-Response includes both `customerProfile` and `sellerProfile` when present, allowing dual roles.
-
-### Better-Auth Endpoints
-
-Standard better-auth endpoints at `/auth/api/*`:
-
-- `POST /auth/api/sign-out` — logout
-- `GET /auth/api/get-session` — current session
-- `GET /auth/api/list-sessions` — all user sessions
-- Password reset, email verification, etc.
-
-### How It Works
-
-1. **Cookie-based sessions** — HTTP-only cookies (secure)
-2. **Bearer token** — Also returned for `Authorization: Bearer <token>`
-3. **Route protection** — Routes opt in with `{ auth: true }`
-4. **User resolution** — Plugin resolves user/session from headers
-
-## Order Types
-
-- **direct** — immediate in-store purchase, completed instantly
-- **reserve_pickup** — reserve items, pick up within 48 h (stock held until pickup/expiry)
-- **pay_pickup** — pay online, pick up in store
-- **pay_deliver** — pay online, delivered to a shipping address (fixed shipping cost: €5.00)
-
-### Order State Machine
-
-Status transitions are enforced by `src/lib/order-state-machine.ts`:
-
-- `pending` → `confirmed` / `cancelled`
-- `confirmed` → `ready_for_pickup` / `completed` / `cancelled`
-- `ready_for_pickup` → `shipped` (delivery only) / `completed`
-- `shipped` → `delivered` / `completed`
-
-Not all transitions are valid for all order types — the state machine validates each transition.
-
-### Reservation Expiry
-
-`reserve_pickup` orders expire automatically after 48 hours. A cron job (`src/plugins/cron.ts`) runs every minute and
-calls `expireReservations()` — single source of truth, resilient to restarts and horizontal scaling. Worst-case
-latency between the configured expiry and the status flip is ~60 s.
-
-On expiry, stock is refunded and any loyalty points spent are returned to the customer.
-
-### Order Lifecycle Detail
-
-What happens at the DB level when an order is created:
-
-1. **Stock check** — verifies each `store_product` has sufficient stock
-2. **Total calculation** — all arithmetic in integer cents (`toCents`/`fromCents`) to avoid float errors
-3. **Points discount** — if `pointsToSpend > 0`, calculates discount (100 points = €1) capped at order total
-4. **Order insert** — creates `order` row + `order_item` rows in a single transaction
-5. **Stock decrement** — atomic `SET stock = stock - N WHERE stock >= N` (fails with 409 on race condition)
-6. **Points deduction** — deducts spent points, inserts `point_transaction` (type: `redeemed`)
-7. **Type-specific logic**:
-    - `direct` → status starts as `completed`, points earned immediately
-    - `reserve_pickup` → status `confirmed`, schedules expiry timer (48h), points earned on pickup
-    - `pay_pickup` / `pay_deliver` → status `confirmed`, points earned on completion
-
-On **cancellation**: stock is refunded, spent points are returned (`point_transaction` type: `refunded`).
-
-On **pickup/completion**: loyalty points are calculated on the final total and awarded (`point_transaction` type:
-`earned`).
-
-## Seed Data
-
-Run `bun run db:seed` to populate the database with test data. The following test users are created:
-
-|| Email                       | Password    | Role     | Notes                          |
-||--------------------------- |-------------|----------|--------------------------------|
-|| admin1–3@test.com          | password123 | admin    |                                |
-|| customer1–300@test.com     | password123 | customer |                                |
-|| seller1–55@test.com        | password123 | seller   | active, VAT verified, has store |
-|| seller56–80@test.com       | password123 | seller   | pending_review                 |
-|| seller81–95@test.com       | password123 | seller   | pending_payment                |
-|| seller96–107@test.com      | password123 | seller   | pending_store                  |
-|| seller108–117@test.com     | password123 | seller   | pending_company                |
-|| seller118–127@test.com     | password123 | seller   | pending_document               |
-|| seller128–135@test.com     | password123 | seller   | pending_personal               |
-|| seller136–143@test.com     | password123 | seller   | pending_email                  |
-|| seller144–150@test.com     | password123 | seller   | rejected                       |
-
-## API Quickstart
-
-After completing the setup and running `bun run db:seed`, verify everything works:
+## API quickstart
 
 ```bash
-# Health check
 curl http://localhost:3000/health
 
-# Sign in as a test customer (returns session token)
+# Sign in (returns bearer token in response body; session cookie also set)
 curl -X POST http://localhost:3000/register/sign-in \
   -H "Content-Type: application/json" \
   -d '{"email": "customer1@test.com", "password": "password123"}'
 
-# Search products (public endpoint, no auth needed)
-curl "http://localhost:3000/customer/search?q=pizza&page=1&limit=10"
-
-# Search with geo-filter (products within 10 km of Milan center)
+# Public product search, geo-filtered (10 km around Milan)
 curl "http://localhost:3000/customer/search?q=pizza&lat=45.4642&lng=9.19&radius=10"
-
-# Authenticated request (use the token from sign-in response)
-curl http://localhost:3000/user \
-  -H "Authorization: Bearer <token>"
-
-# List categories as admin
-curl http://localhost:3000/admin/categories \
-  -H "Authorization: Bearer <admin-token>"
 ```
 
-Full interactive documentation is available at `http://localhost:3000/openapi` (Scalar UI).
+Interactive docs: `http://localhost:3000/openapi`.
 
-## API Documentation
+## Response envelope
 
-The OpenAPI specification is auto-generated with:
-
-- Full request/response schemas for all ~40 endpoints
-- Better-auth endpoints (authentication, session management)
-- Detailed error responses (400, 401, 403, 404, 422, 500)
-- TypeScript-like type definitions with enums and constraints
-
-### Response envelope format
-
-```json
-// Success
-{
-  "success": true,
-  "data": {
-    ...
-  }
-}
-
-// Success with pagination
-{
-  "success": true,
-  "data": [
-    ...
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100
-  }
-}
-
-// Error
-{
-  "success": false,
-  "error": "ERROR_CODE",
-  "message": "Human-readable error"
-}
+```jsonc
+{ "success": true, "data": { … } }                                    // success
+{ "success": true, "data": [ … ], "pagination": { "page": 1, "limit": 20, "total": 100 } }
+{ "success": false, "error": "ERROR_CODE", "message": "…" }           // error
 ```
 
-## CORS Configuration
+Pagination `limit` is capped at **100** (larger values → `422 VALIDATION_ERROR`).
+Error semantics and the global handler are described in
+[docs/architecture.md](../../docs/architecture.md).
 
-CORS is pre-configured for React/Vue/Angular frontends:
+## Logging, health, shutdown
 
-- **Development**: Automatically accepts `localhost` on any port
-- **Production**: Set `ALLOWED_ORIGINS` environment variable (comma-separated)
-- **Credentials**: Enabled (`withCredentials: true`) for cookie-based auth
+Structured logging via logixlysia + Pino (request logs, JSON, sensitive-field
+redaction). Logs are written to `logs/app.log` (single file, no rotation) and to
+stdout. `GET /health` always returns `{ status: "ok" }` (200) if the process is
+alive; `GET /ready` performs DB + S3 connectivity checks and returns 503 if either is
+unreachable. On SIGTERM/SIGINT the server drains, closes the pool, exits.
 
-Example:
+## CORS
 
-```env
-ALLOWED_ORIGINS=https://app.yourdomain.com,https://admin.yourdomain.com
-```
-
-## React Integration
-
-See **[REACT_INTEGRATION.md](./REACT_INTEGRATION.md)** for a complete frontend integration guide using **Eden Treaty**:
-
-- End-to-end type safety (no code generation!)
-- Auto-completion for all API endpoints
-- Auth context with dual profile support
-- Protected routes with role checking
-- Practical examples (orders, search, pagination, file upload)
-
-**Eden Treaty** provides RPC-like client with full TypeScript inference from the backend. Change a type on the server
-and it's instantly reflected on the client with zero configuration.
+Development: any `localhost` port is accepted automatically. Production: set
+`ALLOWED_ORIGINS` (comma-separated) **and** `NODE_ENV=production`. Credentials are
+enabled for cookie auth.
 
 ## Troubleshooting
 
-### Port already in use (5432 / 9000 / 3000)
-
-Another process is using the port. Find it with `lsof -i :5432` and stop it, or change the port in `compose.yml` /
-`.env`.
-
-### Database connection refused
-
-Ensure Docker containers are running (`bun run infra:up`). Check `DATABASE_URL` in `.env` matches the credentials in
-`compose.yml` (default: `pgadmin` / `P4ssword!`).
-
-### Migrations fail or schema out of sync
-
-Full reset: `bun run infra:reset && bun run infra:up && bun run db:migrate`. This deletes all data.
-
-### `Missing or invalid env vars` on startup
-
-The server validates all required env vars at boot (`src/lib/env.ts`). Copy `.env.example` to `.env` and fill in all
-required values. The error message lists which variables are missing.
-
-### PostGIS extension not found
-
-The custom Dockerfile in `docker/postgis/` installs PostGIS. If you see `type "geometry" does not exist`, make sure
-you're using the project's Dockerfile, not a plain PostgreSQL image.
-
-### MinIO bucket errors
-
-The server auto-creates the bucket on startup (`ensureBucket()`). If you get S3 errors, verify `S3_ENDPOINT`,
-`S3_ACCESS_KEY`, `S3_SECRET_KEY` in `.env` match the MinIO container config.
-
-### `bun run typecheck` fails after pulling changes
-
-Run `bun install` first — new dependencies may have been added.
+| Problem | Fix |
+|---|---|
+| Port 5432 already in use | Another Postgres owns it (`lsof -i :5432`). Note: after a failed bind, Docker Desktop's port forwarding can stay stuck — recreate the container or restart Docker Desktop. |
+| DB connection refused | `bun run infra:up`; check `DATABASE_URL` matches `compose.yml`. |
+| Schema out of sync | `bun run db:reset` from the monorepo root (wipes data). |
+| `Missing or invalid env vars` at boot | Copy `.env.example` → `.env`; the error lists what's missing. |
+| `type "geometry" does not exist` | You're not on the project's PostGIS image (`docker/postgis/`). |
+| S3/MinIO errors | Bucket is auto-created at startup; verify the `S3_*` vars match `compose.yml`. |
+| Stripe checkout never completes | See the [runbook troubleshooting](../../docs/stripe-billing.md#troubleshooting). |
+| Typecheck fails after pulling | `bun install` first. |

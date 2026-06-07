@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to WARP (warp.dev) when working with code in this repository.
+This file provides backend-specific guidance to coding agents working in `apps/api`.
 
 ## Project Overview
 
@@ -36,7 +36,7 @@ After making code changes, always run `bun run typecheck` to verify there are no
 Creates the Elysia app with plugins and modules:
 
 1. **logixlysia** — structured request logging with Pino (method, path, status, duration, IP). Writes to stdout +
-   `logs/app.log` with daily rotation.
+   `logs/app.log` (single file, no rotation).
 2. **cors** — CORS configuration for React frontends. Auto-accepts localhost in dev, uses `ALLOWED_ORIGINS`
    in production.
 3. **errorHandler** — global error handler that catches `ServiceError`, validation errors, pg unique constraint
@@ -44,22 +44,28 @@ Creates the Elysia app with plugins and modules:
 4. **requestId** — derives a `X-Request-Id` (`crypto.randomUUID()`) and sets it on `set.headers` in the `derive` hook so
    the header is present in both success and error responses.
 5. **openapi** — serves the OpenAPI/Swagger spec at `/openapi`, merging better-auth's generated paths and components.
-   Full documentation with ~60 endpoints, request/response schemas, and error responses.
-6. **betterAuth** — mounts better-auth's handler at `/auth/api` and defines an `auth` macro that resolves the current
+   Full documentation with request/response schemas and error responses — the spec is the authoritative route inventory.
+6. **stripeWebhookRoutes** — `POST /webhooks/stripe` — Stripe webhook receiver (signature verification, idempotent
+   event handling; see the Modules domain map below).
+7. **betterAuth** — mounts better-auth's handler at `/auth/api` and defines an `auth` macro that resolves the current
    user/session from request headers. Routes opt in to authentication by setting `{ auth: true }` in their config.
-7. **registration** — `/register/*` — custom authentication endpoints:
+8. **registration** — `/register/*` — custom authentication endpoints:
     - `POST /register/customer` — register + create customer profile
     - `POST /register/seller` — register + create seller profile (starts onboarding)
     - `POST /register/sign-in` — login, returns user + both profiles (customer & seller if they exist)
-8. **adminModule** — `/admin/*` — category CRUD, seller verification. All routes documented with OpenAPI schemas.
-9. **categoriesModule** — `GET /categories` — public paginated category listing (read-only, no auth required).
-10. **locationsModule** — `/locations/*` — Italian geographic data (regions, provinces, municipalities). Public, no auth.
-11. **sellerModule** — `/seller/*` — onboarding, profile, stores, products, images, stock, orders, employees. Accessible
-    by sellers (owner) and their employees. 33 endpoints with full schemas.
-12. **customerModule** — `/customer/*` — product search (public, with full-text relevance ranking + geo-filter),
-    profile, addresses, orders, loyalty points. 12 endpoints with response documentation.
-13. **cronJobs** — scheduled tasks via `@elysiajs/cron`. Runs reservation expiry every minute (single source of truth).
-14. **health** plugin — `GET /health` (liveness probe, always 200) + `GET /ready` (readiness probe, checks DB + S3
+9. **adminModule** — `/admin/*` — category CRUD, seller verification. All routes documented with OpenAPI schemas.
+10. **productMacroCategoriesModule** — `/product-macro-categories/*` — public macro-category listing (no auth).
+11. **productCategoriesModule** — `/product-categories/*` — public product-category listing (no auth).
+12. **storeCategoriesModule** — `/store-categories/*` — public store-category listing (no auth).
+13. **locationsModule** — `/locations/*` — Italian geographic data (regions, provinces, municipalities). Public, no auth.
+14. **sellerModule** — `/seller/*` — onboarding, profile, stores, products, images, stock, orders, employees,
+    billing, checkout. Accessible by sellers (owner) and their employees.
+15. **customerModule** — `/customer/*` — product search (public, with full-text relevance ranking + geo-filter),
+    profile, addresses, orders, loyalty points.
+16. **meModule** — `/me/*` — cross-role endpoints for any authenticated user (avatar today).
+17. **cronJobs** — scheduled tasks via `@elysiajs/cron`. Three jobs: reservation expiry every minute; suspended-store
+    auto-cancel daily at 03:00; pending-store-creation expiry hourly.
+18. **health** plugin — `GET /health` (liveness probe, always 200) + `GET /ready` (readiness probe, checks DB + S3
     connectivity, returns 503 if unhealthy).
 
 **Startup sequence**: ensures the S3 bucket exists, then `app.listen(env.PORT)`. The cron plugin starts itself.
@@ -112,7 +118,7 @@ Email sending via **Resend** in production, Mailpit in development:
 Structured logging via **logixlysia** (Elysia plugin) + **Pino**:
 
 - **Request logging** — automatic HTTP request/response logging (method, path, status, duration, IP)
-- **File output** — writes to `logs/app.log` with daily rotation, 100 MB max, 30-day retention, gzip compression
+- **File output** — writes to `logs/app.log` (single file, no rotation)
 - **Standalone logger** — `logger` export for non-request contexts (cron jobs, startup, timers); writes to both stdout
   and log file
 - **Redaction** — automatically redacts `password`, `token`, `apiKey`, `secret`, `authorization` fields
@@ -189,32 +195,27 @@ under `/auth/api` and tag them as "Better Auth". These are merged into the main 
 
 ### Modules — `src/modules/`
 
-Each module is a self-contained Elysia plugin mounted with a prefix. Every module (except `registration/` and
-`categories.ts`) follows the same structure: `context.ts` (guard context + type helpers), `routes/` (route definitions),
-`services/` (business logic).
+Each module is a self-contained Elysia plugin; most follow `context.ts` (guard context
++ type helpers) + `routes/` + `services/`. Endpoint counts are intentionally not
+tracked here — the OpenAPI spec at `/openapi` is the authoritative route list. The
+domain map:
 
-- `registration/` — custom authentication endpoints:
-  - `POST /register/customer` — sign-up + create customer profile
-  - `POST /register/seller` — sign-up + create seller profile (starts onboarding at `pending_email`)
-  - `POST /register/sign-in` — login returning user + both profiles
-  - All responses include both `customerProfile` and `sellerProfile` when present
-- `categories.ts` — single-file module, `GET /categories` — public paginated category listing (no auth). Uses the same
-  service as admin category routes.
-- `locations/` — 3 public endpoints for Italian geographic data. No auth required:
-  - `GET /locations/regions` — all Italian regions
-  - `GET /locations/provinces` — provinces (optional `regionId` filter)
-  - `GET /locations/municipalities` — paginated municipalities (optional `provinceId` filter)
-- `admin/` — 9 endpoints for category CRUD, seller verification, and change request review. Guarded by `.resolve()`
-  that enforces `user.role === "admin"`. All have full OpenAPI schemas with error responses.
-  - Change request review: `GET /admin/sellers/changes/pending` (paginated list),
-    `PATCH /admin/sellers/changes/:changeId/approve`, `PATCH /admin/sellers/changes/:changeId/reject` (with optional
-    reason).
-- `seller/` — 39 endpoints across 9 route groups. Two guard levels:
-  - **Auth-only guard** (`withSellerAuth`): profile (2 endpoints) + onboarding (6 endpoints) — accessible to any
-    authenticated seller regardless of onboarding status.
-  - **Full guard** (`withSeller`): stores (4), products (6, including CSV bulk import), images (2), stock (3),
-    orders (5, with status/type filters and idempotency keys), employees (5), settings (6) — requires
-    `onboardingStatus === "active"`.
+- `registration/` (`/register`) — customer/seller sign-up, unified sign-in (returns
+  user + both profiles when present), employee-invite acceptance. Seller sign-up
+  starts the onboarding ladder at `pending_email`. (Password reset is better-auth's
+  native flow, configured in `src/lib/auth.ts` — not a custom route here.)
+- `admin/` (`/admin`) — guarded by `user.role === "admin"`: category CRUD + CSV bulk
+  imports, seller verification, profile-change review (`GET
+  /admin/sellers/changes/pending`, `PATCH /admin/sellers/changes/:changeId/approve`,
+  `PATCH /admin/sellers/changes/:changeId/reject` with optional reason), holiday
+  definitions, pricing configuration.
+- `seller/` (`/seller`) — two guard levels: **auth-only** (`withSellerAuth`) for
+  profile + onboarding routes, accessible to any authenticated seller regardless of
+  onboarding status; **full** (`withSeller`, requires `active` status + ownership
+  checks) for everything else. Route files map 1:1 to concerns under `routes/`:
+  stores, store-images, images (product), opening hours live in stores, closures,
+  products (incl. CSV import), brands, stock, discounts, orders, employees (+
+  invitations), settings change-requests, billing, checkout (Stripe).
   - **Settings** (`/seller/settings/*`): post-onboarding profile modification. Two levels:
     - *Level 1 — Free edit*: `PATCH /settings/personal` (personal info), `PATCH /settings/company` (company data
       excluding VAT). Applied immediately.
@@ -224,9 +225,21 @@ Each module is a self-contained Elysia plugin mounted with a prefix. Every modul
     - `GET /settings` returns profile + organization + payment method + pending change requests.
   - Access resolved from seller (owner) or employee role. Ownership checks in `context.ts`
     (`ensureProductOwnership`, `requireOwner`). Store IDs are lazy-loaded via `getStoreIds()`.
-- `customer/` — 12 endpoints: product search (full-text Italian with relevance ranking + PostGIS geo-filter), profile,
-  addresses, orders (4 types: direct, reserve_pickup, pay_pickup, pay_deliver), loyalty points. Search is public,
-  others require auth.
+- `customer/` (`/customer`) — geo search (PostGIS), profile, addresses, orders (4 types: direct,
+  reserve_pickup, pay_pickup, pay_deliver), loyalty points. Search is public, others require auth.
+- `me/` (`/me`) — cross-role endpoints for any authenticated user (avatar today).
+  Role-independent endpoints belong here, never duplicated in per-role modules.
+- `locations/` (`/locations`) — public Italian regions/provinces/municipalities. No auth required:
+  - `GET /locations/regions` — all Italian regions
+  - `GET /locations/provinces` — provinces (optional `regionId` filter)
+  - `GET /locations/municipalities` — paginated municipalities (optional `provinceId` filter)
+- `product-categories.ts`, `product-macro-categories.ts`, `store-categories.ts` —
+  single-file public taxonomy listings (no auth).
+- `webhooks/` — Stripe webhook receiver at `POST /webhooks/stripe`: signature
+  verification via `constructEventAsync` (async required on Bun), `stripe_events`
+  idempotency table, per-event handlers in `services/handlers/`. Dev setup and event
+  flow: [docs/stripe-billing.md](../../docs/stripe-billing.md).
+- `billing/` — internal services only (Stripe customer management); no routes.
 
 **Module context pattern**: Each module has a `context.ts` that defines the resolved context interface (e.g.
 `SellerResolvedContext`) and a `withX(ctx)` helper for type-safe context access in route handlers.
@@ -327,8 +340,7 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   - `auth.ts` — user, session, account, verification (better-auth tables)
   - `customer.ts` — customer_profiles (points balance)
   - `seller.ts` — seller_profiles (multi-step onboarding status: `pending_email` → `pending_personal` →
-    `pending_document` → `pending_company` → `pending_store` → `pending_payment` → `pending_review` → `active` /
-    `rejected`)
+    `pending_document` → `pending_company` → `pending_review` → `active` / `rejected`)
   - `organization.ts` — organizations (business name, VAT number, legal form, address; VAT status:
     pending/verified/rejected)
   - `store.ts` — stores (address + PostGIS point location with GiST index, website URL, phone numbers)
@@ -343,7 +355,7 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   - `points.ts` — point_transactions (earned/redeemed)
   - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
   - `location.ts` — regions, provinces, municipalities (Italian geographic hierarchy with ISTAT codes)
-  - `payment-method.ts` — payment_methods (Stripe Connect accounts per seller)
+  - `payment-method.ts` — payment_methods (dormant — reserved for future customer-order payments; no Connect flow today)
   - `seller-profile-change.ts` — seller_profile_changes (pending change requests for VAT, document, payment;
     status: pending/approved/rejected; JSONB change data; admin review tracking)
 - `seller_profiles` has a `vatChangeBlocked` boolean flag set to `true` when a VAT change request is pending,
@@ -654,7 +666,7 @@ The verification link can be extracted from the `HTML` field of the message resp
 
 Full OpenAPI 3.0 spec available at `/openapi` with:
 
-- ~60 documented endpoints across 7 modules
+- Every module's endpoints, fully documented (the spec is the authoritative route inventory)
 - Request/response schemas with TypeBox (runtime validation + types + restrictive input validation)
 - Error responses (400, 401, 403, 404, 409, 422, 500) for all endpoints
 - Better-auth endpoints merged under "Better Auth" tag
@@ -662,7 +674,8 @@ Full OpenAPI 3.0 spec available at `/openapi` with:
 
 ## Frontend Integration
 
-See `REACT_INTEGRATION.md` for complete React integration guide using **Eden Treaty** for end-to-end type safety.
+Eden Treaty integration (client setup, typed errors, gotchas) is documented in
+[docs/architecture.md](../../docs/architecture.md#frontend--api-integration-eden-treaty).
 
 **Eden Treaty** is Elysia's RPC-like client that provides:
 
