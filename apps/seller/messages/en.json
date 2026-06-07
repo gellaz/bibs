@@ -196,5 +196,7 @@
 	"store.closures.saving": "Saving…",
 	"store.closures.saved": "Closures updated",
 	"store.closures.error": "Failed to save closures",
-	"store.closures.no_store": "No store selected."
+	"store.closures.no_store": "No store selected.",
+	"store.form.hours_invalid_slot": "Closing time must be after opening time",
+	"store.form.hours_overlap": "Time slots overlap"
 }

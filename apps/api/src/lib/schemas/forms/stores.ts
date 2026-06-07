@@ -65,13 +65,16 @@ export const CreateStoreBody = Type.Object({
 		Type.String({ description: "ID categoria negozio" }),
 	),
 	websiteUrl: Type.Optional(
-		Type.String({
-			format: "uri",
-			maxLength: 500,
-			description: "URL del sito web",
-		}),
+		Type.Union([
+			Type.String({
+				format: "uri",
+				maxLength: 500,
+				description: "URL del sito web. null per assenza esplicita",
+			}),
+			Type.Null(),
+		]),
 	),
-	openingHours: Type.Optional(OpeningHoursSchema),
+	openingHours: Type.Optional(Type.Union([OpeningHoursSchema, Type.Null()])),
 	phoneNumbers: Type.Optional(
 		Type.Array(PhoneNumber, {
 			description: "Numeri di telefono del negozio",

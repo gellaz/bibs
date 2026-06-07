@@ -130,11 +130,13 @@ export const storesRoutes = new Elysia()
 				),
 				openingHours: t.Optional(t.Nullable(OpeningHoursSchema)),
 				websiteUrl: t.Optional(
-					t.String({
-						format: "uri",
-						maxLength: 500,
-						description: "URL del sito web",
-					}),
+					t.Nullable(
+						t.String({
+							format: "uri",
+							maxLength: 500,
+							description: "URL del sito web. null per rimuoverlo",
+						}),
+					),
 				),
 				phoneNumbers: t.Optional(
 					t.Array(

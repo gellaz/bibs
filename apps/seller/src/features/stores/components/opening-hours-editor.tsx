@@ -18,7 +18,7 @@ interface TimeSlot {
 	close: string;
 }
 
-interface DaySchedule {
+export interface DaySchedule {
 	dayOfWeek: number;
 	slots: TimeSlot[];
 }
@@ -27,6 +27,7 @@ export interface OpeningHoursEditorProps {
 	value: DaySchedule[];
 	onChange: (value: DaySchedule[]) => void;
 	readOnly?: boolean;
+	dayErrors?: Record<number, string>;
 }
 
 const DEFAULT_WEEKDAY_SLOTS: TimeSlot[] = [
@@ -47,6 +48,7 @@ export function OpeningHoursEditor({
 	value,
 	onChange,
 	readOnly = false,
+	dayErrors,
 }: OpeningHoursEditorProps) {
 	const getDaySchedule = useCallback(
 		(dayOfWeek: number) => value.find((d) => d.dayOfWeek === dayOfWeek),
@@ -235,6 +237,11 @@ export function OpeningHoursEditor({
 									</button>
 								)}
 							</div>
+							{dayErrors?.[dayOfWeek] && (
+								<p className="text-sm text-destructive mt-1 pl-16.5 @xl:pl-0">
+									{dayErrors[dayOfWeek]}
+								</p>
+							)}
 						</div>
 					);
 				})}
