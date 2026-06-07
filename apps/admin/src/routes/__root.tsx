@@ -65,6 +65,9 @@ function NotFound() {
 }
 
 function RootDocument(_props: { children: React.ReactNode }) {
+	// Stesso QueryClient che getRouter() ha messo nel router context (e in cui
+	// i loader fanno ensureQueryData): UNICA istanza per request.
+	const { queryClient } = Route.useRouteContext();
 	return (
 		<html lang={getLocale()} suppressHydrationWarning>
 			<head>
@@ -72,7 +75,7 @@ function RootDocument(_props: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="font-sans antialiased">
-				<TanStackQueryProvider>
+				<TanStackQueryProvider queryClient={queryClient}>
 					<TooltipProvider>
 						<Outlet />
 						<Toaster richColors />
