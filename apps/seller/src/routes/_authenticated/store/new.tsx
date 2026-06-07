@@ -1,3 +1,5 @@
+import { BrandMark } from "@bibs/ui/components/brand-mark";
+import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation } from "@tanstack/react-query";
@@ -5,13 +7,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { EntityFormHeader } from "@/components/entity-form-header";
 import { FormSection } from "@/components/form-section";
+import { OnboardingStepper } from "@/features/onboarding/components/onboarding-stepper";
 import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
+import { useFirstStoreOnboarding } from "@/hooks/use-first-store-onboarding";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 import { api } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 
 /** Step del flusso di creazione mostrati nell'aside "Come funziona". */
@@ -43,6 +48,7 @@ export const Route = createFileRoute("/_authenticated/store/new")({
 function NewStorePage() {
 	const navigate = useNavigate();
 	const isOwner = useIsOwner();
+	const { isFirstStore } = useFirstStoreOnboarding();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
 	const { cancel: pendingId } = Route.useSearch();
@@ -110,6 +116,59 @@ function NewStorePage() {
 		);
 	}
 
+	const storeForm = (
+		<StoreForm
+			onSubmit={(data) => createMutation.mutate(data)}
+			// In modalità primo negozio non c'è nessun "indietro": niente Annulla.
+			onCancel={
+				isFirstStore ? undefined : () => void navigate({ to: "/store" })
+			}
+			isPending={createMutation.isPending}
+			onNameChange={handleNameChange}
+			defaultValues={prefillData ?? undefined}
+			submitLabel={m["store.new.continue_to_payment"]()}
+			pendingLabel={m["store.new.continue_to_payment"]()}
+		/>
+	);
+
+	// Step finale dell'onboarding: il layout è già senza sidebar/header (vedi
+	// FirstStoreGate), la pagina porta il proprio chrome minimo — brand, uscita,
+	// stepper col percorso completato — e parte direttamente col form.
+	if (isFirstStore) {
+		return (
+			<div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
+				<div className="mb-10 flex items-center justify-between">
+					<BrandMark className="size-9" />
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						className="text-muted-foreground"
+						onClick={() =>
+							void authClient.signOut().then(() => navigate({ to: "/login" }))
+						}
+					>
+						Esci
+					</Button>
+				</div>
+
+				<OnboardingStepper currentStatus="first_store" />
+
+				<div className="mb-10 space-y-2">
+					<h1 className="font-display text-3xl font-bold tracking-tight text-balance">
+						Apri il tuo primo negozio
+					</h1>
+					<p className="text-muted-foreground">
+						Per iniziare a vendere su bibs ti serve un punto vendita attivo.
+						L'abbonamento mensile parte solo dopo che confermi il pagamento.
+					</p>
+				</div>
+
+				{storeForm}
+			</div>
+		);
+	}
+
 	return (
 		// w-full obbligatorio: il wrapper è flex-item del layout e le FormSection
 		// figlie sono @container (zero contributo intrinseco) — senza, mx-auto
@@ -124,17 +183,7 @@ function NewStorePage() {
 
 			<div className="@container">
 				<div className="grid gap-x-10 gap-y-8 @2xl:grid-cols-[minmax(0,1fr)_18rem]">
-					<div className="min-w-0">
-						<StoreForm
-							onSubmit={(data) => createMutation.mutate(data)}
-							onCancel={() => void navigate({ to: "/store" })}
-							isPending={createMutation.isPending}
-							onNameChange={handleNameChange}
-							defaultValues={prefillData ?? undefined}
-							submitLabel={m["store.new.continue_to_payment"]()}
-							pendingLabel={m["store.new.continue_to_payment"]()}
-						/>
-					</div>
+					<div className="min-w-0">{storeForm}</div>
 					<div className="space-y-8">
 						<FormSection
 							title="Come funziona"

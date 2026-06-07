@@ -17,6 +17,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { StoreBillingBanner } from "@/components/store-billing-banner";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
+import { useFirstStoreOnboarding } from "@/hooks/use-first-store-onboarding";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
 import { useStores } from "@/hooks/use-stores";
 import { authClient } from "@/lib/auth-client";
@@ -163,25 +164,65 @@ function AuthenticatedLayout() {
 			{isOnboarding ? (
 				<Outlet />
 			) : (
-				<SidebarProvider>
-					<AppSidebar />
-					<SidebarInset>
-						<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
-							<SidebarTrigger className="-ml-1" />
-							<div aria-hidden className="h-4 w-px bg-border" />
-							<AppBreadcrumb />
-						</header>
-						<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
-							<div className="mb-4 empty:hidden">
-								<StoreBillingBanner />
+				<FirstStoreGate>
+					<SidebarProvider>
+						<AppSidebar />
+						<SidebarInset>
+							<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
+								<SidebarTrigger className="-ml-1" />
+								<div aria-hidden className="h-4 w-px bg-border" />
+								<AppBreadcrumb />
+							</header>
+							<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+								<div className="mb-4 empty:hidden">
+									<StoreBillingBanner />
+								</div>
+								<Outlet />
 							</div>
-							<Outlet />
-						</div>
-					</SidebarInset>
-				</SidebarProvider>
+						</SidebarInset>
+					</SidebarProvider>
+				</FirstStoreGate>
 			)}
 		</ActiveStoreProvider>
 	);
+}
+
+/**
+ * Step finale dell'onboarding: finché il seller non ha creato il primo
+ * negozio non può fare altro, quindi sidebar e header sarebbero solo voci
+ * morte. In modalità primo-negozio qualsiasi route viene rediretta su
+ * /store/new (che si veste da pagina di onboarding) e l'albero renderizza
+ * senza chrome; /store/new/processing resta raggiungibile per il ritorno da
+ * Stripe. Creato il negozio, la query stores si aggiorna e il layout
+ * completo compare da solo.
+ */
+function FirstStoreGate({ children }: { children: React.ReactNode }) {
+	const { isLoading, isFirstStore } = useFirstStoreOnboarding();
+	const location = useLocation();
+	const navigate = useNavigate();
+
+	const onFirstStoreRoute = location.pathname.startsWith("/store/new");
+
+	useEffect(() => {
+		if (!isLoading && isFirstStore && !onFirstStoreRoute) {
+			void navigate({ to: "/store/new" });
+		}
+	}, [isLoading, isFirstStore, onFirstStoreRoute, navigate]);
+
+	if (isLoading) {
+		return (
+			<div className="flex h-screen items-center justify-center">
+				<Spinner className="size-8" />
+			</div>
+		);
+	}
+
+	if (isFirstStore) {
+		// In attesa del redirect non mostrare la pagina sbagliata.
+		return onFirstStoreRoute ? <Outlet /> : null;
+	}
+
+	return children;
 }
 
 function EmployeeStoreGate({
