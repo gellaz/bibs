@@ -67,4 +67,9 @@ describe("PATCH /stores — openingHours validation", () => {
 		});
 		expect(res.status).not.toBe(422);
 	});
+
+	it("accepts openingHours: null on PATCH (clear hours)", async () => {
+		const res = await patchStore({ openingHours: null });
+		expect(res.status).not.toBe(422);
+	});
 });

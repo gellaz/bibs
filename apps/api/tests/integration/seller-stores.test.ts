@@ -276,6 +276,137 @@ describe("updateStore", () => {
 			}),
 		).rejects.toMatchObject({ status: 404 });
 	});
+
+	it("clears openingHours when null is passed", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+		await db
+			.update(storeTable)
+			.set({
+				openingHours: [
+					{ dayOfWeek: 0, slots: [{ open: "09:00", close: "13:00" }] },
+				],
+			})
+			.where(eq(storeTable.id, testStore.id));
+
+		await updateStore({
+			storeId: testStore.id,
+			sellerProfileId: seller.profile.id,
+			openingHours: null,
+		});
+
+		const [row] = await db
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, testStore.id));
+		expect(row.openingHours).toBeNull();
+	});
+
+	it("rejects inverted opening-hours slots with 400", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+
+		await expect(
+			updateStore({
+				storeId: testStore.id,
+				sellerProfileId: seller.profile.id,
+				openingHours: [
+					{ dayOfWeek: 1, slots: [{ open: "19:00", close: "09:00" }] },
+				],
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
+	it("rejects overlapping opening-hours slots with 400", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+
+		await expect(
+			updateStore({
+				storeId: testStore.id,
+				sellerProfileId: seller.profile.id,
+				openingHours: [
+					{
+						dayOfWeek: 3,
+						slots: [
+							{ open: "09:00", close: "13:00" },
+							{ open: "12:00", close: "18:00" },
+						],
+					},
+				],
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
+	it("rejects duplicate dayOfWeek entries with 400", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+
+		await expect(
+			updateStore({
+				storeId: testStore.id,
+				sellerProfileId: seller.profile.id,
+				openingHours: [
+					{ dayOfWeek: 4, slots: [{ open: "09:00", close: "13:00" }] },
+					{ dayOfWeek: 4, slots: [{ open: "15:00", close: "19:00" }] },
+				],
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
+	it("clears websiteUrl when null is passed", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+		await db
+			.update(storeTable)
+			.set({ websiteUrl: "https://esempio.it" })
+			.where(eq(storeTable.id, testStore.id));
+
+		await updateStore({
+			storeId: testStore.id,
+			sellerProfileId: seller.profile.id,
+			websiteUrl: null,
+		});
+
+		const [row] = await db
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, testStore.id));
+		expect(row.websiteUrl).toBeNull();
+	});
+
+	it("persists a valid multi-slot week", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+		const validWeek = [
+			{
+				dayOfWeek: 0,
+				slots: [
+					{ open: "09:00", close: "13:00" },
+					{ open: "14:30", close: "19:00" },
+				],
+			},
+			{ dayOfWeek: 5, slots: [{ open: "09:00", close: "13:00" }] },
+		];
+
+		await updateStore({
+			storeId: testStore.id,
+			sellerProfileId: seller.profile.id,
+			openingHours: validWeek,
+		});
+
+		const [row] = await db
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, testStore.id));
+		expect(row.openingHours).toEqual(validWeek);
+	});
 });
 
 // ── deleteStore ───────────────────────────────────────────────────────────────
