@@ -172,6 +172,7 @@
 	"store.new.continue_to_payment": "Continue to payment",
 	"store.new.checkout_error": "Failed to start payment",
 	"store.new.generic_error": "Failed to create store",
+	"store.new.prefill_error": "Could not restore the data you entered previously. The form starts empty.",
 	"store.processing.title": "Setting up your store…",
 	"store.processing.body": "Payment received. Hold on while we activate the store.",
 	"store.processing.timeout": "This is taking longer than expected. You'll get an email when the store is ready. Refresh or come back later.",
