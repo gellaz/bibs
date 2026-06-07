@@ -83,7 +83,10 @@ describe("getBillingOverview", () => {
 
 		const o = await getBillingOverview();
 
-		expect(o.mrrCents).toBe(2900 + 2900 + 1900 + 1900);
+		// MRR = solo revenue RICORRENTE: active. past_due (incasso fallito) e
+		// canceling (non rinnoverà) sono revenue a rischio, esposta a parte.
+		expect(o.mrrCents).toBe(2900 + 1900);
+		expect(o.atRiskCents).toBe(2900 + 1900); // past_due(a) + canceling(b)
 		expect(o.activeStoresCount).toBe(2);
 		expect(o.pastDueCount).toBe(1);
 		expect(o.suspendedCount).toBe(1);

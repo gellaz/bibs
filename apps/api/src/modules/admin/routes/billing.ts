@@ -41,6 +41,10 @@ const SubsPageSchema = t.Object({
 
 const OverviewSchema = t.Object({
 	mrrCents: t.Integer(),
+	atRiskCents: t.Integer({
+		description:
+			"Somma fee di subscription past_due + canceling: revenue mensile a rischio, esclusa dall'MRR",
+	}),
 	activeStoresCount: t.Integer(),
 	pastDueCount: t.Integer(),
 	cancelingCount: t.Integer(),
