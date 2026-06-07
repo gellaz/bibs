@@ -14,6 +14,22 @@ import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
+/** Step del flusso di creazione mostrati nell'aside "Come funziona". */
+const CHECKOUT_STEPS = [
+	{
+		title: "Compili i dati del negozio",
+		detail: "Indirizzo, orari e contatti restano modificabili anche dopo.",
+	},
+	{
+		title: "Attivi l'abbonamento",
+		detail: "Canone mensile per punto vendita, pagamento gestito da Stripe.",
+	},
+	{
+		title: "Il negozio è subito attivo",
+		detail: "Puoi caricare da subito le foto vetrina e aggiungere i prodotti.",
+	},
+];
+
 export const Route = createFileRoute("/_authenticated/store/new")({
 	validateSearch: (search) =>
 		({
@@ -125,42 +141,17 @@ function NewStorePage() {
 							description="Dalla compilazione all'apertura su bibs."
 						>
 							<ol className="space-y-4 text-sm">
-								<li className="flex gap-3">
-									<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
-										1
-									</span>
-									<div>
-										<p className="font-medium">Compili i dati del negozio</p>
-										<p className="text-muted-foreground">
-											Indirizzo, orari e contatti restano modificabili anche
-											dopo.
-										</p>
-									</div>
-								</li>
-								<li className="flex gap-3">
-									<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
-										2
-									</span>
-									<div>
-										<p className="font-medium">Attivi l'abbonamento</p>
-										<p className="text-muted-foreground">
-											Canone mensile per punto vendita, pagamento gestito da
-											Stripe.
-										</p>
-									</div>
-								</li>
-								<li className="flex gap-3">
-									<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
-										3
-									</span>
-									<div>
-										<p className="font-medium">Il negozio è subito attivo</p>
-										<p className="text-muted-foreground">
-											Foto vetrina e prodotti si caricano dalle impostazioni del
-											negozio.
-										</p>
-									</div>
-								</li>
+								{CHECKOUT_STEPS.map((step, index) => (
+									<li key={step.title} className="flex gap-3">
+										<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
+											{index + 1}
+										</span>
+										<div>
+											<p className="font-medium">{step.title}</p>
+											<p className="text-muted-foreground">{step.detail}</p>
+										</div>
+									</li>
+								))}
 							</ol>
 						</FormSection>
 					</div>

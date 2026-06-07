@@ -213,8 +213,9 @@ export function OpeningHoursEditor({
 													<button
 														type="button"
 														onClick={() => removeSlot(dayOfWeek, slotIndex)}
-														className="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+														className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
 														title="Rimuovi fascia"
+														aria-label="Rimuovi fascia"
 													>
 														<XIcon className="size-3.5" />
 													</button>
