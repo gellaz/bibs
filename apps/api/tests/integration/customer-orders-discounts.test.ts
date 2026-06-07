@@ -321,4 +321,68 @@ describe("createOrder — seller percentage discounts", () => {
 		expect(items[0].unitPrice).toBe("0.08");
 		expect(result.total).toBe("0.24");
 	});
+
+	it("prices a multi-line order with a discount on only one line", async () => {
+		const {
+			db,
+			seller,
+			store,
+			product,
+			storeProduct: sp,
+			customer,
+		} = await seedDiscountedFixtures(); // product A: 100.00, default VAT
+		// Explicitly set product A to VAT 22 (matches DEFAULT_VAT_RATE, but be explicit)
+		await db
+			.update(productTable)
+			.set({ vatRate: "22" })
+			.where(eq(productTable.id, product.id));
+		// product B: 11.00 @ VAT 10, NO discount
+		const prodB = await createTestProduct(db, seller.profile.id, {
+			price: "11.00",
+		});
+		await db
+			.update(productTable)
+			.set({ vatRate: "10" })
+			.where(eq(productTable.id, prodB.id));
+		const spB = await createTestStoreProduct(db, store.id, prodB.id, {
+			stock: 5,
+		});
+		// 50% discount on product A only
+		const disc = await createTestDiscount(db, seller.profile.id, {
+			percent: 50,
+		});
+		await createTestDiscountProduct(db, disc.id, product.id);
+
+		const result = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: "direct",
+			storeId: store.id,
+			items: [
+				{ storeProductId: sp.id, quantity: 2 }, // 2 × 50.00 = 100.00
+				{ storeProductId: spB.id, quantity: 1 }, // 11.00 full price
+			],
+		});
+
+		// 100.00 (discounted A) + 11.00 (full B) = 111.00
+		expect(result.total).toBe("111.00");
+		// castelletto aggregates the DISCOUNTED gross per rate:
+		// A: 100.00 @ 22 → scorporo(10000,22): net 8197, vat 1803
+		// B: 11.00 @ 10 → scorporo(1100,10): net 1000, vat 100
+		expect(result.vatBreakdown).toEqual([
+			{ rate: 22, taxableAmount: "81.97", taxAmount: "18.03" },
+			{ rate: 10, taxableAmount: "10.00", taxAmount: "1.00" },
+		]);
+
+		const items = await db
+			.select()
+			.from(orderItem)
+			.where(eq(orderItem.orderId, result.id));
+		const byProduct = new Map(items.map((i) => [i.productId, i]));
+		expect(byProduct.get(product.id)?.unitPrice).toBe("50.00");
+		expect(byProduct.get(product.id)?.discountPercent).toBe(50);
+		expect(byProduct.get(prodB.id)?.unitPrice).toBe("11.00");
+		expect(byProduct.get(prodB.id)?.discountPercent).toBeNull();
+		expect(byProduct.get(prodB.id)?.listPrice).toBe("11.00");
+	});
 });

@@ -262,6 +262,10 @@ export async function createOrder(params: CreateOrderParams) {
 			// Sconto venditore: prezzo unitario scontato PRIMA dello sconto punti,
 			// con lo stesso rounding del prezzo mostrato al cliente
 			// (ROUND(price * (1 - percent/100), 2) per unità, half-away-from-zero).
+			// Semantica last-word: se la promo viene messa in pausa/archiviata tra
+			// display e checkout, si paga il listino. Lookup per-riga DENTRO la tx
+			// (N+1 deliberato: carrelli piccoli, consistenza transazionale con le
+			// letture di stock/prezzo; per batch esiste getBestActiveDiscounts).
 			const discountInfo = await getBestActiveDiscount(sp.product.id, tx);
 			const listUnitCents = toCents(sp.product.price);
 			const unitCents = discountInfo
