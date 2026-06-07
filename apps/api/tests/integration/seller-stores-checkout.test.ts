@@ -284,6 +284,43 @@ describe("createCheckoutSession", () => {
 		expect(oldPending.status).toBe("expired");
 	});
 
+	it("does not recreate the session when the existing one is complete (paid, webhook in flight)", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "complete@b.it",
+		});
+		const first = await createCheckoutSession({
+			sellerProfileId: profile.id,
+			body: VALID_BODY,
+		});
+
+		// Resume after payment but before the webhook landed:
+		sessionRetrieve.mockImplementationOnce(
+			async () =>
+				({
+					id: "cs_FAKE",
+					url: "https://stripe.test/checkout/cs_FAKE",
+					status: "complete",
+				}) as any,
+		);
+
+		const second = await createCheckoutSession({
+			sellerProfileId: profile.id,
+			body: VALID_BODY,
+		});
+
+		// Same pending, NO second Stripe session, redirect to the processing page
+		expect(second.pendingStoreCreationId).toBe(first.pendingStoreCreationId);
+		expect(sessionCreate).toHaveBeenCalledTimes(1);
+		expect(second.checkoutUrl).toContain("/store/new/processing");
+
+		// The pending must stay 'open' so handleCheckoutCompleted can consume it
+		const [pending] = await getTestDb()
+			.select()
+			.from(pendingStoreCreation)
+			.where(eq(pendingStoreCreation.id, first.pendingStoreCreationId));
+		expect(pending.status).toBe("open");
+	});
+
 	it("caches the stripeCustomerId on the seller profile", async () => {
 		const { profile } = await createTestSeller(getTestDb(), {
 			email: "a@b.it",

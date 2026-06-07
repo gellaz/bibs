@@ -74,7 +74,18 @@ export async function createCheckoutSession(
 				pendingStoreCreationId: existing.id,
 			};
 		}
-		// Session is expired or otherwise unusable — expire the pending and fall through to create a fresh one
+		if (session.status === "complete") {
+			// Già pagata: checkout.session.completed consumerà questo pending
+			// (o l'ha appena fatto). NON va né espirato né ricreato — farlo qui
+			// creava una SECONDA session e quindi una seconda subscription.
+			// Rimandiamo il seller alla pagina di processing che polla lo stato.
+			return {
+				checkoutUrl: `${env.SELLER_APP_URL}/store/new/processing?session_id=${session.id}`,
+				pendingStoreCreationId: existing.id,
+			};
+		}
+		// Session expired (o status nullo anomalo) — expire the pending and
+		// fall through to create a fresh one
 		await db
 			.update(pendingStoreCreation)
 			.set({ status: "expired" })
