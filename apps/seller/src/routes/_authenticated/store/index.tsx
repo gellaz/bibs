@@ -38,6 +38,7 @@ function StoreSettingsPage() {
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
+	const [lastSavedAt, setLastSavedAt] = useState<number | undefined>(undefined);
 	const [existingImages, setExistingImages] = useState<ExistingImage[]>([]);
 	const [newFiles, setNewFiles] = useState<File[]>([]);
 	const [imagesStoreId, setImagesStoreId] = useState<string | undefined>(
@@ -126,6 +127,7 @@ function StoreSettingsPage() {
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });
 			void queryClient.invalidateQueries({ queryKey: ["store", storeId] });
 			toast.success("Negozio aggiornato con successo");
+			setLastSavedAt(Date.now());
 		},
 		onError: (error: Error) =>
 			toast.error(error.message || "Errore durante l'aggiornamento"),
@@ -168,7 +170,10 @@ function StoreSettingsPage() {
 				municipalityId: store.municipalityId,
 				zipCode: store.zipCode,
 				websiteUrl: store.websiteUrl ?? "",
-				openingHours: (store.openingHours as never) ?? undefined,
+				// null a DB = nessun orario impostato → l'editor parte con tutti i
+				// giorni chiusi (lo stato VERO), non con i default di comodo che
+				// altrimenti verrebbero persistiti da un save non correlato.
+				openingHours: (store.openingHours as never) ?? [],
 				phoneNumbers: store.phoneNumbers.map((p) => ({
 					label: p.label ?? "",
 					number: p.number,
@@ -182,6 +187,7 @@ function StoreSettingsPage() {
 			pendingLabel="Salvataggio..."
 			onNameChange={handleNameChange}
 			readOnly={!isOwner}
+			lastSavedAt={lastSavedAt}
 		/>
 	);
 

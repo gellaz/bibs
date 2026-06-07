@@ -58,6 +58,7 @@ interface StoreFormProps {
 	pendingLabel?: string;
 	onNameChange?: (name: string) => void;
 	readOnly?: boolean;
+	lastSavedAt?: number;
 }
 
 export function StoreForm({
@@ -69,11 +70,12 @@ export function StoreForm({
 	pendingLabel = "Creazione...",
 	onNameChange,
 	readOnly = false,
+	lastSavedAt,
 }: StoreFormProps) {
 	// openingHours is kept outside react-hook-form, so RHF's isDirty does not
 	// react to changes here. Snapshot the value at mount and diff against it so
 	// opening-hours-only edits can still enable Save (see store form audit).
-	const [initialOpeningHours] = useState<DaySchedule[]>(
+	const [initialOpeningHours, setInitialOpeningHours] = useState<DaySchedule[]>(
 		() =>
 			(defaultValues?.openingHours as DaySchedule[] | undefined) ??
 			DEFAULT_OPENING_HOURS.map((d) => ({
@@ -89,6 +91,8 @@ export function StoreForm({
 		handleSubmit,
 		control,
 		watch,
+		reset,
+		getValues,
 		formState: { errors, isDirty },
 	} = useForm<StoreFormData>({
 		resolver: typeboxResolver(compiledSchema),
@@ -114,6 +118,22 @@ export function StoreForm({
 		serializeOpeningHours(openingHours) !==
 		serializeOpeningHours(initialOpeningHours);
 
+	// Re-baseline dopo un save riuscito: i valori correnti diventano i nuovi
+	// default (isDirty→false) e lo snapshot orari viene riallineato, così il
+	// bottone Salva si disabilita finché non c'è una nuova modifica.
+	// Intentionally depends ONLY on lastSavedAt: adding openingHours would
+	// re-baseline on every edit and kill dirty-detection entirely.
+	useEffect(() => {
+		if (!lastSavedAt) return;
+		reset(getValues());
+		setInitialOpeningHours(
+			openingHours.map((d) => ({
+				...d,
+				slots: d.slots.map((s) => ({ ...s })),
+			})),
+		);
+	}, [lastSavedAt]);
+
 	const { fields, append, remove } = useFieldArray({
 		control,
 		name: "phoneNumbers",
@@ -131,7 +151,9 @@ export function StoreForm({
 			description: data.description || undefined,
 			addressLine2: data.addressLine2 || undefined,
 			websiteUrl: data.websiteUrl || undefined,
-			openingHours: openingHours.length > 0 ? openingHours : undefined,
+			// [] (tutti i giorni chiusi) deve viaggiare come null: Eden non
+			// serializza undefined e il PATCH non vedrebbe mai il clear.
+			openingHours: openingHours.length > 0 ? openingHours : null,
 			phoneNumbers:
 				data.phoneNumbers && data.phoneNumbers.length > 0
 					? data.phoneNumbers.map((p, idx) => ({
@@ -329,9 +351,7 @@ export function StoreForm({
 						type="url"
 						placeholder="https://esempio.it (opzionale)"
 						disabled={readOnly}
-						{...register("websiteUrl", {
-							setValueAs: (v: string) => v || undefined,
-						})}
+						{...register("websiteUrl")}
 					/>
 					<FieldError errors={[errors.websiteUrl]} />
 				</Field>
