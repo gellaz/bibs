@@ -13,6 +13,7 @@ import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { buildCastelletto, scorporo } from "@/lib/vat";
+import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
 
 interface ListCustomerOrdersParams {
 	customerProfileId: string;
@@ -222,6 +223,8 @@ export async function createOrder(params: CreateOrderParams) {
 			productImageUrl: string | null;
 			quantity: number;
 			unitPrice: string;
+			listPrice: string;
+			discountPercent: number | null;
 			vatRate: string;
 			vatAmount: string;
 		}[] = [];
@@ -256,7 +259,20 @@ export async function createOrder(params: CreateOrderParams) {
 					`Insufficient stock for ${sp.product.name}`,
 				);
 
-			const lineGrossCents = toCents(sp.product.price) * item.quantity;
+			// Sconto venditore: prezzo unitario scontato PRIMA dello sconto punti,
+			// con lo stesso rounding del prezzo mostrato al cliente
+			// (ROUND(price * (1 - percent/100), 2) per unità, half-away-from-zero).
+			// Semantica last-word: se la promo viene messa in pausa/archiviata tra
+			// display e checkout, si paga il listino. Lookup per-riga DENTRO la tx
+			// (N+1 deliberato: carrelli piccoli, consistenza transazionale con le
+			// letture di stock/prezzo; per batch esiste getBestActiveDiscounts).
+			const discountInfo = await getBestActiveDiscount(sp.product.id, tx);
+			const listUnitCents = toCents(sp.product.price);
+			const unitCents = discountInfo
+				? Math.round((listUnitCents * (100 - discountInfo.percent)) / 100)
+				: listUnitCents;
+
+			const lineGrossCents = unitCents * item.quantity;
 			totalCents += lineGrossCents;
 			const { vatCents } = scorporo(lineGrossCents, Number(sp.product.vatRate));
 			resolvedItems.push({
@@ -267,7 +283,9 @@ export async function createOrder(params: CreateOrderParams) {
 				brandName: sp.product.brand?.name ?? null,
 				productImageUrl: sp.product.images[0]?.url ?? null,
 				quantity: item.quantity,
-				unitPrice: sp.product.price,
+				unitPrice: fromCents(unitCents),
+				listPrice: sp.product.price,
+				discountPercent: discountInfo?.percent ?? null,
 				vatRate: sp.product.vatRate,
 				vatAmount: fromCents(vatCents),
 			});
@@ -336,6 +354,8 @@ export async function createOrder(params: CreateOrderParams) {
 				productImageUrl: item.productImageUrl,
 				quantity: item.quantity,
 				unitPrice: item.unitPrice,
+				listPrice: item.listPrice,
+				discountPercent: item.discountPercent,
 				vatRate: item.vatRate,
 				vatAmount: item.vatAmount,
 			})),

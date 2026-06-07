@@ -120,6 +120,13 @@
       "when": 1780240462740,
       "tag": "0016_far_joystick",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1780820004377,
+      "tag": "0017_sticky_lenny_balinger",
+      "breakpoints": true
     }
   ]
 }
