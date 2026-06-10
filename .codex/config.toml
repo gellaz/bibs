@@ -1,0 +1,19 @@
+# Codex CLI mirror of the repo's MCP setup — keep in sync with .mcp.json.
+[mcp_servers.better-auth]
+url = "https://mcp.better-auth.com/mcp"
+
+[mcp_servers.context7]
+args = [
+    "-y",
+    "@upstash/context7-mcp@latest",
+]
+command = "bunx"
+
+[mcp_servers.shadcn]
+args = [
+    "shadcn@latest",
+    "mcp",
+    "--cwd",
+    "./packages/ui",
+]
+command = "bunx"
