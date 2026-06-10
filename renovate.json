@@ -46,6 +46,17 @@
 			"automerge": true
 		},
 		{
+			"matchPackageNames": ["@types/node"],
+			"allowedVersions": "<23",
+			"groupName": "node types"
+		},
+		{
+			"matchPackageNames": ["react-email", "@react-email/**"],
+			"groupName": "react-email",
+			"dependencyDashboardApproval": true,
+			"automerge": false
+		},
+		{
 			"matchPackageNames": ["drizzle-orm", "drizzle-kit", "drizzle-zod"],
 			"groupName": "drizzle"
 		},
