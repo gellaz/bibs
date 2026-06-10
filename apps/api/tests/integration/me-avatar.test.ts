@@ -33,11 +33,15 @@ mock.module("@/lib/s3", () => ({
 	publicUrl: (key: string) => `http://minio/test-bucket/${key}`,
 }));
 
-// env mock: ci serve S3_ENDPOINT e S3_BUCKET per extractOurKey
+// env mock: ci serve S3_ENDPOINT e S3_BUCKET per extractOurKey.
+// STRIPE_SECRET_KEY: il mock di @/lib/env è globale, quindi il singleton in
+// @/lib/stripe si ri-valuta contro questo env; senza la chiave, `new Stripe()`
+// lancia "between tests". Vedi anche i mock dei test stripe-webhook-*.
 mock.module("@/lib/env", () => ({
 	env: {
 		S3_ENDPOINT: "http://minio",
 		S3_BUCKET: "test-bucket",
+		STRIPE_SECRET_KEY: "sk_test_FAKE",
 	},
 }));
 

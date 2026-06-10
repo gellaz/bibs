@@ -60,7 +60,10 @@ mock.module("@/lib/stripe", () => ({
 }));
 
 mock.module("@/lib/env", () => ({
-	env: { STRIPE_WEBHOOK_SECRET: "whsec_FAKE" },
+	env: {
+		STRIPE_SECRET_KEY: "sk_test_FAKE",
+		STRIPE_WEBHOOK_SECRET: "whsec_FAKE",
+	},
 }));
 
 import { eq } from "drizzle-orm";
