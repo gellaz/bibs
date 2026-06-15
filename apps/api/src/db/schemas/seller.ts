@@ -1,6 +1,7 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
+	check,
 	date,
 	index,
 	pgTable,
@@ -83,6 +84,10 @@ export const sellerProfile = pgTable(
 		),
 		index("seller_profile_document_municipality_idx").on(
 			table.documentIssuedMunicipalityId,
+		),
+		check(
+			"seller_profile_onboarding_status_valid",
+			sql`${table.onboardingStatus} IN ('pending_email','pending_personal','pending_document','pending_company','pending_review','active','rejected')`,
 		),
 	],
 );

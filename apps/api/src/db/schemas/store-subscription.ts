@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
+	check,
 	index,
 	integer,
 	pgTable,
@@ -57,6 +58,10 @@ export const storeSubscription = pgTable(
 		index("store_subscription_suspended_idx")
 			.on(t.suspendedAt)
 			.where(sql`${t.status} = 'suspended'`),
+		check(
+			"store_subscription_status_valid",
+			sql`${t.status} IN ('active','past_due','canceling','suspended','canceled')`,
+		),
 	],
 );
 

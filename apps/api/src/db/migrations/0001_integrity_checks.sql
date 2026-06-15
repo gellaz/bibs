@@ -1,0 +1,14 @@
+DROP INDEX "point_transaction_order_type_unique_idx";--> statement-breakpoint
+CREATE UNIQUE INDEX "point_transaction_order_type_unique_idx" ON "point_transactions" USING btree ("order_id","type") WHERE "point_transactions"."order_id" IS NOT NULL AND "point_transactions"."type" IN ('earned', 'refunded', 'redeemed');--> statement-breakpoint
+ALTER TABLE "employee_invitations" ADD CONSTRAINT "employee_invitation_status_valid" CHECK ("employee_invitations"."status" IN ('pending','accepted','expired'));--> statement-breakpoint
+ALTER TABLE "store_employees" ADD CONSTRAINT "store_employee_status_valid" CHECK ("store_employees"."status" IN ('active','banned','removed'));--> statement-breakpoint
+ALTER TABLE "orders" ADD CONSTRAINT "order_type_valid" CHECK ("orders"."type" IN ('direct','reserve_pickup','pay_pickup','pay_deliver'));--> statement-breakpoint
+ALTER TABLE "orders" ADD CONSTRAINT "order_status_valid" CHECK ("orders"."status" IN ('pending','confirmed','ready_for_pickup','shipped','delivered','completed','cancelled','expired'));--> statement-breakpoint
+ALTER TABLE "order_items" ADD CONSTRAINT "order_item_vat_rate_valid" CHECK ("order_items"."vat_rate" IS NULL OR "order_items"."vat_rate" IN (22,10,5,4,0));--> statement-breakpoint
+ALTER TABLE "organizations" ADD CONSTRAINT "organization_vat_status_valid" CHECK ("organizations"."vat_status" IN ('pending','verified','rejected'));--> statement-breakpoint
+ALTER TABLE "pending_store_creations" ADD CONSTRAINT "pending_store_creation_status_valid" CHECK ("pending_store_creations"."status" IN ('open','consumed','expired','canceled'));--> statement-breakpoint
+ALTER TABLE "point_transactions" ADD CONSTRAINT "point_transaction_type_valid" CHECK ("point_transactions"."type" IN ('earned','redeemed','refunded'));--> statement-breakpoint
+ALTER TABLE "seller_profiles" ADD CONSTRAINT "seller_profile_onboarding_status_valid" CHECK ("seller_profiles"."onboarding_status" IN ('pending_email','pending_personal','pending_document','pending_company','pending_review','active','rejected'));--> statement-breakpoint
+ALTER TABLE "seller_profile_changes" ADD CONSTRAINT "seller_profile_change_type_valid" CHECK ("seller_profile_changes"."change_type" IN ('vat','document','payment'));--> statement-breakpoint
+ALTER TABLE "seller_profile_changes" ADD CONSTRAINT "seller_profile_change_status_valid" CHECK ("seller_profile_changes"."status" IN ('pending','approved','rejected'));--> statement-breakpoint
+ALTER TABLE "store_subscriptions" ADD CONSTRAINT "store_subscription_status_valid" CHECK ("store_subscriptions"."status" IN ('active','past_due','canceling','suspended','canceled'));

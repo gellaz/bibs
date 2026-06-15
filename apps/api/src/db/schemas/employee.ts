@@ -1,5 +1,6 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
+	check,
 	index,
 	pgTable,
 	primaryKey,
@@ -44,6 +45,10 @@ export const storeEmployee = pgTable(
 		uniqueIndex("store_employee_seller_user_idx").on(
 			table.sellerProfileId,
 			table.userId,
+		),
+		check(
+			"store_employee_status_valid",
+			sql`${table.status} IN ('active','banned','removed')`,
 		),
 	],
 );
