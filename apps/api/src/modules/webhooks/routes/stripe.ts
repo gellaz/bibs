@@ -27,10 +27,13 @@ export const stripeWebhookRoutes = new Elysia().post(
 				ctx.set.status = 400;
 				return { error: "invalid signature" };
 			}
-			// Return 200 even on handler errors to avoid Stripe infinite retries.
-			// stripe_events row stays with processedAt=null → can be reprocessed manually.
-			ctx.set.status = 200;
-			return { received: true, internalError: true };
+			// Return 5xx on handler failure so Stripe redelivers the event (with
+			// backoff, for ~3 days). The dispatcher's dedup ledger gates on
+			// processed_at, so each redelivery re-runs the handler until it
+			// succeeds; a permanently failing event surfaces in the Stripe
+			// dashboard for manual inspection instead of being silently dropped.
+			ctx.set.status = 500;
+			return { error: "internal error" };
 		}
 	},
 	{
