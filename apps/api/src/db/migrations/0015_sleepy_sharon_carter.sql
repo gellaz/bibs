@@ -1,2 +1,0 @@
-DROP INDEX "holiday_definition_unique_idx";--> statement-breakpoint
-ALTER TABLE "holiday_definitions" ADD CONSTRAINT "holiday_definition_unique_idx" UNIQUE NULLS NOT DISTINCT("type","month","day","easter_offset_days","one_off_date");
