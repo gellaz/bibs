@@ -30,10 +30,14 @@ mock.module("@/lib/email", () => ({
 import { eq } from "drizzle-orm";
 import { user as userTable } from "@/db/schemas/auth";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
-import { employeeInvitationStores } from "@/db/schemas/employee-invitation";
+import {
+	employeeInvitation,
+	employeeInvitationStores,
+} from "@/db/schemas/employee-invitation";
 import {
 	getEmployeeStores,
 	inviteEmployee,
+	listEmployeeInvitations,
 	listEmployees,
 	setEmployeeStores,
 } from "@/modules/seller/services/employees";
@@ -50,6 +54,37 @@ afterAll(async () => {
 
 beforeEach(async () => {
 	await truncateAll(getTestDb());
+});
+
+describe("listEmployeeInvitations", () => {
+	it("returns only pending invitations, not accepted/expired history", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+
+		// One pending (via the real service path)...
+		await inviteEmployee(profile.id, "pending@test.com", [store.id]);
+		// ...and two terminal-state rows that must be excluded.
+		await db.insert(employeeInvitation).values([
+			{
+				sellerProfileId: profile.id,
+				email: "accepted@test.com",
+				status: "accepted",
+				expiresAt: new Date(Date.now() + 86_400_000),
+			},
+			{
+				sellerProfileId: profile.id,
+				email: "expired@test.com",
+				status: "expired",
+				expiresAt: new Date(Date.now() - 86_400_000),
+			},
+		]);
+
+		const result = await listEmployeeInvitations(profile.id);
+		expect(result).toHaveLength(1);
+		expect(result[0]?.email).toBe("pending@test.com");
+		expect(result[0]?.status).toBe("pending");
+	});
 });
 
 describe("listEmployees", () => {

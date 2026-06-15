@@ -37,7 +37,14 @@ export async function listMunicipalities(params: ListMunicipalitiesParams) {
 		: undefined;
 
 	const [data, [{ total }]] = await Promise.all([
-		db.query.municipality.findMany({ where, limit, offset }),
+		// Stable total order over a large reference table — without it, offset
+		// paging returns non-deterministic page contents (id tiebreaks equal names).
+		db.query.municipality.findMany({
+			where,
+			orderBy: (m, { asc }) => [asc(m.name), asc(m.id)],
+			limit,
+			offset,
+		}),
 		db.select({ total: count() }).from(municipality).where(where),
 	]);
 

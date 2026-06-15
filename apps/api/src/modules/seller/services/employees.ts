@@ -157,8 +157,15 @@ export async function inviteEmployee(
 }
 
 export async function listEmployeeInvitations(sellerProfileId: string) {
+	// Only pending invitations are actionable; accepted/expired rows are append-only
+	// history the client discards anyway. Filtering server-side keeps the result
+	// bounded (uses the partial pending-unique index) instead of returning the full
+	// invitation log.
 	const invitations = await db.query.employeeInvitation.findMany({
-		where: eq(employeeInvitation.sellerProfileId, sellerProfileId),
+		where: and(
+			eq(employeeInvitation.sellerProfileId, sellerProfileId),
+			eq(employeeInvitation.status, "pending"),
+		),
 		with: { storeAssignments: { columns: { storeId: true } } },
 		orderBy: (inv, { desc }) => [desc(inv.createdAt)],
 	});

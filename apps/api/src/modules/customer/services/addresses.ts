@@ -49,6 +49,14 @@ export async function listAddresses(params: ListAddressesParams) {
 		db.query.customerAddress.findMany({
 			where: eq(customerAddress.customerProfileId, customerProfileId),
 			with: municipalityWith,
+			// Stable total order: without it, LIMIT/OFFSET paging over an unordered
+			// heap scan can repeat or skip rows across pages. Default first, then
+			// newest, id as the deterministic tiebreaker.
+			orderBy: (a, { asc, desc }) => [
+				desc(a.isDefault),
+				desc(a.createdAt),
+				asc(a.id),
+			],
 			limit,
 			offset,
 		}),
