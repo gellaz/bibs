@@ -220,7 +220,7 @@ export async function getPendingForResume(params: {
 			eq(pendingStoreCreation.sellerProfileId, params.sellerProfileId),
 		),
 	});
-	if (!pending || pending.status !== "open") {
+	if (pending?.status !== "open") {
 		throw new ServiceError(
 			404,
 			"Pending checkout not found or already consumed",
