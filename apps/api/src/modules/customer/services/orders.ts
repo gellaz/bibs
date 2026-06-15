@@ -380,12 +380,24 @@ export async function createOrder(params: CreateOrderParams) {
 
 		// Deduct points spent
 		if (actualPointsSpent > 0) {
-			await tx
+			// CAS on the live balance inside the tx, mirroring the stock decrement
+			// above. The affordability check near the top reads a points snapshot
+			// taken OUTSIDE this tx, so without this guard two concurrent checkouts
+			// by the same customer could both pass that check and over-spend.
+			const [debited] = await tx
 				.update(customerProfile)
 				.set({
 					points: sql`${customerProfile.points} - ${actualPointsSpent}`,
 				})
-				.where(eq(customerProfile.id, customerProfileId));
+				.where(
+					and(
+						eq(customerProfile.id, customerProfileId),
+						sql`${customerProfile.points} >= ${actualPointsSpent}`,
+					),
+				)
+				.returning();
+
+			if (!debited) throw new ServiceError(409, "Punti insufficienti, riprova");
 
 			await tx.insert(pointTransaction).values({
 				customerProfileId,

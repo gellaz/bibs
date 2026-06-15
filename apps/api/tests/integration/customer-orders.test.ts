@@ -275,6 +275,43 @@ describe("createOrder — points discount", () => {
 	});
 });
 
+describe("createOrder — points CAS guard", () => {
+	it("rejects with 409 when the live balance is below a stale points snapshot", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+		const prod = await createTestProduct(db, seller.profile.id, {
+			price: "10.00",
+		});
+		const sp = await createTestStoreProduct(db, testStore.id, prod.id, {
+			stock: 5,
+		});
+		// The live balance is 0...
+		const customer = await createTestCustomer(db, { points: 0 });
+
+		// ...but we pass a STALE snapshot of 100, as if it were read before a
+		// concurrent checkout drained the balance. The pre-tx affordability check
+		// passes on the snapshot; the in-tx CAS must catch the real shortfall.
+		await expect(
+			createOrder({
+				customerProfileId: customer.profile.id,
+				customerPoints: 100,
+				type: "direct",
+				storeId: testStore.id,
+				items: [{ storeProductId: sp.id, quantity: 1 }],
+				pointsToSpend: 100,
+			}),
+		).rejects.toThrow(/punti insufficienti/i);
+
+		// The transaction rolled back: balance untouched, no order persisted.
+		const [profile] = await db
+			.select()
+			.from(customerProfile)
+			.where(eq(customerProfile.id, customer.profile.id));
+		expect(profile.points).toBe(0);
+	});
+});
+
 describe("createOrder — validation errors", () => {
 	it("throws ServiceError 400 when stock is insufficient", async () => {
 		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
