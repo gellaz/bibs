@@ -78,8 +78,11 @@ export const order = pgTable(
 			table.createdAt,
 		),
 		index("order_store_id_created_at_idx").on(table.storeId, table.createdAt),
-		index("order_status_idx").on(table.status),
-		index("order_type_status_idx").on(table.type, table.status),
+		// order_status_idx (status alone) and order_type_status_idx (type, status)
+		// were dropped: no query uses them as an access path. Status/type filters are
+		// always secondary to customerProfileId/storeId (covered by the composite
+		// idxs above) or are PK-keyed CAS guards; the reservation sweep is served by
+		// the partial order_active_reservation_idx below.
 		index("order_active_reservation_idx")
 			.on(table.reservationExpiresAt)
 			.where(

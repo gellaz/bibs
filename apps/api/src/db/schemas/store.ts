@@ -64,6 +64,9 @@ export const store = pgTable(
 		index("store_location_idx").using("gist", t.location),
 		index("store_seller_profile_id_idx").on(t.sellerProfileId),
 		index("store_municipality_id_idx").on(t.municipalityId),
+		// Backs the categoryId FK (ON DELETE SET NULL): without it, deleting a store
+		// category seq-scans stores to null out the references.
+		index("store_category_id_idx").on(t.categoryId),
 		index("store_active_idx")
 			.on(t.sellerProfileId)
 			.where(sql`${t.deletedAt} IS NULL`),

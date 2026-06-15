@@ -150,6 +150,10 @@ export const storeProduct = pgTable(
 			table.productId,
 			table.storeId,
 		),
+		// Store-leading lookups (public search JOINs, seller inventory by store) and
+		// the storeId FK cascade can't use the unique index above (product_id is its
+		// left prefix), so they fall back to a seq scan without this.
+		index("store_product_store_id_idx").on(table.storeId),
 		check("store_product_stock_non_negative", sql`${table.stock} >= 0`),
 	],
 );

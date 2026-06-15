@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "point_transaction_order_type_unique_idx" ON "point_transactions" USING btree ("order_id","type") WHERE "point_transactions"."order_id" IS NOT NULL AND "point_transactions"."type" IN ('earned', 'refunded');
