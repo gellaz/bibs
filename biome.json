@@ -14,7 +14,9 @@
 			"**/*.jsx",
 			"**/*.json",
 			"!**/.agents",
-			"!**/.claude/skills"
+			"!**/.claude/skills",
+			"!**/.codex",
+			"!skills-lock.json"
 		]
 	},
 	"overrides": [

@@ -9,7 +9,19 @@
 						"command": "F=$(jq -r '.tool_input.file_path // empty'); [ -z \"$F\" ] && exit 0; case \"$F\" in *.ts|*.tsx|*.js|*.jsx|*.json) bunx biome check --fix --no-errors-on-unmatched \"$F\" >/dev/null 2>&1 || true;; esac; exit 0"
 					}
 				]
+			},
+			{
+				"matcher": "Edit|Write|apply_patch",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "node \"$(git rev-parse --show-toplevel)/.agents/skills/impeccable/scripts/hook.mjs\"",
+						"timeout": 5,
+						"statusMessage": "Checking UI changes"
+					}
+				]
 			}
 		]
-	}
+	},
+	"description": "Impeccable design detector: runs after Edit/Write/apply_patch on UI files and surfaces findings as system reminders."
 }
