@@ -3,12 +3,11 @@ import {
 	count,
 	desc,
 	eq,
-	gt,
 	gte,
 	inArray,
+	isNotNull,
 	isNull,
 	lt,
-	lte,
 	or,
 	sql,
 } from "drizzle-orm";
@@ -263,13 +262,7 @@ export async function removeProductsFromDiscount(params: RemoveProductsParams) {
 
 // ── List / Get / GetProducts ──────────────────────────────────────────────────
 
-export type DiscountOperationalState =
-	| "all"
-	| "scheduled"
-	| "running"
-	| "paused"
-	| "expired"
-	| "archived";
+export type DiscountOperationalState = "assignable" | "concluded";
 
 interface ListDiscountsParams {
 	sellerProfileId: string;
@@ -281,7 +274,7 @@ interface ListDiscountsParams {
 
 export async function listDiscounts(params: ListDiscountsParams) {
 	const { page, limit, offset } = parsePagination(params);
-	const state = params.state ?? "all";
+	const state = params.state ?? "assignable";
 	const now = new Date();
 
 	const whereParts: ReturnType<typeof eq>[] = [
@@ -289,27 +282,30 @@ export async function listDiscounts(params: ListDiscountsParams) {
 	];
 
 	switch (state) {
-		case "archived":
-			whereParts.push(eq(discount.status, "archived"));
-			break;
-		case "paused":
-			whereParts.push(eq(discount.status, "paused"));
-			break;
-		case "scheduled":
-			whereParts.push(eq(discount.status, "active"));
-			whereParts.push(gt(discount.startsAt, now));
-			break;
-		case "running":
-			whereParts.push(eq(discount.status, "active"));
-			whereParts.push(lte(discount.startsAt, now));
-			whereParts.push(or(isNull(discount.endsAt), gte(discount.endsAt, now))!);
-			break;
-		case "expired":
-			whereParts.push(eq(discount.status, "active"));
-			whereParts.push(lt(discount.endsAt, now));
+		case "concluded":
+			// Archived, or active-but-past its end date.
+			whereParts.push(
+				or(
+					eq(discount.status, "archived"),
+					and(
+						eq(discount.status, "active"),
+						isNotNull(discount.endsAt),
+						lt(discount.endsAt, now),
+					),
+				)!,
+			);
 			break;
 		default:
-			whereParts.push(sql`${discount.status} <> 'archived'`);
+			// "assignable": paused, or active and not yet ended (running + scheduled).
+			whereParts.push(
+				or(
+					eq(discount.status, "paused"),
+					and(
+						eq(discount.status, "active"),
+						or(isNull(discount.endsAt), gte(discount.endsAt, now)),
+					),
+				)!,
+			);
 			break;
 	}
 

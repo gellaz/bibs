@@ -398,7 +398,7 @@ describe("removeProductsFromDiscount", () => {
 });
 
 describe("listDiscounts", () => {
-	it("filters by operational state 'running'", async () => {
+	it("'assignable' = running + scheduled + paused, excludes expired and archived", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		await createTestDiscount(db, seller.profile.id, {
@@ -412,42 +412,75 @@ describe("listDiscounts", () => {
 			endsAt: new Date(Date.now() + 2 * 86_400_000),
 		});
 		await createTestDiscount(db, seller.profile.id, {
+			title: "Paused",
+			status: "paused",
+		});
+		await createTestDiscount(db, seller.profile.id, {
 			title: "Expired",
 			startsAt: new Date(Date.now() - 2 * 86_400_000),
 			endsAt: new Date(Date.now() - 86_400_000),
-		});
-
-		const result = await listDiscounts({
-			sellerProfileId: seller.profile.id,
-			state: "running",
-		});
-		expect(result.data).toHaveLength(1);
-		expect(result.data[0].title).toBe("Running");
-	});
-
-	it("filters 'archived' separately, hidden from 'all'", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-		await createTestDiscount(db, seller.profile.id, {
-			title: "Active",
-			status: "active",
 		});
 		await createTestDiscount(db, seller.profile.id, {
 			title: "Arch",
 			status: "archived",
 		});
 
-		const all = await listDiscounts({
+		const res = await listDiscounts({
 			sellerProfileId: seller.profile.id,
-			state: "all",
+			state: "assignable",
 		});
-		expect(all.data.find((d) => d.title === "Arch")).toBeUndefined();
+		expect(res.data.map((d) => d.title).sort()).toEqual([
+			"Paused",
+			"Running",
+			"Scheduled",
+		]);
+	});
 
-		const arch = await listDiscounts({
-			sellerProfileId: seller.profile.id,
-			state: "archived",
+	it("'concluded' = expired + archived only", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Running",
+			startsAt: new Date(Date.now() - 3600_000),
+			endsAt: new Date(Date.now() + 86_400_000),
 		});
-		expect(arch.data).toHaveLength(1);
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Expired",
+			startsAt: new Date(Date.now() - 2 * 86_400_000),
+			endsAt: new Date(Date.now() - 86_400_000),
+		});
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Arch",
+			status: "archived",
+		});
+
+		const res = await listDiscounts({
+			sellerProfileId: seller.profile.id,
+			state: "concluded",
+		});
+		expect(res.data.map((d) => d.title).sort()).toEqual(["Arch", "Expired"]);
+	});
+
+	it("a no-end-date running discount is assignable, not concluded", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await createTestDiscount(db, seller.profile.id, {
+			title: "Forever",
+			startsAt: new Date(Date.now() - 3600_000),
+			endsAt: null,
+		});
+
+		const assignable = await listDiscounts({
+			sellerProfileId: seller.profile.id,
+			state: "assignable",
+		});
+		expect(assignable.data.map((d) => d.title)).toEqual(["Forever"]);
+
+		const concluded = await listDiscounts({
+			sellerProfileId: seller.profile.id,
+			state: "concluded",
+		});
+		expect(concluded.data).toHaveLength(0);
 	});
 
 	it("includes productCount", async () => {
