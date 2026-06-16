@@ -13,7 +13,7 @@ import {
 } from "@bibs/ui/components/table";
 import { Link } from "@tanstack/react-router";
 import { XIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	useDiscountProducts,
 	useRemoveDiscountProducts,
@@ -34,6 +34,12 @@ export function IncludedProductsList({ discountId }: Props) {
 	const rows = query.data?.data ?? [];
 	const total = query.data?.pagination.total ?? 0;
 	const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+	// If removals shrink the list below the current page, step back so the
+	// user never lands on an out-of-range empty page.
+	useEffect(() => {
+		if (page > totalPages) setPage(totalPages);
+	}, [page, totalPages]);
 
 	const onRemove = (productId: string) => {
 		remove.mutate([productId], {
