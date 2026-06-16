@@ -35,7 +35,7 @@ Three workstreams on one branch, each independently shippable:
 
 | Part | What | Surface |
 |------|------|---------|
-| A | Simplify promotion display states 5 → 4 | api filter + seller badges/tabs |
+| A | Simplify promotion badge (5 → 4) and tabs (6 → 2) | api filter + seller badges/tabs |
 | B | Apply-promotion action (row + bulk) | seller products table |
 | C | Slim the promotion create/edit page | seller promotions routes |
 
@@ -47,16 +47,30 @@ Final mental model — a clean, learnable split:
 
 ---
 
-## Part A — Simplify promotion states (5 → 4)
+## Part A — Simplify promotion states & tabs
 
-Today the UI derives **5** operational states from the 3 stored `status` values
-(`active`/`paused`/`archived`) combined with the date window
+Two separate concepts, simplified independently:
+
+**Row badge — 5 → 4 states.** Today the UI derives **5** operational states from the 3
+stored `status` values (`active`/`paused`/`archived`) combined with the date window
 (`promotion-state-badge.tsx:18`): `running`, `scheduled`, `expired`, `paused`,
 `archived`. The `expired` vs `archived` split is the confusing one — both just mean
-"this promotion is over" — so they merge into a single **Conclusa**.
+"this promotion is over" — so they merge into a single **Conclusa**. `running` (live
+now), `scheduled` (starts in future) and `paused` (manually off) stay distinct: each is
+a different situation and drives a different action. So the badge shows **4** values:
+`running | scheduled | paused | concluded`.
 
-`running` (live now), `scheduled` (starts in future) and `paused` (manually off) stay
-distinct: each answers a different question and drives a different action.
+**Tabs / list filter — 6 → 2.** Today: `Tutte · In corso · Programmate · In pausa ·
+Scadute · Archiviate`. The catch-all "Tutte" is misleading (it silently excludes
+archived). Replace the whole bar with **two** honest tabs:
+
+- **Attive** (default) = `running + scheduled + paused` — the working set. This is
+  exactly the `assignable` set, so the Attive tab and the apply-promotion picker show
+  the **same** promotions.
+- **Concluse** = `expired + archived`.
+
+The precise per-row state stays visible in the **badge**, so collapsing the granular
+tabs loses no information for a modest catalog.
 
 **The stored `status` enum does not change.** Only the *derived display states* and
 the *list filter* change. No migration.
@@ -67,16 +81,17 @@ the *list filter* change. No migration.
 `DiscountOperationalState` type + `listDiscounts` switch
 (`modules/seller/services/discounts.ts:266`):
 
-- Remove the `expired` and `archived` filter values.
-- Add **`concluded`** → `status='archived' OR (status='active' AND ends_at IS NOT NULL AND ends_at < now())`.
-  Backs the "Concluse" tab.
-- Add **`assignable`** → `status='paused' OR (status='active' AND (ends_at IS NULL OR ends_at >= now()))`,
-  i.e. NOT concluded. Backs the apply picker (running + scheduled + paused). Not shown
-  as a tab.
-- Final enum: `all | running | scheduled | paused | concluded | assignable`.
-- **`all` keeps its current meaning: non-archived** (`status <> 'archived'`). The
-  default list stays clean; archived promotions surface only under "Concluse". (This is
-  an intentional choice — `all` is not literally "everything".)
+The filter enum collapses to the two values the UI actually uses:
+
+- **`assignable`** → `status='paused' OR (status='active' AND (ends_at IS NULL OR ends_at >= now()))`
+  — i.e. running + scheduled + paused. Backs the **Attive** tab *and* the apply picker.
+- **`concluded`** → `status='archived' OR (status='active' AND ends_at IS NOT NULL AND ends_at < now())`
+  — backs the **Concluse** tab.
+- Final enum: `assignable | concluded` (was `all | scheduled | running | paused | expired | archived`).
+  These two partition the space cleanly: `assignable ∩ concluded = ∅`, and together they
+  cover every promotion (`assignable ∪ concluded = all`).
+- Server default `state` becomes `assignable` (the default tab); `listDiscounts` rewrites
+  its `switch` to these two cases.
 - Update the route `detail.description` wording (`routes/discounts.ts:54`) which
   currently mentions the `archived` state explicitly.
 
@@ -84,15 +99,19 @@ the *list filter* change. No migration.
 
 - `features/promotions/components/promotion-state-badge.tsx`: `operationalState()`
   returns `running | scheduled | paused | concluded`; update the `OperationalState`
-  type, `STATE_LABELS`, `STATE_CLASSES` (Conclusa reuses today's muted grey).
+  type, `STATE_LABELS`, `STATE_CLASSES` (Conclusa reuses today's muted grey). **Badge
+  keeps 4 states** — only the tab filter is 2.
 - `features/promotions/components/promotion-state-tabs.tsx`: `PromotionState` type +
-  `ORDER` become `all · running · scheduled · paused · concluded`
-  (labels: Tutte · In corso · Programmate · In pausa · Concluse).
-- `routes/_authenticated/promotions/index.tsx`: `validateSearch` valid-states array and
-  the `EMPTY_MESSAGE` map follow the new set.
-- `messages/{it,en}.json`: add `promotions_state_concluded` and
-  `promotions_empty_concluded`; remove the now-unused `*_state_expired`,
-  `*_state_archived`, `*_empty_expired`, `*_empty_archived` keys.
+  `ORDER` become `assignable · concluded` (labels: **Attive · Concluse**, default
+  `assignable`).
+- `routes/_authenticated/promotions/index.tsx`: `validateSearch` valid-states array
+  becomes `["assignable","concluded"]` with default `assignable`; the `EMPTY_MESSAGE`
+  map covers the two tabs.
+- `messages/{it,en}.json`: add `promotions_tab_active` ("Attive"),
+  `promotions_state_concluded`/`promotions_tab_concluded` ("Conclusa"/"Concluse"), and
+  `promotions_empty_active` + `promotions_empty_concluded`; remove the now-unused
+  `*_state_all`, `*_state_expired`, `*_state_archived` and the `*_empty_*` keys for the
+  dropped tabs.
 
 ---
 
@@ -185,6 +204,8 @@ in the edit page):
 
 ### Cleanup
 
+- Both routes' `onCancel` currently navigate with `search: { …, state: "all" }`; update
+  to the new default `state: "assignable"` (the `"all"` value no longer exists).
 - Delete `features/promotions/components/product-selector.tsx` (no remaining importers
   after the two route changes).
 - The create-body `initialProductIds` field and the `addProductsToDiscount` "initial
@@ -209,9 +230,10 @@ in the edit page):
   3. Promotion edit page shows the included list; remove a product → count drops.
   4. Create a promotion → no products section; lands on edit with the empty-state +
      deeplink.
-  5. Promotions list tabs read Tutte · In corso · Programmate · In pausa · Concluse;
-     a past-end and an archived promo both badge as **Conclusa** and appear under
-     "Concluse".
+  5. Promotions list shows two tabs, **Attive · Concluse** (default Attive); a past-end
+     and an archived promo both badge as **Conclusa** and appear under "Concluse"; a
+     running, a scheduled and a paused promo all appear under "Attive" with their
+     distinct row badges.
 
 ## Out of scope (YAGNI)
 
