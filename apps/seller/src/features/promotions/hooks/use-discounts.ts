@@ -11,7 +11,10 @@ interface ListParams {
 	search?: string;
 }
 
-export function useDiscountsList(params: ListParams) {
+export function useDiscountsList(
+	params: ListParams,
+	options?: { enabled?: boolean },
+) {
 	return useQuery({
 		queryKey: [...DISCOUNTS_KEY, "list", params],
 		queryFn: async () => {
@@ -20,6 +23,7 @@ export function useDiscountsList(params: ListParams) {
 				throw new Error(res.error.value?.message || "Errore caricamento");
 			return res.data;
 		},
+		enabled: options?.enabled,
 	});
 }
 
@@ -84,27 +88,6 @@ export function useUpdateDiscount(discountId: string) {
 	});
 }
 
-export function useAddDiscountProducts(discountId: string) {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: async (productIds: string[]) => {
-			const res = await api()
-				.seller.discounts({ discountId })
-				.products.post({ productIds });
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data;
-		},
-		onSuccess: () => {
-			void qc.invalidateQueries({
-				queryKey: [...DISCOUNTS_KEY, "products", discountId],
-			});
-			void qc.invalidateQueries({
-				queryKey: [...DISCOUNTS_KEY, "detail", discountId],
-			});
-		},
-	});
-}
-
 export function useRemoveDiscountProducts(discountId: string) {
 	const qc = useQueryClient();
 	return useMutation({
@@ -138,5 +121,28 @@ export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
 			return res.data;
 		},
 		enabled: !!discountId,
+	});
+}
+
+// Applies an existing promotion to a set of products: the discount is chosen at
+// call time (the products-table picker), so discountId is a mutation variable
+// rather than bound at hook creation. Invalidates the whole discounts cache so
+// list product counts refresh.
+export function useApplyPromotionToProducts() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async (vars: { discountId: string; productIds: string[] }) => {
+			const res = await api()
+				.seller.discounts({ discountId: vars.discountId })
+				.products.post({ productIds: vars.productIds });
+			if (res.error) throw new Error(res.error.value?.message || "Errore");
+			return res.data;
+		},
+		onSuccess: (_data, vars) => {
+			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
+			void qc.invalidateQueries({
+				queryKey: [...DISCOUNTS_KEY, "products", vars.discountId],
+			});
+		},
 	});
 }

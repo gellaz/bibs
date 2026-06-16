@@ -6,15 +6,11 @@ export const DiscountStatusSchema = t.Union(
 );
 
 export const DiscountOperationalStateSchema = t.Union(
-	[
-		t.Literal("all"),
-		t.Literal("scheduled"),
-		t.Literal("running"),
-		t.Literal("paused"),
-		t.Literal("expired"),
-		t.Literal("archived"),
-	],
-	{ description: "Stato operativo derivato (filtro lista)" },
+	[t.Literal("assignable"), t.Literal("concluded")],
+	{
+		description:
+			"Filtro lista: 'assignable' = in corso/programmate/in pausa; 'concluded' = scadute/archiviate",
+	},
 );
 
 export const DiscountSchema = t.Object({

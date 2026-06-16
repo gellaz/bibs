@@ -52,7 +52,7 @@ export const discountsRoutes = new Elysia()
 			detail: {
 				summary: "Lista promozioni",
 				description:
-					"Elenca le promozioni del venditore filtrate per stato operativo. Lo stato 'archived' è incluso solo quando esplicitamente richiesto.",
+					"Elenca le promozioni del venditore. Filtro 'state': 'assignable' (in corso/programmate/in pausa, default) o 'concluded' (scadute/archiviate).",
 				tags: ["Seller - Discounts"],
 			},
 		},

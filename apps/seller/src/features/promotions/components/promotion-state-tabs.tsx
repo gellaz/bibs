@@ -1,13 +1,7 @@
 import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { m } from "@/paraglide/messages";
 
-export type PromotionState =
-	| "all"
-	| "running"
-	| "scheduled"
-	| "paused"
-	| "expired"
-	| "archived";
+export type PromotionState = "assignable" | "concluded";
 
 interface Props {
 	value: PromotionState;
@@ -15,12 +9,8 @@ interface Props {
 }
 
 const ORDER: { value: PromotionState; label: () => string }[] = [
-	{ value: "all", label: () => m.promotions_state_all() },
-	{ value: "running", label: () => m.promotions_state_running() },
-	{ value: "scheduled", label: () => m.promotions_state_scheduled() },
-	{ value: "paused", label: () => m.promotions_state_paused() },
-	{ value: "expired", label: () => m.promotions_state_expired() },
-	{ value: "archived", label: () => m.promotions_state_archived() },
+	{ value: "assignable", label: () => m.promotions_tab_active() },
+	{ value: "concluded", label: () => m.promotions_tab_concluded() },
 ];
 
 export function PromotionStateTabs({ value, onChange }: Props) {

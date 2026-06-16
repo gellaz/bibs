@@ -16,10 +16,12 @@ import {
 	MoreHorizontalIcon,
 	PencilIcon,
 	RotateCcwIcon,
+	TagIcon,
 	Trash2Icon,
 	TrashIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { ApplyPromotionDialog } from "@/features/products/components/apply-promotion-dialog";
 import { ConfirmPermanentDeleteDialog } from "@/features/products/components/confirm-permanent-delete-dialog";
 import { StoreAssignmentDialog } from "@/features/products/components/store-assignment-dialog";
 import { useProductMutations } from "@/features/products/hooks/use-product-mutations";
@@ -43,6 +45,7 @@ export function ProductRowActions({
 	const { setStatus } = useProductMutations(activeStoreId);
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [addStoreOpen, setAddStoreOpen] = useState(false);
+	const [applyPromoOpen, setApplyPromoOpen] = useState(false);
 
 	return (
 		<>
@@ -69,6 +72,16 @@ export function ProductRowActions({
 						>
 							<CopyPlusIcon />
 							{m.products_action_add_to_store()}
+						</DropdownMenuItem>
+					)}
+
+					{status !== "trashed" && (
+						<DropdownMenuItem
+							className="whitespace-nowrap"
+							onSelect={() => setApplyPromoOpen(true)}
+						>
+							<TagIcon />
+							{m.products_apply_promotion_action()}
 						</DropdownMenuItem>
 					)}
 
@@ -178,6 +191,12 @@ export function ProductRowActions({
 				assignedStoreIds={assignedStoreIds}
 				open={addStoreOpen}
 				onOpenChange={setAddStoreOpen}
+			/>
+
+			<ApplyPromotionDialog
+				open={applyPromoOpen}
+				onOpenChange={setApplyPromoOpen}
+				productIds={[productId]}
 			/>
 		</>
 	);
