@@ -4,11 +4,13 @@ import {
 	EyeOffIcon,
 	PackageIcon,
 	RotateCcwIcon,
+	TagIcon,
 	Trash2Icon,
 	TrashIcon,
 	XIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { ApplyPromotionDialog } from "@/features/products/components/apply-promotion-dialog";
 import { BulkStockAdjustDialog } from "@/features/products/components/bulk-stock-adjust-dialog";
 import { ConfirmPermanentDeleteDialog } from "@/features/products/components/confirm-permanent-delete-dialog";
 import type { ProductStatusFilter } from "@/features/products/components/product-status-tabs";
@@ -31,6 +33,7 @@ export function ProductBulkToolbar({
 	const { bulkSetStatus } = useProductMutations(activeStoreId);
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [adjustOpen, setAdjustOpen] = useState(false);
+	const [applyPromoOpen, setApplyPromoOpen] = useState(false);
 
 	if (selectedIds.length === 0) return null;
 
@@ -66,6 +69,14 @@ export function ProductBulkToolbar({
 							{/* Le varianti seguono i colori dei badge nelle tab di stato:
 							    warning = Disabilitati, destructive = Cestino, success =
 							    ritorno ad Attivi. L'azione neutra (stock) resta primary. */}
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => setApplyPromoOpen(true)}
+							>
+								<TagIcon className="size-4" />
+								{m.products_apply_promotion_action()}
+							</Button>
 							<Button size="sm" onClick={() => setAdjustOpen(true)}>
 								<PackageIcon className="size-4" />
 								{m.products_bulk_adjust_stock_button()}
@@ -86,6 +97,14 @@ export function ProductBulkToolbar({
 					)}
 					{statusFilter === "disabled" && (
 						<>
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={() => setApplyPromoOpen(true)}
+							>
+								<TagIcon className="size-4" />
+								{m.products_apply_promotion_action()}
+							</Button>
 							<Button size="sm" variant="success" onClick={apply("active")}>
 								<EyeIcon className="size-4" />
 								{m.products_action_enable()}
@@ -131,6 +150,12 @@ export function ProductBulkToolbar({
 				onOpenChange={setAdjustOpen}
 				productIds={selectedIds}
 				storeId={activeStoreId}
+				onSuccess={onClear}
+			/>
+			<ApplyPromotionDialog
+				open={applyPromoOpen}
+				onOpenChange={setApplyPromoOpen}
+				productIds={selectedIds}
 				onSuccess={onClear}
 			/>
 		</>
