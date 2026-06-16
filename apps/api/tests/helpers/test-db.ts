@@ -1,5 +1,6 @@
 import path from "node:path";
 import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import {
 	GenericContainerBuilder,
 	type StartedTestContainer,
@@ -11,6 +12,7 @@ export type DrizzleTestDb = ReturnType<typeof drizzle<typeof schema>>;
 
 const POSTGIS_DIR = path.resolve(import.meta.dir, "../../../../docker/postgis");
 const API_DIR = path.resolve(import.meta.dir, "../../");
+const MIGRATIONS_DIR = path.resolve(API_DIR, "src/db/migrations");
 
 let container: StartedTestContainer | null = null;
 let _testDb: DrizzleTestDb | null = null;
@@ -30,7 +32,7 @@ export function getTestDb(): DrizzleTestDb {
 
 /**
  * Starts a PostGIS container (built from the project Dockerfile),
- * pushes the Drizzle schema, and returns a connected Drizzle instance.
+ * applies the Drizzle migrations, and returns a connected Drizzle instance.
  *
  * Call this in beforeAll() with a generous timeout (~120s on first build).
  */
@@ -54,9 +56,11 @@ export async function setupTestContainer(): Promise<DrizzleTestDb> {
 
 	const connectionUri = `postgresql://test:test@${container.getHost()}:${container.getMappedPort(5432)}/bibs_test`;
 
-	await pushSchema(connectionUri);
-
 	_testDb = drizzle(connectionUri, { schema });
+	// Apply the real migration files (the same path as prod `bun run db:migrate`)
+	// so the suite exercises the actual DDL — including CHECK constraints, which
+	// `drizzle-kit push` silently skips.
+	await migrate(_testDb, { migrationsFolder: MIGRATIONS_DIR });
 	return _testDb;
 }
 
@@ -69,19 +73,5 @@ export async function teardownTestContainer(): Promise<void> {
 	if (container) {
 		await container.stop();
 		container = null;
-	}
-}
-
-async function pushSchema(connectionUri: string): Promise<void> {
-	const proc = Bun.spawn(["bunx", "drizzle-kit", "push", "--force"], {
-		cwd: API_DIR,
-		env: { ...process.env, DATABASE_URL: connectionUri },
-		stdout: "pipe",
-		stderr: "pipe",
-	});
-	const exitCode = await proc.exited;
-	if (exitCode !== 0) {
-		const stderr = await new Response(proc.stderr).text();
-		throw new Error(`drizzle-kit push failed (exit ${exitCode}):\n${stderr}`);
 	}
 }
