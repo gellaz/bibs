@@ -66,7 +66,7 @@ function NewPromotionPage() {
 						onCancel={() =>
 							void navigate({
 								to: "/promotions",
-								search: { page: 1, limit: 20, state: "all" as const },
+								search: { page: 1, limit: 20, state: "assignable" as const },
 							})
 						}
 						onSubmit={async (v) => {

@@ -32,18 +32,11 @@ import { m } from "@/paraglide/messages";
 export const Route = createFileRoute("/_authenticated/promotions/")({
 	component: PromotionsListPage,
 	validateSearch: (search: Record<string, unknown>) => {
-		const validStates: readonly PromotionState[] = [
-			"all",
-			"running",
-			"scheduled",
-			"paused",
-			"expired",
-			"archived",
-		];
+		const validStates: readonly PromotionState[] = ["assignable", "concluded"];
 		const s = search.state;
 		const state: PromotionState = validStates.includes(s as PromotionState)
 			? (s as PromotionState)
-			: "all";
+			: "assignable";
 		return {
 			page: Number(search.page ?? 1),
 			limit: Number(search.limit ?? 20),
@@ -53,12 +46,8 @@ export const Route = createFileRoute("/_authenticated/promotions/")({
 });
 
 const EMPTY_MESSAGE: Record<PromotionState, () => string> = {
-	all: () => m.promotions_empty_all(),
-	running: () => m.promotions_empty_running(),
-	scheduled: () => m.promotions_empty_scheduled(),
-	paused: () => m.promotions_empty_paused(),
-	expired: () => m.promotions_empty_expired(),
-	archived: () => m.promotions_empty_archived(),
+	assignable: () => m.promotions_empty_active(),
+	concluded: () => m.promotions_empty_concluded(),
 };
 
 interface DiscountRow {
@@ -297,10 +286,10 @@ function PromotionsListPage() {
 				containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"
 				hideHeaderWhenEmpty
 				emptyState={
-					state === "all" ? (
+					state === "assignable" ? (
 						<EmptyState
-							title={EMPTY_MESSAGE.all()}
-							description={m.promotions_empty_all_description()}
+							title={EMPTY_MESSAGE.assignable()}
+							description={m.promotions_empty_active_description()}
 							action={
 								<CreateButton asChild>
 									<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
