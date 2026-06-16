@@ -88,27 +88,6 @@ export function useUpdateDiscount(discountId: string) {
 	});
 }
 
-export function useAddDiscountProducts(discountId: string) {
-	const qc = useQueryClient();
-	return useMutation({
-		mutationFn: async (productIds: string[]) => {
-			const res = await api()
-				.seller.discounts({ discountId })
-				.products.post({ productIds });
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data;
-		},
-		onSuccess: () => {
-			void qc.invalidateQueries({
-				queryKey: [...DISCOUNTS_KEY, "products", discountId],
-			});
-			void qc.invalidateQueries({
-				queryKey: [...DISCOUNTS_KEY, "detail", discountId],
-			});
-		},
-	});
-}
-
 export function useRemoveDiscountProducts(discountId: string) {
 	const qc = useQueryClient();
 	return useMutation({
@@ -145,9 +124,10 @@ export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
 	});
 }
 
-// Like useAddDiscountProducts, but the discount is chosen at call time (the
-// products-table picker) rather than bound at hook creation; invalidates the
-// whole discounts cache so list product counts refresh.
+// Applies an existing promotion to a set of products: the discount is chosen at
+// call time (the products-table picker), so discountId is a mutation variable
+// rather than bound at hook creation. Invalidates the whole discounts cache so
+// list product counts refresh.
 export function useApplyPromotionToProducts() {
 	const qc = useQueryClient();
 	return useMutation({
