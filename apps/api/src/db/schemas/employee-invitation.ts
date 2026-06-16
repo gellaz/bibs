@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+	check,
 	index,
 	pgTable,
 	primaryKey,
@@ -44,6 +45,10 @@ export const employeeInvitation = pgTable(
 		uniqueIndex("employee_invitation_pending_unique_idx")
 			.on(table.sellerProfileId, table.email)
 			.where(sql`${table.status} = 'pending'`),
+		check(
+			"employee_invitation_status_valid",
+			sql`${table.status} IN ('pending','accepted','expired')`,
+		),
 	],
 );
 

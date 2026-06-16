@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+	check,
 	integer,
 	jsonb,
 	pgTable,
@@ -46,6 +47,10 @@ export const pendingStoreCreation = pgTable(
 		uniqueIndex("pending_store_creation_one_open_idx")
 			.on(t.sellerProfileId)
 			.where(sql`${t.status} = 'open'`),
+		check(
+			"pending_store_creation_status_valid",
+			sql`${t.status} IN ('open','consumed','expired','canceled')`,
+		),
 	],
 );
 

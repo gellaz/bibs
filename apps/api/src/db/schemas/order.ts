@@ -95,6 +95,18 @@ export const order = pgTable(
 		check("order_shipping_cost_non_negative", sql`${table.shippingCost} >= 0`),
 		check("order_points_earned_non_negative", sql`${table.pointsEarned} >= 0`),
 		check("order_points_spent_non_negative", sql`${table.pointsSpent} >= 0`),
+		// DB-level domain guard for the state-machine columns: the varchar({enum})
+		// helper emits a bare varchar, so without these CHECKs an out-of-domain
+		// status/type could be persisted and silently bypass every CAS transition
+		// guard and the partial reservation index predicate.
+		check(
+			"order_type_valid",
+			sql`${table.type} IN ('direct','reserve_pickup','pay_pickup','pay_deliver')`,
+		),
+		check(
+			"order_status_valid",
+			sql`${table.status} IN ('pending','confirmed','ready_for_pickup','shipped','delivered','completed','cancelled','expired')`,
+		),
 	],
 );
 
@@ -167,6 +179,12 @@ export const orderItem = pgTable(
 		check(
 			"order_item_discount_percent_range",
 			sql`${table.discountPercent} IS NULL OR ${table.discountPercent} BETWEEN 1 AND 99`,
+		),
+		// Mirror products.vat_rate's allowed set on the snapshot column (nullable on
+		// historical rows). Bounds the castelletto against an impossible rate.
+		check(
+			"order_item_vat_rate_valid",
+			sql`${table.vatRate} IS NULL OR ${table.vatRate} IN (22,10,5,4,0)`,
 		),
 	],
 );

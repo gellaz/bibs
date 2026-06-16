@@ -44,14 +44,18 @@ export const pointTransaction = pgTable(
 		),
 		index("point_transaction_order_id_idx").on(table.orderId),
 		check("point_transaction_amount_positive", sql`${table.amount} > 0`),
-		// Backstop against double-award / double-refund: at most one 'earned' and
-		// one 'refunded' transaction per order. The application also guards via a
+		check(
+			"point_transaction_type_valid",
+			sql`${table.type} IN ('earned','redeemed','refunded')`,
+		),
+		// Backstop against double-award / double-refund / double-redeem: at most one
+		// transaction of each type per order. The application also guards via a
 		// compare-and-swap on the order status, but this makes it impossible at the
 		// DB level even under concurrency.
 		uniqueIndex("point_transaction_order_type_unique_idx")
 			.on(table.orderId, table.type)
 			.where(
-				sql`${table.orderId} IS NOT NULL AND ${table.type} IN ('earned', 'refunded')`,
+				sql`${table.orderId} IS NOT NULL AND ${table.type} IN ('earned', 'refunded', 'redeemed')`,
 			),
 	],
 );

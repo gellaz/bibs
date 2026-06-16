@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+	check,
 	index,
 	jsonb,
 	pgTable,
@@ -46,6 +47,14 @@ export const sellerProfileChange = pgTable(
 		uniqueIndex("seller_profile_change_pending_unique_idx")
 			.on(t.sellerProfileId, t.changeType)
 			.where(sql`${t.status} = 'pending'`),
+		check(
+			"seller_profile_change_type_valid",
+			sql`${t.changeType} IN ('vat','document','payment')`,
+		),
+		check(
+			"seller_profile_change_status_valid",
+			sql`${t.status} IN ('pending','approved','rejected')`,
+		),
 	],
 );
 

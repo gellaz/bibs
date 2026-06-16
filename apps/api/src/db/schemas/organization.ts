@@ -1,5 +1,12 @@
-import { relations } from "drizzle-orm";
-import { index, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+import {
+	check,
+	index,
+	pgTable,
+	text,
+	timestamp,
+	varchar,
+} from "drizzle-orm/pg-core";
 import { municipality } from "./location";
 import { sellerProfile } from "./seller";
 
@@ -36,7 +43,13 @@ export const organization = pgTable(
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
-	(t) => [index("organization_municipality_id_idx").on(t.municipalityId)],
+	(t) => [
+		index("organization_municipality_id_idx").on(t.municipalityId),
+		check(
+			"organization_vat_status_valid",
+			sql`${t.vatStatus} IN ('pending','verified','rejected')`,
+		),
+	],
 );
 
 export const organizationRelations = relations(organization, ({ one }) => ({
