@@ -11,7 +11,10 @@ interface ListParams {
 	search?: string;
 }
 
-export function useDiscountsList(params: ListParams) {
+export function useDiscountsList(
+	params: ListParams,
+	options?: { enabled?: boolean },
+) {
 	return useQuery({
 		queryKey: [...DISCOUNTS_KEY, "list", params],
 		queryFn: async () => {
@@ -20,6 +23,7 @@ export function useDiscountsList(params: ListParams) {
 				throw new Error(res.error.value?.message || "Errore caricamento");
 			return res.data;
 		},
+		enabled: options?.enabled,
 	});
 }
 
@@ -141,6 +145,9 @@ export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
 	});
 }
 
+// Like useAddDiscountProducts, but the discount is chosen at call time (the
+// products-table picker) rather than bound at hook creation; invalidates the
+// whole discounts cache so list product counts refresh.
 export function useApplyPromotionToProducts() {
 	const qc = useQueryClient();
 	return useMutation({

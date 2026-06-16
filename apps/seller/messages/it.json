@@ -24,6 +24,8 @@
 	"products_apply_promotion_confirm": "Applica",
 	"products_apply_promotion_product_count": "{count} prodotti",
 	"products_apply_promotion_success": "{added} prodotti aggiunti a «{title}» ({alreadyPresent} già presenti)",
+	"products_apply_promotion_success_simple": "{added} prodotti aggiunti a «{title}»",
+	"products_apply_promotion_error": "Impossibile caricare le promozioni.",
 	"products_apply_promotion_rejected": "{count} prodotti non applicabili",
 	"products_confirm_delete_title": "Eliminare definitivamente {count} prodotti?",
 	"products_confirm_delete_title_one": "Eliminare definitivamente questo prodotto?",

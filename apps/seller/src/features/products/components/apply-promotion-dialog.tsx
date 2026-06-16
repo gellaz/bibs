@@ -52,7 +52,10 @@ export function ApplyPromotionDialog({
 	onSuccess,
 }: Props) {
 	const [selectedId, setSelectedId] = useState<string | null>(null);
-	const list = useDiscountsList({ page: 1, limit: 100, state: "assignable" });
+	const list = useDiscountsList(
+		{ page: 1, limit: 100, state: "assignable" },
+		{ enabled: open },
+	);
 	const apply = useApplyPromotionToProducts();
 
 	// Reset selection on every open (also covers cancel).
@@ -71,11 +74,16 @@ export function ApplyPromotionDialog({
 				onSuccess: (res) => {
 					const r = res.data;
 					toast.success(
-						m.products_apply_promotion_success({
-							added: r.added,
-							alreadyPresent: r.alreadyPresent,
-							title: promo?.title ?? "",
-						}),
+						r.alreadyPresent > 0
+							? m.products_apply_promotion_success({
+									added: r.added,
+									alreadyPresent: r.alreadyPresent,
+									title: promo?.title ?? "",
+								})
+							: m.products_apply_promotion_success_simple({
+									added: r.added,
+									title: promo?.title ?? "",
+								}),
 					);
 					if (r.rejected.length > 0) {
 						toast.warning(
@@ -107,6 +115,12 @@ export function ApplyPromotionDialog({
 				{list.isLoading ? (
 					<div className="flex h-40 items-center justify-center">
 						<Spinner className="size-6" />
+					</div>
+				) : list.isError ? (
+					<div className="flex h-40 items-center justify-center px-6 text-center">
+						<p className="text-destructive text-sm">
+							{m.products_apply_promotion_error()}
+						</p>
 					</div>
 				) : promotions.length === 0 ? (
 					<div className="flex h-40 flex-col items-center justify-center gap-3 text-center">
