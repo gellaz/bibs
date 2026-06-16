@@ -140,3 +140,22 @@ export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
 		enabled: !!discountId,
 	});
 }
+
+export function useApplyPromotionToProducts() {
+	const qc = useQueryClient();
+	return useMutation({
+		mutationFn: async (vars: { discountId: string; productIds: string[] }) => {
+			const res = await api()
+				.seller.discounts({ discountId: vars.discountId })
+				.products.post({ productIds: vars.productIds });
+			if (res.error) throw new Error(res.error.value?.message || "Errore");
+			return res.data;
+		},
+		onSuccess: (_data, vars) => {
+			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
+			void qc.invalidateQueries({
+				queryKey: [...DISCOUNTS_KEY, "products", vars.discountId],
+			});
+		},
+	});
+}
