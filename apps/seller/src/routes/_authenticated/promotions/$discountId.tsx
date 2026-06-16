@@ -19,7 +19,7 @@ import { useState } from "react";
 import { EntityFormHeader } from "@/components/entity-form-header";
 import { SectionHeader } from "@/components/section-header";
 import { DiscountForm } from "@/features/promotions/components/discount-form";
-import { ProductSelector } from "@/features/promotions/components/product-selector";
+import { IncludedProductsList } from "@/features/promotions/components/included-products-list";
 import { PromotionStateBadge } from "@/features/promotions/components/promotion-state-badge";
 import {
 	useArchiveDiscount,
@@ -155,9 +155,7 @@ function PromotionDetailPage() {
 						title={m.promotions_section_products_title()}
 						subtitle={m.promotions_section_products_subtitle()}
 					/>
-					<ProductSelector
-						mode={{ kind: "mutate", discountId, percent: d.percent }}
-					/>
+					<IncludedProductsList discountId={discountId} />
 				</section>
 			</div>
 		</div>
