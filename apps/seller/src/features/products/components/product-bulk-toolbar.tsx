@@ -66,9 +66,10 @@ export function ProductBulkToolbar({
 				<div className="ml-auto flex gap-2">
 					{statusFilter === "active" && (
 						<>
-							{/* Le varianti seguono i colori dei badge nelle tab di stato:
-							    warning = Disabilitati, destructive = Cestino, success =
-							    ritorno ad Attivi. L'azione neutra (stock) resta primary. */}
+							{/* "Applica promozione" è outline: azione additiva
+							    secondaria. Le altre varianti seguono i colori dei badge di
+							    stato: warning = Disabilitati, destructive = Cestino, success
+							    = ritorno ad Attivi. Lo stock resta primary (CTA principale). */}
 							<Button
 								size="sm"
 								variant="outline"
