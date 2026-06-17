@@ -407,7 +407,10 @@ function ProductsListPage() {
 				},
 				cell: ({ row }) => {
 					const rate = Number(row.original.vatRate);
-					const { vat } = scorporoDisplay(row.original.price, rate);
+					const { vat } = scorporoDisplay(
+						row.original.appliedDiscount?.discountedPrice ?? row.original.price,
+						rate,
+					);
 					return (
 						<div className="flex items-center gap-1.5 tabular-nums">
 							<span>{formatPriceEur(vat)}</span>
