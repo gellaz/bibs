@@ -1,4 +1,6 @@
 import { GENERIC_FONTS } from '../../shared/constants.mjs';
+import { isNeutralColor } from '../../shared/color.mjs';
+import { checkSourceDesignSystem } from '../../design-system.mjs';
 import { isFullPage } from '../../shared/page.mjs';
 import { finding } from '../../findings.mjs';
 import { filterByProviders } from '../../registry/antipatterns.mjs';
@@ -36,10 +38,11 @@ function shouldRunPageAnalyzers(content, filePath) {
 }
 
 function isNeutralBorderColor(str) {
-  const m = str.match(/solid\s+(#[0-9a-f]{3,8}|rgba?\([^)]+\)|\w+)/i);
+  const m = str.match(/solid\s+((?:rgba?|hsla?|oklch|oklab|lab|lch|hwb|color)\([^)]*\)|#[0-9a-f]{3,8}\b|[a-z]+)/i);
   if (!m) return false;
   const c = m[1].toLowerCase();
   if (['gray', 'grey', 'silver', 'white', 'black', 'transparent', 'currentcolor'].includes(c)) return true;
+  if (/^(?:rgba?|hsla?|oklch|oklab|lab|lch|hwb)\(/i.test(c)) return isNeutralColor(c);
   const hex = c.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/);
   if (hex) {
     const [r, g, b] = [parseInt(hex[1], 16), parseInt(hex[2], 16), parseInt(hex[3], 16)];
@@ -56,10 +59,10 @@ function isNeutralBorderColor(str) {
 const REGEX_MATCHERS = [
   // --- Side-tab ---
   { id: 'side-tab', regex: /\bborder-[lrse]-(\d+)\b/g,
-    test: (m, line) => { const n = +m[1]; return hasRounded(line) ? n >= 1 : n >= 4; },
+    test: (m, line) => { const n = +m[1]; return hasRounded(line) ? n >= 2 : n >= 4; },
     fmt: (m) => m[0] },
   { id: 'side-tab', regex: /border-(?:left|right)\s*:\s*(\d+)px\s+solid[^;]*/gi,
-    test: (m, line) => { if (isSafeElement(line)) return false; if (isNeutralBorderColor(m[0])) return false; const n = +m[1]; return hasBorderRadius(line) ? n >= 1 : n >= 3; },
+    test: (m, line) => { if (isSafeElement(line)) return false; if (isNeutralBorderColor(m[0])) return false; const n = +m[1]; return hasBorderRadius(line) ? n >= 2 : n >= 3; },
     fmt: (m) => m[0].replace(/\s*;?\s*$/, '') },
   { id: 'side-tab', regex: /border-(?:left|right)-width\s*:\s*(\d+)px/gi,
     test: (m, line) => !isSafeElement(line) && +m[1] >= 3,
@@ -501,6 +504,15 @@ function detectText(content, filePath, options = {}) {
       profile,
       phase: 'css-in-js',
     }));
+  }
+
+  if (options?.designSystem) {
+    findings.push(...profileFindings(profile, {
+      engine: 'regex',
+      phase: 'source',
+      ruleId: 'design-system',
+      target: filePath,
+    }, () => checkSourceDesignSystem(content, filePath, { designSystem: options.designSystem })));
   }
 
   // Deduplicate findings (same antipattern + similar snippet, within 2 lines)

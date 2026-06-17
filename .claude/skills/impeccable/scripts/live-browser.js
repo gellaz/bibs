@@ -2681,12 +2681,12 @@
     });
     const check = el('span', {
       fontSize: '15px', lineHeight: '1', flexShrink: '0',
-      color: 'oklch(45% 0.15 145)',
+      color: 'oklch(45% 0.18 145)',
     });
     check.textContent = '\u2713';
     row.appendChild(check);
     const label = el('span', {
-      fontSize: '12px', color: 'oklch(35% 0.1 145)', fontWeight: '600',
+      fontSize: '12px', color: 'oklch(49% 0.08 188)', fontWeight: '600',
     });
     label.textContent = 'Variant applied';
     row.appendChild(label);
@@ -6489,10 +6489,13 @@
     ) {
       return;
     }
+    if (isPageEditableElement(deepActive) && !isInlineEditActive(deepActive)) {
+      return;
+    }
     // While a contenteditable text-leaf is focused, let the browser handle
     // all keys except Escape. Escape cancels the current edit (restores
     // original text) and blurs without saving, staying in CONFIGURING.
-    if (e.target.isContentEditable && inlineEditRows.some((r) => r.el === e.target)) {
+    if (e.target.isContentEditable && isInlineEditActive(e.target)) {
       if (e.key !== 'Escape') return;
       e.preventDefault();
       e.stopPropagation();
@@ -8186,18 +8189,18 @@ void main() {
   let voiceInterimBase = '';
   /** @type {{ mode: 'steer'|'configure', input: HTMLInputElement, submit: () => void, beforeStart?: () => void } | null} */
   let voiceCtx = null;
-  const PAGE_CHAT_COLLAPSED_W = '88px';
+  const PAGE_CHAT_COLLAPSED_W = '104px';
   const PAGE_CHAT_PROCESSING_W = '76px';
   const PAGE_CHAT_PLACEHOLDER_COLLAPSED = 'Steer…';
   const PAGE_CHAT_PLACEHOLDER_EXPANDED = 'Steer the page…';
   const STEER_AWAIT_TIMEOUT_MS = 120000;
   const AGENT_STATUS_POLL_MS = 5000;
-  const AGENT_DISCONNECTED_MARK = 'oklch(56% 0.032 82 / 0.78)';
+  const AGENT_DISCONNECTED_MARK = 'oklch(62% 0 0 / 0.78)';
   const AGENT_DISCONNECTED_TIP = 'Agent disconnected - run live-poll.mjs to connect';
   const GLOBAL_BAR_SECTION_GAP = 8;
   const GLOBAL_BAR_INNER_GAP = 2;
   const GLOBAL_BAR_INNER_PAD_LEFT = 2;
-  const PAGE_CHAT_EXPANDED_W = 'min(280px, 38vw)';
+  const PAGE_CHAT_EXPANDED_MAX_W = 280;
   const ICON_PAGE_CHAT =
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
   const ICON_PAGE_VOICE =
@@ -8259,8 +8262,8 @@ void main() {
       // Neutral hairline for internal control borders / dividers (was a warm
       // gold rule that read as muddy champagne edges on the pill / input / count).
       hairline: 'oklch(92% 0 0 / 0.12)',
-      text: 'oklch(84% 0.035 82)',
-      textDim: 'oklch(63% 0.024 82)',
+      text: 'oklch(91% 0 0)',
+      textDim: 'oklch(72% 0 0)',
       accent: C.brand,
       accentSoft: C.brandSoft,
       exitHover: 'oklch(58% 0.15 35 / 0.18)',
@@ -8275,6 +8278,52 @@ void main() {
 
   function pageChatPalette() {
     return barPaletteForTheme(globalBarEl?.dataset.theme || detectPageTheme());
+  }
+
+  function globalBarModeToggles() {
+    return [
+      uiGetById(PREFIX + '-pick-toggle'),
+      uiGetById(PREFIX + '-insert-toggle'),
+      uiGetById(PREFIX + '-detect-toggle'),
+      uiGetById(PREFIX + '-design-toggle'),
+    ].filter(Boolean);
+  }
+
+  function applyGlobalBarLabelState(expandInactive, forceCollapse = false) {
+    globalBarModeToggles().forEach((toggle) => {
+      if (forceCollapse) toggle._collapseLabel?.(true);
+      else if (expandInactive || toggle.dataset.active === 'true') toggle._expandLabel?.();
+      else toggle._collapseLabel?.();
+    });
+  }
+
+  function syncGlobalBarExpandedLabels(expanded = globalBarEl?.matches(':hover')) {
+    const expandInactive = !!(expanded && !pageChatExpanded);
+    applyGlobalBarLabelState(expandInactive, pageChatExpanded);
+
+    if (expandInactive && globalBarEl && globalBarEl.scrollWidth > window.innerWidth - 16) {
+      applyGlobalBarLabelState(false);
+    }
+  }
+
+  function pageChatCollapsedWidthPx() {
+    const parsed = parseFloat(PAGE_CHAT_COLLAPSED_W);
+    return Number.isFinite(parsed) ? parsed : 104;
+  }
+
+  function pageChatExpandedWidth() {
+    if (!pageChatEl || !globalBarEl) return PAGE_CHAT_EXPANDED_MAX_W + 'px';
+    const currentChatWidth = pageChatEl.getBoundingClientRect().width || pageChatCollapsedWidthPx();
+    const barWidth = Math.max(globalBarEl.getBoundingClientRect().width || 0, globalBarEl.scrollWidth || 0);
+    const nonChatWidth = Math.max(0, barWidth - currentChatWidth);
+    const available = window.innerWidth - 16 - nonChatWidth;
+    const next = Math.max(pageChatCollapsedWidthPx(), Math.min(PAGE_CHAT_EXPANDED_MAX_W, available));
+    return Math.round(next) + 'px';
+  }
+
+  function syncPageChatExpandedWidth() {
+    if (!pageChatEl || !pageChatExpanded) return;
+    pageChatEl.style.width = pageChatExpandedWidth();
   }
 
   function syncPageChatChrome() {
@@ -8312,6 +8361,21 @@ void main() {
       && !steerLocked;
   }
 
+  function isPageEditableElement(el) {
+    if (!el || own(el)) return false;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName || '')) return true;
+    return !!el.isContentEditable;
+  }
+
+  function isInlineEditActive(el) {
+    return !!el && inlineEditRows.some((r) => r.el === el);
+  }
+
+  function isPageEditableActive() {
+    const active = activeElementDeep();
+    return isPageEditableElement(active) && !isInlineEditActive(active);
+  }
+
   function pageHasHostTextSelection() {
     const sel = window.getSelection?.();
     if (!sel || sel.isCollapsed) return false;
@@ -8325,6 +8389,7 @@ void main() {
   function shouldSteerAutoFocus() {
     return shouldFocusSteerChat()
       && !steerFocusSuspended
+      && !isPageEditableActive()
       && performance.now() >= steerFocusPauseUntil;
   }
 
@@ -8562,7 +8627,8 @@ void main() {
     if (!pageChatEl || !pageChatInput) return false;
     pageChatExpanded = true;
     pageChatEl.dataset.expanded = 'true';
-    pageChatEl.style.width = PAGE_CHAT_EXPANDED_W;
+    syncGlobalBarExpandedLabels(false);
+    pageChatEl.style.width = pageChatExpandedWidth();
     pageChatEl.style.cursor = steerLocked ? 'default' : 'text';
     pageChatInput.placeholder = PAGE_CHAT_PLACEHOLDER_EXPANDED;
     if (pageChatHint) {
@@ -8657,7 +8723,7 @@ void main() {
     pageChatEl.setAttribute('aria-label', 'Steer the page');
     pageChatExpanded = keepExpanded;
     pageChatEl.dataset.expanded = keepExpanded ? 'true' : 'false';
-    pageChatEl.style.width = keepExpanded ? PAGE_CHAT_EXPANDED_W : PAGE_CHAT_COLLAPSED_W;
+    pageChatEl.style.width = keepExpanded ? pageChatExpandedWidth() : PAGE_CHAT_COLLAPSED_W;
     pageChatEl.style.cursor = 'pointer';
     if (pageChatInput) {
       pageChatInput.disabled = false;
@@ -8971,6 +9037,7 @@ void main() {
     pageChatEl.dataset.expanded = 'false';
     pageChatEl.style.width = PAGE_CHAT_COLLAPSED_W;
     pageChatEl.style.cursor = 'pointer';
+    syncGlobalBarExpandedLabels(globalBarEl?.matches(':hover'));
     if (blur) {
       pageChatInput.blur();
       pageChatInput.style.pointerEvents = 'none';
@@ -9064,9 +9131,9 @@ void main() {
         '#' + PREFIX + '-page-chat[data-voice-listening="true"] { border-color: oklch(70% 0.12 188 / 0.45); }' +
         '#' + PREFIX + '-page-chat-voice[data-listening="true"] svg { animation: impeccable-voice-pulse 1.1s ease-in-out infinite; }' +
         '@media (prefers-reduced-motion: reduce) { #' + PREFIX + '-page-chat-voice[data-listening="true"] svg { animation: none; opacity: 1; } }' +
-        '#' + PREFIX + '-page-chat-input::placeholder { color: oklch(63% 0.024 82); opacity: 1; }' +
+        '#' + PREFIX + '-page-chat-input::placeholder { color: oklch(72% 0 0); opacity: 1; }' +
         '#' + PREFIX + '-page-chat-input { caret-color: oklch(84% 0.19 80.46); }' +
-        '#' + PREFIX + '-page-chat[data-input-focused="true"]:not([data-expanded="true"]) #' + PREFIX + '-page-chat-input::placeholder { color: oklch(72% 0.024 82); }' +
+        '#' + PREFIX + '-page-chat[data-input-focused="true"]:not([data-expanded="true"]) #' + PREFIX + '-page-chat-input::placeholder { color: oklch(72% 0 0); }' +
         '#' + PREFIX + '-page-chat-voice:hover { background: oklch(78% 0.12 82 / 0.12); }';
       uiAppendStyle(s);
     }
@@ -9270,6 +9337,7 @@ void main() {
       zIndex: Z.bar + 5,
       display: 'flex', alignItems: 'stretch',
       gap: '0',
+      width: 'max-content',
       background: P.surface,
       border: '1px solid ' + P.border,
       borderRadius: '8px',
@@ -9277,6 +9345,8 @@ void main() {
       fontFamily: FONT, fontSize: '12px', lineHeight: '1',
       opacity: '0',
       overflow: 'hidden',          // clip the full-bleed brand mark to the bar radius
+      maxWidth: 'calc(100vw - 16px)',
+      boxSizing: 'border-box',
       transition: 'opacity 0.3s ' + EASE + ', transform 0.3s ' + EASE,
     });
     globalBarEl.id = PREFIX + '-global-bar';
@@ -9306,7 +9376,7 @@ void main() {
     const agentDot = el('span', {
       position: 'absolute', right: '-1px', bottom: '7px',
       width: '6px', height: '6px', borderRadius: '50%',
-      background: 'oklch(78% 0.14 75)',
+      background: 'oklch(77% 0.13 82)',
       boxShadow: '0 0 0 2px ' + P.surface,
       display: 'none', pointerEvents: 'none',
     });
@@ -9325,6 +9395,7 @@ void main() {
     const inner = el('div', {
       display: 'flex', alignItems: 'center',
       padding: '4px 5px 4px ' + GLOBAL_BAR_INNER_PAD_LEFT + 'px', gap: GLOBAL_BAR_INNER_GAP + 'px',
+      flex: '0 0 auto',
     });
     inner.id = PREFIX + '-global-bar-inner';
     globalBarEl.appendChild(inner);
@@ -9333,7 +9404,10 @@ void main() {
     function makeIconBtn({ id, svg, label, ariaLabel, labelFont, onClick }) {
       const b = el('button', {
         position: 'relative',
-        display: 'inline-flex', alignItems: 'center',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        boxSizing: 'border-box',
+        flex: '0 0 auto',
+        minWidth: '30px',
         padding: '6px 8px', borderRadius: '7px',
         border: 'none', background: 'transparent',
         color: P.textDim, fontFamily: FONT, fontSize: '11.5px', fontWeight: '500',
@@ -9352,8 +9426,8 @@ void main() {
         if (!labelEl) return;
         labelEl.style.maxWidth = '120px'; labelEl.style.opacity = '1'; labelEl.style.marginLeft = '6px'; labelEl.style.transform = 'translateX(0)';
       };
-      const collapse = () => {
-        if (!labelEl || b.dataset.active === 'true') return;
+      const collapse = (force = false) => {
+        if (!labelEl || (!force && b.dataset.active === 'true')) return;
         labelEl.style.maxWidth = '0'; labelEl.style.opacity = '0'; labelEl.style.marginLeft = '0'; labelEl.style.transform = 'translateX(-4px)';
       };
       // Per-button hover only changes color (no layout). The label expand/
@@ -9408,11 +9482,11 @@ void main() {
     // DESIGN.md panel toggle - quartet of color squares as the mark.
     const designBtn = makeIconBtn({
       id: PREFIX + '-design-toggle',
-      svg: `<span style="display:inline-grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:14px;height:14px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px oklch(58% 0.065 82 / 0.55);flex-shrink:0">
+      svg: `<span style="display:inline-grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:14px;height:14px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 1px oklch(92% 0 0 / 0.13);flex-shrink:0">
         <span style="background:oklch(84% 0.19 80.46)"></span>
         <span style="background:oklch(70% 0.12 188)"></span>
-        <span style="background:oklch(84% 0.035 82)"></span>
-        <span style="background:oklch(34% 0.014 82)"></span>
+        <span style="background:oklch(91% 0 0)"></span>
+        <span style="background:oklch(34% 0 0)"></span>
       </span>`,
       label: 'DESIGN.md',
       ariaLabel: 'Toggle DESIGN.md panel',
@@ -9604,6 +9678,7 @@ void main() {
       width: '1px', height: '18px',
       background: P.hairline,
       margin: '0 4px 0 2px',
+      flexShrink: '0',
     });
     inner.appendChild(divider);
 
@@ -9620,6 +9695,7 @@ void main() {
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       padding: '0', boxSizing: 'border-box',
       width: '24px', height: '24px', borderRadius: '6px',
+      flexShrink: '0',
       border: 'none', background: 'transparent',
       color: P.textDim, fontFamily: FONT, fontSize: '0', lineHeight: '0',
       cursor: 'pointer', transition: 'color 0.12s ease, background 0.12s ease',
@@ -9632,16 +9708,16 @@ void main() {
     exitBtn.addEventListener('click', () => { sendEvent({ type: 'exit' }); teardown(); });
     inner.appendChild(exitBtn);
 
-    // Bar-level hover: expand every toggle's label at once; collapse on leave.
+    // Bar-level hover: expand mode labels unless Steer is using the space.
     // Buttons with dataset.active="true" ignore collapse (their label stays).
-    const toggles = [pickBtn, insertBtn, detectBtn, designBtn];
     globalBarEl.addEventListener('mouseenter', () => {
-      toggles.forEach((t) => t._expandLabel && t._expandLabel());
+      syncGlobalBarExpandedLabels(true);
+      syncPageChatExpandedWidth();
       schedulePendingDockPosition();
       setTimeout(schedulePendingDockPosition, 260);
     });
     globalBarEl.addEventListener('mouseleave', () => {
-      toggles.forEach((t) => t._collapseLabel && t._collapseLabel());
+      syncGlobalBarExpandedLabels(false);
       schedulePendingDockPosition();
       setTimeout(schedulePendingDockPosition, 260);
     });
@@ -9659,6 +9735,7 @@ void main() {
       pendingDockResizeObserver.observe(globalBarEl);
     }
     window.addEventListener('resize', positionPendingDock);
+    window.addEventListener('resize', syncPageChatExpandedWidth);
 
     requestAnimationFrame(() => {
       globalBarEl.style.opacity = '1';
@@ -9705,9 +9782,7 @@ void main() {
     // If the bar is currently under the cursor, keep all labels expanded -
     // otherwise clicking a toggle that deactivates (e.g. closing DESIGN.md)
     // would collapse its label while the user's mouse is still on the bar.
-    if (globalBarEl && globalBarEl.matches(':hover')) {
-      [pickToggle, insertToggle, detectToggle, designToggle].forEach((t) => t?._expandLabel?.());
-    }
+    syncGlobalBarExpandedLabels(globalBarEl && globalBarEl.matches(':hover'));
 
     if (detectBadge) {
       detectBadge.style.display = (detectActive && detectCount > 0) ? 'inline' : 'none';
@@ -9996,8 +10071,8 @@ void main() {
     meta:     'oklch(55% 0 0)',
     hairline: 'oklch(88% 0 0)',
     hairlineSoft: 'oklch(92% 0 0)',
-    amber:    'oklch(70% 0.13 65)',         // stale-hint accent
-    amberBg:  'oklch(95% 0.05 80)',
+    amber:    'oklch(77% 0.13 82)',         // stale-hint accent
+    amberBg:  'oklch(89% 0.055 84)',
   };
 
   function designPanelCss(BP) {
@@ -10088,7 +10163,7 @@ void main() {
       }
       .empty strong { color: ${DP.ink}; display: block; margin-bottom: 6px; font-size: 14px; }
       .empty code { font-family: ${MONO}; background: ${DP.canvas}; padding: 1px 6px; border-radius: 4px; font-size: 12px; color: ${DP.ink}; }
-      .error { color: oklch(45% 0.15 25); }
+      .error { color: oklch(58% 0.15 35); }
 
       /* Stale hint */
       .stale {
@@ -10240,8 +10315,8 @@ void main() {
         content: ''; position: absolute; left: 4px; top: 13px;
         width: 8px; height: 8px; border-radius: 50%;
       }
-      .coll .do::before { background: oklch(62% 0.16 145); }
-      .coll .dont::before { background: oklch(58% 0.22 25); }
+      .coll .do::before { background: oklch(45% 0.18 145); }
+      .coll .dont::before { background: oklch(58% 0.15 35); }
 
       .coll .overview-body {
         font-size: 12px; line-height: 1.55; color: ${DP.ink2};
