@@ -15,6 +15,7 @@ import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
 import type { VatRate } from "@/lib/vat";
+import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
 
 // ── Brand resolution helper ───────────────────────────────────────────────────
@@ -348,7 +349,22 @@ export async function listProducts(params: ListProductsParams) {
 	const indexById = new Map(productIds.map((id, idx) => [id, idx]));
 	data.sort((a, b) => (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0));
 
-	return { data, pagination: { page, limit, total } };
+	const discountMap = await getBestActiveDiscounts(data.map((p) => p.id));
+	const annotated = data.map((p) => {
+		const d = discountMap.get(p.id);
+		return {
+			...p,
+			appliedDiscount: d
+				? {
+						percent: d.percent,
+						discountedPrice: d.discountedPrice,
+						title: d.title,
+					}
+				: null,
+		};
+	});
+
+	return { data: annotated, pagination: { page, limit, total } };
 }
 
 // ── listCategoriesInUse ───────────────────────────────────────────────────────
