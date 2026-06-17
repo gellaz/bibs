@@ -12,11 +12,7 @@ import {
 	InputGroupInput,
 } from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import {
-	formatPriceEur,
-	Price,
-	scorporoDisplay,
-} from "@bibs/ui/components/price";
+import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -24,6 +20,7 @@ import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { PackageIcon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
+import { ProductPriceCell } from "@/features/products/components/product-price-cell";
 import { ProductRowActions } from "@/features/products/components/product-row-actions";
 import {
 	type ProductStatusFilter,
@@ -392,20 +389,13 @@ function ProductsListPage() {
 					cellClassName: "text-sm",
 					menuLabel: "Prezzo",
 				},
-				cell: ({ row }) => {
-					const { net } = scorporoDisplay(
-						row.original.price,
-						Number(row.original.vatRate),
-					);
-					return (
-						<div className="flex flex-col leading-tight">
-							<Price value={row.original.price} />
-							<span className="text-muted-foreground text-xs tabular-nums">
-								netto {formatPriceEur(net)}
-							</span>
-						</div>
-					);
-				},
+				cell: ({ row }) => (
+					<ProductPriceCell
+						price={row.original.price}
+						vatRate={row.original.vatRate}
+						appliedDiscount={row.original.appliedDiscount}
+					/>
+				),
 			},
 			{
 				id: "vat",
