@@ -51,7 +51,7 @@ function PromotionDetailPage() {
 
 	return (
 		<div className="-m-4 xl:flex xl:h-full xl:flex-col">
-			<div className="grid xl:flex-1 xl:grid-cols-[2fr_3fr] xl:gap-x-0">
+			<div className="grid xl:flex-1 xl:grid-cols-2 xl:gap-x-0">
 				<div className="space-y-6 p-4 pb-6 xl:p-6">
 					<EntityFormHeader
 						mode="edit"
