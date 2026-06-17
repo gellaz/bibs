@@ -98,14 +98,6 @@ export function ProductBulkToolbar({
 					)}
 					{statusFilter === "disabled" && (
 						<>
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={() => setApplyPromoOpen(true)}
-							>
-								<TagIcon className="size-4" />
-								{m.products_apply_promotion_action()}
-							</Button>
 							<Button size="sm" variant="success" onClick={apply("active")}>
 								<EyeIcon className="size-4" />
 								{m.products_action_enable()}

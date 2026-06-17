@@ -75,7 +75,7 @@ export function ProductRowActions({
 						</DropdownMenuItem>
 					)}
 
-					{status !== "trashed" && (
+					{status === "active" && (
 						<DropdownMenuItem
 							className="whitespace-nowrap"
 							onSelect={() => setApplyPromoOpen(true)}
