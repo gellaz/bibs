@@ -52,6 +52,8 @@ import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestBrand,
 	createTestCategory,
+	createTestDiscount,
+	createTestDiscountProduct,
 	createTestMacroCategory,
 	createTestProduct,
 	createTestSeller,
@@ -158,6 +160,55 @@ describe("listProducts", () => {
 
 		expect(result.data.map((p) => p.name)).toEqual(["InA"]);
 		expect(result.pagination.total).toBe(1);
+	});
+});
+
+describe("listProducts appliedDiscount annotation", () => {
+	it("annotates a product in a running discount", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id, {
+			name: "Scontato",
+			price: "100.00",
+		});
+		const d = await createTestDiscount(db, seller.profile.id, {
+			title: "Saldi estivi",
+			percent: 25,
+		});
+		await createTestDiscountProduct(db, d.id, p.id);
+
+		const result = await listProducts({ sellerProfileId: seller.profile.id });
+		const row = result.data.find((r) => r.id === p.id);
+		expect(row?.appliedDiscount).toEqual({
+			percent: 25,
+			discountedPrice: "75.00",
+			title: "Saldi estivi",
+		});
+	});
+
+	it("is null for a product with no discount", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id);
+
+		const result = await listProducts({ sellerProfileId: seller.profile.id });
+		expect(result.data.find((r) => r.id === p.id)?.appliedDiscount).toBeNull();
+	});
+
+	it("is null when the only discount is paused (not active)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id, {
+			price: "50.00",
+		});
+		const d = await createTestDiscount(db, seller.profile.id, {
+			percent: 30,
+			status: "paused",
+		});
+		await createTestDiscountProduct(db, d.id, p.id);
+
+		const result = await listProducts({ sellerProfileId: seller.profile.id });
+		expect(result.data.find((r) => r.id === p.id)?.appliedDiscount).toBeNull();
 	});
 });
 

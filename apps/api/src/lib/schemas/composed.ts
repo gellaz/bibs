@@ -107,6 +107,20 @@ export const ProductWithRelationsSchema = t.Object({
 	brand: t.Nullable(BrandSchema),
 });
 
+export const AppliedDiscountSchema = t.Object({
+	percent: t.Integer({ minimum: 1, maximum: 99 }),
+	discountedPrice: t.String({ description: "Prezzo scontato (numeric.2)" }),
+	title: t.String(),
+});
+
+// Seller product list item = product with relations + the best running discount
+// (null when none). Separate from ProductWithRelationsSchema so the single-product
+// GET that also uses it stays unchanged.
+export const SellerProductListItemSchema = t.Object({
+	...ProductWithRelationsSchema.properties,
+	appliedDiscount: t.Nullable(AppliedDiscountSchema),
+});
+
 // StoreProduct + product (for order items)
 const StoreProductWithProduct = t.Object({
 	...StoreProductSchema.properties,

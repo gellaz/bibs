@@ -18,6 +18,7 @@ import {
 	ProductStatusBody,
 	ProductStatusCounts,
 	ProductWithRelationsSchema,
+	SellerProductListItemSchema,
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
@@ -162,7 +163,7 @@ export const productsRoutes = new Elysia()
 					),
 				}),
 			]),
-			response: withErrors({ 200: okPageRes(ProductWithRelationsSchema) }),
+			response: withErrors({ 200: okPageRes(SellerProductListItemSchema) }),
 			detail: {
 				summary: "Lista prodotti del venditore",
 				description:
