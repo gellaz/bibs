@@ -43,7 +43,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 			},
 			{
 				rel: "stylesheet",
-				href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap",
+				href: "https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap",
 			},
 			{ rel: "stylesheet", href: appCss },
 		],
