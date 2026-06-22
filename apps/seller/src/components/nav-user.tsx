@@ -12,30 +12,24 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
+import {
+	segmentedTrayClassName,
+	segmentedTrayItemClassName,
+	ThemeToggle,
+} from "@bibs/ui/components/theme-toggle";
 import { ToggleGroup, ToggleGroupItem } from "@bibs/ui/components/toggle-group";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
 	LogOutIcon,
-	MonitorIcon,
-	MoonIcon,
 	MoreHorizontalIcon,
-	SunIcon,
 	UserIcon,
 	UsersIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { SellerRoleBadge } from "@/components/seller-role-badge";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { authClient } from "@/lib/auth-client";
 import { getLocale, locales, setLocale } from "@/paraglide/runtime";
-
-type ThemeMode = "light" | "dark" | "auto";
-
-const TRAY_CONTAINER = "rounded-lg bg-accent p-1 dark:bg-background";
-
-const TRAY_ITEM =
-	"rounded-md border-0 bg-transparent text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground dark:hover:bg-accent/50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs dark:aria-pressed:bg-accent data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-xs data-[state=on]:hover:bg-background data-[state=on]:hover:text-foreground dark:data-[state=on]:bg-accent dark:data-[state=on]:hover:bg-accent";
 
 const LOCALE_FLAGS: Record<string, string> = {
 	it: "🇮🇹",
@@ -47,60 +41,11 @@ const LOCALE_NAMES: Record<string, string> = {
 	en: "English",
 };
 
-function getInitialMode(): ThemeMode {
-	if (typeof window === "undefined") return "auto";
-	const stored = window.localStorage.getItem("theme");
-	if (stored === "light" || stored === "dark" || stored === "auto") {
-		return stored;
-	}
-	return "auto";
-}
-
-function applyThemeMode(mode: ThemeMode) {
-	const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-	const resolved = mode === "auto" ? (prefersDark ? "dark" : "light") : mode;
-	document.documentElement.classList.remove("light", "dark");
-	document.documentElement.classList.add(resolved);
-	if (mode === "auto") {
-		document.documentElement.removeAttribute("data-theme");
-	} else {
-		document.documentElement.setAttribute("data-theme", mode);
-	}
-	document.documentElement.style.colorScheme = resolved;
-}
-
-function useThemeMode() {
-	const [mode, setMode] = useState<ThemeMode>("auto");
-
-	useEffect(() => {
-		const initialMode = getInitialMode();
-		setMode(initialMode);
-		applyThemeMode(initialMode);
-	}, []);
-
-	useEffect(() => {
-		if (mode !== "auto") return;
-		const media = window.matchMedia("(prefers-color-scheme: dark)");
-		const onChange = () => applyThemeMode("auto");
-		media.addEventListener("change", onChange);
-		return () => media.removeEventListener("change", onChange);
-	}, [mode]);
-
-	function changeMode(next: ThemeMode) {
-		setMode(next);
-		applyThemeMode(next);
-		window.localStorage.setItem("theme", next);
-	}
-
-	return [mode, changeMode] as const;
-}
-
 export function NavUser() {
 	const { isMobile } = useSidebar();
 	const { data: session } = authClient.useSession();
 	const navigate = useNavigate();
 	const isOwner = useIsOwner();
-	const [themeMode, setThemeMode] = useThemeMode();
 	const currentLocale = getLocale();
 
 	if (!session?.user) return null;
@@ -172,45 +117,7 @@ export function NavUser() {
 						<DropdownMenuSeparator />
 
 						<div className="flex flex-col gap-1 py-1">
-							<div className="flex items-center justify-between gap-3 px-2 py-1">
-								<span className="text-xs font-medium text-muted-foreground">
-									Aspetto
-								</span>
-								<ToggleGroup
-									type="single"
-									value={themeMode}
-									onValueChange={(value) => {
-										if (!value) return;
-										setThemeMode(value as ThemeMode);
-									}}
-									size="sm"
-									spacing={1}
-									aria-label="Aspetto"
-									className={TRAY_CONTAINER}
-								>
-									<ToggleGroupItem
-										value="light"
-										aria-label="Chiaro"
-										className={TRAY_ITEM}
-									>
-										<SunIcon />
-									</ToggleGroupItem>
-									<ToggleGroupItem
-										value="dark"
-										aria-label="Scuro"
-										className={TRAY_ITEM}
-									>
-										<MoonIcon />
-									</ToggleGroupItem>
-									<ToggleGroupItem
-										value="auto"
-										aria-label="Sistema"
-										className={TRAY_ITEM}
-									>
-										<MonitorIcon />
-									</ToggleGroupItem>
-								</ToggleGroup>
-							</div>
+							<ThemeToggle />
 							<div className="flex items-center justify-between gap-3 px-2 py-1">
 								<span className="text-xs font-medium text-muted-foreground">
 									Lingua
@@ -225,7 +132,7 @@ export function NavUser() {
 									size="sm"
 									spacing={1}
 									aria-label="Lingua"
-									className={TRAY_CONTAINER}
+									className={segmentedTrayClassName}
 								>
 									{locales.map((locale) => {
 										const name = LOCALE_NAMES[locale] ?? locale.toUpperCase();
@@ -235,7 +142,7 @@ export function NavUser() {
 												value={locale}
 												aria-label={name}
 												title={name}
-												className={`px-2 text-base leading-none ${TRAY_ITEM}`}
+												className={`px-2 text-base leading-none ${segmentedTrayItemClassName}`}
 											>
 												<span aria-hidden="true">
 													{LOCALE_FLAGS[locale] ?? locale.toUpperCase()}
