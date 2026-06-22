@@ -73,17 +73,21 @@ export async function searchProducts(params: SearchParams) {
 
 	const hasGeo = lat !== undefined && lng !== undefined;
 
+	// Stessa accortezza della subquery `images`: dentro un campo SELECT le
+	// Column interpolate non vengono qualificate, e qui l'interna ha due tabelle
+	// (store_products + stores) entrambe con `id` → "id" sarebbe ambiguo. Alias
+	// espliciti (sp, s) e correlazione letterale su products.id.
 	const distanceExpr = hasGeo
 		? sql`(
           SELECT MIN(ST_Distance(
-            ${store.location}::geography,
+            s.location::geography,
             ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
           ))
-          FROM ${storeProduct}
-          INNER JOIN ${store} ON ${store.id} = ${storeProduct.storeId}
-          WHERE ${storeProduct.productId} = ${product.id}
-          AND ${storeProduct.stock} > 0
-          AND ${store.deletedAt} IS NULL
+          FROM ${storeProduct} sp
+          INNER JOIN ${store} s ON s.id = sp.store_id
+          WHERE sp.product_id = products.id
+          AND sp.stock > 0
+          AND s.deleted_at IS NULL
         )`
 		: sql`0`;
 
@@ -112,14 +116,21 @@ export async function searchProducts(params: SearchParams) {
 				price: product.price,
 				distance: sql<number>`${distanceExpr}`.as("distance"),
 				rank: sql<number>`${rankExpr}`.as("rank"),
+				// NB: in un `sql` template usato come campo della SELECT, Drizzle
+				// rende le Column interpolate SENZA qualificarle con la tabella
+				// (es. ${product.id} → "id"). In una subquery correlata "id" verrebbe
+				// risolto sulla tabella interna (product_images), spezzando la
+				// correlazione (product_id = id → sempre vuoto). Quindi: alias
+				// esplicito (pi) per l'interna e riferimento letterale products.id
+				// per la tabella esterna.
 				images: sql<{ id: string; url: string; position: number }[]>`(
           SELECT coalesce(json_agg(json_build_object(
-            'id', ${productImage.id},
-            'url', ${productImage.url},
-            'position', ${productImage.position}
-          ) ORDER BY ${productImage.position}), '[]'::json)
-          FROM ${productImage}
-          WHERE ${productImage.productId} = ${product.id}
+            'id', pi.id,
+            'url', pi.url,
+            'position', pi.position
+          ) ORDER BY pi.position), '[]'::json)
+          FROM ${productImage} pi
+          WHERE pi.product_id = products.id
         )`.as("images"),
 			})
 			.from(product)
