@@ -17,7 +17,7 @@ jobs:
     name: Lint (Biome)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run lint
@@ -26,7 +26,7 @@ jobs:
     name: Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       # pretypecheck hooks compile Paraglide messages before tsc in each frontend.
@@ -37,7 +37,7 @@ jobs:
     name: API tests (unit + integration)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       # Integration tests spin up Postgres/PostGIS via testcontainers; Docker is preinstalled on ubuntu-latest.
