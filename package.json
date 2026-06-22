@@ -30,7 +30,7 @@
 		"skills:update": "bunx skills update --project --yes && printf 'Y\\n' | npx --yes impeccable skills update && rm -rf .github/skills"
 	},
 	"catalog": {
-		"@aws-sdk/client-s3": "^3.1073.0",
+		"@aws-sdk/client-s3": "^3.1074.0",
 		"@elysiajs/eden": "^1.4.9",
 		"@hookform/resolvers": "^5.4.0",
 		"@inlang/paraglide-js": "^2.20.1",
