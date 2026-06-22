@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.24
+# syntax=docker/dockerfile:1.25
 
 # ---------- Build stage ----------
 # Installs the full monorepo workspace graph (dev deps included — the bun
