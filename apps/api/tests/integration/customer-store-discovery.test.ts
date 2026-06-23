@@ -289,6 +289,46 @@ describe("searchStores — open status", () => {
 	});
 });
 
+describe("searchStores — ordering precedence", () => {
+	it("relevance dominates distance: prefix-match far away ranks before contains-match nearby", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		// "Libreria Milano" is in Milan (far from Rome), name starts with "libr" → relevance tier 2
+		await visibleStore(profile.id, { name: "Libreria Milano", ...MILAN });
+		// "Centro Libri" is in Rome (near), name contains "libr" → relevance tier 1
+		await visibleStore(profile.id, { name: "Centro Libri", ...ROME });
+
+		const result = await searchStores({
+			q: "libr",
+			lat: ROME.lat,
+			lng: ROME.lng,
+		});
+		expect(result.data.map((s) => s.name)).toEqual([
+			"Libreria Milano",
+			"Centro Libri",
+		]);
+	});
+
+	it("name-match tier ranks above comune-only match tier", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		// "Roma Bottega" — name contains "roma" → relevance tier 1
+		await visibleStore(profile.id, { name: "Roma Bottega" });
+		// "Alimentari Buoni" — in a municipality called "Roma" → relevance tier 0 (comune-only match)
+		const roma = await createTestMunicipalityNamed(db, "Roma");
+		await visibleStore(profile.id, {
+			name: "Alimentari Buoni",
+			municipalityId: roma.id,
+		});
+
+		const result = await searchStores({ q: "roma" });
+		const names = result.data.map((s) => s.name);
+		expect(names.indexOf("Roma Bottega")).toBeLessThan(
+			names.indexOf("Alimentari Buoni"),
+		);
+	});
+});
+
 describe("searchStores — pagination", () => {
 	it("respects limit and page with a stable order", async () => {
 		const db = getTestDb();
