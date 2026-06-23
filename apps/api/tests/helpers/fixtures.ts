@@ -323,9 +323,13 @@ export async function createTestOrganization(
 		.values({
 			sellerProfileId,
 			businessName: params.businessName ?? `Test Org ${unique}`,
+			// Derive 11 decimal digits from the full 32-bit hex value. The old
+			// `unique.replace(/\D/g, "")` kept only the digit chars of an 8-char hex
+			// slice (often 0-4 of them) then zero-padded, so many distinct UUIDs
+			// collapsed onto the same vat (e.g. IT06820000000) → flaky unique-violation.
 			vatNumber:
 				params.vatNumber ??
-				`IT${unique.replace(/\D/g, "").padEnd(11, "0").slice(0, 11)}`,
+				`IT${BigInt(`0x${unique}`).toString().padStart(11, "0").slice(-11)}`,
 			legalForm: params.legalForm ?? "SRL",
 			addressLine1: "Via Roma 1",
 			municipalityId,
