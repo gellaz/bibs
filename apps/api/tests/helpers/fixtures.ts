@@ -13,6 +13,7 @@ import {
 	productCategoryAssignment,
 	storeProduct,
 } from "@/db/schemas/product";
+import { productImage } from "@/db/schemas/product-image";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store, storePhoneNumber } from "@/db/schemas/store";
@@ -246,6 +247,24 @@ export async function createTestStoreProduct(
 		.returning();
 
 	return sp;
+}
+
+export async function createTestProductImage(
+	db: DrizzleTestDb,
+	productId: string,
+	params: { url?: string; position?: number } = {},
+) {
+	const unique = crypto.randomUUID().slice(0, 8);
+	const [img] = await db
+		.insert(productImage)
+		.values({
+			productId,
+			url: params.url ?? `https://img.test/${unique}.jpg`,
+			key: `products/${unique}.jpg`,
+			position: params.position ?? 0,
+		})
+		.returning();
+	return img;
 }
 
 export async function createTestMacroCategory(
