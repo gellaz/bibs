@@ -1,5 +1,6 @@
 import { Clock, MapPin } from "lucide-react";
 import { useState } from "react";
+import { openStatusLabel } from "./open-status";
 import type { StoreCardView } from "./use-store-search";
 
 /** Metri → "240 m" / "1,2 km" (convenzione italiana, virgola decimale). */
@@ -35,38 +36,8 @@ function TileImage({ url, name }: { url: string | null; name: string }) {
 	);
 }
 
-function describeOpensAt(opensAt: { date: string; time: string }): string {
-	const todayRome = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Europe/Rome",
-	}).format(new Date());
-	const base = new Date(`${todayRome}T00:00:00`);
-	const tomorrow = new Date(base);
-	tomorrow.setDate(base.getDate() + 1);
-	const fmt = (d: Date) =>
-		`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-	if (opensAt.date === todayRome) return `apre alle ${opensAt.time}`;
-	if (opensAt.date === fmt(tomorrow)) return `apre domani alle ${opensAt.time}`;
-	const d = new Date(`${opensAt.date}T00:00:00`);
-	const label = new Intl.DateTimeFormat("it-IT", {
-		weekday: "short",
-		day: "numeric",
-		month: "short",
-	}).format(d);
-	return `apre ${label} alle ${opensAt.time}`;
-}
-
-/** Riga di stato apertura: "Aperto · chiude alle 19:30" / "Chiuso · apre ...". */
+/** Riga di stato apertura. */
 function OpenStatusLine({ status }: { status: StoreCardView["openStatus"] }) {
-	let label: string;
-	if (status.isOpen) {
-		label = status.closesAt
-			? `Aperto · chiude alle ${status.closesAt}`
-			: "Aperto";
-	} else if (status.opensAt) {
-		label = `Chiuso · ${describeOpensAt(status.opensAt)}`;
-	} else {
-		label = "Chiuso";
-	}
 	return (
 		<span
 			className={`inline-flex items-center gap-1 text-xs ${
@@ -74,7 +45,7 @@ function OpenStatusLine({ status }: { status: StoreCardView["openStatus"] }) {
 			}`}
 		>
 			<Clock className="size-3" aria-hidden />
-			{label}
+			{openStatusLabel(status)}
 		</span>
 	);
 }
