@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { Clock, MapPin } from "lucide-react";
 import { useState } from "react";
 import { openStatusLabel } from "./open-status";
@@ -64,7 +65,11 @@ interface StoreTileProps {
 export function StoreTile({ store, showDistance }: StoreTileProps) {
 	const hasDistance = showDistance && store.distance !== null;
 	return (
-		<article className="flex flex-col gap-3">
+		<Link
+			to="/stores/$storeId"
+			params={{ storeId: store.id }}
+			className="group flex flex-col gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-saffron"
+		>
 			<div className="relative aspect-square overflow-hidden rounded-lg border border-border">
 				<TileImage url={store.imageUrl} name={store.name} />
 				{hasDistance && (
@@ -75,7 +80,7 @@ export function StoreTile({ store, showDistance }: StoreTileProps) {
 				)}
 			</div>
 			<div className="flex flex-col gap-1">
-				<h3 className="line-clamp-2 font-medium text-[0.9375rem] text-foreground leading-snug">
+				<h3 className="line-clamp-2 font-medium text-[0.9375rem] text-foreground leading-snug group-hover:text-primary">
 					{store.name}
 				</h3>
 				<p className="text-muted-foreground text-sm">
@@ -84,6 +89,6 @@ export function StoreTile({ store, showDistance }: StoreTileProps) {
 				</p>
 				<OpenStatusLine status={store.openStatus} />
 			</div>
-		</article>
+		</Link>
 	);
 }
