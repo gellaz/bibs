@@ -740,6 +740,33 @@ export const StoreDetailSchema = t.Object({
 	openStatus: OpenStatusSchema,
 });
 
+// Store product card (customer store catalog — #2b). SearchResultSchema minus
+// distance/rank: no geo on a store page. No discountTitle/discountEndsAt → no
+// Date in the DTO, so the FE needs no toYMD coercion.
+export const StoreProductCardSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome del prodotto" }),
+	description: t.Nullable(
+		t.String({ description: "Descrizione del prodotto" }),
+	),
+	price: t.String({ description: "Prezzo in formato decimale" }),
+	images: t.Array(
+		t.Object({
+			id: t.String(),
+			url: t.String({ description: "URL dell'immagine" }),
+			position: t.Number({
+				minimum: 0,
+				description: "Posizione di ordinamento",
+			}),
+		}),
+		{ description: "Immagini del prodotto ordinate per posizione" },
+	),
+	discountedPrice: t.Nullable(
+		t.String({ description: "Prezzo scontato, se promo attiva" }),
+	),
+	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
+});
+
 // Search result
 export const SearchResultSchema = t.Object({
 	id: t.String(),
