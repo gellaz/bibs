@@ -1,7 +1,6 @@
 import type { Static } from "@sinclair/typebox";
 import { and, count, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { holidayDefinition } from "@/db/schemas/holiday-definition";
 import {
 	municipality as municipalityTable,
 	province as provinceTable,
@@ -10,18 +9,13 @@ import {
 	storePhoneNumber as storePhoneNumberTable,
 	store as storeTable,
 } from "@/db/schemas/store";
-import { storeHolidayOptout } from "@/db/schemas/store-holiday-optout";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
-import type { CustomClosure, HolidayDef } from "@/lib/holidays";
-import {
-	addDaysYMD,
-	getOpenStatus,
-	resolveStoreClosedDates,
-} from "@/lib/holidays";
+import type { CustomClosure } from "@/lib/holidays";
 import { validateOpeningHours } from "@/lib/opening-hours";
 import { parsePagination } from "@/lib/pagination";
 import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
+import { resolveOpenStatuses } from "@/lib/store-open-status";
 import { stripe } from "@/lib/stripe";
 
 type OpeningHours = Static<typeof OpeningHoursSchema>;
@@ -78,55 +72,18 @@ export async function listStores(params: ListStoresParams) {
 		},
 	}));
 
-	const now = new Date();
-	const today = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Europe/Rome",
-	}).format(now);
-	const windowEnd = addDaysYMD(today, 60);
-	const storeIds = data.map((s) => s.id);
-
-	const [activeDefs, optOutRows] = await Promise.all([
-		db.query.holidayDefinition.findMany({
-			where: eq(holidayDefinition.isActive, true),
-		}),
-		storeIds.length > 0
-			? db
-					.select({
-						storeId: storeHolidayOptout.storeId,
-						holidayDefinitionId: storeHolidayOptout.holidayDefinitionId,
-					})
-					.from(storeHolidayOptout)
-					.where(inArray(storeHolidayOptout.storeId, storeIds))
-			: Promise.resolve(
-					[] as Array<{ storeId: string; holidayDefinitionId: string }>,
-				),
-	]);
-
-	const optOutsByStore = new Map<string, string[]>();
-	for (const row of optOutRows) {
-		const list = optOutsByStore.get(row.storeId) ?? [];
-		list.push(row.holidayDefinitionId);
-		optOutsByStore.set(row.storeId, list);
-	}
-
-	const dataWithStatus = data.map((s) => {
-		const closedDates = resolveStoreClosedDates(
-			{
-				activeDefs: activeDefs as HolidayDef[],
-				optOutIds: optOutsByStore.get(s.id) ?? [],
-				customClosures: (s.closures as CustomClosure[] | null) ?? [],
-			},
-			{ from: today, to: windowEnd },
-		);
-		return {
-			...s,
-			openStatus: getOpenStatus({
-				openingHours: s.openingHours ?? null,
-				closedDates,
-				now,
-			}),
-		};
-	});
+	const statusMap = await resolveOpenStatuses(
+		data.map((s) => ({
+			id: s.id,
+			openingHours: s.openingHours ?? null,
+			closures: (s.closures as CustomClosure[] | null) ?? null,
+		})),
+		new Date(),
+	);
+	const dataWithStatus = data.map((s) => ({
+		...s,
+		openStatus: statusMap.get(s.id) ?? null,
+	}));
 
 	return { data: dataWithStatus, pagination: { page, limit, total } };
 }
