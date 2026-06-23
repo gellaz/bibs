@@ -18,6 +18,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedStoresIndexRouteImport } from './routes/_authenticated/stores/index'
+import { Route as AuthenticatedStoresStoreIdRouteImport } from './routes/_authenticated/stores/$storeId'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -64,6 +65,12 @@ const AuthenticatedStoresIndexRoute =
     path: '/stores/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedStoresStoreIdRoute =
+  AuthenticatedStoresStoreIdRouteImport.update({
+    id: '/stores/$storeId',
+    path: '/stores/$storeId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/stores/$storeId': typeof AuthenticatedStoresStoreIdRoute
   '/stores/': typeof AuthenticatedStoresIndexRoute
 }
 export interface FileRoutesByTo {
@@ -83,6 +91,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/': typeof AuthenticatedIndexRoute
+  '/stores/$storeId': typeof AuthenticatedStoresStoreIdRoute
   '/stores': typeof AuthenticatedStoresIndexRoute
 }
 export interface FileRoutesById {
@@ -95,6 +104,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/stores/$storeId': typeof AuthenticatedStoresStoreIdRoute
   '/_authenticated/stores/': typeof AuthenticatedStoresIndexRoute
 }
 export interface FileRouteTypes {
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/profile'
+    | '/stores/$storeId'
     | '/stores/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/profile'
     | '/'
+    | '/stores/$storeId'
     | '/stores'
   id:
     | '__root__'
@@ -128,6 +140,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/profile'
     | '/_authenticated/'
+    | '/_authenticated/stores/$storeId'
     | '/_authenticated/stores/'
   fileRoutesById: FileRoutesById
 }
@@ -205,18 +218,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoresIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/stores/$storeId': {
+      id: '/_authenticated/stores/$storeId'
+      path: '/stores/$storeId'
+      fullPath: '/stores/$storeId'
+      preLoaderRoute: typeof AuthenticatedStoresStoreIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedStoresStoreIdRoute: typeof AuthenticatedStoresStoreIdRoute
   AuthenticatedStoresIndexRoute: typeof AuthenticatedStoresIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedStoresStoreIdRoute: AuthenticatedStoresStoreIdRoute,
   AuthenticatedStoresIndexRoute: AuthenticatedStoresIndexRoute,
 }
 

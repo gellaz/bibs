@@ -15,7 +15,7 @@ import {
 } from "@/db/schemas/product";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
-import { store } from "@/db/schemas/store";
+import { store, storePhoneNumber } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeImage } from "@/db/schemas/store-image";
 import {
@@ -323,9 +323,13 @@ export async function createTestOrganization(
 		.values({
 			sellerProfileId,
 			businessName: params.businessName ?? `Test Org ${unique}`,
+			// Derive 11 decimal digits from the full 32-bit hex value. The old
+			// `unique.replace(/\D/g, "")` kept only the digit chars of an 8-char hex
+			// slice (often 0-4 of them) then zero-padded, so many distinct UUIDs
+			// collapsed onto the same vat (e.g. IT06820000000) → flaky unique-violation.
 			vatNumber:
 				params.vatNumber ??
-				`IT${unique.replace(/\D/g, "").padEnd(11, "0").slice(0, 11)}`,
+				`IT${BigInt(`0x${unique}`).toString().padStart(11, "0").slice(-11)}`,
 			legalForm: params.legalForm ?? "SRL",
 			addressLine1: "Via Roma 1",
 			municipalityId,
@@ -457,6 +461,23 @@ export async function createTestStoreImage(
 		})
 		.returning();
 	return img;
+}
+
+export async function createTestStorePhoneNumber(
+	db: DrizzleTestDb,
+	storeId: string,
+	params: { label?: string | null; number?: string; position?: number } = {},
+) {
+	const [phone] = await db
+		.insert(storePhoneNumber)
+		.values({
+			storeId,
+			label: params.label ?? null,
+			number: params.number ?? "0123456789",
+			position: params.position ?? 0,
+		})
+		.returning();
+	return phone;
 }
 
 /** Create a municipality with a specific name (region/province auto-created). */

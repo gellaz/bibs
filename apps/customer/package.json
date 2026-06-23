@@ -15,7 +15,8 @@
 		"typecheck": "tsc --noEmit",
 		"format": "biome format",
 		"lint": "biome lint",
-		"check": "biome check"
+		"check": "biome check",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@bibs/api": "workspace:*",
@@ -33,15 +34,18 @@
 		"@tanstack/react-start": "catalog:",
 		"@tanstack/router-plugin": "catalog:",
 		"better-auth": "catalog:",
+		"leaflet": "catalog:",
 		"lucide-react": "catalog:",
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"react-hook-form": "catalog:",
+		"react-leaflet": "catalog:",
 		"tailwindcss": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@inlang/paraglide-js": "catalog:",
+		"@types/leaflet": "catalog:",
 		"@rolldown/plugin-babel": "catalog:",
 		"@tanstack/devtools-vite": "catalog:",
 		"@types/node": "catalog:",

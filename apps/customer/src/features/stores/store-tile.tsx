@@ -1,5 +1,7 @@
+import { Link } from "@tanstack/react-router";
 import { Clock, MapPin } from "lucide-react";
 import { useState } from "react";
+import { openStatusLabel } from "./open-status";
 import type { StoreCardView } from "./use-store-search";
 
 /** Metri → "240 m" / "1,2 km" (convenzione italiana, virgola decimale). */
@@ -35,38 +37,8 @@ function TileImage({ url, name }: { url: string | null; name: string }) {
 	);
 }
 
-function describeOpensAt(opensAt: { date: string; time: string }): string {
-	const todayRome = new Intl.DateTimeFormat("en-CA", {
-		timeZone: "Europe/Rome",
-	}).format(new Date());
-	const base = new Date(`${todayRome}T00:00:00`);
-	const tomorrow = new Date(base);
-	tomorrow.setDate(base.getDate() + 1);
-	const fmt = (d: Date) =>
-		`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-	if (opensAt.date === todayRome) return `apre alle ${opensAt.time}`;
-	if (opensAt.date === fmt(tomorrow)) return `apre domani alle ${opensAt.time}`;
-	const d = new Date(`${opensAt.date}T00:00:00`);
-	const label = new Intl.DateTimeFormat("it-IT", {
-		weekday: "short",
-		day: "numeric",
-		month: "short",
-	}).format(d);
-	return `apre ${label} alle ${opensAt.time}`;
-}
-
-/** Riga di stato apertura: "Aperto · chiude alle 19:30" / "Chiuso · apre ...". */
+/** Riga di stato apertura. */
 function OpenStatusLine({ status }: { status: StoreCardView["openStatus"] }) {
-	let label: string;
-	if (status.isOpen) {
-		label = status.closesAt
-			? `Aperto · chiude alle ${status.closesAt}`
-			: "Aperto";
-	} else if (status.opensAt) {
-		label = `Chiuso · ${describeOpensAt(status.opensAt)}`;
-	} else {
-		label = "Chiuso";
-	}
 	return (
 		<span
 			className={`inline-flex items-center gap-1 text-xs ${
@@ -74,7 +46,7 @@ function OpenStatusLine({ status }: { status: StoreCardView["openStatus"] }) {
 			}`}
 		>
 			<Clock className="size-3" aria-hidden />
-			{label}
+			{openStatusLabel(status)}
 		</span>
 	);
 }
@@ -93,7 +65,11 @@ interface StoreTileProps {
 export function StoreTile({ store, showDistance }: StoreTileProps) {
 	const hasDistance = showDistance && store.distance !== null;
 	return (
-		<article className="flex flex-col gap-3">
+		<Link
+			to="/stores/$storeId"
+			params={{ storeId: store.id }}
+			className="group flex flex-col gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-saffron"
+		>
 			<div className="relative aspect-square overflow-hidden rounded-lg border border-border">
 				<TileImage url={store.imageUrl} name={store.name} />
 				{hasDistance && (
@@ -104,7 +80,7 @@ export function StoreTile({ store, showDistance }: StoreTileProps) {
 				)}
 			</div>
 			<div className="flex flex-col gap-1">
-				<h3 className="line-clamp-2 font-medium text-[0.9375rem] text-foreground leading-snug">
+				<h3 className="line-clamp-2 font-medium text-[0.9375rem] text-foreground leading-snug group-hover:text-primary">
 					{store.name}
 				</h3>
 				<p className="text-muted-foreground text-sm">
@@ -113,6 +89,6 @@ export function StoreTile({ store, showDistance }: StoreTileProps) {
 				</p>
 				<OpenStatusLine status={store.openStatus} />
 			</div>
-		</article>
+		</Link>
 	);
 }
