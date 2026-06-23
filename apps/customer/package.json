@@ -15,7 +15,8 @@
 		"typecheck": "tsc --noEmit",
 		"format": "biome format",
 		"lint": "biome lint",
-		"check": "biome check"
+		"check": "biome check",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@bibs/api": "workspace:*",
