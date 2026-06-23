@@ -1,11 +1,9 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
-import { useState } from "react";
 import { ProductTile } from "./product-tile";
-import { type Coords, useNearbyProducts } from "./use-nearby-products";
-
-type GeoStatus = "idle" | "pending" | "granted" | "denied" | "unsupported";
+import { useGeolocation } from "./use-geolocation";
+import { useNearbyProducts } from "./use-nearby-products";
 
 const GRID = "grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4";
 
@@ -53,30 +51,17 @@ function Notice({
 }
 
 export function NearbyProducts() {
-	const [coords, setCoords] = useState<Coords | null>(null);
-	const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
+	const {
+		coords,
+		status: geoStatus,
+		request: requestLocation,
+	} = useGeolocation();
 	const {
 		data: products,
 		isPending,
 		isError,
 		refetch,
 	} = useNearbyProducts(coords);
-
-	function requestLocation() {
-		if (typeof navigator === "undefined" || !navigator.geolocation) {
-			setGeoStatus("unsupported");
-			return;
-		}
-		setGeoStatus("pending");
-		navigator.geolocation.getCurrentPosition(
-			(pos) => {
-				setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-				setGeoStatus("granted");
-			},
-			() => setGeoStatus("denied"),
-			{ enableHighAccuracy: false, timeout: 8000, maximumAge: 300_000 },
-		);
-	}
 
 	return (
 		<section aria-labelledby="nearby-heading" className="mt-10 sm:mt-12">
