@@ -124,6 +124,45 @@ export const ProductSearchQuery = t.Object({
 });
 
 /**
+ * Pagination + optional text (name/comune) + category + geo for store discovery.
+ * `radius` has NO default — geo without radius returns all stores nearest-first.
+ */
+export const StoreSearchQuery = t.Object({
+	page: t.Optional(
+		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
+	),
+	limit: t.Optional(
+		t.Number({
+			minimum: 1,
+			maximum: maxLimit,
+			default: defaultLimit,
+			description: "Elementi per pagina",
+		}),
+	),
+	q: t.Optional(
+		t.String({ description: "Testo di ricerca su nome negozio o comune" }),
+	),
+	categoryId: t.Optional(
+		t.String({ description: "Filtra per ID categoria negozio" }),
+	),
+	lat: t.Optional(
+		t.Number({ minimum: -90, maximum: 90, description: "Latitudine utente" }),
+	),
+	lng: t.Optional(
+		t.Number({
+			minimum: -180,
+			maximum: 180,
+			description: "Longitudine utente",
+		}),
+	),
+	radius: t.Optional(
+		t.Number({
+			description: "Raggio in km (opzionale, nessun limite di default)",
+		}),
+	),
+});
+
+/**
  * Pagination + optional search/sort for category list endpoints.
  */
 export const CategoryListQuery = t.Object({
