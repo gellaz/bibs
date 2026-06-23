@@ -15,7 +15,7 @@ import {
 } from "@/db/schemas/product";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
-import { store } from "@/db/schemas/store";
+import { store, storePhoneNumber } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeImage } from "@/db/schemas/store-image";
 import {
@@ -457,6 +457,23 @@ export async function createTestStoreImage(
 		})
 		.returning();
 	return img;
+}
+
+export async function createTestStorePhoneNumber(
+	db: DrizzleTestDb,
+	storeId: string,
+	params: { label?: string | null; number?: string; position?: number } = {},
+) {
+	const [phone] = await db
+		.insert(storePhoneNumber)
+		.values({
+			storeId,
+			label: params.label ?? null,
+			number: params.number ?? "0123456789",
+			position: params.position ?? 0,
+		})
+		.returning();
+	return phone;
 }
 
 /** Create a municipality with a specific name (region/province auto-created). */

@@ -687,6 +687,59 @@ export const StoreCardSchema = t.Object({
 	openStatus: OpenStatusSchema,
 });
 
+// Weekly opening hours (response shape), dayOfWeek 0=Lun..6=Dom
+const StoreOpeningHoursSchema = t.Array(
+	t.Object({
+		dayOfWeek: t.Integer({
+			minimum: 0,
+			maximum: 6,
+			description: "0=Lun..6=Dom",
+		}),
+		slots: t.Array(
+			t.Object({
+				open: t.String({ description: "Apertura HH:mm" }),
+				close: t.String({ description: "Chiusura HH:mm" }),
+			}),
+		),
+	}),
+);
+
+// Store detail (customer public store page — #2a)
+export const StoreDetailSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome del negozio" }),
+	description: t.Nullable(t.String({ description: "Descrizione del negozio" })),
+	category: t.Nullable(t.Object({ id: t.String(), name: t.String() })),
+	municipality: MunicipalityCompactSchema,
+	addressLine1: t.String({ description: "Indirizzo (riga 1)" }),
+	addressLine2: t.Nullable(t.String({ description: "Indirizzo (riga 2)" })),
+	zipCode: t.String({ description: "CAP" }),
+	coordinates: t.Nullable(
+		t.Object({
+			lat: t.Number({ description: "Latitudine" }),
+			lng: t.Number({ description: "Longitudine" }),
+		}),
+	),
+	images: t.Array(
+		t.Object({
+			id: t.String(),
+			url: t.String({ description: "URL immagine" }),
+		}),
+		{ description: "Immagini del negozio ordinate per posizione" },
+	),
+	phoneNumbers: t.Array(
+		t.Object({
+			id: t.String(),
+			label: t.Nullable(t.String({ description: "Etichetta (es. Negozio)" })),
+			number: t.String({ description: "Numero di telefono" }),
+		}),
+		{ description: "Telefoni ordinati per posizione" },
+	),
+	websiteUrl: t.Nullable(t.String({ description: "Sito web" })),
+	openingHours: t.Nullable(StoreOpeningHoursSchema),
+	openStatus: OpenStatusSchema,
+});
+
 // Search result
 export const SearchResultSchema = t.Object({
 	id: t.String(),
