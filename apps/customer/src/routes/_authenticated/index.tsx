@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { NearbyProducts } from "@/features/discovery/nearby-products";
 import { authClient } from "@/lib/auth-client";
 
@@ -20,6 +20,13 @@ function Home() {
 				<p className="mt-2 max-w-prose text-balance text-muted-foreground leading-relaxed">
 					Scopri cosa vendono i negozi del tuo quartiere — vicino, oggi.
 				</p>
+				<Link
+					to="/stores"
+					search={{ q: undefined, categoryId: undefined }}
+					className="mt-4 inline-flex items-center gap-1.5 font-medium text-primary text-sm hover:underline"
+				>
+					Esplora tutti i negozi →
+				</Link>
 			</section>
 
 			<NearbyProducts />
