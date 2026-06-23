@@ -128,8 +128,18 @@ function StoreDetailPage() {
 
 	const cover = store.images[0]?.url ?? null;
 	const address = `${store.addressLine1}${store.addressLine2 ? `, ${store.addressLine2}` : ""} · ${store.zipCode} ${store.city} (${store.province})`;
-	const hasContacts =
-		store.phoneNumbers.length > 0 || Boolean(store.websiteUrl);
+	const safeWebsiteUrl = (() => {
+		if (!store.websiteUrl) return null;
+		try {
+			const u = new URL(store.websiteUrl);
+			return u.protocol === "http:" || u.protocol === "https:"
+				? u.toString()
+				: null;
+		} catch {
+			return null;
+		}
+	})();
+	const hasContacts = store.phoneNumbers.length > 0 || Boolean(safeWebsiteUrl);
 
 	return (
 		<div>
@@ -196,10 +206,10 @@ function StoreDetailPage() {
 									</a>
 								</li>
 							))}
-							{store.websiteUrl && (
+							{safeWebsiteUrl && (
 								<li>
 									<a
-										href={store.websiteUrl}
+										href={safeWebsiteUrl}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="inline-flex items-center gap-2 text-foreground text-sm hover:text-primary"
