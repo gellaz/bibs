@@ -1,4 +1,5 @@
 import { t } from "elysia";
+import { OpenStatusSchema } from "./holidays";
 
 // ────────────────────────────────────────────
 // Shared types
@@ -664,6 +665,26 @@ export const SellerProfileChangeSchema = t.Object({
 	reviewedAt: t.Nullable(t.Date()),
 	rejectionReason: t.Nullable(t.String()),
 	createdAt: t.Date(),
+});
+
+// Store discovery card (customer public search)
+export const StoreCardSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome del negozio" }),
+	category: t.Nullable(t.Object({ id: t.String(), name: t.String() })),
+	municipality: MunicipalityCompactSchema,
+	addressLine1: t.String({ description: "Indirizzo (riga 1)" }),
+	distance: t.Nullable(
+		t.Number({
+			minimum: 0,
+			description:
+				"Distanza in metri dalla posizione utente (null senza geo o senza posizione del negozio)",
+		}),
+	),
+	image: t.Nullable(
+		t.Object({ url: t.String({ description: "URL immagine principale" }) }),
+	),
+	openStatus: OpenStatusSchema,
 });
 
 // Search result

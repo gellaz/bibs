@@ -16,6 +16,12 @@ import {
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
+import { storeCategory } from "@/db/schemas/store-category";
+import { storeImage } from "@/db/schemas/store-image";
+import {
+	type StoreSubscriptionStatus,
+	storeSubscription,
+} from "@/db/schemas/store-subscription";
 import type { DrizzleTestDb } from "./test-db";
 
 // ── User / Auth ───────────────────────────────────────────────────────────────
@@ -152,6 +158,14 @@ export async function createTestStore(
 		lng?: number;
 		/** latitude (y) */
 		lat?: number;
+		/** null = leave location unset (for NULLS-LAST ordering tests) */
+		noLocation?: boolean;
+		categoryId?: string;
+		openingHours?: Array<{
+			dayOfWeek: number;
+			slots: Array<{ open: string; close: string }>;
+		}>;
+		closures?: Array<{ startDate: string; endDate?: string; note?: string }>;
 	} = {},
 ) {
 	const lng = params.lng ?? 12.4964; // Rome
@@ -169,8 +183,13 @@ export async function createTestStore(
 			municipalityId,
 			zipCode: "00100",
 			country: "IT",
+			categoryId: params.categoryId,
+			openingHours: params.openingHours,
+			closures: params.closures,
 			// Raw SQL needed for PostGIS geometry column
-			location: sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`,
+			location: params.noLocation
+				? null
+				: sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`,
 		} as any)
 		.returning();
 
@@ -389,4 +408,61 @@ export async function createTestDiscountProduct(
 		.values({ discountId, productId })
 		.returning();
 	return row;
+}
+
+// ── Store subscription / category / image ───────────────────────────────────
+
+export async function createTestStoreSubscription(
+	db: DrizzleTestDb,
+	storeId: string,
+	params: { status?: StoreSubscriptionStatus } = {},
+) {
+	const unique = crypto.randomUUID().slice(0, 8);
+	const [sub] = await db
+		.insert(storeSubscription)
+		.values({
+			storeId,
+			stripeSubscriptionId: `sub_${unique}`,
+			stripeCustomerId: `cus_${unique}`,
+			stripePriceId: `price_${unique}`,
+			feeAmountCents: 1000,
+			status: params.status ?? "active",
+			currentPeriodEnd: new Date(Date.now() + 30 * 86_400_000),
+		})
+		.returning();
+	return sub;
+}
+
+export async function createTestStoreCategory(
+	db: DrizzleTestDb,
+	name = "Test Store Category",
+) {
+	const [c] = await db.insert(storeCategory).values({ name }).returning();
+	return c;
+}
+
+export async function createTestStoreImage(
+	db: DrizzleTestDb,
+	storeId: string,
+	params: { url?: string; position?: number } = {},
+) {
+	const unique = crypto.randomUUID().slice(0, 8);
+	const [img] = await db
+		.insert(storeImage)
+		.values({
+			storeId,
+			url: params.url ?? `https://img.test/${unique}.jpg`,
+			key: `stores/${unique}.jpg`,
+			position: params.position ?? 0,
+		})
+		.returning();
+	return img;
+}
+
+/** Create a municipality with a specific name (region/province auto-created). */
+export async function createTestMunicipalityNamed(
+	db: DrizzleTestDb,
+	name: string,
+) {
+	return createTestMunicipality(db, { municipalityName: name });
 }

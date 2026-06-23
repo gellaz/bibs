@@ -17,6 +17,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedStoresIndexRouteImport } from './routes/_authenticated/stores/index'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -57,6 +58,12 @@ const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStoresIndexRoute =
+  AuthenticatedStoresIndexRouteImport.update({
+    id: '/stores/',
+    path: '/stores/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/stores/': typeof AuthenticatedStoresIndexRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/': typeof AuthenticatedIndexRoute
+  '/stores': typeof AuthenticatedStoresIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/stores/': typeof AuthenticatedStoresIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/profile'
+    | '/stores/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forgot-password'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/profile'
     | '/'
+    | '/stores'
   id:
     | '__root__'
     | '/_authenticated'
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/profile'
     | '/_authenticated/'
+    | '/_authenticated/stores/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -185,17 +198,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/stores/': {
+      id: '/_authenticated/stores/'
+      path: '/stores'
+      fullPath: '/stores/'
+      preLoaderRoute: typeof AuthenticatedStoresIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedStoresIndexRoute: typeof AuthenticatedStoresIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedStoresIndexRoute: AuthenticatedStoresIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
