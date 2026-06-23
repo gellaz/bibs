@@ -3,7 +3,7 @@ import { Skeleton } from "@bibs/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Compass, LocateFixed, MapPin, RotateCw, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGeolocation } from "@/features/discovery/use-geolocation";
 import { StoreTile } from "@/features/stores/store-tile";
 import { useStoreSearch } from "@/features/stores/use-store-search";
@@ -98,6 +98,15 @@ function StoresPage() {
 		}, 300);
 		return () => clearTimeout(id);
 	}, [text, navigate]);
+
+	// Sync the controlled input when `q` changes externally (browser back/forward, deep-link).
+	const prevQ = useRef(q);
+	useEffect(() => {
+		if (q !== prevQ.current) {
+			prevQ.current = q;
+			setText(q ?? "");
+		}
+	}, [q]);
 
 	const {
 		stores,
