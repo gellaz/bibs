@@ -12,7 +12,7 @@ import {
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
 import { ProductStockManager } from "@/features/products/components/product-stock-manager";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products/$productId")({
@@ -43,13 +43,7 @@ function EditProductPage() {
 		queryFn: async () => {
 			const response = await api().seller.products({ productId }).get();
 
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nel caricamento prodotto",
-				);
-			}
-
-			return response.data.data;
+			return unwrap(response, "Errore nel caricamento prodotto").data;
 		},
 	});
 
@@ -96,11 +90,7 @@ function EditProductPage() {
 					brandName: formData.brandName,
 				});
 
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nell'aggiornamento",
-				);
-			}
+			const data = unwrap(response, "Errore nell'aggiornamento");
 
 			if (formData.files.length > 0) {
 				const imgResponse = await api()
@@ -114,7 +104,7 @@ function EditProductPage() {
 				}
 			}
 
-			return response.data;
+			return data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["products"] });

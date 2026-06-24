@@ -6,7 +6,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface CustomClosure {
@@ -104,12 +104,7 @@ export function ClosuresManager({
 			const response = await api()
 				.seller.stores({ storeId })
 				.closures.put({ optOutIds, customClosures: cleaned });
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m["store.closures.error"](),
-				);
-			}
-			return response.data;
+			return unwrap(response, m["store.closures.error"]());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({

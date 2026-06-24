@@ -8,7 +8,7 @@ import {
 	useState,
 } from "react";
 import { useStores } from "@/hooks/use-stores";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 const STORAGE_KEY = "bibs-seller-active-store";
 
@@ -66,8 +66,7 @@ export function ActiveStoreProvider({
 		queryKey: ["seller", "billing", "subscriptions"],
 		queryFn: async () => {
 			const r = await api().seller.billing.subscriptions.get();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return (r.data?.data ?? []) as Subscription[];
+			return (unwrap(r, "Errore").data ?? []) as Subscription[];
 		},
 		enabled,
 	});

@@ -7,7 +7,7 @@ import {
 	DiscountForm,
 	type DiscountFormValues,
 } from "@/features/promotions/components/discount-form";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/promotions/new")({
@@ -28,8 +28,7 @@ function NewPromotionPage() {
 				endsAt:
 					values.noEndDate || !values.endsAt ? null : new Date(values.endsAt),
 			});
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data.data;
+			return unwrap(res, "Errore").data;
 		},
 		onSuccess: (d) => {
 			toast.success(m.promotions_toast_created());

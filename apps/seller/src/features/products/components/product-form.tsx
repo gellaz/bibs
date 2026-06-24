@@ -19,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { BrandCombobox, type BrandComboboxValue } from "./brand-combobox";
 import { ProductCategoriesPicker } from "./product-categories-picker";
 import {
@@ -135,8 +135,7 @@ export function ProductForm({
 			const response = await api().seller.products.lookup.get({
 				query: { ean: eanValue },
 			});
-			if (response.error) throw new Error("Errore lookup EAN");
-			return response.data.data;
+			return unwrap(response, "Errore lookup EAN").data;
 		},
 		enabled: eanLookupEnabled,
 		staleTime: Number.POSITIVE_INFINITY,

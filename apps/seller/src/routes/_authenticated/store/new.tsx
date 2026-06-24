@@ -15,7 +15,7 @@ import {
 import { useFirstStoreOnboarding } from "@/hooks/use-first-store-onboarding";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 
@@ -88,12 +88,7 @@ function NewStorePage() {
 	const createMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
 			const response = await api().seller.stores.checkout.post(formData);
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m["store.new.checkout_error"](),
-				);
-			}
-			return response.data;
+			return unwrap(response, m["store.new.checkout_error"]());
 		},
 		onSuccess: (data) => {
 			if (data?.data?.checkoutUrl) {

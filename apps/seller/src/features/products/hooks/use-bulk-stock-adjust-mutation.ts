@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 type Mode = "delta" | "set";
 
@@ -32,9 +32,7 @@ export function useBulkStockAdjustMutation() {
 		mutationFn: async (params: MutateParams): Promise<BulkResult> => {
 			const response =
 				await api().seller.products.bulk["stock-adjust"].post(params);
-			if (response.error)
-				throw new Error(response.error.value?.message || "Errore");
-			return response.data.data as BulkResult;
+			return unwrap(response, "Errore").data as BulkResult;
 		},
 		onSuccess: (result) => {
 			// Patcha la lista per ogni riga succeeded

@@ -4,7 +4,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangleIcon, CalendarIcon, LockIcon } from "lucide-react";
 import { type Subscription, useActiveStore } from "@/hooks/use-active-store";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 export function StoreBillingBanner() {
 	const { activeStore, activeSubscription } = useActiveStore();
@@ -13,8 +13,7 @@ export function StoreBillingBanner() {
 	const portalMutation = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.billing.portal.post();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;
@@ -28,8 +27,7 @@ export function StoreBillingBanner() {
 			const r = await api()
 				.seller.stores({ storeId: activeStore.id })
 				.reactivate.post();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 		onSuccess: () => {
 			// Optimistically flip the local subscription cache to 'active' so the banner

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PromotionState } from "@/features/promotions/components/promotion-state-tabs";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 const DISCOUNTS_KEY = ["discounts"] as const;
 
@@ -19,9 +19,7 @@ export function useDiscountsList(
 		queryKey: [...DISCOUNTS_KEY, "list", params],
 		queryFn: async () => {
 			const res = await api().seller.discounts.get({ query: params });
-			if (res.error)
-				throw new Error(res.error.value?.message || "Errore caricamento");
-			return res.data;
+			return unwrap(res, "Errore caricamento");
 		},
 		enabled: options?.enabled,
 	});
@@ -33,9 +31,7 @@ export function useDiscount(discountId: string | undefined) {
 		queryFn: async () => {
 			if (!discountId) throw new Error("missing id");
 			const res = await api().seller.discounts({ discountId }).get();
-			if (res.error)
-				throw new Error(res.error.value?.message || "Errore caricamento");
-			return res.data;
+			return unwrap(res, "Errore caricamento");
 		},
 		enabled: !!discountId,
 	});
@@ -46,8 +42,7 @@ export function usePauseDiscount() {
 	return useMutation({
 		mutationFn: async (discountId: string) => {
 			const res = await api().seller.discounts({ discountId }).pause.post();
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data;
+			return unwrap(res, "Errore");
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -60,8 +55,7 @@ export function useArchiveDiscount() {
 	return useMutation({
 		mutationFn: async (discountId: string) => {
 			const res = await api().seller.discounts({ discountId }).archive.post();
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data;
+			return unwrap(res, "Errore");
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -79,8 +73,7 @@ export function useUpdateDiscount(discountId: string) {
 			endsAt?: Date | null;
 		}) => {
 			const res = await api().seller.discounts({ discountId }).patch(patch);
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data;
+			return unwrap(res, "Errore");
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -95,8 +88,7 @@ export function useRemoveDiscountProducts(discountId: string) {
 			const res = await api()
 				.seller.discounts({ discountId })
 				.products.delete({ productIds });
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data;
+			return unwrap(res, "Errore");
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({
@@ -116,9 +108,7 @@ export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
 			const res = await api()
 				.seller.discounts({ discountId })
 				.products.get({ query: { page, limit } });
-			if (res.error)
-				throw new Error(res.error.value?.message || "Errore caricamento");
-			return res.data;
+			return unwrap(res, "Errore caricamento");
 		},
 		enabled: !!discountId,
 	});
@@ -135,8 +125,7 @@ export function useApplyPromotionToProducts() {
 			const res = await api()
 				.seller.discounts({ discountId: vars.discountId })
 				.products.post({ productIds: vars.productIds });
-			if (res.error) throw new Error(res.error.value?.message || "Errore");
-			return res.data;
+			return unwrap(res, "Errore");
 		},
 		onSuccess: (_data, vars) => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });

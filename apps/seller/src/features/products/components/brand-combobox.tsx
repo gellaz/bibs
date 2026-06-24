@@ -15,7 +15,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ChevronsUpDownIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useState } from "react";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 export interface BrandComboboxValue {
 	brandId?: string;
@@ -43,8 +43,7 @@ export function BrandCombobox({
 			const response = await api().seller.brands.get({
 				query: { q: deferredQuery || undefined, limit: 20 },
 			});
-			if (response.error) throw new Error("Errore nel caricamento brand");
-			return response.data.data;
+			return unwrap(response, "Errore nel caricamento brand").data;
 		},
 		enabled: open,
 		staleTime: 30_000,

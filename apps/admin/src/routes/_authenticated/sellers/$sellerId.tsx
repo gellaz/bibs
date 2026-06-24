@@ -1,17 +1,6 @@
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
-import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	ArrowLeftIcon,
@@ -19,8 +8,11 @@ import {
 	ExternalLinkIcon,
 	XCircleIcon,
 } from "lucide-react";
-import { useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
+import {
+	SellerModerationDialog,
+	useSellerModeration,
+} from "@/components/seller-moderation-dialog";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/sellers/$sellerId")({
@@ -29,11 +21,9 @@ export const Route = createFileRoute("/_authenticated/sellers/$sellerId")({
 
 function SellerDetailPage() {
 	const { sellerId } = Route.useParams();
-	const queryClient = useQueryClient();
-
-	const [confirmAction, setConfirmAction] = useState<
-		"verify" | "reject" | null
-	>(null);
+	const moderation = useSellerModeration({
+		extraInvalidateKey: ["admin-seller-detail", sellerId],
+	});
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin-seller-detail", sellerId],
@@ -50,69 +40,6 @@ function SellerDetailPage() {
 		},
 	});
 
-	const verifyMutation = useMutation({
-		mutationFn: async () => {
-			const response = await api().admin.sellers({ sellerId }).verify.patch();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nella verifica",
-				);
-			}
-			return response.data;
-		},
-		onSuccess: () => {
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-seller-detail", sellerId],
-			});
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-sellers"],
-			});
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-sellers-counts"],
-			});
-			setConfirmAction(null);
-			toast.success("Venditore approvato con successo");
-		},
-		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante l'approvazione");
-		},
-	});
-
-	const rejectMutation = useMutation({
-		mutationFn: async () => {
-			const response = await api().admin.sellers({ sellerId }).reject.patch();
-			if (response.error) {
-				throw new Error(response.error.value?.message || "Errore nel rifiuto");
-			}
-			return response.data;
-		},
-		onSuccess: () => {
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-seller-detail", sellerId],
-			});
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-sellers"],
-			});
-			void queryClient.invalidateQueries({
-				queryKey: ["admin-sellers-counts"],
-			});
-			setConfirmAction(null);
-			toast.success("Venditore rifiutato");
-		},
-		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante il rifiuto");
-		},
-	});
-
-	const handleConfirm = () => {
-		if (confirmAction === "verify") {
-			verifyMutation.mutate();
-		} else if (confirmAction === "reject") {
-			rejectMutation.mutate();
-		}
-	};
-
-	const isPending = verifyMutation.isPending || rejectMutation.isPending;
 	const seller = data?.data;
 
 	if (isLoading) {
@@ -170,7 +97,14 @@ function SellerDetailPage() {
 								<Button
 									variant="destructive"
 									size="sm"
-									onClick={() => setConfirmAction("reject")}
+									onClick={() =>
+										moderation.setTarget({
+											type: "reject",
+											sellerId,
+											sellerName:
+												seller.organization?.businessName ?? seller.user.name,
+										})
+									}
 								>
 									<XCircleIcon className="size-3.5" />
 									Rifiuta
@@ -178,7 +112,14 @@ function SellerDetailPage() {
 								<Button
 									variant="success"
 									size="sm"
-									onClick={() => setConfirmAction("verify")}
+									onClick={() =>
+										moderation.setTarget({
+											type: "verify",
+											sellerId,
+											sellerName:
+												seller.organization?.businessName ?? seller.user.name,
+										})
+									}
 								>
 									<CheckCircle2Icon className="size-3.5" />
 									Approva
@@ -300,7 +241,14 @@ function SellerDetailPage() {
 					<Button
 						variant="destructive"
 						className="flex-1"
-						onClick={() => setConfirmAction("reject")}
+						onClick={() =>
+							moderation.setTarget({
+								type: "reject",
+								sellerId,
+								sellerName:
+									seller.organization?.businessName ?? seller.user.name,
+							})
+						}
 					>
 						<XCircleIcon className="size-4" />
 						Rifiuta
@@ -308,7 +256,14 @@ function SellerDetailPage() {
 					<Button
 						variant="success"
 						className="flex-1"
-						onClick={() => setConfirmAction("verify")}
+						onClick={() =>
+							moderation.setTarget({
+								type: "verify",
+								sellerId,
+								sellerName:
+									seller.organization?.businessName ?? seller.user.name,
+							})
+						}
 					>
 						<CheckCircle2Icon className="size-4" />
 						Approva
@@ -317,56 +272,14 @@ function SellerDetailPage() {
 			)}
 
 			{/* Confirm Dialog */}
-			<AlertDialog
-				open={!!confirmAction}
+			<SellerModerationDialog
+				target={moderation.target}
 				onOpenChange={(open) => {
-					if (!open) setConfirmAction(null);
+					if (!open) moderation.setTarget(null);
 				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>
-							{confirmAction === "verify"
-								? "Approva venditore"
-								: "Rifiuta venditore"}
-						</AlertDialogTitle>
-						<AlertDialogDescription>
-							{confirmAction === "verify" ? (
-								<>
-									Sei sicuro di voler approvare{" "}
-									<strong>
-										{seller.organization?.businessName ?? seller.user.name}
-									</strong>
-									? Il venditore potrà iniziare a operare sulla piattaforma.
-								</>
-							) : (
-								<>
-									Sei sicuro di voler rifiutare{" "}
-									<strong>
-										{seller.organization?.businessName ?? seller.user.name}
-									</strong>
-									? Il venditore dovrà aggiornare i dati e ripresentare la
-									richiesta.
-								</>
-							)}
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isPending}>Annulla</AlertDialogCancel>
-						<AlertDialogAction
-							variant={confirmAction === "verify" ? "success" : "destructive"}
-							onClick={handleConfirm}
-							disabled={isPending}
-						>
-							{isPending
-								? "Attendere..."
-								: confirmAction === "verify"
-									? "Approva"
-									: "Rifiuta"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+				onConfirm={moderation.confirm}
+				isPending={moderation.isPending}
+			/>
 		</div>
 	);
 }

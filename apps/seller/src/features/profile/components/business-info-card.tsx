@@ -17,7 +17,7 @@ import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
 import { useMunicipalities } from "@/hooks/use-municipalities";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { VatChangeDialog } from "./vat-change-dialog";
 
 const schema = z.object({
@@ -65,14 +65,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 	const mut = useMutation({
 		mutationFn: async (form: Form) => {
 			const r = await api().seller.settings.company.patch(form);
-			if (r.error) {
-				throw new Error(
-					(typeof r.error.value === "string"
-						? r.error.value
-						: r.error.value?.message) || "Errore nel salvataggio",
-				);
-			}
-			return r.data;
+			return unwrap(r, "Errore nel salvataggio");
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });

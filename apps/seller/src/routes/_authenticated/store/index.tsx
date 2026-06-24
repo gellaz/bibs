@@ -21,7 +21,7 @@ import {
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/store/")({
@@ -58,12 +58,8 @@ function StoreSettingsPage() {
 			const response = await api().seller.stores.get({
 				query: { page: 1, limit: 100 },
 			});
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nel caricamento negozio",
-				);
-			}
-			const found = response.data.data.find((s) => s.id === storeId);
+			const data = unwrap(response, "Errore nel caricamento negozio");
+			const found = data.data.find((s) => s.id === storeId);
 			if (!found) throw new Error("Negozio non trovato");
 			return found;
 		},
@@ -105,11 +101,7 @@ function StoreSettingsPage() {
 		mutationFn: async (formData: StoreFormData) => {
 			if (!storeId) throw new Error("No active store");
 			const response = await api().seller.stores({ storeId }).patch(formData);
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nell'aggiornamento",
-				);
-			}
+			const data = unwrap(response, "Errore nell'aggiornamento");
 			if (newFiles.length > 0) {
 				const imgResponse = await api()
 					.seller.stores({ storeId })
@@ -121,7 +113,7 @@ function StoreSettingsPage() {
 				}
 				setNewFiles([]);
 			}
-			return response.data;
+			return data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });

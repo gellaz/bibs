@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 type StatusFilter = "active" | "disabled" | "trashed";
 
@@ -20,9 +20,7 @@ export function useSellerCategoriesInUse(
 					...(statusFilter ? { statusFilter } : {}),
 				},
 			});
-			if (response.error)
-				throw new Error("Errore caricamento categorie in uso");
-			return response.data.data;
+			return unwrap(response, "Errore caricamento categorie in uso").data;
 		},
 	});
 }

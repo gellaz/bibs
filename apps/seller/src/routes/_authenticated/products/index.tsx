@@ -31,7 +31,7 @@ import { ProductsFilterBar } from "@/features/products/components/products-filte
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 type ProductSortField =
@@ -214,10 +214,7 @@ function ProductsListPage() {
 					...(maxPrice ? { maxPrice } : {}),
 				},
 			});
-			if (response.error) {
-				throw new Error(response.error.value?.message || "Errore caricamento");
-			}
-			return response.data;
+			return unwrap(response, "Errore caricamento");
 		},
 		enabled: !!activeStore?.id,
 	});

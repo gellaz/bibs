@@ -13,7 +13,7 @@ import {
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 interface Props {
 	storeId: string;
@@ -35,8 +35,7 @@ export function CancelStoreDialog({
 	const cancelMutation = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.stores({ storeId }).delete();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 		onSuccess: (data) => {
 			void qc.invalidateQueries({ queryKey: ["seller", "billing"] });

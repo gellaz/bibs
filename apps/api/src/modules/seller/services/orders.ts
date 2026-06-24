@@ -5,6 +5,10 @@ import { order } from "@/db/schemas/order";
 import { ServiceError } from "@/lib/errors";
 import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
 import { toCents } from "@/lib/money";
+import {
+	municipalityCompactWith,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { awardPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
@@ -136,10 +140,7 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 				customerProfile: { with: { user: true } },
 				store: {
 					with: {
-						municipality: {
-							columns: { id: true, name: true },
-							with: { province: { columns: { acronym: true } } },
-						},
+						municipality: municipalityCompactWith,
 					},
 				},
 			},
@@ -154,11 +155,7 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 		...rest,
 		store: {
 			...store,
-			municipality: {
-				id: store.municipality.id,
-				name: store.municipality.name,
-				provinceAcronym: store.municipality.province.acronym,
-			},
+			municipality: toMunicipalityCompact(store.municipality),
 		},
 	}));
 
@@ -180,10 +177,7 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 			customerProfile: { with: { user: true } },
 			store: {
 				with: {
-					municipality: {
-						columns: { id: true, name: true },
-						with: { province: { columns: { acronym: true } } },
-					},
+					municipality: municipalityCompactWith,
 				},
 			},
 			shippingAddress: true,
@@ -198,11 +192,7 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 		...foundRest,
 		store: {
 			...store,
-			municipality: {
-				id: store.municipality.id,
-				name: store.municipality.name,
-				provinceAcronym: store.municipality.province.acronym,
-			},
+			municipality: toMunicipalityCompact(store.municipality),
 		},
 	};
 }

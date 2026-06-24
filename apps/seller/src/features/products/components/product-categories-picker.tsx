@@ -23,7 +23,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDownIcon, XIcon } from "lucide-react";
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 interface ProductCategoriesPickerProps {
 	macroCategoryId: string | null;
@@ -51,9 +51,7 @@ export function ProductCategoriesPicker({
 			const response = await api()["product-macro-categories"].get({
 				query: { page: 1, limit: 100 },
 			});
-			if (response.error)
-				throw new Error("Errore nel caricamento macro-categorie");
-			return response.data.data;
+			return unwrap(response, "Errore nel caricamento macro-categorie").data;
 		},
 	});
 
@@ -67,8 +65,7 @@ export function ProductCategoriesPicker({
 					macroCategoryId: macroCategoryId ?? undefined,
 				},
 			});
-			if (response.error) throw new Error("Errore nel caricamento categorie");
-			return response.data.data;
+			return unwrap(response, "Errore nel caricamento categorie").data;
 		},
 		enabled: !!macroCategoryId,
 	});

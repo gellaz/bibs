@@ -12,6 +12,10 @@ import {
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
+import {
+	municipalityCompactWith,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
 import type { VatRate } from "@/lib/vat";
@@ -317,10 +321,7 @@ export async function listProducts(params: ListProductsParams) {
 								store: {
 									columns: { location: false },
 									with: {
-										municipality: {
-											columns: { id: true, name: true },
-											with: { province: { columns: { acronym: true } } },
-										},
+										municipality: municipalityCompactWith,
 									},
 								},
 							},
@@ -336,11 +337,7 @@ export async function listProducts(params: ListProductsParams) {
 			...sp,
 			store: {
 				...store,
-				municipality: {
-					id: store.municipality.id,
-					name: store.municipality.name,
-					provinceAcronym: store.municipality.province.acronym,
-				},
+				municipality: toMunicipalityCompact(store.municipality),
 			},
 		})),
 	}));
@@ -486,10 +483,7 @@ export async function getProduct(params: GetProductParams) {
 					store: {
 						columns: { location: false },
 						with: {
-							municipality: {
-								columns: { id: true, name: true },
-								with: { province: { columns: { acronym: true } } },
-							},
+							municipality: municipalityCompactWith,
 						},
 					},
 				},
@@ -513,11 +507,7 @@ export async function getProduct(params: GetProductParams) {
 			...sp,
 			store: {
 				...store,
-				municipality: {
-					id: store.municipality.id,
-					name: store.municipality.name,
-					provinceAcronym: store.municipality.province.acronym,
-				},
+				municipality: toMunicipalityCompact(store.municipality),
 			},
 		})),
 	};

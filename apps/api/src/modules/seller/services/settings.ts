@@ -6,46 +6,14 @@ import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
+import {
+	municipalityCompactWith,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { getEmployeeAssignedStoreIds } from "./access";
+import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
-
-async function fetchProfileWithMunicipalities(sellerProfileId: string) {
-	const raw = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.id, sellerProfileId),
-		with: {
-			residenceMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-			documentIssuedMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-		},
-	});
-
-	if (!raw) return null;
-
-	const { residenceMunicipality, documentIssuedMunicipality, ...rest } = raw;
-	return {
-		...rest,
-		residenceMunicipality: residenceMunicipality
-			? {
-					id: residenceMunicipality.id,
-					name: residenceMunicipality.name,
-					provinceAcronym: residenceMunicipality.province.acronym,
-				}
-			: null,
-		documentIssuedMunicipality: documentIssuedMunicipality
-			? {
-					id: documentIssuedMunicipality.id,
-					name: documentIssuedMunicipality.name,
-					provinceAcronym: documentIssuedMunicipality.province.acronym,
-				}
-			: null,
-	};
-}
 
 function assertActive(onboardingStatus: string) {
 	if (onboardingStatus !== "active") {
@@ -86,14 +54,8 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 		where: eq(sellerProfile.id, sellerProfileId),
 		with: {
 			changes: true,
-			residenceMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-			documentIssuedMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
+			residenceMunicipality: municipalityCompactWith,
+			documentIssuedMunicipality: municipalityCompactWith,
 		},
 	});
 
@@ -107,18 +69,10 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 	const profile = {
 		...profileRest,
 		residenceMunicipality: rawResidenceMunicipality
-			? {
-					id: rawResidenceMunicipality.id,
-					name: rawResidenceMunicipality.name,
-					provinceAcronym: rawResidenceMunicipality.province.acronym,
-				}
+			? toMunicipalityCompact(rawResidenceMunicipality)
 			: null,
 		documentIssuedMunicipality: rawDocumentIssuedMunicipality
-			? {
-					id: rawDocumentIssuedMunicipality.id,
-					name: rawDocumentIssuedMunicipality.name,
-					provinceAcronym: rawDocumentIssuedMunicipality.province.acronym,
-				}
+			? toMunicipalityCompact(rawDocumentIssuedMunicipality)
 			: null,
 	};
 
@@ -126,10 +80,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 		db.query.organization.findFirst({
 			where: eq(organization.sellerProfileId, sellerProfileId),
 			with: {
-				municipality: {
-					columns: { id: true, name: true },
-					with: { province: { columns: { acronym: true } } },
-				},
+				municipality: municipalityCompactWith,
 			},
 		}),
 		db.query.paymentMethod.findFirst({
@@ -153,11 +104,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 				const { municipality, ...rest } = orgRaw;
 				return {
 					...rest,
-					municipality: {
-						id: municipality.id,
-						name: municipality.name,
-						provinceAcronym: municipality.province.acronym,
-					},
+					municipality: toMunicipalityCompact(municipality),
 				};
 			})()
 		: null;
@@ -245,7 +192,9 @@ export async function updatePersonalSettings(params: PersonalSettingsParams) {
 			.where(eq(sellerProfile.id, sellerProfileId));
 	});
 
-	const updated = await fetchProfileWithMunicipalities(sellerProfileId);
+	const updated = await fetchSellerProfileCompact(
+		eq(sellerProfile.id, sellerProfileId),
+	);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
@@ -293,10 +242,7 @@ export async function updateCompanySettings(params: CompanySettingsParams) {
 	const result = await db.query.organization.findFirst({
 		where: eq(organization.id, updated.id),
 		with: {
-			municipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
+			municipality: municipalityCompactWith,
 		},
 	});
 
@@ -306,11 +252,7 @@ export async function updateCompanySettings(params: CompanySettingsParams) {
 	const { municipality, ...rest } = result;
 	return {
 		...rest,
-		municipality: {
-			id: municipality.id,
-			name: municipality.name,
-			provinceAcronym: municipality.province.acronym,
-		},
+		municipality: toMunicipalityCompact(municipality),
 	};
 }
 

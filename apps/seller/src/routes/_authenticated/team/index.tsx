@@ -57,7 +57,7 @@ import { SellerRoleBadge } from "@/components/seller-role-badge";
 import { EmployeeStoresDialog } from "@/features/team/components/employee-stores-dialog";
 import { StoreChips } from "@/features/team/components/store-chips";
 import { useStores } from "@/hooks/use-stores";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated/team/")({
@@ -77,12 +77,7 @@ function useEmployees(page: number, limit: number) {
 			const response = await api().seller.employees.get({
 				query: { page, limit },
 			});
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nel caricamento dipendenti",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore nel caricamento dipendenti");
 		},
 	});
 }
@@ -92,12 +87,7 @@ function useInvitations(enabled: boolean) {
 		queryKey: ["employee-invitations"],
 		queryFn: async () => {
 			const response = await api().seller.employees.invitations.get();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nel caricamento inviti",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore nel caricamento inviti");
 		},
 		enabled,
 	});
@@ -108,12 +98,7 @@ function useInviteEmployee() {
 	return useMutation({
 		mutationFn: async (params: { email: string; storeIds: string[] }) => {
 			const response = await api().seller.employees.invite.post(params);
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore durante l'invio dell'invito",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante l'invio dell'invito");
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
@@ -130,13 +115,7 @@ function useCancelInvitation() {
 			const response = await api()
 				.seller.employees.invitations({ invitationId })
 				.delete();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message ||
-						"Errore durante l'annullamento dell'invito",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante l'annullamento dell'invito");
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
@@ -158,12 +137,7 @@ function useBanEmployee() {
 	return useMutation({
 		mutationFn: async (employeeId: string) => {
 			const response = await api().seller.employees({ employeeId }).ban.patch();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore durante il ban",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante il ban");
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -178,12 +152,7 @@ function useUnbanEmployee() {
 			const response = await api()
 				.seller.employees({ employeeId })
 				.unban.patch();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore durante la riabilitazione",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante la riabilitazione");
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -196,12 +165,7 @@ function useRemoveEmployee() {
 	return useMutation({
 		mutationFn: async (employeeId: string) => {
 			const response = await api().seller.employees({ employeeId }).delete();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore durante la rimozione",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante la rimozione");
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });

@@ -1,6 +1,6 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 type ProductStatus = "active" | "disabled" | "trashed";
@@ -40,12 +40,7 @@ export function useProductMutations(activeStoreId: string | undefined) {
 			const res = await api()
 				.seller.products({ productId: vars.productId })
 				.status.patch({ status: vars.status });
-			if (res.error) {
-				throw new Error(
-					res.error.value?.message ?? "Errore aggiornamento stato",
-				);
-			}
-			return res.data;
+			return unwrap(res, "Errore aggiornamento stato");
 		},
 		onSuccess: (_data, vars) => {
 			invalidateAll();
@@ -78,10 +73,7 @@ export function useProductMutations(activeStoreId: string | undefined) {
 				productIds: vars.productIds,
 				status: vars.status,
 			});
-			if (res.error) {
-				throw new Error(res.error.value?.message ?? "Errore bulk update");
-			}
-			return res.data.data;
+			return unwrap(res, "Errore bulk update").data;
 		},
 		onSuccess: (data) => {
 			invalidateAll();
@@ -102,10 +94,7 @@ export function useProductMutations(activeStoreId: string | undefined) {
 			const res = await api().seller.products.bulk["delete-permanent"].post({
 				productIds: vars.productIds,
 			});
-			if (res.error) {
-				throw new Error(res.error.value?.message ?? "Errore eliminazione");
-			}
-			return res.data.data;
+			return unwrap(res, "Errore eliminazione").data;
 		},
 		onSuccess: (data) => {
 			invalidateAll();
