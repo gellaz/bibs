@@ -6,6 +6,7 @@ import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
+import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
 
@@ -18,43 +19,6 @@ function assertStatus(current: OnboardingStatus, expected: OnboardingStatus) {
 	}
 }
 
-async function fetchProfileWithMunicipalities(userId: string) {
-	const raw = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-		with: {
-			residenceMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-			documentIssuedMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-		},
-	});
-
-	if (!raw) return null;
-
-	const { residenceMunicipality, documentIssuedMunicipality, ...rest } = raw;
-	return {
-		...rest,
-		residenceMunicipality: residenceMunicipality
-			? {
-					id: residenceMunicipality.id,
-					name: residenceMunicipality.name,
-					provinceAcronym: residenceMunicipality.province.acronym,
-				}
-			: null,
-		documentIssuedMunicipality: documentIssuedMunicipality
-			? {
-					id: documentIssuedMunicipality.id,
-					name: documentIssuedMunicipality.name,
-					provinceAcronym: documentIssuedMunicipality.province.acronym,
-				}
-			: null,
-	};
-}
-
 const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
 	pending_document: "pending_personal",
 	pending_company: "pending_document",
@@ -64,10 +28,12 @@ const PREVIOUS_STATUS: Partial<Record<OnboardingStatus, OnboardingStatus>> = {
 // ── GET status ──────────────────────────────
 
 export async function getOnboardingStatus(userId: string) {
-	// fetchProfileWithMunicipalities intentionally omits the `organization` relation:
+	// fetchSellerProfileCompact intentionally omits the `organization` relation:
 	// SellerProfileSchema (the route's response shape) does not expose it, so the
 	// FE never had access to it from this endpoint. No data loss.
-	const profile = await fetchProfileWithMunicipalities(userId);
+	const profile = await fetchSellerProfileCompact(
+		eq(sellerProfile.userId, userId),
+	);
 
 	if (!profile) {
 		throw new ServiceError(404, "Seller profile not found");
@@ -120,7 +86,9 @@ export async function updatePersonalInfo(params: PersonalInfoParams) {
 			.where(eq(sellerProfile.userId, userId));
 	});
 
-	const updated = await fetchProfileWithMunicipalities(userId);
+	const updated = await fetchSellerProfileCompact(
+		eq(sellerProfile.userId, userId),
+	);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
@@ -160,7 +128,9 @@ export async function updateDocument(params: DocumentParams) {
 		})
 		.where(eq(sellerProfile.userId, userId));
 
-	const updated = await fetchProfileWithMunicipalities(userId);
+	const updated = await fetchSellerProfileCompact(
+		eq(sellerProfile.userId, userId),
+	);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
@@ -206,7 +176,9 @@ export async function updateCompany(params: CompanyParams) {
 			.where(eq(sellerProfile.userId, userId));
 	});
 
-	const updated = await fetchProfileWithMunicipalities(userId);
+	const updated = await fetchSellerProfileCompact(
+		eq(sellerProfile.userId, userId),
+	);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }
@@ -242,7 +214,9 @@ export async function goBack(userId: string) {
 			.where(eq(sellerProfile.userId, userId));
 	});
 
-	const updated = await fetchProfileWithMunicipalities(userId);
+	const updated = await fetchSellerProfileCompact(
+		eq(sellerProfile.userId, userId),
+	);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }

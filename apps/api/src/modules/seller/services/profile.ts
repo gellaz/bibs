@@ -1,23 +1,26 @@
-import { eq } from "drizzle-orm";
+import { eq, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
+import {
+	municipalityCompactWith,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 
 // ── Helpers ─────────────────────────────────
 
-async function fetchProfileWithMunicipalities(userId: string) {
+/**
+ * Fetches a seller profile (selected by `where`) with its residence and
+ * document municipalities flattened to the compact { id, name, provinceAcronym }
+ * shape. Returns null if no row matches. Omits the organization relation.
+ */
+export async function fetchSellerProfileCompact(where: SQL | undefined) {
 	const raw = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
+		where,
 		with: {
-			residenceMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-			documentIssuedMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
+			residenceMunicipality: municipalityCompactWith,
+			documentIssuedMunicipality: municipalityCompactWith,
 		},
 	});
 
@@ -27,18 +30,10 @@ async function fetchProfileWithMunicipalities(userId: string) {
 	return {
 		...rest,
 		residenceMunicipality: residenceMunicipality
-			? {
-					id: residenceMunicipality.id,
-					name: residenceMunicipality.name,
-					provinceAcronym: residenceMunicipality.province.acronym,
-				}
+			? toMunicipalityCompact(residenceMunicipality)
 			: null,
 		documentIssuedMunicipality: documentIssuedMunicipality
-			? {
-					id: documentIssuedMunicipality.id,
-					name: documentIssuedMunicipality.name,
-					provinceAcronym: documentIssuedMunicipality.province.acronym,
-				}
+			? toMunicipalityCompact(documentIssuedMunicipality)
 			: null,
 	};
 }
@@ -50,7 +45,9 @@ async function fetchProfileWithMunicipalities(userId: string) {
  * Does not check onboarding status — used for onboarding flow.
  */
 export async function getSellerProfile(userId: string) {
-	const profile = await fetchProfileWithMunicipalities(userId);
+	const profile = await fetchSellerProfileCompact(
+		eq(sellerProfile.userId, userId),
+	);
 
 	if (!profile) {
 		throw new ServiceError(404, "Seller profile not found");
@@ -115,7 +112,9 @@ export async function updateSellerVat(params: UpdateVatParams) {
 			.where(eq(sellerProfile.userId, userId));
 	});
 
-	const updated = await fetchProfileWithMunicipalities(userId);
+	const updated = await fetchSellerProfileCompact(
+		eq(sellerProfile.userId, userId),
+	);
 	if (!updated) throw new ServiceError(404, "Seller profile not found");
 	return updated;
 }

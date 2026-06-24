@@ -12,6 +12,10 @@ import {
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import type { CustomClosure } from "@/lib/holidays";
+import {
+	municipalityCompactWith,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { validateOpeningHours } from "@/lib/opening-hours";
 import { parsePagination } from "@/lib/pagination";
 import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
@@ -54,10 +58,7 @@ export async function listStores(params: ListStoresParams) {
 				phoneNumbers: true,
 				category: true,
 				images: true,
-				municipality: {
-					columns: { id: true, name: true },
-					with: { province: { columns: { acronym: true } } },
-				},
+				municipality: municipalityCompactWith,
 			},
 		}),
 		db.select({ total: count() }).from(storeTable).where(where),
@@ -65,11 +66,7 @@ export async function listStores(params: ListStoresParams) {
 
 	const data = rawData.map(({ municipality, ...rest }) => ({
 		...rest,
-		municipality: {
-			id: municipality.id,
-			name: municipality.name,
-			provinceAcronym: municipality.province.acronym,
-		},
+		municipality: toMunicipalityCompact(municipality),
 	}));
 
 	const statusMap = await resolveOpenStatuses(
@@ -132,10 +129,7 @@ export async function createStore(params: CreateStoreParams) {
 				phoneNumbers: true,
 				category: true,
 				images: true,
-				municipality: {
-					columns: { id: true, name: true },
-					with: { province: { columns: { acronym: true } } },
-				},
+				municipality: municipalityCompactWith,
 			},
 		});
 
@@ -143,11 +137,7 @@ export async function createStore(params: CreateStoreParams) {
 		const { municipality, ...rest } = raw;
 		return {
 			...rest,
-			municipality: {
-				id: municipality.id,
-				name: municipality.name,
-				provinceAcronym: municipality.province.acronym,
-			},
+			municipality: toMunicipalityCompact(municipality),
 		};
 	});
 }
@@ -231,10 +221,7 @@ export async function updateStore(params: UpdateStoreParams) {
 				phoneNumbers: true,
 				category: true,
 				images: true,
-				municipality: {
-					columns: { id: true, name: true },
-					with: { province: { columns: { acronym: true } } },
-				},
+				municipality: municipalityCompactWith,
 			},
 		});
 
@@ -243,11 +230,7 @@ export async function updateStore(params: UpdateStoreParams) {
 		const { municipality, ...updatedRest } = rawUpdated;
 		return {
 			...updatedRest,
-			municipality: {
-				id: municipality.id,
-				name: municipality.name,
-				provinceAcronym: municipality.province.acronym,
-			},
+			municipality: toMunicipalityCompact(municipality),
 		};
 	});
 }
