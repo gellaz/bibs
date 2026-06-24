@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/store/new/processing")({
@@ -38,8 +38,7 @@ function ProcessingPage() {
 			const res = await api()
 				.seller["checkout-sessions"]({ sessionId })
 				.status.get();
-			if (res.error) throw new Error(res.error.value?.message);
-			return res.data?.data;
+			return unwrap(res, "Errore").data;
 		},
 		refetchInterval: (q) =>
 			q.state.data?.status === "ready" || timedOut ? false : POLL_INTERVAL_MS,

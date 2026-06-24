@@ -13,7 +13,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useStores } from "@/hooks/use-stores";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface Props {
@@ -50,8 +50,7 @@ export function StoreAssignmentDialog({
 					storeIds: Array.from(selected),
 					stock: Number.isNaN(stock) ? 0 : stock,
 				});
-			if (response.error) throw new Error("Errore assegnazione");
-			return response.data.data;
+			return unwrap(response, "Errore assegnazione").data;
 		},
 		onSuccess: (data) => {
 			void queryClient.invalidateQueries({ queryKey: ["product", productId] });

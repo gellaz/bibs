@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 /**
  * Hook to fetch the list of countries from the API.
@@ -11,15 +11,7 @@ export function useCountries() {
 		queryFn: async () => {
 			const response = await api().locations.countries.get();
 
-			if (response.error) {
-				throw new Error(
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore nel caricamento dei paesi",
-				);
-			}
-
-			return response.data.data;
+			return unwrap(response, "Errore nel caricamento dei paesi").data;
 		},
 		staleTime: 1000 * 60 * 60, // 1 hour
 	});

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 /**
  * True quando il seller non ha MAI avuto un negozio: zero attivi e zero
@@ -24,8 +24,7 @@ export function useFirstStoreOnboarding() {
 			const r = await api().seller.stores.archived.get({
 				query: { page: 1, limit: 50 },
 			});
-			if (r.error) throw new Error(r.error.value?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 		enabled: noActiveStores,
 	});

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 /**
  * Hook to fetch the seller's stores.
@@ -13,13 +13,7 @@ export function useStores({ enabled = true }: { enabled?: boolean } = {}) {
 				query: { page: 1, limit: 100 },
 			});
 
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nel caricamento negozi",
-				);
-			}
-
-			return response.data.data;
+			return unwrap(response, "Errore nel caricamento negozi").data;
 		},
 		enabled,
 	});

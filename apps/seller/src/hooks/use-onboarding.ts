@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 /**
  * Hook to fetch the current onboarding status and data.
@@ -10,15 +10,10 @@ export function useOnboardingStatus() {
 		queryFn: async () => {
 			const response = await api().seller.onboarding.status.get();
 
-			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante il caricamento dello stato onboarding";
-				throw new Error(errorMsg);
-			}
-
-			return response.data.data;
+			return unwrap(
+				response,
+				"Errore durante il caricamento dello stato onboarding",
+			).data;
 		},
 	});
 }
@@ -60,14 +55,10 @@ export function useUpdatePersonalInfo() {
 		}) => {
 			const response =
 				await api().seller.onboarding["personal-info"].patch(params);
-			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante il salvataggio dei dati personali";
-				throw new Error(errorMsg);
-			}
-			return response.data;
+			return unwrap(
+				response,
+				"Errore durante il salvataggio dei dati personali",
+			);
 		},
 	);
 }
@@ -84,14 +75,7 @@ export function useUpdateDocument() {
 			documentImage: File;
 		}) => {
 			const response = await api().seller.onboarding.document.patch(params);
-			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante il caricamento del documento";
-				throw new Error(errorMsg);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante il caricamento del documento");
 		},
 	);
 }
@@ -111,14 +95,10 @@ export function useUpdateCompany() {
 			zipCode: string;
 		}) => {
 			const response = await api().seller.onboarding.company.patch(params);
-			if (response.error) {
-				const errorMsg =
-					typeof response.error.value === "string"
-						? response.error.value
-						: "Errore durante il salvataggio dei dati aziendali";
-				throw new Error(errorMsg);
-			}
-			return response.data;
+			return unwrap(
+				response,
+				"Errore durante il salvataggio dei dati aziendali",
+			);
 		},
 	);
 }
@@ -129,13 +109,6 @@ export function useUpdateCompany() {
 export function useGoBack() {
 	return useOnboardingMutation(async () => {
 		const response = await api().seller.onboarding["go-back"].post();
-		if (response.error) {
-			const errorMsg =
-				typeof response.error.value === "string"
-					? response.error.value
-					: "Errore durante il ritorno allo step precedente";
-			throw new Error(errorMsg);
-		}
-		return response.data;
+		return unwrap(response, "Errore durante il ritorno allo step precedente");
 	});
 }

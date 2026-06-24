@@ -6,7 +6,7 @@ import {
 	type ClosuresState,
 } from "@/features/stores/components/closures-manager";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { toYMD } from "@/lib/date";
 import { m } from "@/paraglide/messages";
 
@@ -23,15 +23,11 @@ function ClosuresPage() {
 		queryFn: async (): Promise<ClosuresState> => {
 			if (!storeId) throw new Error("No active store");
 			const response = await api().seller.stores({ storeId }).closures.get();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m["store.closures.error"](),
-				);
-			}
+			const data = unwrap(response, m["store.closures.error"]());
 			// Eden rehydrates date-string fields into Date objects; normalise them
 			// back to "YYYY-MM-DD" so the manager (render, dirty-tracking, PUT body)
 			// works with strings as typed.
-			const raw = response.data.data as ClosuresState;
+			const raw = data.data as ClosuresState;
 			return {
 				holidays: raw.holidays.map((h) => ({
 					...h,

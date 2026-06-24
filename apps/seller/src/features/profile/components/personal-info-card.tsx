@@ -3,7 +3,7 @@ import {
 	PersonalInfoCard as SharedPersonalInfoCard,
 } from "@bibs/ui/components/personal-info-card";
 import { toast } from "@bibs/ui/components/sonner";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 
 const LABELS: PersonalInfoCardLabels = {
@@ -60,30 +60,14 @@ export function PersonalInfoCard() {
 
 	const onUploadAvatar = async (file: File) => {
 		const res = await api().me.avatar.post({ file });
-		if (res.error) {
-			throw new Error(
-				typeof res.error.value === "object" &&
-					res.error.value &&
-					"message" in res.error.value
-					? String((res.error.value as { message: string }).message)
-					: "Errore",
-			);
-		}
+		unwrap(res, "Errore");
 		await refetch();
 		toast.success("Immagine profilo aggiornata");
 	};
 
 	const onRemoveAvatar = async () => {
 		const res = await api().me.avatar.delete();
-		if (res.error) {
-			throw new Error(
-				typeof res.error.value === "object" &&
-					res.error.value &&
-					"message" in res.error.value
-					? String((res.error.value as { message: string }).message)
-					: "Errore",
-			);
-		}
+		unwrap(res, "Errore");
 		await refetch();
 		toast.success("Immagine profilo rimossa");
 	};

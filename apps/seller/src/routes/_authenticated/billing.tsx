@@ -30,7 +30,7 @@ import { useEffect } from "react";
 import { SectionHeader } from "@/components/section-header";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/billing")({
 	component: BillingPage,
@@ -98,8 +98,7 @@ function BillingPage() {
 		enabled: isOwner,
 		queryFn: async () => {
 			const r = await api().seller.billing.summary.get();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 	});
 
@@ -108,8 +107,7 @@ function BillingPage() {
 		enabled: isOwner,
 		queryFn: async () => {
 			const r = await api().seller.billing.subscriptions.get();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data ?? [];
+			return unwrap(r, "Errore").data ?? [];
 		},
 	});
 
@@ -120,16 +118,14 @@ function BillingPage() {
 			const r = await api().seller.billing.invoices.get({
 				query: { limit: 25 },
 			});
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 	});
 
 	const portalMutation = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.billing.portal.post();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;
@@ -140,8 +136,7 @@ function BillingPage() {
 	const reactivateMutation = useMutation({
 		mutationFn: async (storeId: string) => {
 			const r = await api().seller.stores({ storeId }).reactivate.post();
-			if (r.error) throw new Error((r.error.value as any)?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["seller", "billing"] });

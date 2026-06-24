@@ -16,7 +16,7 @@ import {
 } from "@bibs/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/store/archived")({
 	component: ArchivedPage,
@@ -43,8 +43,7 @@ function ArchivedPage() {
 			const r = await api().seller.stores.archived.get({
 				query: { page: 1, limit: 50 },
 			});
-			if (r.error) throw new Error(r.error.value?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore").data;
 		},
 	});
 

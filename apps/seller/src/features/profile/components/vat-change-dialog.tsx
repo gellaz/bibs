@@ -14,7 +14,7 @@ import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 	const [open, setOpen] = useState(false);
@@ -25,14 +25,7 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 	const mut = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.settings.vat.patch({ vatNumber: vat });
-			if (r.error) {
-				throw new Error(
-					(typeof r.error.value === "string"
-						? r.error.value
-						: r.error.value?.message) || "Errore nella richiesta",
-				);
-			}
-			return r.data;
+			return unwrap(r, "Errore nella richiesta");
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });

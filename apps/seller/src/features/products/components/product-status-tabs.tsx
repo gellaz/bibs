@@ -1,6 +1,6 @@
 import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export type ProductStatusFilter = "active" | "disabled" | "trashed";
@@ -18,8 +18,7 @@ export function ProductStatusTabs({ storeId, value, onChange }: Props) {
 			const res = await api().seller.products["status-counts"].get({
 				query: { storeId },
 			});
-			if (res.error) throw new Error("Errore caricamento conteggi");
-			return res.data.data;
+			return unwrap(res, "Errore caricamento conteggi").data;
 		},
 		enabled: !!storeId,
 	});

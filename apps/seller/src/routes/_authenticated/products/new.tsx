@@ -8,7 +8,7 @@ import {
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/products/new")({
 	component: NewProductPage,
@@ -43,13 +43,7 @@ function NewProductPage() {
 				storeId,
 			});
 
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nella creazione",
-				);
-			}
-
-			const product = response.data;
+			const product = unwrap(response, "Errore nella creazione");
 
 			if (formData.files.length > 0 && product.data?.id) {
 				const imgResponse = await api()
