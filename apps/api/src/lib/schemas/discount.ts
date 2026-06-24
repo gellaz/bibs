@@ -1,4 +1,5 @@
 import { t } from "elysia";
+import { PaginationQuery } from "@/lib/pagination";
 
 export const DiscountStatusSchema = t.Union(
 	[t.Literal("active"), t.Literal("paused"), t.Literal("archived")],
@@ -68,8 +69,7 @@ export const DiscountProductsBody = t.Object({
 });
 
 export const DiscountListQuery = t.Object({
-	page: t.Optional(t.Number({ minimum: 1, default: 1 })),
-	limit: t.Optional(t.Number({ minimum: 1, maximum: 100, default: 20 })),
+	...PaginationQuery.properties,
 	state: t.Optional(DiscountOperationalStateSchema),
 	search: t.Optional(t.String({ maxLength: 80 })),
 });

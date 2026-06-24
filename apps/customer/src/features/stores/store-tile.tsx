@@ -1,41 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Clock, MapPin } from "lucide-react";
-import { useState } from "react";
+import { formatDistance, TileImage } from "@/components/tile";
 import { openStatusLabel } from "./open-status";
 import type { StoreCardView } from "./use-store-search";
-
-/** Metri → "240 m" / "1,2 km" (convenzione italiana, virgola decimale). */
-function formatDistance(meters: number): string {
-	if (meters < 1000) return `${Math.round(meters)} m`;
-	return `${(meters / 1000).toFixed(1).replace(".", ",")} km`;
-}
-
-function TileImage({ url, name }: { url: string | null; name: string }) {
-	const [failed, setFailed] = useState(false);
-	if (!url || failed) {
-		const initial = name.trim().charAt(0).toUpperCase() || "?";
-		return (
-			<div className="flex size-full items-center justify-center bg-muted">
-				<span
-					aria-hidden
-					className="font-display font-semibold text-4xl text-muted-foreground/70"
-				>
-					{initial}
-				</span>
-			</div>
-		);
-	}
-	return (
-		<img
-			src={url}
-			alt={name}
-			loading="lazy"
-			decoding="async"
-			onError={() => setFailed(true)}
-			className="size-full object-cover"
-		/>
-	);
-}
 
 /** Riga di stato apertura. */
 function OpenStatusLine({ status }: { status: StoreCardView["openStatus"] }) {

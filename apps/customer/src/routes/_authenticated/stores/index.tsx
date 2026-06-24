@@ -1,67 +1,23 @@
 import { Button } from "@bibs/ui/components/button";
-import { Skeleton } from "@bibs/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Compass, LocateFixed, MapPin, RotateCw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Notice } from "@/components/notice";
+import { GRID, TileSkeleton } from "@/components/tile";
 import { useGeolocation } from "@/features/discovery/use-geolocation";
 import { StoreTile } from "@/features/stores/store-tile";
 import { useStoreSearch } from "@/features/stores/use-store-search";
 import { api } from "@/lib/api";
 
-const SEARCH_SCHEMA = (search: Record<string, unknown>) => ({
-	q: typeof search.q === "string" ? search.q : undefined,
-	categoryId:
-		typeof search.categoryId === "string" ? search.categoryId : undefined,
-});
-
 export const Route = createFileRoute("/_authenticated/stores/")({
-	validateSearch: SEARCH_SCHEMA,
+	validateSearch: (search: Record<string, unknown>) => ({
+		q: typeof search.q === "string" ? search.q : undefined,
+		categoryId:
+			typeof search.categoryId === "string" ? search.categoryId : undefined,
+	}),
 	component: StoresPage,
 });
-
-const GRID = "grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4";
-
-function TileSkeleton() {
-	return (
-		<div className="flex flex-col gap-3">
-			<Skeleton className="aspect-square rounded-lg" />
-			<div className="flex flex-col gap-1.5">
-				<Skeleton className="h-4 w-4/5" />
-				<Skeleton className="h-4 w-1/3" />
-			</div>
-		</div>
-	);
-}
-
-function Notice({
-	icon: Icon,
-	title,
-	description,
-	action,
-}: {
-	icon: typeof Compass;
-	title: string;
-	description: string;
-	action?: React.ReactNode;
-}) {
-	return (
-		<div className="flex flex-col items-center gap-4 rounded-xl border border-border border-dashed px-6 py-14 text-center">
-			<div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-				<Icon className="size-6" aria-hidden />
-			</div>
-			<div className="space-y-1">
-				<h3 className="font-display font-semibold text-foreground text-lg">
-					{title}
-				</h3>
-				<p className="mx-auto max-w-sm text-muted-foreground text-sm leading-relaxed">
-					{description}
-				</p>
-			</div>
-			{action}
-		</div>
-	);
-}
 
 function useStoreCategories() {
 	return useQuery({

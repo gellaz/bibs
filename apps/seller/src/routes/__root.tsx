@@ -1,5 +1,7 @@
 import { Toaster } from "@bibs/ui/components/sonner";
 import { TooltipProvider } from "@bibs/ui/components/tooltip";
+import TanStackQueryDevtools from "@bibs/ui/integrations/tanstack-query/devtools";
+import TanStackQueryProvider from "@bibs/ui/integrations/tanstack-query/root-provider";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -10,8 +12,6 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import TanStackQueryDevtools from "@/integrations/tanstack-query/devtools";
-import TanStackQueryProvider from "@/integrations/tanstack-query/root-provider";
 import { getLocale } from "@/paraglide/runtime";
 import appCss from "@/styles.css?url";
 

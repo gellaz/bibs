@@ -11,6 +11,7 @@ import {
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
+import { formatDateIt } from "@bibs/ui/lib/date";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -61,12 +62,6 @@ type AdminUser = {
 	role: string | null | undefined;
 	banned: boolean | null | undefined;
 	createdAt: string | Date;
-};
-
-const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
-	year: "numeric",
-	month: "long",
-	day: "numeric",
 };
 
 function UsersPage() {
@@ -209,11 +204,7 @@ function UsersPage() {
 				header: ({ column }) => (
 					<SortableHeader column={column}>Registrato il</SortableHeader>
 				),
-				cell: ({ row }) =>
-					new Date(row.original.createdAt).toLocaleDateString(
-						"it-IT",
-						DATE_FMT_OPTS,
-					),
+				cell: ({ row }) => formatDateIt(row.original.createdAt, { long: true }),
 			},
 			{
 				id: "actions",

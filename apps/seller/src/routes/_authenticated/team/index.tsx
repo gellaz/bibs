@@ -37,6 +37,7 @@ import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
+import { formatDateIt } from "@bibs/ui/lib/date";
 import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -510,12 +511,6 @@ type InvitationRow = {
 };
 type TeamRow = OwnerRow | EmployeeRow | InvitationRow;
 
-const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
-	year: "numeric",
-	month: "short",
-	day: "numeric",
-};
-
 // ─── Main Page ───────────────────────────────────────────
 
 function TeamPage() {
@@ -708,7 +703,7 @@ function TeamPage() {
 						r.kind === "employee"
 							? r.employee.createdAt
 							: r.invitation.createdAt;
-					return new Date(createdAt).toLocaleDateString("it-IT", DATE_FMT_OPTS);
+					return formatDateIt(createdAt);
 				},
 			},
 		];

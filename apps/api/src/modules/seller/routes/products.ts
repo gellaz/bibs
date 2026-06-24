@@ -47,15 +47,11 @@ export const productsRoutes = new Elysia()
 				sellerProfile: sp,
 				query,
 				isOwner,
-				user,
+				accessCtx,
 				getAccessibleStoreIds,
 			} = withSeller(ctx);
 			if (query.storeId) {
-				await ensureStoreAccess(query.storeId, {
-					userId: user.id,
-					sellerProfileId: sp.id,
-					isOwner,
-				});
+				await ensureStoreAccess(query.storeId, accessCtx);
 			}
 			// Employees without an explicit storeId must only see products in
 			// their assigned stores (owners see the whole catalog).
@@ -204,15 +200,11 @@ export const productsRoutes = new Elysia()
 				sellerProfile: sp,
 				query,
 				isOwner,
-				user,
+				accessCtx,
 				getAccessibleStoreIds,
 			} = withSeller(ctx);
 			if (query.storeId) {
-				await ensureStoreAccess(query.storeId, {
-					userId: user.id,
-					sellerProfileId: sp.id,
-					isOwner,
-				});
+				await ensureStoreAccess(query.storeId, accessCtx);
 			}
 			const restrictToStoreIds =
 				!query.storeId && !isOwner ? await getAccessibleStoreIds() : undefined;
@@ -256,12 +248,8 @@ export const productsRoutes = new Elysia()
 	.get(
 		"/products/status-counts",
 		async (ctx) => {
-			const { sellerProfile: sp, query, isOwner, user } = withSeller(ctx);
-			await ensureStoreAccess(query.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			const { sellerProfile: sp, query, accessCtx } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, accessCtx);
 
 			const counts = await getProductStatusCounts({
 				sellerProfileId: sp.id,
@@ -311,13 +299,15 @@ export const productsRoutes = new Elysia()
 	.post(
 		"/products",
 		async (ctx) => {
-			const { sellerProfile: sp, body, user, store, isOwner } = withSeller(ctx);
+			const {
+				sellerProfile: sp,
+				body,
+				user,
+				store,
+				accessCtx,
+			} = withSeller(ctx);
 			const pino = getLogger(store);
-			await ensureStoreAccess(body.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			await ensureStoreAccess(body.storeId, accessCtx);
 			const data = await createProduct({ sellerProfileId: sp.id, ...body });
 
 			pino.info(
@@ -432,13 +422,14 @@ export const productsRoutes = new Elysia()
 	.post(
 		"/products/import",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, body, user, store, isOwner } = sellerCtx;
-			await ensureStoreAccess(body.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			const {
+				sellerProfile: sp,
+				body,
+				user,
+				store,
+				accessCtx,
+			} = withSeller(ctx);
+			await ensureStoreAccess(body.storeId, accessCtx);
 			const pino = getLogger(store);
 			const csvText = await body.file.text();
 			const result = await importProductsFromCsv({

@@ -4,8 +4,9 @@
  * Eden Treaty rehydrates ISO-date-looking response strings into `Date` objects
  * (date-only values like "2026-01-01" become UTC-midnight `Date`s), even when
  * the TypeBox schema declares `t.String()`. Rendering such a value directly
- * throws "Objects are not valid as a React child (found: [object Date])". Run
- * every API calendar-date through this at the use site.
+ * throws "Objects are not valid as a React child (found: [object Date])", and
+ * feeding it to string APIs (`.split`, date `<input value>`, the PUT body)
+ * breaks too. Run every API calendar-date through this at the use site.
  *
  * UTC parts are used so the original calendar day is recovered regardless of
  * the viewer's timezone (Eden parsed the date-only string as UTC midnight).
@@ -18,4 +19,19 @@ export function toYMD(value: string | Date): string {
 		return `${y}-${m}-${d}`;
 	}
 	return value.slice(0, 10);
+}
+
+/**
+ * Formatta una data in italiano ("3 mar 2026" / "3 marzo 2026"). `long` usa il
+ * mese per esteso (default: mese abbreviato). Accetta una string o una Date.
+ */
+export function formatDateIt(
+	value: string | Date,
+	{ long = false }: { long?: boolean } = {},
+): string {
+	return new Date(value).toLocaleDateString("it-IT", {
+		year: "numeric",
+		month: long ? "long" : "short",
+		day: "numeric",
+	});
 }

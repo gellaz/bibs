@@ -1,7 +1,7 @@
+import { toYMD } from "@bibs/ui/lib/date";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/discovery/use-geolocation";
 import { api } from "@/lib/api";
-import { toYMD } from "@/lib/date";
 
 export interface StoreCardView {
 	id: string;

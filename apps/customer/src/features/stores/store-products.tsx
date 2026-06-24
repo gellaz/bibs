@@ -1,22 +1,8 @@
 import { Button } from "@bibs/ui/components/button";
-import { Skeleton } from "@bibs/ui/components/skeleton";
 import { RotateCw } from "lucide-react";
+import { GRID, TileSkeleton } from "@/components/tile";
 import { ProductTile } from "@/features/catalog/product-tile";
 import { useStoreProducts } from "./use-store-products";
-
-const GRID = "grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4";
-
-function TileSkeleton() {
-	return (
-		<div className="flex flex-col gap-3">
-			<Skeleton className="aspect-square rounded-lg" />
-			<div className="flex flex-col gap-1.5">
-				<Skeleton className="h-4 w-4/5" />
-				<Skeleton className="h-4 w-1/3" />
-			</div>
-		</div>
-	);
-}
 
 export function StoreProducts({ storeId }: { storeId: string }) {
 	const {

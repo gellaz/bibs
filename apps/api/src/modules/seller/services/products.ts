@@ -460,6 +460,38 @@ export async function getProductStatusCounts(
 
 // ── getProduct ────────────────────────────────────────────────────────────────
 
+/** True if at least one of the product's store rows is in the accessible set. */
+function isProductAccessible(
+	storeProducts: { storeId: string }[],
+	accessibleStoreIds: string[],
+) {
+	return storeProducts.some((sp) => accessibleStoreIds.includes(sp.storeId));
+}
+
+/**
+ * Loads a product owned by the seller AND reachable via one of accessibleStoreIds,
+ * throwing 404 otherwise. Minimal (storeId-only) accessibility guard shared by the
+ * mutations that throw. getProduct fetches richer relations and updateProduct
+ * returns null instead of throwing, so those call isProductAccessible directly.
+ */
+async function loadAccessibleProduct(
+	productId: string,
+	sellerProfileId: string,
+	accessibleStoreIds: string[],
+) {
+	const found = await db.query.product.findFirst({
+		where: and(
+			eq(product.id, productId),
+			eq(product.sellerProfileId, sellerProfileId),
+		),
+		with: { storeProducts: { columns: { storeId: true } } },
+	});
+	if (!found || !isProductAccessible(found.storeProducts, accessibleStoreIds)) {
+		throw new ServiceError(404, "Product not found");
+	}
+	return found;
+}
+
 interface GetProductParams {
 	productId: string;
 	sellerProfileId: string;
@@ -494,12 +526,9 @@ export async function getProduct(params: GetProductParams) {
 	});
 
 	if (!found) throw new ServiceError(404, "Product not found");
-
-	// Verify accessibility: at least one storeProducts row must be in accessibleStoreIds
-	const accessible = found.storeProducts.some((sp) =>
-		accessibleStoreIds.includes(sp.storeId),
-	);
-	if (!accessible) throw new ServiceError(404, "Product not found");
+	if (!isProductAccessible(found.storeProducts, accessibleStoreIds)) {
+		throw new ServiceError(404, "Product not found");
+	}
 
 	return {
 		...found,
@@ -644,10 +673,9 @@ export async function updateProduct(params: UpdateProductParams) {
 		with: { storeProducts: { columns: { storeId: true } } },
 	});
 	if (!existing) return null;
-	const accessible = existing.storeProducts.some((sp) =>
-		accessibleStoreIds.includes(sp.storeId),
-	);
-	if (!accessible) return null;
+	if (!isProductAccessible(existing.storeProducts, accessibleStoreIds)) {
+		return null;
+	}
 
 	// Validate: all categoryIds belong to a single macro-category
 	if (categoryIds && categoryIds.length > 1) {
@@ -764,19 +792,11 @@ interface DeleteProductParams {
 export async function deleteProduct(params: DeleteProductParams) {
 	const { productId, sellerProfileId, accessibleStoreIds } = params;
 
-	// Verify accessibility before mutating
-	const check = await db.query.product.findFirst({
-		where: and(
-			eq(product.id, productId),
-			eq(product.sellerProfileId, sellerProfileId),
-		),
-		with: { storeProducts: { columns: { storeId: true } } },
-	});
-	if (!check) throw new ServiceError(404, "Product not found");
-	const accessible = check.storeProducts.some((sp) =>
-		accessibleStoreIds.includes(sp.storeId),
+	const check = await loadAccessibleProduct(
+		productId,
+		sellerProfileId,
+		accessibleStoreIds,
 	);
-	if (!accessible) throw new ServiceError(404, "Product not found");
 
 	if (check.status !== "trashed") {
 		throw new ServiceError(409, "Sposta prima il prodotto nel cestino");
@@ -884,19 +904,11 @@ export async function updateProductStatus(params: UpdateProductStatusParams) {
 		status,
 	} = params;
 
-	const found = await db.query.product.findFirst({
-		where: and(
-			eq(product.id, productId),
-			eq(product.sellerProfileId, sellerProfileId),
-		),
-		with: { storeProducts: { columns: { storeId: true } } },
-	});
-	if (!found) throw new ServiceError(404, "Product not found");
-
-	const accessible = found.storeProducts.some((sp) =>
-		accessibleStoreIds.includes(sp.storeId),
+	const found = await loadAccessibleProduct(
+		productId,
+		sellerProfileId,
+		accessibleStoreIds,
 	);
-	if (!accessible) throw new ServiceError(404, "Product not found");
 
 	if (found.status === status) return found;
 

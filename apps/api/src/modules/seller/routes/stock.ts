@@ -24,14 +24,9 @@ export const stockRoutes = new Elysia()
 	.post(
 		"/products/:productId/stores",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params, body, isOwner, user } = sellerCtx;
+			const { sellerProfile: sp, params, body, accessCtx } = withSeller(ctx);
 			for (const storeId of body.storeIds) {
-				await ensureStoreAccess(storeId, {
-					userId: user.id,
-					sellerProfileId: sp.id,
-					isOwner,
-				});
+				await ensureStoreAccess(storeId, accessCtx);
 			}
 			const data = await assignProductToStores({
 				productId: params.productId,
@@ -70,13 +65,8 @@ export const stockRoutes = new Elysia()
 	.patch(
 		"/products/:productId/stores/:storeId",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params, body, isOwner, user } = sellerCtx;
-			await ensureStoreAccess(params.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			const { sellerProfile: sp, params, body, accessCtx } = withSeller(ctx);
+			await ensureStoreAccess(params.storeId, accessCtx);
 			const data = await updateStock({
 				productId: params.productId,
 				storeId: params.storeId,
@@ -105,21 +95,16 @@ export const stockRoutes = new Elysia()
 	.post(
 		"/products/:productId/stores/:storeId/stock-adjust",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
 			const {
 				sellerProfile: sp,
 				params,
 				body,
-				isOwner,
 				user,
+				accessCtx,
 				store,
-			} = sellerCtx;
+			} = withSeller(ctx);
 			const pino = getLogger(store);
-			await ensureStoreAccess(params.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			await ensureStoreAccess(params.storeId, accessCtx);
 			const data = await adjustStock({
 				productId: params.productId,
 				storeId: params.storeId,
@@ -158,14 +143,15 @@ export const stockRoutes = new Elysia()
 	.post(
 		"/products/bulk/stock-adjust",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, body, isOwner, user, store } = sellerCtx;
+			const {
+				sellerProfile: sp,
+				body,
+				user,
+				store,
+				accessCtx,
+			} = withSeller(ctx);
 			const pino = getLogger(store);
-			await ensureStoreAccess(body.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			await ensureStoreAccess(body.storeId, accessCtx);
 			const result = await bulkAdjustStock({
 				sellerProfileId: sp.id,
 				storeId: body.storeId,
@@ -203,13 +189,8 @@ export const stockRoutes = new Elysia()
 	.delete(
 		"/products/:productId/stores/:storeId",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params, isOwner, user } = sellerCtx;
-			await ensureStoreAccess(params.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			const { sellerProfile: sp, params, accessCtx } = withSeller(ctx);
+			await ensureStoreAccess(params.storeId, accessCtx);
 			await removeProductFromStore({
 				productId: params.productId,
 				storeId: params.storeId,

@@ -1,40 +1,13 @@
-import { asc, count, desc, eq, ilike } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { storeCategory } from "@/db/schemas/store-category";
 import { ServiceError } from "@/lib/errors";
-import { parsePagination } from "@/lib/pagination";
+import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
-interface ListStoreCategoriesParams {
-	page?: number;
-	limit?: number;
-	search?: string;
-	sortBy?: "name" | "createdAt";
-	sortOrder?: "asc" | "desc";
-}
-
-export async function listStoreCategories(params: ListStoreCategoriesParams) {
-	const { page, limit, offset } = parsePagination(params);
-	const where = params.search
-		? ilike(storeCategory.name, `%${params.search}%`)
-		: undefined;
-
-	const sortCol =
-		params.sortBy === "createdAt"
-			? storeCategory.createdAt
-			: storeCategory.name;
-	const sortDir = params.sortOrder === "desc" ? desc : asc;
-
-	const [data, [{ total }]] = await Promise.all([
-		db.query.storeCategory.findMany({
-			where,
-			orderBy: sortDir(sortCol),
-			limit,
-			offset,
-		}),
-		db.select({ total: count() }).from(storeCategory).where(where),
-	]);
-
-	return { data, pagination: { page, limit, total } };
+export async function listStoreCategories(params: ListByNameParams) {
+	return listByNamePaged(storeCategory, params, (opts) =>
+		db.query.storeCategory.findMany(opts),
+	);
 }
 
 export async function createStoreCategory(name: string) {

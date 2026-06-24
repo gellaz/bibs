@@ -15,6 +15,7 @@ import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
+import { formatDateIt } from "@bibs/ui/lib/date";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -27,7 +28,7 @@ import {
 	type ProductStatusFilter,
 	ProductStatusTabs,
 } from "@/features/products/components/product-status-tabs";
-import { ProductsFilterBar } from "@/features/products/components/products-filter-bar";
+import { ProductsFilterSheet } from "@/features/products/components/products-filter-sheet";
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
@@ -117,12 +118,6 @@ const INITIAL_COLUMN_VISIBILITY = {
 	vat: false,
 };
 
-const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
-	year: "numeric",
-	month: "short",
-	day: "numeric",
-};
-
 const DATETIME_FMT_OPTS: Intl.DateTimeFormatOptions = {
 	year: "numeric",
 	month: "long",
@@ -138,7 +133,7 @@ function DateCell({ value }: { value: string | Date }) {
 			dateTime={d.toISOString()}
 			title={d.toLocaleString("it-IT", DATETIME_FMT_OPTS)}
 		>
-			{d.toLocaleDateString("it-IT", DATE_FMT_OPTS)}
+			{formatDateIt(d)}
 		</time>
 	);
 }
@@ -632,7 +627,7 @@ function ProductsListPage() {
 								</InputGroupAddon>
 							)}
 						</InputGroup>
-						<ProductsFilterBar
+						<ProductsFilterSheet
 							value={{ categoryIds, minPrice, maxPrice }}
 							storeId={activeStore.id}
 							statusFilter={statusFilter}

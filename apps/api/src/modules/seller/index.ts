@@ -5,7 +5,11 @@ import { storeEmployee } from "@/db/schemas/employee";
 import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
-import { getAccessibleStoreIdsFor, getSellerStoreIds } from "./context";
+import {
+	type AccessCtx,
+	getAccessibleStoreIdsFor,
+	getSellerStoreIds,
+} from "./context";
 import { billingRoutes } from "./routes/billing";
 import { brandsRoutes } from "./routes/brands";
 import { checkoutRoutes } from "./routes/checkout";
@@ -64,21 +68,24 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 						if (profile.onboardingStatus !== "active")
 							throw new ServiceError(403, "Seller onboarding not completed");
 
+						const accessCtx: AccessCtx = {
+							userId: u.id,
+							sellerProfileId: profile.id,
+							isOwner: true,
+						};
+
 						let cached: Promise<string[]> | null = null;
 						const getStoreIds = () =>
 							(cached ??= getSellerStoreIds(profile.id));
 
 						let cachedAccessible: Promise<string[]> | null = null;
 						const getAccessibleStoreIds = () =>
-							(cachedAccessible ??= getAccessibleStoreIdsFor({
-								userId: u.id,
-								sellerProfileId: profile.id,
-								isOwner: true,
-							}));
+							(cachedAccessible ??= getAccessibleStoreIdsFor(accessCtx));
 
 						return {
 							sellerProfile: profile,
 							isOwner: true as const,
+							accessCtx,
 							getStoreIds,
 							getAccessibleStoreIds,
 						};
@@ -95,21 +102,24 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 						});
 
 						if (!emp) throw new ServiceError(403, "Employee access denied");
+						const accessCtx: AccessCtx = {
+							userId: u.id,
+							sellerProfileId: emp.sellerProfile.id,
+							isOwner: false,
+						};
+
 						let cached: Promise<string[]> | null = null;
 						const getStoreIds = () =>
 							(cached ??= getSellerStoreIds(emp.sellerProfile.id));
 
 						let cachedAccessible: Promise<string[]> | null = null;
 						const getAccessibleStoreIds = () =>
-							(cachedAccessible ??= getAccessibleStoreIdsFor({
-								userId: u.id,
-								sellerProfileId: emp.sellerProfile.id,
-								isOwner: false,
-							}));
+							(cachedAccessible ??= getAccessibleStoreIdsFor(accessCtx));
 
 						return {
 							sellerProfile: emp.sellerProfile,
 							isOwner: false as const,
+							accessCtx,
 							getStoreIds,
 							getAccessibleStoreIds,
 						};

@@ -12,6 +12,7 @@ import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
+import { formatDateIt } from "@bibs/ui/lib/date";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -62,12 +63,6 @@ interface Seller {
 		vatStatus: string;
 	} | null;
 }
-
-const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
-	year: "numeric",
-	month: "long",
-	day: "numeric",
-};
 
 function SellersPage() {
 	"use no memo";
@@ -267,11 +262,7 @@ function SellersPage() {
 			header: ({ column }) => (
 				<SortableHeader column={column}>Registrato il</SortableHeader>
 			),
-			cell: ({ row }) =>
-				new Date(row.original.createdAt).toLocaleDateString(
-					"it-IT",
-					DATE_FMT_OPTS,
-				),
+			cell: ({ row }) => formatDateIt(row.original.createdAt, { long: true }),
 		});
 
 		if (showActions) {

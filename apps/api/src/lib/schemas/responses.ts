@@ -99,21 +99,6 @@ export const InternalError = t.Object({
 	message: t.String({ description: "Messaggio di errore leggibile" }),
 });
 
-// Generic error response (for backward compatibility)
-export const ErrorResponse = t.Union(
-	[
-		BadRequestError,
-		UnauthorizedError,
-		ForbiddenError,
-		NotFoundError,
-		ConflictError,
-		ValidationError,
-		TooManyRequestsError,
-		InternalError,
-	],
-	{ description: "Risposta di errore standard" },
-);
-
 // Helper to add common error responses with specific types
 export function withErrors<T extends Record<number, any>>(
 	successResponses: T,

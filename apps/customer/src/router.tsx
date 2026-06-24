@@ -1,5 +1,5 @@
+import { getContext } from "@bibs/ui/integrations/tanstack-query/root-provider";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
-import { getContext } from "@/integrations/tanstack-query/root-provider";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
