@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { CategoryCrudPanel } from "@/features/crud/category-crud-panel";
 import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
 import { ProductCategoriesPanel } from "@/features/product-categories/components/product-categories-panel";
-import { ProductMacroCategoriesPanel } from "@/features/product-macro-categories/components/product-macro-categories-panel";
+import { productMacroCategoriesConfig } from "@/features/product-macro-categories/product-macro-categories.config";
 import { storeCategoriesConfig } from "@/features/store-categories/store-categories.config";
 import { api } from "@/lib/api";
 
@@ -74,7 +74,8 @@ function ConfigurationsPage() {
 			</TabNav>
 
 			{tab === "product-macro-categories" && (
-				<ProductMacroCategoriesPanel
+				<CategoryCrudPanel
+					config={productMacroCategoriesConfig}
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>
