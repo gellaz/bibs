@@ -17,6 +17,21 @@ import { product } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
 
+/**
+ * Loads a discount owned by the seller, or throws 404. Centralizes the
+ * id + sellerProfileId lookup repeated by every mutation/read in this module.
+ */
+async function loadOwnedDiscount(discountId: string, sellerProfileId: string) {
+	const d = await db.query.discount.findFirst({
+		where: and(
+			eq(discount.id, discountId),
+			eq(discount.sellerProfileId, sellerProfileId),
+		),
+	});
+	if (!d) throw new ServiceError(404, "Promozione non trovata");
+	return d;
+}
+
 interface CreateDiscountParams {
 	sellerProfileId: string;
 	title: string;
@@ -53,13 +68,10 @@ interface UpdateDiscountParams {
 }
 
 export async function updateDiscount(params: UpdateDiscountParams) {
-	const existing = await db.query.discount.findFirst({
-		where: and(
-			eq(discount.id, params.discountId),
-			eq(discount.sellerProfileId, params.sellerProfileId),
-		),
-	});
-	if (!existing) throw new ServiceError(404, "Promozione non trovata");
+	const existing = await loadOwnedDiscount(
+		params.discountId,
+		params.sellerProfileId,
+	);
 
 	const isStarted = new Date() >= existing.startsAt;
 	const patch = params.patch;
@@ -111,13 +123,10 @@ interface SimpleByIdParams {
 }
 
 export async function pauseDiscount(params: SimpleByIdParams) {
-	const existing = await db.query.discount.findFirst({
-		where: and(
-			eq(discount.id, params.discountId),
-			eq(discount.sellerProfileId, params.sellerProfileId),
-		),
-	});
-	if (!existing) throw new ServiceError(404, "Promozione non trovata");
+	const existing = await loadOwnedDiscount(
+		params.discountId,
+		params.sellerProfileId,
+	);
 	if (existing.status === "archived") {
 		throw new ServiceError(
 			409,
@@ -134,13 +143,10 @@ export async function pauseDiscount(params: SimpleByIdParams) {
 }
 
 export async function archiveDiscount(params: SimpleByIdParams) {
-	const existing = await db.query.discount.findFirst({
-		where: and(
-			eq(discount.id, params.discountId),
-			eq(discount.sellerProfileId, params.sellerProfileId),
-		),
-	});
-	if (!existing) throw new ServiceError(404, "Promozione non trovata");
+	const existing = await loadOwnedDiscount(
+		params.discountId,
+		params.sellerProfileId,
+	);
 	if (existing.status === "archived") {
 		throw new ServiceError(409, "Promozione già archiviata");
 	}
@@ -167,14 +173,7 @@ interface AddProductsResult {
 export async function addProductsToDiscount(
 	params: AddProductsParams,
 ): Promise<AddProductsResult> {
-	// Discount ownership check
-	const d = await db.query.discount.findFirst({
-		where: and(
-			eq(discount.id, params.discountId),
-			eq(discount.sellerProfileId, params.sellerProfileId),
-		),
-	});
-	if (!d) throw new ServiceError(404, "Promozione non trovata");
+	await loadOwnedDiscount(params.discountId, params.sellerProfileId);
 
 	if (params.productIds.length === 0) {
 		return { added: 0, alreadyPresent: 0, rejected: [] };
@@ -237,13 +236,7 @@ interface RemoveProductsParams {
 }
 
 export async function removeProductsFromDiscount(params: RemoveProductsParams) {
-	const d = await db.query.discount.findFirst({
-		where: and(
-			eq(discount.id, params.discountId),
-			eq(discount.sellerProfileId, params.sellerProfileId),
-		),
-	});
-	if (!d) throw new ServiceError(404, "Promozione non trovata");
+	await loadOwnedDiscount(params.discountId, params.sellerProfileId);
 
 	if (params.productIds.length === 0) return { removed: 0 };
 
@@ -343,13 +336,7 @@ interface ByIdParams {
 }
 
 export async function getDiscountById(params: ByIdParams) {
-	const d = await db.query.discount.findFirst({
-		where: and(
-			eq(discount.id, params.discountId),
-			eq(discount.sellerProfileId, params.sellerProfileId),
-		),
-	});
-	if (!d) throw new ServiceError(404, "Promozione non trovata");
+	const d = await loadOwnedDiscount(params.discountId, params.sellerProfileId);
 
 	const [{ c }] = await db
 		.select({ c: count() })
@@ -365,14 +352,7 @@ interface GetDiscountProductsParams extends ByIdParams {
 }
 
 export async function getDiscountProducts(params: GetDiscountProductsParams) {
-	const d = await db.query.discount.findFirst({
-		where: and(
-			eq(discount.id, params.discountId),
-			eq(discount.sellerProfileId, params.sellerProfileId),
-		),
-		columns: { id: true, percent: true },
-	});
-	if (!d) throw new ServiceError(404, "Promozione non trovata");
+	const d = await loadOwnedDiscount(params.discountId, params.sellerProfileId);
 
 	const { page, limit, offset } = parsePagination(params);
 
