@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
+import { CategoryCrudPanel } from "@/features/crud/category-crud-panel";
 import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
-import { ProductCategoriesPanel } from "@/features/product-categories/components/product-categories-panel";
-import { ProductMacroCategoriesPanel } from "@/features/product-macro-categories/components/product-macro-categories-panel";
-import { StoreCategoriesPanel } from "@/features/store-categories/components/store-categories-panel";
+import { productCategoriesConfig } from "@/features/product-categories/product-categories.config";
+import { productMacroCategoriesConfig } from "@/features/product-macro-categories/product-macro-categories.config";
+import { storeCategoriesConfig } from "@/features/store-categories/store-categories.config";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/configurations")({
@@ -73,19 +74,22 @@ function ConfigurationsPage() {
 			</TabNav>
 
 			{tab === "product-macro-categories" && (
-				<ProductMacroCategoriesPanel
+				<CategoryCrudPanel
+					config={productMacroCategoriesConfig}
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>
 			)}
 			{tab === "product-categories" && (
-				<ProductCategoriesPanel
+				<CategoryCrudPanel
+					config={productCategoriesConfig}
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>
 			)}
 			{tab === "store-categories" && (
-				<StoreCategoriesPanel
+				<CategoryCrudPanel
+					config={storeCategoriesConfig}
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>
