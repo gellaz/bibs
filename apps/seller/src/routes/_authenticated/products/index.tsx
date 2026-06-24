@@ -14,6 +14,7 @@ import {
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -30,7 +31,6 @@ import { ProductsFilterBar } from "@/features/products/components/products-filte
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 

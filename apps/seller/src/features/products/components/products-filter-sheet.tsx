@@ -24,6 +24,7 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@bibs/ui/components/sheet";
+import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import {
 	CheckIcon,
 	ChevronDownIcon,
@@ -34,7 +35,6 @@ import {
 	XIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useSellerCategoriesInUse } from "../hooks/use-seller-categories-in-use";
 
 function normalizePrice(raw: string): string | undefined {

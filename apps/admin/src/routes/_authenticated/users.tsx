@@ -1,22 +1,55 @@
+import { Badge } from "@bibs/ui/components/badge";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable } from "@bibs/ui/components/data-table";
+import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
+import { EmptyState } from "@bibs/ui/components/empty-state";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+} from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
-import { UsersIcon } from "lucide-react";
-import { useMemo } from "react";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import { SearchIcon, XIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { UserRoleBadge } from "@/components/user-role-badge";
+import { UserRowActions } from "@/components/user-row-actions";
 import { authClient } from "@/lib/auth-client";
+
+type UserSortField = "name" | "email" | "createdAt";
+type SortDir = "asc" | "desc";
+
+const SORT_FIELDS: UserSortField[] = ["name", "email", "createdAt"];
 
 export const Route = createFileRoute("/_authenticated/users")({
 	component: UsersPage,
-	validateSearch: (search: Record<string, unknown>) => {
+	validateSearch: (
+		search: Record<string, unknown>,
+	): {
+		page: number;
+		limit: number;
+		q?: string;
+		sort?: UserSortField;
+		order?: SortDir;
+	} => {
+		const rawQ = typeof search.q === "string" ? search.q : "";
+		const sort = SORT_FIELDS.includes(search.sort as UserSortField)
+			? (search.sort as UserSortField)
+			: undefined;
+		const order =
+			search.order === "asc" || search.order === "desc"
+				? (search.order as SortDir)
+				: undefined;
 		return {
 			page: Number(search.page ?? 1),
 			limit: Number(search.limit ?? 20),
+			...(rawQ.length > 0 ? { q: rawQ } : {}),
+			...(sort && order ? { sort, order } : {}),
 		};
 	},
 });
@@ -26,6 +59,7 @@ type AdminUser = {
 	name: string;
 	email: string;
 	role: string | null | undefined;
+	banned: boolean | null | undefined;
 	createdAt: string | Date;
 };
 
@@ -38,19 +72,53 @@ const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
 function UsersPage() {
 	"use no memo";
 
-	const { page, limit } = Route.useSearch();
+	const { page, limit, q: routeQ, sort, order } = Route.useSearch();
 	const navigate = useNavigate({ from: "/users" });
 	const offset = (page - 1) * limit;
 
+	const { data: session } = authClient.useSession();
+	const currentUserId = session?.user?.id;
+
+	// Input controllato; il valore deboundato finisce nell'URL e scatena la
+	// query. Su back/forward il localQ viene riallineato a routeQ.
+	const [localQ, setLocalQ] = useState(routeQ ?? "");
+	const debouncedQ = useDebouncedValue(localQ, 300);
+	const effectiveQ = routeQ ?? "";
+
+	useEffect(() => {
+		setLocalQ(routeQ ?? "");
+	}, [routeQ]);
+
+	useEffect(() => {
+		if (debouncedQ === effectiveQ) return;
+		void navigate({
+			search: (prev) => ({
+				...prev,
+				q: debouncedQ.length > 0 ? debouncedQ : undefined,
+				page: 1,
+			}),
+		});
+	}, [debouncedQ, effectiveQ, navigate]);
+
 	const { data, isLoading, error } = useQuery({
-		queryKey: ["users", page, limit],
+		queryKey: ["users", page, limit, effectiveQ, sort, order],
 		queryFn: async () => {
 			const result = await authClient.admin.listUsers({
 				query: {
 					limit,
 					offset,
-					sortBy: "createdAt",
-					sortDirection: "desc",
+					sortBy: sort ?? "createdAt",
+					sortDirection: order ?? "desc",
+					...(effectiveQ.length > 0
+						? {
+								// better-auth cerca su un solo campo: indoviniamo quello giusto
+								// dalla presenza della "@" così un'unica casella copre nome ed
+								// email senza una seconda query.
+								searchField: effectiveQ.includes("@") ? "email" : "name",
+								searchOperator: "contains",
+								searchValue: effectiveQ,
+							}
+						: {}),
 				},
 			});
 
@@ -72,22 +140,57 @@ function UsersPage() {
 	const total = data?.total ?? 0;
 	const totalPages = Math.ceil(total / limit);
 
+	const sorting: SortingState = sort
+		? [{ id: sort, desc: order === "desc" }]
+		: [];
+
+	const onSortingChange = (next: SortingState) => {
+		const head = next[0];
+		void navigate({
+			search: (prev) => ({
+				...prev,
+				sort: head ? (head.id as UserSortField) : undefined,
+				order: head ? (head.desc ? "desc" : "asc") : undefined,
+				page: 1,
+			}),
+		});
+	};
+
 	const columns = useMemo<ColumnDef<AdminUser>[]>(
 		() => [
 			{
 				id: "name",
-				header: "Nome",
+				accessorKey: "name",
 				enableHiding: false,
+				enableSorting: true,
 				meta: {
+					menuLabel: "Nome",
 					headerClassName: "pl-6",
 					cellClassName: "pl-6 font-semibold",
 				},
-				cell: ({ row }) => row.original.name,
+				header: ({ column }) => (
+					<SortableHeader column={column}>Nome</SortableHeader>
+				),
+				cell: ({ row }) => (
+					<span className="flex items-center gap-2">
+						{row.original.name}
+						{row.original.banned ? (
+							<Badge variant="destructive">Bannato</Badge>
+						) : null}
+					</span>
+				),
 			},
 			{
 				id: "email",
-				header: "Email",
-				meta: { cellClassName: "text-muted-foreground text-sm" },
+				accessorKey: "email",
+				enableSorting: true,
+				meta: {
+					menuLabel: "Email",
+					cellClassName: "text-muted-foreground text-sm",
+				},
+				header: ({ column }) => (
+					<SortableHeader column={column}>Email</SortableHeader>
+				),
 				cell: ({ row }) => row.original.email,
 			},
 			{
@@ -97,11 +200,15 @@ function UsersPage() {
 			},
 			{
 				id: "createdAt",
-				header: "Registrato il",
+				accessorKey: "createdAt",
+				enableSorting: true,
 				meta: {
-					headerClassName: "pr-2",
+					menuLabel: "Registrato il",
 					cellClassName: "text-muted-foreground text-sm",
 				},
+				header: ({ column }) => (
+					<SortableHeader column={column}>Registrato il</SortableHeader>
+				),
 				cell: ({ row }) =>
 					new Date(row.original.createdAt).toLocaleDateString(
 						"it-IT",
@@ -109,14 +216,24 @@ function UsersPage() {
 					),
 			},
 			{
-				id: "toggle",
+				id: "actions",
 				enableHiding: false,
-				meta: { headerClassName: "w-12 pr-6 text-right" },
+				meta: {
+					headerClassName: "w-12 pr-6 text-right",
+					cellClassName: "pr-6 text-right",
+				},
 				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
-				cell: () => null,
+				cell: ({ row }) => (
+					<UserRowActions
+						userId={row.original.id}
+						userName={row.original.name}
+						banned={Boolean(row.original.banned)}
+						canBan={row.original.id !== currentUserId}
+					/>
+				),
 			},
 		],
-		[],
+		[currentUserId],
 	);
 
 	return (
@@ -125,6 +242,29 @@ function UsersPage() {
 				title="Utenti"
 				description="Gestisci gli utenti registrati sulla piattaforma"
 			/>
+
+			<InputGroup className="max-w-md">
+				<InputGroupAddon align="inline-start">
+					<SearchIcon />
+				</InputGroupAddon>
+				<InputGroupInput
+					value={localQ}
+					onChange={(e) => setLocalQ(e.target.value)}
+					placeholder="Cerca per nome o email..."
+					aria-label="Cerca utenti"
+				/>
+				{localQ.length > 0 && (
+					<InputGroupAddon align="inline-end">
+						<InputGroupButton
+							size="icon-xs"
+							onClick={() => setLocalQ("")}
+							aria-label="Cancella ricerca"
+						>
+							<XIcon />
+						</InputGroupButton>
+					</InputGroupAddon>
+				)}
+			</InputGroup>
 
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
@@ -140,21 +280,30 @@ function UsersPage() {
 				storageKey="admin.users.columns"
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				manualSorting={{ sorting, onSortingChange }}
+				hideHeaderWhenEmpty={effectiveQ.length === 0}
 				emptyState={
-					<div className="flex flex-col items-center gap-2">
-						<UsersIcon className="text-muted-foreground/40 size-8" />
-						<p className="text-muted-foreground font-medium">
-							Nessun utente trovato
-						</p>
-					</div>
+					effectiveQ.length > 0 ? (
+						<EmptyState
+							variant="no-results"
+							title="Nessun risultato"
+							description={`Nessun utente corrisponde a "${effectiveQ}".`}
+						/>
+					) : (
+						<EmptyState
+							variant="empty"
+							title="Nessun utente"
+							description="Gli utenti registrati sulla piattaforma appariranno qui."
+						/>
+					)
 				}
 			/>
 
 			{total > 0 && (
 				<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
 					<p className="text-muted-foreground text-sm tabular-nums">
-						{(page - 1) * limit + 1}–{Math.min(page * limit, total)} di {total}{" "}
-						utent{total === 1 ? "e" : "i"}
+						{offset + 1}–{Math.min(page * limit, total)} di {total} utent
+						{total === 1 ? "e" : "i"}
 					</p>
 					<div className="flex items-center gap-4">
 						<PageSizeSelector
