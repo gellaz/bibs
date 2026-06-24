@@ -1,55 +1,30 @@
-import { and, asc, count, desc, eq, ilike, type SQL } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import { ServiceError } from "@/lib/errors";
-import { parsePagination } from "@/lib/pagination";
+import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
-interface ListProductCategoriesParams {
-	page?: number;
-	limit?: number;
-	search?: string;
-	sortBy?: "name" | "createdAt";
-	sortOrder?: "asc" | "desc";
+interface ListProductCategoriesParams extends ListByNameParams {
 	macroCategoryId?: string;
 }
 
 export async function listProductCategories(
 	params: ListProductCategoriesParams,
 ) {
-	const { page, limit, offset } = parsePagination(params);
-
-	const filters: SQL[] = [];
-	if (params.search) {
-		filters.push(ilike(productCategory.name, `%${params.search}%`));
-	}
-	if (params.macroCategoryId) {
-		filters.push(eq(productCategory.macroCategoryId, params.macroCategoryId));
-	}
-	const where =
-		filters.length === 0
-			? undefined
-			: filters.length === 1
-				? filters[0]
-				: and(...filters);
-
-	const sortCol =
-		params.sortBy === "createdAt"
-			? productCategory.createdAt
-			: productCategory.name;
-	const sortDir = params.sortOrder === "desc" ? desc : asc;
-
-	const [data, [{ total }]] = await Promise.all([
-		db.query.productCategory.findMany({
-			where,
-			orderBy: sortDir(sortCol),
-			limit,
-			offset,
-			with: { macroCategory: true },
-		}),
-		db.select({ total: count() }).from(productCategory).where(where),
-	]);
-
-	return { data, pagination: { page, limit, total } };
+	return listByNamePaged(
+		productCategory,
+		params,
+		(opts) =>
+			db.query.productCategory.findMany({
+				...opts,
+				with: { macroCategory: true },
+			}),
+		[
+			params.macroCategoryId
+				? eq(productCategory.macroCategoryId, params.macroCategoryId)
+				: undefined,
+		],
+	);
 }
 
 interface CreateProductCategoryParams {

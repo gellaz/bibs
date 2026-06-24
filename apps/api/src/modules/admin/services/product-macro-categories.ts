@@ -1,44 +1,15 @@
-import { asc, count, desc, eq, ilike } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { ServiceError } from "@/lib/errors";
-import { parsePagination } from "@/lib/pagination";
 import type { VatRate } from "@/lib/vat";
+import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
-interface ListProductMacroCategoriesParams {
-	page?: number;
-	limit?: number;
-	search?: string;
-	sortBy?: "name" | "createdAt";
-	sortOrder?: "asc" | "desc";
-}
-
-export async function listProductMacroCategories(
-	params: ListProductMacroCategoriesParams,
-) {
-	const { page, limit, offset } = parsePagination(params);
-	const where = params.search
-		? ilike(productMacroCategory.name, `%${params.search}%`)
-		: undefined;
-
-	const sortCol =
-		params.sortBy === "createdAt"
-			? productMacroCategory.createdAt
-			: productMacroCategory.name;
-	const sortDir = params.sortOrder === "desc" ? desc : asc;
-
-	const [data, [{ total }]] = await Promise.all([
-		db.query.productMacroCategory.findMany({
-			where,
-			orderBy: sortDir(sortCol),
-			limit,
-			offset,
-		}),
-		db.select({ total: count() }).from(productMacroCategory).where(where),
-	]);
-
-	return { data, pagination: { page, limit, total } };
+export async function listProductMacroCategories(params: ListByNameParams) {
+	return listByNamePaged(productMacroCategory, params, (opts) =>
+		db.query.productMacroCategory.findMany(opts),
+	);
 }
 
 export async function createProductMacroCategory(params: {
