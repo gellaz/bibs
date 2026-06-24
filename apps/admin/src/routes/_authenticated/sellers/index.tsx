@@ -10,30 +10,31 @@ import {
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
 import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable } from "@bibs/ui/components/data-table";
-import { Input } from "@bibs/ui/components/input";
+import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
+import { EmptyState } from "@bibs/ui/components/empty-state";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+} from "@bibs/ui/components/input-group";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
-import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
-import { SortableHeadButton } from "@bibs/ui/components/sortable-table-head";
 import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
-import {
-	CheckCircle2Icon,
-	SearchIcon,
-	ShieldCheckIcon,
-	XCircleIcon,
-} from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import { CheckCircle2Icon, SearchIcon, XCircleIcon, XIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
 import { PageHeader } from "@/components/page-header";
 import { api } from "@/lib/api";
 
 type SellerStatus = "pending_review" | "active" | "rejected";
 type SortByField = "name" | "createdAt";
+type SortOrder = "asc" | "desc";
 
 const STATUS_TABS = [
 	{ value: "all", label: "Tutte", badgeColor: "default" },
@@ -85,7 +86,7 @@ function SellersPage() {
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 	const [search, setSearch] = useState("");
-	const [debouncedSearch, setDebouncedSearch] = useState("");
+	const debouncedSearch = useDebouncedValue(search, 300);
 	const [sortBy, setSortBy] = useState<SortByField>("createdAt");
 	const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
@@ -96,29 +97,29 @@ function SellersPage() {
 
 	const activeTab = status ?? "all";
 
+	// Cambiando tab azzeriamo ricerca e pagina.
 	useEffect(() => {
 		setPage(1);
 		setSearch("");
-		setDebouncedSearch("");
 	}, [status]);
 
-	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	// La ricerca deboundata riporta sempre alla prima pagina.
 	useEffect(() => {
-		debounceRef.current = setTimeout(() => {
-			setDebouncedSearch(search);
-			setPage(1);
-		}, 300);
-		return () => {
-			if (debounceRef.current) clearTimeout(debounceRef.current);
-		};
-	}, [search]);
+		setPage(1);
+	}, [debouncedSearch]);
 
-	const handleSort = (field: SortByField) => {
-		if (sortBy === field) {
-			setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+	const sorting: SortingState = [{ id: sortBy, desc: sortOrder === "desc" }];
+
+	const onSortingChange = (next: SortingState) => {
+		const head = next[0];
+		if (head) {
+			setSortBy(head.id as SortByField);
+			setSortOrder(head.desc ? "desc" : "asc");
 		} else {
-			setSortBy(field);
-			setSortOrder("asc");
+			// SortableHeader rimuove l'ordinamento al terzo clic: torniamo al
+			// default (più recenti) invece di lasciare la query senza ordine.
+			setSortBy("createdAt");
+			setSortOrder("desc");
 		}
 		setPage(1);
 	};
@@ -253,20 +254,19 @@ function SellersPage() {
 		const cols: ColumnDef<Seller>[] = [
 			{
 				id: "name",
+				accessorFn: (row) =>
+					row.firstName && row.lastName
+						? `${row.firstName} ${row.lastName}`
+						: row.user.name,
 				enableHiding: false,
+				enableSorting: true,
 				meta: {
 					menuLabel: "Venditore",
 					headerClassName: "pl-4",
 					cellClassName: "pl-6 font-semibold",
 				},
-				header: () => (
-					<SortableHeadButton
-						active={sortBy === "name"}
-						sortOrder={sortOrder}
-						onSort={() => handleSort("name")}
-					>
-						Venditore
-					</SortableHeadButton>
+				header: ({ column }) => (
+					<SortableHeader column={column}>Venditore</SortableHeader>
 				),
 				cell: ({ row }) => {
 					const s = row.original;
@@ -325,18 +325,14 @@ function SellersPage() {
 
 		cols.push({
 			id: "createdAt",
+			accessorKey: "createdAt",
+			enableSorting: true,
 			meta: {
 				menuLabel: "Registrato il",
 				cellClassName: "text-muted-foreground text-sm",
 			},
-			header: () => (
-				<SortableHeadButton
-					active={sortBy === "createdAt"}
-					sortOrder={sortOrder}
-					onSort={() => handleSort("createdAt")}
-				>
-					Registrato il
-				</SortableHeadButton>
+			header: ({ column }) => (
+				<SortableHeader column={column}>Registrato il</SortableHeader>
 			),
 			cell: ({ row }) =>
 				new Date(row.original.createdAt).toLocaleDateString(
@@ -391,7 +387,7 @@ function SellersPage() {
 		}
 
 		return cols;
-	}, [status, showActions, sortBy, sortOrder]);
+	}, [status, showActions]);
 
 	return (
 		<div className="space-y-4">
@@ -406,15 +402,28 @@ function SellersPage() {
 				onTabChange={handleTabChange}
 			/>
 
-			<div className="relative">
-				<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-				<Input
+			<InputGroup className="max-w-md">
+				<InputGroupAddon align="inline-start">
+					<SearchIcon />
+				</InputGroupAddon>
+				<InputGroupInput
 					placeholder="Cerca per nome, email, azienda o P.IVA..."
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
-					className="pl-9"
+					aria-label="Cerca venditori"
 				/>
-			</div>
+				{search.length > 0 && (
+					<InputGroupAddon align="inline-end">
+						<InputGroupButton
+							size="icon-xs"
+							onClick={() => setSearch("")}
+							aria-label="Cancella ricerca"
+						>
+							<XIcon />
+						</InputGroupButton>
+					</InputGroupAddon>
+				)}
+			</InputGroup>
 
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
@@ -430,39 +439,46 @@ function SellersPage() {
 				storageKey="admin.sellers.columns"
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				manualSorting={{ sorting, onSortingChange }}
+				hideHeaderWhenEmpty={!debouncedSearch}
 				emptyState={
-					<div className="flex flex-col items-center gap-2">
-						<ShieldCheckIcon className="text-muted-foreground/40 size-8" />
-						<div>
-							<p className="text-muted-foreground font-medium">
-								Nessun venditore trovato
-							</p>
-							<p className="text-muted-foreground/60 text-sm">
-								{debouncedSearch
-									? `Nessun risultato per "${debouncedSearch}"`
-									: status === "pending_review"
-										? "Nessuna candidatura in attesa di revisione"
-										: status === "rejected"
-											? "Nessuna candidatura rifiutata"
-											: status === "active"
-												? "Nessun venditore attivo"
-												: "Le nuove candidature appariranno qui"}
-							</p>
-						</div>
-					</div>
+					debouncedSearch ? (
+						<EmptyState
+							variant="no-results"
+							title="Nessun risultato"
+							description={`Nessun venditore corrisponde a "${debouncedSearch}".`}
+						/>
+					) : (
+						<EmptyState
+							variant="empty"
+							title="Nessun venditore"
+							description={
+								status === "pending_review"
+									? "Nessuna candidatura in attesa di revisione."
+									: status === "rejected"
+										? "Nessuna candidatura rifiutata."
+										: status === "active"
+											? "Nessun venditore attivo."
+											: "Le nuove candidature appariranno qui."
+							}
+						/>
+					)
 				}
 			/>
 
 			{data?.pagination &&
 				data.pagination.total > 0 &&
 				(() => {
-					const totalPages = Math.ceil(data.pagination.total / limit);
+					const total = data.pagination.total;
+					const totalPages = Math.ceil(total / limit);
+					const rangeStart = (page - 1) * limit + 1;
+					const rangeEnd = Math.min(page * limit, total);
 					return (
-						<div className="flex items-center justify-between">
-							<div className="text-muted-foreground text-sm">
-								Totale: {data.pagination.total} venditor
-								{data.pagination.total === 1 ? "e" : "i"}
-							</div>
+						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+							<p className="text-muted-foreground text-sm tabular-nums">
+								{rangeStart}–{rangeEnd} di {total} venditor
+								{total === 1 ? "e" : "i"}
+							</p>
 							<div className="flex items-center gap-4">
 								<PageSizeSelector
 									pageSize={limit}
