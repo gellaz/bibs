@@ -1,4 +1,5 @@
 import { Spinner } from "@bibs/ui/components/spinner";
+import { toYMD } from "@bibs/ui/lib/date";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
@@ -7,7 +8,6 @@ import {
 } from "@/features/stores/components/closures-manager";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { api, unwrap } from "@/lib/api";
-import { toYMD } from "@/lib/date";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/store/closures")({

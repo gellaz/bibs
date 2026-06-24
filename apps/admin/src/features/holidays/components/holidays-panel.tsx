@@ -26,6 +26,7 @@ import {
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
 import { toast } from "@bibs/ui/components/sonner";
+import { toYMD } from "@bibs/ui/lib/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarDaysIcon, PencilIcon, Trash2Icon } from "lucide-react";
@@ -33,7 +34,6 @@ import { useMemo, useState } from "react";
 import { HolidayForm } from "@/features/holidays/components/holiday-form";
 import { MONTHS } from "@/features/holidays/schemas/holiday";
 import { api } from "@/lib/api";
-import { toYMD } from "@/lib/date";
 
 interface HolidayDefinition {
 	id: string;

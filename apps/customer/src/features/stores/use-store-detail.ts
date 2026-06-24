@@ -1,6 +1,6 @@
+import { toYMD } from "@bibs/ui/lib/date";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { toYMD } from "@/lib/date";
 import type { OpeningHoursDayInput } from "./format-opening-hours";
 import type { OpenStatusView } from "./open-status";
 

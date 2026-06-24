@@ -1,4 +1,5 @@
 import { Button } from "@bibs/ui/components/button";
+import { toYMD } from "@bibs/ui/lib/date";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -14,7 +15,6 @@ import {
 } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useStores } from "@/hooks/use-stores";
-import { toYMD } from "@/lib/date";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: Dashboard,
