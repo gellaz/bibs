@@ -1,9 +1,9 @@
 import { Button } from "@bibs/ui/components/button";
-import { Skeleton } from "@bibs/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Compass, LocateFixed, MapPin, RotateCw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { GRID, TileSkeleton } from "@/components/tile";
 import { useGeolocation } from "@/features/discovery/use-geolocation";
 import { StoreTile } from "@/features/stores/store-tile";
 import { useStoreSearch } from "@/features/stores/use-store-search";
@@ -19,20 +19,6 @@ export const Route = createFileRoute("/_authenticated/stores/")({
 	validateSearch: SEARCH_SCHEMA,
 	component: StoresPage,
 });
-
-const GRID = "grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4";
-
-function TileSkeleton() {
-	return (
-		<div className="flex flex-col gap-3">
-			<Skeleton className="aspect-square rounded-lg" />
-			<div className="flex flex-col gap-1.5">
-				<Skeleton className="h-4 w-4/5" />
-				<Skeleton className="h-4 w-1/3" />
-			</div>
-		</div>
-	);
-}
 
 function Notice({
 	icon: Icon,

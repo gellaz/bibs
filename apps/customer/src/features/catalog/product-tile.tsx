@@ -1,6 +1,6 @@
 import { DiscountedPrice } from "@bibs/ui/components/discounted-price";
 import { MapPin } from "lucide-react";
-import { useState } from "react";
+import { formatDistance, TileImage } from "@/components/tile";
 
 /** Forma dati minima per un tile prodotto (discovery o catalogo negozio). */
 export interface ProductCardData {
@@ -12,46 +12,6 @@ export interface ProductCardData {
 	discountPercent: number | null;
 	/** Distanza in metri dal punto di ricerca; assente quando non geo-rilevante. */
 	distance?: number;
-}
-
-/** Metri → "240 m" / "1,2 km" (convenzione italiana, virgola decimale). */
-function formatDistance(meters: number): string {
-	if (meters < 1000) {
-		return `${Math.round(meters)} m`;
-	}
-	const km = meters / 1000;
-	return `${km.toFixed(1).replace(".", ",")} km`;
-}
-
-function TileImage({ url, name }: { url: string | undefined; name: string }) {
-	const [failed, setFailed] = useState(false);
-
-	if (!url || failed) {
-		// Fallback identitario: l'iniziale del prodotto invece di un'icona
-		// generica, così una griglia senza foto resta varia e leggibile.
-		const initial = name.trim().charAt(0).toUpperCase() || "?";
-		return (
-			<div className="flex size-full items-center justify-center bg-muted">
-				<span
-					aria-hidden
-					className="font-display font-semibold text-4xl text-muted-foreground/70"
-				>
-					{initial}
-				</span>
-			</div>
-		);
-	}
-
-	return (
-		<img
-			src={url}
-			alt={name}
-			loading="lazy"
-			decoding="async"
-			onError={() => setFailed(true)}
-			className="size-full object-cover"
-		/>
-	);
 }
 
 interface ProductTileProps {

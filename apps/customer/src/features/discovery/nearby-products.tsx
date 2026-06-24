@@ -1,23 +1,9 @@
 import { Button } from "@bibs/ui/components/button";
-import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
+import { GRID, TileSkeleton } from "@/components/tile";
 import { ProductTile } from "@/features/catalog/product-tile";
 import { useGeolocation } from "./use-geolocation";
 import { useNearbyProducts } from "./use-nearby-products";
-
-const GRID = "grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4";
-
-function TileSkeleton() {
-	return (
-		<div className="flex flex-col gap-3">
-			<Skeleton className="aspect-square rounded-lg" />
-			<div className="flex flex-col gap-1.5">
-				<Skeleton className="h-4 w-4/5" />
-				<Skeleton className="h-4 w-1/3" />
-			</div>
-		</div>
-	);
-}
 
 /** Stato vuoto/errore on-brand (tono caldo + ink), senza l'accent cobalt del
  * register product riservato a seller/admin. */
