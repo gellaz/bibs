@@ -42,6 +42,11 @@ function useMacros() {
 				);
 			return res.data;
 		},
+		// Both the toolbar filter and the form mount their own observer of this
+		// query; a stale time keeps the second mount (opening a dialog) from
+		// refetching. Edits on the macro tab still refresh it: invalidating
+		// ["product-macro-categories"] overrides staleTime.
+		staleTime: 5 * 60 * 1000,
 	});
 	const macros: MacroCategory[] = data?.data ?? [];
 	return { macros, isLoading };
