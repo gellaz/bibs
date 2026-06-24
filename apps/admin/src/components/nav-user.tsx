@@ -13,11 +13,11 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
+import { ThemeToggle } from "@bibs/ui/components/theme-toggle";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
 import LocaleSwitcher from "@/components/locale-switcher";
-import ThemeToggle from "@/components/theme-toggle";
 import { authClient } from "@/lib/auth-client";
 
 export function NavUser() {
@@ -65,8 +65,8 @@ export function NavUser() {
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
+							<ThemeToggle />
 							<div className="flex items-center gap-2 px-2 py-1.5">
-								<ThemeToggle />
 								<LocaleSwitcher />
 							</div>
 						</DropdownMenuGroup>
