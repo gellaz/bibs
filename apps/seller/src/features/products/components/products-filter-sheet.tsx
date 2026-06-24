@@ -29,12 +29,13 @@ import {
 	CheckIcon,
 	ChevronDownIcon,
 	EuroIcon,
+	FilterIcon,
 	type LucideIcon,
 	SlidersHorizontalIcon,
 	TagIcon,
 	XIcon,
 } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSellerCategoriesInUse } from "../hooks/use-seller-categories-in-use";
 
 function normalizePrice(raw: string): string | undefined {
@@ -58,9 +59,6 @@ interface ProductsFilterSheetProps {
 	storeId: string | undefined;
 	statusFilter: StatusFilter | undefined;
 	totalResults: number | undefined;
-	trigger: ReactNode;
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
 }
 
 function ResultSummary({ count }: { count: number | undefined }) {
@@ -142,10 +140,8 @@ export function ProductsFilterSheet({
 	storeId,
 	statusFilter,
 	totalResults,
-	trigger,
-	open,
-	onOpenChange,
 }: ProductsFilterSheetProps) {
+	const [open, setOpen] = useState(false);
 	const [localMin, setLocalMin] = useState(value.minPrice ?? "");
 	const [localMax, setLocalMax] = useState(value.maxPrice ?? "");
 	const debouncedMin = useDebouncedValue(localMin, 300);
@@ -250,10 +246,26 @@ export function ProductsFilterSheet({
 		selectedIds.length > 0 ||
 		Boolean(value.minPrice) ||
 		Boolean(value.maxPrice);
+	const activeCount =
+		selectedIds.length + (value.minPrice ? 1 : 0) + (value.maxPrice ? 1 : 0);
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetTrigger asChild>{trigger}</SheetTrigger>
+		<Sheet open={open} onOpenChange={setOpen}>
+			<SheetTrigger asChild>
+				<Button variant="outline" className="relative gap-2">
+					<FilterIcon className="size-4" />
+					Filtri
+					{activeCount > 0 && (
+						<span
+							role="status"
+							aria-label={`${activeCount} filtri attivi`}
+							className="bg-cobalt-soft text-cobalt-deep ring-background absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold tabular-nums ring-2"
+						>
+							{activeCount}
+						</span>
+					)}
+				</Button>
+			</SheetTrigger>
 			<SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
 				<SheetHeader className="border-b px-6 py-5">
 					<div className="flex items-stretch gap-3">
@@ -465,14 +477,9 @@ export function ProductsFilterSheet({
 
 				<SheetFooter className="flex-row items-center justify-between border-t px-6 py-3">
 					<p className="text-muted-foreground text-xs">
-						{(() => {
-							const n =
-								selectedIds.length +
-								(value.minPrice ? 1 : 0) +
-								(value.maxPrice ? 1 : 0);
-							if (n === 0) return "Nessun filtro attivo";
-							return `${n} filtr${n === 1 ? "o" : "i"} attiv${n === 1 ? "o" : "i"}`;
-						})()}
+						{activeCount === 0
+							? "Nessun filtro attivo"
+							: `${activeCount} filtr${activeCount === 1 ? "o" : "i"} attiv${activeCount === 1 ? "o" : "i"}`}
 					</p>
 					<Button
 						variant="outline"

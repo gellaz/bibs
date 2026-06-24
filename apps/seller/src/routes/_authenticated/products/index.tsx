@@ -27,7 +27,7 @@ import {
 	type ProductStatusFilter,
 	ProductStatusTabs,
 } from "@/features/products/components/product-status-tabs";
-import { ProductsFilterBar } from "@/features/products/components/products-filter-bar";
+import { ProductsFilterSheet } from "@/features/products/components/products-filter-sheet";
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
@@ -632,7 +632,7 @@ function ProductsListPage() {
 								</InputGroupAddon>
 							)}
 						</InputGroup>
-						<ProductsFilterBar
+						<ProductsFilterSheet
 							value={{ categoryIds, minPrice, maxPrice }}
 							storeId={activeStore.id}
 							statusFilter={statusFilter}
