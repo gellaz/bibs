@@ -14,6 +14,8 @@ import { getEmployeeAssignedStoreIds } from "./services/access";
 export interface SellerResolvedContext {
 	sellerProfile: InferSelectModel<typeof sellerProfile>;
 	isOwner: boolean;
+	/** The caller's access triple, assembled by the seller guard's resolve. */
+	accessCtx: AccessCtx;
 	/** Lazy getter — only queries DB on first call, caches the result. */
 	getStoreIds: () => Promise<string[]>;
 	/** Lazy: tutti gli store accessibili al chiamante (owner: tutti; employee: solo assegnati). */

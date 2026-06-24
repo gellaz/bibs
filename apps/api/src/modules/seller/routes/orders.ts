@@ -20,13 +20,8 @@ export const ordersRoutes = new Elysia()
 	.get(
 		"/orders",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, query, isOwner, user } = sellerCtx;
-			await ensureStoreAccess(query.storeId, {
-				userId: user.id,
-				sellerProfileId: sp.id,
-				isOwner,
-			});
+			const { query, accessCtx } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, accessCtx);
 			const result = await listSellerOrders({
 				storeIds: [query.storeId],
 				...query,
