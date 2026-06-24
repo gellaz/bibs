@@ -1,6 +1,5 @@
 import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon } from "lucide-react";
 import type * as React from "react";
-import { TableHead } from "~/components/table";
 import { cn } from "~/lib/utils";
 
 type SortOrder = "asc" | "desc";
@@ -56,31 +55,5 @@ function SortableHeadButton({
 	);
 }
 
-interface SortableTableHeadProps
-	extends React.ComponentProps<typeof TableHead>,
-		Pick<SortableHeadButtonProps, "active" | "sortOrder" | "onSort"> {}
-
-/**
- * Drop-in `<TableHead>` replacement for hand-rolled tables that adds sorting.
- * For TanStack-powered tables, use `<SortableHeadButton>` directly inside the
- * column `header` renderer to avoid nesting a `<th>` inside another `<th>`.
- */
-function SortableTableHead({
-	active,
-	sortOrder,
-	onSort,
-	children,
-	className,
-	...props
-}: SortableTableHeadProps) {
-	return (
-		<TableHead className={cn("p-0", className)} {...props}>
-			<SortableHeadButton active={active} sortOrder={sortOrder} onSort={onSort}>
-				{children}
-			</SortableHeadButton>
-		</TableHead>
-	);
-}
-
-export type { SortableTableHeadProps, SortOrder };
-export { SortableHeadButton, SortableTableHead };
+export type { SortOrder };
+export { SortableHeadButton };
