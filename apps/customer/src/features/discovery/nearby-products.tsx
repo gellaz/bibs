@@ -1,40 +1,10 @@
 import { Button } from "@bibs/ui/components/button";
 import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
+import { Notice } from "@/components/notice";
 import { GRID, TileSkeleton } from "@/components/tile";
 import { ProductTile } from "@/features/catalog/product-tile";
 import { useGeolocation } from "./use-geolocation";
 import { useNearbyProducts } from "./use-nearby-products";
-
-/** Stato vuoto/errore on-brand (tono caldo + ink), senza l'accent cobalt del
- * register product riservato a seller/admin. */
-function Notice({
-	icon: Icon,
-	title,
-	description,
-	action,
-}: {
-	icon: typeof Compass;
-	title: string;
-	description: string;
-	action?: React.ReactNode;
-}) {
-	return (
-		<div className="flex flex-col items-center gap-4 rounded-xl border border-border border-dashed px-6 py-14 text-center">
-			<div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-				<Icon className="size-6" aria-hidden />
-			</div>
-			<div className="space-y-1">
-				<h3 className="font-display font-semibold text-foreground text-lg">
-					{title}
-				</h3>
-				<p className="mx-auto max-w-sm text-muted-foreground text-sm leading-relaxed">
-					{description}
-				</p>
-			</div>
-			{action}
-		</div>
-	);
-}
 
 export function NearbyProducts() {
 	const {

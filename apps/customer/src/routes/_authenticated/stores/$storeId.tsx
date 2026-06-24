@@ -3,6 +3,7 @@ import { Skeleton } from "@bibs/ui/components/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Compass, Globe, MapPin, Phone, RotateCw } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { NoticePage } from "@/components/notice";
 import { OpeningHours } from "@/features/stores/opening-hours";
 import { StoreCover } from "@/features/stores/store-cover";
 import { StoreProducts } from "@/features/stores/store-products";
@@ -228,37 +229,6 @@ function StoreDetailPage() {
 						</ul>
 					</Section>
 				)}
-			</div>
-		</div>
-	);
-}
-
-function NoticePage({
-	icon: Icon,
-	title,
-	description,
-	action,
-}: {
-	icon: typeof Compass;
-	title: string;
-	description: string;
-	action?: React.ReactNode;
-}) {
-	return (
-		<div className="mx-auto w-full max-w-3xl px-4 py-16">
-			<div className="flex flex-col items-center gap-4 rounded-xl border border-border border-dashed px-6 py-14 text-center">
-				<div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-					<Icon className="size-6" aria-hidden />
-				</div>
-				<div className="space-y-1">
-					<h1 className="font-display font-semibold text-foreground text-lg">
-						{title}
-					</h1>
-					<p className="mx-auto max-w-sm text-muted-foreground text-sm leading-relaxed">
-						{description}
-					</p>
-				</div>
-				{action}
 			</div>
 		</div>
 	);

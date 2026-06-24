@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Compass, LocateFixed, MapPin, RotateCw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Notice } from "@/components/notice";
 import { GRID, TileSkeleton } from "@/components/tile";
 import { useGeolocation } from "@/features/discovery/use-geolocation";
 import { StoreTile } from "@/features/stores/store-tile";
@@ -19,35 +20,6 @@ export const Route = createFileRoute("/_authenticated/stores/")({
 	validateSearch: SEARCH_SCHEMA,
 	component: StoresPage,
 });
-
-function Notice({
-	icon: Icon,
-	title,
-	description,
-	action,
-}: {
-	icon: typeof Compass;
-	title: string;
-	description: string;
-	action?: React.ReactNode;
-}) {
-	return (
-		<div className="flex flex-col items-center gap-4 rounded-xl border border-border border-dashed px-6 py-14 text-center">
-			<div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-				<Icon className="size-6" aria-hidden />
-			</div>
-			<div className="space-y-1">
-				<h3 className="font-display font-semibold text-foreground text-lg">
-					{title}
-				</h3>
-				<p className="mx-auto max-w-sm text-muted-foreground text-sm leading-relaxed">
-					{description}
-				</p>
-			</div>
-			{action}
-		</div>
-	);
-}
 
 function useStoreCategories() {
 	return useQuery({
