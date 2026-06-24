@@ -1,28 +1,19 @@
 import { cn } from "../lib/utils";
 import { Badge } from "./badge";
+import { formatPriceEur } from "./price";
 
 export interface DiscountedPriceProps {
 	originalPrice: string | number;
 	discountedPrice?: string | number | null;
 	percent?: number | null;
-	currency?: string;
 	className?: string;
 	size?: "sm" | "md" | "lg";
-}
-
-function formatPrice(value: string | number, currency = "EUR") {
-	const num = typeof value === "string" ? Number.parseFloat(value) : value;
-	return new Intl.NumberFormat("it-IT", {
-		style: "currency",
-		currency,
-	}).format(num);
 }
 
 export function DiscountedPrice({
 	originalPrice,
 	discountedPrice,
 	percent,
-	currency = "EUR",
 	className,
 	size = "md",
 }: DiscountedPriceProps) {
@@ -43,7 +34,7 @@ export function DiscountedPrice({
 	if (!hasDiscount) {
 		return (
 			<span className={cn("inline-flex items-baseline", mainSize, className)}>
-				{formatPrice(originalPrice, currency)}
+				{formatPriceEur(originalPrice)}
 			</span>
 		);
 	}
@@ -51,10 +42,10 @@ export function DiscountedPrice({
 	return (
 		<span className={cn("inline-flex items-baseline gap-2", className)}>
 			<span className={cn("text-foreground", mainSize)}>
-				{formatPrice(discountedPrice, currency)}
+				{formatPriceEur(discountedPrice)}
 			</span>
 			<span className={cn("text-muted-foreground line-through", strikeSize)}>
-				{formatPrice(originalPrice, currency)}
+				{formatPriceEur(originalPrice)}
 			</span>
 			<Badge variant="secondary" className="text-xs">
 				-{percent}%
