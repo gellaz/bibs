@@ -1,5 +1,6 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
+import { PaginationQuery } from "@/lib/pagination";
 import { StoreSearchQuery } from "@/lib/queries";
 import { ok, okPage } from "@/lib/responses";
 import {
@@ -7,10 +8,12 @@ import {
 	okRes,
 	StoreCardSchema,
 	StoreDetailSchema,
+	StoreProductCardSchema,
 	withErrors,
 } from "@/lib/schemas";
 import { getStoreDetail } from "../services/store-detail";
 import { searchStores } from "../services/store-discovery";
+import { getStoreProducts } from "../services/store-products";
 
 export const storesRoutes = new Elysia()
 	.get(
@@ -59,6 +62,33 @@ export const storesRoutes = new Elysia()
 				summary: "Dettaglio negozio",
 				description:
 					"Scheda pubblica di un negozio visibile. Restituisce 404 se il negozio non esiste o non è pubblicamente visibile (sospeso/cancellato/senza abbonamento). Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		},
+	)
+	.get(
+		"/stores/:id/products",
+		async ({ params, query, store }) => {
+			const pino = getLogger(store);
+			const result = await getStoreProducts(params.id, query);
+			pino.info(
+				{
+					storeId: params.id,
+					resultCount: result.data.length,
+					action: "store_products",
+				},
+				"Catalogo negozio richiesto",
+			);
+			return okPage(result.data, result.pagination);
+		},
+		{
+			params: t.Object({ id: t.String({ description: "ID del negozio" }) }),
+			query: PaginationQuery,
+			response: withErrors({ 200: okPageRes(StoreProductCardSchema) }),
+			detail: {
+				summary: "Catalogo prodotti del negozio",
+				description:
+					"Prodotti attivi e disponibili (stock > 0) di un negozio pubblicamente visibile, ordinati per novità. Restituisce 404 se il negozio non esiste o non è visibile (sospeso/cancellato/senza abbonamento). Non richiede autenticazione.",
 				tags: ["Customer - Search"],
 			},
 		},

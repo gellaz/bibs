@@ -5,6 +5,7 @@ import { Compass, Globe, MapPin, Phone, RotateCw } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { OpeningHours } from "@/features/stores/opening-hours";
 import { StoreCover } from "@/features/stores/store-cover";
+import { StoreProducts } from "@/features/stores/store-products";
 import { useStoreDetail } from "@/features/stores/use-store-detail";
 
 const LazyStoreMap = lazy(() => import("@/features/stores/store-map"));
@@ -153,6 +154,8 @@ function StoreDetailPage() {
 			/>
 
 			<div className="mx-auto max-w-3xl space-y-8 px-4 py-8">
+				<StoreProducts storeId={store.id} />
+
 				{store.images.length > 1 && (
 					<ul className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1">
 						{store.images.slice(1).map((img) => (

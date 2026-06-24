@@ -1,7 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
-import { ProductTile } from "./product-tile";
+import { ProductTile } from "@/features/catalog/product-tile";
 import { useGeolocation } from "./use-geolocation";
 import { useNearbyProducts } from "./use-nearby-products";
 
