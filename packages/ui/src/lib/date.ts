@@ -20,3 +20,18 @@ export function toYMD(value: string | Date): string {
 	}
 	return value.slice(0, 10);
 }
+
+/**
+ * Formatta una data in italiano ("3 mar 2026" / "3 marzo 2026"). `long` usa il
+ * mese per esteso (default: mese abbreviato). Accetta una string o una Date.
+ */
+export function formatDateIt(
+	value: string | Date,
+	{ long = false }: { long?: boolean } = {},
+): string {
+	return new Date(value).toLocaleDateString("it-IT", {
+		year: "numeric",
+		month: long ? "long" : "short",
+		day: "numeric",
+	});
+}

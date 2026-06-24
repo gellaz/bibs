@@ -25,6 +25,7 @@ import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
 import { SortableHeadButton } from "@bibs/ui/components/sortable-table-head";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
+import { formatDateIt } from "@bibs/ui/lib/date";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { PencilIcon, SearchIcon, Trash2Icon, UploadIcon } from "lucide-react";
@@ -35,12 +36,6 @@ import {
 } from "@/features/csv-import/components/csv-import-dialog";
 
 type SortByField = "name" | "createdAt";
-
-const DATE_FMT_OPTS: Intl.DateTimeFormatOptions = {
-	year: "numeric",
-	month: "long",
-	day: "numeric",
-};
 
 const EMPTY: never[] = [];
 
@@ -292,11 +287,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					Data Creazione
 				</SortableHeadButton>
 			),
-			cell: ({ row }) =>
-				new Date(row.original.createdAt).toLocaleDateString(
-					"it-IT",
-					DATE_FMT_OPTS,
-				),
+			cell: ({ row }) => formatDateIt(row.original.createdAt, { long: true }),
 		};
 		const actionsCol: ColumnDef<TEntity> = {
 			id: "actions",
