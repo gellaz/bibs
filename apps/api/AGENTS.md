@@ -82,7 +82,7 @@ TypeBox schemas split into submodules (all re-exported from `src/lib/schemas/ind
   type definitions, plus shared field groups (`LocationField`, `AddressFieldsRequired`, `AddressFieldsOptional`)
 - **`composed.ts`** — schemas with nested relations (`ProductWithRelationsSchema`, `SellerOrderWithRelationsSchema`,
   `CustomerOrderWithRelationsSchema`, etc.)
-- **`responses.ts`** — response envelope helpers (`okRes()`, `okPageRes()`, `OkMessage`, `ErrorResponse`), error schemas
+- **`responses.ts`** — response envelope helpers (`okRes()`, `okPageRes()`, `OkMessage`), error schemas
   per status code, `withErrors()` / `withConflictErrors()` helpers
 - All schemas include Italian descriptions and TypeScript-like type constraints
 
