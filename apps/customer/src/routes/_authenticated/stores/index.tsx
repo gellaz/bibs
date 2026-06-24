@@ -10,14 +10,12 @@ import { StoreTile } from "@/features/stores/store-tile";
 import { useStoreSearch } from "@/features/stores/use-store-search";
 import { api } from "@/lib/api";
 
-const SEARCH_SCHEMA = (search: Record<string, unknown>) => ({
-	q: typeof search.q === "string" ? search.q : undefined,
-	categoryId:
-		typeof search.categoryId === "string" ? search.categoryId : undefined,
-});
-
 export const Route = createFileRoute("/_authenticated/stores/")({
-	validateSearch: SEARCH_SCHEMA,
+	validateSearch: (search: Record<string, unknown>) => ({
+		q: typeof search.q === "string" ? search.q : undefined,
+		categoryId:
+			typeof search.categoryId === "string" ? search.categoryId : undefined,
+	}),
 	component: StoresPage,
 });
 
