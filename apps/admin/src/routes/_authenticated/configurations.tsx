@@ -6,7 +6,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { CategoryCrudPanel } from "@/features/crud/category-crud-panel";
 import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
-import { ProductCategoriesPanel } from "@/features/product-categories/components/product-categories-panel";
+import { productCategoriesConfig } from "@/features/product-categories/product-categories.config";
 import { productMacroCategoriesConfig } from "@/features/product-macro-categories/product-macro-categories.config";
 import { storeCategoriesConfig } from "@/features/store-categories/store-categories.config";
 import { api } from "@/lib/api";
@@ -81,7 +81,8 @@ function ConfigurationsPage() {
 				/>
 			)}
 			{tab === "product-categories" && (
-				<ProductCategoriesPanel
+				<CategoryCrudPanel
+					config={productCategoriesConfig}
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>
