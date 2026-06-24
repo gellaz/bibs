@@ -183,6 +183,8 @@
       "version": "0.0.1",
       "dependencies": {
         "@base-ui/react": "^1.6.0",
+        "@tanstack/react-query": "catalog:",
+        "@tanstack/react-query-devtools": "catalog:",
         "@tanstack/react-table": "catalog:",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
