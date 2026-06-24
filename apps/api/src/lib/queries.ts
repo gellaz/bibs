@@ -1,25 +1,13 @@
 import { t } from "elysia";
 import { orderStatuses, orderTypes } from "@/db/schemas/order";
 import { onboardingStatuses } from "@/db/schemas/seller";
-import { config } from "@/lib/config";
-
-const { defaultLimit, maxLimit } = config.pagination;
+import { PaginationQuery } from "@/lib/pagination";
 
 /**
  * Pagination + optional status/type filters for order list endpoints.
  */
 export const OrderListQuery = t.Object({
-	page: t.Optional(
-		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
-	),
-	limit: t.Optional(
-		t.Number({
-			minimum: 1,
-			maximum: maxLimit,
-			default: defaultLimit,
-			description: "Elementi per pagina",
-		}),
-	),
+	...PaginationQuery.properties,
 	status: t.Optional(
 		t.Union(
 			orderStatuses.map((s) => t.Literal(s)),
@@ -42,17 +30,7 @@ export const OrderListQuery = t.Object({
  * Pagination + optional status/search/sort for seller list endpoints.
  */
 export const SellerListQuery = t.Object({
-	page: t.Optional(
-		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
-	),
-	limit: t.Optional(
-		t.Number({
-			minimum: 1,
-			maximum: maxLimit,
-			default: defaultLimit,
-			description: "Elementi per pagina",
-		}),
-	),
+	...PaginationQuery.properties,
 	status: t.Optional(
 		t.Union(
 			onboardingStatuses.map((s) => t.Literal(s)),
@@ -86,17 +64,7 @@ export const SellerListQuery = t.Object({
  * Pagination + optional full-text + category + geo filters for product search.
  */
 export const ProductSearchQuery = t.Object({
-	page: t.Optional(
-		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
-	),
-	limit: t.Optional(
-		t.Number({
-			minimum: 1,
-			maximum: maxLimit,
-			default: defaultLimit,
-			description: "Elementi per pagina",
-		}),
-	),
+	...PaginationQuery.properties,
 	q: t.Optional(
 		t.String({ description: "Testo di ricerca (full-text italiano)" }),
 	),
@@ -128,17 +96,7 @@ export const ProductSearchQuery = t.Object({
  * `radius` has NO default — geo without radius returns all stores nearest-first.
  */
 export const StoreSearchQuery = t.Object({
-	page: t.Optional(
-		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
-	),
-	limit: t.Optional(
-		t.Number({
-			minimum: 1,
-			maximum: maxLimit,
-			default: defaultLimit,
-			description: "Elementi per pagina",
-		}),
-	),
+	...PaginationQuery.properties,
 	q: t.Optional(
 		t.String({ description: "Testo di ricerca su nome negozio o comune" }),
 	),
@@ -166,17 +124,7 @@ export const StoreSearchQuery = t.Object({
  * Pagination + optional search/sort for category list endpoints.
  */
 export const CategoryListQuery = t.Object({
-	page: t.Optional(
-		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
-	),
-	limit: t.Optional(
-		t.Number({
-			minimum: 1,
-			maximum: maxLimit,
-			default: defaultLimit,
-			description: "Elementi per pagina",
-		}),
-	),
+	...PaginationQuery.properties,
 	search: t.Optional(
 		t.String({
 			maxLength: 100,
