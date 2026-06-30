@@ -59,7 +59,7 @@
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^6.0.3",
 		"babel-plugin-react-compiler": "^1.0.0",
-		"better-auth": "1.6.20",
+		"better-auth": "1.6.23",
 		"elysia": "1.4.29",
 		"jsdom": "^29.1.1",
 		"leaflet": "^1.9.4",
