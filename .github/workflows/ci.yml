@@ -12,22 +12,30 @@ concurrency:
 permissions:
   contents: read
 
+# runner image and bun are pinned (not `ubuntu-latest` / floating `setup-bun`)
+# for reproducible CI: a silent `ubuntu-latest` image bump shifted bun's test-file
+# execution order and surfaced an order-dependent mock-isolation flake (see #146,
+# apps/api/scripts/test-integration.sh). Bump these deliberately, in one place.
 jobs:
   lint:
     name: Lint (Biome)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
       - run: bun install --frozen-lockfile
       - run: bun run lint
 
   typecheck:
     name: Typecheck
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
       - run: bun install --frozen-lockfile
       # pretypecheck hooks compile Paraglide messages before tsc in each frontend.
       # TODO: add `bunx @inlang/cli validate` if message-quality gates become useful.
@@ -35,11 +43,13 @@ jobs:
 
   api-test:
     name: API tests (unit + integration)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
       - run: bun install --frozen-lockfile
-      # Integration tests spin up Postgres/PostGIS via testcontainers; Docker is preinstalled on ubuntu-latest.
+      # Integration tests spin up Postgres/PostGIS via testcontainers; Docker is preinstalled on ubuntu-24.04.
       # Env vars required by @/lib/env are injected in apps/api/tests/preload.ts, no secrets needed here.
       - run: bun run test
