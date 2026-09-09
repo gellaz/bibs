@@ -22,12 +22,12 @@
 		"@bibs/emails": "workspace:*",
 		"@elysiajs/cors": "^1.4.2",
 		"@elysiajs/cron": "^1.4.2",
-		"@elysiajs/openapi": "^1.4.15",
+		"@elysiajs/openapi": "^1.4.16",
 		"@sinclair/typebox": "catalog:",
 		"better-auth": "catalog:",
 		"drizzle-orm": "^0.45.2",
 		"elysia": "catalog:",
-		"logixlysia": "^6.6.0",
+		"logixlysia": "^6.8.1",
 		"pg": "catalog:",
 		"pino": "^10.3.1",
 		"sharp": "catalog:",
@@ -35,9 +35,9 @@
 	},
 	"devDependencies": {
 		"@types/pg": "catalog:",
-		"bun-types": "^1.3.14",
+		"bun-types": "1.3.14",
 		"drizzle-kit": "^0.31.10",
-		"testcontainers": "^12.0.4"
+		"testcontainers": "^12.1.0"
 	},
 	"module": "src/index.ts",
 	"types": "src/types.ts",
