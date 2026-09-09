@@ -11,7 +11,6 @@ import {
 } from "@/db/schemas/employee-invitation";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
-import { store as storeTable } from "@/db/schemas/store";
 import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import {
@@ -302,15 +301,15 @@ export async function acceptInvite(
 					})
 					.returning();
 
-				// Propagate store assignments from the invitation,
-				// INNER JOIN with store table so deleted stores are silently dropped.
+				// Propagate the invitation's store assignments as-is. Hard-deleted
+				// stores are already gone from employee_invitation_stores via the
+				// FK's ON DELETE CASCADE; soft-deleted ones are propagated on
+				// purpose — an assignment is durable intent, and access is derived
+				// at read time by getEmployeeAssignedStoreIds.
+				// docs/superpowers/specs/2026-09-09-employee-store-assignment-lifecycle-design.md
 				const invitedStores = await tx
 					.select({ storeId: employeeInvitationStores.storeId })
 					.from(employeeInvitationStores)
-					.innerJoin(
-						storeTable,
-						eq(employeeInvitationStores.storeId, storeTable.id),
-					)
 					.where(eq(employeeInvitationStores.invitationId, invitation.id));
 
 				if (invitedStores.length > 0) {
