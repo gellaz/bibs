@@ -385,12 +385,24 @@ export async function setEmployeeStores(params: SetEmployeeStoresParams) {
 			),
 		);
 		if (uniqueStoreIds.length > 0) {
-			await tx.insert(storeEmployeeStores).values(
-				uniqueStoreIds.map((storeId) => ({
-					storeEmployeeId: params.employeeId,
-					storeId,
-				})),
-			);
+			// The liveness validation above runs outside this transaction, so a
+			// store can be soft-deleted in the window between that check and here
+			// (another tab, the subscription.deleted webhook, the
+			// auto-cancel-suspended-stores job). When that happens the delete above
+			// no longer matches the pre-existing row for that store (it only
+			// targets live stores), but we're still about to insert it — a PK
+			// conflict on (storeEmployeeId, storeId). onConflictDoNothing() leaves
+			// the surviving dormant row untouched, which is exactly the invariant's
+			// desired end state.
+			await tx
+				.insert(storeEmployeeStores)
+				.values(
+					uniqueStoreIds.map((storeId) => ({
+						storeEmployeeId: params.employeeId,
+						storeId,
+					})),
+				)
+				.onConflictDoNothing();
 		}
 	});
 

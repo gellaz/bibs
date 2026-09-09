@@ -2,6 +2,7 @@
 
 **Date:** 2026-09-09
 **Status:** implemented
+**Riferimenti:** i riferimenti `file:riga` in questo documento puntano allo stato pre-implementazione (base `3998178`)
 **Branch:** `fix/employee-store-lifecycle`
 
 ## Problema
@@ -194,9 +195,14 @@ del seller, l'accesso al dato di un negozio morto no.
   ```
 
   Sono le due righe che rendono affidabile il ripristino: un salvataggio
-  dell'owner non distrugge più l'intento verso un negozio archiviato. Nessun
-  conflitto di PK sull'insert successivo: tutte le righe vive sono state
-  cancellate e gli `uniqueStoreIds` sono già validati come vivi.
+  dell'owner non distrugge più l'intento verso un negozio archiviato. Nel
+  percorso normale non c'è conflitto di PK sull'insert successivo: tutte le
+  righe vive sono state cancellate e gli `uniqueStoreIds` sono già validati
+  come vivi. Ma la validazione gira fuori dalla transazione, quindi un negozio
+  può essere soft-deleted nella finestra tra quel controllo e la transazione:
+  il delete ristretto non tocca più la riga preesistente per quel negozio,
+  mentre l'insert proverebbe comunque a reinserirla — da qui
+  `onConflictDoNothing()`, che risolve la race lasciando la riga dormiente.
 
 ### 4. `acceptInvite` — rimuovere il falso guardiano
 

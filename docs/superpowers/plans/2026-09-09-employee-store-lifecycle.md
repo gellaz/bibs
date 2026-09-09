@@ -771,7 +771,7 @@ Sostituisci il corpo della transazione in `setEmployeeStores`:
 	});
 ```
 
-Nessun conflitto di PK sull'insert: tutte le righe vive sono state cancellate e `uniqueStoreIds` è già validato come vivo.
+Nel percorso normale non c'è conflitto di PK sull'insert: tutte le righe vive sono state cancellate e `uniqueStoreIds` è già validato come vivo. Ma la validazione gira fuori dalla transazione, quindi un negozio può essere soft-deleted nella finestra tra il controllo e la transazione, lasciando una riga preesistente dormiente che il delete ristretto non tocca più — da qui `onConflictDoNothing()`, che risolve la race lasciando la riga dormiente.
 
 `inArray()` accetta una subquery (è un `SQLWrapper`), quindi la forma sopra è quella da usare. Se il typecheck dovesse comunque protestare, **non** ripiegare su due query separate fuori transazione: usa un `exists` in raw SQL dentro la stessa `where`, mantenendo un solo statement.
 
