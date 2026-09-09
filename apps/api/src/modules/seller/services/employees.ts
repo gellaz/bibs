@@ -1,5 +1,5 @@
 import { renderEmployeeInviteEmail } from "@bibs/emails";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
@@ -18,6 +18,7 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { parsePagination } from "@/lib/pagination";
+import { getSellerStoreIds } from "../context";
 
 /** Invitation token validity: 7 days */
 const INVITATION_EXPIRY_DAYS = 7;
@@ -32,7 +33,7 @@ export async function listEmployees(params: ListEmployeesParams) {
 	const { sellerProfileId } = params;
 	const { page, limit, offset } = parsePagination(params);
 
-	const [employees, [{ total }], profile] = await Promise.all([
+	const [employees, [{ total }], profile, liveStoreIds] = await Promise.all([
 		db.query.storeEmployee.findMany({
 			where: eq(storeEmployee.sellerProfileId, sellerProfileId),
 			with: {
@@ -50,11 +51,19 @@ export async function listEmployees(params: ListEmployeesParams) {
 			where: eq(sellerProfile.id, sellerProfileId),
 			with: { user: { columns: { id: true, name: true, email: true } } },
 		}),
+		getSellerStoreIds(sellerProfileId),
 	]);
+
+	// An assignment can only point at a store of this same seller (enforced on
+	// write), so filtering against the seller's live store ids is equivalent to
+	// `deleted_at IS NULL` — and the relational query above cannot reach `store`.
+	const liveStores = new Set(liveStoreIds);
 
 	const data = employees.map((e) => ({
 		...e,
-		storeIds: e.storeAssignments.map((a) => a.storeId),
+		storeIds: e.storeAssignments
+			.map((a) => a.storeId)
+			.filter((id) => liveStores.has(id)),
 	}));
 
 	const owner = profile?.user
@@ -161,17 +170,23 @@ export async function listEmployeeInvitations(sellerProfileId: string) {
 	// history the client discards anyway. Filtering server-side keeps the result
 	// bounded (uses the partial pending-unique index) instead of returning the full
 	// invitation log.
-	const invitations = await db.query.employeeInvitation.findMany({
-		where: and(
-			eq(employeeInvitation.sellerProfileId, sellerProfileId),
-			eq(employeeInvitation.status, "pending"),
-		),
-		with: { storeAssignments: { columns: { storeId: true } } },
-		orderBy: (inv, { desc }) => [desc(inv.createdAt)],
-	});
+	const [invitations, liveStoreIds] = await Promise.all([
+		db.query.employeeInvitation.findMany({
+			where: and(
+				eq(employeeInvitation.sellerProfileId, sellerProfileId),
+				eq(employeeInvitation.status, "pending"),
+			),
+			with: { storeAssignments: { columns: { storeId: true } } },
+			orderBy: (inv, { desc }) => [desc(inv.createdAt)],
+		}),
+		getSellerStoreIds(sellerProfileId),
+	]);
+	const liveStores = new Set(liveStoreIds);
 	return invitations.map((i) => ({
 		...i,
-		storeIds: i.storeAssignments.map((a) => a.storeId),
+		storeIds: i.storeAssignments
+			.map((a) => a.storeId)
+			.filter((id) => liveStores.has(id)),
 	}));
 }
 
@@ -294,7 +309,12 @@ export async function getEmployeeStores(params: EmployeeStoresParams) {
 			provinceTable,
 			eq(provinceTable.id, municipalityTable.provinceId),
 		)
-		.where(eq(storeEmployeeStores.storeEmployeeId, params.employeeId));
+		.where(
+			and(
+				eq(storeEmployeeStores.storeEmployeeId, params.employeeId),
+				isNull(storeTable.deletedAt),
+			),
+		);
 
 	return rows.map(({ municipalityName, provinceAcronym, ...row }) => ({
 		...row,
