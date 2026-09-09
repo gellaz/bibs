@@ -1,7 +1,7 @@
 # Assegnazioni employee↔negozio e ciclo di vita del negozio — design
 
 **Date:** 2026-09-09
-**Status:** approved, pending implementation plan
+**Status:** implemented
 **Branch:** `fix/employee-store-lifecycle`
 
 ## Problema
