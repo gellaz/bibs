@@ -100,6 +100,7 @@ export async function inviteEmployee(
 			and(
 				inArray(storeTable.id, storeIds),
 				eq(storeTable.sellerProfileId, sellerProfileId),
+				isNull(storeTable.deletedAt),
 			),
 		);
 	if (valid.length !== storeIds.length) {
@@ -350,6 +351,7 @@ export async function setEmployeeStores(params: SetEmployeeStoresParams) {
 				and(
 					inArray(storeTable.id, uniqueStoreIds),
 					eq(storeTable.sellerProfileId, params.sellerProfileId),
+					isNull(storeTable.deletedAt),
 				),
 			);
 		if (valid.length !== uniqueStoreIds.length) {
@@ -361,9 +363,27 @@ export async function setEmployeeStores(params: SetEmployeeStoresParams) {
 	}
 
 	await db.transaction(async (tx) => {
-		await tx
-			.delete(storeEmployeeStores)
-			.where(eq(storeEmployeeStores.storeEmployeeId, params.employeeId));
+		// Replace only the assignments the owner can actually see and manage:
+		// the live ones. Rows pointing at soft-deleted stores are dormant intent
+		// (and cannot be re-inserted, the validation above rejects them), so a
+		// save must not destroy them.
+		await tx.delete(storeEmployeeStores).where(
+			and(
+				eq(storeEmployeeStores.storeEmployeeId, params.employeeId),
+				inArray(
+					storeEmployeeStores.storeId,
+					tx
+						.select({ id: storeTable.id })
+						.from(storeTable)
+						.where(
+							and(
+								eq(storeTable.sellerProfileId, params.sellerProfileId),
+								isNull(storeTable.deletedAt),
+							),
+						),
+				),
+			),
+		);
 		if (uniqueStoreIds.length > 0) {
 			await tx.insert(storeEmployeeStores).values(
 				uniqueStoreIds.map((storeId) => ({
