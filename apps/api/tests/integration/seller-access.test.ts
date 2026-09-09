@@ -26,15 +26,23 @@ mock.module("@/db", () => ({
 
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
+import { eq } from "drizzle-orm";
 import { user as userTable } from "@/db/schemas/auth";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
+import { store as storeTable } from "@/db/schemas/store";
 import {
+	ensureProductAccess,
 	ensureStoreAccess,
 	getAccessibleStoreIdsFor,
 } from "@/modules/seller/context";
 import { getEmployeeAssignedStoreIds } from "@/modules/seller/services/access";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestSeller, createTestStore } from "../helpers/fixtures";
+import {
+	createTestProduct,
+	createTestSeller,
+	createTestStore,
+	createTestStoreProduct,
+} from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -141,6 +149,43 @@ describe("getEmployeeAssignedStoreIds", () => {
 		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
 		expect(ids).toEqual([]);
 	});
+
+	it("excludes assignments whose store is soft-deleted", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id, { name: "Live" });
+		const dead = await createTestStore(db, profile.id, { name: "Dead" });
+
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db.insert(storeEmployeeStores).values([
+			{ storeEmployeeId: emp.id, storeId: live.id },
+			{ storeEmployeeId: emp.id, storeId: dead.id },
+		]);
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
+		expect(ids).toEqual([live.id]);
+	});
 });
 
 // ── getAccessibleStoreIdsFor ──────────────────────────────────────────────────
@@ -196,6 +241,47 @@ describe("getAccessibleStoreIdsFor", () => {
 		});
 		expect(ids).toEqual([sA.id]);
 	});
+
+	it("employee: excludes soft-deleted stores, like the owner path does", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id, { name: "Live" });
+		const dead = await createTestStore(db, profile.id, { name: "Dead" });
+
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db.insert(storeEmployeeStores).values([
+			{ storeEmployeeId: emp.id, storeId: live.id },
+			{ storeEmployeeId: emp.id, storeId: dead.id },
+		]);
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		const ids = await getAccessibleStoreIdsFor({
+			userId: empUserId,
+			sellerProfileId: profile.id,
+			isOwner: false,
+		});
+		expect(ids).toEqual([live.id]);
+	});
 });
 
 // ── ensureStoreAccess ─────────────────────────────────────────────────────────
@@ -249,6 +335,91 @@ describe("ensureStoreAccess", () => {
 		});
 		await expect(
 			ensureStoreAccess(sNotAssigned.id, {
+				userId: empUserId,
+				sellerProfileId: profile.id,
+				isOwner: false,
+			}),
+		).rejects.toMatchObject({ status: 403 });
+	});
+
+	it("employee: throws 403 on an assigned store that is soft-deleted", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const dead = await createTestStore(db, profile.id);
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db.insert(storeEmployeeStores).values({
+			storeEmployeeId: emp.id,
+			storeId: dead.id,
+		});
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		// The owner already gets a 404 here (ensureStoreOwnership filters
+		// deletedAt); the employee must not keep write access the owner lost.
+		await expect(
+			ensureStoreAccess(dead.id, {
+				userId: empUserId,
+				sellerProfileId: profile.id,
+				isOwner: false,
+			}),
+		).rejects.toMatchObject({ status: 403 });
+	});
+
+	it("employee: throws 403 on a product stocked only in a soft-deleted store", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const dead = await createTestStore(db, profile.id);
+		const prod = await createTestProduct(db, profile.id);
+		await createTestStoreProduct(db, dead.id, prod.id);
+
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db.insert(storeEmployeeStores).values({
+			storeEmployeeId: emp.id,
+			storeId: dead.id,
+		});
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		await expect(
+			ensureProductAccess(prod.id, {
 				userId: empUserId,
 				sellerProfileId: profile.id,
 				isOwner: false,
