@@ -652,7 +652,7 @@ bun run test:integration  # integration only (requires Docker)
 
 ### Why integration tests run with `--isolate`
 
-`test:integration` is `bun test tests/integration --isolate`. **Keep the flag.**
+`test:integration` is `bun test tests/integration --parallel=4 --isolate`. **Keep both flags.**
 
 Bun keeps one module registry per `bun test` process, so a `mock.module(...)` from one
 file leaks into files loaded after it: the mocked module *and* every module already
@@ -681,11 +681,27 @@ This matters because a suite can be green and silently un-isolated. A control ru
 proves the global is shared there) but no existing test happened to sit in an order that
 exposed it. The guard turns that invisible property into a ~0.2 ms assertion.
 
-`--parallel=N` implies `--isolate` and is measured as ~2x faster on CI (177s vs 350s
-serial vs 381s for the old per-process script), green with the guards. Not enabled here:
-each file starts its own PostGIS testcontainer, so N files in parallel means N concurrent
-containers on a 4-vCPU runner — a resource-profile change that deserves its own
-validation rather than riding along with this one.
+### Why `--parallel=4`, with the count pinned
+
+Files run across 4 worker processes, roughly halving wall-clock (~180s against ~350s
+serial and ~381s for the old per-process script).
+
+**The worker count is pinned on purpose.** Bare `--parallel` defaults to the CPU count,
+and each worker starts its own PostGIS testcontainer — so the number of concurrent
+databases would silently follow whatever machine you are on (4 on the CI runner, 8+ on a
+dev laptop, more on a bigger runner). That is a resource profile, not a tuning knob, and
+this repo already pins the runner image and bun version for the same reason: a config
+that changes under you is one you cannot reason about. 4 matches the CI runner's vCPU
+count and is the configuration that was actually measured.
+
+Raising it is not free: every extra worker is another Postgres server plus another
+`migrate` run competing for the same cores and disk. If you change it, re-measure —
+and note that unlike the file-order flake, contention *does* vary run to run, so
+repeated CI runs are genuinely informative here.
+
+`--isolate` is passed explicitly even though `--parallel` implies it. It documents the
+invariant the guards protect, and it means `--no-isolate` (which exists, and which
+`--parallel` would otherwise happily accept as a speed-up) cannot creep in unnoticed.
 
 ### Dev emails (Mailpit)
 
