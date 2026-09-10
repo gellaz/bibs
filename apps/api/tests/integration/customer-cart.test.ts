@@ -25,11 +25,14 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { cartItem } from "@/db/schemas/cart";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
-import { addCartItem } from "@/modules/customer/services/cart";
+import { store as storeTable } from "@/db/schemas/store";
+import { addCartItem, getCart } from "@/modules/customer/services/cart";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCartItem,
 	createTestCustomer,
+	createTestDiscount,
+	createTestDiscountProduct,
 	createTestProduct,
 	createTestSeller,
 	createTestStore,
@@ -274,5 +277,166 @@ describe("addCartItem", () => {
 
 		const rows = await db.select().from(cartItem);
 		expect(rows).toHaveLength(2);
+	});
+});
+
+describe("getCart", () => {
+	it("returns zeros for an empty cart", async () => {
+		const db = getTestDb();
+		const { profile: cp } = await createTestCustomer(db);
+
+		const cart = await getCart(cp.id);
+
+		expect(cart.groups).toEqual([]);
+		expect(cart.itemCount).toBe(0);
+		expect(cart.total).toBe("0.00");
+	});
+
+	it("groups rows by store, ordered by store name", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: spB } = await sellableProduct(profile.id, {
+			storeName: "Bottega Zeta",
+			price: "5.00",
+		});
+		const { storeProduct: spA } = await sellableProduct(profile.id, {
+			storeName: "Alimentari Alfa",
+			price: "3.00",
+		});
+		const { profile: cp } = await createTestCustomer(db);
+
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: spB.id,
+			quantity: 1,
+		});
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: spA.id,
+			quantity: 2,
+		});
+
+		const cart = await getCart(cp.id);
+
+		expect(cart.groups.map((g) => g.store.name)).toEqual([
+			"Alimentari Alfa",
+			"Bottega Zeta",
+		]);
+		expect(cart.groups[0].subtotal).toBe("6.00");
+		expect(cart.groups[1].subtotal).toBe("5.00");
+		expect(cart.itemCount).toBe(3);
+		expect(cart.total).toBe("11.00");
+	});
+
+	it("prices the line at the discounted price when a promo is active", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const s = await visibleStore(profile.id);
+		const p = await createTestProduct(db, profile.id, { price: "10.00" });
+		const sp = await createTestStoreProduct(db, s.id, p.id, { stock: 10 });
+		const d = await createTestDiscount(db, profile.id, { percent: 20 });
+		await createTestDiscountProduct(db, d.id, p.id);
+		const { profile: cp } = await createTestCustomer(db);
+
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 3,
+		});
+
+		const cart = await getCart(cp.id);
+		const item = cart.groups[0].items[0];
+
+		expect(item.unitPrice).toBe("10.00");
+		expect(item.discountedPrice).toBe("8.00");
+		expect(item.discountPercent).toBe(20);
+		expect(item.lineTotal).toBe("24.00");
+		expect(cart.total).toBe("24.00");
+	});
+
+	it("flags a line whose stock fell below the quantity, without failing", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 5,
+			price: "4.00",
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 4,
+		});
+
+		// Il venditore vende altrove: lo stock scende sotto il carrello
+		await db
+			.update(storeProductTable)
+			.set({ stock: 1 })
+			.where(eq(storeProductTable.id, sp.id));
+
+		const cart = await getCart(cp.id);
+		const item = cart.groups[0].items[0];
+
+		expect(item.issue).toBe("insufficient_stock");
+		expect(item.availableStock).toBe(1);
+		// Prezzabile comunque: la riga resta nei totali
+		expect(item.lineTotal).toBe("16.00");
+		expect(cart.total).toBe("16.00");
+	});
+
+	it("flags an unavailable line and keeps it out of the totals", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { store: s, storeProduct: sp } = await sellableProduct(profile.id, {
+			price: "9.00",
+		});
+		const { storeProduct: spOk } = await sellableProduct(profile.id, {
+			storeName: "Ancora Viva",
+			price: "2.00",
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: spOk.id,
+			quantity: 1,
+		});
+
+		// Il negozio esce dalla visibilità pubblica (soft delete)
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, s.id));
+
+		const cart = await getCart(cp.id);
+		const flagged = cart.groups
+			.flatMap((g) => g.items)
+			.find((i) => i.storeProductId === sp.id);
+
+		expect(flagged?.issue).toBe("unavailable");
+		// Fuori dai totali, ma ancora contata come "roba nel carrello"
+		expect(cart.total).toBe("2.00");
+		expect(cart.itemCount).toBe(2);
+	});
+
+	it("never returns another customer's rows", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id);
+		const { profile: a } = await createTestCustomer(db);
+		const { profile: b } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: b.id,
+			storeProductId: sp.id,
+			quantity: 2,
+		});
+
+		const cart = await getCart(a.id);
+
+		expect(cart.groups).toEqual([]);
 	});
 });
