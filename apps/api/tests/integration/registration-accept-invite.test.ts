@@ -110,12 +110,9 @@ describe("acceptInvite storeEmployeeStores propagation", () => {
 	});
 
 	// The guard here is the `employee_invitation_stores.store_id` FK
-	// (ON DELETE CASCADE), not the service's INNER JOIN against `store`:
-	// removing the join keeps this test green. Verified 2026-09-09 — and with it
-	// that a SOFT-deleted store (`stores.deleted_at`, which is how the app
-	// actually deletes stores) IS still propagated to the new employee. That case
-	// is deliberately not asserted here: it is a product decision, not a
-	// regression to lock in.
+	// (ON DELETE CASCADE), not an INNER JOIN in the service: a hard-deleted
+	// store is already gone from the invitation rows. A SOFT-deleted store is a
+	// different case on purpose — see the next test.
 	it("does not assign a store hard-deleted between invite and accept", async () => {
 		const { acceptInvite } = await import("@/modules/registration/services");
 		const db = getTestDb();
@@ -149,5 +146,60 @@ describe("acceptInvite storeEmployeeStores propagation", () => {
 			.from(storeEmployeeStores)
 			.where(eq(storeEmployeeStores.storeEmployeeId, employee.id));
 		expect(assigned.map((r) => r.storeId)).toEqual([sA.id]);
+	});
+
+	// An assignment is durable intent, independent of the store's lifecycle: the
+	// row is propagated even for a soft-deleted store, exactly as it survives on
+	// an employee whose store dies later. Access is gated at read time by
+	// getEmployeeAssignedStoreIds, so the row is inert until a restore.
+	// docs/superpowers/specs/2026-09-09-employee-store-assignment-lifecycle-design.md
+	it("still assigns a store soft-deleted between invite and accept", async () => {
+		const { acceptInvite } = await import("@/modules/registration/services");
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const sA = await createTestStore(db, profile.id);
+		const sB = await createTestStore(db, profile.id);
+
+		const inv = await inviteEmployee(profile.id, "employee@test.com", [
+			sA.id,
+			sB.id,
+		]);
+
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, sB.id));
+
+		await acceptInvite({
+			token: inv.invitationToken,
+			password: "password123",
+		});
+
+		const [employeeUser] = await db
+			.select()
+			.from(userTable)
+			.where(eq(userTable.email, "employee@test.com"));
+		const [employee] = await db
+			.select()
+			.from(storeEmployee)
+			.where(eq(storeEmployee.userId, employeeUser.id));
+
+		const assigned = await db
+			.select()
+			.from(storeEmployeeStores)
+			.where(eq(storeEmployeeStores.storeEmployeeId, employee.id));
+		expect(assigned.map((r) => r.storeId).sort()).toEqual(
+			[sA.id, sB.id].sort(),
+		);
+
+		// …and the dormant row grants nothing: only the live store is accessible.
+		const { getEmployeeAssignedStoreIds } = await import(
+			"@/modules/seller/services/access"
+		);
+		const accessible = await getEmployeeAssignedStoreIds(
+			employeeUser.id,
+			profile.id,
+		);
+		expect(accessible).toEqual([sA.id]);
 	});
 });

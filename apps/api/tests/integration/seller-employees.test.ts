@@ -34,6 +34,7 @@ import {
 	employeeInvitation,
 	employeeInvitationStores,
 } from "@/db/schemas/employee-invitation";
+import { store as storeTable } from "@/db/schemas/store";
 import {
 	getEmployeeStores,
 	inviteEmployee,
@@ -85,6 +86,27 @@ describe("listEmployeeInvitations", () => {
 		expect(result[0]?.email).toBe("pending@test.com");
 		expect(result[0]?.status).toBe("pending");
 	});
+
+	it("omits soft-deleted stores from a pending invitation's storeIds", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id);
+		const dead = await createTestStore(db, profile.id);
+
+		const inv = await inviteEmployee(profile.id, "pending@test.com", [
+			live.id,
+			dead.id,
+		]);
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		const result = await listEmployeeInvitations(profile.id);
+		expect(result).toHaveLength(1);
+		expect(result[0]?.id).toBe(inv.id);
+		expect(result[0]?.storeIds).toEqual([live.id]);
+	});
 });
 
 describe("listEmployees", () => {
@@ -120,6 +142,42 @@ describe("listEmployees", () => {
 		expect(result.data).toHaveLength(1);
 		expect(result.data[0].storeIds.sort()).toEqual([sA.id, sB.id].sort());
 	});
+
+	it("omits soft-deleted stores from storeIds", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id);
+		const dead = await createTestStore(db, profile.id);
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db.insert(storeEmployeeStores).values([
+			{ storeEmployeeId: emp.id, storeId: live.id },
+			{ storeEmployeeId: emp.id, storeId: dead.id },
+		]);
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		const result = await listEmployees({ sellerProfileId: profile.id });
+		expect(result.data[0].storeIds).toEqual([live.id]);
+	});
 });
 
 describe("inviteEmployee with storeIds", () => {
@@ -152,6 +210,20 @@ describe("inviteEmployee with storeIds", () => {
 
 		await expect(
 			inviteEmployee(profileA.id, "n@test.com", [sB.id]),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("rejects a soft-deleted store (404)", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const dead = await createTestStore(db, profile.id);
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		await expect(
+			inviteEmployee(profile.id, "n@test.com", [dead.id]),
 		).rejects.toMatchObject({ status: 404 });
 	});
 
@@ -263,6 +335,93 @@ describe("setEmployeeStores", () => {
 		).rejects.toMatchObject({ status: 404 });
 	});
 
+	it("rejects a soft-deleted store (404)", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const dead = await createTestStore(db, profile.id);
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		await expect(
+			setEmployeeStores({
+				sellerProfileId: profile.id,
+				employeeId: emp.id,
+				storeIds: [dead.id],
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("preserves the dormant assignment of a soft-deleted store", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id);
+		const other = await createTestStore(db, profile.id);
+		const dead = await createTestStore(db, profile.id);
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db.insert(storeEmployeeStores).values([
+			{ storeEmployeeId: emp.id, storeId: live.id },
+			{ storeEmployeeId: emp.id, storeId: dead.id },
+		]);
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		// The owner re-assigns among live stores only (the dialog cannot even
+		// show the archived one). The dormant row must survive, so a future
+		// store restore brings the assignment back.
+		await setEmployeeStores({
+			sellerProfileId: profile.id,
+			employeeId: emp.id,
+			storeIds: [other.id],
+		});
+
+		const rows = await db
+			.select()
+			.from(storeEmployeeStores)
+			.where(eq(storeEmployeeStores.storeEmployeeId, emp.id));
+		expect(rows.map((r) => r.storeId).sort()).toEqual(
+			[other.id, dead.id].sort(),
+		);
+	});
+
 	it("getEmployeeStores: 404 if employee not found in seller", async () => {
 		const db = getTestDb();
 		const a = await createTestSeller(db);
@@ -290,5 +449,44 @@ describe("setEmployeeStores", () => {
 		await expect(
 			getEmployeeStores({ sellerProfileId: b.profile.id, employeeId: emp.id }),
 		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("getEmployeeStores: omits a soft-deleted assigned store", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id);
+		const dead = await createTestStore(db, profile.id);
+		const empUserId = crypto.randomUUID();
+		await db.insert(userTable).values({
+			id: empUserId,
+			name: "Emp",
+			email: `e-${empUserId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		});
+		const [emp] = await db
+			.insert(storeEmployee)
+			.values({
+				sellerProfileId: profile.id,
+				userId: empUserId,
+				status: "active",
+			})
+			.returning();
+		await db.insert(storeEmployeeStores).values([
+			{ storeEmployeeId: emp.id, storeId: live.id },
+			{ storeEmployeeId: emp.id, storeId: dead.id },
+		]);
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		const rows = await getEmployeeStores({
+			sellerProfileId: profile.id,
+			employeeId: emp.id,
+		});
+		expect(rows.map((s) => s.id)).toEqual([live.id]);
 	});
 });

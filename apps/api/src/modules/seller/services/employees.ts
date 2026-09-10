@@ -1,5 +1,5 @@
 import { renderEmployeeInviteEmail } from "@bibs/emails";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
@@ -18,6 +18,7 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { parsePagination } from "@/lib/pagination";
+import { getSellerStoreIds } from "../context";
 
 /** Invitation token validity: 7 days */
 const INVITATION_EXPIRY_DAYS = 7;
@@ -32,7 +33,7 @@ export async function listEmployees(params: ListEmployeesParams) {
 	const { sellerProfileId } = params;
 	const { page, limit, offset } = parsePagination(params);
 
-	const [employees, [{ total }], profile] = await Promise.all([
+	const [employees, [{ total }], profile, liveStoreIds] = await Promise.all([
 		db.query.storeEmployee.findMany({
 			where: eq(storeEmployee.sellerProfileId, sellerProfileId),
 			with: {
@@ -50,11 +51,19 @@ export async function listEmployees(params: ListEmployeesParams) {
 			where: eq(sellerProfile.id, sellerProfileId),
 			with: { user: { columns: { id: true, name: true, email: true } } },
 		}),
+		getSellerStoreIds(sellerProfileId),
 	]);
+
+	// An assignment can only point at a store of this same seller (enforced on
+	// write), so filtering against the seller's live store ids is equivalent to
+	// `deleted_at IS NULL` — and the relational query above cannot reach `store`.
+	const liveStores = new Set(liveStoreIds);
 
 	const data = employees.map((e) => ({
 		...e,
-		storeIds: e.storeAssignments.map((a) => a.storeId),
+		storeIds: e.storeAssignments
+			.map((a) => a.storeId)
+			.filter((id) => liveStores.has(id)),
 	}));
 
 	const owner = profile?.user
@@ -91,6 +100,7 @@ export async function inviteEmployee(
 			and(
 				inArray(storeTable.id, storeIds),
 				eq(storeTable.sellerProfileId, sellerProfileId),
+				isNull(storeTable.deletedAt),
 			),
 		);
 	if (valid.length !== storeIds.length) {
@@ -161,17 +171,23 @@ export async function listEmployeeInvitations(sellerProfileId: string) {
 	// history the client discards anyway. Filtering server-side keeps the result
 	// bounded (uses the partial pending-unique index) instead of returning the full
 	// invitation log.
-	const invitations = await db.query.employeeInvitation.findMany({
-		where: and(
-			eq(employeeInvitation.sellerProfileId, sellerProfileId),
-			eq(employeeInvitation.status, "pending"),
-		),
-		with: { storeAssignments: { columns: { storeId: true } } },
-		orderBy: (inv, { desc }) => [desc(inv.createdAt)],
-	});
+	const [invitations, liveStoreIds] = await Promise.all([
+		db.query.employeeInvitation.findMany({
+			where: and(
+				eq(employeeInvitation.sellerProfileId, sellerProfileId),
+				eq(employeeInvitation.status, "pending"),
+			),
+			with: { storeAssignments: { columns: { storeId: true } } },
+			orderBy: (inv, { desc }) => [desc(inv.createdAt)],
+		}),
+		getSellerStoreIds(sellerProfileId),
+	]);
+	const liveStores = new Set(liveStoreIds);
 	return invitations.map((i) => ({
 		...i,
-		storeIds: i.storeAssignments.map((a) => a.storeId),
+		storeIds: i.storeAssignments
+			.map((a) => a.storeId)
+			.filter((id) => liveStores.has(id)),
 	}));
 }
 
@@ -294,7 +310,12 @@ export async function getEmployeeStores(params: EmployeeStoresParams) {
 			provinceTable,
 			eq(provinceTable.id, municipalityTable.provinceId),
 		)
-		.where(eq(storeEmployeeStores.storeEmployeeId, params.employeeId));
+		.where(
+			and(
+				eq(storeEmployeeStores.storeEmployeeId, params.employeeId),
+				isNull(storeTable.deletedAt),
+			),
+		);
 
 	return rows.map(({ municipalityName, provinceAcronym, ...row }) => ({
 		...row,
@@ -330,6 +351,7 @@ export async function setEmployeeStores(params: SetEmployeeStoresParams) {
 				and(
 					inArray(storeTable.id, uniqueStoreIds),
 					eq(storeTable.sellerProfileId, params.sellerProfileId),
+					isNull(storeTable.deletedAt),
 				),
 			);
 		if (valid.length !== uniqueStoreIds.length) {
@@ -341,16 +363,46 @@ export async function setEmployeeStores(params: SetEmployeeStoresParams) {
 	}
 
 	await db.transaction(async (tx) => {
-		await tx
-			.delete(storeEmployeeStores)
-			.where(eq(storeEmployeeStores.storeEmployeeId, params.employeeId));
+		// Replace only the assignments the owner can actually see and manage:
+		// the live ones. Rows pointing at soft-deleted stores are dormant intent
+		// (and cannot be re-inserted, the validation above rejects them), so a
+		// save must not destroy them.
+		await tx.delete(storeEmployeeStores).where(
+			and(
+				eq(storeEmployeeStores.storeEmployeeId, params.employeeId),
+				inArray(
+					storeEmployeeStores.storeId,
+					tx
+						.select({ id: storeTable.id })
+						.from(storeTable)
+						.where(
+							and(
+								eq(storeTable.sellerProfileId, params.sellerProfileId),
+								isNull(storeTable.deletedAt),
+							),
+						),
+				),
+			),
+		);
 		if (uniqueStoreIds.length > 0) {
-			await tx.insert(storeEmployeeStores).values(
-				uniqueStoreIds.map((storeId) => ({
-					storeEmployeeId: params.employeeId,
-					storeId,
-				})),
-			);
+			// The liveness validation above runs outside this transaction, so a
+			// store can be soft-deleted in the window between that check and here
+			// (another tab, the subscription.deleted webhook, the
+			// auto-cancel-suspended-stores job). When that happens the delete above
+			// no longer matches the pre-existing row for that store (it only
+			// targets live stores), but we're still about to insert it — a PK
+			// conflict on (storeEmployeeId, storeId). onConflictDoNothing() leaves
+			// the surviving dormant row untouched, which is exactly the invariant's
+			// desired end state.
+			await tx
+				.insert(storeEmployeeStores)
+				.values(
+					uniqueStoreIds.map((storeId) => ({
+						storeEmployeeId: params.employeeId,
+						storeId,
+					})),
+				)
+				.onConflictDoNothing();
 		}
 	});
 

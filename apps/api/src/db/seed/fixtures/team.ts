@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
@@ -133,7 +133,12 @@ export async function seedTeam() {
 			sellerProfileId: store.sellerProfileId,
 		})
 		.from(store)
-		.where(inArray(store.sellerProfileId, sellerProfileIds))
+		.where(
+			and(
+				inArray(store.sellerProfileId, sellerProfileIds),
+				isNull(store.deletedAt),
+			),
+		)
 		.orderBy(asc(store.createdAt), asc(store.id));
 
 	const storesBySeller = new Map<string, string[]>();
