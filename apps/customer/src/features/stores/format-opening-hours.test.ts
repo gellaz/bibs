@@ -1,12 +1,22 @@
 import { describe, expect, it } from "bun:test";
 import { formatWeeklyHours, romeDayOfWeek } from "./format-opening-hours";
 
+const TEST_DAY_LABELS = [
+	"Lun",
+	"Mar",
+	"Mer",
+	"Gio",
+	"Ven",
+	"Sab",
+	"Dom",
+] as const;
+
 describe("formatWeeklyHours", () => {
 	it("returns 7 rows Lun→Dom, all closed when openingHours is null", () => {
-		const rows = formatWeeklyHours(null, 0);
+		const rows = formatWeeklyHours(null, 0, TEST_DAY_LABELS);
 		expect(rows).toHaveLength(7);
-		expect(rows[0].label).toBe("Lunedì");
-		expect(rows[6].label).toBe("Domenica");
+		expect(rows[0].label).toBe("Lun");
+		expect(rows[6].label).toBe("Dom");
 		expect(rows.every((r) => r.hours === null)).toBe(true);
 	});
 
@@ -22,17 +32,22 @@ describe("formatWeeklyHours", () => {
 				},
 			],
 			3,
+			TEST_DAY_LABELS,
 		);
 		expect(rows[0].hours).toBe("09:00–13:00 · 16:00–19:00");
 	});
 
 	it("marks days with no slots as closed (null hours)", () => {
-		const rows = formatWeeklyHours([{ dayOfWeek: 2, slots: [] }], 0);
+		const rows = formatWeeklyHours(
+			[{ dayOfWeek: 2, slots: [] }],
+			0,
+			TEST_DAY_LABELS,
+		);
 		expect(rows[2].hours).toBeNull();
 	});
 
 	it("flags only today", () => {
-		const rows = formatWeeklyHours(null, 5);
+		const rows = formatWeeklyHours(null, 5, TEST_DAY_LABELS);
 		expect(rows.filter((r) => r.isToday).map((r) => r.dayOfWeek)).toEqual([5]);
 	});
 });

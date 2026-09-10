@@ -9,6 +9,7 @@ import { useGeolocation } from "@/features/discovery/use-geolocation";
 import { StoreTile } from "@/features/stores/store-tile";
 import { useStoreSearch } from "@/features/stores/use-store-search";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/stores/")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -80,10 +81,10 @@ function StoresPage() {
 		<div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
 			<section className="space-y-1">
 				<h1 className="font-bold font-display text-2xl text-primary tracking-[-0.015em]">
-					Negozi
+					{m.store_list_title()}
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Trova i negozi vicino a te. Cerca per nome o città.
+					{m.store_list_subtitle()}
 				</p>
 			</section>
 
@@ -97,15 +98,15 @@ function StoresPage() {
 						type="search"
 						value={text}
 						onChange={(e) => setText(e.target.value)}
-						placeholder="Cerca un negozio o un comune…"
-						aria-label="Cerca negozi"
+						placeholder={m.store_search_placeholder()}
+						aria-label={m.store_search_aria()}
 						className="h-10 w-full rounded-md border border-border bg-background pr-3 pl-9 text-foreground text-sm outline-none focus-visible:ring-2 focus-visible:ring-saffron"
 					/>
 				</div>
 				{geoStatus === "granted" ? (
 					<span className="inline-flex items-center gap-1.5 text-saffron-deep text-sm dark:text-saffron">
 						<LocateFixed className="size-4" aria-hidden />
-						Ordinati per vicinanza
+						{m.store_sorted_by_distance()}
 					</span>
 				) : (
 					<Button
@@ -115,7 +116,7 @@ function StoresPage() {
 						disabled={geoStatus === "pending"}
 					>
 						<MapPin className="size-4" aria-hidden />
-						{geoStatus === "pending" ? "Rilevamento…" : "Vicino a me"}
+						{geoStatus === "pending" ? m.store_locating() : m.store_near_me()}
 					</Button>
 				)}
 			</div>
@@ -124,7 +125,7 @@ function StoresPage() {
 				<div className="mt-3 flex flex-wrap gap-2">
 					<CategoryChip
 						active={!categoryId}
-						label="Tutte"
+						label={m.store_category_all()}
 						onClick={() =>
 							navigate({
 								search: (prev) => ({ ...prev, categoryId: undefined }),
@@ -158,23 +159,25 @@ function StoresPage() {
 				) : isError ? (
 					<Notice
 						icon={RotateCw}
-						title="Non siamo riusciti a caricare i negozi"
-						description="Qualcosa è andato storto. Riprova tra un momento."
+						title={m.store_load_error_title()}
+						description={m.store_load_error_description()}
 						action={
 							<Button variant="secondary" size="sm" onClick={() => refetch()}>
 								<RotateCw className="size-4" aria-hidden />
-								Riprova
+								{m.store_retry()}
 							</Button>
 						}
 					/>
 				) : stores.length === 0 ? (
 					<Notice
 						icon={Compass}
-						title={hasQuery ? "Nessun risultato" : "Esplora i negozi"}
+						title={
+							hasQuery ? m.store_no_results_title() : m.store_explore_title()
+						}
 						description={
 							hasQuery
-								? "Nessun negozio corrisponde alla tua ricerca. Prova con un altro nome o comune."
-								: "Non ci sono ancora negozi da mostrare. Torna a trovarci presto."
+								? m.store_no_results_description()
+								: m.store_explore_description()
 						}
 					/>
 				) : (
@@ -196,7 +199,7 @@ function StoresPage() {
 									onClick={() => fetchNextPage()}
 									disabled={isFetchingNextPage}
 								>
-									{isFetchingNextPage ? "Caricamento…" : "Carica altri"}
+									{isFetchingNextPage ? m.store_loading() : m.store_load_more()}
 								</Button>
 							</div>
 						)}

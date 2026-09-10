@@ -1,5 +1,6 @@
 import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Link } from "@tanstack/react-router";
+import { m } from "@/paraglide/messages";
 import { UserMenu } from "./user-menu";
 
 /**
@@ -17,7 +18,7 @@ export function SiteHeader() {
 			<div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:h-16 sm:px-6">
 				<Link
 					to="/"
-					aria-label="bibs, torna alla home"
+					aria-label={m.nav_home_aria()}
 					className="-mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1 outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 				>
 					<BrandMark className="size-9" />
@@ -31,7 +32,7 @@ export function SiteHeader() {
 						search={{ q: undefined, categoryId: undefined }}
 						className="rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground"
 					>
-						Negozi
+						{m.nav_stores()}
 					</Link>
 				</nav>
 				<UserMenu />

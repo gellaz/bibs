@@ -3,6 +3,7 @@ import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
 import { Notice } from "@/components/notice";
 import { GRID, TileSkeleton } from "@/components/tile";
 import { ProductTile } from "@/features/catalog/product-tile";
+import { m } from "@/paraglide/messages";
 import { useGeolocation } from "./use-geolocation";
 import { useNearbyProducts } from "./use-nearby-products";
 
@@ -27,17 +28,17 @@ export function NearbyProducts() {
 						id="nearby-heading"
 						className="font-bold font-display text-2xl text-primary tracking-[-0.015em]"
 					>
-						Vicino a te
+						{m.discovery_nearby_title()}
 					</h2>
 					<p className="text-muted-foreground text-sm">
-						I prodotti disponibili nei negozi della tua zona.
+						{m.discovery_nearby_subtitle()}
 					</p>
 				</div>
 
 				{geoStatus === "granted" ? (
 					<span className="inline-flex items-center gap-1.5 text-saffron-deep text-sm dark:text-saffron">
 						<LocateFixed className="size-4" aria-hidden />
-						Distanze dalla tua posizione
+						{m.discovery_sorted_by_distance()}
 					</span>
 				) : (
 					<Button
@@ -47,7 +48,9 @@ export function NearbyProducts() {
 						disabled={geoStatus === "pending"}
 					>
 						<MapPin className="size-4" aria-hidden />
-						{geoStatus === "pending" ? "Rilevamento…" : "Mostra le distanze"}
+						{geoStatus === "pending"
+							? m.discovery_locating()
+							: m.discovery_show_distances()}
 					</Button>
 				)}
 			</div>
@@ -55,8 +58,8 @@ export function NearbyProducts() {
 			{(geoStatus === "denied" || geoStatus === "unsupported") && (
 				<p className="mt-3 text-muted-foreground text-xs">
 					{geoStatus === "denied"
-						? "Posizione non disponibile. Mostriamo comunque cosa c'è in zona."
-						: "Il tuo dispositivo non supporta la geolocalizzazione."}
+						? m.discovery_location_denied()
+						: m.discovery_location_unsupported()}
 				</p>
 			)}
 
@@ -70,20 +73,20 @@ export function NearbyProducts() {
 				) : isError ? (
 					<Notice
 						icon={RotateCw}
-						title="Non siamo riusciti a caricare i prodotti"
-						description="Qualcosa è andato storto durante il caricamento. Riprova tra un momento."
+						title={m.discovery_load_error_title()}
+						description={m.discovery_load_error_description()}
 						action={
 							<Button variant="secondary" size="sm" onClick={() => refetch()}>
 								<RotateCw className="size-4" aria-hidden />
-								Riprova
+								{m.discovery_retry()}
 							</Button>
 						}
 					/>
 				) : products.length === 0 ? (
 					<Notice
 						icon={Compass}
-						title="Ancora niente da scoprire"
-						description="Non ci sono ancora prodotti disponibili in zona. Torna a trovarci: i negozi del quartiere stanno arrivando."
+						title={m.discovery_empty_title()}
+						description={m.discovery_empty_description()}
 					/>
 				) : (
 					<ul className={GRID}>

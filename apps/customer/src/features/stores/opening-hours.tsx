@@ -1,4 +1,6 @@
+import { m } from "@/paraglide/messages";
 import {
+	type DayLabels,
 	formatWeeklyHours,
 	type OpeningHoursDayInput,
 	romeDayOfWeek,
@@ -9,7 +11,20 @@ export function OpeningHours({
 }: {
 	openingHours: OpeningHoursDayInput[] | null;
 }) {
-	const rows = formatWeeklyHours(openingHours, romeDayOfWeek(new Date()));
+	const dayLabels: DayLabels = [
+		m.day_monday(),
+		m.day_tuesday(),
+		m.day_wednesday(),
+		m.day_thursday(),
+		m.day_friday(),
+		m.day_saturday(),
+		m.day_sunday(),
+	];
+	const rows = formatWeeklyHours(
+		openingHours,
+		romeDayOfWeek(new Date()),
+		dayLabels,
+	);
 	return (
 		<dl className="divide-y divide-border overflow-hidden rounded-xl border border-border">
 			{rows.map((r) => (
@@ -23,7 +38,7 @@ export function OpeningHours({
 					<dd
 						className={`tabular-nums ${r.hours ? "text-foreground" : "text-muted-foreground"}`}
 					>
-						{r.hours ?? "Chiuso"}
+						{r.hours ?? m.store_closed()}
 					</dd>
 				</div>
 			))}
