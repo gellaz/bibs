@@ -20,8 +20,9 @@ import { expect, test } from "bun:test";
  * happen to pick (#146), so it needs a check that fails loudly and everywhere
  * instead of waiting for an unlucky CI image.
  *
- * If this fails: `--isolate` is missing from the `test:integration` script, not
- * broken here. See apps/api/AGENTS.md.
+ * If this fails: isolation is off in the `test:integration` script -- `--isolate`
+ * dropped, or `--no-isolate` added alongside `--parallel` -- not broken here. See
+ * apps/api/AGENTS.md.
  */
 declare global {
 	var __bibsIsolationGuard: number | undefined;
