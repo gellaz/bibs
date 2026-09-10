@@ -1,4 +1,4 @@
-import type { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { LayersIcon } from "lucide-react";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import { ProductMacroCategoryForm } from "@/features/product-macro-categories/components/product-macro-category-form";
@@ -12,7 +12,7 @@ interface ProductMacroCategory {
 	createdAt: Date | string;
 }
 
-const vatColumn: ColumnDef<ProductMacroCategory> = {
+const vatColumn: DataTableColumnDef<ProductMacroCategory> = {
 	id: "suggestedVatRate",
 	header: "IVA suggerita",
 	meta: { menuLabel: "IVA suggerita", cellClassName: "text-sm tabular-nums" },

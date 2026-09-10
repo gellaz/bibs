@@ -24,7 +24,6 @@
 		"@hookform/resolvers": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"@tailwindcss/vite": "catalog:",
-		"@tanstack/match-sorter-utils": "catalog:",
 		"@tanstack/react-devtools": "catalog:",
 		"@tanstack/react-query": "catalog:",
 		"@tanstack/react-query-devtools": "catalog:",

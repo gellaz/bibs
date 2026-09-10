@@ -13,8 +13,8 @@ import { EmptyState } from "@bibs/ui/components/empty-state";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
 import { MoreVerticalIcon } from "lucide-react";
 import { useMemo } from "react";
 import { PromotionStateBadge } from "@/features/promotions/components/promotion-state-badge";
@@ -121,7 +121,7 @@ function PromotionsListPage() {
 		[data],
 	);
 
-	const columns = useMemo<ColumnDef<DiscountRow>[]>(
+	const columns = useMemo<DataTableColumnDef<DiscountRow>[]>(
 		() => [
 			{
 				id: "title",

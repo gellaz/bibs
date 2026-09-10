@@ -12,9 +12,10 @@ import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import type { SortingState } from "@tanstack/react-table";
 import { SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -151,7 +152,7 @@ function UsersPage() {
 		});
 	};
 
-	const columns = useMemo<ColumnDef<AdminUser>[]>(
+	const columns = useMemo<DataTableColumnDef<AdminUser>[]>(
 		() => [
 			{
 				id: "name",

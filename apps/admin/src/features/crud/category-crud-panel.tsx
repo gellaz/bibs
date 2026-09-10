@@ -26,8 +26,8 @@ import { SortableHeadButton } from "@bibs/ui/components/sortable-table-head";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 import { PencilIcon, SearchIcon, Trash2Icon, UploadIcon } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import {
@@ -102,7 +102,7 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 	update: (id: string, form: TForm) => Promise<EdenRes<unknown>>;
 	remove: (id: string) => Promise<EdenRes<unknown>>;
 
-	extraColumns?: ColumnDef<TEntity>[];
+	extraColumns?: DataTableColumnDef<TEntity>[];
 	emptyIcon: ReactNode;
 
 	renderForm: (p: CrudFormProps<TForm>) => ReactNode;
@@ -252,8 +252,8 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 		deleteMutation.mutate(selected.id);
 	};
 
-	const columns = useMemo<ColumnDef<TEntity>[]>(() => {
-		const nameCol: ColumnDef<TEntity> = {
+	const columns = useMemo<DataTableColumnDef<TEntity>[]>(() => {
+		const nameCol: DataTableColumnDef<TEntity> = {
 			id: "name",
 			enableHiding: false,
 			meta: {
@@ -272,7 +272,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			),
 			cell: ({ row }) => row.original.name,
 		};
-		const createdAtCol: ColumnDef<TEntity> = {
+		const createdAtCol: DataTableColumnDef<TEntity> = {
 			id: "createdAt",
 			meta: {
 				menuLabel: "Data creazione",
@@ -289,7 +289,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			),
 			cell: ({ row }) => formatDateIt(row.original.createdAt, { long: true }),
 		};
-		const actionsCol: ColumnDef<TEntity> = {
+		const actionsCol: DataTableColumnDef<TEntity> = {
 			id: "actions",
 			enableHiding: false,
 			meta: {

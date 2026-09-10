@@ -1,6 +1,6 @@
 "use client";
 
-import type { Column, Table } from "@tanstack/react-table";
+import type { RowData } from "@tanstack/react-table";
 import { Columns3Icon, LockIcon } from "lucide-react";
 
 import { Button } from "~/components/button";
@@ -13,9 +13,13 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "~/components/dropdown-menu";
+import type {
+	DataTableColumn,
+	DataTableCoreInstance,
+} from "~/lib/table-features";
 
-interface TableColumnsToggleProps<TData> {
-	table: Table<TData>;
+interface TableColumnsToggleProps<TData extends RowData> {
+	table: DataTableCoreInstance<TData>;
 	/** Side to align the menu against the trigger. Default `"end"`. */
 	align?: "start" | "center" | "end";
 	/** Italian by default; override for English contexts. */
@@ -35,7 +39,9 @@ const DEFAULT_LABELS = {
 	locked: "Sempre visibile",
 } as const;
 
-function getMenuLabel<TData>(col: Column<TData, unknown>): string | null {
+function getMenuLabel<TData extends RowData>(
+	col: DataTableColumn<TData>,
+): string | null {
 	const meta = col.columnDef.meta;
 	if (meta?.menuLabel) return meta.menuLabel;
 	const header = col.columnDef.header;
@@ -51,7 +57,7 @@ function getMenuLabel<TData>(col: Column<TData, unknown>): string | null {
  * header and without `meta.menuLabel` are skipped — they're chrome (checkbox,
  * actions) and not real data columns.
  */
-export function TableColumnsToggle<TData>({
+export function TableColumnsToggle<TData extends RowData>({
 	table,
 	align = "end",
 	labels: labelOverrides,
@@ -66,7 +72,10 @@ export function TableColumnsToggle<TData>({
 		.filter((col) => getMenuLabel(col) !== null);
 
 	const initial = table.initialState.columnVisibility ?? {};
-	const current = table.getState().columnVisibility;
+	// Core tables (what a header renderer hands us) expose state through
+	// the store; the enclosing DataTable re-renders on visibility changes, so
+	// this snapshot is always read fresh.
+	const current = table.store.state.columnVisibility;
 	const isAtDefault = menuColumns.every((col) => {
 		const def = initial[col.id] ?? true;
 		const cur = current[col.id] ?? true;

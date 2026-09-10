@@ -27,8 +27,8 @@ import {
 } from "@bibs/ui/components/native-select";
 import { toast } from "@bibs/ui/components/sonner";
 import { toYMD } from "@bibs/ui/lib/date";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarDaysIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { HolidayForm } from "@/features/holidays/components/holiday-form";
@@ -195,7 +195,7 @@ export function HolidaysPanel({
 		[data],
 	);
 
-	const columns = useMemo<ColumnDef<HolidayDefinition>[]>(
+	const columns = useMemo<DataTableColumnDef<HolidayDefinition>[]>(
 		() => [
 			{
 				id: "name",
