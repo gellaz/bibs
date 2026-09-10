@@ -7,6 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { S3Client } from "bun";
 import { env } from "@/lib/env";
+import { isConnectionError, retry } from "@/lib/retry";
 
 const endpoint = env.S3_ENDPOINT;
 const bucket = env.S3_BUCKET;
@@ -29,10 +30,31 @@ const awsS3 = new AwsS3Client({
 });
 
 /**
- * Creates the S3 bucket if it doesn't already exist.
- * Called once at application startup.
+ * Ensures the S3 bucket exists and is publicly readable.
+ *
+ * Runs once at startup, before the server begins listening, so a failure here
+ * is fatal — it reports what to do instead of surfacing a raw socket trace.
+ * Connection failures are retried to absorb a container that is running but
+ * has not bound its port yet; see @/lib/retry.
  */
 export async function ensureBucket() {
+	try {
+		await retry(provisionBucket);
+	} catch (err) {
+		if (isConnectionError(err)) {
+			throw Object.assign(
+				new Error(
+					`S3 storage at ${endpoint} is unreachable. Start the local infrastructure with "bun run infra:up".`,
+				),
+				{ cause: err },
+			);
+		}
+		throw err;
+	}
+}
+
+/** Creates the bucket when missing, then (re)applies the public-read policy. */
+async function provisionBucket() {
 	let created = false;
 
 	try {
