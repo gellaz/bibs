@@ -669,9 +669,23 @@ module registry in-process, which fixes the same class of leak without paying a 
 start per file. It also still runs every file after a failure and exits non-zero, so CI
 reports all failing files at once.
 
-`--parallel=N` implies `--isolate` and would cut wall-clock further, but each file starts
-its own PostGIS testcontainer, so N files in parallel means N concurrent containers on the
-runner. Not enabled: measure it before turning it on.
+`tests/integration/isolation-guard-{1,2}.test.ts` assert the flag is actually in effect.
+Their bodies are identical: each bumps a counter on the global object and asserts it sees
+1, i.e. that it got a global nobody else has touched. Under `--isolate` both see 1; share
+one global and whichever file runs second sees 2 and fails, **in any order** — which is
+what makes the check trustworthy, since the order is chosen by the runner. Don't "fix" a
+failing guard by editing it: it means `--isolate` is missing from the script.
+
+This matters because a suite can be green and silently un-isolated. A control run without
+`--isolate` on the pinned runner passed 411/411 — the leak mechanism was live (the guard
+proves the global is shared there) but no existing test happened to sit in an order that
+exposed it. The guard turns that invisible property into a ~0.2 ms assertion.
+
+`--parallel=N` implies `--isolate` and is measured as ~2x faster on CI (177s vs 350s
+serial vs 381s for the old per-process script), green with the guards. Not enabled here:
+each file starts its own PostGIS testcontainer, so N files in parallel means N concurrent
+containers on a 4-vCPU runner — a resource-profile change that deserves its own
+validation rather than riding along with this one.
 
 ### Dev emails (Mailpit)
 
