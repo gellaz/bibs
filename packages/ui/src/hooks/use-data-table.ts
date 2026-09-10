@@ -1,49 +1,26 @@
 "use client";
 
 import {
-	type ColumnDef,
-	getCoreRowModel,
+	type ColumnVisibilityState,
 	type OnChangeFn,
 	type PaginationState,
 	type RowData,
 	type SortingState,
-	type Table,
 	type Updater,
-	useReactTable,
-	type VisibilityState,
+	useTable,
 } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
 
-// Project-wide augmentation: add bibs-specific meta keys to TanStack's
-// ColumnMeta so they're typed on every ColumnDef.
-declare module "@tanstack/react-table" {
-	// biome-ignore lint/correctness/noUnusedVariables: required for module augmentation
-	interface ColumnMeta<TData extends RowData, TValue> {
-		/**
-		 * Italian label shown in the column-visibility menu. Falls back to a
-		 * string `header` when omitted; required for columns whose header is a
-		 * function (e.g. a checkbox or a toggle).
-		 */
-		menuLabel?: string;
-		/** Optional class applied to the `<th>` for this column. */
-		headerClassName?: string;
-		/** Optional class applied to every `<td>` for this column. */
-		cellClassName?: string;
-		/**
-		 * Freeze this column to the left or right edge of the horizontal scroll
-		 * container. Requires the DataTable to live inside a scroll container
-		 * (its default `overflow-auto` is enough). Both header and body cells
-		 * are made `position: sticky` with a `bg-card` base + neutral border
-		 * separator. Row-state styling (hover/selected) is mirrored from
-		 * `<TableRow>` so sticky cells track the rest of the row.
-		 */
-		sticky?: "left" | "right";
-	}
-}
+import {
+	type DataTableColumnDef,
+	type DataTableFeatures,
+	type DataTableInstance,
+	dataTableFeatures,
+} from "~/lib/table-features";
 
-export interface UseDataTableOptions<TData> {
+export interface UseDataTableOptions<TData extends RowData> {
 	data: TData[];
-	columns: ColumnDef<TData, unknown>[];
+	columns: DataTableColumnDef<TData>[];
 	/**
 	 * Stable storage key for column-visibility persistence in `localStorage`.
 	 * Convention: `"<app>.<surface>.columns"` (e.g. `"seller.products.columns"`).
@@ -51,7 +28,7 @@ export interface UseDataTableOptions<TData> {
 	 */
 	storageKey?: string;
 	/** Initial visibility state. Becomes the target of `Ripristina predefinite`. */
-	initialColumnVisibility?: VisibilityState;
+	initialColumnVisibility?: ColumnVisibilityState;
 	/**
 	 * Enable server-side pagination. When present, the table is in `manualPagination`
 	 * mode and you own the page state via your route's search params.
@@ -77,7 +54,7 @@ export interface UseDataTableOptions<TData> {
 }
 
 /**
- * Project wrapper around `useReactTable` that adds:
+ * Project wrapper around TanStack's `useTable` that adds:
  *
  * - localStorage-backed column visibility persistence keyed by `storageKey`,
  *   SSR-safe via post-mount hydration to avoid React 19 mismatches.
@@ -85,10 +62,13 @@ export interface UseDataTableOptions<TData> {
  *   in `manualPagination: true` mode while you keep the source of truth in
  *   the route's search params.
  *
+ * The feature registry lives in `~/lib/table-features` — v9 requires features
+ * to be declared up front, and every bibs table shares the same set.
+ *
  * All other table features (selection, sorting, filtering) are left to the
  * caller — opt-in via TanStack's standard APIs.
  */
-export function useDataTable<TData>({
+export function useDataTable<TData extends RowData>({
 	data,
 	columns,
 	storageKey,
@@ -96,16 +76,14 @@ export function useDataTable<TData>({
 	manualPagination,
 	manualSorting,
 	getRowId,
-}: UseDataTableOptions<TData>): Table<TData> {
-	"use no memo";
-
-	const defaults = useMemo<VisibilityState>(
+}: UseDataTableOptions<TData>): DataTableInstance<TData> {
+	const defaults = useMemo<ColumnVisibilityState>(
 		() => initialColumnVisibility ?? {},
 		[initialColumnVisibility],
 	);
 
 	const [columnVisibility, setColumnVisibility] =
-		useState<VisibilityState>(defaults);
+		useState<ColumnVisibilityState>(defaults);
 	const [hydrated, setHydrated] = useState(false);
 
 	// Hydrate stored visibility on mount.
@@ -122,7 +100,7 @@ export function useDataTable<TData>({
 				if (parsed && typeof parsed === "object") {
 					setColumnVisibility((prev) => ({
 						...prev,
-						...(parsed as VisibilityState),
+						...(parsed as ColumnVisibilityState),
 					}));
 				}
 			}
@@ -143,8 +121,8 @@ export function useDataTable<TData>({
 		}
 	}, [columnVisibility, hydrated, storageKey]);
 
-	const onColumnVisibilityChange: OnChangeFn<VisibilityState> = (
-		updater: Updater<VisibilityState>,
+	const onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState> = (
+		updater: Updater<ColumnVisibilityState>,
 	) => {
 		setColumnVisibility((prev) =>
 			typeof updater === "function" ? updater(prev) : updater,
@@ -171,7 +149,8 @@ export function useDataTable<TData>({
 			}
 		: undefined;
 
-	return useReactTable<TData>({
+	return useTable<DataTableFeatures, TData>({
+		features: dataTableFeatures,
 		data,
 		columns,
 		initialState: { columnVisibility: defaults },
@@ -193,7 +172,6 @@ export function useDataTable<TData>({
 		manualPagination: Boolean(manualPagination),
 		pageCount: manualPagination?.pageCount,
 		manualSorting: Boolean(manualSorting),
-		getCoreRowModel: getCoreRowModel(),
 		getRowId,
 	});
 }

@@ -2,8 +2,8 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 import { TagsIcon } from "lucide-react";
 import type {
 	CategoryCrudConfig,
@@ -87,7 +87,7 @@ function MacroFilter({
 	);
 }
 
-const macroColumn: ColumnDef<ProductCategory> = {
+const macroColumn: DataTableColumnDef<ProductCategory> = {
 	id: "macroCategory",
 	header: "Macro Categoria",
 	meta: { cellClassName: "text-muted-foreground" },

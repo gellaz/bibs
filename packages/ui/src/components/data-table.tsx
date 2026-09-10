@@ -1,12 +1,10 @@
 "use client";
 
 import {
-	type Column,
-	type ColumnDef,
+	type ColumnVisibilityState,
 	flexRender,
-	type Row,
+	type RowData,
 	type SortingState,
-	type VisibilityState,
 } from "@tanstack/react-table";
 import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
@@ -21,6 +19,11 @@ import {
 	TableRow,
 } from "~/components/table";
 import { useDataTable } from "~/hooks/use-data-table";
+import type {
+	DataTableColumn,
+	DataTableColumnDef,
+	DataTableRow,
+} from "~/lib/table-features";
 import { cn } from "~/lib/utils";
 
 // Classi per colonne `meta.sticky`. Header e cell hanno bg / z-index distinti:
@@ -84,16 +87,16 @@ function stickyCellClass(sticky: "left" | "right" | undefined) {
 	return undefined;
 }
 
-interface DataTableProps<TData> {
+interface DataTableProps<TData extends RowData> {
 	data: TData[];
-	columns: ColumnDef<TData, unknown>[];
+	columns: DataTableColumnDef<TData>[];
 	/**
 	 * Stable storage key for column-visibility persistence in `localStorage`.
 	 * Convention: `"<app>.<surface>.columns"`.
 	 */
 	storageKey?: string;
 	/** Initial visibility (defaults to all visible). Target of "Ripristina". */
-	initialColumnVisibility?: VisibilityState;
+	initialColumnVisibility?: ColumnVisibilityState;
 	/** Stable row identity; recommended when rows have a real id. */
 	getRowId?: (row: TData, index: number) => string;
 	/** Show a centered spinner instead of the table while data loads. */
@@ -117,9 +120,9 @@ interface DataTableProps<TData> {
 	 * the system tint (cobalt) on row and sticky cells — no per-call-site
 	 * background classes needed.
 	 */
-	isRowSelected?: (row: Row<TData>) => boolean;
+	isRowSelected?: (row: DataTableRow<TData>) => boolean;
 	/** Extra class for each row. Function form receives the TanStack row. */
-	rowClassName?: string | ((row: Row<TData>) => string);
+	rowClassName?: string | ((row: DataTableRow<TData>) => string);
 	/** Class on the rounded card wrapper around the table. */
 	containerClassName?: string;
 	/**
@@ -149,7 +152,7 @@ interface DataTableProps<TData> {
  * { id: "actions", header: ({ table }) => <TableColumnsToggle table={table} /> }
  * ```
  */
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
 	data,
 	columns,
 	storageKey,
@@ -352,12 +355,12 @@ export function DataTable<TData>({
  * when the column has `enableSorting: true` and the DataTable receives
  * `manualSorting`. Cycles asc → desc → none on click.
  */
-export function SortableHeader<TData, TValue>({
+export function SortableHeader<TData extends RowData, TValue>({
 	column,
 	children,
 	className,
 }: {
-	column: Column<TData, TValue>;
+	column: DataTableColumn<TData, TValue>;
 	children: ReactNode;
 	className?: string;
 }) {

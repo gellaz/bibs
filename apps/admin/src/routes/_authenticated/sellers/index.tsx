@@ -13,9 +13,10 @@ import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import type { SortingState } from "@tanstack/react-table";
 import { CheckCircle2Icon, SearchIcon, XCircleIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
@@ -178,8 +179,8 @@ function SellersPage() {
 
 	const rows = useMemo<Seller[]>(() => (data?.data as Seller[]) ?? [], [data]);
 
-	const columns = useMemo<ColumnDef<Seller>[]>(() => {
-		const cols: ColumnDef<Seller>[] = [
+	const columns = useMemo<DataTableColumnDef<Seller>[]>(() => {
+		const cols: DataTableColumnDef<Seller>[] = [
 			{
 				id: "name",
 				accessorFn: (row) =>

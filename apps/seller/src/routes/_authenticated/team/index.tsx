@@ -38,10 +38,10 @@ import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
 import {
 	CheckIcon,
 	MoreHorizontalIcon,
@@ -571,8 +571,8 @@ function TeamPage() {
 		return out;
 	}, [page, owner, data?.data, currentUserId, isOwner, pendingInvitations]);
 
-	const columns = useMemo<ColumnDef<TeamRow>[]>(() => {
-		const cols: ColumnDef<TeamRow>[] = [
+	const columns = useMemo<DataTableColumnDef<TeamRow>[]>(() => {
+		const cols: DataTableColumnDef<TeamRow>[] = [
 			{
 				id: "user",
 				header: "Utente",

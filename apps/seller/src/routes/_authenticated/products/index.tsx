@@ -16,9 +16,10 @@ import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import type { ColumnDef, SortingState } from "@tanstack/react-table";
+import type { SortingState } from "@tanstack/react-table";
 import { PackageIcon, SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
@@ -270,7 +271,7 @@ function ProductsListPage() {
 	const isPristineCatalogView =
 		Boolean(activeStore) && statusFilter === "active" && !hasSearchOrFilters;
 
-	const columns = useMemo<ColumnDef<Product>[]>(
+	const columns = useMemo<DataTableColumnDef<Product>[]>(
 		() => [
 			{
 				id: "select",
