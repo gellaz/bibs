@@ -184,6 +184,11 @@ describe("addCartItem", () => {
 				quantity: 2,
 			}),
 		).rejects.toMatchObject({ status: 400 });
+
+		const [stored] = await db
+			.select({ quantity: cartItem.quantity })
+			.from(cartItem);
+		expect(stored.quantity).toBe(2);
 	});
 
 	it("refuses to go past the per-row cap", async () => {
@@ -207,6 +212,11 @@ describe("addCartItem", () => {
 				quantity: 1,
 			}),
 		).rejects.toMatchObject({ status: 400 });
+
+		const [stored] = await db
+			.select({ quantity: cartItem.quantity })
+			.from(cartItem);
+		expect(stored.quantity).toBe(99);
 	});
 
 	it("refuses a store that is not publicly visible", async () => {

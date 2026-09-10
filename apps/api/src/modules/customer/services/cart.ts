@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { cartItem, MAX_CART_ITEM_QUANTITY } from "@/db/schemas/cart";
 import { product, storeProduct } from "@/db/schemas/product";
@@ -41,46 +41,45 @@ export async function addCartItem(
 		if (!sellable || sellable.status !== "active")
 			throw new ServiceError(404, "Prodotto non disponibile");
 
-		const [existing] = await tx
-			.select({ id: cartItem.id, quantity: cartItem.quantity })
-			.from(cartItem)
-			.where(
-				and(
-					eq(cartItem.customerProfileId, customerProfileId),
-					eq(cartItem.storeProductId, storeProductId),
-				),
-			)
-			.limit(1);
+		// Tetto effettivo: il minore fra il limite per riga e ciò che il negozio
+		// ha davvero. Lo stock qui è un tetto, non una prenotazione — il
+		// decremento resta in createOrder.
+		const ceiling = Math.min(MAX_CART_ITEM_QUANTITY, sellable.stock);
 
-		const nextQuantity = (existing?.quantity ?? 0) + quantity;
-
-		if (nextQuantity > MAX_CART_ITEM_QUANTITY)
-			throw new ServiceError(
+		const limitError = () =>
+			new ServiceError(
 				400,
-				`Puoi aggiungere al massimo ${MAX_CART_ITEM_QUANTITY} pezzi per prodotto`,
+				sellable.stock < MAX_CART_ITEM_QUANTITY
+					? sellable.stock === 0
+						? "Questo prodotto è esaurito"
+						: `Ne restano solo ${sellable.stock}`
+					: `Puoi aggiungere al massimo ${MAX_CART_ITEM_QUANTITY} pezzi per prodotto`,
 			);
 
-		if (nextQuantity > sellable.stock)
-			throw new ServiceError(
-				400,
-				sellable.stock === 0
-					? "Questo prodotto è esaurito"
-					: `Ne restano solo ${sellable.stock}`,
-			);
+		// La quantità richiesta da sola non può superare il tetto: copre la prima
+		// aggiunta, dove non c'è conflitto e la setWhere qui sotto non si applica.
+		if (quantity > ceiling) throw limitError();
 
-		if (existing) {
-			const [updated] = await tx
-				.update(cartItem)
-				.set({ quantity: nextQuantity })
-				.where(eq(cartItem.id, existing.id))
-				.returning({ id: cartItem.id, quantity: cartItem.quantity });
-			return updated;
-		}
-
-		const [created] = await tx
+		// Upsert atomico. L'incremento avviene DENTRO il database, quindi due
+		// aggiunte simultanee si sommano invece di sovrascriversi — il
+		// read-then-write che c'era prima perdeva l'aggiunta del perdente, in
+		// silenzio. La setWhere fa sì che il superamento del tetto non aggiorni
+		// nulla: RETURNING torna vuoto, ed è così che lo riconosciamo.
+		const [row] = await tx
 			.insert(cartItem)
-			.values({ customerProfileId, storeProductId, quantity: nextQuantity })
+			.values({ customerProfileId, storeProductId, quantity })
+			.onConflictDoUpdate({
+				target: [cartItem.customerProfileId, cartItem.storeProductId],
+				set: {
+					quantity: sql`${cartItem.quantity} + ${quantity}`,
+					updatedAt: new Date(),
+				},
+				setWhere: sql`${cartItem.quantity} + ${quantity} <= ${ceiling}`,
+			})
 			.returning({ id: cartItem.id, quantity: cartItem.quantity });
-		return created;
+
+		if (!row) throw limitError();
+
+		return row;
 	});
 }
