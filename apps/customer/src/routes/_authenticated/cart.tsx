@@ -163,7 +163,12 @@ function CartRow({ item }: { item: CartLine }) {
 					</p>
 				)}
 
-				<div className="flex items-end justify-between gap-3 pt-1">
+				{/* flex-wrap + shrink-0 sul prezzo: quando stepper e Rimuovi
+				    convivono (stock sceso sotto la quantità) a 390px lo spazio non
+				    basta, e senza questi due il totale di riga veniva TAGLIATO —
+				    perdeva il simbolo € — invece di andare a capo, perché la lista
+				    ha overflow-hidden e ritaglia in silenzio. */}
+				<div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-1">
 					<div className="flex items-center gap-2">
 						{showStepper && (
 							<div className="w-32">
@@ -186,7 +191,7 @@ function CartRow({ item }: { item: CartLine }) {
 						)}
 					</div>
 					<span
-						className={`font-medium tabular-nums ${unavailable ? "text-muted-foreground line-through" : "text-foreground"}`}
+						className={`ml-auto shrink-0 font-medium tabular-nums ${unavailable ? "text-muted-foreground line-through" : "text-foreground"}`}
 					>
 						{formatPriceEur(item.lineTotal)}
 					</span>
