@@ -30,7 +30,12 @@ import {
 } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
-import { addCartItem, getCart } from "@/modules/customer/services/cart";
+import {
+	addCartItem,
+	getCart,
+	removeCartItem,
+	setCartItemQuantity,
+} from "@/modules/customer/services/cart";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCartItem,
@@ -575,5 +580,118 @@ describe("getCart", () => {
 		expect(cart.groups[0].items[0].product.imageUrl).toBe(
 			"https://img.test/first.jpg",
 		);
+	});
+});
+
+describe("setCartItemQuantity", () => {
+	it("sets the quantity absolutely, not incrementally", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 10,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 5,
+		});
+
+		const updated = await setCartItemQuantity({
+			cartItemId: row.id,
+			customerProfileId: cp.id,
+			quantity: 2,
+		});
+
+		expect(updated.quantity).toBe(2);
+	});
+
+	it("refuses a quantity beyond the available stock", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 3,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		await expect(
+			setCartItemQuantity({
+				cartItemId: row.id,
+				customerProfileId: cp.id,
+				quantity: 4,
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
+	it("404s on another customer's row instead of 403", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id);
+		const { profile: owner } = await createTestCustomer(db);
+		const { profile: intruder } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: owner.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		await expect(
+			setCartItemQuantity({
+				cartItemId: row.id,
+				customerProfileId: intruder.id,
+				quantity: 2,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+
+		// E la riga della vittima è rimasta intatta
+		const [untouched] = await db
+			.select()
+			.from(cartItem)
+			.where(eq(cartItem.id, row.id));
+		expect(untouched.quantity).toBe(1);
+	});
+});
+
+describe("removeCartItem", () => {
+	it("removes the caller's own row", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id);
+		const { profile: cp } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		await removeCartItem({ cartItemId: row.id, customerProfileId: cp.id });
+
+		const left = await db.select().from(cartItem);
+		expect(left).toHaveLength(0);
+	});
+
+	it("404s on another customer's row and leaves it alone", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id);
+		const { profile: owner } = await createTestCustomer(db);
+		const { profile: intruder } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: owner.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		await expect(
+			removeCartItem({ cartItemId: row.id, customerProfileId: intruder.id }),
+		).rejects.toMatchObject({ status: 404 });
+
+		const left = await db.select().from(cartItem);
+		expect(left).toHaveLength(1);
 	});
 });

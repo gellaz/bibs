@@ -251,3 +251,82 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 		total: fromCents(totalCents),
 	};
 }
+
+interface SetCartItemQuantityParams {
+	cartItemId: string;
+	customerProfileId: string;
+	quantity: number;
+}
+
+/**
+ * Imposta la quantità di una riga (valore assoluto, è lo stepper).
+ *
+ * Il filtro su `customerProfileId` è la difesa IDOR: senza, l'id della riga
+ * basterebbe a toccare il carrello di chiunque. Riga altrui → 404, non 403.
+ */
+export async function setCartItemQuantity(
+	params: SetCartItemQuantityParams,
+): Promise<{ id: string; quantity: number }> {
+	const { cartItemId, customerProfileId, quantity } = params;
+
+	return db.transaction(async (tx) => {
+		const [owned] = await tx
+			.select({ stock: storeProduct.stock })
+			.from(cartItem)
+			.innerJoin(storeProduct, eq(storeProduct.id, cartItem.storeProductId))
+			.where(
+				and(
+					eq(cartItem.id, cartItemId),
+					eq(cartItem.customerProfileId, customerProfileId),
+				),
+			)
+			.limit(1);
+
+		if (!owned) throw new ServiceError(404, "Prodotto non nel carrello");
+
+		if (quantity > owned.stock)
+			throw new ServiceError(
+				400,
+				owned.stock === 0
+					? "Questo prodotto è esaurito"
+					: `Ne restano solo ${owned.stock}`,
+			);
+
+		const [updated] = await tx
+			.update(cartItem)
+			.set({ quantity })
+			.where(
+				and(
+					eq(cartItem.id, cartItemId),
+					eq(cartItem.customerProfileId, customerProfileId),
+				),
+			)
+			.returning({ id: cartItem.id, quantity: cartItem.quantity });
+
+		return updated;
+	});
+}
+
+interface RemoveCartItemParams {
+	cartItemId: string;
+	customerProfileId: string;
+}
+
+/** Toglie una riga dal carrello. Riga altrui → 404, come sopra. */
+export async function removeCartItem(
+	params: RemoveCartItemParams,
+): Promise<void> {
+	const { cartItemId, customerProfileId } = params;
+
+	const [deleted] = await db
+		.delete(cartItem)
+		.where(
+			and(
+				eq(cartItem.id, cartItemId),
+				eq(cartItem.customerProfileId, customerProfileId),
+			),
+		)
+		.returning({ id: cartItem.id });
+
+	if (!deleted) throw new ServiceError(404, "Prodotto non nel carrello");
+}
