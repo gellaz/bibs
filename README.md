@@ -25,7 +25,7 @@ Dev infrastructure (Docker): **PostGIS** :5432 · **MinIO** :9000 (console :9001
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) ≥ 1.3
+- [Bun](https://bun.sh/) ≥ 1.4
 - [Docker](https://www.docker.com/) (PostGIS, MinIO, Mailpit)
 
 ## Getting started

@@ -5,6 +5,9 @@
 		"apps/*",
 		"packages/*"
 	],
+	"engines": {
+		"bun": ">=1.4.0"
+	},
 	"scripts": {
 		"postinstall": "lefthook install",
 		"dev": "concurrently -n api,admin,customer,seller -c blue,green,cyan,magenta \"bun run dev:api\" \"bun run dev:admin\" \"bun run dev:customer\" \"bun run dev:seller\"",
