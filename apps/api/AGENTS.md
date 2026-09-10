@@ -650,6 +650,29 @@ bun run test:unit   # unit only
 bun run test:integration  # integration only (requires Docker)
 ```
 
+### Why integration tests run with `--isolate`
+
+`test:integration` is `bun test tests/integration --isolate`. **Keep the flag.**
+
+Bun keeps one module registry per `bun test` process, so a `mock.module(...)` from one
+file leaks into files loaded after it: the mocked module *and* every module already
+cached holding a binding to it are reused instead of re-evaluated. 53 of the 54
+integration files call `mock.module`, and the sharpest case is
+`stripe-webhook-reprocessing.test.ts`, which replaces `handleCheckoutCompleted` with a
+no-op — if it loads before `stripe-webhook-checkout-completed.test.ts`, that file
+silently asserts against a handler that does nothing.
+
+File execution order is decided by the runner environment, so this was green locally and
+on some CI images and red on others (#146). The original fix was a shell script running
+each file in its own process; bun 1.4's `--isolate` gives every file a fresh global and
+module registry in-process, which fixes the same class of leak without paying a process
+start per file. It also still runs every file after a failure and exits non-zero, so CI
+reports all failing files at once.
+
+`--parallel=N` implies `--isolate` and would cut wall-clock further, but each file starts
+its own PostGIS testcontainer, so N files in parallel means N concurrent containers on the
+runner. Not enabled: measure it before turning it on.
+
 ### Dev emails (Mailpit)
 
 In development every `sendEmail()` call is delivered to the local Mailpit container — web UI at <http://localhost:8025> (history, HTML rendering, clickable links).
