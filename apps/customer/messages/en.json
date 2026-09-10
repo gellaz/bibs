@@ -118,5 +118,14 @@
 	"profile_avatar_error_too_large": "File too large. Maximum 5MB.",
 	"profile_avatar_error_generic": "Error while uploading. Please try again.",
 	"profile_avatar_updated_toast": "Profile picture updated",
-	"profile_avatar_removed_toast": "Profile picture removed"
+	"profile_avatar_removed_toast": "Profile picture removed",
+	"cart_add": "Add",
+	"cart_out_of_stock": "Out of stock",
+	"cart_item_added": "Added to cart",
+	"cart_load_failed": "We couldn't load your cart.",
+	"cart_add_aria": "Add {product} to the cart",
+	"cart_increase_aria": "Increase the quantity of {product}",
+	"cart_decrease_aria": "Decrease the quantity of {product}",
+	"cart_remove_aria": "Remove {product} from the cart",
+	"error_generic": "Something went wrong. Please try again."
 }

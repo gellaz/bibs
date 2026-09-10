@@ -118,5 +118,14 @@
 	"profile_avatar_error_too_large": "File troppo grande. Massimo 5MB.",
 	"profile_avatar_error_generic": "Errore durante il caricamento. Riprova.",
 	"profile_avatar_updated_toast": "Immagine profilo aggiornata",
-	"profile_avatar_removed_toast": "Immagine profilo rimossa"
+	"profile_avatar_removed_toast": "Immagine profilo rimossa",
+	"cart_add": "Aggiungi",
+	"cart_out_of_stock": "Esaurito",
+	"cart_item_added": "Aggiunto al carrello",
+	"cart_load_failed": "Non siamo riusciti a caricare il carrello.",
+	"cart_add_aria": "Aggiungi {product} al carrello",
+	"cart_increase_aria": "Aumenta la quantità di {product}",
+	"cart_decrease_aria": "Riduci la quantità di {product}",
+	"cart_remove_aria": "Togli {product} dal carrello",
+	"error_generic": "Qualcosa è andato storto. Riprova."
 }

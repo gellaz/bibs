@@ -1,6 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
 import { RotateCw } from "lucide-react";
 import { GRID, TileSkeleton } from "@/components/tile";
+import { AddToCart } from "@/features/cart/add-to-cart";
 import { ProductTile } from "@/features/catalog/product-tile";
 import { m } from "@/paraglide/messages";
 import { useStoreProducts } from "./use-store-products";
@@ -47,7 +48,17 @@ export function StoreProducts({ storeId }: { storeId: string }) {
 					<ul className={GRID}>
 						{products.map((product) => (
 							<li key={product.id}>
-								<ProductTile product={product} showDistance={false} />
+								<ProductTile
+									product={product}
+									showDistance={false}
+									action={
+										<AddToCart
+											storeProductId={product.storeProductId}
+											stock={product.stock}
+											productName={product.name}
+										/>
+									}
+								/>
 							</li>
 						))}
 					</ul>
