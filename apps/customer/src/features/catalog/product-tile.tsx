@@ -1,5 +1,6 @@
 import { DiscountedPrice } from "@bibs/ui/components/discounted-price";
 import { MapPin } from "lucide-react";
+import type { ReactNode } from "react";
 import { formatDistance, TileImage } from "@/components/tile";
 
 /** Forma dati minima per un tile prodotto (discovery o catalogo negozio). */
@@ -18,6 +19,12 @@ interface ProductTileProps {
 	product: ProductCardData;
 	/** Mostra la pill della distanza (solo quando c'è una posizione). */
 	showDistance: boolean;
+	/**
+	 * Azione opzionale sotto il prezzo. La discovery non la passa: lì il negozio
+	 * non è ancora scelto e "aggiungi" sarebbe ambiguo (lo stesso prodotto può
+	 * stare in più botteghe).
+	 */
+	action?: ReactNode;
 }
 
 /**
@@ -25,7 +32,11 @@ interface ProductTileProps {
  * dettaglio prodotto (niente controlli morti). Immagine con fallback caldo,
  * nome, prezzo (con sconto se attivo) e — quando rilevante — la distanza in mono.
  */
-export function ProductTile({ product, showDistance }: ProductTileProps) {
+export function ProductTile({
+	product,
+	showDistance,
+	action,
+}: ProductTileProps) {
 	const cover = product.images[0]?.url;
 	const hasDistance = showDistance && (product.distance ?? 0) > 0;
 
@@ -51,6 +62,7 @@ export function ProductTile({ product, showDistance }: ProductTileProps) {
 					discountedPrice={product.discountedPrice}
 					percent={product.discountPercent}
 				/>
+				{action ? <div className="mt-2">{action}</div> : null}
 			</div>
 		</article>
 	);

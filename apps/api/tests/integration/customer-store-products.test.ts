@@ -108,6 +108,24 @@ describe("getStoreProducts — visible store", () => {
 		expect(row.discountPercent).toBe(20);
 	});
 
+	it("exposes the store_products row id and stock for ordering", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const s = await visibleStore(profile.id);
+		const other = await visibleStore(profile.id, "Altro");
+
+		const p = await createTestProduct(db, profile.id, { name: "Vendibile" });
+		const spHere = await createTestStoreProduct(db, s.id, p.id, { stock: 7 });
+		// Stesso prodotto, altro negozio: non deve inquinare né la riga né lo stock
+		await createTestStoreProduct(db, other.id, p.id, { stock: 99 });
+
+		const result = await getStoreProducts(s.id, {});
+
+		expect(result.data).toHaveLength(1);
+		expect(result.data[0].storeProductId).toBe(spHere.id);
+		expect(result.data[0].stock).toBe(7);
+	});
+
 	it("orders products newest-first (created_at desc)", async () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);

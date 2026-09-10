@@ -745,6 +745,13 @@ export const StoreDetailSchema = t.Object({
 // Date in the DTO, so the FE needs no toYMD coercion.
 export const StoreProductCardSchema = t.Object({
 	id: t.String(),
+	storeProductId: t.String({
+		description: "ID della riga store_products, da usare per ordinare",
+	}),
+	stock: t.Integer({
+		minimum: 0,
+		description: "Disponibilità del prodotto in questo negozio",
+	}),
 	name: t.String({ description: "Nome del prodotto" }),
 	description: t.Nullable(
 		t.String({ description: "Descrizione del prodotto" }),
@@ -801,4 +808,77 @@ export const SearchResultSchema = t.Object({
 	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
 	discountTitle: t.Nullable(t.String()),
 	discountEndsAt: t.Nullable(t.Date()),
+});
+
+// Carrello customer. Nessun campo data: Eden Treaty idrata le stringhe-data in
+// Date e manderebbe in errore il render. createdAt/updatedAt restano in tabella.
+export const CartItemSchema = t.Object({
+	id: t.String({ description: "ID della riga di carrello" }),
+	storeProductId: t.String({
+		description: "ID della riga store_products, da usare per ordinare",
+	}),
+	quantity: t.Integer({ minimum: 1, description: "Quantità nel carrello" }),
+	product: t.Object({
+		id: t.String(),
+		name: t.String({ description: "Nome del prodotto" }),
+		imageUrl: t.Nullable(
+			t.String({ description: "URL della prima immagine del prodotto" }),
+		),
+	}),
+	unitPrice: t.String({ description: "Prezzo di listino in formato decimale" }),
+	discountedPrice: t.Nullable(
+		t.String({ description: "Prezzo scontato, se promo attiva" }),
+	),
+	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
+	lineTotal: t.String({
+		description: "Totale di riga: prezzo effettivo per quantità",
+	}),
+	availableStock: t.Integer({
+		minimum: 0,
+		description: "Disponibilità residua nel negozio",
+	}),
+	issue: t.Union(
+		[
+			t.Literal("ok"),
+			t.Literal("insufficient_stock"),
+			t.Literal("unavailable"),
+		],
+		{
+			description:
+				"Stato della riga: ok, disponibilità insufficiente, oppure non più acquistabile (negozio non visibile o prodotto non attivo)",
+		},
+	),
+});
+
+export const CartStoreGroupSchema = t.Object({
+	store: t.Object({
+		id: t.String(),
+		name: t.String({ description: "Nome del negozio" }),
+		municipality: t.Object({
+			name: t.String({ description: "Comune del negozio" }),
+			provinceAcronym: t.String({ description: "Sigla della provincia" }),
+		}),
+	}),
+	items: t.Array(CartItemSchema),
+	subtotal: t.String({
+		description: "Subtotale del negozio, escluse le righe non più acquistabili",
+	}),
+});
+
+export const CartSchema = t.Object({
+	groups: t.Array(CartStoreGroupSchema, {
+		description: "Righe raggruppate per negozio, ordinate per nome",
+	}),
+	itemCount: t.Integer({
+		minimum: 0,
+		description: "Somma delle quantità, righe problematiche incluse",
+	}),
+	total: t.String({
+		description: "Totale del carrello, escluse le righe non acquistabili",
+	}),
+});
+
+export const CartItemMutationSchema = t.Object({
+	id: t.String({ description: "ID della riga di carrello" }),
+	quantity: t.Integer({ minimum: 1, description: "Quantità risultante" }),
 });

@@ -4,9 +4,9 @@ Customer-facing web app for **bibs** — browse local stores, search products, o
 earn loyalty points.
 
 **Implemented today:** registration and the full password lifecycle (verify-email,
-forgot/reset password) and the user profile. The storefront (search, store pages,
-cart/checkout) is **not built yet** — the API for it exists (see
-[apps/api](../api/README.md)), the UI doesn't.
+forgot/reset password), the user profile, store discovery and detail, the store
+catalog, and the shopping cart. **Checkout is not built yet** — the order API
+exists (see [apps/api](../api/README.md)), the UI doesn't.
 
 ## Stack
 

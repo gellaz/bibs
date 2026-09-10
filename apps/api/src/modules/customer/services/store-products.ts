@@ -10,6 +10,8 @@ import { getBestActiveDiscounts } from "@/modules/seller/services/discount-prici
 
 export interface StoreProductCard {
 	id: string;
+	storeProductId: string;
+	stock: number;
 	name: string;
 	description: string | null;
 	price: string;
@@ -34,28 +36,33 @@ export async function getStoreProducts(
 		.limit(1);
 	if (!visible) throw new ServiceError(404, "Negozio non trovato");
 
-	// active + stocked (>0) in THIS store. The EXISTS lives in WHERE, so the
-	// interpolated columns are qualified correctly (unlike a SELECT-field sql).
+	// La disponibilità in QUESTO negozio era un EXISTS: ora è una join, perché
+	// serve far uscire store_products.id (l'identificatore che l'ordine pretende).
+	// La cardinalità non cambia: store_product_product_store_idx è unique su
+	// (product_id, store_id), quindi al massimo una riga per prodotto.
+	const storeProductJoin = and(
+		eq(storeProduct.productId, product.id),
+		eq(storeProduct.storeId, storeId),
+	);
+
 	const whereClause = sql`
 		${product.status} = 'active'
-		AND EXISTS (
-			SELECT 1 FROM ${storeProduct}
-			WHERE ${storeProduct.productId} = ${product.id}
-			AND ${storeProduct.storeId} = ${storeId}
-			AND ${storeProduct.stock} > 0
-		)
+		AND ${storeProduct.stock} > 0
 	`;
 
 	const [data, [{ total }]] = await Promise.all([
 		db
 			.select({
 				id: product.id,
+				storeProductId: storeProduct.id,
+				stock: storeProduct.stock,
 				name: product.name,
 				description: product.description,
 				price: product.price,
-				// Correlated subquery: alias the inner table (pi) and reference the
-				// outer table literally (products.id) — interpolated Columns in a
-				// SELECT-field sql render UNqualified and would break correlation.
+				// Subquery correlata: alias l'interna (pi) e riferisci l'esterna
+				// letteralmente (products.id) — le Column interpolate in un campo
+				// SELECT vengono rese senza qualificazione e romperebbero la
+				// correlazione.
 				images: sql<{ id: string; url: string; position: number }[]>`(
           SELECT coalesce(json_agg(json_build_object(
             'id', pi.id,
@@ -67,6 +74,7 @@ export async function getStoreProducts(
         )`.as("images"),
 			})
 			.from(product)
+			.innerJoin(storeProduct, storeProductJoin)
 			.where(whereClause)
 			.orderBy(sql`${product.createdAt} DESC, ${product.id} ASC`)
 			.limit(limit)
@@ -74,6 +82,7 @@ export async function getStoreProducts(
 		db
 			.select({ total: sql<number>`count(*)::int` })
 			.from(product)
+			.innerJoin(storeProduct, storeProductJoin)
 			.where(whereClause),
 	]);
 
@@ -83,6 +92,8 @@ export async function getStoreProducts(
 		const info = discountMap.get(r.id);
 		return {
 			id: r.id,
+			storeProductId: r.storeProductId,
+			stock: r.stock,
 			name: r.name,
 			description: r.description,
 			price: r.price,

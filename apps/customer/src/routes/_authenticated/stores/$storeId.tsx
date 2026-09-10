@@ -8,6 +8,7 @@ import { OpeningHours } from "@/features/stores/opening-hours";
 import { StoreCover } from "@/features/stores/store-cover";
 import { StoreProducts } from "@/features/stores/store-products";
 import { useStoreDetail } from "@/features/stores/use-store-detail";
+import { m } from "@/paraglide/messages";
 
 const LazyStoreMap = lazy(() => import("@/features/stores/store-map"));
 
@@ -54,7 +55,7 @@ function MapSection({
 	useEffect(() => setMounted(true), []);
 	const mapsHref = `https://www.google.com/maps/search/?api=1&query=${coordinates.lat},${coordinates.lng}`;
 	return (
-		<Section title="Dove siamo">
+		<Section title={m.store_location_title()}>
 			<div className="relative isolate overflow-hidden rounded-xl border border-border">
 				{mounted ? (
 					<Suspense fallback={<MapSkeleton />}>
@@ -72,7 +73,7 @@ function MapSection({
 			<Button asChild variant="secondary" size="sm">
 				<a href={mapsHref} target="_blank" rel="noopener noreferrer">
 					<MapPin className="size-4" aria-hidden />
-					Apri in Mappe
+					{m.store_open_maps()}
 				</a>
 			</Button>
 		</Section>
@@ -99,12 +100,12 @@ function StoreDetailPage() {
 		return (
 			<NoticePage
 				icon={RotateCw}
-				title="Non siamo riusciti a caricare il negozio"
-				description="Qualcosa è andato storto. Riprova tra un momento."
+				title={m.store_detail_load_error_title()}
+				description={m.store_load_error_description()}
 				action={
 					<Button variant="secondary" size="sm" onClick={() => refetch()}>
 						<RotateCw className="size-4" aria-hidden />
-						Riprova
+						{m.store_retry()}
 					</Button>
 				}
 			/>
@@ -115,12 +116,12 @@ function StoreDetailPage() {
 		return (
 			<NoticePage
 				icon={Compass}
-				title="Negozio non trovato"
-				description="Questo negozio non esiste o non è più disponibile."
+				title={m.store_not_found_title()}
+				description={m.store_not_found_description()}
 				action={
 					<Button asChild variant="secondary" size="sm">
 						<Link to="/stores" search={{ q: undefined, categoryId: undefined }}>
-							Torna ai negozi
+							{m.store_back_to_stores()}
 						</Link>
 					</Button>
 				}
@@ -174,14 +175,14 @@ function StoreDetailPage() {
 				)}
 
 				{store.description && (
-					<Section title="Descrizione">
+					<Section title={m.store_description_title()}>
 						<p className="whitespace-pre-line text-muted-foreground text-sm leading-relaxed">
 							{store.description}
 						</p>
 					</Section>
 				)}
 
-				<Section title="Orari">
+				<Section title={m.store_hours_title()}>
 					<OpeningHours openingHours={store.openingHours} />
 				</Section>
 
@@ -194,7 +195,7 @@ function StoreDetailPage() {
 				)}
 
 				{hasContacts && (
-					<Section title="Contatti">
+					<Section title={m.store_contacts_title()}>
 						<ul className="space-y-2">
 							{store.phoneNumbers.map((p) => (
 								<li key={p.id}>
@@ -222,7 +223,7 @@ function StoreDetailPage() {
 											className="size-4 text-muted-foreground"
 											aria-hidden
 										/>
-										Sito web
+										{m.store_website_link()}
 									</a>
 								</li>
 							)}

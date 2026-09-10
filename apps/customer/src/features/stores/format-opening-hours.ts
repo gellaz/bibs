@@ -1,13 +1,3 @@
-const DAY_LABELS = [
-	"Lunedì",
-	"Martedì",
-	"Mercoledì",
-	"Giovedì",
-	"Venerdì",
-	"Sabato",
-	"Domenica",
-] as const;
-
 export interface OpeningHoursDayInput {
 	dayOfWeek: number; // 0=Lun..6=Dom
 	slots: { open: string; close: string }[];
@@ -21,11 +11,24 @@ export interface WeekRow {
 	isToday: boolean;
 }
 
+/** Etichette dei sette giorni, lunedì per primo. Le fornisce il chiamante:
+ *  questo modulo resta puro e testabile senza il runtime i18n. */
+export type DayLabels = readonly [
+	string,
+	string,
+	string,
+	string,
+	string,
+	string,
+	string,
+];
+
 export function formatWeeklyHours(
 	openingHours: OpeningHoursDayInput[] | null,
 	todayDow: number,
+	dayLabels: DayLabels,
 ): WeekRow[] {
-	return DAY_LABELS.map((label, dow) => {
+	return dayLabels.map((label, dow) => {
 		const day = openingHours?.find((d) => d.dayOfWeek === dow);
 		const hours =
 			day && day.slots.length > 0

@@ -11,6 +11,7 @@ import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, UserRound } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 /**
  * Avatar dell'utente nella top bar: apre il menu account (profilo, logout).
@@ -32,7 +33,7 @@ export function UserMenu() {
 			<DropdownMenuTrigger asChild>
 				<button
 					type="button"
-					aria-label="Apri il menu account"
+					aria-label={m.nav_account_menu_aria()}
 					className="flex size-11 items-center justify-center rounded-full outline-none transition-[background-color] hover:bg-muted focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 				>
 					<UserAvatar name={user.name} image={user.image} />
@@ -51,7 +52,7 @@ export function UserMenu() {
 				<DropdownMenuItem asChild>
 					<Link to="/profile">
 						<UserRound />
-						Il mio profilo
+						{m.profile_title()}
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
@@ -63,7 +64,7 @@ export function UserMenu() {
 					}}
 				>
 					<LogOut />
-					Esci
+					{m.nav_sign_out()}
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

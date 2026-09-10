@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
+import { cartItem } from "@/db/schemas/cart";
 import { productCategory } from "@/db/schemas/category";
 import { customerProfile } from "@/db/schemas/customer";
 import type { DiscountStatus } from "@/db/schemas/discount";
@@ -505,4 +506,22 @@ export async function createTestMunicipalityNamed(
 	name: string,
 ) {
 	return createTestMunicipality(db, { municipalityName: name });
+}
+
+export async function createTestCartItem(
+	db: DrizzleTestDb,
+	customerProfileId: string,
+	storeProductId: string,
+	params: { quantity?: number } = {},
+) {
+	const [row] = await db
+		.insert(cartItem)
+		.values({
+			customerProfileId,
+			storeProductId,
+			quantity: params.quantity ?? 1,
+		})
+		.returning();
+
+	return row;
 }
