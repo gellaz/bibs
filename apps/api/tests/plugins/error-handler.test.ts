@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { APIError } from "better-auth";
 import { Elysia } from "elysia";
+import logixlysia from "logixlysia";
 import { ServiceError } from "@/lib/errors";
+import { pinoOptions } from "@/lib/logger";
 import { errorHandler } from "@/plugins/error-handler";
 import { requestId } from "@/plugins/request-id";
 
@@ -270,5 +272,60 @@ describe("errorHandler — response structure", () => {
 			new Request("http://localhost/service-error-404"),
 		);
 		expect(res.headers.get("x-request-id")).toBeString();
+	});
+});
+
+// Regression: the app above stubs `store.pino` by hand. Mounted the way
+// src/index.ts mounts it — on top of the real logixlysia plugin — the handler
+// used to crash while logging, turning every API error into an opaque 500.
+describe("errorHandler — mounted on the real logixlysia plugin", () => {
+	const logged = new Elysia()
+		.use(
+			logixlysia({
+				config: {
+					showStartupMessage: false,
+					disableFileLogging: true,
+					pino: pinoOptions,
+				},
+			}),
+		)
+		.use(errorHandler)
+		.get("/unhandled", () => {
+			throw new Error("Unexpected crash");
+		})
+		.get("/service-error-404", () => {
+			throw new ServiceError(404, "Resource not found");
+		});
+
+	it("returns the JSON envelope for an unhandled error", async () => {
+		const res = await logged.handle(new Request("http://localhost/unhandled"));
+
+		expect(res.status).toBe(500);
+		expect(await json(res)).toMatchObject({
+			success: false,
+			error: "INTERNAL_ERROR",
+		});
+	});
+
+	it("returns the JSON envelope for a ServiceError", async () => {
+		const res = await logged.handle(
+			new Request("http://localhost/service-error-404"),
+		);
+
+		expect(res.status).toBe(404);
+		expect(await json(res)).toMatchObject({
+			success: false,
+			error: "NOT_FOUND",
+		});
+	});
+
+	it("returns the JSON envelope for an unknown route", async () => {
+		const res = await logged.handle(new Request("http://localhost/nope"));
+
+		expect(res.status).toBe(404);
+		expect(await json(res)).toMatchObject({
+			success: false,
+			error: "NOT_FOUND",
+		});
 	});
 });
