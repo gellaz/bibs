@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { LogixlysiaStore, LogLevel, Transport } from "logixlysia";
+import type { LogixlysiaStore, LogLevel, Pino, Transport } from "logixlysia";
 import pino from "pino";
 import { env } from "@/lib/env";
 
@@ -13,7 +13,12 @@ const LOG_FILE = path.join(LOG_DIR, "app.log");
 
 /** Base pino options shared across all loggers. */
 export const pinoOptions: pino.LoggerOptions = {
+	// logixlysia rebuilds its pino from these options and forwards messageKey /
+	// errorKey by name, so leaving them out makes pino emit a literal
+	// "undefined" key instead of falling back to its own defaults.
+	errorKey: "err",
 	level: env.NODE_ENV === "production" ? "info" : "debug",
+	messageKey: "msg",
 	timestamp: pino.stdTimeFunctions.isoTime,
 	formatters: {
 		level: (label) => ({ level: label }),
@@ -67,13 +72,6 @@ export const fileTransport: Transport = {
 // ── Helpers ─────────────────────────────────────────
 
 /**
- * Type-safe helper to access the Pino logger from Elysia context store.
- */
-export function getLogger(store: unknown) {
-	return (store as LogixlysiaStore).pino;
-}
-
-/**
  * Standalone logger for non-request contexts (cron jobs, startup, timers).
  * Writes to both stdout and the log file.
  */
@@ -81,3 +79,19 @@ export const logger = pino(
 	pinoOptions,
 	pino.multistream([{ stream: process.stdout }, { stream: fileDest }]),
 );
+
+/**
+ * Type-safe helper to access the Pino logger from the Elysia context store.
+ *
+ * logixlysia registers its pino instance as `store.pino`, but that state never
+ * lands: its pino is a lazily-built Proxy over `{}`, and Elysia's `.state()`
+ * silently skips object values with no enumerable keys. The same instance is
+ * reachable through `store.logger`, so read it from there as well, and fall
+ * back to the standalone logger so that a store without logixlysia (tests,
+ * mounted sub-apps) can never take down a handler — least of all the error
+ * handler, which would otherwise turn every API error into an opaque 500.
+ */
+export function getLogger(store: unknown): Pino {
+	const logixlysiaStore = store as Partial<LogixlysiaStore> | null | undefined;
+	return logixlysiaStore?.pino ?? logixlysiaStore?.logger?.pino ?? logger;
+}
