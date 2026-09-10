@@ -14,8 +14,10 @@ permissions:
 
 # runner image and bun are pinned (not `ubuntu-latest` / floating `setup-bun`)
 # for reproducible CI: a silent `ubuntu-latest` image bump shifted bun's test-file
-# execution order and surfaced an order-dependent mock-isolation flake (see #146,
-# apps/api/scripts/test-integration.sh). Bump these deliberately, in one place.
+# execution order and surfaced an order-dependent mock-isolation flake (see #146).
+# Mock isolation no longer depends on that order — `test:integration` now runs with
+# bun's native `--isolate` (bun >=1.4) — but keep the pins so a runner or bun bump
+# is a deliberate, single-place change. `--isolate` needs bun >=1.4: do not lower it.
 jobs:
   lint:
     name: Lint (Biome)
