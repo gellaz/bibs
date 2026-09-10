@@ -1,5 +1,6 @@
 import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Link } from "@tanstack/react-router";
+import { CartBadge } from "@/features/cart/cart-badge";
 import { m } from "@/paraglide/messages";
 import { UserMenu } from "./user-menu";
 
@@ -34,6 +35,7 @@ export function SiteHeader() {
 					>
 						{m.nav_stores()}
 					</Link>
+					<CartBadge />
 				</nav>
 				<UserMenu />
 			</div>
