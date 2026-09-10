@@ -25,6 +25,7 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { cartItem } from "@/db/schemas/cart";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
+import { addCartItem } from "@/modules/customer/services/cart";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCartItem,
@@ -114,5 +115,154 @@ describe("cart_items — vincoli di schema", () => {
 
 		const left = await db.select().from(cartItem);
 		expect(left).toHaveLength(0);
+	});
+});
+
+describe("addCartItem", () => {
+	it("creates the row, then sums on the second add", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 10,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+
+		const first = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 2,
+		});
+		expect(first.quantity).toBe(2);
+
+		const second = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 3,
+		});
+		expect(second.id).toBe(first.id);
+		expect(second.quantity).toBe(5);
+
+		const rows = await db.select().from(cartItem);
+		expect(rows).toHaveLength(1);
+	});
+
+	it("refuses a quantity beyond the available stock", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 3,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+
+		await expect(
+			addCartItem({
+				customerProfileId: cp.id,
+				storeProductId: sp.id,
+				quantity: 4,
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
+	it("refuses when the sum of two adds exceeds the stock", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 3,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 2,
+		});
+
+		await expect(
+			addCartItem({
+				customerProfileId: cp.id,
+				storeProductId: sp.id,
+				quantity: 2,
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
+	it("refuses to go past the per-row cap", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 500,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 99,
+		});
+
+		await expect(
+			addCartItem({
+				customerProfileId: cp.id,
+				storeProductId: sp.id,
+				quantity: 1,
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
+	it("refuses a store that is not publicly visible", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		// Negozio senza abbonamento: publiclyVisibleStore() lo esclude
+		const s = await createTestStore(db, profile.id, { name: "Invisibile" });
+		const p = await createTestProduct(db, profile.id);
+		const sp = await createTestStoreProduct(db, s.id, p.id, { stock: 5 });
+		const { profile: cp } = await createTestCustomer(db);
+
+		await expect(
+			addCartItem({
+				customerProfileId: cp.id,
+				storeProductId: sp.id,
+				quantity: 1,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("refuses a product that is not active", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const s = await visibleStore(profile.id);
+		const p = await createTestProduct(db, profile.id, { status: "disabled" });
+		const sp = await createTestStoreProduct(db, s.id, p.id, { stock: 5 });
+		const { profile: cp } = await createTestCustomer(db);
+
+		await expect(
+			addCartItem({
+				customerProfileId: cp.id,
+				storeProductId: sp.id,
+				quantity: 1,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("keeps two customers' carts apart", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id);
+		const { profile: a } = await createTestCustomer(db);
+		const { profile: b } = await createTestCustomer(db);
+
+		await addCartItem({
+			customerProfileId: a.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+		await addCartItem({
+			customerProfileId: b.id,
+			storeProductId: sp.id,
+			quantity: 4,
+		});
+
+		const rows = await db.select().from(cartItem);
+		expect(rows).toHaveLength(2);
 	});
 });
