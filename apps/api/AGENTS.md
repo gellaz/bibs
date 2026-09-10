@@ -683,8 +683,11 @@ exposed it. The guard turns that invisible property into a ~0.2 ms assertion.
 
 ### Why `--parallel=4`, with the count pinned
 
-Files run across 4 worker processes, roughly halving wall-clock (~180s against ~350s
-serial and ~381s for the old per-process script).
+Files run across 4 worker processes. Measured on CI over 5 runs: **171, 180, 204, 219,
+351s** (median 204s) against a serial median of ~336s and ~381s for the old per-process
+script — so **~1.6x**, not the 2x a single best-case run suggests. Note the worst
+parallel run (351s) is about a typical serial run: the downside case is "no faster",
+not "slower".
 
 **The worker count is pinned on purpose.** Bare `--parallel` defaults to the CPU count,
 and each worker starts its own PostGIS testcontainer — so the number of concurrent
@@ -697,7 +700,9 @@ count and is the configuration that was actually measured.
 Raising it is not free: every extra worker is another Postgres server plus another
 `migrate` run competing for the same cores and disk. If you change it, re-measure —
 and note that unlike the file-order flake, contention *does* vary run to run, so
-repeated CI runs are genuinely informative here.
+repeated CI runs are genuinely informative here. Runner speed varies enough (see the
+351s run) that any comparison needs several samples in the same time window; a single
+pair of numbers will mislead you.
 
 `--isolate` is passed explicitly even though `--parallel` implies it. It documents the
 invariant the guards protect, and it means `--no-isolate` (which exists, and which
