@@ -85,13 +85,15 @@ function StoreSection({ group }: { group: CartGroup }) {
 	return (
 		<section className="space-y-3">
 			<div className="flex items-baseline justify-between gap-3">
-				<Link
-					to="/stores/$storeId"
-					params={{ storeId: group.store.id }}
-					className="font-display font-semibold text-foreground text-lg hover:underline"
-				>
-					{group.store.name}
-				</Link>
+				<h2>
+					<Link
+						to="/stores/$storeId"
+						params={{ storeId: group.store.id }}
+						className="font-display font-semibold text-foreground text-lg hover:underline"
+					>
+						{group.store.name}
+					</Link>
+				</h2>
 				<span className="text-muted-foreground text-sm">
 					{group.store.municipality.name} (
 					{group.store.municipality.provinceAcronym})
@@ -121,6 +123,13 @@ function StoreSection({ group }: { group: CartGroup }) {
 function CartRow({ item }: { item: CartLine }) {
 	const { removeItem } = useCart();
 	const unavailable = item.issue === "unavailable";
+	const outOfStock = item.availableStock === 0;
+	// Lo stepper ha senso solo se resta qualcosa da comprare.
+	const showStepper = !unavailable && !outOfStock;
+	// Qualsiasi riga con un problema deve poter uscire dal carrello. Senza
+	// questo, una riga esaurita non ha NESSUN controllo attivo e ci resta per
+	// sempre.
+	const showRemove = item.issue !== "ok";
 
 	return (
 		<div className="flex gap-3 p-3">
@@ -129,9 +138,9 @@ function CartRow({ item }: { item: CartLine }) {
 			</div>
 
 			<div className="flex min-w-0 flex-1 flex-col gap-2">
-				<h2 className="line-clamp-2 font-medium text-foreground text-sm leading-snug">
+				<h3 className="line-clamp-2 font-medium text-foreground text-sm leading-snug">
 					{item.product.name}
-				</h2>
+				</h3>
 
 				<DiscountedPrice
 					size="sm"
@@ -143,7 +152,9 @@ function CartRow({ item }: { item: CartLine }) {
 
 				{item.issue === "insufficient_stock" && (
 					<p className="text-destructive text-xs">
-						{m.cart_only_left({ count: item.availableStock })}
+						{outOfStock
+							? m.cart_out_of_stock()
+							: m.cart_only_left({ count: item.availableStock })}
 					</p>
 				)}
 				{unavailable && (
@@ -153,27 +164,27 @@ function CartRow({ item }: { item: CartLine }) {
 				)}
 
 				<div className="flex items-end justify-between gap-3 pt-1">
-					{unavailable ? (
-						// Niente stepper su una riga che non si può comprare: l'unica
-						// azione sensata è toglierla.
-						<Button
-							variant="secondary"
-							size="sm"
-							onClick={() => removeItem.mutate(item.id)}
-							disabled={removeItem.isPending}
-						>
-							{m.cart_remove()}
-						</Button>
-					) : (
-						<div className="w-32">
-							<AddToCart
-								storeProductId={item.storeProductId}
-								stock={item.availableStock}
-								productName={item.product.name}
-							/>
-						</div>
-					)}
-
+					<div className="flex items-center gap-2">
+						{showStepper && (
+							<div className="w-32">
+								<AddToCart
+									storeProductId={item.storeProductId}
+									stock={item.availableStock}
+									productName={item.product.name}
+								/>
+							</div>
+						)}
+						{showRemove && (
+							<Button
+								variant="secondary"
+								size="sm"
+								onClick={() => removeItem.mutate(item.id)}
+								disabled={removeItem.isPending}
+							>
+								{m.cart_remove()}
+							</Button>
+						)}
+					</div>
 					<span
 						className={`font-medium tabular-nums ${unavailable ? "text-muted-foreground line-through" : "text-foreground"}`}
 					>

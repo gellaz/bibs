@@ -657,6 +657,65 @@ describe("setCartItemQuantity", () => {
 		expect(stored.quantity).toBe(1);
 	});
 
+	it("allows lowering the quantity when stock has fallen below it", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 5,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 4,
+		});
+
+		// Il negozio vende quasi tutto: nel carrello resta più merce di quanta
+		// ne esista.
+		await db
+			.update(storeProductTable)
+			.set({ stock: 1 })
+			.where(eq(storeProductTable.id, sp.id));
+
+		// Ridurre deve restare possibile anche se 3 supera ancora lo stock:
+		// altrimenti la riga sarebbe impossibile da correggere e resterebbe
+		// bloccata nel carrello.
+		const updated = await setCartItemQuantity({
+			cartItemId: row.id,
+			customerProfileId: cp.id,
+			quantity: 3,
+		});
+
+		expect(updated.quantity).toBe(3);
+	});
+
+	it("still refuses to raise the quantity beyond the stock", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 5,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 2,
+		});
+
+		await db
+			.update(storeProductTable)
+			.set({ stock: 3 })
+			.where(eq(storeProductTable.id, sp.id));
+
+		await expect(
+			setCartItemQuantity({
+				cartItemId: row.id,
+				customerProfileId: cp.id,
+				quantity: 4,
+			}),
+		).rejects.toMatchObject({ status: 400 });
+	});
+
 	it("404s on another customer's row instead of 403", async () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);

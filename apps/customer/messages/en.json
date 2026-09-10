@@ -127,7 +127,6 @@
 	"cart_increase_aria": "Increase the quantity of {product}",
 	"cart_decrease_aria": "Decrease the quantity of {product}",
 	"cart_remove_aria": "Remove {product} from the cart",
-	"nav_cart": "Cart",
 	"cart_badge_aria": "Cart, {count} items",
 	"cart_title": "Your cart",
 	"cart_empty_title": "Your cart is empty",
@@ -140,7 +139,6 @@
 	"cart_total": "Total",
 	"cart_remove": "Remove",
 	"cart_only_left": "Only {count} left",
-	"cart_unavailable": "No longer available",
 	"cart_unavailable_description": "This product can no longer be bought and is not counted in the total.",
 	"error_generic": "Something went wrong. Please try again."
 }

@@ -127,7 +127,6 @@
 	"cart_increase_aria": "Aumenta la quantità di {product}",
 	"cart_decrease_aria": "Riduci la quantità di {product}",
 	"cart_remove_aria": "Togli {product} dal carrello",
-	"nav_cart": "Carrello",
 	"cart_badge_aria": "Carrello, {count} articoli",
 	"cart_title": "Il tuo carrello",
 	"cart_empty_title": "Il carrello è vuoto",
@@ -140,7 +139,6 @@
 	"cart_total": "Totale",
 	"cart_remove": "Rimuovi",
 	"cart_only_left": "Ne restano solo {count}",
-	"cart_unavailable": "Non più disponibile",
 	"cart_unavailable_description": "Questo prodotto non è più acquistabile e non è conteggiato nel totale.",
 	"error_generic": "Qualcosa è andato storto. Riprova."
 }

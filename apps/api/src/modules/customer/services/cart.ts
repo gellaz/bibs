@@ -285,7 +285,7 @@ export async function setCartItemQuantity(
 
 	return db.transaction(async (tx) => {
 		const [owned] = await tx
-			.select({ stock: storeProduct.stock })
+			.select({ stock: storeProduct.stock, quantity: cartItem.quantity })
 			.from(cartItem)
 			.innerJoin(storeProduct, eq(storeProduct.id, cartItem.storeProductId))
 			.where(
@@ -298,9 +298,15 @@ export async function setCartItemQuantity(
 
 		if (!owned) throw new ServiceError(404, "Prodotto non nel carrello");
 
-		const { ceiling, error: limitError } = quantityCeiling(owned.stock);
-
-		if (quantity > ceiling) throw limitError();
+		// Il tetto vincola solo chi ALZA la quantità. Abbassarla non accumula
+		// intento non acquistabile, ed è l'unica mossa che resta al cliente
+		// quando il negozio vende l'ultimo pezzo di qualcosa che lui ha già nel
+		// carrello: vietarla lo bloccherebbe su una riga che non può né
+		// comprare né correggere.
+		if (quantity > owned.quantity) {
+			const { ceiling, error: limitError } = quantityCeiling(owned.stock);
+			if (quantity > ceiling) throw limitError();
+		}
 
 		const [updated] = await tx
 			.update(cartItem)
@@ -312,6 +318,8 @@ export async function setCartItemQuantity(
 				),
 			)
 			.returning({ id: cartItem.id, quantity: cartItem.quantity });
+
+		if (!updated) throw new ServiceError(404, "Prodotto non nel carrello");
 
 		return updated;
 	});
