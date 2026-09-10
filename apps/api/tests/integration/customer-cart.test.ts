@@ -628,6 +628,35 @@ describe("setCartItemQuantity", () => {
 		).rejects.toMatchObject({ status: 400 });
 	});
 
+	it("refuses to go past the per-row cap even when stock is plentiful", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { storeProduct: sp } = await sellableProduct(profile.id, {
+			stock: 500,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		const row = await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		// Senza il tetto lato servizio questa finirebbe sul CHECK del database,
+		// cioè un errore grezzo invece di un 400 leggibile.
+		await expect(
+			setCartItemQuantity({
+				cartItemId: row.id,
+				customerProfileId: cp.id,
+				quantity: 150,
+			}),
+		).rejects.toMatchObject({ status: 400 });
+
+		const [stored] = await db
+			.select({ quantity: cartItem.quantity })
+			.from(cartItem);
+		expect(stored.quantity).toBe(1);
+	});
+
 	it("404s on another customer's row instead of 403", async () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);

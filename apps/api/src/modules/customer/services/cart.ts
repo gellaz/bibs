@@ -17,6 +17,30 @@ interface AddCartItemParams {
 }
 
 /**
+ * Tetto effettivo di una riga — il minore fra il limite per riga e ciò che il
+ * negozio ha davvero — insieme all'errore da lanciare quando lo si supera.
+ *
+ * Condiviso dalle due scritture di proposito: così il cliente legge la stessa
+ * frase quando preme "Aggiungi" e quando usa lo stepper, e il tetto non può
+ * più valere su un percorso e non sull'altro.
+ */
+function quantityCeiling(stock: number) {
+	const ceiling = Math.min(MAX_CART_ITEM_QUANTITY, stock);
+
+	const error = () =>
+		new ServiceError(
+			400,
+			stock < MAX_CART_ITEM_QUANTITY
+				? stock === 0
+					? "Questo prodotto è esaurito"
+					: `Ne restano solo ${stock}`
+				: `Puoi aggiungere al massimo ${MAX_CART_ITEM_QUANTITY} pezzi per prodotto`,
+		);
+
+	return { ceiling, error };
+}
+
+/**
  * Aggiunge un prodotto al carrello, sommando se la riga esiste già.
  *
  * Il carrello NON riserva stock: lo decrementa `createOrder`, in transazione.
@@ -48,17 +72,7 @@ export async function addCartItem(
 		// Tetto effettivo: il minore fra il limite per riga e ciò che il negozio
 		// ha davvero. Lo stock qui è un tetto, non una prenotazione — il
 		// decremento resta in createOrder.
-		const ceiling = Math.min(MAX_CART_ITEM_QUANTITY, sellable.stock);
-
-		const limitError = () =>
-			new ServiceError(
-				400,
-				sellable.stock < MAX_CART_ITEM_QUANTITY
-					? sellable.stock === 0
-						? "Questo prodotto è esaurito"
-						: `Ne restano solo ${sellable.stock}`
-					: `Puoi aggiungere al massimo ${MAX_CART_ITEM_QUANTITY} pezzi per prodotto`,
-			);
+		const { ceiling, error: limitError } = quantityCeiling(sellable.stock);
 
 		// La quantità richiesta da sola non può superare il tetto: copre la prima
 		// aggiunta, dove non c'è conflitto e la setWhere qui sotto non si applica.
@@ -284,13 +298,9 @@ export async function setCartItemQuantity(
 
 		if (!owned) throw new ServiceError(404, "Prodotto non nel carrello");
 
-		if (quantity > owned.stock)
-			throw new ServiceError(
-				400,
-				owned.stock === 0
-					? "Questo prodotto è esaurito"
-					: `Ne restano solo ${owned.stock}`,
-			);
+		const { ceiling, error: limitError } = quantityCeiling(owned.stock);
+
+		if (quantity > ceiling) throw limitError();
 
 		const [updated] = await tx
 			.update(cartItem)
