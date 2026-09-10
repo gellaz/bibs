@@ -24,8 +24,12 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { cartItem } from "@/db/schemas/cart";
-import { storeProduct as storeProductTable } from "@/db/schemas/product";
+import {
+	product as productTable,
+	storeProduct as storeProductTable,
+} from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
+import { storeSubscription } from "@/db/schemas/store-subscription";
 import { addCartItem, getCart } from "@/modules/customer/services/cart";
 import { truncateAll } from "../helpers/cleanup";
 import {
@@ -34,6 +38,7 @@ import {
 	createTestDiscount,
 	createTestDiscountProduct,
 	createTestProduct,
+	createTestProductImage,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
@@ -438,5 +443,137 @@ describe("getCart", () => {
 		const cart = await getCart(a.id);
 
 		expect(cart.groups).toEqual([]);
+	});
+
+	it("flags a line as unavailable when the shop's subscription lapses", async () => {
+		const db = getTestDb();
+		const { store: s, storeProduct: sp } = await sellableProduct(
+			(await createTestSeller(db)).profile.id,
+			{ price: "7.00" },
+		);
+		const { profile: cp } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		// Il negozio è vivo, ma l'abbonamento esce dai tre stati "live":
+		// publiclyVisibleStore() lo nasconde, e il carrello deve accorgersene.
+		await db
+			.update(storeSubscription)
+			.set({ status: "suspended" })
+			.where(eq(storeSubscription.storeId, s.id));
+
+		const cart = await getCart(cp.id);
+
+		expect(cart.groups[0].items[0].issue).toBe("unavailable");
+		expect(cart.total).toBe("0.00");
+	});
+
+	it("flags a line as unavailable when the product is no longer active", async () => {
+		const db = getTestDb();
+		const { product: p, storeProduct: sp } = await sellableProduct(
+			(await createTestSeller(db)).profile.id,
+			{ price: "7.00" },
+		);
+		const { profile: cp } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		// Qui il negozio resta visibile: a cadere è solo il prodotto.
+		await db
+			.update(productTable)
+			.set({ status: "disabled" })
+			.where(eq(productTable.id, p.id));
+
+		const cart = await getCart(cp.id);
+
+		expect(cart.groups[0].items[0].issue).toBe("unavailable");
+		expect(cart.total).toBe("0.00");
+	});
+
+	it("reads stock 0 as insufficient, not as unavailable", async () => {
+		const db = getTestDb();
+		const { storeProduct: sp } = await sellableProduct(
+			(await createTestSeller(db)).profile.id,
+			{ stock: 2, price: "3.00" },
+		);
+		const { profile: cp } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 2,
+		});
+
+		await db
+			.update(storeProductTable)
+			.set({ stock: 0 })
+			.where(eq(storeProductTable.id, sp.id));
+
+		const cart = await getCart(cp.id);
+		const item = cart.groups[0].items[0];
+
+		expect(item.issue).toBe("insufficient_stock");
+		expect(item.availableStock).toBe(0);
+		// Ha ancora un prezzo, quindi resta nei totali.
+		expect(cart.total).toBe("6.00");
+	});
+
+	it("prefers unavailable over insufficient_stock when both apply", async () => {
+		const db = getTestDb();
+		const { store: s, storeProduct: sp } = await sellableProduct(
+			(await createTestSeller(db)).profile.id,
+			{ stock: 5 },
+		);
+		const { profile: cp } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 3,
+		});
+
+		await db
+			.update(storeProductTable)
+			.set({ stock: 0 })
+			.where(eq(storeProductTable.id, sp.id));
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, s.id));
+
+		const cart = await getCart(cp.id);
+
+		expect(cart.groups[0].items[0].issue).toBe("unavailable");
+	});
+
+	it("returns the product's first image by position", async () => {
+		const db = getTestDb();
+		const { product: p, storeProduct: sp } = await sellableProduct(
+			(await createTestSeller(db)).profile.id,
+		);
+		await createTestProductImage(db, p.id, {
+			url: "https://img.test/second.jpg",
+			position: 2,
+		});
+		await createTestProductImage(db, p.id, {
+			url: "https://img.test/first.jpg",
+			position: 0,
+		});
+		const { profile: cp } = await createTestCustomer(db);
+		await addCartItem({
+			customerProfileId: cp.id,
+			storeProductId: sp.id,
+			quantity: 1,
+		});
+
+		const cart = await getCart(cp.id);
+
+		expect(cart.groups[0].items[0].product.imageUrl).toBe(
+			"https://img.test/first.jpg",
+		);
 	});
 });

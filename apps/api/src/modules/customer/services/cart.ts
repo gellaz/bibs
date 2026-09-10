@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { cartItem, MAX_CART_ITEM_QUANTITY } from "@/db/schemas/cart";
 import { municipality, province } from "@/db/schemas/location";
 import { product, storeProduct } from "@/db/schemas/product";
+import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
@@ -155,7 +156,7 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
         )
       )`.as("store_visible"),
 			imageUrl: sql<string | null>`(
-        SELECT pi.url FROM product_images pi
+        SELECT pi.url FROM ${productImage} pi
         WHERE pi.product_id = products.id
         ORDER BY pi.position ASC
         LIMIT 1
@@ -168,7 +169,10 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 		.innerJoin(municipality, eq(municipality.id, store.municipalityId))
 		.innerJoin(province, eq(province.id, municipality.provinceId))
 		.where(eq(cartItem.customerProfileId, customerProfileId))
-		.orderBy(store.name, store.id, cartItem.createdAt);
+		// createdAt tiene la riga ferma nella lista quando cambia la quantità
+		// (l'upsert tocca solo updatedAt); id chiude l'ordinamento quando due
+		// righe condividono l'istante di inserimento.
+		.orderBy(store.name, store.id, cartItem.createdAt, cartItem.id);
 
 	if (rows.length === 0) return { groups: [], itemCount: 0, total: "0.00" };
 
