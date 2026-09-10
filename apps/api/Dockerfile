@@ -4,7 +4,7 @@
 # Installs the full monorepo workspace graph (dev deps included — the bun
 # bundler needs them to build, and drizzle-kit is a runtime requirement for
 # `bun run db:migrate` on the final image).
-FROM oven/bun:1 AS build
+FROM oven/bun:1.4 AS build
 WORKDIR /app
 
 # Workspace manifests first, so the install layer caches until any lockfile
@@ -28,7 +28,7 @@ RUN bun run --cwd apps/api build
 
 
 # ---------- Runtime stage ----------
-FROM oven/bun:1-slim
+FROM oven/bun:1.4-slim
 WORKDIR /app
 
 # Non-root user; writable /app for Pino's local file transport if enabled.
