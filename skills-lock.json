@@ -5,7 +5,7 @@
 			"source": "better-auth/skills",
 			"sourceType": "github",
 			"skillPath": "better-auth/best-practices/SKILL.md",
-			"computedHash": "61ba0ef64ed2e7c424401cc848ca33dd6d790a720c44727717dc0c5cba5fc122"
+			"computedHash": "0c30be0e118c2b7a0c4c57bd9e63bf110c7e420a79ec6ce7997153f3b1e066ee"
 		},
 		"better-auth-security-best-practices": {
 			"source": "better-auth/skills",
@@ -13,11 +13,11 @@
 			"skillPath": "security/SKILL.md",
 			"computedHash": "7a230edf3a24ce18162cb4379f59b6a19b8d24ca04db530609d0f15cede556dc"
 		},
-		"create-auth-skill": {
+		"create-auth": {
 			"source": "better-auth/skills",
 			"sourceType": "github",
 			"skillPath": "better-auth/create-auth/SKILL.md",
-			"computedHash": "31c027d02dbf1faa37f58191f574b9443143042fb2b684fe32df53ab0270487c"
+			"computedHash": "9a9b498bc144367b8e237233f89def63fb2bd69e8cafe173eaa58fe3a863cdc4"
 		},
 		"elysiajs": {
 			"source": "elysiajs/skills",
@@ -29,19 +29,19 @@
 			"source": "better-auth/skills",
 			"sourceType": "github",
 			"skillPath": "better-auth/emailAndPassword/SKILL.md",
-			"computedHash": "747d7f73bd9e2ec5317b8ef88dc70f97df716d00e3d02de4051feebaa48b062d"
+			"computedHash": "863886759f729081e265941f4f72c503835d55a1f34f6d63cebe6571159fff4a"
 		},
 		"organization-best-practices": {
 			"source": "better-auth/skills",
 			"sourceType": "github",
 			"skillPath": "better-auth/organization/SKILL.md",
-			"computedHash": "27627eb3a13bd44eff3a5d890f96e7db052b623db90e01684f759abe3e7fe56b"
+			"computedHash": "8c85e683dabef4532f1e8b67bbed5c453d39e0e3d5aeedd69d16b568f6e6d44f"
 		},
 		"shadcn": {
 			"source": "shadcn/ui",
 			"sourceType": "github",
 			"skillPath": "skills/shadcn/SKILL.md",
-			"computedHash": "d81caa0f86aabab65b25e302d454f23a3328760386ed9078345584c0d5c8058e"
+			"computedHash": "f615de216e085a84e31593ad0fa9062232adc40cd87b7c7ab2b8e49abf6500be"
 		},
 		"tanstack-integration-best-practices": {
 			"source": "deckardger/tanstack-agent-skills",
@@ -53,25 +53,25 @@
 			"source": "deckardger/tanstack-agent-skills",
 			"sourceType": "github",
 			"skillPath": "skills/tanstack-query/SKILL.md",
-			"computedHash": "21d2e8b7468a81d772b6527ad8ca178cc2f3f08af777bb9061333013ee88a0c9"
+			"computedHash": "8e5a7e3cdc6900c3967945658aa277629ba7b5264ddadc017ee2b76359456719"
 		},
 		"tanstack-router-best-practices": {
 			"source": "deckardger/tanstack-agent-skills",
 			"sourceType": "github",
 			"skillPath": "skills/tanstack-router/SKILL.md",
-			"computedHash": "65764bc7b90e47f6023cb7f89b3af93eaaafc517754f10b9382e184d4646a77d"
+			"computedHash": "659549bfcacc5767cd489fcbceb2889247bd38c82f0a37c282da754eb2603f63"
 		},
 		"tanstack-start-best-practices": {
 			"source": "deckardger/tanstack-agent-skills",
 			"sourceType": "github",
 			"skillPath": "skills/tanstack-start/SKILL.md",
-			"computedHash": "8b073187405a10f9997158f9139a9664cc801595d2fe63d542a0bac9bf2152f5"
+			"computedHash": "8799a83f34c3c0631915f8ddcdccc470d91e8bff05409564679bcd76b5eb0be8"
 		},
 		"two-factor-authentication-best-practices": {
 			"source": "better-auth/skills",
 			"sourceType": "github",
 			"skillPath": "better-auth/twoFactor/SKILL.md",
-			"computedHash": "a6f720042e5a090909e0d519a6a50a7eb8179553cd5315f0bbad852a6d20dac8"
+			"computedHash": "5bc3051aef5060db013f0b3cbe812c40dbae5c22d6ba3ddde4b941158362a197"
 		}
 	}
 }

@@ -53,8 +53,14 @@ Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.cl
 | `shadcn` | shadcn/ui CLI, theming, registries — activates on `packages/ui` work |
 | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices` | Better Auth — matches the current auth stack |
 | `organization-best-practices`, `two-factor-authentication-best-practices` | Installed ahead of need — activate only when those Better Auth plugins are enabled |
+| `create-auth` | Better Auth scaffolding — installed ahead of need, the stack is already wired |
+| `impeccable` | Frontend design/UX passes — ships its own native engine, updated by `npx impeccable` (not skills.sh) |
 
 To add more: `bunx skills add <source>` from repo root. To refresh everything: `bun run skills:update`.
+
+The impeccable engine binary (`.agents|.claude/skills/impeccable/scripts/bin/`) is platform-specific and
+gitignored: the committed `scripts/impeccable` launcher fetches the matching build (checksum-verified) on
+first use, or `bun run skills:update` installs it up front.
 
 ## TODO (agent tooling, next iterations)
 
