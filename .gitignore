@@ -55,3 +55,8 @@ logs/
 
 # Playwright MCP browser artifacts (per-agent-session snapshots and logs)
 .playwright-mcp/
+
+# impeccable engine: 12 MB platform-specific binary shipped by the skill
+# updater. The launcher re-fetches (checksum-verified) the right build per
+# platform, so it never belongs in git.
+**/skills/impeccable/scripts/bin/
