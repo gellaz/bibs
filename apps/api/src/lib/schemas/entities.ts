@@ -745,6 +745,13 @@ export const StoreDetailSchema = t.Object({
 // Date in the DTO, so the FE needs no toYMD coercion.
 export const StoreProductCardSchema = t.Object({
 	id: t.String(),
+	storeProductId: t.String({
+		description: "ID della riga store_products, da usare per ordinare",
+	}),
+	stock: t.Integer({
+		minimum: 0,
+		description: "Disponibilità del prodotto in questo negozio",
+	}),
 	name: t.String({ description: "Nome del prodotto" }),
 	description: t.Nullable(
 		t.String({ description: "Descrizione del prodotto" }),
