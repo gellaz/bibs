@@ -6,9 +6,16 @@
       "name": "bibs",
       "devDependencies": {
         "@biomejs/biome": "^2.5.13",
+        "@inlang/paraglide-js": "catalog:",
+        "@rolldown/plugin-babel": "catalog:",
+        "@tailwindcss/vite": "catalog:",
+        "@tanstack/devtools-vite": "catalog:",
+        "@tanstack/react-start": "catalog:",
+        "@vitejs/plugin-react": "catalog:",
         "concurrently": "^10.0.5",
         "lefthook": "^2.1.12",
         "typescript": "^6.0.3",
+        "vite": "catalog:",
       },
     },
     "apps/admin": {

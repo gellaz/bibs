@@ -12,6 +12,13 @@ import { defineConfig } from "vite";
  * by the devtools event-bus port. The `~/` alias points at @bibs/ui/src,
  * resolved from `process.cwd()` — each app runs `vite` from its own directory,
  * so this is the app dir (same as `__dirname` was in the per-app configs).
+ *
+ * Living at the repo root, this file resolves its bare imports from the root
+ * `node_modules`, so every plugin below is also declared in the root
+ * package.json devDependencies (same catalog versions, same Bun store entry as
+ * the apps' copies — not a duplicate install). Keep the two lists in sync, and
+ * import this file with its `.ts` extension so Vite's `configLoader: 'native'`
+ * can load it.
  */
 export function makeViteConfig(devtoolsPort: number) {
 	return defineConfig({

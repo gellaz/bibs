@@ -1,3 +1,3 @@
-import { makeViteConfig } from "../../vite.base";
+import { makeViteConfig } from "../../vite.base.ts";
 
 export default makeViteConfig(42072);
