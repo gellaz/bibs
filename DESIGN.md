@@ -18,6 +18,7 @@ colors:
   cobalt-deep: "oklch(0.42 0.19 256)"
   brick: "oklch(0.55 0.18 25)"
   olive: "oklch(0.62 0.10 135)"
+  warning: "oklch(0.62 0.14 60)"
   ink-on-saffron: "oklch(0.22 0.014 80)"
   ink-on-cobalt: "oklch(0.985 0.008 80)"
   ink-on-brick: "oklch(0.985 0.008 80)"
@@ -278,6 +279,16 @@ chrome. Cobalt must not appear on customer brand surfaces. Each register
 keeps its accent; mixing them collapses the distinction the system is
 built on.
 
+**The Focus Contrast Rule.** Saffron never carries a focus indicator on
+its own. Measured against the surfaces it lands on, saffron is 1.96:1 on
+cream and 1.85:1 on warm paper, and even saffron-deep reaches only
+3.06:1 on cream and 2.89:1 on a card — under the 3:1 that WCAG 2.2
+SC 1.4.11 asks of a focus indicator. Where the customer ring is saffron,
+an Ink border or outline (11.44:1 on cream, Cream on dusk in dark) must
+carry the contrast underneath it. Cobalt has no such constraint
+(4.76:1 on cream): on seller and admin the accent can be the whole
+indicator.
+
 **The Ink Rule.** Pure black (`#000`) and pure white (`#fff`) are
 prohibited. Foreground is Dusk. Background is Cream. Surfaces with no
 chroma feel like a tax form. The whole system tints, slightly.
@@ -392,7 +403,8 @@ statement of offer ("vai al negozio", "prenota").
 - **Focus:** 2px ring offset 2px from the surface. Ring color follows the
   register: **Saffron** on customer surfaces, **Cobalt** on seller/admin.
   Ink Soft is the fallback for ghost and secondary variants in both
-  registers.
+  registers. A saffron ring never stands alone — see The Focus Contrast
+  Rule.
 - **Secondary:** Warm Paper background, Ink text, same padding.
 - **Ghost:** transparent background, Ink text, smaller padding
   (0.5rem × 0.875rem). For tertiary actions inside cards.
@@ -408,7 +420,9 @@ Inputs are openings, not gates.
   typography, padding 0.625rem × 0.875rem.
 - **Focus:** border shifts to Ink, ring 2px outside the border at offset
   2px. Ring is Saffron on customer surfaces, Cobalt on seller/admin.
-  Smooth 150ms ease-out-quart.
+  Smooth 150ms ease-out-quart. The Ink border is not decoration: it is
+  what carries the contrast under a saffron ring (The Focus Contrast
+  Rule).
 - **Error:** border shifts to Brick, helper text in Brick below the
   input. No icons or red glow; the change in border carries the signal.
 - **Disabled:** 60% opacity, Warm Paper background. Cursor: not-allowed.
