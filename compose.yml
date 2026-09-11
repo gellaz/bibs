@@ -41,8 +41,10 @@ services:
       - bibs-minio-data:/data
     # Note: no healthcheck — the minio/minio image ships without curl/wget/nc/mc,
     # so there's no simple in-container probe. `docker compose up --wait` treats
-    # this service as ready when it reaches the "running" state, which is good
-    # enough for local dev (the API retries S3 on startup).
+    # this service as ready once it reaches the "running" state, which lands a
+    # beat before the port is actually bound (~60ms locally). The API's startup
+    # bucket check retries connection failures to cover that window; see
+    # apps/api/src/lib/retry.ts.
 
   bibs-mailpit:
     image: axllent/mailpit:v1.30.3
