@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, Clock } from "lucide-react";
 import { useState } from "react";
+import { PAGE_CONTAINER } from "@/components/page";
 import { type OpenStatusView, openStatusLabel } from "./open-status";
 
 interface StoreCoverProps {
@@ -25,7 +26,7 @@ export function StoreCover({
 	const initial = name.trim().charAt(0).toUpperCase() || "?";
 
 	return (
-		<div className="relative h-64 w-full overflow-hidden sm:h-80">
+		<div className="relative h-64 w-full overflow-hidden sm:h-80 xl:h-96">
 			{showImage ? (
 				<>
 					<img
@@ -51,16 +52,20 @@ export function StoreCover({
 				</div>
 			)}
 
-			<Link
-				to="/stores"
-				search={{ q: undefined, categoryId: undefined }}
-				className="absolute top-4 left-4 inline-flex items-center gap-1 rounded-full bg-ink/40 px-3 py-1.5 font-medium text-cream text-sm backdrop-blur-sm transition-colors hover:bg-ink/60"
-			>
-				<ChevronLeft className="size-4" aria-hidden />
-				Negozi
-			</Link>
+			<div className={`${PAGE_CONTAINER} absolute inset-x-0 top-4`}>
+				<Link
+					to="/stores"
+					search={{ q: undefined, categoryId: undefined }}
+					className="inline-flex items-center gap-1 rounded-full bg-ink/40 px-3 py-1.5 font-medium text-cream text-sm backdrop-blur-sm transition-colors hover:bg-ink/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40"
+				>
+					<ChevronLeft className="size-4" aria-hidden />
+					Negozi
+				</Link>
+			</div>
 
-			<div className="absolute inset-x-0 bottom-0 mx-auto max-w-3xl px-4 pb-5">
+			<div
+				className={`${PAGE_CONTAINER} absolute inset-x-0 bottom-0 pb-5 sm:pb-6`}
+			>
 				<h1 className="font-bold font-display text-3xl text-cream leading-tight tracking-[-0.015em] drop-shadow-sm sm:text-4xl">
 					{name}
 				</h1>
@@ -68,12 +73,13 @@ export function StoreCover({
 					{categoryName ? `${categoryName} · ` : ""}
 					{city} ({province})
 				</p>
-				<span
-					className={`mt-2 inline-flex items-center gap-1.5 rounded-full bg-cream px-2.5 py-1 font-medium text-xs ${
-						openStatus.isOpen ? "text-saffron-deep" : "text-ink/70"
-					}`}
-				>
-					<Clock className="size-3.5" aria-hidden />
+				<span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-cream px-2.5 py-1 font-medium text-ink text-xs">
+					<Clock
+						className={`size-3.5 ${
+							openStatus.isOpen ? "text-saffron-deep" : "text-ink/60"
+						}`}
+						aria-hidden
+					/>
 					{openStatusLabel(openStatus)}
 				</span>
 			</div>

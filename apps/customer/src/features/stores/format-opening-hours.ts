@@ -8,6 +8,8 @@ export interface WeekRow {
 	label: string;
 	/** "09:00–13:00 · 16:00–19:00", or null when closed. */
 	hours: string | null;
+	/** The same slots unjoined ("09:00–13:00"), for narrow layouts that stack them. */
+	slots: string[];
 	isToday: boolean;
 }
 
@@ -30,11 +32,14 @@ export function formatWeeklyHours(
 ): WeekRow[] {
 	return dayLabels.map((label, dow) => {
 		const day = openingHours?.find((d) => d.dayOfWeek === dow);
-		const hours =
-			day && day.slots.length > 0
-				? day.slots.map((s) => `${s.open}–${s.close}`).join(" · ")
-				: null;
-		return { dayOfWeek: dow, label, hours, isToday: dow === todayDow };
+		const slots = day?.slots.map((s) => `${s.open}–${s.close}`) ?? [];
+		return {
+			dayOfWeek: dow,
+			label,
+			hours: slots.length > 0 ? slots.join(" · ") : null,
+			slots,
+			isToday: dow === todayDow,
+		};
 	});
 }
 

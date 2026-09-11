@@ -37,6 +37,24 @@ describe("formatWeeklyHours", () => {
 		expect(rows[0].hours).toBe("09:00–13:00 · 16:00–19:00");
 	});
 
+	it("also returns the slots unjoined, for layouts that stack them", () => {
+		const rows = formatWeeklyHours(
+			[
+				{
+					dayOfWeek: 0,
+					slots: [
+						{ open: "09:00", close: "13:00" },
+						{ open: "16:00", close: "19:00" },
+					],
+				},
+			],
+			3,
+			TEST_DAY_LABELS,
+		);
+		expect(rows[0].slots).toEqual(["09:00–13:00", "16:00–19:00"]);
+		expect(rows[1].slots).toEqual([]);
+	});
+
 	it("marks days with no slots as closed (null hours)", () => {
 		const rows = formatWeeklyHours(
 			[{ dayOfWeek: 2, slots: [] }],
