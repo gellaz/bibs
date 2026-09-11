@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 2,
-	"generatedAt": "2026-05-10T00:00:00Z",
+	"generatedAt": "2026-09-11T13:24:36Z",
 	"title": "Design System: bibs",
 	"extensions": {
 		"colorMeta": {
@@ -98,6 +98,46 @@
 				"role": "tertiary",
 				"displayName": "Olive",
 				"canonical": "oklch(0.62 0.10 135)"
+			},
+			"cobalt": {
+				"role": "secondary",
+				"displayName": "Cobalt",
+				"canonical": "oklch(0.55 0.19 256)",
+				"tonalRamp": [
+					"oklch(0.20 0.10 256)",
+					"oklch(0.30 0.15 256)",
+					"oklch(0.42 0.19 256)",
+					"oklch(0.55 0.19 256)",
+					"oklch(0.68 0.16 256)",
+					"oklch(0.80 0.10 256)",
+					"oklch(0.90 0.06 256)",
+					"oklch(0.95 0.05 256)"
+				]
+			},
+			"cobalt-soft": {
+				"role": "secondary",
+				"displayName": "Cobalt Soft",
+				"canonical": "oklch(0.95 0.05 256)"
+			},
+			"cobalt-deep": {
+				"role": "secondary",
+				"displayName": "Cobalt Deep",
+				"canonical": "oklch(0.42 0.19 256)"
+			},
+			"warning": {
+				"role": "tertiary",
+				"displayName": "Warning Amber",
+				"canonical": "oklch(0.62 0.14 60)",
+				"tonalRamp": [
+					"oklch(0.22 0.05 60)",
+					"oklch(0.32 0.08 60)",
+					"oklch(0.45 0.12 60)",
+					"oklch(0.62 0.14 60)",
+					"oklch(0.72 0.14 60)",
+					"oklch(0.82 0.12 60)",
+					"oklch(0.90 0.08 60)",
+					"oklch(0.96 0.03 60)"
+				]
 			}
 		},
 		"typographyMeta": {
@@ -181,10 +221,22 @@
 			}
 		],
 		"breakpoints": [
-			{ "name": "sm", "value": "640px" },
-			{ "name": "md", "value": "768px" },
-			{ "name": "lg", "value": "1024px" },
-			{ "name": "xl", "value": "1280px" }
+			{
+				"name": "sm",
+				"value": "640px"
+			},
+			{
+				"name": "md",
+				"value": "768px"
+			},
+			{
+				"name": "lg",
+				"value": "1024px"
+			},
+			{
+				"name": "xl",
+				"value": "1280px"
+			}
 		]
 	},
 	"components": [
@@ -234,7 +286,7 @@
 			"refersTo": "badge-saffron",
 			"description": "Signature: the Reward Thread. Saffron pill announces points earned. ALL CAPS. ≤1 per surface.",
 			"html": "<span class=\"ds-badge-reward\"><svg viewBox=\"0 0 16 16\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M8 1l1.8 4.6L14.5 6 11 9.2l1 4.8L8 11.6 4 14l1-4.8L1.5 6l4.7-.4z\" fill=\"currentColor\"/></svg>+5 PUNTI</span>",
-			"css": ".ds-badge-reward { display: inline-flex; align-items: center; gap: 0.375rem; background: oklch(0.78 0.14 75); color: oklch(0.22 0.014 80); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; line-height: 1.2; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.25rem 0.625rem; border-radius: 9999px; }"
+			"css": ".ds-badge-reward { display: inline-flex; align-items: center; gap: 0.375rem; background: oklch(0.78 0.14 75); color: oklch(0.22 0.014 80); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.125rem 0.625rem; border-radius: 9999px; }"
 		},
 		{
 			"name": "Civic Pill",
@@ -243,6 +295,22 @@
 			"description": "Signature: 360° civic involvement. Marks surfaces where a Comune participates.",
 			"html": "<span class=\"ds-badge-civic\"><svg viewBox=\"0 0 16 16\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M2 14h12M3 14V7l5-3 5 3v7M6 14V9h4v5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>Il Comune di Modena partecipa</span>",
 			"css": ".ds-badge-civic { display: inline-flex; align-items: center; gap: 0.375rem; background: oklch(0.965 0.012 80); color: oklch(0.34 0.10 258); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.01em; padding: 0.25rem 0.75rem; border: 1px solid oklch(0.34 0.10 258); border-radius: 9999px; }"
+		},
+		{
+			"name": "Cobalt Pill",
+			"kind": "chip",
+			"refersTo": "badge-cobalt",
+			"description": "Operational state on seller and admin: counts, category badges, flags. Never on customer surfaces.",
+			"html": "<span class=\"ds-badge-cobalt\">3 selezionati</span>",
+			"css": ".ds-badge-cobalt { display: inline-flex; align-items: center; gap: 0.375rem; background: oklch(0.95 0.05 256); color: oklch(0.42 0.19 256); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.8125rem; font-weight: 500; line-height: 1.3; letter-spacing: 0.04em; padding: 0.125rem 0.625rem; border-radius: 9999px; }"
+		},
+		{
+			"name": "Distance Pill",
+			"kind": "chip",
+			"refersTo": "distance-pill",
+			"description": "The Market Square's voice: how far the shop is, on every store and product tile. Sits on the photo, so it carries a shadow instead of a border.",
+			"html": "<span class=\"ds-pill-distance\"><svg viewBox=\"0 0 16 16\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M8 1.5c-2.5 0-4.5 2-4.5 4.5 0 3.2 4.5 8.5 4.5 8.5s4.5-5.3 4.5-8.5c0-2.5-2-4.5-4.5-4.5z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/><circle cx=\"8\" cy=\"6\" r=\"1.6\" fill=\"currentColor\"/></svg>240 m</span>",
+			"css": ".ds-pill-distance { display: inline-flex; align-items: center; gap: 0.25rem; background: oklch(0.985 0.008 80); color: oklch(0.34 0.10 258); font-family: Geist Mono, ui-monospace, monospace; font-size: 0.75rem; font-weight: 500; font-variant-numeric: tabular-nums; padding: 0.25rem 0.5rem; border-radius: 9999px; box-shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10); } .ds-pill-distance svg { color: oklch(0.66 0.16 70); }"
 		},
 		{
 			"name": "Bottom Tab Bar (Customer)",
@@ -255,39 +323,44 @@
 	],
 	"narrative": {
 		"northStar": "The Open Hand",
-		"overview": "bibs is shaped like the gesture in its own logo. An open hand offering, palm up, neither pulling nor pushing. The interface is confident enough to slow down: it makes room around the merchant, the product, the place. Where Amazon collapses everything into a yellow-CTA grid, bibs leaves space for a shop's name, its street, the hours it keeps today. Two surface idioms run inside this metaphor without breaking it: The Shopkeeper's Window (every merchant detail page, photo-led, identity above inventory) and The Market Square (discovery and home, presence + distance + 'aperto adesso' + civic chips). The parent metaphor decides the tone; the surface idioms decide the rhythm.",
+		"overview": "bibs is shaped like the gesture in its own logo. An open hand offering, palm up, neither pulling nor pushing. The interface is confident enough to slow down: it makes room around the merchant, the product, the place. Where Amazon collapses everything into a yellow-CTA grid, bibs leaves space for a shop's name, its street, the hours it keeps today. The voice is the same as a neighbor pointing across the road and saying \"lì, da Marco, hai trovato\".\n\nTwo surface idioms run inside this metaphor without breaking it: The Shopkeeper's Window governs every merchant detail page (a vetrina that opens, photo-led, with the shop's identity above the inventory), and The Market Square governs discovery and home (a live square: presence, distance, \"aperto adesso\", civic chips). The parent metaphor decides the tone; the surface idioms decide the rhythm of a particular page.\n\nThis system explicitly rejects: the Amazon mass-marketplace grid (yellow CTAs, density over clarity, anonymous merchants); the generic SaaS template (gradient hero, identical icon-heading-text card grids, hero-metric pattern); coupon and cashback aggregator aesthetics (loud %-off stickers, manipulative urgency); Italian classifieds (Subito, Bakeca: ad-heavy, blue-and-orange corporate); crypto / web3 dark-and-neon. Anything that treats the shopper as a conversion or the merchant as a SKU is wrong by default.\n\nRegister split. PRODUCT.md sets the customer as brand-default surface; seller and admin override to product per task. DESIGN.md follows: every token is shared (one ink, one cream, one type ramp), but two accents are reserved per register — saffron on brand, cobalt on product. A seller chip in saffron, or a customer reward pill in cobalt, is wrong by construction.",
 		"keyCharacteristics": [
-			"Navy ink on warm cream, never pure white, never black.",
+			"Navy ink on warm cream, never pure white, never black. The page reads like a printed map, not a dashboard.",
 			"Generous spacing as a moral position. The merchant gets room.",
-			"Geist (UI workhorse) + Bricolage Grotesque (warm display). Two voices, one register.",
-			"Saffron is the only saturated accent. ≤5% of the surface, signal moments only.",
+			"Typography pairs Geist (UI workhorse) with Satoshi (warm display, loaded from Fontshare). Two voices, one register.",
+			"Two accent roles, one per register. Saffron is the brand-register signal (customer surfaces): reward earned, civic partner, \"aperto adesso\", presence dots. Cobalt is the product-register accent (seller, admin): selection state, focus on operational controls, accent fills on chips and badges. Neither is decorative; neither is used across registers.",
 			"Flat by default. Elevation is reserved for state response.",
-			"Motion respects prefers-reduced-motion without exception. Ease-out exponential, no bounce."
+			"Motion respects prefers-reduced-motion without exception. Ease-out exponential curves, no bounce."
 		],
 		"rules": [
 			{
 				"name": "The Single Hand Rule",
-				"body": "Saffron belongs to ≤5% of any given screen, only on signal moments: reward, civic, presence, focus. Every additional saffron pixel weakens the one that earned its place.",
+				"body": "On the customer surface, saffron is the open palm. It belongs to ≤5% of any given screen, and only on signal moments: reward, civic, presence. Never as a decorative accent, never on body chrome, never on a gradient. Every additional saffron pixel weakens the one that earned its place.",
+				"section": "colors"
+			},
+			{
+				"name": "The Cobalt Discipline",
+				"body": "On seller and admin surfaces, cobalt earns its place by carrying selection and focus on operational controls. It can paint more than 5% of a chip-dense view (a selected row, a focused input ring, an accent badge), but never replaces ink as the primary action. Ink stays the voice; cobalt is the state.",
+				"section": "colors"
+			},
+			{
+				"name": "The Cross-Register Ban",
+				"body": "Saffron must not appear on seller/admin chrome. Cobalt must not appear on customer brand surfaces. Each register keeps its accent; mixing them collapses the distinction the system is built on.",
 				"section": "colors"
 			},
 			{
 				"name": "The Ink Rule",
-				"body": "Pure black (#000) and pure white (#fff) are prohibited. Foreground is Dusk; background is Cream.",
-				"section": "colors"
-			},
-			{
-				"name": "The No-Cyan Rule",
-				"body": "The current shadcn preset's cyan-sky primary is legacy and contradicts the wordmark. Do not introduce new uses; migrate opportunistically. The brand voice is navy ink.",
+				"body": "Pure black (#000) and pure white (#fff) are prohibited. Foreground is Dusk. Background is Cream. Surfaces with no chroma feel like a tax form. The whole system tints, slightly.",
 				"section": "colors"
 			},
 			{
 				"name": "The Two-Voice Rule",
-				"body": "Bricolage carries identity. Geist carries information. Mixing roles breaks the system.",
+				"body": "Satoshi carries identity. Geist carries information. Mixing roles, putting Satoshi on a price tag or Geist on a hero, breaks the system. If a piece of text is the *what*, Geist; if it is the *who* or the *welcome*, Satoshi.",
 				"section": "typography"
 			},
 			{
 				"name": "The 72ch Rule",
-				"body": "Body copy never exceeds 72 characters per line.",
+				"body": "Body copy never exceeds 72 characters per line. Above that the eye loses the line return, the merchant's story stops feeling like a story.",
 				"section": "typography"
 			},
 			{
@@ -297,42 +370,43 @@
 			},
 			{
 				"name": "The Flat-By-Default Rule",
-				"body": "Surfaces are flat. Shadows respond to state. Decorative ambient glow is forbidden.",
+				"body": "Surfaces are flat. Shadows respond to state (hover, focus, drag, just-opened). Decorative ambient glow is forbidden.",
 				"section": "elevation"
 			},
 			{
 				"name": "The 1px Border Rule",
-				"body": "Where shadow would be the obvious answer for separation at rest, use a 1px Warm Edge border instead.",
+				"body": "Where shadow would be the obvious answer for separation at rest, use a 1px Warm Edge border instead. The system prefers a drawn line over a fictional drop shadow.",
 				"section": "elevation"
 			}
 		],
 		"dos": [
 			"Do lead with the merchant: face, name, place, hours come before the inventory grid on every customer surface.",
 			"Do use Ink as the brand voice. Wordmark, primary buttons, headlines, focus rings: the same Ink everywhere.",
-			"Do keep Saffron at ≤5% of any screen, on signal moments only.",
-			"Do show distance, opening status, and pickup-or-delivery affordances on every store and product card.",
-			"Do show the civic pill ('il Comune di X partecipa') wherever it's true.",
+			"Do keep Saffron at ≤5% of any customer screen, on signal moments only. On seller/admin, saffron is absent — use Cobalt instead.",
+			"Do show distance, opening status, and pickup-or-delivery affordances on every store and product card. The Market Square is a promise.",
+			"Do show the civic pill (\"il Comune di X partecipa\") wherever it's true. The civic partnership is a first-class signal.",
 			"Do keep Body lines under 72 characters.",
-			"Do tune typography on Italian copy.",
-			"Do keep the system flat by default.",
-			"Do respect prefers-reduced-motion without an opt-out.",
+			"Do tune typography on Italian copy. Test \"Salumeria Borgo\" on the same scale as \"Salumeria di Borgo Vecchio Padova\". Both must read one-pass.",
+			"Do keep the system flat by default. Surfaces lift only on state.",
+			"Do respect prefers-reduced-motion without an opt-out. State changes collapse to fades.",
 			"Do ease out with exponential curves (cubic-bezier(0.22, 1, 0.36, 1) or steeper). 150-220ms for state, 280-380ms for layout."
 		],
 		"donts": [
-			"Don't introduce new uses of the cyan-sky --primary. The brand is navy Ink. The cyan is legacy.",
-			"Don't use pure #000 or #fff anywhere. Foreground is Dusk; background is Cream.",
-			"Don't use a side-stripe border (border-left > 1px) as a colored accent.",
-			"Don't use gradient text (background-clip: text over a gradient).",
-			"Don't use glassmorphism or backdrop-blur as decoration.",
-			"Don't ship the SaaS hero-metric template.",
-			"Don't ship identical icon-heading-text card grids.",
-			"Don't ship Amazon-style yellow CTAs, infinite anonymous product grids, or density-over-clarity layouts.",
-			"Don't ship Groupon-style coupon stickers, countdown timers, or manipulative urgency.",
-			"Don't put crypto / web3 / dark-and-neon energy anywhere.",
-			"Don't put Bricolage on a price or a button. Bricolage is the *who*; Geist is the *what*.",
-			"Don't nest a card inside a card.",
-			"Don't wrap everything in a container with the same padding.",
-			"Don't reach for a modal as the first thought."
+			"Don't mix the two accents across registers. Saffron on a seller chip, or cobalt on a customer reward pill, is a system error.",
+			"Don't reintroduce cyan-sky as primary. The brand voice is navy Ink; cobalt belongs to the product register's accent role, not to the primary action.",
+			"Don't use pure #000 or #fff. Anywhere. Foreground is Dusk; background is Cream.",
+			"Don't use a side-stripe border (border-left: Npx solid <color>) with N > 1px as a colored accent on cards, list items, callouts, or alerts. Rewrite with a full border, a background tint, a leading icon, or nothing.",
+			"Don't use gradient text (background-clip: text over a gradient). Emphasis comes from weight or size, not from rainbow ink.",
+			"Don't use glassmorphism or backdrop-blur as decoration. Rare and purposeful, or absent.",
+			"Don't ship the SaaS hero-metric template (big number / small label / supporting stats / gradient accent). bibs is not a B2B tool selling itself.",
+			"Don't ship identical icon-heading-text card grids (the three-feature SaaS landing pattern).",
+			"Don't ship Amazon-style yellow CTAs, infinite anonymous product grids, or density-over-clarity layouts. That is the aesthetic bibs displaces.",
+			"Don't ship Groupon-style coupon stickers, countdown timers, or manipulative urgency. The reward system is a relationship, not a hook.",
+			"Don't put crypto / web3 / dark-and-neon energy anywhere. Wrong register entirely.",
+			"Don't put Satoshi on a price or a button. Satoshi is the *who*; Geist is the *what*.",
+			"Don't nest a card inside a card. Reach for spacing or a divider instead.",
+			"Don't wrap everything in a container with the same padding. Vary the rhythm; spacing is part of voice.",
+			"Don't reach for a modal as the first thought. Inline and progressive paths almost always exist; use them."
 		]
 	}
 }
