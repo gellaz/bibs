@@ -1,9 +1,18 @@
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { useState } from "react";
 
-/** Tailwind grid condivisa dalle griglie di tile (prodotti / negozi). */
+/**
+ * Tailwind grid condivisa dalle griglie di tile a piena pagina (prodotti della
+ * discovery / negozi). La quinta colonna da `xl` tiene la tile sulla stessa
+ * misura di prima ora che il container arriva a 1280px: lo spazio in più
+ * diventa densità, non tile gonfiate.
+ *
+ * Le griglie dentro una colonna più stretta della pagina (il catalogo nella
+ * scheda negozio) usano invece una grid a container query: lì la larghezza
+ * disponibile non è quella del viewport.
+ */
 export const GRID =
-	"grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4";
+	"grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
 /** Metri → "240 m" / "1,2 km" (convenzione italiana, virgola decimale). */
 export function formatDistance(meters: number): string {

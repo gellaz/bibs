@@ -41,7 +41,7 @@ export function ProductTile({
 	const hasDistance = showDistance && (product.distance ?? 0) > 0;
 
 	return (
-		<article className="flex flex-col gap-3">
+		<article className="flex h-full flex-col gap-3">
 			<div className="relative aspect-square overflow-hidden rounded-lg border border-border">
 				<TileImage url={cover} name={product.name} />
 				{hasDistance && (
@@ -51,7 +51,7 @@ export function ProductTile({
 					</span>
 				)}
 			</div>
-			<div className="flex flex-col gap-1">
+			<div className="flex flex-1 flex-col gap-1">
 				<h3 className="line-clamp-2 font-medium text-[0.9375rem] text-foreground leading-snug">
 					{product.name}
 				</h3>
@@ -62,7 +62,7 @@ export function ProductTile({
 					discountedPrice={product.discountedPrice}
 					percent={product.discountPercent}
 				/>
-				{action ? <div className="mt-2">{action}</div> : null}
+				{action ? <div className="mt-auto pt-3">{action}</div> : null}
 			</div>
 		</article>
 	);

@@ -1,10 +1,19 @@
 import { Button } from "@bibs/ui/components/button";
 import { RotateCw } from "lucide-react";
-import { GRID, TileSkeleton } from "@/components/tile";
+import { TileSkeleton } from "@/components/tile";
 import { AddToCart } from "@/features/cart/add-to-cart";
 import { ProductTile } from "@/features/catalog/product-tile";
 import { m } from "@/paraglide/messages";
 import { useStoreProducts } from "./use-store-products";
+
+/**
+ * Il catalogo vive nella colonna centrale della scheda, non a piena pagina: le
+ * colonne le decide la larghezza della colonna (container query), non quella
+ * del viewport. Altrimenti a 1024px il rail ruberebbe spazio e la griglia
+ * passerebbe comunque a 4 colonne da 146px.
+ */
+const CATALOG_GRID =
+	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @3xl:grid-cols-4";
 
 export function StoreProducts({ storeId }: { storeId: string }) {
 	const {
@@ -22,19 +31,19 @@ export function StoreProducts({ storeId }: { storeId: string }) {
 	if (!isPending && !isError && products.length === 0) return null;
 
 	return (
-		<section className="space-y-3">
+		<section className="@container space-y-4">
 			<h2 className="font-display font-semibold text-foreground text-lg">
 				{m.store_products_title()}
 			</h2>
 
 			{isPending ? (
-				<div className={GRID} aria-hidden>
+				<div className={CATALOG_GRID} aria-hidden>
 					{Array.from({ length: 6 }, (_, i) => (
 						<TileSkeleton key={`product-skeleton-${i}`} />
 					))}
 				</div>
 			) : isError ? (
-				<div className="flex flex-col items-center gap-4 rounded-xl border border-border border-dashed px-6 py-12 text-center">
+				<div className="flex flex-col items-center gap-4 rounded-lg border border-border border-dashed px-6 py-12 text-center">
 					<p className="text-muted-foreground text-sm">
 						{m.store_load_failed()}
 					</p>
@@ -45,7 +54,7 @@ export function StoreProducts({ storeId }: { storeId: string }) {
 				</div>
 			) : (
 				<>
-					<ul className={GRID}>
+					<ul className={CATALOG_GRID}>
 						{products.map((product) => (
 							<li key={product.id}>
 								<ProductTile
