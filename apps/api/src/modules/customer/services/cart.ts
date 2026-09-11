@@ -66,7 +66,7 @@ export async function addCartItem(
 		// Un prodotto non acquistabile e un prodotto inesistente collassano nello
 		// stesso 404: non si conferma l'esistenza di righe che non si possono
 		// comprare.
-		if (!sellable || sellable.status !== "active")
+		if (sellable?.status !== "active")
 			throw new ServiceError(404, "Prodotto non disponibile");
 
 		// Tetto effettivo: il minore fra il limite per riga e ciò che il negozio
