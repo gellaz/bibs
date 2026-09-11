@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Compass, LocateFixed, MapPin, RotateCw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Notice } from "@/components/notice";
+import { PAGE_CONTAINER } from "@/components/page";
 import { GRID, TileSkeleton } from "@/components/tile";
 import { useGeolocation } from "@/features/discovery/use-geolocation";
 import { StoreTile } from "@/features/stores/store-tile";
@@ -78,7 +79,7 @@ function StoresPage() {
 	const hasQuery = Boolean(q) || Boolean(categoryId);
 
 	return (
-		<div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+		<div className={`${PAGE_CONTAINER} py-8 sm:py-10`}>
 			<section className="space-y-1">
 				<h1 className="font-bold font-display text-2xl text-primary tracking-[-0.015em]">
 					{m.store_list_title()}

@@ -1,3 +1,26 @@
 @import "@bibs/ui/globals.css";
 @source "./**/*.{ts,tsx}";
 @source "../../packages/ui/src/**/*.{ts,tsx}";
+
+/**
+ * Rail informativo della scheda negozio (orari, mappa, contatti, descrizione).
+ *
+ * Si aggancia solo dove ci sta davvero: il rail è alto ~930px e su un portatile
+ * da 900px un `sticky` con `max-height` taglierebbe l'ultima sezione dentro uno
+ * scroll annidato che nessuno nota. Sopra i 1024px di altezza resta agganciato
+ * mentre si scorre il catalogo; sotto, scorre con la pagina — intero.
+ *
+ * `scrollbar-gutter: stable` tiene la misura ferma quando "Leggi tutto" allunga
+ * la descrizione oltre il viewport, e la scrollbar è tematizzata sui token.
+ */
+@media (min-width: 64rem) and (min-height: 64rem) {
+	.info-rail {
+		position: sticky;
+		top: 5rem;
+		max-height: calc(100dvh - 6rem);
+		overflow-y: auto;
+		scrollbar-gutter: stable;
+		scrollbar-width: thin;
+		scrollbar-color: var(--border) transparent;
+	}
+}

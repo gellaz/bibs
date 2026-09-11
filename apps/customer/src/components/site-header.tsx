@@ -2,6 +2,7 @@ import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Link } from "@tanstack/react-router";
 import { CartBadge } from "@/features/cart/cart-badge";
 import { m } from "@/paraglide/messages";
+import { PAGE_CONTAINER } from "./page";
 import { UserMenu } from "./user-menu";
 
 /**
@@ -16,7 +17,9 @@ import { UserMenu } from "./user-menu";
 export function SiteHeader() {
 	return (
 		<header className="sticky top-0 z-40 border-border border-b bg-background">
-			<div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:h-16 sm:px-6">
+			<div
+				className={`${PAGE_CONTAINER} flex h-14 items-center justify-between gap-4 sm:h-16`}
+			>
 				<Link
 					to="/"
 					aria-label={m.nav_home_aria()}

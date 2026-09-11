@@ -1,6 +1,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { useEffect } from "react";
+import { MapContainer, Marker, TileLayer, useMap } from "react-leaflet";
 
 // divIcon HTML lives in the document, so brand CSS vars resolve and stay theme-aware.
 const pinIcon = L.divIcon({
@@ -9,6 +10,22 @@ const pinIcon = L.divIcon({
 	iconSize: [32, 40],
 	iconAnchor: [16, 40],
 });
+
+/**
+ * Leaflet calcola la dimensione una volta al mount: nel rail la larghezza
+ * cambia con il breakpoint (colonna piena → 19rem → 21rem) e senza questo
+ * la mappa resta con i tile della misura vecchia e una banda grigia.
+ */
+function KeepSizeInSync() {
+	const map = useMap();
+	useEffect(() => {
+		const container = map.getContainer();
+		const observer = new ResizeObserver(() => map.invalidateSize());
+		observer.observe(container);
+		return () => observer.disconnect();
+	}, [map]);
+	return null;
+}
 
 export default function StoreMap({
 	lat,
@@ -24,7 +41,7 @@ export default function StoreMap({
 			center={[lat, lng]}
 			zoom={15}
 			scrollWheelZoom={false}
-			className="h-56 w-full"
+			className="h-48 w-full sm:h-56 lg:h-40"
 			style={{ zIndex: 0 }}
 		>
 			<TileLayer
@@ -32,6 +49,7 @@ export default function StoreMap({
 				url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 			/>
 			<Marker position={[lat, lng]} icon={pinIcon} title={name} />
+			<KeepSizeInSync />
 		</MapContainer>
 	);
 }
