@@ -165,6 +165,36 @@ export async function getSeedMunicipalityIds(): Promise<
 }
 
 /**
+ * Prefisso telefonico urbano per comune seed. Serve ai numeri di telefono dei
+ * negozi: un fisso genovese comincia per 010, uno milanese per 02.
+ */
+export const SEED_MUNICIPALITY_PHONE_PREFIX: Record<
+	SeedMunicipalityHandle,
+	string
+> = {
+	milano: "02",
+	roma: "06",
+	torino: "011",
+	bologna: "051",
+	firenze: "055",
+	napoli: "081",
+	bari: "080",
+	palermo: "091",
+	genova: "010",
+	venezia: "041",
+};
+
+/** ISTAT → handle, per risalire al comune partendo da una riga di `stores`. */
+export const ISTAT_TO_SEED_HANDLE: Record<string, SeedMunicipalityHandle> =
+	Object.fromEntries(
+		(
+			Object.entries(SEED_MUNICIPALITIES) as Array<
+				[SeedMunicipalityHandle, string]
+			>
+		).map(([handle, istat]) => [istat, handle]),
+	) as Record<string, SeedMunicipalityHandle>;
+
+/**
  * Coordinate approssimative per comune seed, usate per popolare `location` nei negozi.
  */
 export const SEED_MUNICIPALITY_COORDS: Record<

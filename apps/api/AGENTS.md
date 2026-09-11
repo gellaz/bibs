@@ -310,7 +310,8 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     - `fetch-locations.ts` — standalone script to refresh the location JSON from GitHub
     - `regions.json`, `provinces.json`, `municipalities.json` — generated and committed
   - `fixtures/` — test users for dev/staging only, depend on `better-auth`'s `signUpEmail`. Order matters: admins
-    → customers → sellers → extra-stores → team → brands → products. Each step is idempotent via canary check:
+    → customers → sellers → extra-stores → store-images → store-profiles → team → brands → products. Each step is
+    idempotent via canary check:
     - `index.ts` — `seedFixtures()` orchestrator
     - `admins.ts` — `seedAdmins()` (3 admin users)
     - `customers.ts` — `seedCustomers()` (~300 customers)
@@ -318,6 +319,22 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     - `extra-stores.ts` — `seedExtraStores()` adds 1–2 extra stores to 8 designated active sellers
       (idx `[0,7,14,21,28,35,42,49]` → `seller{1,8,15,22,29,36,43,50}`); naming `<prefix> <lastName> <suffix>`
       where suffix ∈ {Centro, Stazione, …}. Per-seller canary: only fills the names that are missing
+    - `store-profiles.ts` — `seedStoreProfiles()` fills the public store profile, after `seedStoreImages()` has
+      placed the cover at position 0: `categoryId`, `openingHours`, phone numbers, `websiteUrl`, a description
+      matched to the business type and extra gallery photos. Three completeness tiers, derived deterministically
+      from `(sellerIdx, rankInSeller)` so the split survives a reseed — `full` (~40%: hours, 2 phones, website,
+      long description, 5 photos), `basic` (~30%: hours, 1 phone, short description, 3 photos), `bare` (~30%:
+      left as `seedSellers` made it, so the "nothing filled in yet" states stay reproducible in dev). Opening
+      hours come from 7 archetypes keyed on `businessPrefix` (bottega with the midweek half-day, forno open
+      Sunday morning and closed Monday, ristorazione closed Monday, negozio with Monday morning shut, …) with a
+      ±30′ shift on the evening close per store, and every generated week is run through the same
+      `validateOpeningHours()` the seller route uses: an incoherent archetype fails the seed instead of reaching
+      a page. Closed days are **omitted** from the array — `DayScheduleSchema` requires `minItems: 1` on `slots`,
+      so `slots: []` is a shape the seller could never save. Categories are set at every tier (without them the
+      category filters on `/stores` match nothing); `Ottica` has no `store_categories` counterpart and stays
+      `null` on purpose, keeping the no-category state alive. Phone numbers use the city's real dialling prefix
+      with the `555` block, websites a `*.example.com` host (RFC 2606 — never resolves, so no seed link can land
+      on someone's real site)
     - `team.ts` — `seedTeam()` creates **45 employee users** `employee1..employee45@test.com` (role `"employee"`,
       not `"seller"`), `storeEmployee` rows and store-assignments, plus **8 pending invitations**
       `pending-invite-1..8@test.com` (token `inv-test-<n>`, `expiresAt` 2099-12-31). Distribution:

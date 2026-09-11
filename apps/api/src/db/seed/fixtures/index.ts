@@ -8,6 +8,7 @@ import { seedPricingConfig } from "./pricing-config";
 import { seedProducts } from "./products";
 import { seedSellers } from "./sellers";
 import { seedStoreImages } from "./store-images";
+import { seedStoreProfiles } from "./store-profiles";
 import { seedTeam } from "./team";
 
 /**
@@ -24,6 +25,7 @@ export async function seedFixtures() {
 	await seedExtraStores();
 	await seedBillingSubscriptions();
 	await seedStoreImages();
+	await seedStoreProfiles();
 	await seedTeam();
 	const brandsBySeller = await seedBrands();
 	await seedProducts(brandsBySeller);
