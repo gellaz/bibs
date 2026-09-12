@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 2,
-	"generatedAt": "2026-09-11T13:24:36Z",
+	"generatedAt": "2026-09-11T14:11:05Z",
 	"title": "Design System: bibs",
 	"extensions": {
 		"colorMeta": {
@@ -346,6 +346,11 @@
 			{
 				"name": "The Cross-Register Ban",
 				"body": "Saffron must not appear on seller/admin chrome. Cobalt must not appear on customer brand surfaces. Each register keeps its accent; mixing them collapses the distinction the system is built on.",
+				"section": "colors"
+			},
+			{
+				"name": "The Focus Contrast Rule",
+				"body": "Saffron never carries a focus indicator on its own. Measured against the surfaces it lands on, saffron is 1.96:1 on cream and 1.85:1 on warm paper, and even saffron-deep reaches only 3.06:1 on cream and 2.89:1 on a card — under the 3:1 that WCAG 2.2 SC 1.4.11 asks of a focus indicator. Where the customer ring is saffron, an Ink border or outline (11.44:1 on cream, Cream on dusk in dark) must carry the contrast underneath it. Cobalt has no such constraint (4.76:1 on cream): on seller and admin the accent can be the whole indicator.",
 				"section": "colors"
 			},
 			{
