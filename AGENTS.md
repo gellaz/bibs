@@ -182,6 +182,8 @@ bun install
 bun run typecheck
 ```
 
+That is the targeted path for a single dependency. For a whole sweep use §4 instead — `bun update` re-resolves the catalog and raises the floors itself, so there is nothing to hand-edit.
+
 #### 3. Update workspace-specific dependencies
 
 For dependencies not in the catalog:
@@ -197,32 +199,56 @@ bun add package-name@latest
 bun add -d package-name@latest
 ```
 
-#### 4. Update all dependencies to latest (use with caution)
+#### 4. Full dependency sweep
+
+There is no update bot. Renovate was removed in #145: it cannot regenerate `bun.lock` for `catalog:` entries — neither through the regex `customManager` nor the still-unmerged native Bun catalog support ([renovate#42909](https://github.com/renovatebot/renovate/pull/42909), which explicitly leaves the lockfile to a manual `bun install`) — so every catalog PR failed `--frozen-lockfile`, while the TanStack `latest` entries were `ignoreDeps` anyway. Sweeps are on-demand and manual.
+
+Run all four steps, in order:
 
 ```bash
-# Update all to latest compatible (respects semver ranges)
-bun update
-
-# For major updates, edit package.json manually and test thoroughly
+bun outdated --filter '*'   # what is behind, across the catalog and every workspace
+bun update                  # root catalog: refreshes the `latest` tags and bumps the `^` floors
+bun update --filter '*'     # workspace-level deps — the previous step does NOT reach them
+bun outdated --filter '*'   # confirm only the intentional majors are left
 ```
 
-#### 5. Automated weekly updates (Renovate)
+**Both update passes are required.** Argument-less `bun update` only touches the root `package.json`; a dependency declared in a workspace (`packages/ui`, `apps/*`) stays at its old version with nothing printed to say so — that is how `tailwind-merge` sat a minor behind until #170. On bun ≥ 1.4 the first pass also raises the catalog's `^` floors by itself, which is what keeps floors in sync with the lockfile; editing a floor by hand is only the fallback for an entry it leaves behind.
 
-The Mend Renovate Bot (configured in `renovate.json` at the repo root) opens dependency-bump PRs every Monday morning (Europe/Rome). Non-breaking updates are processed automatically:
+Rules that bite:
 
-- **Patches and curated dev-tooling minors** (`@types/*`, `@biomejs/*`, `vite*`, `vitest*`) are auto-merged once CI is green.
-- **Other minor / all major bumps** are opened as PRs but require manual review and merge.
-- **`rangeStrategy: "bump"`** keeps caret floors in `package.json` in sync with `bun.lock` automatically, replacing the manual floor-sync pass.
-- **TanStack packages** are pinned to `latest` in the catalog and intentionally excluded (`ignoreDeps`); they appear in the Dependency Dashboard issue as a reminder for the manual SSR-checked bump (see `apps/{admin,customer,seller}` SSR verification).
-- **Catalog support** is provided by a `customManagers` regex on the root `package.json`; this can be removed once renovatebot/renovate#42909 ships native Bun catalog support.
+- **Never `bun update <package-name>`.** Bun reads the name as "add this to the root package" and injects a spurious root `dependencies` block instead of re-resolving the catalog entry (#128). To recover, delete that block and re-run `bun install`.
+- **A `latest` tag is not a hold.** It can cross a major in silence — the lock sat on `@tanstack/react-table` 8.21.3 while `latest` had already moved to 9.2.4 (#149). Every sweep, compare the `Latest` column against the locked major for each `latest`-tagged row; to actually hold a major, replace the tag with a caret floor.
+- **One major per PR.** Majors fall outside the caret ranges and stay put on their own; port them deliberately, never folded into a sweep.
+- **`@types/node` stays on `^22`.** Transitives (testcontainers, `@types/pg`, bun-types) resolve their own nested copies higher; only the catalog entry is ours.
 
-When Renovate opens a grouped PR, treat it like any other PR: the existing `ci.yml` jobs (`lint`, `typecheck`, `api-test`) gate the merge. If a bump breaks the typecheck or a frontend SSR response, close the PR or pin the offending package via `ignoreDeps` and document why in the commit.
+The three `ci.yml` jobs (`lint`, `typecheck`, `api-test`) gate the merge, but run the full set locally before opening the PR:
 
-##### Operational patterns
+```bash
+bun run lint
+for w in packages/ui packages/emails apps/api apps/admin apps/customer apps/seller; do
+  bun run --cwd "$w" typecheck || echo "FAILED: $w"
+done                        # per workspace: `--filter '*'` can swallow a single-workspace failure
+bun run test
+bun run --cwd apps/api build
+bun run db:generate         # expect "No schema changes"
+```
 
-- **Status panel.** The persistent "Dependency Dashboard" issue (auto-created by `renovate[bot]`) lists every outdated dep, every pending update, and TanStack packages under "Ignored". It is the source of truth for what Renovate sees — pin it in the repo's Issues sidebar.
-- **Major breaking PRs → defer.** When a major bump's CI fails (typecheck/lint/test red) and the porting work isn't a priority, close the PR with a short comment (e.g. `Deferred: major breaking change; revisit in a dedicated porting window`) and `--delete-branch`. Renovate does not recreate a manually-closed PR for the same target version, so the noise stays out of the way until a new major release ships.
-- **Force a run outside the Monday schedule.** Tick the **🔐 Create all awaiting schedule PRs at once 🔐** checkbox at the bottom of the Dependency Dashboard issue. Renovate reacts to the GitHub webhook within ~1 min and opens every queued PR immediately. Single-PR checkboxes higher in the issue do the same per-package.
+Any TanStack bump additionally needs the SSR smoke: a bad `@tanstack/react-start` release breaks server rendering while typecheck stays green (1.167.48 did exactly that). With `bun run dev` up:
+
+```bash
+for u in http://localhost:3001/ http://localhost:3002/login http://localhost:3003/login; do
+  curl -s -m 20 -o /tmp/ssr.html -w "$u -> %{http_code} " "$u"
+  grep -qi '<title>' /tmp/ssr.html && echo 'markup ok' || echo 'NO MARKUP'
+done
+```
+
+All three must report 200 **and** `markup ok`: a 200 carrying an error shell is not a pass, which is why the status code alone never settles it.
+
+#### 5. Security advisories
+
+GitHub Dependabot **alerts** are enabled on the repo (detection only). With no update bot left they are the only automated signal, so triage one when it arrives instead of waiting for the next sweep.
+
+Dependabot's automated security *fix* PRs are deliberately off: they would hit the wall Renovate did — a bumped manifest with a `bun.lock` nobody regenerated, failing `--frozen-lockfile`. Fix an advisory by hand, in a sweep-shaped PR.
 
 ### Adding New Dependencies
 
