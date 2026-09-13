@@ -21,13 +21,17 @@ export const storeCategoriesWriteRoutes = new Elysia()
 		async (ctx) => {
 			const { body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await createStoreCategory(body.name);
+			const data = await createStoreCategory({
+				name: body.name,
+				macroCategoryId: body.macroCategoryId,
+			});
 
 			pino.info(
 				{
 					adminId: user.id,
 					storeCategoryId: data.id,
 					storeCategoryName: data.name,
+					macroCategoryId: data.macroCategoryId,
 					action: "store_category_created",
 				},
 				"Categoria negozio creata",
@@ -41,6 +45,9 @@ export const storeCategoriesWriteRoutes = new Elysia()
 					minLength: 1,
 					maxLength: 100,
 					description: "Nome della categoria negozio",
+				}),
+				macroCategoryId: t.String({
+					description: "ID della macro categoria di appartenenza",
 				}),
 			}),
 			response: withConflictErrors({ 200: okRes(StoreCategorySchema) }),
@@ -60,6 +67,7 @@ export const storeCategoriesWriteRoutes = new Elysia()
 			const data = await updateStoreCategory({
 				categoryId: params.categoryId,
 				name: body.name,
+				macroCategoryId: body.macroCategoryId,
 			});
 
 			pino.info(
@@ -67,6 +75,7 @@ export const storeCategoriesWriteRoutes = new Elysia()
 					adminId: user.id,
 					storeCategoryId: data.id,
 					newName: data.name,
+					newMacroCategoryId: data.macroCategoryId,
 					action: "store_category_updated",
 				},
 				"Categoria negozio aggiornata",
@@ -79,16 +88,22 @@ export const storeCategoriesWriteRoutes = new Elysia()
 				categoryId: t.String({ description: "ID della categoria negozio" }),
 			}),
 			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nuovo nome della categoria negozio",
-				}),
+				name: t.Optional(
+					t.String({
+						minLength: 1,
+						maxLength: 100,
+						description: "Nuovo nome della categoria negozio",
+					}),
+				),
+				macroCategoryId: t.Optional(
+					t.String({ description: "Nuova macro categoria di appartenenza" }),
+				),
 			}),
 			response: withConflictErrors({ 200: okRes(StoreCategorySchema) }),
 			detail: {
 				summary: "Aggiorna categoria negozio",
-				description: "Aggiorna il nome di una categoria negozio esistente.",
+				description:
+					"Aggiorna nome e/o macro categoria di una categoria negozio esistente.",
 				tags: ["Admin"],
 			},
 		},

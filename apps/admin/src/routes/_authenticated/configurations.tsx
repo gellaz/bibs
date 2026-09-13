@@ -9,6 +9,7 @@ import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
 import { productCategoriesConfig } from "@/features/product-categories/product-categories.config";
 import { productMacroCategoriesConfig } from "@/features/product-macro-categories/product-macro-categories.config";
 import { storeCategoriesConfig } from "@/features/store-categories/store-categories.config";
+import { storeMacroCategoriesConfig } from "@/features/store-macro-categories/store-macro-categories.config";
 import { api } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/configurations")({
@@ -42,6 +43,11 @@ function ConfigurationsPage() {
 			value: "product-categories",
 			label: "Categorie Prodotto",
 			count: countsData?.productCategories ?? null,
+		},
+		{
+			value: "store-macro-categories",
+			label: "Macro Categorie Negozio",
+			count: countsData?.storeMacroCategories ?? null,
 		},
 		{
 			value: "store-categories",
@@ -83,6 +89,13 @@ function ConfigurationsPage() {
 			{tab === "product-categories" && (
 				<CategoryCrudPanel
 					config={productCategoriesConfig}
+					createOpen={createOpen}
+					onCreateOpenChange={setCreateOpen}
+				/>
+			)}
+			{tab === "store-macro-categories" && (
+				<CategoryCrudPanel
+					config={storeMacroCategoriesConfig}
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>

@@ -24,14 +24,19 @@ export interface StoreCardView {
 interface UseStoreSearchArgs {
 	q?: string;
 	categoryId?: string;
+	macroCategoryId?: string;
 	coords: Coords | null;
+	/** Raggio in km. Ignorato finché non c'è una posizione. */
+	radius?: number;
 	limit?: number;
 }
 
 export function useStoreSearch({
 	q,
 	categoryId,
+	macroCategoryId,
 	coords,
+	radius,
 	limit = 20,
 }: UseStoreSearchArgs) {
 	const query = useInfiniteQuery({
@@ -39,8 +44,10 @@ export function useStoreSearch({
 			"store-search",
 			q ?? "",
 			categoryId ?? "",
+			macroCategoryId ?? "",
 			coords?.lat ?? null,
 			coords?.lng ?? null,
+			radius ?? null,
 			limit,
 		],
 		staleTime: 60_000,
@@ -52,7 +59,9 @@ export function useStoreSearch({
 					limit,
 					...(q ? { q } : {}),
 					...(categoryId ? { categoryId } : {}),
+					...(macroCategoryId ? { macroCategoryId } : {}),
 					...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+					...(coords && radius ? { radius } : {}),
 				},
 			});
 			if (error) {

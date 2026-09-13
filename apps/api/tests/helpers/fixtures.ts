@@ -20,6 +20,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store, storePhoneNumber } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeImage } from "@/db/schemas/store-image";
+import { storeMacroCategory } from "@/db/schemas/store-macro-category";
 import {
 	type StoreSubscriptionStatus,
 	storeSubscription,
@@ -457,11 +458,31 @@ export async function createTestStoreSubscription(
 	return sub;
 }
 
+export async function createTestStoreMacroCategory(
+	db: DrizzleTestDb,
+	name = "Test Store Macro Category",
+) {
+	const [m] = await db
+		.insert(storeMacroCategory)
+		.values({ name })
+		.onConflictDoUpdate({
+			target: storeMacroCategory.name,
+			set: { name },
+		})
+		.returning();
+	return m;
+}
+
 export async function createTestStoreCategory(
 	db: DrizzleTestDb,
 	name = "Test Store Category",
+	macroName = "Test Store Macro Category",
 ) {
-	const [c] = await db.insert(storeCategory).values({ name }).returning();
+	const macro = await createTestStoreMacroCategory(db, macroName);
+	const [c] = await db
+		.insert(storeCategory)
+		.values({ name, macroCategoryId: macro.id })
+		.returning();
 	return c;
 }
 

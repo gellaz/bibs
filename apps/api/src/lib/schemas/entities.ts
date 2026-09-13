@@ -213,11 +213,26 @@ export const OrganizationSchema = t.Object({
 	updatedAt: t.Date(),
 });
 
+export const StoreMacroCategorySchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della macro categoria negozio" }),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
 export const StoreCategorySchema = t.Object({
 	id: t.String(),
+	macroCategoryId: t.String({
+		description: "ID della macro categoria di appartenenza",
+	}),
 	name: t.String({ description: "Nome della categoria negozio" }),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
+});
+
+export const StoreCategoryWithMacroSchema = t.Object({
+	...StoreCategorySchema.properties,
+	macroCategory: StoreMacroCategorySchema,
 });
 
 export const StoreImageSchema = t.Object({

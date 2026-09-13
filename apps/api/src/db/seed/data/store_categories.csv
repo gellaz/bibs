@@ -1,110 +1,110 @@
-name
-Abbigliamento
-Abbigliamento bambino
-Abbigliamento donna
-Abbigliamento uomo
-Accessori auto
-Accessori viaggio
-Acquari
-Alimentari
-Arredamento
-Articoli infanzia
-Articoli sportivi
-Bagno
-Biciclette
-Borse
-Bricolage
-Caccia
-Cartoleria
-Casalinghi
-Cosmetici
-Cucine
-Decorazioni casa
-Elettrodomestici
-Elettronica
-Enoteca
-Erboristeria
-Ferramenta
-Fiorista
-Fitness
-Fumetteria
-Gaming
-Garden center
-Gastronomia
-Giocattoli
-Gioielleria
-Gommista
-Hobby creativi
-Illuminazione
-Informatica
-Intimo
-Libreria
-Macelleria
-Make-up professionale
-Merceria
-Modellismo
-Moto accessori
-Negozio bio
-Negozio gadget
-Orologeria
-Outdoor
-Panetteria
-Parafarmacia
-Pasticceria
-Pelletteria
-Pesca
-Pescheria
-Pet shop
-Prodotti capelli
-Profumeria
-Ricambi auto
-Scarpe
-Second hand
-Sex shop (prodotti)
-Sigarette elettroniche
-Sneakers
-Souvenir
-Telefonia
-Utensili
-Valigeria
-Vernici
-Vintage
-Vivai
-Affittacamere
-Agenzia immobiliare
-Agenzia viaggi
-Autofficina
-Autolavaggio
-B&B
-Bar
-Barbiere
-Caffetteria
-Carrozzeria
-Centro estetico
-Centro medico
-Centro yoga
-Commercialista
-Copisteria
-Dentista
-Dog sitter
-Fisioterapia
-Fotografo
-Gelateria
-Hotel
-Ludoteca
-Massaggi
-Nail salon
-Noleggio auto
-Palestra
-Parrucchiere
-Pilates
-Pizzeria
-Pub
-Riparazione PC
-Riparazione smartphone
-Ristorante
-Spa
-Tipografia
-Toelettatura animali
-Trattamenti viso
-Veterinario
+macro_category,name
+Alimentari,Alimentari
+Alimentari,Enoteca
+Alimentari,Gastronomia
+Alimentari,Macelleria
+Alimentari,Negozio bio
+Alimentari,Panetteria
+Alimentari,Pasticceria
+Alimentari,Pescheria
+Altro,Sex shop (prodotti)
+Animali,Acquari
+Animali,Dog sitter
+Animali,Pet shop
+Animali,Toelettatura animali
+Animali,Veterinario
+Auto e moto,Accessori auto
+Auto e moto,Autofficina
+Auto e moto,Autolavaggio
+Auto e moto,Carrozzeria
+Auto e moto,Gommista
+Auto e moto,Moto accessori
+Auto e moto,Noleggio auto
+Auto e moto,Ricambi auto
+Bellezza e benessere,Barbiere
+Bellezza e benessere,Centro estetico
+Bellezza e benessere,Cosmetici
+Bellezza e benessere,Make-up professionale
+Bellezza e benessere,Massaggi
+Bellezza e benessere,Nail salon
+Bellezza e benessere,Parrucchiere
+Bellezza e benessere,Prodotti capelli
+Bellezza e benessere,Profumeria
+Bellezza e benessere,Spa
+Bellezza e benessere,Trattamenti viso
+Casa e arredamento,Arredamento
+Casa e arredamento,Bagno
+Casa e arredamento,Casalinghi
+Casa e arredamento,Cucine
+Casa e arredamento,Decorazioni casa
+Casa e arredamento,Elettrodomestici
+Casa e arredamento,Illuminazione
+Elettronica e telefonia,Elettronica
+Elettronica e telefonia,Gaming
+Elettronica e telefonia,Informatica
+Elettronica e telefonia,Riparazione PC
+Elettronica e telefonia,Riparazione smartphone
+Elettronica e telefonia,Sigarette elettroniche
+Elettronica e telefonia,Telefonia
+Fai da te e giardino,Bricolage
+Fai da te e giardino,Ferramenta
+Fai da te e giardino,Fiorista
+Fai da te e giardino,Garden center
+Fai da te e giardino,Utensili
+Fai da te e giardino,Vernici
+Fai da te e giardino,Vivai
+Infanzia e giocattoli,Articoli infanzia
+Infanzia e giocattoli,Giocattoli
+Infanzia e giocattoli,Ludoteca
+Libri e hobby,Cartoleria
+Libri e hobby,Fumetteria
+Libri e hobby,Hobby creativi
+Libri e hobby,Libreria
+Libri e hobby,Modellismo
+Libri e hobby,Negozio gadget
+Libri e hobby,Souvenir
+Moda e accessori,Abbigliamento
+Moda e accessori,Abbigliamento bambino
+Moda e accessori,Abbigliamento donna
+Moda e accessori,Abbigliamento uomo
+Moda e accessori,Accessori viaggio
+Moda e accessori,Borse
+Moda e accessori,Gioielleria
+Moda e accessori,Intimo
+Moda e accessori,Merceria
+Moda e accessori,Orologeria
+Moda e accessori,Pelletteria
+Moda e accessori,Scarpe
+Moda e accessori,Second hand
+Moda e accessori,Sneakers
+Moda e accessori,Valigeria
+Moda e accessori,Vintage
+Ospitalità e viaggi,Affittacamere
+Ospitalità e viaggi,Agenzia viaggi
+Ospitalità e viaggi,B&B
+Ospitalità e viaggi,Hotel
+Ristorazione e locali,Bar
+Ristorazione e locali,Caffetteria
+Ristorazione e locali,Gelateria
+Ristorazione e locali,Pizzeria
+Ristorazione e locali,Pub
+Ristorazione e locali,Ristorante
+Salute,Centro medico
+Salute,Dentista
+Salute,Erboristeria
+Salute,Fisioterapia
+Salute,Parafarmacia
+Servizi,Agenzia immobiliare
+Servizi,Commercialista
+Servizi,Copisteria
+Servizi,Fotografo
+Servizi,Tipografia
+Sport e tempo libero,Articoli sportivi
+Sport e tempo libero,Biciclette
+Sport e tempo libero,Caccia
+Sport e tempo libero,Centro yoga
+Sport e tempo libero,Fitness
+Sport e tempo libero,Outdoor
+Sport e tempo libero,Palestra
+Sport e tempo libero,Pesca
+Sport e tempo libero,Pilates

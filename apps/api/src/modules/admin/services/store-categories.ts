@@ -4,29 +4,65 @@ import { storeCategory } from "@/db/schemas/store-category";
 import { ServiceError } from "@/lib/errors";
 import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
-export async function listStoreCategories(params: ListByNameParams) {
-	return listByNamePaged(storeCategory, params, (opts) =>
-		db.query.storeCategory.findMany(opts),
+interface ListStoreCategoriesParams extends ListByNameParams {
+	macroCategoryId?: string;
+}
+
+export async function listStoreCategories(params: ListStoreCategoriesParams) {
+	return listByNamePaged(
+		storeCategory,
+		params,
+		(opts) =>
+			db.query.storeCategory.findMany({
+				...opts,
+				with: { macroCategory: true },
+			}),
+		[
+			params.macroCategoryId
+				? eq(storeCategory.macroCategoryId, params.macroCategoryId)
+				: undefined,
+		],
 	);
 }
 
-export async function createStoreCategory(name: string) {
-	const [created] = await db.insert(storeCategory).values({ name }).returning();
+interface CreateStoreCategoryParams {
+	name: string;
+	macroCategoryId: string;
+}
+
+export async function createStoreCategory(params: CreateStoreCategoryParams) {
+	const [created] = await db
+		.insert(storeCategory)
+		.values({ name: params.name, macroCategoryId: params.macroCategoryId })
+		.returning();
 
 	return created;
 }
 
 interface UpdateStoreCategoryParams {
 	categoryId: string;
-	name: string;
+	name?: string;
+	macroCategoryId?: string;
 }
 
 export async function updateStoreCategory(params: UpdateStoreCategoryParams) {
-	const { categoryId, name } = params;
+	const { categoryId, name, macroCategoryId } = params;
+
+	const set: { name?: string; macroCategoryId?: string } = {};
+	if (name !== undefined) set.name = name;
+	if (macroCategoryId !== undefined) set.macroCategoryId = macroCategoryId;
+
+	if (Object.keys(set).length === 0) {
+		const existing = await db.query.storeCategory.findFirst({
+			where: eq(storeCategory.id, categoryId),
+		});
+		if (!existing) throw new ServiceError(404, "Store category not found");
+		return existing;
+	}
 
 	const [updated] = await db
 		.update(storeCategory)
-		.set({ name })
+		.set(set)
 		.where(eq(storeCategory.id, categoryId))
 		.returning();
 

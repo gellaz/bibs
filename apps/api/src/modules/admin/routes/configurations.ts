@@ -22,13 +22,16 @@ export const configurationsRoutes = new Elysia().get(
 					storeCategories: t.Number({
 						description: "Numero totale di categorie negozio",
 					}),
+					storeMacroCategories: t.Number({
+						description: "Numero totale di macro categorie negozio",
+					}),
 				}),
 			),
 		}),
 		detail: {
 			summary: "Contatori configurazioni",
 			description:
-				"Restituisce il numero totale di macro categorie prodotto, sotto-categorie prodotto e categorie negozio.",
+				"Restituisce il numero totale di macro categorie e categorie, prodotto e negozio.",
 			tags: ["Admin"],
 		},
 	},

@@ -26,6 +26,7 @@ import { count, eq } from "drizzle-orm";
 import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { storeCategory } from "@/db/schemas/store-category";
+import { storeMacroCategory } from "@/db/schemas/store-macro-category";
 import { ServiceError } from "@/lib/errors";
 import {
 	importProductCategoriesFromCsv,
@@ -35,10 +36,15 @@ import {
 	createProductMacroCategory,
 	deleteProductMacroCategory,
 } from "@/modules/admin/services/product-macro-categories";
+import {
+	createStoreMacroCategory,
+	deleteStoreMacroCategory,
+} from "@/modules/admin/services/store-macro-categories";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCategory,
 	createTestMacroCategory,
+	createTestStoreCategory,
 } from "../helpers/fixtures";
 
 beforeAll(async () => {
@@ -180,22 +186,69 @@ describe("importProductCategoriesFromCsv", () => {
 // ── importStoreCategoriesFromCsv ──────────────────────────────────────────────
 
 describe("importStoreCategoriesFromCsv", () => {
-	it("creates new store categories from CSV", async () => {
-		const csv = ["name", "Ristorante", "Barbiere", "Bar"].join("\n");
+	it("creates macros and store categories from CSV", async () => {
+		const csv = [
+			"macro_category,name",
+			"Ristorazione e locali,Ristorante",
+			"Ristorazione e locali,Bar",
+			"Bellezza e benessere,Barbiere",
+		].join("\n");
 
 		const result = await importStoreCategoriesFromCsv(csv);
 
 		expect(result.failed).toBe(0);
-		expect(result.created).toBe(3);
+		// 2 macro + 3 categorie
+		expect(result.created).toBe(5);
 		expect(result.skipped).toBe(0);
 
 		const db = getTestDb();
 		const [{ total }] = await db.select({ total: count() }).from(storeCategory);
+		const [{ macroTotal }] = await db
+			.select({ macroTotal: count() })
+			.from(storeMacroCategory);
 		expect(total).toBe(3);
+		expect(macroTotal).toBe(2);
+	});
+
+	it("attaches each category to the macro named in its row", async () => {
+		const csv = [
+			"macro_category,name",
+			"Alimentari,Panetteria",
+			"Moda e accessori,Scarpe",
+		].join("\n");
+
+		await importStoreCategoriesFromCsv(csv);
+
+		const db = getTestDb();
+		const panetteria = await db.query.storeCategory.findFirst({
+			where: eq(storeCategory.name, "Panetteria"),
+			with: { macroCategory: true },
+		});
+		expect(panetteria?.macroCategory.name).toBe("Alimentari");
+	});
+
+	it("reuses an existing macro instead of duplicating it", async () => {
+		await createStoreMacroCategory("Alimentari");
+
+		const csv = ["macro_category,name", "Alimentari,Panetteria"].join("\n");
+		const result = await importStoreCategoriesFromCsv(csv);
+
+		// solo la categoria: la macro c'era già
+		expect(result.created).toBe(1);
+
+		const db = getTestDb();
+		const [{ macroTotal }] = await db
+			.select({ macroTotal: count() })
+			.from(storeMacroCategory);
+		expect(macroTotal).toBe(1);
 	});
 
 	it("is idempotent", async () => {
-		const csv = ["name", "Ristorante", "Barbiere"].join("\n");
+		const csv = [
+			"macro_category,name",
+			"Ristorazione e locali,Ristorante",
+			"Bellezza e benessere,Barbiere",
+		].join("\n");
 
 		await importStoreCategoriesFromCsv(csv);
 		const second = await importStoreCategoriesFromCsv(csv);
@@ -205,42 +258,113 @@ describe("importStoreCategoriesFromCsv", () => {
 	});
 
 	it("rejects CSV without `name` header", async () => {
-		await expect(importStoreCategoriesFromCsv("foo\nx")).rejects.toThrow(
+		await expect(
+			importStoreCategoriesFromCsv("macro_category\nAlimentari"),
+		).rejects.toThrow(ServiceError);
+	});
+
+	it("rejects CSV without `macro_category` header", async () => {
+		await expect(importStoreCategoriesFromCsv("name\nBar")).rejects.toThrow(
 			ServiceError,
 		);
 	});
 
+	it("reports a row-level error for a missing macro_category", async () => {
+		const csv = ["macro_category,name", ",Ristorante", "Alimentari,Bar"].join(
+			"\n",
+		);
+
+		const result = await importStoreCategoriesFromCsv(csv);
+
+		expect(result.failed).toBe(1);
+		expect(result.errors[0].row).toBe(2);
+		// 1 macro + 1 categoria: la riga rotta non blocca le altre
+		expect(result.created).toBe(2);
+	});
+
 	it("dedupes identical rows within the same CSV (case-insensitive)", async () => {
 		const csv = [
-			"name",
-			"Ristorante",
-			"ristorante",
-			"RISTORANTE",
-			"Barbiere",
+			"macro_category,name",
+			"Ristorazione e locali,Ristorante",
+			"Ristorazione e locali,ristorante",
+			"Ristorazione e locali,RISTORANTE",
+			"Bellezza e benessere,Barbiere",
 		].join("\n");
 
 		const result = await importStoreCategoriesFromCsv(csv);
 
 		expect(result.failed).toBe(0);
-		expect(result.created).toBe(2);
+		// 2 macro + 2 categorie
+		expect(result.created).toBe(4);
 		expect(result.skipped).toBe(2);
 	});
 
 	it("reports row-level error for whitespace-only quoted name", async () => {
-		const csv = ["name", "Ristorante", '"   "', "Barbiere"].join("\n");
+		const csv = [
+			"macro_category,name",
+			"Ristorazione e locali,Ristorante",
+			'Bellezza e benessere,"   "',
+			"Bellezza e benessere,Barbiere",
+		].join("\n");
 
 		const result = await importStoreCategoriesFromCsv(csv);
 
 		expect(result.failed).toBe(1);
 		expect(result.errors[0].row).toBe(3);
-		expect(result.created).toBe(2);
+		// 2 macro + 2 categorie
+		expect(result.created).toBe(4);
 	});
 
 	it("imports a quoted multi-line name without misaligning following rows", async () => {
-		const csv = ["name", '"Casa\ne Giardino"', "Barbiere"].join("\n");
+		const csv = [
+			"macro_category,name",
+			'Casa e arredamento,"Casa\ne Giardino"',
+			"Bellezza e benessere,Barbiere",
+		].join("\n");
 		const result = await importStoreCategoriesFromCsv(csv);
-		expect(result.created).toBe(2);
+		// 2 macro + 2 categorie
+		expect(result.created).toBe(4);
 		expect(result.failed).toBe(0);
+	});
+});
+
+// ── deleteStoreMacroCategory (RESTRICT) ───────────────────────────────────────
+
+describe("deleteStoreMacroCategory", () => {
+	it("deletes a macro with no categories attached", async () => {
+		const macro = await createStoreMacroCategory("Solo negozio");
+
+		const deleted = await deleteStoreMacroCategory(macro.id);
+
+		expect(deleted.id).toBe(macro.id);
+		const db = getTestDb();
+		const remaining = await db.query.storeMacroCategory.findFirst({
+			where: eq(storeMacroCategory.id, macro.id),
+		});
+		expect(remaining).toBeUndefined();
+	});
+
+	it("rejects delete when categories are still attached", async () => {
+		const db = getTestDb();
+		await createTestStoreCategory(db, "Panetteria", "Alimentari");
+		const macro = await db.query.storeMacroCategory.findFirst({
+			where: eq(storeMacroCategory.name, "Alimentari"),
+		});
+
+		await expect(
+			deleteStoreMacroCategory(macro?.id ?? ""),
+		).rejects.toMatchObject({ status: 409 });
+
+		const stillThere = await db.query.storeMacroCategory.findFirst({
+			where: eq(storeMacroCategory.id, macro?.id ?? ""),
+		});
+		expect(stillThere).toBeDefined();
+	});
+
+	it("returns 404 when the macro does not exist", async () => {
+		await expect(
+			deleteStoreMacroCategory("non-existent-id"),
+		).rejects.toMatchObject({ status: 404 });
 	});
 });
 
