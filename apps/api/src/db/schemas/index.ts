@@ -25,5 +25,6 @@ export * from "./store";
 export * from "./store-category";
 export * from "./store-holiday-optout";
 export * from "./store-image";
+export * from "./store-macro-category";
 export * from "./store-subscription";
 export * from "./stripe-event";

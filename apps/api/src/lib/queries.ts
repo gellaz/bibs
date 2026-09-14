@@ -103,6 +103,12 @@ export const StoreSearchQuery = t.Object({
 	categoryId: t.Optional(
 		t.String({ description: "Filtra per ID categoria negozio" }),
 	),
+	macroCategoryId: t.Optional(
+		t.String({
+			description:
+				"Filtra per ID macro categoria negozio. Ignorato se `categoryId` è presente: la categoria è già dentro la sua macro.",
+		}),
+	),
 	lat: t.Optional(
 		t.Number({ minimum: -90, maximum: 90, description: "Latitudine utente" }),
 	),

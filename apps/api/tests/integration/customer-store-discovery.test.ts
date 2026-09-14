@@ -23,6 +23,7 @@ mock.module("@/db", () => ({
 }));
 
 import { searchStores } from "@/modules/customer/services/store-discovery";
+import { getStoreFacets } from "@/modules/customer/services/store-facets";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestMunicipalityNamed,
@@ -214,6 +215,167 @@ describe("searchStores — category filter", () => {
 
 		const result = await searchStores({ categoryId: libreria.id });
 		expect(result.data.map((s) => s.name)).toEqual(["Libri & Co"]);
+	});
+});
+
+describe("searchStores — macro category filter", () => {
+	it("returns every store under the macro, across its categories", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		const fumetteria = await createTestStoreCategory(
+			db,
+			"Fumetteria",
+			"Cultura",
+		);
+		const panificio = await createTestStoreCategory(
+			db,
+			"Panificio",
+			"Alimentari",
+		);
+		await visibleStore(profile.id, { name: "Libri", categoryId: libreria.id });
+		await visibleStore(profile.id, {
+			name: "Bolle",
+			categoryId: fumetteria.id,
+		});
+		await visibleStore(profile.id, { name: "Pane", categoryId: panificio.id });
+
+		const result = await searchStores({
+			macroCategoryId: libreria.macroCategoryId,
+		});
+		expect(result.data.map((s) => s.name).sort()).toEqual(["Bolle", "Libri"]);
+	});
+
+	it("lets categoryId win over macroCategoryId", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		const fumetteria = await createTestStoreCategory(
+			db,
+			"Fumetteria",
+			"Cultura",
+		);
+		await visibleStore(profile.id, { name: "Libri", categoryId: libreria.id });
+		await visibleStore(profile.id, {
+			name: "Bolle",
+			categoryId: fumetteria.id,
+		});
+
+		const result = await searchStores({
+			categoryId: libreria.id,
+			macroCategoryId: libreria.macroCategoryId,
+		});
+		expect(result.data.map((s) => s.name)).toEqual(["Libri"]);
+	});
+});
+
+describe("getStoreFacets", () => {
+	it("counts stores per macro and per category", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		const fumetteria = await createTestStoreCategory(
+			db,
+			"Fumetteria",
+			"Cultura",
+		);
+		await visibleStore(profile.id, { name: "Libri", categoryId: libreria.id });
+		await visibleStore(profile.id, { name: "Altri", categoryId: libreria.id });
+		await visibleStore(profile.id, {
+			name: "Bolle",
+			categoryId: fumetteria.id,
+		});
+
+		const facets = await getStoreFacets({});
+
+		expect(facets.total).toBe(3);
+		expect(facets.macros).toHaveLength(1);
+		expect(facets.macros[0].name).toBe("Cultura");
+		expect(facets.macros[0].storeCount).toBe(3);
+		expect(
+			facets.macros[0].categories.map((c) => [c.name, c.storeCount]),
+		).toEqual([
+			["Fumetteria", 1],
+			["Libreria", 2],
+		]);
+	});
+
+	it("omits macros with no matching stores", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		// Una macro senza negozi non deve comparire: sarebbe un filtro che
+		// garantisce "nessun risultato".
+		await createTestStoreCategory(db, "Panificio", "Alimentari");
+		await visibleStore(profile.id, { name: "Libri", categoryId: libreria.id });
+
+		const facets = await getStoreFacets({});
+
+		expect(facets.macros.map((mc) => mc.name)).toEqual(["Cultura"]);
+	});
+
+	it("narrows the counts with the text query", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		await visibleStore(profile.id, {
+			name: "Libri Rari",
+			categoryId: libreria.id,
+		});
+		await visibleStore(profile.id, {
+			name: "Altra Bottega",
+			categoryId: libreria.id,
+		});
+
+		const facets = await getStoreFacets({ q: "Libri" });
+
+		expect(facets.total).toBe(1);
+		expect(facets.macros[0].storeCount).toBe(1);
+	});
+
+	it("narrows the counts with the radius", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		await visibleStore(profile.id, {
+			name: "Vicino",
+			categoryId: libreria.id,
+			...ROME,
+		});
+		await visibleStore(profile.id, {
+			name: "Lontano",
+			categoryId: libreria.id,
+			...MILAN,
+		});
+
+		const facets = await getStoreFacets({
+			lat: ROME.lat,
+			lng: ROME.lng,
+			radius: 50,
+		});
+
+		expect(facets.total).toBe(1);
+		expect(facets.macros[0].categories[0].storeCount).toBe(1);
+	});
+
+	it("excludes stores that are not publicly visible", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		await visibleStore(profile.id, {
+			name: "Visibile",
+			categoryId: libreria.id,
+		});
+		// Nessun abbonamento attivo: fuori dalla ricerca, quindi fuori dai conteggi.
+		await createTestStore(db, profile.id, {
+			name: "Invisibile",
+			categoryId: libreria.id,
+		});
+
+		const facets = await getStoreFacets({});
+
+		expect(facets.total).toBe(1);
+		expect(facets.macros[0].storeCount).toBe(1);
 	});
 });
 

@@ -16,6 +16,7 @@ import { publiclyVisibleStore } from "@/lib/store-visibility";
 interface StoreSearchParams {
 	q?: string;
 	categoryId?: string;
+	macroCategoryId?: string;
 	lat?: number;
 	lng?: number;
 	radius?: number;
@@ -35,7 +36,7 @@ export interface StoreCard {
 }
 
 export async function searchStores(params: StoreSearchParams) {
-	const { q, categoryId, lat, lng, radius } = params;
+	const { q, categoryId, macroCategoryId, lat, lng, radius } = params;
 	const { page, limit, offset } = parsePagination(params);
 	const hasGeo = lat !== undefined && lng !== undefined;
 
@@ -46,8 +47,18 @@ export async function searchStores(params: StoreSearchParams) {
 			sql`(${store.name} ILIKE ${`%${q}%`} OR ${municipality.name} ILIKE ${`%${q}%`})`,
 		);
 	}
+	// `categoryId` wins over `macroCategoryId`: a leaf already sits inside its
+	// macro, so applying both would only ever narrow to the same set.
 	if (categoryId) {
 		conditions.push(sql`${store.categoryId} = ${categoryId}`);
+	} else if (macroCategoryId) {
+		conditions.push(
+			sql`EXISTS (
+				SELECT 1 FROM ${storeCategory} sc
+				WHERE sc.id = stores.category_id
+					AND sc.macro_category_id = ${macroCategoryId}
+			)`,
+		);
 	}
 	if (hasGeo && radius !== undefined) {
 		conditions.push(

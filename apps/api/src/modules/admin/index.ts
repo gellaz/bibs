@@ -10,6 +10,7 @@ import { productMacroCategoriesWriteRoutes } from "./routes/product-macro-catego
 import { sellerChangesRoutes } from "./routes/seller-changes";
 import { sellersRoutes } from "./routes/sellers";
 import { storeCategoriesWriteRoutes } from "./routes/store-categories";
+import { storeMacroCategoriesWriteRoutes } from "./routes/store-macro-categories";
 
 export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.use(betterAuth)
@@ -30,6 +31,7 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				.use(productMacroCategoriesWriteRoutes)
 				.use(productCategoriesWriteRoutes)
 				.use(configurationsRoutes)
+				.use(storeMacroCategoriesWriteRoutes)
 				.use(storeCategoriesWriteRoutes)
 				.use(holidayDefinitionsRoutes)
 				.use(categoryImportsRoutes)

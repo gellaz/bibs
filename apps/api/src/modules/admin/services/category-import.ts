@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { storeCategory } from "@/db/schemas/store-category";
+import { storeMacroCategory } from "@/db/schemas/store-macro-category";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
 
@@ -18,7 +19,7 @@ export interface CategoryImportResult {
 }
 
 const PRODUCT_HEADERS = ["macro_category", "subcategory"];
-const STORE_HEADERS = ["name"];
+const STORE_HEADERS = ["macro_category", "name"];
 
 function assertHeaders(actual: string[], expected: string[]) {
 	for (const h of expected) {
@@ -177,7 +178,7 @@ export async function importProductCategoriesFromCsv(
 }
 
 // ────────────────────────────────────────────
-// Store categories (flat)
+// Store categories (macro + sub)
 // ────────────────────────────────────────────
 
 export async function importStoreCategoriesFromCsv(
@@ -190,48 +191,97 @@ export async function importStoreCategoriesFromCsv(
 		throw new ServiceError(400, "CSV file contains no data rows");
 	}
 
+	const macroIdx = headers.indexOf("macro_category");
 	const nameIdx = headers.indexOf("name");
 
-	const existing = await db.query.storeCategory.findMany({
-		columns: { id: true, name: true },
-	});
-	const existingNames = new Set(existing.map((c) => c.name.toLowerCase()));
+	const [existingMacros, existingSubs] = await Promise.all([
+		db.query.storeMacroCategory.findMany({ columns: { id: true, name: true } }),
+		db.query.storeCategory.findMany({ columns: { id: true, name: true } }),
+	]);
+
+	const macroByName = new Map(
+		existingMacros.map((m) => [m.name.toLowerCase(), m]),
+	);
+	// Unlike product sub-categories, a store category name is globally unique:
+	// the same name cannot live under two macros.
+	const existingNames = new Set(existingSubs.map((c) => c.name.toLowerCase()));
 
 	const errors: ImportError[] = [];
-	const toCreate = new Map<string, string>(); // lowercase → original
+	const macrosToCreate = new Map<string, string>(); // lowercase → original
+	const pendingSubs = new Map<
+		string,
+		{ macroNameLower: string; name: string }
+	>();
 	let skipped = 0;
 
 	for (let i = 0; i < rows.length; i++) {
 		const row = rows[i];
-		const rowNum = i + 2;
+		const rowNum = i + 2; // 1-indexed + header
 
+		const macroName = (row[macroIdx] ?? "").trim();
 		const name = (row[nameIdx] ?? "").trim();
 
+		if (!macroName) {
+			errors.push({ row: rowNum, message: "Missing macro_category" });
+			continue;
+		}
 		if (!name) {
 			errors.push({ row: rowNum, message: "Missing name" });
 			continue;
 		}
 
-		const nameLower = name.toLowerCase();
+		const macroLower = macroName.toLowerCase();
+		if (!macroByName.has(macroLower) && !macrosToCreate.has(macroLower)) {
+			macrosToCreate.set(macroLower, macroName);
+		}
 
-		if (existingNames.has(nameLower)) {
-			skipped++;
-		} else if (toCreate.has(nameLower)) {
+		const nameLower = name.toLowerCase();
+		if (existingNames.has(nameLower) || pendingSubs.has(nameLower)) {
 			skipped++;
 		} else {
-			toCreate.set(nameLower, name);
+			pendingSubs.set(nameLower, { macroNameLower: macroLower, name });
 		}
 	}
 
 	let created = 0;
 
-	if (toCreate.size > 0) {
+	if (macrosToCreate.size > 0 || pendingSubs.size > 0) {
 		await db.transaction(async (tx) => {
-			const inserted = await tx
-				.insert(storeCategory)
-				.values(Array.from(toCreate.values()).map((name) => ({ name })))
-				.returning({ id: storeCategory.id });
-			created = inserted.length;
+			if (macrosToCreate.size > 0) {
+				const inserted = await tx
+					.insert(storeMacroCategory)
+					.values(Array.from(macrosToCreate.values()).map((name) => ({ name })))
+					.returning({
+						id: storeMacroCategory.id,
+						name: storeMacroCategory.name,
+					});
+
+				created += inserted.length;
+
+				for (const m of inserted) {
+					macroByName.set(m.name.toLowerCase(), { id: m.id, name: m.name });
+				}
+			}
+
+			if (pendingSubs.size > 0) {
+				const subValues = Array.from(pendingSubs.values()).map((p) => {
+					const macro = macroByName.get(p.macroNameLower);
+					if (!macro) {
+						throw new ServiceError(
+							500,
+							`Store macro category "${p.macroNameLower}" lookup failed after insert`,
+						);
+					}
+					return { macroCategoryId: macro.id, name: p.name };
+				});
+
+				const inserted = await tx
+					.insert(storeCategory)
+					.values(subValues)
+					.returning({ id: storeCategory.id });
+
+				created += inserted.length;
+			}
 		});
 	}
 

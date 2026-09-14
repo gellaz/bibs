@@ -176,3 +176,28 @@ export const SellerProfileChangeWithSellerSchema = t.Object({
 		organization: t.Nullable(OrganizationSchema),
 	}),
 });
+
+// ── Customer: facet di ricerca negozi (sidebar filtri) ─────
+const StoreCategoryFacetSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della categoria negozio" }),
+	storeCount: t.Number({
+		description: "Negozi che restano applicando questa categoria",
+	}),
+});
+
+export const StoreFacetsSchema = t.Object({
+	total: t.Number({
+		description: "Negozi che corrispondono a testo e raggio, senza categoria",
+	}),
+	macros: t.Array(
+		t.Object({
+			id: t.String(),
+			name: t.String({ description: "Nome della macro categoria" }),
+			storeCount: t.Number({
+				description: "Negozi che restano applicando questa macro",
+			}),
+			categories: t.Array(StoreCategoryFacetSchema),
+		}),
+	),
+});

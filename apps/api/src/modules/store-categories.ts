@@ -1,8 +1,21 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { CategoryListQuery } from "@/lib/queries";
 import { okPage } from "@/lib/responses";
-import { okPageRes, StoreCategorySchema, withErrors } from "@/lib/schemas";
+import {
+	okPageRes,
+	StoreCategoryWithMacroSchema,
+	withErrors,
+} from "@/lib/schemas";
 import { listStoreCategories } from "./admin/services/store-categories";
+
+const StoreCategoryListQuery = t.Composite([
+	CategoryListQuery,
+	t.Object({
+		macroCategoryId: t.Optional(
+			t.String({ description: "Filtra per ID della macro categoria" }),
+		),
+	}),
+]);
 
 export const storeCategoriesModule = new Elysia().get(
 	"/store-categories",
@@ -11,12 +24,12 @@ export const storeCategoriesModule = new Elysia().get(
 		return okPage(result.data, result.pagination);
 	},
 	{
-		query: CategoryListQuery,
-		response: withErrors({ 200: okPageRes(StoreCategorySchema) }),
+		query: StoreCategoryListQuery,
+		response: withErrors({ 200: okPageRes(StoreCategoryWithMacroSchema) }),
 		detail: {
 			summary: "Lista categorie negozio",
 			description:
-				"Restituisce la lista paginata di tutte le categorie negozio.",
+				"Restituisce la lista paginata delle categorie negozio con la macro categoria di appartenenza.",
 			tags: ["Store Categories"],
 		},
 	},

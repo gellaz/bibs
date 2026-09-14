@@ -8,11 +8,13 @@ import {
 	okRes,
 	StoreCardSchema,
 	StoreDetailSchema,
+	StoreFacetsSchema,
 	StoreProductCardSchema,
 	withErrors,
 } from "@/lib/schemas";
 import { getStoreDetail } from "../services/store-detail";
 import { searchStores } from "../services/store-discovery";
+import { getStoreFacets } from "../services/store-facets";
 import { getStoreProducts } from "../services/store-products";
 
 export const storesRoutes = new Elysia()
@@ -25,7 +27,9 @@ export const storesRoutes = new Elysia()
 				{
 					searchQuery: query.q,
 					categoryId: query.categoryId,
+					macroCategoryId: query.macroCategoryId,
 					hasGeoFilter: !!(query.lat && query.lng),
+					radius: query.radius,
 					resultCount: result.data.length,
 					action: "store_search",
 				},
@@ -40,6 +44,39 @@ export const storesRoutes = new Elysia()
 				summary: "Ricerca negozi",
 				description:
 					"Ricerca pubblica di negozi per vicinanza (PostGIS) con ricerca testuale opzionale su nome e comune. Senza testo restituisce tutti i negozi visibili. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		},
+	)
+	.get(
+		"/stores/facets",
+		async ({ query, store }) => {
+			const pino = getLogger(store);
+			const facets = await getStoreFacets(query);
+			pino.info(
+				{
+					searchQuery: query.q,
+					hasGeoFilter: !!(query.lat && query.lng),
+					radius: query.radius,
+					macroCount: facets.macros.length,
+					action: "store_facets",
+				},
+				"Facet di ricerca negozi richiesti",
+			);
+			return ok(facets);
+		},
+		{
+			query: t.Omit(StoreSearchQuery, [
+				"page",
+				"limit",
+				"categoryId",
+				"macroCategoryId",
+			]),
+			response: withErrors({ 200: okRes(StoreFacetsSchema) }),
+			detail: {
+				summary: "Facet di ricerca negozi",
+				description:
+					"Conteggi per macro categoria e categoria sui negozi che corrispondono a testo e raggio. Le categorie senza negozi non vengono restituite. Non richiede autenticazione.",
 				tags: ["Customer - Search"],
 			},
 		},
