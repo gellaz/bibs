@@ -133,17 +133,19 @@ oggi. Un terzo consumatore è il momento di estrarre:
 
 ```ts
 // services/store-search-conditions.ts
-export async function storeSearchConditions(params: {
+export function storeFilterConditions(params: {
   q?: string; categoryId?: string; macroCategoryId?: string;
-  lat?: number; lng?: number; radius?: number; openNow?: boolean;
-}): Promise<ReturnType<typeof sql>[]>
+  lat?: number; lng?: number; radius?: number;
+}): ReturnType<typeof sql>[]
 ```
 
-È `async` perché `openNowCondition()` lo è
-(`apps/api/src/lib/store-open-status.ts:119`). I facet continuano a chiamarla
-**senza** `categoryId`/`macroCategoryId` — è la loro regola, non un dettaglio da
-travasare nell'helper: un facet che applicasse la categoria selezionata
-mostrerebbe solo il ramo aperto.
+`openNow` resta **fuori** dall'helper, che così è sincrono: i facet hanno
+bisogno di `openNowCondition()` come pezzo separato per contare "quanti
+sarebbero aperti" a filtro spento (`store-facets.ts:71`), quindi ogni chiamante
+la compone come gli serve. Allo stesso modo i facet continuano a non passare
+`categoryId`/`macroCategoryId` — è la loro regola, non un dettaglio da travasare
+nell'helper: un facet che applicasse la categoria selezionata mostrerebbe solo
+il ramo aperto.
 
 Nessuna factory generica sopra le route Elysia: l'estrazione è un helper di
 servizio, che è esattamente il caso permesso
@@ -210,12 +212,13 @@ DOM-only e un import statico in una route SSR dà `window is not defined`
   del pin: il default di markercluster è un cerchio verde che non appartiene a
   questa interfaccia. Il CSS del plugin va importato nel componente, accanto a
   `leaflet/dist/leaflet.css`.
-- `pinIcon` esce da `store-map.tsx:7` in `features/stores/store-pin-icon.ts` e
+- `pinIcon` esce da `store-map.tsx:7` in `features/stores/map-shared.ts` e
   viene usato da entrambe le mappe. Resta un `divIcon` con SVG inline: è ciò che
   permette a `var(--saffron)` di risolversi nel documento e restare theme-aware.
-- `KeepSizeInSync` (`store-map.tsx:19`) si sposta nello stesso modulo
-  condiviso: anche qui la larghezza cambia col breakpoint e senza
-  `invalidateSize()` restano tile della misura vecchia.
+- `KeepSizeInSync` (`store-map.tsx:19`) si sposta nello stesso `map-shared.ts`
+  (usa hook e restituisce `null`, quindi non serve JSX): anche qui la larghezza
+  cambia col breakpoint e senza `invalidateSize()` restano tile della misura
+  vecchia.
 - Altezza: `h-[26rem] sm:h-[32rem] lg:h-[calc(100dvh-16rem)]` con un `min-h`.
   Su desktop la mappa riempie la finestra senza far scrollare la pagina; su
   mobile resta una superficie alta ma non infinita, sotto la riga dei risultati.
