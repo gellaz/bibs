@@ -119,6 +119,8 @@ function StoresPage() {
 
 	const facets = useStoreFacets({ q, coords, radius, openNow });
 
+	const isMap = view === "map";
+
 	const {
 		stores,
 		total,
@@ -135,9 +137,10 @@ function StoresPage() {
 		coords,
 		radius,
 		openNow,
+		// In mappa la lista non è mostrata: niente pagina di risultati da
+		// scaricare a ogni cambio filtro, la mappa ha già la sua query.
+		enabled: !isMap,
 	});
-
-	const isMap = view === "map";
 
 	const map = useStoreMap({
 		q,
@@ -148,6 +151,11 @@ function StoresPage() {
 		openNow,
 		enabled: isMap,
 	});
+
+	// In vista mappa il numero autorevole è quello della query mappa: la lista è
+	// spenta, e i suoi `total`/`isPending` resterebbero fermi a 0/true per sempre.
+	const resultsTotal = isMap ? map.total : total;
+	const resultsPending = isMap ? map.isPending : isPending;
 
 	// Leaflet è DOM-only: la mappa monta solo dopo l'hydration, mai in SSR.
 	const [hydrated, setHydrated] = useState(false);
@@ -407,14 +415,14 @@ function StoresPage() {
 								</SheetContent>
 							</Sheet>
 							<p className="min-w-0 text-muted-foreground text-sm">
-								{isPending ? (
+								{resultsPending ? (
 									<span className="sr-only">{m.store_loading()}</span>
 								) : (
 									<>
 										<span className="font-medium text-foreground">
-											{total === 1
+											{resultsTotal === 1
 												? m.store_results_count_one()
-												: m.store_results_count({ count: total })}
+												: m.store_results_count({ count: resultsTotal })}
 										</span>
 										{openNow && ` · ${m.store_open_now()}`}
 										{scopeLabel && ` · ${scopeLabel}`}
