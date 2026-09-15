@@ -43,7 +43,8 @@ function FitToPins({ pins }: { pins: StorePinView[] }) {
 	const map = useMap();
 	const key = pins.map((p) => p.id).join(",");
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: `key` riassume `pins`
+	// `key` riassume l'insieme dei pin: l'effetto deve girare quando cambia il set,
+	// non a ogni render con un nuovo array della stessa lista.
 	useEffect(() => {
 		if (pins.length === 0) return;
 		if (pins.length === 1) {
