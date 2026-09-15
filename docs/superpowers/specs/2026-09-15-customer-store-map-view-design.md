@@ -1,7 +1,7 @@
 # Vista mappa nella ricerca negozi customer — design
 
 **Date:** 2026-09-15
-**Status:** approved, not implemented
+**Status:** implemented
 **Riferimenti:** i riferimenti `file:riga` puntano allo stato pre-implementazione (base `4e9ae92`)
 **Branch:** `feat/customer-store-map-view`
 
