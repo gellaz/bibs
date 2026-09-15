@@ -7,8 +7,15 @@ import {
 	SheetTrigger,
 } from "@bibs/ui/components/sheet";
 import { createFileRoute } from "@tanstack/react-router";
-import { Compass, RotateCw, Search, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import {
+	Compass,
+	Map as MapIcon,
+	RotateCw,
+	Search,
+	SlidersHorizontal,
+	X,
+} from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Notice } from "@/components/notice";
 import { PAGE_CONTAINER } from "@/components/page";
 import { TileSkeleton } from "@/components/tile";
@@ -16,7 +23,10 @@ import { useGeolocation } from "@/features/discovery/use-geolocation";
 import type { StoreFilterValue } from "@/features/stores/store-filters";
 import { StoreFilters } from "@/features/stores/store-filters";
 import { StoreTile } from "@/features/stores/store-tile";
+import type { StoreView } from "@/features/stores/store-view-toggle";
+import { StoreViewToggle } from "@/features/stores/store-view-toggle";
 import { useStoreFacets } from "@/features/stores/use-store-facets";
+import { useStoreMap } from "@/features/stores/use-store-map";
 import { useStoreSearch } from "@/features/stores/use-store-search";
 import { m } from "@/paraglide/messages";
 
@@ -36,6 +46,17 @@ const LAYOUT_GRID =
 const RESULTS_GRID =
 	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @4xl:grid-cols-4";
 
+/**
+ * Su desktop la mappa riempie la finestra sotto la riga dei risultati, così non
+ * si scrolla la pagina per vederne il fondo; su mobile resta una superficie
+ * alta ma finita.
+ */
+const MAP_FRAME = "h-[26rem] min-h-80 sm:h-[32rem] lg:h-[calc(100dvh-16rem)]";
+
+const LazyStoreSearchMap = lazy(
+	() => import("@/features/stores/store-search-map"),
+);
+
 /** Tutti i parametri sono opzionali: `/stores` nudo è una vista valida. */
 interface StoreSearchParams {
 	q?: string;
@@ -43,6 +64,8 @@ interface StoreSearchParams {
 	macroCategoryId?: string;
 	radius?: number;
 	openNow?: boolean;
+	/** Assente = lista: `/stores` nudo resta la vista di sempre. */
+	view?: "map";
 }
 
 export const Route = createFileRoute("/_authenticated/stores/")({
@@ -57,13 +80,15 @@ export const Route = createFileRoute("/_authenticated/stores/")({
 		radius: typeof search.radius === "number" ? search.radius : undefined,
 		// `false` esce dall'URL: un filtro spento non è uno stato da descrivere.
 		openNow: search.openNow === true ? true : undefined,
+		view: search.view === "map" ? "map" : undefined,
 	}),
 	component: StoresPage,
 });
 
 function StoresPage() {
 	const navigate = Route.useNavigate();
-	const { q, categoryId, macroCategoryId, radius, openNow } = Route.useSearch();
+	const { q, categoryId, macroCategoryId, radius, openNow, view } =
+		Route.useSearch();
 	const [text, setText] = useState(q ?? "");
 	const [filtersOpen, setFiltersOpen] = useState(false);
 	const {
@@ -111,6 +136,31 @@ function StoresPage() {
 		radius,
 		openNow,
 	});
+
+	const isMap = view === "map";
+
+	const map = useStoreMap({
+		q,
+		categoryId,
+		macroCategoryId,
+		coords,
+		radius,
+		openNow,
+		enabled: isMap,
+	});
+
+	// Leaflet è DOM-only: la mappa monta solo dopo l'hydration, mai in SSR.
+	const [hydrated, setHydrated] = useState(false);
+	useEffect(() => setHydrated(true), []);
+
+	// Niente `replace: true` qui (a differenza del testo di ricerca, che è
+	// debounced): tornare indietro dalla mappa alla lista è un'aspettativa
+	// legittima, e `navigate` senza `replace` lascia la voce nella cronologia.
+	const changeView = (next: StoreView) => {
+		void navigate({
+			search: (prev) => ({ ...prev, view: next === "map" ? "map" : undefined }),
+		});
+	};
 
 	const filterValue: StoreFilterValue = {
 		macroCategoryId,
@@ -170,6 +220,125 @@ function StoresPage() {
 			.flatMap((mc) => mc.categories)
 			.find((c) => c.id === categoryId)?.name;
 	const scopeLabel = activeCategoryName ?? activeMacro?.name;
+
+	const listResults = isPending ? (
+		<div className={RESULTS_GRID} aria-hidden>
+			{Array.from({ length: 8 }, (_, i) => (
+				<TileSkeleton key={`tile-skeleton-${i}`} />
+			))}
+		</div>
+	) : isError ? (
+		<Notice
+			icon={RotateCw}
+			title={m.store_load_error_title()}
+			description={m.store_load_error_description()}
+			action={
+				<Button variant="secondary" size="sm" onClick={() => refetch()}>
+					<RotateCw className="size-4" aria-hidden />
+					{m.store_retry()}
+				</Button>
+			}
+		/>
+	) : stores.length === 0 ? (
+		<Notice
+			icon={Compass}
+			title={hasQuery ? m.store_no_results_title() : m.store_explore_title()}
+			description={
+				hasQuery
+					? m.store_no_results_description()
+					: m.store_explore_description()
+			}
+			action={
+				activeFilterCount > 0 ? (
+					<Button variant="secondary" size="sm" onClick={clearFilters}>
+						{m.store_clear_filters()}
+					</Button>
+				) : undefined
+			}
+		/>
+	) : (
+		<>
+			<ul className={RESULTS_GRID}>
+				{stores.map((store) => (
+					<li key={store.id}>
+						<StoreTile store={store} showDistance={geoStatus === "granted"} />
+					</li>
+				))}
+			</ul>
+			{hasNextPage && (
+				<div className="mt-8 flex justify-center">
+					<Button
+						variant="secondary"
+						onClick={() => fetchNextPage()}
+						disabled={isFetchingNextPage}
+					>
+						{isFetchingNextPage ? m.store_loading() : m.store_load_more()}
+					</Button>
+				</div>
+			)}
+		</>
+	);
+
+	const mapResults = map.isError ? (
+		<Notice
+			icon={RotateCw}
+			title={m.store_map_error_title()}
+			description={m.store_map_error_description()}
+			action={
+				<Button variant="secondary" size="sm" onClick={() => map.refetch()}>
+					<RotateCw className="size-4" aria-hidden />
+					{m.store_retry()}
+				</Button>
+			}
+		/>
+	) : !map.isPending && map.pins.length === 0 ? (
+		<Notice
+			icon={MapIcon}
+			title={hasQuery ? m.store_no_results_title() : m.store_explore_title()}
+			description={
+				hasQuery
+					? m.store_no_results_description()
+					: m.store_explore_description()
+			}
+			action={
+				activeFilterCount > 0 ? (
+					<Button variant="secondary" size="sm" onClick={clearFilters}>
+						{m.store_clear_filters()}
+					</Button>
+				) : undefined
+			}
+		/>
+	) : (
+		<div className="space-y-2">
+			{map.truncated && (
+				<p className="text-muted-foreground text-sm">
+					{m.store_map_truncated({ count: map.pins.length })}
+				</p>
+			)}
+			{map.total > map.mappable && (
+				<p className="text-muted-foreground text-sm">
+					{map.total - map.mappable === 1
+						? m.store_map_unmapped_one()
+						: m.store_map_unmapped({ count: map.total - map.mappable })}
+				</p>
+			)}
+			<div
+				className={`relative isolate overflow-hidden rounded-lg border border-border ${MAP_FRAME}`}
+			>
+				{hydrated && !map.isPending ? (
+					<Suspense fallback={<div className="size-full bg-muted" />}>
+						<LazyStoreSearchMap
+							pins={map.pins}
+							showDistance={geoStatus === "granted"}
+							userCoords={coords}
+						/>
+					</Suspense>
+				) : (
+					<div className="size-full animate-pulse bg-muted" aria-hidden />
+				)}
+			</div>
+		</div>
+	);
 
 	return (
 		<div className={`${PAGE_CONTAINER} py-8 sm:py-10`}>
@@ -254,93 +423,24 @@ function StoresPage() {
 								)}
 							</p>
 						</div>
-						{activeFilterCount > 0 && (
-							<button
-								type="button"
-								onClick={clearFilters}
-								className="rounded-md text-primary text-sm underline-offset-4 outline-none hover:underline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron"
-							>
-								{m.store_clear_filters()}
-							</button>
-						)}
+						<div className="flex items-center gap-3">
+							{activeFilterCount > 0 && (
+								<button
+									type="button"
+									onClick={clearFilters}
+									className="rounded-md text-primary text-sm underline-offset-4 outline-none hover:underline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron"
+								>
+									{m.store_clear_filters()}
+								</button>
+							)}
+							<StoreViewToggle
+								value={isMap ? "map" : "list"}
+								onChange={changeView}
+							/>
+						</div>
 					</div>
 
-					<div className="mt-4">
-						{isPending ? (
-							<div className={RESULTS_GRID} aria-hidden>
-								{Array.from({ length: 8 }, (_, i) => (
-									<TileSkeleton key={`tile-skeleton-${i}`} />
-								))}
-							</div>
-						) : isError ? (
-							<Notice
-								icon={RotateCw}
-								title={m.store_load_error_title()}
-								description={m.store_load_error_description()}
-								action={
-									<Button
-										variant="secondary"
-										size="sm"
-										onClick={() => refetch()}
-									>
-										<RotateCw className="size-4" aria-hidden />
-										{m.store_retry()}
-									</Button>
-								}
-							/>
-						) : stores.length === 0 ? (
-							<Notice
-								icon={Compass}
-								title={
-									hasQuery
-										? m.store_no_results_title()
-										: m.store_explore_title()
-								}
-								description={
-									hasQuery
-										? m.store_no_results_description()
-										: m.store_explore_description()
-								}
-								action={
-									activeFilterCount > 0 ? (
-										<Button
-											variant="secondary"
-											size="sm"
-											onClick={clearFilters}
-										>
-											{m.store_clear_filters()}
-										</Button>
-									) : undefined
-								}
-							/>
-						) : (
-							<>
-								<ul className={RESULTS_GRID}>
-									{stores.map((store) => (
-										<li key={store.id}>
-											<StoreTile
-												store={store}
-												showDistance={geoStatus === "granted"}
-											/>
-										</li>
-									))}
-								</ul>
-								{hasNextPage && (
-									<div className="mt-8 flex justify-center">
-										<Button
-											variant="secondary"
-											onClick={() => fetchNextPage()}
-											disabled={isFetchingNextPage}
-										>
-											{isFetchingNextPage
-												? m.store_loading()
-												: m.store_load_more()}
-										</Button>
-									</div>
-								)}
-							</>
-						)}
-					</div>
+					<div className="mt-4">{isMap ? mapResults : listResults}</div>
 				</div>
 			</div>
 		</div>
