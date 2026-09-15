@@ -727,9 +727,10 @@ Expected: nessun errore (l'hook pre-commit lo rieseguirà comunque).
 Avviare l'API (`cd apps/api && bun run dev`, porta 3000) con il DB di sviluppo su e i dati seminati, poi:
 
 ```bash
-curl -s "http://localhost:3000/customer/stores/map?limit=1" | head -c 400
+curl -s "http://localhost:3000/customer/stores/map?limit=1" \
+  | python3 -c "import json,sys; d=json.load(sys.stdin)['data']; print(len(d['pins']))"
 ```
-Expected: `422` — `limit` non fa parte della query di questo endpoint. È la conferma che `t.Omit` sta funzionando.
+Expected: lo stesso numero di pin della chiamata senza `limit` (vedi sotto). Elysia ignora i parametri di query non dichiarati invece di rifiutarli, quindi la prova che `t.Omit` funziona è che `limit` non ha effetto — non un 422.
 
 ```bash
 curl -s "http://localhost:3000/customer/stores/map" \
