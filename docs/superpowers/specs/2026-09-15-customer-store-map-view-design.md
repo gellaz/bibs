@@ -317,6 +317,6 @@ Prima di dichiarare fatto:
   `leaflet.markercluster` direttamente con un piccolo componente che crea il
   `markerClusterGroup` via `useMap()` — una quarantina di righe, nessun wrapper.
   Va verificato **prima** di costruirci sopra la UI.
-- **Tap target dei controlli Leaflet**: zoom e bolle cluster restano sui 30px,
+- **Tap target dei controlli Leaflet**: zoom 30×30px e bolle cluster 36×36px,
   sotto i 44px del resto dello storefront. È lo stesso debito già annotato sulla
   scheda negozio (PR #166), non viene chiuso qui.
