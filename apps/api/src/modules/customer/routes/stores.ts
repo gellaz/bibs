@@ -9,12 +9,14 @@ import {
 	StoreCardSchema,
 	StoreDetailSchema,
 	StoreFacetsSchema,
+	StoreMapSchema,
 	StoreProductCardSchema,
 	withErrors,
 } from "@/lib/schemas";
 import { getStoreDetail } from "../services/store-detail";
 import { searchStores } from "../services/store-discovery";
 import { getStoreFacets } from "../services/store-facets";
+import { getStoreMapPins } from "../services/store-map";
 import { getStoreProducts } from "../services/store-products";
 
 export const storesRoutes = new Elysia()
@@ -79,6 +81,39 @@ export const storesRoutes = new Elysia()
 				summary: "Facet di ricerca negozi",
 				description:
 					"Conteggi per macro categoria e categoria sui negozi che corrispondono a testo e raggio. Le categorie senza negozi non vengono restituite. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		},
+	)
+	.get(
+		"/stores/map",
+		async ({ query, store }) => {
+			const pino = getLogger(store);
+			const result = await getStoreMapPins(query);
+			pino.info(
+				{
+					searchQuery: query.q,
+					categoryId: query.categoryId,
+					macroCategoryId: query.macroCategoryId,
+					hasGeoFilter: !!(query.lat && query.lng),
+					radius: query.radius,
+					openNow: query.openNow,
+					pinCount: result.pins.length,
+					total: result.total,
+					truncated: result.truncated,
+					action: "store_map",
+				},
+				"Pin mappa negozi richiesti",
+			);
+			return ok(result);
+		},
+		{
+			query: t.Omit(StoreSearchQuery, ["page", "limit"]),
+			response: withErrors({ 200: okRes(StoreMapSchema) }),
+			detail: {
+				summary: "Pin mappa negozi",
+				description:
+					"Tutti i negozi che corrispondono ai filtri, con le coordinate, per la vista mappa. Non paginato: una mappa non si scorre a pagine. Restituisce al massimo 500 pin (`truncated: true` oltre quella soglia) ordinati per distanza quando `lat`/`lng` sono presenti, altrimenti per nome. `total` conta anche i negozi senza posizione, che non compaiono fra i pin. Non richiede autenticazione.",
 				tags: ["Customer - Search"],
 			},
 		},
