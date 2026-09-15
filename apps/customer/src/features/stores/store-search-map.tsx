@@ -68,7 +68,10 @@ function PinCard({
 	pin: StorePinView;
 	showDistance: boolean;
 }) {
-	const hasDistance = showDistance && pin.distance !== null;
+	const distanceLabel =
+		showDistance && pin.distance !== null
+			? ` · ${formatDistance(pin.distance)}`
+			: "";
 	return (
 		<Link
 			to="/stores/$storeId"
@@ -90,7 +93,7 @@ function PinCard({
 					className={`text-xs ${pin.openStatus.isOpen ? "text-primary" : "text-muted-foreground"}`}
 				>
 					{openStatusLabel(pin.openStatus)}
-					{hasDistance && ` · ${formatDistance(pin.distance as number)}`}
+					{distanceLabel}
 				</span>
 			</div>
 		</Link>
