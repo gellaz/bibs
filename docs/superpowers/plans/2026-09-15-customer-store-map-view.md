@@ -1568,8 +1568,8 @@ EOF
 
 - [ ] **Step 1: Suite completa dell'API**
 
-Run: `cd apps/api && bun test`
-Expected: PASS su tutti i file. Se `isolation-guard-1`/`isolation-guard-2` falliscono, manca `--isolate` nello script: non modificare i guard.
+Run: `cd apps/api && bun run test`
+Expected: PASS su tutti i file. Usa lo script (`bun run test`), non `bun test` nudo: lo script passa `--isolate`, e senza quel flag `isolation-guard-2` fallisce per costruzione — è il guard che fa il suo mestiere, non una regressione. Se fallisce *con* lo script, manca il flag: non modificare i guard.
 
 - [ ] **Step 2: Typecheck di tutti i workspace toccati**
 
