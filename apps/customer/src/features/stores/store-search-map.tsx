@@ -12,6 +12,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { formatDistance, TileImage } from "@/components/tile";
 import type { Coords } from "@/features/discovery/use-geolocation";
+import { m } from "@/paraglide/messages";
 import { KeepSizeInSync, pinIcon, userLocationIcon } from "./map-shared";
 import { openStatusLabel } from "./open-status";
 import type { StorePinView } from "./use-store-map";
@@ -147,7 +148,7 @@ export default function StoreSearchMap({
 				<Marker
 					position={[userCoords.lat, userCoords.lng]}
 					icon={userLocationIcon}
-					title="La tua posizione"
+					title={m.store_map_your_position()}
 				/>
 			)}
 			<FitToPins pins={pins} />

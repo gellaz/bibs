@@ -287,6 +287,15 @@ function StoresPage() {
 		</>
 	);
 
+	// I pin possono essere vuoti per due ragioni diverse: zero negozi
+	// corrispondono ai filtri (nessun risultato), oppure i negozi ci sono ma
+	// nessuno ha una posizione geocodificata (`total > 0 && mappable === 0`,
+	// es. una ricerca testuale che pesca un solo negozio senza coordinate).
+	// Confondere i due casi mostrerebbe "N negozi" sopra e "nessun negozio
+	// trovato" sotto, nella stessa vista.
+	const mapEmpty = !map.isPending && map.pins.length === 0;
+	const mapAllUnmapped = mapEmpty && map.total > 0 && map.mappable === 0;
+
 	const mapResults = map.isError ? (
 		<Notice
 			icon={RotateCw}
@@ -299,7 +308,22 @@ function StoresPage() {
 				</Button>
 			}
 		/>
-	) : !map.isPending && map.pins.length === 0 ? (
+	) : mapAllUnmapped ? (
+		<Notice
+			icon={MapIcon}
+			title={m.store_map_all_unmapped_title()}
+			description={m.store_map_all_unmapped_description()}
+			action={
+				<Button
+					variant="secondary"
+					size="sm"
+					onClick={() => changeView("list")}
+				>
+					{m.store_view_list()}
+				</Button>
+			}
+		/>
+	) : mapEmpty ? (
 		<Notice
 			icon={MapIcon}
 			title={hasQuery ? m.store_no_results_title() : m.store_explore_title()}
@@ -330,11 +354,16 @@ function StoresPage() {
 						: m.store_map_unmapped({ count: map.total - map.mappable })}
 				</p>
 			)}
-			<div
+			<section
+				aria-label={m.store_map_region()}
 				className={`relative isolate overflow-hidden rounded-lg border border-border ${MAP_FRAME}`}
 			>
 				{hydrated && !map.isPending ? (
-					<Suspense fallback={<div className="size-full bg-muted" />}>
+					<Suspense
+						fallback={
+							<div className="size-full animate-pulse bg-muted" aria-hidden />
+						}
+					>
 						<LazyStoreSearchMap
 							pins={map.pins}
 							showDistance={geoStatus === "granted"}
@@ -344,7 +373,7 @@ function StoresPage() {
 				) : (
 					<div className="size-full animate-pulse bg-muted" aria-hidden />
 				)}
-			</div>
+			</section>
 		</div>
 	);
 

@@ -1,5 +1,5 @@
 import { toYMD } from "@bibs/ui/lib/date";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/discovery/use-geolocation";
 import { api } from "@/lib/api";
 import type { OpenStatusView } from "./open-status";
@@ -56,6 +56,13 @@ export function useStoreMap({
 		],
 		enabled,
 		staleTime: 60_000,
+		// Smontare una `MapContainer` costa più che smontare una griglia di card
+		// (tile riscaricati, zoom/pan persi): senza `placeholderData` ogni cambio
+		// filtro riporta la query in `pending` e smonta Leaflet. Tenendo i dati
+		// precedenti la mappa resta viva, e `FitToPins` (che ha bisogno di una
+		// mappa già montata) può riadattare l'inquadratura ai nuovi pin appena
+		// arrivano.
+		placeholderData: keepPreviousData,
 		queryFn: async () => {
 			const { data, error } = await api().customer.stores.map.get({
 				query: {

@@ -113,7 +113,7 @@ export const storesRoutes = new Elysia()
 			detail: {
 				summary: "Pin mappa negozi",
 				description:
-					"Tutti i negozi che corrispondono ai filtri, con le coordinate, per la vista mappa. Non paginato: una mappa non si scorre a pagine. Restituisce al massimo 500 pin (`truncated: true` oltre quella soglia) ordinati per distanza quando `lat`/`lng` sono presenti, altrimenti per nome. `total` conta anche i negozi senza posizione, che non compaiono fra i pin. Non richiede autenticazione.",
+					"Tutti i negozi che corrispondono ai filtri, con le coordinate, per la vista mappa. Non paginato: una mappa non si scorre a pagine. Restituisce al massimo 500 pin (`truncated: true` oltre quella soglia) ordinati per distanza quando `lat`/`lng` sono presenti, altrimenti per nome. `total` conta anche i negozi senza posizione, che non compaiono fra i pin; `mappable` è quanti di quei `total` hanno effettivamente una posizione e possono quindi comparire fra i pin (`pins.length` = `min(mappable, 500)`). Non richiede autenticazione.",
 				tags: ["Customer - Search"],
 			},
 		},
