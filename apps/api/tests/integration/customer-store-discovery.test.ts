@@ -22,6 +22,9 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+import { holidayDefinition } from "@/db/schemas/holiday-definition";
+import { storeHolidayOptout } from "@/db/schemas/store-holiday-optout";
+import { addDaysYMD, dowFromYMD } from "@/lib/holidays";
 import { searchStores } from "@/modules/customer/services/store-discovery";
 import { getStoreFacets } from "@/modules/customer/services/store-facets";
 import { truncateAll } from "../helpers/cleanup";
@@ -507,5 +510,222 @@ describe("searchStores — pagination", () => {
 		expect(page2.data.map((s) => s.name)).toEqual(["C", "D"]);
 		expect(page3.data.map((s) => s.name)).toEqual(["E"]);
 		expect(page1.pagination.total).toBe(5);
+	});
+});
+
+/** Orari che coprono ogni momento della settimana: aperto, comunque vada. */
+const ALWAYS_OPEN = Array.from({ length: 7 }, (_, i) => ({
+	dayOfWeek: i,
+	slots: [{ open: "00:00", close: "23:59" }],
+}));
+
+/** Data di oggi a Roma + il giorno della settimana nella forma 0=Lun..6=Dom. */
+function romeToday(): { date: string; dow: number } {
+	const date = new Intl.DateTimeFormat("en-CA", {
+		timeZone: "Europe/Rome",
+	}).format(new Date());
+	return { date, dow: dowFromYMD(date) };
+}
+
+/** Festività attiva che cade oggi. */
+async function holidayToday(name: string) {
+	const db = getTestDb();
+	const [def] = await db
+		.insert(holidayDefinition)
+		.values({ name, type: "one_off", oneOffDate: romeToday().date })
+		.returning();
+	return def;
+}
+
+describe("searchStores — openNow filter", () => {
+	it("keeps only the stores whose weekly hours cover this moment", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { dow } = romeToday();
+		await visibleStore(profile.id, {
+			name: "Aperto",
+			openingHours: ALWAYS_OPEN,
+		});
+		await visibleStore(profile.id, { name: "SenzaOrari" });
+		await visibleStore(profile.id, {
+			name: "AltroGiorno",
+			openingHours: [
+				{
+					dayOfWeek: (dow + 1) % 7,
+					slots: [{ open: "00:00", close: "23:59" }],
+				},
+			],
+		});
+
+		const result = await searchStores({ openNow: true });
+
+		expect(result.data.map((s) => s.name)).toEqual(["Aperto"]);
+		expect(result.pagination.total).toBe(1);
+	});
+
+	it("excludes a store whose custom closure covers today", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { date } = romeToday();
+		await visibleStore(profile.id, {
+			name: "Aperto",
+			openingHours: ALWAYS_OPEN,
+		});
+		await visibleStore(profile.id, {
+			name: "InFerie",
+			openingHours: ALWAYS_OPEN,
+			closures: [{ startDate: addDaysYMD(date, -2), endDate: date }],
+		});
+		// Chiusura di un giorno solo: `endDate` assente vale `startDate`.
+		await visibleStore(profile.id, {
+			name: "ChiusuraDiUnGiorno",
+			openingHours: ALWAYS_OPEN,
+			closures: [{ startDate: date }],
+		});
+
+		const result = await searchStores({ openNow: true });
+
+		expect(result.data.map((s) => s.name)).toEqual(["Aperto"]);
+	});
+
+	it("excludes a store closed by an active holiday falling today", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		await holidayToday("Festa di Prova");
+		await visibleStore(profile.id, {
+			name: "ChiusoPerFesta",
+			openingHours: ALWAYS_OPEN,
+		});
+
+		const result = await searchStores({ openNow: true });
+
+		expect(result.data).toHaveLength(0);
+		expect(result.pagination.total).toBe(0);
+	});
+
+	it("keeps a store that opted out of the holiday falling today", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const def = await holidayToday("Festa di Prova");
+		const open = await visibleStore(profile.id, {
+			name: "ApertoPerScelta",
+			openingHours: ALWAYS_OPEN,
+		});
+		await visibleStore(profile.id, {
+			name: "ChiusoPerFesta",
+			openingHours: ALWAYS_OPEN,
+		});
+		await db
+			.insert(storeHolidayOptout)
+			.values({ storeId: open.id, holidayDefinitionId: def.id });
+
+		const result = await searchStores({ openNow: true });
+
+		expect(result.data.map((s) => s.name)).toEqual(["ApertoPerScelta"]);
+	});
+
+	it("matches exactly the stores the unfiltered search reports as open", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { date, dow } = romeToday();
+		const def = await holidayToday("Festa di Prova");
+
+		await visibleStore(profile.id, {
+			name: "SempreAperto",
+			openingHours: ALWAYS_OPEN,
+		});
+		await visibleStore(profile.id, { name: "SenzaOrari" });
+		await visibleStore(profile.id, {
+			name: "SoloAltroGiorno",
+			openingHours: [
+				{
+					dayOfWeek: (dow + 1) % 7,
+					slots: [{ open: "00:00", close: "23:59" }],
+				},
+			],
+		});
+		await visibleStore(profile.id, {
+			name: "InFerie",
+			openingHours: ALWAYS_OPEN,
+			closures: [{ startDate: date, endDate: addDaysYMD(date, 3) }],
+		});
+		const optedOut = await visibleStore(profile.id, {
+			name: "ApertoPerScelta",
+			openingHours: ALWAYS_OPEN,
+		});
+		await db
+			.insert(storeHolidayOptout)
+			.values({ storeId: optedOut.id, holidayDefinitionId: def.id });
+
+		const all = await searchStores({ limit: 100 });
+		const expected = all.data
+			.filter((s) => s.openStatus.isOpen)
+			.map((s) => s.id)
+			.sort();
+		const filtered = await searchStores({ openNow: true, limit: 100 });
+
+		// La condizione SQL e `getOpenStatus` sono due implementazioni della
+		// stessa regola: questo test è il solo posto che le tiene allineate.
+		expect(filtered.data.map((s) => s.id).sort()).toEqual(expected);
+		expect(filtered.pagination.total).toBe(expected.length);
+	});
+});
+
+describe("getStoreFacets — openNow", () => {
+	it("counts only the stores open now when the filter is on", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		await visibleStore(profile.id, {
+			name: "Aperto",
+			categoryId: libreria.id,
+			openingHours: ALWAYS_OPEN,
+		});
+		await visibleStore(profile.id, { name: "Chiuso", categoryId: libreria.id });
+
+		const facets = await getStoreFacets({ openNow: true });
+
+		expect(facets.total).toBe(1);
+		expect(facets.macros[0].storeCount).toBe(1);
+		expect(facets.macros[0].categories).toEqual([
+			{ id: libreria.id, name: "Libreria", storeCount: 1 },
+		]);
+	});
+
+	it("reports openNowTotal while the filter is off", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		await visibleStore(profile.id, {
+			name: "Aperto",
+			categoryId: libreria.id,
+			openingHours: ALWAYS_OPEN,
+		});
+		await visibleStore(profile.id, { name: "Chiuso", categoryId: libreria.id });
+
+		const facets = await getStoreFacets({});
+
+		expect(facets.total).toBe(2);
+		expect(facets.openNowTotal).toBe(1);
+	});
+
+	it("keeps openNowTotal aligned with the text query", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const libreria = await createTestStoreCategory(db, "Libreria", "Cultura");
+		await visibleStore(profile.id, {
+			name: "Libri Aperti",
+			categoryId: libreria.id,
+			openingHours: ALWAYS_OPEN,
+		});
+		await visibleStore(profile.id, {
+			name: "Altra Bottega",
+			categoryId: libreria.id,
+			openingHours: ALWAYS_OPEN,
+		});
+
+		const facets = await getStoreFacets({ q: "Libri" });
+
+		expect(facets.openNowTotal).toBe(1);
 	});
 });

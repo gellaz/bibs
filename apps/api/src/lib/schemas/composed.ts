@@ -190,6 +190,10 @@ export const StoreFacetsSchema = t.Object({
 	total: t.Number({
 		description: "Negozi che corrispondono a testo e raggio, senza categoria",
 	}),
+	openNowTotal: t.Number({
+		description:
+			"Negozi aperti adesso fra quelli che corrispondono a testo e raggio",
+	}),
 	macros: t.Array(
 		t.Object({
 			id: t.String(),
