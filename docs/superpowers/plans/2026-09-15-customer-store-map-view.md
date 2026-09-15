@@ -239,12 +239,12 @@ describe("getStoreMapPins", () => {
 	it("restituisce gli stessi negozi della lista, con le coordinate", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		const a = await visibleStore(seller.sellerProfile.id, {
+		const a = await visibleStore(seller.profile.id, {
 			name: "Bottega A",
 			lat: ROME.lat,
 			lng: ROME.lng,
 		});
-		const b = await visibleStore(seller.sellerProfile.id, {
+		const b = await visibleStore(seller.profile.id, {
 			name: "Bottega B",
 			lat: MILAN.lat,
 			lng: MILAN.lng,
@@ -272,12 +272,12 @@ describe("getStoreMapPins", () => {
 	it("tiene i negozi senza posizione fuori dai pin ma dentro total", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		await visibleStore(seller.sellerProfile.id, {
+		await visibleStore(seller.profile.id, {
 			name: "Con posizione",
 			lat: ROME.lat,
 			lng: ROME.lng,
 		});
-		const senzaPosizione = await visibleStore(seller.sellerProfile.id, {
+		const senzaPosizione = await visibleStore(seller.profile.id, {
 			name: "Senza posizione",
 			noLocation: true,
 		});
@@ -293,11 +293,11 @@ describe("getStoreMapPins", () => {
 	it("esclude i negozi non pubblicamente visibili", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		const visibile = await visibleStore(seller.sellerProfile.id, {
+		const visibile = await visibleStore(seller.profile.id, {
 			name: "Visibile",
 		});
 		// Nessun abbonamento: fuori dalla vetrina pubblica, quindi fuori dalla mappa.
-		await createTestStore(db, seller.sellerProfile.id, { name: "Senza abbonamento" });
+		await createTestStore(db, seller.profile.id, { name: "Senza abbonamento" });
 
 		const map = await getStoreMapPins({});
 
@@ -310,19 +310,19 @@ describe("getStoreMapPins", () => {
 		const seller = await createTestSeller(db);
 		const categoria = await createTestStoreCategory(db, "Panetterie");
 		const altra = await createTestStoreCategory(db, "Ferramenta");
-		const panetteria = await visibleStore(seller.sellerProfile.id, {
+		const panetteria = await visibleStore(seller.profile.id, {
 			name: "Pane e Co",
 			categoryId: categoria.id,
 			lat: ROME.lat,
 			lng: ROME.lng,
 		});
-		await visibleStore(seller.sellerProfile.id, {
+		await visibleStore(seller.profile.id, {
 			name: "Chiodi e Co",
 			categoryId: altra.id,
 			lat: ROME.lat,
 			lng: ROME.lng,
 		});
-		await visibleStore(seller.sellerProfile.id, {
+		await visibleStore(seller.profile.id, {
 			name: "Pane lontano",
 			categoryId: categoria.id,
 			lat: MILAN.lat,
@@ -350,17 +350,17 @@ describe("getStoreMapPins", () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		// Tre negozi a distanza crescente da Roma.
-		const vicino = await visibleStore(seller.sellerProfile.id, {
+		const vicino = await visibleStore(seller.profile.id, {
 			name: "Vicino",
 			lat: ROME.lat,
 			lng: ROME.lng,
 		});
-		const medio = await visibleStore(seller.sellerProfile.id, {
+		const medio = await visibleStore(seller.profile.id, {
 			name: "Medio",
 			lat: ROME.lat + 0.1,
 			lng: ROME.lng,
 		});
-		await visibleStore(seller.sellerProfile.id, {
+		await visibleStore(seller.profile.id, {
 			name: "Lontano",
 			lat: MILAN.lat,
 			lng: MILAN.lng,
@@ -393,8 +393,8 @@ describe("getStoreMapPins", () => {
 	it("ordina per nome quando non c'è la posizione", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		await visibleStore(seller.sellerProfile.id, { name: "Zeta" });
-		await visibleStore(seller.sellerProfile.id, { name: "Alfa" });
+		await visibleStore(seller.profile.id, { name: "Zeta" });
+		await visibleStore(seller.profile.id, { name: "Alfa" });
 
 		const map = await getStoreMapPins({});
 
