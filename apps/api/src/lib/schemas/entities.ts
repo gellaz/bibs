@@ -702,6 +702,41 @@ export const StoreCardSchema = t.Object({
 	openStatus: OpenStatusSchema,
 });
 
+export const StoreMapPinSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome del negozio" }),
+	coordinates: t.Object({
+		lat: t.Number({ description: "Latitudine" }),
+		lng: t.Number({ description: "Longitudine" }),
+	}),
+	category: t.Nullable(t.Object({ id: t.String(), name: t.String() })),
+	municipality: MunicipalityCompactSchema,
+	distance: t.Nullable(
+		t.Number({
+			minimum: 0,
+			description: "Distanza in metri dalla posizione utente (null senza geo)",
+		}),
+	),
+	image: t.Nullable(
+		t.Object({ url: t.String({ description: "URL immagine principale" }) }),
+	),
+	openStatus: OpenStatusSchema,
+});
+
+export const StoreMapSchema = t.Object({
+	pins: t.Array(StoreMapPinSchema),
+	total: t.Integer({
+		description:
+			"Negozi che corrispondono ai filtri, con o senza posizione: lo stesso numero della lista",
+	}),
+	mappable: t.Integer({
+		description: "Quanti di quei negozi hanno una posizione sulla mappa",
+	}),
+	truncated: t.Boolean({
+		description: "true quando i negozi mappabili superano il tetto di 500 pin",
+	}),
+});
+
 // Weekly opening hours (response shape), dayOfWeek 0=Lun..6=Dom
 const StoreOpeningHoursSchema = t.Array(
 	t.Object({
