@@ -28,6 +28,8 @@ interface UseStoreSearchArgs {
 	coords: Coords | null;
 	/** Raggio in km. Ignorato finché non c'è una posizione. */
 	radius?: number;
+	/** Solo i negozi aperti in questo momento. */
+	openNow?: boolean;
 	limit?: number;
 }
 
@@ -37,6 +39,7 @@ export function useStoreSearch({
 	macroCategoryId,
 	coords,
 	radius,
+	openNow,
 	limit = 20,
 }: UseStoreSearchArgs) {
 	const query = useInfiniteQuery({
@@ -48,6 +51,7 @@ export function useStoreSearch({
 			coords?.lat ?? null,
 			coords?.lng ?? null,
 			radius ?? null,
+			openNow ?? false,
 			limit,
 		],
 		staleTime: 60_000,
@@ -62,6 +66,7 @@ export function useStoreSearch({
 					...(macroCategoryId ? { macroCategoryId } : {}),
 					...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
 					...(coords && radius ? { radius } : {}),
+					...(openNow ? { openNow } : {}),
 				},
 			});
 			if (error) {

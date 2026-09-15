@@ -42,6 +42,7 @@ interface StoreSearchParams {
 	categoryId?: string;
 	macroCategoryId?: string;
 	radius?: number;
+	openNow?: boolean;
 }
 
 export const Route = createFileRoute("/_authenticated/stores/")({
@@ -54,13 +55,15 @@ export const Route = createFileRoute("/_authenticated/stores/")({
 				? search.macroCategoryId
 				: undefined,
 		radius: typeof search.radius === "number" ? search.radius : undefined,
+		// `false` esce dall'URL: un filtro spento non è uno stato da descrivere.
+		openNow: search.openNow === true ? true : undefined,
 	}),
 	component: StoresPage,
 });
 
 function StoresPage() {
 	const navigate = Route.useNavigate();
-	const { q, categoryId, macroCategoryId, radius } = Route.useSearch();
+	const { q, categoryId, macroCategoryId, radius, openNow } = Route.useSearch();
 	const [text, setText] = useState(q ?? "");
 	const [filtersOpen, setFiltersOpen] = useState(false);
 	const {
@@ -89,7 +92,7 @@ function StoresPage() {
 		}
 	}, [q]);
 
-	const facets = useStoreFacets({ q, coords, radius });
+	const facets = useStoreFacets({ q, coords, radius, openNow });
 
 	const {
 		stores,
@@ -100,14 +103,28 @@ function StoresPage() {
 		isPending,
 		isError,
 		refetch,
-	} = useStoreSearch({ q, categoryId, macroCategoryId, coords, radius });
+	} = useStoreSearch({
+		q,
+		categoryId,
+		macroCategoryId,
+		coords,
+		radius,
+		openNow,
+	});
 
-	const filterValue: StoreFilterValue = { macroCategoryId, categoryId, radius };
+	const filterValue: StoreFilterValue = {
+		macroCategoryId,
+		categoryId,
+		radius,
+		openNow,
+	};
 	// Senza posizione il raggio non viene inviato: contarlo tra i filtri attivi
 	// annuncerebbe una restrizione che i risultati non hanno.
 	const radiusApplies = radius !== undefined && geoStatus === "granted";
 	const activeFilterCount =
-		(categoryId || macroCategoryId ? 1 : 0) + (radiusApplies ? 1 : 0);
+		(categoryId || macroCategoryId ? 1 : 0) +
+		(radiusApplies ? 1 : 0) +
+		(openNow ? 1 : 0);
 	const hasQuery = Boolean(q) || activeFilterCount > 0;
 
 	const applyFilters = (next: StoreFilterValue) => {
@@ -117,6 +134,7 @@ function StoresPage() {
 				macroCategoryId: next.macroCategoryId,
 				categoryId: next.categoryId,
 				radius: next.radius,
+				openNow: next.openNow || undefined,
 			}),
 			replace: true,
 		});
@@ -127,12 +145,14 @@ function StoresPage() {
 			macroCategoryId: undefined,
 			categoryId: undefined,
 			radius: undefined,
+			openNow: undefined,
 		});
 
 	const filters = (
 		<StoreFilters
 			macros={facets.macros}
 			total={facets.total}
+			openNowTotal={facets.openNowTotal}
 			isPending={facets.isPending}
 			value={filterValue}
 			geoStatus={geoStatus}
@@ -227,6 +247,7 @@ function StoresPage() {
 												? m.store_results_count_one()
 												: m.store_results_count({ count: total })}
 										</span>
+										{openNow && ` · ${m.store_open_now()}`}
 										{scopeLabel && ` · ${scopeLabel}`}
 										{radiusApplies && ` · ${m.store_within_km({ km: radius })}`}
 									</>

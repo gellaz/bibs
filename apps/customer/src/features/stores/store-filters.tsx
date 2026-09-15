@@ -1,6 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
-import { ChevronRight, LocateFixed, MapPin } from "lucide-react";
+import { ChevronRight, Clock, LocateFixed, MapPin } from "lucide-react";
 import type { GeoStatus } from "@/features/discovery/use-geolocation";
 import { m } from "@/paraglide/messages";
 import type { MacroFacet } from "./use-store-facets";
@@ -20,11 +20,14 @@ export interface StoreFilterValue {
 	macroCategoryId?: string;
 	categoryId?: string;
 	radius?: number;
+	openNow?: boolean;
 }
 
 interface StoreFiltersProps {
 	macros: MacroFacet[];
 	total: number;
+	/** Quanti negozi sono aperti adesso, a parità di testo e raggio. */
+	openNowTotal: number;
 	isPending: boolean;
 	value: StoreFilterValue;
 	geoStatus: GeoStatus;
@@ -116,6 +119,44 @@ function CategoryRow({
 	);
 }
 
+/**
+ * Riga a interruttore: stessa geometria di `CategoryRow` — è lo stesso gesto
+ * nello stesso rail — ma `aria-pressed`, perché qui si accende un filtro
+ * invece di scegliere fra alternative. A zero resta visibile e spenta: "nessuno
+ * aperto adesso" è una risposta, non rumore da nascondere.
+ */
+function ToggleRow({
+	label,
+	count,
+	active,
+	disabled,
+	onClick,
+}: {
+	label: string;
+	count: number;
+	active: boolean;
+	disabled: boolean;
+	onClick: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			disabled={disabled}
+			aria-pressed={active}
+			className={`${ROW} pl-2 text-sm disabled:cursor-not-allowed ${
+				active
+					? "bg-primary/10 font-medium text-primary"
+					: "text-muted-foreground enabled:hover:bg-muted enabled:hover:text-foreground disabled:opacity-60"
+			}`}
+		>
+			<Clock className="-ml-0.5 size-3.5 shrink-0" aria-hidden />
+			<span className="min-w-0 flex-1 truncate">{label}</span>
+			<Count value={count} />
+		</button>
+	);
+}
+
 function CategorySkeleton() {
 	return (
 		<div className="space-y-1.5 py-1" aria-hidden>
@@ -127,20 +168,21 @@ function CategorySkeleton() {
 }
 
 /**
- * Rail dei filtri: categoria (macro → categoria) e distanza. Lo stesso nodo
- * serve il rail da `lg` e il pannello mobile, quindi non porta larghezza né
- * posizionamento propri.
+ * Rail dei filtri: disponibilità, categoria (macro → categoria) e distanza. Lo
+ * stesso nodo serve il rail da `lg` e il pannello mobile, quindi non porta
+ * larghezza né posizionamento propri.
  */
 export function StoreFilters({
 	macros,
 	total,
+	openNowTotal,
 	isPending,
 	value,
 	geoStatus,
 	onRequestLocation,
 	onChange,
 }: StoreFiltersProps) {
-	const { macroCategoryId, categoryId, radius } = value;
+	const { macroCategoryId, categoryId, radius, openNow } = value;
 
 	// La macro aperta è quella che contiene la selezione: nessuno stato
 	// separato da tenere in sincrono, e l'URL descrive già tutta la vista.
@@ -152,6 +194,31 @@ export function StoreFilters({
 
 	return (
 		<div className="space-y-7">
+			<FilterSection title={m.store_filter_availability()}>
+				{isPending ? (
+					<Skeleton className="h-6 w-2/5" />
+				) : (
+					<div className="-mx-2">
+						<ToggleRow
+							label={m.store_open_now()}
+							count={openNowTotal}
+							active={openNow === true}
+							// A zero il filtro garantisce la lista vuota; resta cliccabile
+							// solo se è già acceso, altrimenti non si potrebbe spegnere.
+							disabled={openNowTotal === 0 && openNow !== true}
+							onClick={() => onChange({ ...value, openNow: !openNow })}
+						/>
+						{openNowTotal === 0 && (
+							// Vero esattamente quanto il conteggio: misurato su testo e
+							// raggio, non sulla categoria scelta.
+							<p className="px-2 pt-1 text-muted-foreground text-xs leading-relaxed">
+								{m.store_open_now_none()}
+							</p>
+						)}
+					</div>
+				)}
+			</FilterSection>
+
 			<FilterSection title={m.store_filter_category()}>
 				{isPending ? (
 					<CategorySkeleton />

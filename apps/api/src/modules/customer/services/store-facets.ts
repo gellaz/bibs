@@ -4,6 +4,7 @@ import { municipality } from "@/db/schemas/location";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeMacroCategory } from "@/db/schemas/store-macro-category";
+import { openNowCondition } from "@/lib/store-open-status";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 
 interface StoreFacetParams {
@@ -11,6 +12,7 @@ interface StoreFacetParams {
 	lat?: number;
 	lng?: number;
 	radius?: number;
+	openNow?: boolean;
 }
 
 export interface StoreCategoryFacet {
@@ -29,6 +31,8 @@ export interface StoreMacroFacet {
 export interface StoreFacets {
 	/** Stores matching the query regardless of category — the "Tutte" row. */
 	total: number;
+	/** Quanti di quei negozi sono aperti adesso — il numero del toggle. */
+	openNowTotal: number;
 	macros: StoreMacroFacet[];
 }
 
@@ -44,7 +48,7 @@ export interface StoreFacets {
 export async function getStoreFacets(
 	params: StoreFacetParams,
 ): Promise<StoreFacets> {
-	const { q, lat, lng, radius } = params;
+	const { q, lat, lng, radius, openNow } = params;
 	const hasGeo = lat !== undefined && lng !== undefined;
 
 	const conditions: ReturnType<typeof sql>[] = [publiclyVisibleStore()];
@@ -64,9 +68,26 @@ export async function getStoreFacets(
 		);
 	}
 
+	// Il conteggio del toggle "aperti ora" risponde sempre alla stessa domanda —
+	// "quanti negozi restano se lo attivo?" — quindi si misura su testo e raggio.
+	// A filtro attivo coincide con `total`, e la query in più si salta.
+	const openCondition = await openNowCondition(new Date());
+	const openNowClause = sql.join([...conditions, openCondition], sql` AND `);
+	if (openNow) conditions.push(openCondition);
+
 	const whereClause = sql.join(conditions, sql` AND `);
 
-	const [rows, [{ total }]] = await Promise.all([
+	const countStores = (where: ReturnType<typeof sql>) =>
+		db
+			.select({ total: sql<number>`count(*)::int` })
+			.from(store)
+			.innerJoin(
+				municipality,
+				sql`${municipality.id} = ${store.municipalityId}`,
+			)
+			.where(where);
+
+	const [rows, [{ total }], openNowRows] = await Promise.all([
 		db
 			.select({
 				macroId: storeMacroCategory.id,
@@ -93,14 +114,8 @@ export async function getStoreFacets(
 				storeCategory.name,
 			)
 			.orderBy(sql`${storeMacroCategory.name} ASC, ${storeCategory.name} ASC`),
-		db
-			.select({ total: sql<number>`count(*)::int` })
-			.from(store)
-			.innerJoin(
-				municipality,
-				sql`${municipality.id} = ${store.municipalityId}`,
-			)
-			.where(whereClause),
+		countStores(whereClause),
+		openNow ? Promise.resolve(null) : countStores(openNowClause),
 	]);
 
 	const macros = new Map<string, StoreMacroFacet>();
@@ -123,5 +138,9 @@ export async function getStoreFacets(
 		});
 	}
 
-	return { total, macros: Array.from(macros.values()) };
+	return {
+		total,
+		openNowTotal: openNowRows?.[0].total ?? total,
+		macros: Array.from(macros.values()),
+	};
 }

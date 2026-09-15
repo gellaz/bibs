@@ -16,6 +16,7 @@ interface UseStoreFacetsArgs {
 	q?: string;
 	coords: Coords | null;
 	radius?: number;
+	openNow?: boolean;
 }
 
 /**
@@ -23,7 +24,12 @@ interface UseStoreFacetsArgs {
  * la domanda a cui rispondono è "quanti negozi restano se aggiungo questo
  * filtro", quindi le alternative devono restare visibili e contate.
  */
-export function useStoreFacets({ q, coords, radius }: UseStoreFacetsArgs) {
+export function useStoreFacets({
+	q,
+	coords,
+	radius,
+	openNow,
+}: UseStoreFacetsArgs) {
 	const query = useQuery({
 		queryKey: [
 			"store-facets",
@@ -31,6 +37,7 @@ export function useStoreFacets({ q, coords, radius }: UseStoreFacetsArgs) {
 			coords?.lat ?? null,
 			coords?.lng ?? null,
 			radius ?? null,
+			openNow ?? false,
 		],
 		staleTime: 60_000,
 		queryFn: async () => {
@@ -39,6 +46,7 @@ export function useStoreFacets({ q, coords, radius }: UseStoreFacetsArgs) {
 					...(q ? { q } : {}),
 					...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
 					...(coords && radius ? { radius } : {}),
+					...(openNow ? { openNow } : {}),
 				},
 			});
 			if (error) throw new Error(`Filtri non disponibili (${error.status})`);
@@ -49,6 +57,7 @@ export function useStoreFacets({ q, coords, radius }: UseStoreFacetsArgs) {
 	return {
 		macros: (query.data?.macros ?? []) as MacroFacet[],
 		total: query.data?.total ?? 0,
+		openNowTotal: query.data?.openNowTotal ?? 0,
 		isPending: query.isPending,
 	};
 }

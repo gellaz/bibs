@@ -124,6 +124,12 @@ export const StoreSearchQuery = t.Object({
 			description: "Raggio in km (opzionale, nessun limite di default)",
 		}),
 	),
+	openNow: t.Optional(
+		t.Boolean({
+			description:
+				"Restituisce solo i negozi aperti in questo momento (fuso Europe/Rome), tenendo conto di orari, chiusure personalizzate e festività.",
+		}),
+	),
 });
 
 /**

@@ -10,7 +10,7 @@ import type {
 	OpenStatus,
 } from "@/lib/holidays";
 import { parsePagination } from "@/lib/pagination";
-import { resolveOpenStatuses } from "@/lib/store-open-status";
+import { openNowCondition, resolveOpenStatuses } from "@/lib/store-open-status";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 
 interface StoreSearchParams {
@@ -20,6 +20,7 @@ interface StoreSearchParams {
 	lat?: number;
 	lng?: number;
 	radius?: number;
+	openNow?: boolean;
 	page?: number;
 	limit?: number;
 }
@@ -36,7 +37,7 @@ export interface StoreCard {
 }
 
 export async function searchStores(params: StoreSearchParams) {
-	const { q, categoryId, macroCategoryId, lat, lng, radius } = params;
+	const { q, categoryId, macroCategoryId, lat, lng, radius, openNow } = params;
 	const { page, limit, offset } = parsePagination(params);
 	const hasGeo = lat !== undefined && lng !== undefined;
 
@@ -68,6 +69,11 @@ export async function searchStores(params: StoreSearchParams) {
 				${radius * 1000}
 			)`,
 		);
+	}
+	// In SQL e non come post-filtro sulle righe: filtrare dopo la query darebbe
+	// un `total` e una paginazione che non corrispondono ai risultati.
+	if (openNow) {
+		conditions.push(await openNowCondition(new Date()));
 	}
 
 	const whereClause = sql.join(conditions, sql` AND `);
