@@ -11,7 +11,7 @@ import type {
 } from "@/lib/holidays";
 import { parsePagination } from "@/lib/pagination";
 import { openNowCondition, resolveOpenStatuses } from "@/lib/store-open-status";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
+import { storeFilterConditions } from "./store-search-conditions";
 
 interface StoreSearchParams {
 	q?: string;
@@ -37,39 +37,11 @@ export interface StoreCard {
 }
 
 export async function searchStores(params: StoreSearchParams) {
-	const { q, categoryId, macroCategoryId, lat, lng, radius, openNow } = params;
+	const { q, lat, lng, openNow } = params;
 	const { page, limit, offset } = parsePagination(params);
 	const hasGeo = lat !== undefined && lng !== undefined;
 
-	const conditions: ReturnType<typeof sql>[] = [publiclyVisibleStore()];
-
-	if (q) {
-		conditions.push(
-			sql`(${store.name} ILIKE ${`%${q}%`} OR ${municipality.name} ILIKE ${`%${q}%`})`,
-		);
-	}
-	// `categoryId` wins over `macroCategoryId`: a leaf already sits inside its
-	// macro, so applying both would only ever narrow to the same set.
-	if (categoryId) {
-		conditions.push(sql`${store.categoryId} = ${categoryId}`);
-	} else if (macroCategoryId) {
-		conditions.push(
-			sql`EXISTS (
-				SELECT 1 FROM ${storeCategory} sc
-				WHERE sc.id = stores.category_id
-					AND sc.macro_category_id = ${macroCategoryId}
-			)`,
-		);
-	}
-	if (hasGeo && radius !== undefined) {
-		conditions.push(
-			sql`ST_DWithin(
-				${store.location}::geography,
-				ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-				${radius * 1000}
-			)`,
-		);
-	}
+	const conditions = storeFilterConditions(params);
 	// In SQL e non come post-filtro sulle righe: filtrare dopo la query darebbe
 	// un `total` e una paginazione che non corrispondono ai risultati.
 	if (openNow) {
