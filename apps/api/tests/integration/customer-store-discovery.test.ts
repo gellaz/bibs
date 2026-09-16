@@ -27,6 +27,7 @@ import { storeHolidayOptout } from "@/db/schemas/store-holiday-optout";
 import { addDaysYMD, dowFromYMD } from "@/lib/holidays";
 import { searchStores } from "@/modules/customer/services/store-discovery";
 import { getStoreFacets } from "@/modules/customer/services/store-facets";
+import { getStoreMapPins } from "@/modules/customer/services/store-map";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestMunicipalityNamed,
@@ -727,5 +728,179 @@ describe("getStoreFacets — openNow", () => {
 		const facets = await getStoreFacets({ q: "Libri" });
 
 		expect(facets.openNowTotal).toBe(1);
+	});
+});
+
+describe("getStoreMapPins", () => {
+	it("restituisce gli stessi negozi della lista, con le coordinate", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const a = await visibleStore(seller.profile.id, {
+			name: "Bottega A",
+			lat: ROME.lat,
+			lng: ROME.lng,
+		});
+		const b = await visibleStore(seller.profile.id, {
+			name: "Bottega B",
+			lat: MILAN.lat,
+			lng: MILAN.lng,
+		});
+
+		const list = await searchStores({ limit: 100 });
+		const map = await getStoreMapPins({});
+
+		expect(new Set(map.pins.map((p) => p.id))).toEqual(
+			new Set(list.data.map((s) => s.id)),
+		);
+		expect(map.total).toBe(list.pagination.total);
+		expect(map.mappable).toBe(2);
+		expect(map.truncated).toBe(false);
+
+		const pinA = map.pins.find((p) => p.id === a.id);
+		expect(pinA?.coordinates.lat).toBeCloseTo(ROME.lat, 5);
+		expect(pinA?.coordinates.lng).toBeCloseTo(ROME.lng, 5);
+		expect(map.pins.find((p) => p.id === b.id)?.coordinates.lat).toBeCloseTo(
+			MILAN.lat,
+			5,
+		);
+	});
+
+	it("tiene i negozi senza posizione fuori dai pin ma dentro total", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await visibleStore(seller.profile.id, {
+			name: "Con posizione",
+			lat: ROME.lat,
+			lng: ROME.lng,
+		});
+		const senzaPosizione = await visibleStore(seller.profile.id, {
+			name: "Senza posizione",
+			noLocation: true,
+		});
+
+		const map = await getStoreMapPins({});
+
+		expect(map.total).toBe(2);
+		expect(map.mappable).toBe(1);
+		expect(map.pins).toHaveLength(1);
+		expect(map.pins.map((p) => p.id)).not.toContain(senzaPosizione.id);
+	});
+
+	it("esclude i negozi non pubblicamente visibili", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const visibile = await visibleStore(seller.profile.id, {
+			name: "Visibile",
+		});
+		// Nessun abbonamento: fuori dalla vetrina pubblica, quindi fuori dalla mappa.
+		await createTestStore(db, seller.profile.id, { name: "Senza abbonamento" });
+
+		const map = await getStoreMapPins({});
+
+		expect(map.pins.map((p) => p.id)).toEqual([visibile.id]);
+		expect(map.total).toBe(1);
+	});
+
+	it("applica categoria, raggio e testo come la lista", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const categoria = await createTestStoreCategory(db, "Panetterie");
+		const altra = await createTestStoreCategory(db, "Ferramenta");
+		const panetteria = await visibleStore(seller.profile.id, {
+			name: "Pane e Co",
+			categoryId: categoria.id,
+			lat: ROME.lat,
+			lng: ROME.lng,
+		});
+		await visibleStore(seller.profile.id, {
+			name: "Chiodi e Co",
+			categoryId: altra.id,
+			lat: ROME.lat,
+			lng: ROME.lng,
+		});
+		await visibleStore(seller.profile.id, {
+			name: "Pane lontano",
+			categoryId: categoria.id,
+			lat: MILAN.lat,
+			lng: MILAN.lng,
+		});
+
+		const perCategoria = await getStoreMapPins({ categoryId: categoria.id });
+		expect(perCategoria.pins).toHaveLength(2);
+
+		const vicino = await getStoreMapPins({
+			categoryId: categoria.id,
+			lat: ROME.lat,
+			lng: ROME.lng,
+			radius: 50,
+		});
+		expect(vicino.pins.map((p) => p.id)).toEqual([panetteria.id]);
+		expect(vicino.total).toBe(1);
+
+		const perTesto = await getStoreMapPins({ q: "Chiodi" });
+		expect(perTesto.pins).toHaveLength(1);
+		expect(perTesto.pins[0].name).toBe("Chiodi e Co");
+	});
+
+	it("ordina per distanza quando c'è la posizione e tronca al tetto", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		// Tre negozi a distanza crescente da Roma.
+		const vicino = await visibleStore(seller.profile.id, {
+			name: "Vicino",
+			lat: ROME.lat,
+			lng: ROME.lng,
+		});
+		const medio = await visibleStore(seller.profile.id, {
+			name: "Medio",
+			lat: ROME.lat + 0.1,
+			lng: ROME.lng,
+		});
+		await visibleStore(seller.profile.id, {
+			name: "Lontano",
+			lat: MILAN.lat,
+			lng: MILAN.lng,
+		});
+
+		const tutti = await getStoreMapPins({ lat: ROME.lat, lng: ROME.lng });
+		expect(tutti.pins.map((p) => p.name)).toEqual([
+			"Vicino",
+			"Medio",
+			"Lontano",
+		]);
+		expect(tutti.pins[0].distance).toBeLessThan(
+			tutti.pins[2].distance as number,
+		);
+
+		// La distanza è lo stesso numero che la lista mostra sulla card: due
+		// formule diverse per lo stesso metro sarebbero due viste in disaccordo.
+		const list = await searchStores({
+			lat: ROME.lat,
+			lng: ROME.lng,
+			limit: 100,
+		});
+		for (const pin of tutti.pins) {
+			const card = list.data.find((s) => s.id === pin.id);
+			expect(pin.distance).toBeCloseTo(card?.distance as number, 3);
+		}
+
+		// Il tetto è iniettabile per non dover inserire 501 negozi in un test.
+		const troncati = await getStoreMapPins({ lat: ROME.lat, lng: ROME.lng }, 2);
+		expect(troncati.pins.map((p) => p.id)).toEqual([vicino.id, medio.id]);
+		expect(troncati.truncated).toBe(true);
+		expect(troncati.total).toBe(3);
+		expect(troncati.mappable).toBe(3);
+	});
+
+	it("ordina per nome quando non c'è la posizione", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await visibleStore(seller.profile.id, { name: "Zeta" });
+		await visibleStore(seller.profile.id, { name: "Alfa" });
+
+		const map = await getStoreMapPins({});
+
+		expect(map.pins.map((p) => p.name)).toEqual(["Alfa", "Zeta"]);
+		expect(map.pins.every((p) => p.distance === null)).toBe(true);
 	});
 });

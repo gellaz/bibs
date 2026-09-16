@@ -5,7 +5,7 @@ import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeMacroCategory } from "@/db/schemas/store-macro-category";
 import { openNowCondition } from "@/lib/store-open-status";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
+import { storeFilterConditions } from "./store-search-conditions";
 
 interface StoreFacetParams {
 	q?: string;
@@ -49,24 +49,11 @@ export async function getStoreFacets(
 	params: StoreFacetParams,
 ): Promise<StoreFacets> {
 	const { q, lat, lng, radius, openNow } = params;
-	const hasGeo = lat !== undefined && lng !== undefined;
 
-	const conditions: ReturnType<typeof sql>[] = [publiclyVisibleStore()];
-
-	if (q) {
-		conditions.push(
-			sql`(${store.name} ILIKE ${`%${q}%`} OR ${municipality.name} ILIKE ${`%${q}%`})`,
-		);
-	}
-	if (hasGeo && radius !== undefined) {
-		conditions.push(
-			sql`ST_DWithin(
-				${store.location}::geography,
-				ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography,
-				${radius * 1000}
-			)`,
-		);
-	}
+	// Niente `categoryId`/`macroCategoryId`: i facet rispondono a "quanti negozi
+	// restano se aggiungo questo filtro", quindi non applicano mai la categoria
+	// già selezionata — altrimenti mostrerebbero solo il ramo aperto.
+	const conditions = storeFilterConditions({ q, lat, lng, radius });
 
 	// Il conteggio del toggle "aperti ora" risponde sempre alla stessa domanda —
 	// "quanti negozi restano se lo attivo?" — quindi si misura su testo e raggio.

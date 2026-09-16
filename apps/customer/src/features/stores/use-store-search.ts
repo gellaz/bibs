@@ -31,6 +31,8 @@ interface UseStoreSearchArgs {
 	/** Solo i negozi aperti in questo momento. */
 	openNow?: boolean;
 	limit?: number;
+	/** Spegnila quando un'altra vista (es. la mappa) sta già mostrando i risultati. */
+	enabled?: boolean;
 }
 
 export function useStoreSearch({
@@ -41,6 +43,7 @@ export function useStoreSearch({
 	radius,
 	openNow,
 	limit = 20,
+	enabled = true,
 }: UseStoreSearchArgs) {
 	const query = useInfiniteQuery({
 		queryKey: [
@@ -54,6 +57,7 @@ export function useStoreSearch({
 			openNow ?? false,
 			limit,
 		],
+		enabled,
 		staleTime: 60_000,
 		initialPageParam: 1,
 		queryFn: async ({ pageParam }) => {

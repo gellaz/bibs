@@ -24,3 +24,27 @@
 		scrollbar-color: var(--border) transparent;
 	}
 }
+
+/**
+ * Popup dei pin sulla mappa dei risultati (`store-search-map.tsx`).
+ *
+ * Il CSS vendor di Leaflet fissa wrapper e punta del popup a bianco/grigio
+ * scuro, senza variante dark; dentro, `PinCard` usa i token theme-aware
+ * (`--foreground`, `--primary`), che in dark diventano crema — crema su
+ * bianco è illeggibile. Sia la regola di Leaflet sia questa sono unlayered
+ * (fuori da `@layer`): vinciamo per specificità, non per ordine di import,
+ * annidando un selettore in più rispetto a quello di Leaflet.
+ */
+.leaflet-popup .leaflet-popup-content-wrapper,
+.leaflet-popup .leaflet-popup-tip {
+	background: var(--popover);
+	color: var(--popover-foreground);
+}
+.leaflet-container .leaflet-popup a.leaflet-popup-close-button {
+	color: var(--popover-foreground);
+	opacity: 0.6;
+}
+.leaflet-container .leaflet-popup a.leaflet-popup-close-button:hover,
+.leaflet-container .leaflet-popup a.leaflet-popup-close-button:focus {
+	opacity: 1;
+}
