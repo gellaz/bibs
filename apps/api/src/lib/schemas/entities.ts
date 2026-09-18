@@ -153,6 +153,30 @@ export const MunicipalityCompactSchema = t.Object(
 	{ description: "Comune in formato compatto per liste precaricate" },
 );
 
+export const GeocodeSuggestionSchema = t.Object(
+	{
+		label: t.String({
+			description: "Riga leggibile, es. 'Via Roma 12, Pioltello (MI)'",
+		}),
+		addressLine1: t.String({
+			description: "Indirizzo con civico, quando il provider lo conosce",
+		}),
+		zipCode: t.Nullable(
+			t.String({ description: "CAP, se il provider lo restituisce" }),
+		),
+		location: PointXY,
+		municipality: t.Nullable(MunicipalityCompactSchema),
+		municipalityCandidates: t.Array(MunicipalityCompactSchema, {
+			description:
+				"Comuni omonimi fra cui deve scegliere il cliente quando la risoluzione è incerta",
+		}),
+		providerRef: t.String({
+			description: "Riferimento opaco del provider, usato per il dedup",
+		}),
+	},
+	{ description: "Suggerimento di indirizzo geocodificato" },
+);
+
 export const SellerProfileSchema = t.Object({
 	id: t.String(),
 	userId: t.String(),
