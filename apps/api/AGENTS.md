@@ -645,6 +645,9 @@ Optional:
 - `EMAIL_FROM` — sender address for emails (default `Bibs <noreply@bibs.it>`)
 - `CUSTOMER_APP_URL` — customer frontend URL (default `http://localhost:3001`)
 - `SELLER_APP_URL` — seller frontend URL (default `http://localhost:3002`)
+- `GEOCODING_PROVIDER` — geocoding provider (default `photon`; `google` is not implemented yet)
+- `PHOTON_URL` — Photon endpoint (default `https://photon.komoot.io/api`)
+- `GEOCODING_USER_AGENT` — User-Agent sent to the geocoding provider (Photon requires identification)
 
 ## Testing
 
