@@ -7,6 +7,7 @@ export * from "./customer";
 export * from "./discount";
 export * from "./employee";
 export * from "./employee-invitation";
+export * from "./geocoding";
 export * from "./holiday-definition";
 export * from "./location";
 export * from "./order";

@@ -24,6 +24,9 @@ const EnvSchema = t.Object({
 	STRIPE_SECRET_KEY: t.String(),
 	STRIPE_WEBHOOK_SECRET: t.Optional(t.String()),
 	STRIPE_DEV_PRICE_ID: t.Optional(t.String()),
+	GEOCODING_PROVIDER: t.Optional(t.String()),
+	PHOTON_URL: t.Optional(t.String()),
+	GEOCODING_USER_AGENT: t.Optional(t.String()),
 });
 
 if (!Value.Check(EnvSchema, process.env)) {
@@ -59,4 +62,9 @@ export const env = {
 	STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY!,
 	STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 	STRIPE_DEV_PRICE_ID: process.env.STRIPE_DEV_PRICE_ID,
+	GEOCODING_PROVIDER: process.env.GEOCODING_PROVIDER ?? "photon",
+	PHOTON_URL: process.env.PHOTON_URL ?? "https://photon.komoot.io/api",
+	// Photon chiede di identificarsi: un contatto reale evita di finire bloccati.
+	GEOCODING_USER_AGENT:
+		process.env.GEOCODING_USER_AGENT ?? "bibs/1.0 (+https://bibs.it)",
 } as const;

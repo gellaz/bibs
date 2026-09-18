@@ -1,17 +1,23 @@
 import { Elysia, t } from "elysia";
 import { env } from "@/lib/env";
+import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
 import {
 	CountrySchema,
+	GeocodeSuggestionSchema,
 	MunicipalityCompactSchema,
 	MunicipalitySchema,
 	okPageRes,
 	okRes,
 	ProvinceSchema,
 	RegionSchema,
+	ServiceUnavailableError,
+	TooManyRequestsError,
 	withErrors,
 } from "@/lib/schemas";
+import { rateLimit } from "@/plugins/rate-limit";
+import { geocodeAddress } from "../services/geocode";
 import {
 	listAllMunicipalities,
 	listCountries,
@@ -19,6 +25,8 @@ import {
 	listProvinces,
 	listRegions,
 } from "../services/locations";
+
+const MINUTE = 60_000;
 
 export const locationsRoutes = new Elysia()
 	.get(
@@ -117,6 +125,76 @@ export const locationsRoutes = new Elysia()
 				description:
 					"Restituisce l'elenco di TUTTI i comuni italiani con sigla provincia, in formato compatto e ordinati per nome. Endpoint pensato per precaricamento client-side; risposta cacheable 24h.",
 				tags: ["Locations"],
+			},
+		},
+	)
+	.get(
+		"/geocode",
+		async (ctx) => {
+			const { user, query, store } = ctx as typeof ctx & {
+				user: { id: string };
+			};
+			const pino = getLogger(store);
+			const data = await geocodeAddress(query);
+			pino.info(
+				{
+					userId: user.id,
+					queryLength: query.q.length,
+					hasBias: query.lat !== undefined && query.lng !== undefined,
+					resultCount: data.length,
+					action: "address_geocode",
+				},
+				"Geocoding indirizzo eseguito",
+			);
+			return ok(data);
+		},
+		{
+			auth: true,
+			query: t.Object({
+				q: t.String({
+					minLength: 3,
+					maxLength: 200,
+					description: "Testo dell'indirizzo da cercare",
+				}),
+				limit: t.Optional(
+					t.Number({
+						minimum: 1,
+						maximum: 10,
+						default: 5,
+						description: "Numero massimo di suggerimenti (default 5)",
+					}),
+				),
+				lat: t.Optional(
+					t.Number({
+						minimum: -90,
+						maximum: 90,
+						description:
+							"Latitudine da cui cercare: i risultati vicini vengono primi",
+					}),
+				),
+				lng: t.Optional(
+					t.Number({
+						minimum: -180,
+						maximum: 180,
+						description: "Longitudine da cui cercare",
+					}),
+				),
+			}),
+			beforeHandle: rateLimit({
+				name: "geocode",
+				limits: [{ by: "ip", window: MINUTE, max: 30 }],
+			}),
+			response: withErrors({
+				200: okRes(t.Array(GeocodeSuggestionSchema)),
+				429: TooManyRequestsError,
+				503: ServiceUnavailableError,
+			}),
+			detail: {
+				summary: "Geocoding indirizzo",
+				description:
+					"Trasforma un testo digitato in suggerimenti di indirizzo con coordinate e comune già risolto sui comuni italiani. Con `lat`/`lng` i risultati vicini vengono primi; se il testo nomina un comune, i risultati di quel comune hanno la precedenza. Richiede autenticazione.",
+				tags: ["Locations"],
+				security: [{ bearerAuth: [] }],
 			},
 		},
 	);

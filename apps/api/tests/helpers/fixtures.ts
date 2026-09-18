@@ -83,13 +83,16 @@ export async function createTestSeller(
 
 // ── Location ──────────────────────────────────────────────────────────────────
 
-// Monotonic counter for municipality ISTAT codes. The columns are tiny
-// (region varchar(2), province acronym varchar(2) / istat varchar(3),
+// Monotonic counters for province/municipality ISTAT codes. The columns are
+// tiny (region varchar(2), province acronym varchar(2) / istat varchar(3),
 // municipality varchar(6)) and unique, so random per-call codes collided across
 // the suite. truncateAll() wipes the location tables between tests, so a shared
-// region/province (find-or-create by a fixed name) only ever has one row alive
-// at a time and its fixed codes can never collide; only the municipality varies
-// per call, via this base36 counter (6 chars → ~2.1B values, no overflow).
+// region (find-or-create by a fixed name) only ever has one row alive at a
+// time and its fixed code can never collide. Province is find-or-create by
+// name too, but a single test can need more than one alive at once (e.g. two
+// municipalities in different provinces), so its ISTAT code comes from a
+// counter as well — same base36 trick as municipality, just 3 chars wide.
+let provinceSeq = 0;
 let municipalitySeq = 0;
 
 /** Creates a minimal region → province → municipality chain for tests. */
@@ -122,12 +125,17 @@ export async function createTestMunicipality(
 		where: eq(province.name, provinceName),
 	});
 	if (!testProvince) {
+		provinceSeq += 1;
+		const provinceIstatCode = provinceSeq
+			.toString(36)
+			.padStart(3, "0")
+			.slice(-3);
 		[testProvince] = await db
 			.insert(province)
 			.values({
 				name: provinceName,
 				acronym,
-				istatCode: "000",
+				istatCode: provinceIstatCode,
 				regionId: testRegion.id,
 			})
 			.returning();
