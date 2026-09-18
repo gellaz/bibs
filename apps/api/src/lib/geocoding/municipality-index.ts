@@ -16,21 +16,24 @@ export async function loadMunicipalityIndex(): Promise<MunicipalityIndex> {
 	if (cached) return cached;
 	if (!loading) {
 		loading = (async () => {
-			const rows = await db.query.municipality.findMany({
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true, name: true } } },
-			});
-			const index = buildMunicipalityIndex(
-				rows.map((row) => ({
-					id: row.id,
-					name: row.name,
-					provinceAcronym: row.province.acronym,
-					provinceName: row.province.name,
-				})),
-			);
-			cached = index;
-			loading = null;
-			return index;
+			try {
+				const rows = await db.query.municipality.findMany({
+					columns: { id: true, name: true },
+					with: { province: { columns: { acronym: true, name: true } } },
+				});
+				const index = buildMunicipalityIndex(
+					rows.map((row) => ({
+						id: row.id,
+						name: row.name,
+						provinceAcronym: row.province.acronym,
+						provinceName: row.province.name,
+					})),
+				);
+				cached = index;
+				return index;
+			} finally {
+				loading = null;
+			}
 		})();
 	}
 	return loading;

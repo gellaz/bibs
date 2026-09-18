@@ -79,4 +79,21 @@ describe("loadMunicipalityIndex", () => {
 
 		expect(second).toBe(first);
 	});
+
+	it("retries after a failed load instead of caching the failure", async () => {
+		const db = getTestDb();
+		await createTestMunicipality(db, { municipalityName: "Pioltello" });
+
+		const original = db.query.municipality.findMany;
+		db.query.municipality.findMany = (() =>
+			Promise.reject(new Error("db down"))) as typeof original;
+
+		await expect(loadMunicipalityIndex()).rejects.toThrow("db down");
+
+		db.query.municipality.findMany = original;
+
+		// Se il fallimento fosse rimasto in cache, anche questa rigetterebbe.
+		const index = await loadMunicipalityIndex();
+		expect(index.size).toBeGreaterThan(0);
+	});
 });
