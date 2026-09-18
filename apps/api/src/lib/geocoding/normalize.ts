@@ -30,7 +30,7 @@ export function normalizePlaceName(s: string): string {
 	return s
 		.normalize("NFD")
 		.replace(DIACRITICS, "")
-		.replace(/['']/g, " ")
+		.replace(/['’]/g, " ")
 		.replace(/[-/]/g, " ")
 		.replace(/\s+/g, " ")
 		.trim()

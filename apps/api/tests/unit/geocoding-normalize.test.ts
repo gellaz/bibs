@@ -24,6 +24,10 @@ describe("normalizePlaceName", () => {
 		);
 	});
 
+	it("turns typographic apostrophes into spaces", () => {
+		expect(normalizePlaceName("L’Aquila")).toBe("l aquila");
+	});
+
 	it("turns hyphens into spaces", () => {
 		expect(normalizePlaceName("Pont-Canavese")).toBe("pont canavese");
 	});
