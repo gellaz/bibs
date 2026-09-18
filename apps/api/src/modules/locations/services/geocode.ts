@@ -112,9 +112,11 @@ export async function geocodeAddress(
 			: undefined;
 
 	const index = await loadMunicipalityIndex();
-	const mentionedIds = new Set(
-		findMunicipalityNamesInQuery(index, query).map((m) => m.id),
-	);
+	const mentioned = findMunicipalityNamesInQuery(index, query);
+	const mentionedIds = new Set(mentioned.map((m) => m.id));
+	// Chi nomina un comune intende la sua zona: i risultati nei comuni limitrofi
+	// (stessa provincia) sono la risposta giusta, non rumore da scartare.
+	const mentionedProvinces = new Set(mentioned.map((m) => m.provinceAcronym));
 
 	const biased = near ? await lookup(query, { limit, near }) : [];
 	// Senza bias la prima chiamata è già larga: la seconda serve solo quando il
@@ -129,7 +131,9 @@ export async function geocodeAddress(
 	if (mentionedIds.size === 0) return suggestions.slice(0, limit);
 
 	const isMentioned = (s: GeocodeSuggestion) =>
-		s.municipality !== null && mentionedIds.has(s.municipality.id);
+		s.municipality !== null &&
+		(mentionedIds.has(s.municipality.id) ||
+			mentionedProvinces.has(s.municipality.provinceAcronym));
 
 	return [
 		...suggestions.filter(isMentioned),

@@ -186,6 +186,51 @@ describe("geocodeAddress", () => {
 		expect(suggestions[1].municipality?.name).toBe("Parma");
 	});
 
+	// Il provider risponde con un comune diverso da quello nominato, ma nella
+	// stessa provincia (Scillato è in provincia di Palermo): chi scrive
+	// "palermo" intende la zona, quindi va promosso comunque, non solo un match
+	// esatto sul comune.
+	it("promotes a result in a neighboring municipality of the named province", async () => {
+		const db = getTestDb();
+		await createTestMunicipality(db, {
+			municipalityName: "Palermo",
+			provinceName: "Palermo",
+			provinceAcronym: "PA",
+		});
+		await createTestMunicipality(db, {
+			municipalityName: "Scillato",
+			provinceName: "Palermo",
+			provinceAcronym: "PA",
+		});
+		await createTestMunicipality(db, {
+			municipalityName: "Parma",
+			provinceName: "Parma",
+			provinceAcronym: "PR",
+		});
+
+		const biased = hit({
+			addressLine1: "Via Palermo 12",
+			rawCity: "Parma",
+			rawCounty: "Parma",
+			providerRef: "photon:N-parma",
+		});
+		const unbiased = hit({
+			addressLine1: "Via Roma 12",
+			rawCity: "Scillato",
+			rawCounty: "Palermo",
+			providerRef: "photon:N-scillato",
+		});
+		queue = [[biased], [unbiased]];
+
+		const suggestions = await geocodeAddress({
+			q: "Via Roma 12 Palermo",
+			...MILAN,
+		});
+
+		expect(suggestions[0].municipality?.name).toBe("Scillato");
+		expect(suggestions[1].municipality?.name).toBe("Parma");
+	});
+
 	it("serves a stale entry when the provider is down", async () => {
 		await writeLookup({
 			provider: "photon",
