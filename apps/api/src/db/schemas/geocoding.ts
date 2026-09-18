@@ -20,6 +20,15 @@ import {
  * Non memorizza il `municipalityId`: la risoluzione del comune è deterministica
  * e locale, quindi correggerla non richiede di invalidare la cache.
  */
+/**
+ * I valori del CHECK derivati dalla tupla della porta: una fonte di verità sola.
+ * `sql.raw` perché un CHECK è DDL e non ammette parametri — i valori sono nostre
+ * costanti di compilazione, non input.
+ */
+const providerCheckValues = geocodingProviderNames
+	.map((name) => `'${name}'`)
+	.join(", ");
+
 export const geocodingLookup = pgTable(
 	"geocoding_lookups",
 	{
@@ -40,7 +49,7 @@ export const geocodingLookup = pgTable(
 		unique("geocoding_lookup_key_unique").on(t.provider, t.query, t.biasCell),
 		check(
 			"geocoding_provider_valid",
-			sql`${t.provider} IN ('photon', 'google')`,
+			sql`${t.provider} IN (${sql.raw(providerCheckValues)})`,
 		),
 	],
 );
