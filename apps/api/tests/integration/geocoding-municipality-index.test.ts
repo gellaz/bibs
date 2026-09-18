@@ -86,11 +86,12 @@ describe("loadMunicipalityIndex", () => {
 
 		const original = db.query.municipality.findMany;
 		db.query.municipality.findMany = (() =>
-			Promise.reject(new Error("db down"))) as typeof original;
+			Promise.reject(new Error("db down"))) as unknown as typeof original;
 
 		await expect(loadMunicipalityIndex()).rejects.toThrow("db down");
 
-		db.query.municipality.findMany = original;
+		db.query.municipality.findMany =
+			original as unknown as typeof db.query.municipality.findMany;
 
 		// Se il fallimento fosse rimasto in cache, anche questa rigetterebbe.
 		const index = await loadMunicipalityIndex();
