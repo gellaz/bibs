@@ -12,6 +12,7 @@ import {
 	okRes,
 	ProvinceSchema,
 	RegionSchema,
+	ServiceUnavailableError,
 	TooManyRequestsError,
 	withErrors,
 } from "@/lib/schemas";
@@ -129,13 +130,17 @@ export const locationsRoutes = new Elysia()
 	)
 	.get(
 		"/geocode",
-		async ({ query, store }) => {
+		async (ctx) => {
+			const { user, query, store } = ctx as typeof ctx & {
+				user: { id: string };
+			};
 			const pino = getLogger(store);
 			const data = await geocodeAddress(query);
 			pino.info(
 				{
-					geocodeQuery: query.q,
-					hasBias: !!(query.lat && query.lng),
+					userId: user.id,
+					queryLength: query.q.length,
+					hasBias: query.lat !== undefined && query.lng !== undefined,
 					resultCount: data.length,
 					action: "address_geocode",
 				},
@@ -182,6 +187,7 @@ export const locationsRoutes = new Elysia()
 			response: withErrors({
 				200: okRes(t.Array(GeocodeSuggestionSchema)),
 				429: TooManyRequestsError,
+				503: ServiceUnavailableError,
 			}),
 			detail: {
 				summary: "Geocoding indirizzo",

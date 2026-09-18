@@ -86,7 +86,7 @@ describe("resolveMunicipality", () => {
 	});
 
 	// Il `county` del provider è rumoroso: `Roma Capitale` per la nostra `Roma`.
-	it("resolves despite a noisy province name", () => {
+	it("resolves a unique name even when the province name is noisy", () => {
 		const result = resolveMunicipality(index, {
 			rawCity: "Roma",
 			rawCounty: "Roma Capitale",

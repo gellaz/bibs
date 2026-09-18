@@ -14,6 +14,12 @@ import {
 } from "@/lib/geocoding/resolve-municipality";
 
 const DEFAULT_LIMIT = 5;
+// La chiave di cache è (provider, query, biasCell): non include `limit` perché
+// al provider si chiede sempre il massimo consentito dalla route, quindi una
+// riga soddisfa qualunque `limit` del chiamante senza mentire su quanti
+// risultati esistono davvero. Il taglio al `limit` richiesto avviene solo alla
+// fine, in `geocodeAddress`.
+const PROVIDER_FETCH_LIMIT = 10;
 
 export interface GeocodeSuggestion {
 	/** Riga da mostrare, es. `Via Roma 12, Pioltello (MI)`. */
@@ -37,7 +43,7 @@ export interface GeocodeParams {
 /** Una chiamata al provider, passando prima dalla cache. */
 async function lookup(
 	query: string,
-	opts: GeocodeSearchOptions,
+	opts: Pick<GeocodeSearchOptions, "near">,
 ): Promise<GeocodeHit[]> {
 	const provider = getGeocodingProvider();
 	const cell = biasCell(opts.near);
@@ -49,13 +55,23 @@ async function lookup(
 	if (cached && !cached.isStale) return cached.hits;
 
 	try {
-		const hits = await provider.search(query, opts);
-		await writeLookup({
-			provider: provider.name,
-			query,
-			biasCell: cell,
-			hits,
+		const hits = await provider.search(query, {
+			limit: PROVIDER_FETCH_LIMIT,
+			near: opts.near,
 		});
+		// Una lista vuota va servita ma non scritta: se andasse in cache, uno
+		// stale-if-error trasformerebbe una futura interruzione del provider in un
+		// falso "indirizzo inesistente" invece di un errore, e nel frattempo la
+		// tabella accumulerebbe una riga per ogni query di prefisso o typo che non
+		// trova nulla.
+		if (hits.length > 0) {
+			await writeLookup({
+				provider: provider.name,
+				query,
+				biasCell: cell,
+				hits,
+			});
+		}
 		return hits;
 	} catch (error) {
 		// Stale-if-error: una risposta vecchia è meglio di un form che non cerca.
@@ -100,6 +116,12 @@ function toSuggestion(
  * palermo` da Milano torna come `Via Palermo 12` a Parma), quindi quando il
  * testo nomina un comune parte anche una chiamata senza bias, e i risultati di
  * quel comune vanno in testa.
+ *
+ * Questa regola delle due chiamate e la promozione sono tarate sulla semantica
+ * del bias di prossimità di Photon (sposta *quali* risultati arrivano, non
+ * solo il loro ordine). Passare a un altro provider (Google in produzione)
+ * non è solo "un file nuovo e una env": se il bias del nuovo provider si
+ * comporta diversamente, questa politica va rivista, non solo l'adapter.
  */
 export async function geocodeAddress(
 	params: GeocodeParams,
@@ -118,11 +140,10 @@ export async function geocodeAddress(
 	// (stessa provincia) sono la risposta giusta, non rumore da scartare.
 	const mentionedProvinces = new Set(mentioned.map((m) => m.provinceAcronym));
 
-	const biased = near ? await lookup(query, { limit, near }) : [];
+	const biased = near ? await lookup(query, { near }) : [];
 	// Senza bias la prima chiamata è già larga: la seconda serve solo quando il
 	// bias c'è e il testo nomina un comune che il bias schiaccerebbe.
-	const wide =
-		!near || mentionedIds.size > 0 ? await lookup(query, { limit }) : [];
+	const wide = !near || mentionedIds.size > 0 ? await lookup(query, {}) : [];
 
 	const suggestions = dedupe([...biased, ...wide]).map((hit) =>
 		toSuggestion(hit, index),

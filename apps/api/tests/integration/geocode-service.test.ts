@@ -41,7 +41,14 @@ mock.module("@/lib/geocoding", () => ({
 		name: "photon",
 		async search(q: string, opts: GeocodeSearchOptions) {
 			calls.push({ q, opts });
-			if (failNext) throw new Error("provider down");
+			// Rispecchia l'adapter reale (photon.ts): timeout/risposte non-ok
+			// diventano un ServiceError(503, ...), non un Error generico.
+			if (failNext) {
+				throw new ServiceError(
+					503,
+					"Servizio di ricerca indirizzi non disponibile",
+				);
+			}
 			return queue.length > 0 ? (queue.shift() as GeocodeHit[]) : nextHits;
 		},
 	}),
@@ -49,6 +56,7 @@ mock.module("@/lib/geocoding", () => ({
 
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
+import { ServiceError } from "@/lib/errors";
 import { LOOKUP_TTL_MS, writeLookup } from "@/lib/geocoding/cache";
 import { resetMunicipalityIndex } from "@/lib/geocoding/municipality-index";
 import { geocodeAddress } from "@/modules/locations/services/geocode";
@@ -255,8 +263,11 @@ describe("geocodeAddress", () => {
 	it("propagates the failure when there is nothing cached", async () => {
 		failNext = true;
 
+		// Un'unica asserzione: propaga E porta con sé lo status 503 del
+		// ServiceError del provider, non un Error generico che il chiamante non
+		// potrebbe discriminare.
 		await expect(
 			geocodeAddress({ q: "Via Roma 12", ...MILAN }),
-		).rejects.toThrow();
+		).rejects.toMatchObject({ status: 503 });
 	});
 });

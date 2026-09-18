@@ -93,6 +93,12 @@ export const TooManyRequestsError = t.Object({
 	message: t.String({ description: "Messaggio di errore leggibile" }),
 });
 
+export const ServiceUnavailableError = t.Object({
+	success: t.Literal(false),
+	error: t.Literal("SERVICE_UNAVAILABLE"),
+	message: t.String({ description: "Messaggio di errore leggibile" }),
+});
+
 export const InternalError = t.Object({
 	success: t.Literal(false),
 	error: t.Literal("INTERNAL_ERROR"),
