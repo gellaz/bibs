@@ -121,8 +121,8 @@ const STREET_WORDS = new Set([
 	"frazione",
 ]);
 
-/** Il nome di comune più lungo dell'elenco ISTAT sta sotto le 6 parole. */
-const MAX_NAME_WORDS = 5;
+/** Il nome di comune più lungo dell'elenco ISTAT è di 6 parole (4 comuni su 7904, es. "San Casciano in Val di Pesa"). */
+const MAX_NAME_WORDS = 6;
 
 /**
  * I comuni nominati nel testo della query. Serve a decidere se affiancare al

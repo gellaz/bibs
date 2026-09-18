@@ -25,6 +25,12 @@ const ROWS: MunicipalityIndexEntry[] = [
 		provinceAcronym: "RE",
 		provinceName: "Reggio nell'Emilia",
 	},
+	{
+		id: "m-san-casciano",
+		name: "San Casciano in Val di Pesa",
+		provinceAcronym: "FI",
+		provinceName: "Firenze",
+	},
 ];
 
 const index = buildMunicipalityIndex(ROWS);
@@ -67,5 +73,16 @@ describe("findMunicipalityNamesInQuery", () => {
 
 	it("returns an empty list when no municipality is named", () => {
 		expect(findMunicipalityNamesInQuery(index, "via garibaldi 7")).toEqual([]);
+	});
+
+	// Il nome di comune più lungo d'Italia è di 6 parole: se il limite fosse 5,
+	// questo comune non sarebbe mai riconosciuto come nominato.
+	it("matches the longest municipality names", () => {
+		expect(
+			findMunicipalityNamesInQuery(
+				index,
+				"via roma 12 san casciano in val di pesa",
+			).map((m) => m.id),
+		).toEqual(["m-san-casciano"]);
 	});
 });
