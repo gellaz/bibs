@@ -1,4 +1,8 @@
-import { placeNameVariants, placeTokens } from "./normalize";
+import {
+	normalizePlaceName,
+	placeNameVariants,
+	placeTokens,
+} from "./normalize";
 
 export interface MunicipalityIndexEntry {
 	id: string;
@@ -89,4 +93,64 @@ export function resolveMunicipality(
 	}
 
 	return { municipality: null, candidates: matches.map(toCompact) };
+}
+
+/**
+ * Parole che introducono un odonimo. Un nome di comune subito dopo una di
+ * queste è una via, non una destinazione: `via roma` non nomina Roma.
+ */
+const STREET_WORDS = new Set([
+	"via",
+	"viale",
+	"piazza",
+	"piazzale",
+	"corso",
+	"largo",
+	"vicolo",
+	"strada",
+	"stradone",
+	"borgo",
+	"contrada",
+	"lungomare",
+	"salita",
+	"calle",
+	"campo",
+	"rotonda",
+	"circonvallazione",
+	"localita",
+	"frazione",
+]);
+
+/** Il nome di comune più lungo dell'elenco ISTAT sta sotto le 6 parole. */
+const MAX_NAME_WORDS = 5;
+
+/**
+ * I comuni nominati nel testo della query. Serve a decidere se affiancare al
+ * bias di prossimità una chiamata senza bias: senza questa distinzione, un
+ * indirizzo lontano è irraggiungibile, oppure il bias non funziona più.
+ */
+export function findMunicipalityNamesInQuery(
+	index: MunicipalityIndex,
+	q: string,
+): MunicipalityCompact[] {
+	const words = normalizePlaceName(q)
+		.split(" ")
+		.filter((word) => word.length > 0);
+	const found = new Map<string, MunicipalityIndexEntry>();
+
+	for (let i = 0; i < words.length; i++) {
+		if (i > 0 && STREET_WORDS.has(words[i - 1])) continue;
+
+		// Dal più lungo al più corto: `reggio nell emilia` prima di `reggio`.
+		for (let n = Math.min(MAX_NAME_WORDS, words.length - i); n >= 1; n--) {
+			const candidate = words.slice(i, i + n).join(" ");
+			const entries = index.get(candidate);
+			if (entries) {
+				for (const entry of entries) found.set(entry.id, entry);
+				break;
+			}
+		}
+	}
+
+	return [...found.values()].map(toCompact);
 }
