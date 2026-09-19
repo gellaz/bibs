@@ -191,5 +191,6 @@
 	"address_search_use_location": "Use my location to see nearby addresses first",
 	"address_search_locating": "Finding your location…",
 	"address_search_nearby_first": "Nearby addresses first",
-	"address_geocode_failed": "Address search failed"
+	"address_geocode_failed": "Address search failed",
+	"address_map_hint": "Drag the pin if the position isn't exact"
 }
