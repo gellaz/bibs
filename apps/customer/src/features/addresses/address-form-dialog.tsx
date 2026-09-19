@@ -12,7 +12,7 @@ import { Input } from "@bibs/ui/components/input";
 import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Switch } from "@bibs/ui/components/switch";
-import { lazy, Suspense, useEffect, useId, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { m } from "@/paraglide/messages";
 import type {
 	AddressFormErrors,
@@ -29,6 +29,7 @@ import {
 import { AddressSearch } from "./address-search";
 import { useAddressMutations } from "./use-address-mutations";
 import type { AddressItem } from "./use-addresses";
+import { useAddresses } from "./use-addresses";
 import { useMunicipalities } from "./use-municipalities";
 
 // Leaflet è DOM-only: si carica a parte e si monta solo dopo l'hydration.
@@ -36,8 +37,15 @@ const LazyAddressMapPreview = lazy(() => import("./address-map-preview"));
 
 const LABEL_PRESETS = ["label_home", "label_work", "label_other"] as const;
 
-function errorText(code: AddressFormErrors[keyof AddressFormErrors]) {
-	if (code === "format") return m.address_form_error_zip();
+function errorText(
+	field: keyof AddressFormErrors,
+	code: AddressFormErrors[keyof AddressFormErrors],
+) {
+	if (code === "format") {
+		return field === "phone"
+			? m.address_form_error_phone()
+			: m.address_form_error_zip();
+	}
 	return m.address_form_error_required();
 }
 
@@ -57,14 +65,30 @@ export function AddressFormDialog({
 	const [values, setValues] = useState<AddressFormValues>(emptyAddressForm());
 	const [touched, setTouched] = useState(false);
 	const municipalities = useMunicipalities();
+	const addresses = useAddresses();
+	// Letto solo al momento dell'apertura (sotto): un refetch in background
+	// (es. focus della finestra) non deve azzerare un form che il cliente sta
+	// già compilando.
+	const addressesRef = useRef(addresses.data);
+	addressesRef.current = addresses.data;
 	const { create, update } = useAddressMutations();
 
-	// Il dialog si rimonta a ogni apertura, quindi i valori si sincronizzano
-	// sull'indirizzo in modifica senza il `reset(defaultValues)` di RHF che
-	// desincronizza i Select.
+	// Il dialog resta montato fra un'apertura e l'altra (si smonta solo il
+	// contenuto), quindi i valori vanno risincronizzati esplicitamente invece di
+	// affidarsi al `reset(defaultValues)` di RHF, che desincronizza i Select.
 	useEffect(() => {
 		if (!open) return;
-		setValues(address ? addressToAddressForm(address) : emptyAddressForm());
+		if (address) {
+			setValues(addressToAddressForm(address));
+		} else {
+			// Il primo indirizzo della rubrica è l'unica origine sensata per le
+			// ricerche finché il cliente non ne salva un secondo: se non tocca
+			// l'interruttore, deve restare predefinito.
+			setValues({
+				...emptyAddressForm(),
+				isDefault: (addressesRef.current?.length ?? 0) === 0,
+			});
+		}
 		setTouched(false);
 	}, [open, address]);
 
@@ -140,6 +164,7 @@ export function AddressFormDialog({
 						</FieldLabel>
 						<Input
 							id={`${ids}-line1`}
+							maxLength={200}
 							value={values.addressLine1}
 							onChange={(e) =>
 								setValues((v) => ({ ...v, addressLine1: e.target.value }))
@@ -153,7 +178,7 @@ export function AddressFormDialog({
 						/>
 						{showErrors && errors.addressLine1 && (
 							<FieldError id={`${ids}-line1-error`}>
-								{errorText(errors.addressLine1)}
+								{errorText("addressLine1", errors.addressLine1)}
 							</FieldError>
 						)}
 					</Field>
@@ -164,6 +189,7 @@ export function AddressFormDialog({
 						</FieldLabel>
 						<Input
 							id={`${ids}-line2`}
+							maxLength={200}
 							value={values.addressLine2}
 							onChange={(e) =>
 								setValues((v) => ({ ...v, addressLine2: e.target.value }))
@@ -191,7 +217,7 @@ export function AddressFormDialog({
 							/>
 							{showErrors && errors.zipCode && (
 								<FieldError id={`${ids}-zip-error`}>
-									{errorText(errors.zipCode)}
+									{errorText("zipCode", errors.zipCode)}
 								</FieldError>
 							)}
 						</Field>
@@ -225,16 +251,14 @@ export function AddressFormDialog({
 							)}
 							{showErrors && errors.municipalityId && (
 								<FieldError id={`${ids}-municipality-error`}>
-									{errorText(errors.municipalityId)}
+									{errorText("municipalityId", errors.municipalityId)}
 								</FieldError>
 							)}
 						</Field>
 					</div>
 
 					{showErrors && errors.location && (
-						<p className="text-destructive text-sm">
-							{m.address_form_error_location()}
-						</p>
+						<FieldError>{m.address_form_error_location()}</FieldError>
 					)}
 
 					<Field>
@@ -288,7 +312,7 @@ export function AddressFormDialog({
 								}
 							/>
 						</Field>
-						<Field>
+						<Field data-invalid={showErrors && !!errors.phone}>
 							<FieldLabel htmlFor={`${ids}-phone`}>
 								{m.address_form_phone()}
 							</FieldLabel>
@@ -300,7 +324,16 @@ export function AddressFormDialog({
 								onChange={(e) =>
 									setValues((v) => ({ ...v, phone: e.target.value }))
 								}
+								aria-invalid={showErrors && !!errors.phone}
+								aria-describedby={
+									showErrors && errors.phone ? `${ids}-phone-error` : undefined
+								}
 							/>
+							{showErrors && errors.phone && (
+								<FieldError id={`${ids}-phone-error`}>
+									{errorText("phone", errors.phone)}
+								</FieldError>
+							)}
 						</Field>
 					</div>
 					<p className="text-muted-foreground text-xs">

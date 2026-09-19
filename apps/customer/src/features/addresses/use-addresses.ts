@@ -15,10 +15,16 @@ async function fetchAddresses() {
 // I tipi vengono dall'API via Eden: nessun DTO scritto a mano da tenere in sync.
 export type AddressItem = Awaited<ReturnType<typeof fetchAddresses>>[number];
 
+/**
+ * `retry: false` è voluto: l'endpoint risponde 403 a chi è autenticato ma non è
+ * un cliente, e ritentare tre volte non aiuta (stessa ragione di
+ * `useCustomerProfile`).
+ */
 export function useAddresses() {
 	return useQuery({
 		queryKey: ADDRESSES_KEY,
 		staleTime: 60_000,
 		queryFn: fetchAddresses,
+		retry: false,
 	});
 }

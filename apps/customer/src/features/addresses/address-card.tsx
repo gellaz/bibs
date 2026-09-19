@@ -88,8 +88,14 @@ export function AddressCard({
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel>{m.address_form_cancel()}</AlertDialogCancel>
-							<AlertDialogAction onClick={onDelete}>
+							<AlertDialogCancel className="min-h-11 sm:min-h-9">
+								{m.address_form_cancel()}
+							</AlertDialogCancel>
+							<AlertDialogAction
+								variant="destructive"
+								className="min-h-11 sm:min-h-9"
+								onClick={onDelete}
+							>
 								{m.addresses_delete_confirm()}
 							</AlertDialogAction>
 						</AlertDialogFooter>

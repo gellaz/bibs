@@ -59,7 +59,11 @@ function AddressesPage() {
 						title={m.addresses_error_title()}
 						description={m.addresses_error_description()}
 						action={
-							<Button variant="secondary" onClick={() => refetch()}>
+							<Button
+								variant="secondary"
+								className="min-h-11 sm:min-h-9"
+								onClick={() => refetch()}
+							>
 								{m.addresses_retry()}
 							</Button>
 						}
@@ -82,7 +86,7 @@ function AddressesPage() {
 						title={m.addresses_empty_title()}
 						description={m.addresses_empty_description()}
 						action={
-							<Button onClick={openCreate}>
+							<Button className="min-h-11 sm:min-h-9" onClick={openCreate}>
 								<Plus className="size-4" aria-hidden />
 								{m.addresses_add()}
 							</Button>
@@ -92,6 +96,7 @@ function AddressesPage() {
 			</div>
 
 			<AddressFormDialog
+				key={editing?.id ?? "new"}
 				open={dialogOpen}
 				onOpenChange={setDialogOpen}
 				address={editing}

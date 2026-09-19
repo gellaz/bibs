@@ -55,9 +55,12 @@ export interface AddressFormErrors {
 	zipCode?: "required" | "format";
 	municipalityId?: "required";
 	location?: "required";
+	phone?: "format";
 }
 
 const ZIP_PATTERN = /^\d{5}$/;
+const PHONE_MIN_LENGTH = 5;
+const PHONE_MAX_LENGTH = 30;
 
 export function emptyAddressForm(): AddressFormValues {
 	return {
@@ -124,6 +127,16 @@ export function validateAddressForm(
 	// Senza coordinate l'indirizzo non può essere origine di una ricerca, che è
 	// metà del motivo per cui la rubrica esiste.
 	if (!values.location) errors.location = "required";
+
+	// Opzionale: un telefono vuoto è valido. Se c'è, deve rispettare lo stesso
+	// intervallo che l'API impone, altrimenti il 422 arriva comunque.
+	const phone = values.phone.trim();
+	if (
+		phone &&
+		(phone.length < PHONE_MIN_LENGTH || phone.length > PHONE_MAX_LENGTH)
+	) {
+		errors.phone = "format";
+	}
 
 	return errors;
 }

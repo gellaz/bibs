@@ -149,6 +149,20 @@ describe("validateAddressForm", () => {
 			validateAddressForm({ ...validForm(), zipCode: "2O096" }).zipCode,
 		).toBe("format");
 	});
+
+	// Il telefono è opzionale, ma se c'è deve stare nell'intervallo 5-30 che
+	// l'API impone: altrimenti il cliente riceve un 422 grezzo.
+	it("accepts an empty phone but rejects one that is too short", () => {
+		expect(
+			validateAddressForm({ ...validForm(), phone: "" }).phone,
+		).toBeUndefined();
+		expect(validateAddressForm({ ...validForm(), phone: "123" }).phone).toBe(
+			"format",
+		);
+		expect(
+			validateAddressForm({ ...validForm(), phone: "0212345" }).phone,
+		).toBeUndefined();
+	});
 });
 
 describe("addressFormToBody", () => {
