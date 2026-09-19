@@ -178,5 +178,8 @@
 	"cart_remove": "Remove",
 	"cart_only_left": "Only {count} left",
 	"cart_unavailable_description": "This product can no longer be bought and is not counted in the total.",
-	"error_generic": "Something went wrong. Please try again."
+	"error_generic": "Something went wrong. Please try again.",
+	"addresses_load_failed": "Can't load your addresses",
+	"addresses_saved": "Address saved",
+	"addresses_deleted": "Address deleted"
 }

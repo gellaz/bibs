@@ -178,5 +178,8 @@
 	"cart_remove": "Rimuovi",
 	"cart_only_left": "Ne restano solo {count}",
 	"cart_unavailable_description": "Questo prodotto non è più acquistabile e non è conteggiato nel totale.",
-	"error_generic": "Qualcosa è andato storto. Riprova."
+	"error_generic": "Qualcosa è andato storto. Riprova.",
+	"addresses_load_failed": "Non riesco a caricare i tuoi indirizzi",
+	"addresses_saved": "Indirizzo salvato",
+	"addresses_deleted": "Indirizzo eliminato"
 }
