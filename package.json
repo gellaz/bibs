@@ -17,7 +17,7 @@
 		"dev:seller": "bun run --filter @bibs/seller dev",
 		"dev:admin": "bun run --filter @bibs/admin dev",
 		"dev:emails": "bun run --filter @bibs/emails dev",
-		"test": "bun run --filter @bibs/emails test && bun run --filter @bibs/api test",
+		"test": "bun run --filter @bibs/emails test && bun run --filter @bibs/api test && bun run --filter @bibs/customer test",
 		"typecheck": "bun run --filter '*' typecheck",
 		"lint": "biome check .",
 		"lint:fix": "biome check --fix .",
