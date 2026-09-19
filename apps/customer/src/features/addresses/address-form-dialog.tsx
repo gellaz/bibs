@@ -74,6 +74,10 @@ export function AddressFormDialog({
 	const errors = validateAddressForm(values);
 	const showErrors = touched;
 	const isSubmitting = create.isPending || update.isPending;
+	// Un indirizzo è stato scelto (o il pin spostato) ma il comune non si è
+	// risolto: è lì che va chiesta conferma. Su un form ancora vuoto no.
+	const municipalityNeedsConfirm =
+		!values.municipalityId && values.location !== null;
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -141,9 +145,16 @@ export function AddressFormDialog({
 								setValues((v) => ({ ...v, addressLine1: e.target.value }))
 							}
 							aria-invalid={showErrors && !!errors.addressLine1}
+							aria-describedby={
+								showErrors && errors.addressLine1
+									? `${ids}-line1-error`
+									: undefined
+							}
 						/>
 						{showErrors && errors.addressLine1 && (
-							<FieldError>{errorText(errors.addressLine1)}</FieldError>
+							<FieldError id={`${ids}-line1-error`}>
+								{errorText(errors.addressLine1)}
+							</FieldError>
 						)}
 					</Field>
 
@@ -174,17 +185,22 @@ export function AddressFormDialog({
 									setValues((v) => ({ ...v, zipCode: e.target.value }))
 								}
 								aria-invalid={showErrors && !!errors.zipCode}
+								aria-describedby={
+									showErrors && errors.zipCode ? `${ids}-zip-error` : undefined
+								}
 							/>
 							{showErrors && errors.zipCode && (
-								<FieldError>{errorText(errors.zipCode)}</FieldError>
+								<FieldError id={`${ids}-zip-error`}>
+									{errorText(errors.zipCode)}
+								</FieldError>
 							)}
 						</Field>
 
 						<Field data-invalid={showErrors && !!errors.municipalityId}>
 							<FieldLabel htmlFor={`${ids}-municipality`}>
-								{values.municipalityId
-									? m.address_form_municipality()
-									: m.address_form_municipality_confirm()}
+								{municipalityNeedsConfirm
+									? m.address_form_municipality_confirm()
+									: m.address_form_municipality()}
 							</FieldLabel>
 							<MunicipalityCombobox
 								id={`${ids}-municipality`}
@@ -196,6 +212,11 @@ export function AddressFormDialog({
 								loading={municipalities.isPending}
 								error={municipalities.isError}
 								aria-invalid={showErrors && !!errors.municipalityId}
+								aria-describedby={
+									showErrors && errors.municipalityId
+										? `${ids}-municipality-error`
+										: undefined
+								}
 							/>
 							{values.municipalityCandidates.length > 1 && (
 								<p className="text-muted-foreground text-xs">
@@ -203,7 +224,9 @@ export function AddressFormDialog({
 								</p>
 							)}
 							{showErrors && errors.municipalityId && (
-								<FieldError>{errorText(errors.municipalityId)}</FieldError>
+								<FieldError id={`${ids}-municipality-error`}>
+									{errorText(errors.municipalityId)}
+								</FieldError>
 							)}
 						</Field>
 					</div>
