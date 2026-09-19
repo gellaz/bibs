@@ -326,10 +326,15 @@ export function AddressFormDialog({
 							variant="secondary"
 							onClick={() => onOpenChange(false)}
 							disabled={isSubmitting}
+							className="min-h-11 sm:min-h-9"
 						>
 							{m.address_form_cancel()}
 						</Button>
-						<Button type="submit" disabled={isSubmitting}>
+						<Button
+							type="submit"
+							disabled={isSubmitting}
+							className="min-h-11 sm:min-h-9"
+						>
 							{m.address_form_save()}
 						</Button>
 					</DialogFooter>
