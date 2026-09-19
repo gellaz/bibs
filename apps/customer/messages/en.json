@@ -215,5 +215,21 @@
 	"address_form_cancel": "Cancel",
 	"address_form_error_required": "Required field",
 	"address_form_error_zip": "The postcode is 5 digits",
-	"address_form_error_location": "Pick an address from the search, or move the pin on the map"
+	"address_form_error_location": "Pick an address from the search, or move the pin on the map",
+	"addresses_title": "Your addresses",
+	"addresses_subtitle": "Use them to search shops and products near you, and for deliveries.",
+	"addresses_add": "Add address",
+	"addresses_edit": "Edit",
+	"addresses_delete": "Delete",
+	"addresses_default_badge": "Default",
+	"addresses_empty_title": "No saved address",
+	"addresses_empty_description": "Save the addresses you use most: home, work, or the one you send gifts to.",
+	"addresses_error_title": "Can't load your addresses",
+	"addresses_error_description": "Try again: if it persists, it's on us.",
+	"addresses_retry": "Try again",
+	"addresses_delete_title": "Delete this address?",
+	"addresses_delete_description": "It won't appear among your addresses any more. Existing orders don't change.",
+	"addresses_delete_confirm": "Delete address",
+	"profile_addresses_link": "Your addresses",
+	"profile_addresses_description": "Manage the addresses for search and deliveries."
 }
