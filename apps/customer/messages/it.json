@@ -181,5 +181,15 @@
 	"error_generic": "Qualcosa è andato storto. Riprova.",
 	"addresses_load_failed": "Non riesco a caricare i tuoi indirizzi",
 	"addresses_saved": "Indirizzo salvato",
-	"addresses_deleted": "Indirizzo eliminato"
+	"addresses_deleted": "Indirizzo eliminato",
+	"address_search_label": "Cerca l'indirizzo",
+	"address_search_placeholder": "Via e civico, poi il comune",
+	"address_search_hint": "Scrivi almeno 3 caratteri",
+	"address_search_empty": "Nessun indirizzo trovato. Puoi inserirlo a mano qui sotto.",
+	"address_search_loading": "Sto cercando…",
+	"address_search_unavailable": "Ricerca indirizzi non disponibile: inseriscilo a mano qui sotto.",
+	"address_search_use_location": "Usa la mia posizione per vedere prima gli indirizzi vicini",
+	"address_search_locating": "Cerco la posizione…",
+	"address_search_nearby_first": "Prima gli indirizzi vicini a te",
+	"address_geocode_failed": "Ricerca indirizzi non riuscita"
 }

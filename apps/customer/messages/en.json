@@ -181,5 +181,15 @@
 	"error_generic": "Something went wrong. Please try again.",
 	"addresses_load_failed": "Can't load your addresses",
 	"addresses_saved": "Address saved",
-	"addresses_deleted": "Address deleted"
+	"addresses_deleted": "Address deleted",
+	"address_search_label": "Search the address",
+	"address_search_placeholder": "Street and number, then the town",
+	"address_search_hint": "Type at least 3 characters",
+	"address_search_empty": "No address found. You can enter it by hand below.",
+	"address_search_loading": "Searching…",
+	"address_search_unavailable": "Address search is unavailable: enter it by hand below.",
+	"address_search_use_location": "Use my location to see nearby addresses first",
+	"address_search_locating": "Finding your location…",
+	"address_search_nearby_first": "Nearby addresses first",
+	"address_geocode_failed": "Address search failed"
 }
