@@ -106,7 +106,16 @@ function ComboboxContent({
 				align={align}
 				alignOffset={alignOffset}
 				anchor={anchor}
-				className="isolate z-50"
+				// A modal Radix Dialog sets `pointer-events: none` on <body> while
+				// it's open, and only re-enables pointer events inside its own
+				// DialogContent. This popup renders through @base-ui/react's own
+				// portal, a sibling of DialogContent, so it inherits that
+				// `pointer-events: none` and mouse clicks on items never land
+				// (they're hit-tested against whatever Dialog content sits
+				// beneath the popup instead). Force pointer events back on here,
+				// the same trick Radix's own DismissableLayer uses to make
+				// popovers/menus interactive inside a modal dialog.
+				className="isolate z-50 pointer-events-auto"
 			>
 				<ComboboxPrimitive.Popup
 					data-slot="combobox-content"
