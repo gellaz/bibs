@@ -3,16 +3,13 @@ import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
 import { Notice } from "@/components/notice";
 import { GRID, TileSkeleton } from "@/components/tile";
 import { ProductTile } from "@/features/catalog/product-tile";
-import { useGeolocation } from "@/features/location/use-geolocation";
+import { originLabel } from "@/features/location/origin-label";
+import { useSearchOrigin } from "@/features/location/search-origin";
 import { m } from "@/paraglide/messages";
 import { useNearbyProducts } from "./use-nearby-products";
 
 export function NearbyProducts() {
-	const {
-		coords,
-		status: geoStatus,
-		request: requestLocation,
-	} = useGeolocation();
+	const { origin, coords, geoStatus, setPickerOpen } = useSearchOrigin();
 	const {
 		data: products,
 		isPending,
@@ -35,33 +32,26 @@ export function NearbyProducts() {
 					</p>
 				</div>
 
-				{geoStatus === "granted" ? (
+				{coords ? (
 					<span className="inline-flex items-center gap-1.5 text-saffron-deep text-sm dark:text-saffron">
 						<LocateFixed className="size-4" aria-hidden />
-						{m.discovery_sorted_by_distance()}
+						{m.origin_distances_from({ label: originLabel(origin, geoStatus) })}
 					</span>
 				) : (
+					// Il perché di un GPS negato o assente sta nel selettore, accanto
+					// alla voce che lo riguarda: qui si dice solo che manca un punto
+					// di partenza, e si offre il gesto per sceglierlo.
 					<Button
 						variant="secondary"
 						size="sm"
-						onClick={requestLocation}
-						disabled={geoStatus === "pending"}
+						className="min-h-11 sm:min-h-9"
+						onClick={() => setPickerOpen(true)}
 					>
 						<MapPin className="size-4" aria-hidden />
-						{geoStatus === "pending"
-							? m.discovery_locating()
-							: m.discovery_show_distances()}
+						{m.origin_choose()}
 					</Button>
 				)}
 			</div>
-
-			{(geoStatus === "denied" || geoStatus === "unsupported") && (
-				<p className="mt-3 text-muted-foreground text-xs">
-					{geoStatus === "denied"
-						? m.discovery_location_denied()
-						: m.discovery_location_unsupported()}
-				</p>
-			)}
 
 			<div className="mt-6">
 				{isPending ? (
@@ -92,10 +82,7 @@ export function NearbyProducts() {
 					<ul className={GRID}>
 						{products.map((product) => (
 							<li key={product.id}>
-								<ProductTile
-									product={product}
-									showDistance={geoStatus === "granted"}
-								/>
+								<ProductTile product={product} showDistance={coords !== null} />
 							</li>
 						))}
 					</ul>
