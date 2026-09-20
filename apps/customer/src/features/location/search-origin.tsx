@@ -129,18 +129,17 @@ export function SearchOriginProvider({
 	const adoptNear = useCallback(
 		(near: string): boolean => {
 			const next = choiceFromNear(near);
-			// Chi riceve un link non ha chiesto niente: se il permesso non c'è
-			// già, `near=gps` non lo chiede — decade a nessuna origine.
-			if (next.kind === "gps" && geoStatus !== "granted") {
-				commit({ kind: "none" });
-				return false;
-			}
-			// Un id che non è tuo non risolve nulla, e non è un errore da mostrare.
+			// Un `near` che non risolve **non tocca la scelta di chi lo riceve**:
+			// il link di un altro non deve cancellargli l'origine salvata. Si dice
+			// solo alla route che non ha attecchito, e l'URL si ripulisce.
+			//
+			// `near=gps` senza consenso non fa scattare il prompt: chi apre un
+			// link non ha chiesto niente.
+			if (next.kind === "gps" && geoStatus !== "granted") return false;
 			if (
 				next.kind === "address" &&
 				!findOriginAddress(addresses, next.addressId)
 			) {
-				commit({ kind: "none" });
 				return false;
 			}
 			commit(next);

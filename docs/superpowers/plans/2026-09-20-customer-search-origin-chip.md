@@ -779,18 +779,17 @@ export function SearchOriginProvider({
 	const adoptNear = useCallback(
 		(near: string): boolean => {
 			const next = choiceFromNear(near);
-			// Chi riceve un link non ha chiesto niente: se il permesso non c'è
-			// già, `near=gps` non lo chiede — decade a nessuna origine.
-			if (next.kind === "gps" && geoStatus !== "granted") {
-				commit({ kind: "none" });
-				return false;
-			}
-			// Un id che non è tuo non risolve nulla, e non è un errore da mostrare.
+			// Un `near` che non risolve **non tocca la scelta di chi lo riceve**:
+			// il link di un altro non deve cancellargli l'origine salvata. Si dice
+			// solo alla route che non ha attecchito, e l'URL si ripulisce.
+			//
+			// `near=gps` senza consenso non fa scattare il prompt: chi apre un
+			// link non ha chiesto niente.
+			if (next.kind === "gps" && geoStatus !== "granted") return false;
 			if (
 				next.kind === "address" &&
 				!findOriginAddress(addresses, next.addressId)
 			) {
-				commit({ kind: "none" });
 				return false;
 			}
 			commit(next);
@@ -1716,7 +1715,7 @@ Copertura della sezione 3 della spec, riga per riga:
 | Popover desktop / Drawer mobile | Task 4 |
 | voci: posizione attuale (permesso al tocco), indirizzi, "Tutta l'Italia", "Gestisci indirizzi" | Task 4 (`OriginOptions`) |
 | `near=gps` / `near=<addressId>`, assente = eredita, nessuna coordinata | Task 6 |
-| id non risolvibile → nessuna origine, senza errori | Task 3 (`adoptNear` → `false`) + Task 6 (ripulitura dell'URL) |
+| id non risolvibile → nessuna origine, senza errori | Task 3 (`adoptNear` → `false`, senza toccare la scelta salvata) + Task 6 (ripulitura dell'URL) |
 | i 4 hook ricevono `coords` dal provider | Task 5 (`use-nearby-products`) + Task 6 (`use-store-search`, `use-store-facets`, `use-store-map`) |
 | `radiusApplies` da `geoStatus === "granted"` a `coords !== null` | Task 6 |
 | home senza bottone proprio, con invito "Scegli da dove cercare" che apre il chip | Task 5 |
