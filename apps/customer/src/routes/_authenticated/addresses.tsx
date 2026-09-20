@@ -30,6 +30,15 @@ function AddressesPage() {
 		setDialogOpen(true);
 	};
 
+	// The empty state below has its own "add address" call to action; showing
+	// the header one too would put two identical invites a few pixels apart.
+	// Single source of truth for both the header button and which panel to
+	// render below, so they can't drift apart if one of them changes later.
+	// Keep the header button for every other state (loading, error, non-empty
+	// list) so the user is never left without a way to add an address.
+	const showEmptyState =
+		!isPending && !isError && (!addresses || addresses.length === 0);
+
 	return (
 		<div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
 			<div className="flex flex-wrap items-end justify-between gap-3">
@@ -41,10 +50,12 @@ function AddressesPage() {
 						{m.addresses_subtitle()}
 					</p>
 				</div>
-				<Button className="min-h-11" onClick={openCreate}>
-					<Plus className="size-4" aria-hidden />
-					{m.addresses_add()}
-				</Button>
+				{!showEmptyState && (
+					<Button className="min-h-11" onClick={openCreate}>
+						<Plus className="size-4" aria-hidden />
+						{m.addresses_add()}
+					</Button>
+				)}
 			</div>
 
 			<div className="mt-8">
@@ -68,19 +79,7 @@ function AddressesPage() {
 							</Button>
 						}
 					/>
-				) : addresses && addresses.length > 0 ? (
-					<ul className="space-y-3">
-						{addresses.map((address) => (
-							<AddressCard
-								key={address.id}
-								address={address}
-								busy={remove.isPending}
-								onEdit={() => openEdit(address)}
-								onDelete={() => remove.mutate(address.id)}
-							/>
-						))}
-					</ul>
-				) : (
+				) : showEmptyState ? (
 					<Notice
 						icon={MapPinPlus}
 						title={m.addresses_empty_title()}
@@ -92,6 +91,18 @@ function AddressesPage() {
 							</Button>
 						}
 					/>
+				) : (
+					<ul className="space-y-3">
+						{(addresses ?? []).map((address) => (
+							<AddressCard
+								key={address.id}
+								address={address}
+								busy={remove.isPending}
+								onEdit={() => openEdit(address)}
+								onDelete={() => remove.mutate(address.id)}
+							/>
+						))}
+					</ul>
 				)}
 			</div>
 
