@@ -84,9 +84,14 @@ export function AddressFormDialog({
 			// Il primo indirizzo della rubrica è l'unica origine sensata per le
 			// ricerche finché il cliente non ne salva un secondo: se non tocca
 			// l'interruttore, deve restare predefinito.
+			// `undefined` significa "lista non ancora caricata", che non è
+			// "rubrica vuota": collassare i due casi pre-attiverebbe il
+			// predefinito a chi ne ha già uno, spostandoglielo al salvataggio.
+			const isFirstAddress =
+				addressesRef.current !== undefined && addressesRef.current.length === 0;
 			setValues({
 				...emptyAddressForm(),
-				isDefault: (addressesRef.current?.length ?? 0) === 0,
+				isDefault: isFirstAddress,
 			});
 		}
 		setTouched(false);
