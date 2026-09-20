@@ -1,13 +1,15 @@
 import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Link } from "@tanstack/react-router";
 import { CartBadge } from "@/features/cart/cart-badge";
+import { SearchOriginChip } from "@/features/location/search-origin-chip";
 import { m } from "@/paraglide/messages";
 import { PAGE_CONTAINER } from "./page";
 import { UserMenu } from "./user-menu";
 
 /**
  * Top app bar del customer: identità bibs (open hand + wordmark) a sinistra,
- * che funge da link verso la home, e il menu account a destra.
+ * che funge da link verso la home, il chip dell'origine della ricerca, e il
+ * menu account a destra.
  *
  * Chrome calmo del register brand: cream pieno con un bordo 1px warm-edge in
  * basso (separazione disegnata, non ombra — "Flat-By-Default"). La navigazione
@@ -18,7 +20,7 @@ export function SiteHeader() {
 	return (
 		<header className="sticky top-0 z-40 border-border border-b bg-background">
 			<div
-				className={`${PAGE_CONTAINER} flex h-14 items-center justify-between gap-4 sm:h-16`}
+				className={`${PAGE_CONTAINER} flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2 sm:h-16 sm:flex-nowrap sm:gap-4 sm:py-0`}
 			>
 				<Link
 					to="/"
@@ -30,6 +32,15 @@ export function SiteHeader() {
 						bibs
 					</span>
 				</Link>
+				{/* Sotto `sm` il chip scende su una riga sua: nella prima non ci sta
+				    un'etichetta leggibile accanto a identità, navigazione e borsa, e
+				    un tap target da 44px la riempirebbe. Da `sm` torna accanto
+				    all'identità. Una sola istanza, spostata dal wrapping del flex:
+				    due copie aprirebbero due pannelli, perché il contenuto finisce
+				    in un portal e il CSS del wrapper non lo nasconde. */}
+				<div className="max-sm:order-last max-sm:basis-full">
+					<SearchOriginChip />
+				</div>
 				<nav className="ml-auto mr-2 flex items-center gap-1">
 					<Link
 						to="/stores"

@@ -232,5 +232,20 @@
 	"addresses_delete_description": "Non comparirà più fra i tuoi indirizzi, e gli ordini già fatti non lo conserveranno.",
 	"addresses_delete_confirm": "Elimina indirizzo",
 	"profile_addresses_link": "I tuoi indirizzi",
-	"profile_addresses_description": "Gestisci gli indirizzi per la ricerca e per le consegne."
+	"profile_addresses_description": "Gestisci gli indirizzi per la ricerca e per le consegne.",
+	"origin_chip_aria": "Da dove cerchi",
+	"origin_title": "Da dove cerchi",
+	"origin_gps": "Posizione attuale",
+	"origin_gps_locating": "Rilevamento…",
+	"origin_gps_denied": "Posizione non disponibile: controlla i permessi del browser.",
+	"origin_gps_unsupported": "Il tuo dispositivo non supporta la geolocalizzazione.",
+	"origin_addresses_title": "I tuoi indirizzi",
+	"origin_addresses_empty": "Non hai ancora salvato indirizzi.",
+	"origin_everywhere": "Tutta l'Italia",
+	"origin_everywhere_hint": "Nessun ordinamento per distanza",
+	"origin_manage": "Gestisci indirizzi",
+	"origin_choose": "Scegli da dove cercare",
+	"origin_distances_from": "Distanze da {label}",
+	"origin_search_here": "Cerca qui vicino",
+	"store_distance_needs_origin": "Scegli da dove cercare per filtrare per distanza."
 }

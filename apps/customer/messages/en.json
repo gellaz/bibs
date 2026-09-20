@@ -232,5 +232,20 @@
 	"addresses_delete_description": "It won't appear among your addresses any more, and past orders won't keep it.",
 	"addresses_delete_confirm": "Delete address",
 	"profile_addresses_link": "Your addresses",
-	"profile_addresses_description": "Manage the addresses for search and deliveries."
+	"profile_addresses_description": "Manage the addresses for search and deliveries.",
+	"origin_chip_aria": "Where you're searching from",
+	"origin_title": "Where you're searching from",
+	"origin_gps": "Current location",
+	"origin_gps_locating": "Locating…",
+	"origin_gps_denied": "Location unavailable: check your browser permissions.",
+	"origin_gps_unsupported": "Your device doesn't support geolocation.",
+	"origin_addresses_title": "Your addresses",
+	"origin_addresses_empty": "You haven't saved any address yet.",
+	"origin_everywhere": "All of Italy",
+	"origin_everywhere_hint": "No distance sorting",
+	"origin_manage": "Manage addresses",
+	"origin_choose": "Choose where to search from",
+	"origin_distances_from": "Distances from {label}",
+	"origin_search_here": "Search near here",
+	"store_distance_needs_origin": "Choose where to search from to filter by distance."
 }
