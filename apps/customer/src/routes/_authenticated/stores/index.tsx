@@ -19,7 +19,9 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Notice } from "@/components/notice";
 import { PAGE_CONTAINER } from "@/components/page";
 import { TileSkeleton } from "@/components/tile";
-import { useGeolocation } from "@/features/location/use-geolocation";
+import { originLabel } from "@/features/location/origin-label";
+import { useSearchOrigin } from "@/features/location/search-origin";
+import { nearFromOrigin } from "@/features/location/search-origin-state";
 import type { StoreFilterValue } from "@/features/stores/store-filters";
 import { StoreFilters } from "@/features/stores/store-filters";
 import { StoreTile } from "@/features/stores/store-tile";
@@ -66,6 +68,12 @@ interface StoreSearchParams {
 	openNow?: boolean;
 	/** Assente = lista: `/stores` nudo resta la vista di sempre. */
 	view?: "map";
+	/**
+	 * Da dove si cerca: `gps` o l'id di un indirizzo. Mai coordinate — un link
+	 * condiviso non deve dire dove abiti, e a chi lo riceve l'id non risolve
+	 * nulla. Assente = si eredita l'origine attiva.
+	 */
+	near?: string;
 }
 
 export const Route = createFileRoute("/_authenticated/stores/")({
@@ -81,21 +89,25 @@ export const Route = createFileRoute("/_authenticated/stores/")({
 		// `false` esce dall'URL: un filtro spento non è uno stato da descrivere.
 		openNow: search.openNow === true ? true : undefined,
 		view: search.view === "map" ? "map" : undefined,
+		near: typeof search.near === "string" ? search.near : undefined,
 	}),
 	component: StoresPage,
 });
 
 function StoresPage() {
 	const navigate = Route.useNavigate();
-	const { q, categoryId, macroCategoryId, radius, openNow, view } =
+	const { q, categoryId, macroCategoryId, radius, openNow, view, near } =
 		Route.useSearch();
 	const [text, setText] = useState(q ?? "");
 	const [filtersOpen, setFiltersOpen] = useState(false);
 	const {
+		origin,
 		coords,
-		status: geoStatus,
-		request: requestLocation,
-	} = useGeolocation();
+		geoStatus,
+		isAddressesPending,
+		adoptNear,
+		setPickerOpen,
+	} = useSearchOrigin();
 
 	// Debounce the text input into the URL search param.
 	useEffect(() => {
@@ -116,6 +128,48 @@ function StoresPage() {
 			setText(q ?? "");
 		}
 	}, [q]);
+
+	// `near` ⇄ origine, in due effetti con memoria.
+	//
+	// All'arrivo **vince il link**: `adoptedNear` ricorda quale valore dell'URL
+	// abbiamo già consumato, così non lo si riadotta a ogni render. Un `near`
+	// che non risolve nulla (l'indirizzo di un altro cliente, o `gps` senza
+	// consenso) viene tolto dall'URL invece di restare lì a promettere
+	// un'origine che non c'è.
+	const adoptedNear = useRef<string | null>(null);
+	useEffect(() => {
+		// Un id di indirizzo non si può giudicare finché la rubrica non ha risposto.
+		if (isAddressesPending) return;
+		const key = near ?? null;
+		if (adoptedNear.current === key) return;
+		adoptedNear.current = key;
+		if (key === null) return;
+		if (!adoptNear(key)) {
+			void navigate({
+				search: (prev) => ({ ...prev, near: undefined }),
+				replace: true,
+			});
+		}
+	}, [near, isAddressesPending, adoptNear, navigate]);
+
+	// …e da lì in poi **vince il chip**: quando l'origine cambia, l'URL la
+	// rispecchia, così quello che si condivide è la vista che si sta guardando.
+	// `lastOriginKey` parte indefinito di proposito: al primo giro non si scrive
+	// niente, altrimenti l'origine ancora in avvio cancellerebbe il `near` del
+	// link appena aperto.
+	const lastOriginKey = useRef<string | null | undefined>(undefined);
+	useEffect(() => {
+		const key = nearFromOrigin(origin) ?? null;
+		const changed =
+			lastOriginKey.current !== undefined && lastOriginKey.current !== key;
+		lastOriginKey.current = key;
+		if (!changed || (near ?? null) === key) return;
+		adoptedNear.current = key;
+		void navigate({
+			search: (prev) => ({ ...prev, near: key ?? undefined }),
+			replace: true,
+		});
+	}, [origin, near, navigate]);
 
 	const facets = useStoreFacets({ q, coords, radius, openNow });
 
@@ -177,8 +231,9 @@ function StoresPage() {
 		openNow,
 	};
 	// Senza posizione il raggio non viene inviato: contarlo tra i filtri attivi
-	// annuncerebbe una restrizione che i risultati non hanno.
-	const radiusApplies = radius !== undefined && geoStatus === "granted";
+	// annuncerebbe una restrizione che i risultati non hanno. Da questa PR una
+	// posizione può venire anche da un indirizzo salvato, non solo dal GPS.
+	const radiusApplies = radius !== undefined && coords !== null;
 	const activeFilterCount =
 		(categoryId || macroCategoryId ? 1 : 0) +
 		(radiusApplies ? 1 : 0) +
@@ -213,8 +268,9 @@ function StoresPage() {
 			openNowTotal={facets.openNowTotal}
 			isPending={facets.isPending}
 			value={filterValue}
-			geoStatus={geoStatus}
-			onRequestLocation={requestLocation}
+			hasOrigin={coords !== null}
+			originLabel={originLabel(origin, geoStatus)}
+			onChooseOrigin={() => setPickerOpen(true)}
 			onChange={applyFilters}
 		/>
 	);
@@ -269,7 +325,7 @@ function StoresPage() {
 			<ul className={RESULTS_GRID}>
 				{stores.map((store) => (
 					<li key={store.id}>
-						<StoreTile store={store} showDistance={geoStatus === "granted"} />
+						<StoreTile store={store} showDistance={coords !== null} />
 					</li>
 				))}
 			</ul>
@@ -366,7 +422,7 @@ function StoresPage() {
 					>
 						<LazyStoreSearchMap
 							pins={map.pins}
-							showDistance={geoStatus === "granted"}
+							showDistance={coords !== null}
 							userCoords={coords}
 						/>
 					</Suspense>

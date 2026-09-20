@@ -1,7 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { ChevronRight, Clock, LocateFixed, MapPin } from "lucide-react";
-import type { GeoStatus } from "@/features/location/use-geolocation";
 import { m } from "@/paraglide/messages";
 import type { MacroFacet } from "./use-store-facets";
 
@@ -30,8 +29,10 @@ interface StoreFiltersProps {
 	openNowTotal: number;
 	isPending: boolean;
 	value: StoreFilterValue;
-	geoStatus: GeoStatus;
-	onRequestLocation: () => void;
+	/** C'è una posizione da cui misurare: GPS o un indirizzo salvato. */
+	hasOrigin: boolean;
+	originLabel: string;
+	onChooseOrigin: () => void;
 	onChange: (next: StoreFilterValue) => void;
 }
 
@@ -178,8 +179,9 @@ export function StoreFilters({
 	openNowTotal,
 	isPending,
 	value,
-	geoStatus,
-	onRequestLocation,
+	hasOrigin,
+	originLabel,
+	onChooseOrigin,
 	onChange,
 }: StoreFiltersProps) {
 	const { macroCategoryId, categoryId, radius, openNow } = value;
@@ -189,8 +191,6 @@ export function StoreFilters({
 	const expandedMacroId =
 		macroCategoryId ??
 		macros.find((mc) => mc.categories.some((c) => c.id === categoryId))?.id;
-
-	const hasPosition = geoStatus === "granted";
 
 	return (
 		<div className="space-y-7">
@@ -288,26 +288,24 @@ export function StoreFilters({
 			</FilterSection>
 
 			<FilterSection title={m.store_filter_distance()}>
-				{hasPosition ? (
+				{hasOrigin ? (
 					<p className="flex items-center gap-1.5 text-saffron-deep text-xs dark:text-saffron">
 						<LocateFixed className="size-3.5 shrink-0" aria-hidden />
-						{m.store_sorted_by_distance()}
+						{m.origin_distances_from({ label: originLabel })}
 					</p>
 				) : (
 					<div className="space-y-2.5">
 						<p className="text-muted-foreground text-xs leading-relaxed">
-							{m.store_distance_needs_location()}
+							{m.store_distance_needs_origin()}
 						</p>
 						<Button
 							variant="secondary"
 							size="sm"
-							onClick={onRequestLocation}
-							disabled={geoStatus === "pending"}
+							className="min-h-11 sm:min-h-9"
+							onClick={onChooseOrigin}
 						>
 							<MapPin className="size-4" aria-hidden />
-							{geoStatus === "pending"
-								? m.store_locating()
-								: m.store_use_my_location()}
+							{m.origin_choose()}
 						</Button>
 					</div>
 				)}
@@ -315,16 +313,16 @@ export function StoreFilters({
 				<div className="grid grid-cols-3 gap-2 pt-1 lg:flex lg:flex-wrap lg:gap-1.5">
 					<RadiusPill
 						label={m.store_radius_any()}
-						active={hasPosition && radius === undefined}
-						disabled={!hasPosition}
+						active={hasOrigin && radius === undefined}
+						disabled={!hasOrigin}
 						onClick={() => onChange({ ...value, radius: undefined })}
 					/>
 					{RADIUS_PRESETS.map((km) => (
 						<RadiusPill
 							key={km}
 							label={m.store_radius_km({ km })}
-							active={hasPosition && radius === km}
-							disabled={!hasPosition}
+							active={hasOrigin && radius === km}
+							disabled={!hasOrigin}
 							onClick={() => onChange({ ...value, radius: km })}
 						/>
 					))}
