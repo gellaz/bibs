@@ -1,7 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { ChevronRight, Clock, LocateFixed, MapPin } from "lucide-react";
-import type { GeoStatus } from "@/features/discovery/use-geolocation";
+import type { GeoStatus } from "@/features/location/use-geolocation";
 import { m } from "@/paraglide/messages";
 import type { MacroFacet } from "./use-store-facets";
 

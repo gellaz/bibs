@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 import { formatDistance, TileImage } from "@/components/tile";
-import type { Coords } from "@/features/discovery/use-geolocation";
+import type { Coords } from "@/features/location/coords";
 import { m } from "@/paraglide/messages";
 import { KeepSizeInSync, pinIcon, userLocationIcon } from "./map-shared";
 import { openStatusLabel } from "./open-status";

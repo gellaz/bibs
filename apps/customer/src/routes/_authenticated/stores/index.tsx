@@ -19,7 +19,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Notice } from "@/components/notice";
 import { PAGE_CONTAINER } from "@/components/page";
 import { TileSkeleton } from "@/components/tile";
-import { useGeolocation } from "@/features/discovery/use-geolocation";
+import { useGeolocation } from "@/features/location/use-geolocation";
 import type { StoreFilterValue } from "@/features/stores/store-filters";
 import { StoreFilters } from "@/features/stores/store-filters";
 import { StoreTile } from "@/features/stores/store-tile";

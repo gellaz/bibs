@@ -3,8 +3,8 @@ import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
 import { Notice } from "@/components/notice";
 import { GRID, TileSkeleton } from "@/components/tile";
 import { ProductTile } from "@/features/catalog/product-tile";
+import { useGeolocation } from "@/features/location/use-geolocation";
 import { m } from "@/paraglide/messages";
-import { useGeolocation } from "./use-geolocation";
 import { useNearbyProducts } from "./use-nearby-products";
 
 export function NearbyProducts() {
