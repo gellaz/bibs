@@ -197,9 +197,9 @@ describe("bestActiveDiscountPercent — parità con getBestActiveDiscounts", () 
 		});
 		await createTestDiscountProduct(db, dNew.id, future.id);
 
-		// Sconto non attivo (bozza / sospeso).
+		// Sconto non attivo. `discountStatuses` = active | paused | archived.
 		const paused = await createTestProduct(db, sp, { name: "Sospeso", price: "100.00" });
-		const dPaused = await createTestDiscount(db, sp, { percent: 50, status: "scheduled" });
+		const dPaused = await createTestDiscount(db, sp, { percent: 50, status: "paused" });
 		await createTestDiscountProduct(db, dPaused.id, paused.id);
 
 		const ids = [plain.id, single.id, doubled.id, expired.id, future.id, paused.id];
@@ -232,9 +232,7 @@ cd apps/api && bun test tests/integration/discount-pricing-parity.test.ts
 ```
 
 Atteso: FAIL con `bestActiveDiscountPercent is not a function` (import non
-risolto). Se invece fallisce su `status: "scheduled"`, apri
-`apps/api/src/db/schemas/discount.ts`, leggi i valori di `discountStatuses` e
-usa nel test uno stato diverso da `active`.
+risolto).
 
 - [ ] **Step 3: Aggiungi il frammento**
 
