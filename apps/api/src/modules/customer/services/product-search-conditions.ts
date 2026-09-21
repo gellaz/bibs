@@ -7,6 +7,10 @@ import {
 } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
+import {
+	bestActiveDiscountPercent,
+	effectivePriceExpr,
+} from "@/modules/seller/services/discount-pricing";
 
 export interface ProductFilterParams {
 	q?: string;
@@ -72,7 +76,18 @@ export function productConditions(
 		)`);
 	}
 
-	// `onSale`, `minPrice` e `maxPrice`: Task 4.
+	// Nel WHERE e non come post-filtro: filtrare dopo la query darebbe un
+	// `total` e una paginazione che non corrispondono ai risultati.
+	if (p.onSale) {
+		conditions.push(sql`${bestActiveDiscountPercent()} IS NOT NULL`);
+	}
+	// Sul prezzo che si paga, non sul listino.
+	if (p.minPrice !== undefined) {
+		conditions.push(sql`${effectivePriceExpr()} >= ${p.minPrice}`);
+	}
+	if (p.maxPrice !== undefined) {
+		conditions.push(sql`${effectivePriceExpr()} <= ${p.maxPrice}`);
+	}
 
 	return conditions;
 }

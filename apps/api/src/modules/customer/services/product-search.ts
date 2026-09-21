@@ -5,6 +5,7 @@ import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
 import { parsePagination } from "@/lib/pagination";
+import { openNowCondition } from "@/lib/store-open-status";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 import {
 	distanceExpr,
@@ -84,7 +85,7 @@ function buildOffer(
 			distance: sql<number | null>`${distanceExpr(params.lat, params.lng)}`.as(
 				"distance",
 			),
-			matchCount: sql<number>`count(*) OVER ()`.as("match_count"),
+			matchCount: sql<number>`(count(*) OVER ())::int`.as("match_count"),
 		})
 		.from(storeProduct)
 		.innerJoin(store, eq(store.id, storeProduct.storeId))
@@ -99,8 +100,12 @@ function buildOffer(
 export async function searchProducts(params: ProductSearchParams) {
 	const { page, limit, offset } = parsePagination(params);
 
-	// `openNow` restringe l'aggancio, non solo l'insieme: lo collega il Task 4.
-	const openCondition = null;
+	// `openNow` restringe anche l'aggancio, non solo l'insieme: entra fra le
+	// condizioni del laterale, quindi il negozio scelto è il più vicino APERTO.
+	// La condizione si costruisce una volta sola: legge le festività attive.
+	const openCondition = params.openNow
+		? await openNowCondition(new Date())
+		: null;
 	const whereClause = sql.join(productConditions(params), sql` AND `);
 
 	const rankExpr = params.q

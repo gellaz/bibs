@@ -26,6 +26,8 @@ import { searchProducts } from "@/modules/customer/services/product-search";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCategory,
+	createTestDiscount,
+	createTestDiscountProduct,
 	createTestMacroCategory,
 	createTestProduct,
 	createTestProductCategoryAssignment,
@@ -359,5 +361,156 @@ describe("searchProducts — testo, categoria, paginazione", () => {
 		const ids = [...page1.data, ...page2.data, ...page3.data].map((r) => r.id);
 		expect(ids).toHaveLength(5);
 		expect(new Set(ids).size).toBe(5);
+	});
+});
+
+/** Sette giorni su sette, 00:00–23:59: aperto sempre, senza dipendere dall'orologio. */
+const ALWAYS_OPEN = Array.from({ length: 7 }, (_, i) => ({
+	dayOfWeek: i,
+	slots: [{ open: "00:00", close: "23:59" }],
+}));
+
+describe("searchProducts — filtro offerta e prezzo", () => {
+	it("onSale tiene solo i prodotti con uno sconto attivo adesso", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await visibleStore(seller.profile.id, {
+			name: "Negozio",
+			...ROME,
+		});
+
+		const discounted = await productIn(seller.profile.id, [s.id], {
+			name: "Scontato",
+			price: "100.00",
+		});
+		const expiredOne = await productIn(seller.profile.id, [s.id], {
+			name: "ScontoScaduto",
+			price: "100.00",
+		});
+		await productIn(seller.profile.id, [s.id], {
+			name: "Pieno",
+			price: "100.00",
+		});
+
+		const live = await createTestDiscount(db, seller.profile.id, {
+			percent: 30,
+		});
+		await createTestDiscountProduct(db, live.id, discounted.id);
+		const old = await createTestDiscount(db, seller.profile.id, {
+			percent: 30,
+			startsAt: new Date(Date.now() - 7 * 86_400_000),
+			endsAt: new Date(Date.now() - 86_400_000),
+		});
+		await createTestDiscountProduct(db, old.id, expiredOne.id);
+
+		const result = await searchProducts({ onSale: true });
+
+		expect(result.data.map((r) => r.name)).toEqual(["Scontato"]);
+		expect(result.pagination.total).toBe(1);
+		expect(result.data[0].discountPercent).toBe(30);
+		expect(result.data[0].discountedPrice).toBe("70.00");
+	});
+
+	it("il prezzo filtra su quello che si paga, non sul listino", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await visibleStore(seller.profile.id, {
+			name: "Negozio",
+			...ROME,
+		});
+
+		// 100 € scontato al 50% → 50 €: dentro `maxPrice: 60`.
+		const cheapAfterDiscount = await productIn(seller.profile.id, [s.id], {
+			name: "CentoScontato",
+			price: "100.00",
+		});
+		const half = await createTestDiscount(db, seller.profile.id, {
+			percent: 50,
+		});
+		await createTestDiscountProduct(db, half.id, cheapAfterDiscount.id);
+
+		// 100 € pieni: fuori.
+		await productIn(seller.profile.id, [s.id], {
+			name: "CentoPieno",
+			price: "100.00",
+		});
+		// 20 € pieni: dentro.
+		await productIn(seller.profile.id, [s.id], {
+			name: "Venti",
+			price: "20.00",
+		});
+
+		const capped = await searchProducts({ maxPrice: 60 });
+		expect(capped.data.map((r) => r.name).sort()).toEqual([
+			"CentoScontato",
+			"Venti",
+		]);
+		expect(capped.pagination.total).toBe(2);
+
+		const floored = await searchProducts({ minPrice: 30 });
+		expect(floored.data.map((r) => r.name).sort()).toEqual([
+			"CentoPieno",
+			"CentoScontato",
+		]);
+
+		const band = await searchProducts({ minPrice: 30, maxPrice: 60 });
+		expect(band.data.map((r) => r.name)).toEqual(["CentoScontato"]);
+	});
+});
+
+describe("searchProducts — filtro aperti ora", () => {
+	it("esclude i prodotti il cui unico negozio è chiuso", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const open = await visibleStore(seller.profile.id, {
+			name: "Aperto",
+			...ROME,
+			openingHours: ALWAYS_OPEN,
+		});
+		// Senza openingHours il negozio è sempre chiuso.
+		const closed = await visibleStore(seller.profile.id, {
+			name: "Chiuso",
+			...ROME,
+		});
+
+		await productIn(seller.profile.id, [open.id], { name: "DaAperto" });
+		await productIn(seller.profile.id, [closed.id], { name: "DaChiuso" });
+
+		const result = await searchProducts({ openNow: true });
+
+		expect(result.data.map((r) => r.name)).toEqual(["DaAperto"]);
+		expect(result.pagination.total).toBe(1);
+	});
+
+	it("restringe l'aggancio: se il più vicino è chiuso, aggancia il più vicino APERTO", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		// Il più vicino all'origine, ma chiuso.
+		const nearClosed = await visibleStore(seller.profile.id, {
+			name: "VicinoChiuso",
+			...ROME_NORTH,
+		});
+		// Più lontano, ma aperto.
+		const farOpen = await visibleStore(seller.profile.id, {
+			name: "LontanoAperto",
+			...MILAN,
+			openingHours: ALWAYS_OPEN,
+		});
+
+		await productIn(seller.profile.id, [nearClosed.id, farOpen.id], {
+			name: "Pane",
+		});
+
+		const plain = await searchProducts({ lat: ROME.lat, lng: ROME.lng });
+		expect(plain.data[0].store.name).toBe("VicinoChiuso");
+
+		const onlyOpen = await searchProducts({
+			lat: ROME.lat,
+			lng: ROME.lng,
+			openNow: true,
+		});
+		expect(onlyOpen.data[0].store.name).toBe("LontanoAperto");
+		// E il conteggio segue il filtro: il negozio chiuso non è "un altro negozio".
+		expect(onlyOpen.data[0].otherStoreCount).toBe(0);
 	});
 });
