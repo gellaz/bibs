@@ -265,12 +265,12 @@ describe("searchProducts — ordinamento", () => {
 
 		// Ogni prodotto sta in UN solo negozio: qui si ordina fra prodotti
 		// diversi, non fra negozi dello stesso prodotto (già coperto sopra).
-		// Creato PRIMA il vicino e DOPO il lontano: se l'ordinamento cadesse
-		// sul fallback per data di creazione invece che sulla distanza, il
-		// lontano (più recente) finirebbe comunque per primo, e l'assert
-		// sotto lo scoprirebbe.
-		await productIn(seller.profile.id, [near.id], { name: "ProdottoVicino" });
+		// Creato PRIMA il lontano e DOPO il vicino, apposta in disaccordo con
+		// l'ordine atteso: senza `ORDER BY` una tabella appena troncata torna
+		// in ordine fisico/di inserimento, che qui è l'opposto di quello
+		// giusto — un `ORDER BY` mancante lo scoprirebbe.
 		await productIn(seller.profile.id, [far.id], { name: "ProdottoLontano" });
+		await productIn(seller.profile.id, [near.id], { name: "ProdottoVicino" });
 
 		const result = await searchProducts({ lat: ROME.lat, lng: ROME.lng });
 
@@ -321,24 +321,28 @@ describe("searchProducts — ordinamento", () => {
 			...ROME,
 		});
 
+		// Tre prodotti, non due: con soli due, un'implementazione senza
+		// tiebreaker avrebbe ~1 probabilità su 2 di azzeccare comunque
+		// l'ordine per id (gli id sono UUID casuali, scorrelati
+		// dall'inserimento). Con tre, le probabilità di indovinare per
+		// coincidenza scendono a 1 su 6.
 		const pA = await productIn(seller.profile.id, [s.id], { name: "A" });
 		const pB = await productIn(seller.profile.id, [s.id], { name: "B" });
+		const pC = await productIn(seller.profile.id, [s.id], { name: "C" });
 		const sameCreatedAt = new Date("2025-01-01T00:00:00Z");
-		await db
-			.update(product)
-			.set({ createdAt: sameCreatedAt })
-			.where(eq(product.id, pA.id));
-		await db
-			.update(product)
-			.set({ createdAt: sameCreatedAt })
-			.where(eq(product.id, pB.id));
+		for (const p of [pA, pB, pC]) {
+			await db
+				.update(product)
+				.set({ createdAt: sameCreatedAt })
+				.where(eq(product.id, p.id));
+		}
 
 		const result = await searchProducts({});
 
 		// L'ordine atteso è quello degli id, non quello di creazione dei
 		// fixture: se il tiebreaker sparisse, l'ordine diventerebbe instabile
 		// fra run diverse invece di seguire sempre l'id.
-		const expectedOrder = [pA.id, pB.id].sort();
+		const expectedOrder = [pA.id, pB.id, pC.id].sort();
 		expect(result.data.map((r) => r.id)).toEqual(expectedOrder);
 	});
 });
