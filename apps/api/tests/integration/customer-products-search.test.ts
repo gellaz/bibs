@@ -22,6 +22,9 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+import { eq } from "drizzle-orm";
+import { product } from "@/db/schemas/product";
+import { store } from "@/db/schemas/store";
 import { searchProducts } from "@/modules/customer/services/product-search";
 import { truncateAll } from "../helpers/cleanup";
 import {
@@ -201,6 +204,31 @@ describe("searchProducts — regola di aggancio", () => {
 		expect(result.data[0].otherStoreCount).toBe(0);
 	});
 
+	it("esclude interamente un prodotto il cui unico negozio idoneo è fuori dal raggio", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const near = await visibleStore(seller.profile.id, {
+			name: "Vicino",
+			...ROME_NORTH,
+		});
+		const far = await visibleStore(seller.profile.id, {
+			name: "Lontano",
+			...MILAN,
+		});
+
+		await productIn(seller.profile.id, [near.id], { name: "Locale" });
+		await productIn(seller.profile.id, [far.id], { name: "SoloLontano" });
+
+		const result = await searchProducts({
+			lat: ROME.lat,
+			lng: ROME.lng,
+			radius: 10,
+		});
+
+		expect(result.data.map((r) => r.name)).toEqual(["Locale"]);
+		expect(result.pagination.total).toBe(1);
+	});
+
 	it("scarta i prodotti senza nessun negozio idoneo", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
@@ -219,6 +247,99 @@ describe("searchProducts — regola di aggancio", () => {
 
 		expect(result.data.map((r) => r.name)).toEqual(["Disponibile"]);
 		expect(result.pagination.total).toBe(1);
+	});
+});
+
+describe("searchProducts — ordinamento", () => {
+	it("con prodotti diversi in negozi diversi, ordina per distanza dall'origine (più vicino prima)", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const near = await visibleStore(seller.profile.id, {
+			name: "Vicino",
+			...ROME_NORTH,
+		});
+		const far = await visibleStore(seller.profile.id, {
+			name: "Lontano",
+			...MILAN,
+		});
+
+		// Ogni prodotto sta in UN solo negozio: qui si ordina fra prodotti
+		// diversi, non fra negozi dello stesso prodotto (già coperto sopra).
+		// Creato PRIMA il vicino e DOPO il lontano: se l'ordinamento cadesse
+		// sul fallback per data di creazione invece che sulla distanza, il
+		// lontano (più recente) finirebbe comunque per primo, e l'assert
+		// sotto lo scoprirebbe.
+		await productIn(seller.profile.id, [near.id], { name: "ProdottoVicino" });
+		await productIn(seller.profile.id, [far.id], { name: "ProdottoLontano" });
+
+		const result = await searchProducts({ lat: ROME.lat, lng: ROME.lng });
+
+		expect(result.data.map((r) => r.name)).toEqual([
+			"ProdottoVicino",
+			"ProdottoLontano",
+		]);
+	});
+
+	it("senza query né origine, ordina per data di creazione decrescente", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await visibleStore(seller.profile.id, {
+			name: "Negozio",
+			...ROME,
+		});
+
+		const p1 = await productIn(seller.profile.id, [s.id], { name: "Uno" });
+		const p2 = await productIn(seller.profile.id, [s.id], { name: "Due" });
+		const p3 = await productIn(seller.profile.id, [s.id], { name: "Tre" });
+
+		// Senza query né origine, rank e distance sono costanti per tutte le
+		// righe: l'ordine deve venire dal tiebreaker, non dall'inserimento.
+		// createdAt esplicito, non quello di default all'inserimento.
+		await db
+			.update(product)
+			.set({ createdAt: new Date("2025-01-01T00:00:00Z") })
+			.where(eq(product.id, p1.id));
+		await db
+			.update(product)
+			.set({ createdAt: new Date("2025-03-01T00:00:00Z") })
+			.where(eq(product.id, p2.id));
+		await db
+			.update(product)
+			.set({ createdAt: new Date("2025-02-01T00:00:00Z") })
+			.where(eq(product.id, p3.id));
+
+		const result = await searchProducts({});
+
+		expect(result.data.map((r) => r.id)).toEqual([p2.id, p3.id, p1.id]);
+	});
+
+	it("a parità di data di creazione, il tiebreaker finale è l'id in ordine crescente", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await visibleStore(seller.profile.id, {
+			name: "Negozio",
+			...ROME,
+		});
+
+		const pA = await productIn(seller.profile.id, [s.id], { name: "A" });
+		const pB = await productIn(seller.profile.id, [s.id], { name: "B" });
+		const sameCreatedAt = new Date("2025-01-01T00:00:00Z");
+		await db
+			.update(product)
+			.set({ createdAt: sameCreatedAt })
+			.where(eq(product.id, pA.id));
+		await db
+			.update(product)
+			.set({ createdAt: sameCreatedAt })
+			.where(eq(product.id, pB.id));
+
+		const result = await searchProducts({});
+
+		// L'ordine atteso è quello degli id, non quello di creazione dei
+		// fixture: se il tiebreaker sparisse, l'ordine diventerebbe instabile
+		// fra run diverse invece di seguire sempre l'id.
+		const expectedOrder = [pA.id, pB.id].sort();
+		expect(result.data.map((r) => r.id)).toEqual(expectedOrder);
 	});
 });
 
@@ -285,6 +406,34 @@ describe("searchProducts — visibilità del negozio", () => {
 		const result = await searchProducts({});
 
 		expect(result.pagination.total).toBe(2);
+	});
+
+	it("esclude i prodotti di un negozio soft-deleted, anche con abbonamento attivo", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+
+		// Abbonamento attivo su entrambi: isola l'effetto di `deletedAt`, non
+		// quello (già coperto sopra) dell'abbonamento.
+		const active = await visibleStore(seller.profile.id, {
+			name: "Attivo",
+			...ROME,
+		});
+		const deleted = await visibleStore(seller.profile.id, {
+			name: "Cancellato",
+			...ROME,
+		});
+		await db
+			.update(store)
+			.set({ deletedAt: new Date() })
+			.where(eq(store.id, deleted.id));
+
+		await productIn(seller.profile.id, [active.id], { name: "Visibile" });
+		await productIn(seller.profile.id, [deleted.id], { name: "Nascosto" });
+
+		const result = await searchProducts({});
+
+		expect(result.data.map((r) => r.name)).toEqual(["Visibile"]);
+		expect(result.pagination.total).toBe(1);
 	});
 });
 
