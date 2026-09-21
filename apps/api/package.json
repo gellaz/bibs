@@ -25,9 +25,9 @@
 		"@elysiajs/openapi": "^1.4.16",
 		"@sinclair/typebox": "catalog:",
 		"better-auth": "catalog:",
-		"drizzle-orm": "^0.45.2",
+		"drizzle-orm": "^0.45.3",
 		"elysia": "catalog:",
-		"logixlysia": "^6.8.1",
+		"logixlysia": "^6.9.2",
 		"pg": "catalog:",
 		"pino": "^10.3.1",
 		"sharp": "catalog:",
@@ -36,7 +36,7 @@
 	"devDependencies": {
 		"@types/pg": "catalog:",
 		"bun-types": "1.4.2",
-		"drizzle-kit": "^0.31.10",
+		"drizzle-kit": "^0.31.11",
 		"testcontainers": "^12.1.0"
 	},
 	"module": "src/index.ts",
