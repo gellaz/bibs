@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Coords } from "@/features/discovery/use-geolocation";
+import type { Coords } from "@/features/location/coords";
 import { api } from "@/lib/api";
 
 export interface CategoryFacet {

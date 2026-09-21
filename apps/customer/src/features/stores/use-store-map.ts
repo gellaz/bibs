@@ -1,6 +1,6 @@
 import { toYMD } from "@bibs/ui/lib/date";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import type { Coords } from "@/features/discovery/use-geolocation";
+import type { Coords } from "@/features/location/coords";
 import { api } from "@/lib/api";
 import type { OpenStatusView } from "./open-status";
 

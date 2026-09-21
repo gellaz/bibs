@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
-export type { Coords } from "./use-geolocation";
+export type { Coords } from "@/features/location/coords";
 
-import type { Coords } from "./use-geolocation";
+import type { Coords } from "@/features/location/coords";
 
 /** Forma normalizzata di un risultato della ricerca pubblica prodotti. */
 export interface NearbyProduct {

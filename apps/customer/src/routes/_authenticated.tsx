@@ -2,6 +2,7 @@ import { Spinner } from "@bibs/ui/components/spinner";
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { SiteHeader } from "@/components/site-header";
+import { SearchOriginProvider } from "@/features/location/search-origin";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -31,11 +32,13 @@ function AuthenticatedLayout() {
 	}
 
 	return (
-		<div className="flex min-h-screen flex-col bg-background">
-			<SiteHeader />
-			<main className="flex-1">
-				<Outlet />
-			</main>
-		</div>
+		<SearchOriginProvider>
+			<div className="flex min-h-screen flex-col bg-background">
+				<SiteHeader />
+				<main className="flex-1">
+					<Outlet />
+				</main>
+			</div>
+		</SearchOriginProvider>
 	);
 }

@@ -10,9 +10,10 @@ import {
 import { Field, FieldLabel } from "@bibs/ui/components/field";
 import { LocateFixed, MapPin } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { useSearchOrigin } from "@/features/location/search-origin";
 import { m } from "@/paraglide/messages";
 import type { GeocodeSuggestionItem } from "./use-geocode";
-import { useBiasPosition, useGeocode } from "./use-geocode";
+import { useGeocode } from "./use-geocode";
 
 interface AddressSearchProps {
 	onSelect: (suggestion: GeocodeSuggestionItem) => void;
@@ -28,7 +29,17 @@ export function AddressSearch({ onSelect, disabled }: AddressSearchProps) {
 	const fieldId = useId();
 	const [text, setText] = useState("");
 	const [debounced, setDebounced] = useState("");
-	const bias = useBiasPosition();
+	const { origin, gpsCoords, geoStatus, requestGps } = useSearchOrigin();
+
+	// L'ordine della spec: il GPS se il consenso c'è già, altrimenti l'origine
+	// attiva quando è un indirizzo salvato — chi aggiunge il secondo indirizzo
+	// di solito lo aggiunge vicino al primo — altrimenti nessun bias.
+	const bias =
+		geoStatus === "granted"
+			? gpsCoords
+			: origin.kind === "address"
+				? origin.coords
+				: null;
 
 	// Una richiesta per pausa di digitazione, non una per tasto.
 	useEffect(() => {
@@ -36,7 +47,7 @@ export function AddressSearch({ onSelect, disabled }: AddressSearchProps) {
 		return () => clearTimeout(id);
 	}, [text]);
 
-	const { data, isFetching, isError } = useGeocode(debounced, bias.position);
+	const { data, isFetching, isError } = useGeocode(debounced, bias);
 	const suggestions = data ?? [];
 
 	return (
@@ -87,22 +98,26 @@ export function AddressSearch({ onSelect, disabled }: AddressSearchProps) {
 				</ComboboxContent>
 			</Combobox>
 
-			{(bias.status === "prompt" || bias.status === "pending") && (
+			{/* Chiedere la posizione qui non cambia l'origine della ricerca:
+			    compilare un indirizzo non è dire "cerca da qui". */}
+			{(geoStatus === "idle" ||
+				geoStatus === "denied" ||
+				geoStatus === "pending") && (
 				<Button
 					type="button"
 					variant="secondary"
 					size="sm"
 					className="mt-1 min-h-11 self-start sm:min-h-9"
-					disabled={bias.status === "pending"}
-					onClick={bias.request}
+					disabled={geoStatus === "pending"}
+					onClick={requestGps}
 				>
 					<LocateFixed className="size-4" aria-hidden />
-					{bias.status === "pending"
+					{geoStatus === "pending"
 						? m.address_search_locating()
 						: m.address_search_use_location()}
 				</Button>
 			)}
-			{bias.status === "granted" && (
+			{geoStatus === "granted" && (
 				<p className="mt-1 text-muted-foreground text-xs">
 					{m.address_search_nearby_first()}
 				</p>

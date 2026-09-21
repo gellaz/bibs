@@ -11,6 +11,8 @@ import {
 } from "@bibs/ui/components/alert-dialog";
 import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
+import { Link } from "@tanstack/react-router";
+import { Search } from "lucide-react";
 import { m } from "@/paraglide/messages";
 import type { AddressItem } from "./use-addresses";
 
@@ -60,6 +62,25 @@ export function AddressCard({
 			</div>
 
 			<div className="mt-3 flex flex-wrap gap-2">
+				{/* Senza coordinate non è un'origine: il bottone porterebbe a una
+				    ricerca identica a quella di prima. La rubrica le esige sui
+				    nuovi indirizzi, ma l'API le ammette nulle. */}
+				{address.location && (
+					<Button
+						asChild
+						variant="secondary"
+						size="sm"
+						className="min-h-11 sm:min-h-9"
+					>
+						<Link
+							to="/stores"
+							search={{ near: address.id, q: undefined, categoryId: undefined }}
+						>
+							<Search className="size-4" aria-hidden />
+							{m.origin_search_here()}
+						</Link>
+					</Button>
+				)}
 				<Button
 					variant="secondary"
 					size="sm"
