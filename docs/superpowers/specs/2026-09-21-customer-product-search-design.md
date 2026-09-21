@@ -383,8 +383,13 @@ zero assenti, `onSaleTotal` e `openNowTotal` coerenti con la ricerca filtrata.
 **Parità** — `bestActiveDiscountPercent()` e `getBestActiveDiscounts()`
 concordano sullo stesso insieme di prodotti.
 
-Frontend: i test unitari degli helper puri estratti (`search-origin-state.test.ts`
-si estende a `useNearParam`). I componenti si verificano nel browser.
+Frontend: niente. `apps/customer` gira su `bun test` senza DOM né
+testing-library, quindi gli hook e i componenti non sono testabili così come
+sta il workspace, e `useNearParam` è un hook. Le funzioni pure già coperte
+(`search-origin-state.test.ts`, `address-form-state.test.ts`) restano; il
+resto si verifica con `typecheck`, `build` e lo smoke nel browser. Montare un
+runner con DOM per l'app customer è una decisione a sé, non un dettaglio di
+questa feature.
 
 ## Verifica prima di completare
 
