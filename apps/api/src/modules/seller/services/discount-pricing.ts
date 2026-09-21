@@ -118,3 +118,39 @@ export async function getBestActiveDiscounts(
 	}
 	return map;
 }
+
+/**
+ * Percentuale del miglior sconto attivo sul prodotto correlato, o NULL.
+ *
+ * Gemello SQL di `getBestActiveDiscounts()`, per i casi in cui lo sconto deve
+ * entrare in un `WHERE` invece di annotare righe già estratte: filtrare dopo
+ * la query darebbe un `total` e una paginazione che non corrispondono ai
+ * risultati. `tests/integration/discount-pricing-parity.test.ts` tiene le due
+ * strade allineate.
+ *
+ * `productRef` è il riferimento **letterale** alla colonna del prodotto nella
+ * query esterna: in posizione di campo-SELECT Drizzle renderizza le Column
+ * interpolate senza qualificarle, e `id` verrebbe risolto sulla tabella
+ * sbagliata.
+ */
+export function bestActiveDiscountPercent(productRef = sql`products.id`) {
+	return sql`(
+		SELECT max(d.percent)
+		FROM discount_products dp
+		JOIN discounts d ON d.id = dp.discount_id
+		JOIN products pp ON pp.id = dp.product_id
+		WHERE dp.product_id = ${productRef}
+			AND d.seller_profile_id = pp.seller_profile_id
+			AND d.status = 'active'
+			AND d.starts_at <= now()
+			AND (d.ends_at IS NULL OR d.ends_at >= now())
+	)`;
+}
+
+/** Prezzo effettivo: listino meno il miglior sconto attivo, arrotondato ai centesimi. */
+export function effectivePriceExpr(
+	priceRef = sql`products.price`,
+	productRef = sql`products.id`,
+) {
+	return sql`ROUND(${priceRef} * (1 - coalesce(${bestActiveDiscountPercent(productRef)}, 0)::numeric / 100), 2)`;
+}
