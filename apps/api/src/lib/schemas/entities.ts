@@ -814,9 +814,10 @@ export const StoreDetailSchema = t.Object({
 	openStatus: OpenStatusSchema,
 });
 
-// Store product card (customer store catalog — #2b). SearchResultSchema minus
-// distance/rank: no geo on a store page. No discountTitle/discountEndsAt → no
-// Date in the DTO, so the FE needs no toYMD coercion.
+// Store product card (customer store catalog — #2b). ProductCardSchema minus
+// store/distance/otherStoreCount/rank: il negozio è già scelto dalla pagina,
+// niente geo. No discountTitle/discountEndsAt → no Date in the DTO, so the FE
+// needs no toYMD coercion.
 export const StoreProductCardSchema = t.Object({
 	id: t.String(),
 	storeProductId: t.String({
@@ -848,22 +849,50 @@ export const StoreProductCardSchema = t.Object({
 	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
 });
 
-// Search result
-export const SearchResultSchema = t.Object({
+// Product search card (customer /products). Un risultato è un prodotto più il
+// negozio agganciato: senza `storeProductId` il carrello non saprebbe cosa
+// aggiungere. Nessun campo data nel DTO — Eden Treaty idraterebbe le
+// stringhe-data in `Date` e il render fallirebbe — quindi niente
+// discountTitle/discountEndsAt, che il tile non mostra.
+export const ProductCardSchema = t.Object({
 	id: t.String(),
 	name: t.String({ description: "Nome del prodotto" }),
 	description: t.Nullable(
 		t.String({ description: "Descrizione del prodotto" }),
 	),
-	price: t.String({ description: "Prezzo in formato decimale" }),
-	distance: t.Number({
+	price: t.String({ description: "Prezzo di listino in formato decimale" }),
+	storeProductId: t.String({
+		description: "ID della riga store_products del negozio agganciato",
+	}),
+	stock: t.Integer({
 		minimum: 0,
-		description: "Distanza in metri dal punto di ricerca",
+		description: "Disponibilità nel negozio agganciato",
+	}),
+	store: t.Object(
+		{
+			id: t.String(),
+			name: t.String({ description: "Nome del negozio" }),
+			municipality: MunicipalityCompactSchema,
+		},
+		{
+			description:
+				"Il negozio più vicino che ha il prodotto fra quelli filtrati",
+		},
+	),
+	distance: t.Nullable(
+		t.Number({
+			minimum: 0,
+			description: "Distanza in metri dall'origine (null senza origine)",
+		}),
+	),
+	otherStoreCount: t.Integer({
+		minimum: 0,
+		description:
+			"Altri negozi che soddisfano i filtri, oltre a quello agganciato",
 	}),
 	rank: t.Number({
 		minimum: 0,
-		description:
-			"Punteggio di rilevanza full-text (0 se nessuna query testuale)",
+		description: "Punteggio di rilevanza full-text (0 senza query testuale)",
 	}),
 	images: t.Array(
 		t.Object({
@@ -880,8 +909,6 @@ export const SearchResultSchema = t.Object({
 		t.String({ description: "Prezzo scontato, se promo attiva" }),
 	),
 	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
-	discountTitle: t.Nullable(t.String()),
-	discountEndsAt: t.Nullable(t.Date()),
 });
 
 // Carrello customer. Nessun campo data: Eden Treaty idrata le stringhe-data in

@@ -8,14 +8,14 @@ import { addressesRoutes } from "./routes/addresses";
 import { cartRoutes } from "./routes/cart";
 import { ordersRoutes } from "./routes/orders";
 import { pointsRoutes } from "./routes/points";
+import { productsRoutes } from "./routes/products";
 import { profileRoutes } from "./routes/profile";
-import { searchRoutes } from "./routes/search";
 import { storesRoutes } from "./routes/stores";
 
 export const customerModule = new Elysia({ prefix: "/customer" })
 	.use(betterAuth)
 	// Product search is public (no auth required)
-	.use(searchRoutes)
+	.use(productsRoutes)
 	// Store discovery is public (no auth required)
 	.use(storesRoutes)
 	// Authenticated customer routes

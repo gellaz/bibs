@@ -5,22 +5,26 @@ export type { Coords } from "@/features/location/coords";
 
 import type { Coords } from "@/features/location/coords";
 
+/** Raggio della striscia in home, in km. L'endpoint non ne ha uno di default: senza, "Vicino a te" pescherebbe mezza Italia quando la zona è vuota. */
+const NEARBY_RADIUS_KM = 50;
+
 /** Forma normalizzata di un risultato della ricerca pubblica prodotti. */
 export interface NearbyProduct {
 	id: string;
 	name: string;
 	description: string | null;
 	price: string;
-	/** Distanza in metri dal punto di ricerca (0 se nessun filtro geografico). */
-	distance: number;
+	/** Distanza in metri dall'origine, `null` senza origine. */
+	distance: number | null;
 	images: { id: string; url: string; position: number }[];
 	discountedPrice: string | null;
 	discountPercent: number | null;
+	store: { id: string; name: string; city: string; province: string };
 }
 
 /**
  * Prodotti da scoprire nei negozi della zona, via endpoint pubblico
- * `/customer/search`. Senza coordinate ritorna i prodotti attivi ordinati per
+ * `/customer/products`. Senza coordinate ritorna i prodotti attivi ordinati per
  * recency; con coordinate l'ordinamento passa alla distanza e ogni risultato
  * porta la propria distanza in metri.
  *
@@ -37,8 +41,15 @@ export function useNearbyProducts(coords: Coords | null, limit = 12) {
 		],
 		staleTime: 60_000,
 		queryFn: async (): Promise<NearbyProduct[]> => {
-			const { data, error } = await api().customer.search.get({
-				query: coords ? { limit, lat: coords.lat, lng: coords.lng } : { limit },
+			const { data, error } = await api().customer.products.get({
+				query: coords
+					? {
+							limit,
+							lat: coords.lat,
+							lng: coords.lng,
+							radius: NEARBY_RADIUS_KM,
+						}
+					: { limit },
 			});
 
 			if (error) {
@@ -58,6 +69,12 @@ export function useNearbyProducts(coords: Coords | null, limit = 12) {
 				})),
 				discountedPrice: p.discountedPrice,
 				discountPercent: p.discountPercent,
+				store: {
+					id: p.store.id,
+					name: p.store.name,
+					city: p.store.municipality.name,
+					province: p.store.municipality.provinceAcronym,
+				},
 			}));
 		},
 	});

@@ -61,14 +61,25 @@ export const SellerListQuery = t.Object({
 });
 
 /**
- * Pagination + optional full-text + category + geo filters for product search.
+ * Paginazione + testo, categoria, geografia, prezzo e disponibilità per la
+ * ricerca prodotti. `radius` **non ha default**, come `StoreSearchQuery`: geo
+ * senza raggio ordina per vicinanza senza tagliare nulla. Chi vuole un limite
+ * lo dichiara (la home lo fa).
  */
 export const ProductSearchQuery = t.Object({
 	...PaginationQuery.properties,
 	q: t.Optional(
 		t.String({ description: "Testo di ricerca (full-text italiano)" }),
 	),
-	categoryId: t.Optional(t.String({ description: "Filtra per ID categoria" })),
+	categoryId: t.Optional(
+		t.String({ description: "Filtra per ID categoria prodotto" }),
+	),
+	macroCategoryId: t.Optional(
+		t.String({
+			description:
+				"Filtra per ID macro categoria prodotto. Ignorato se `categoryId` è presente: la categoria è già dentro la sua macro.",
+		}),
+	),
 	lat: t.Optional(
 		t.Number({
 			minimum: -90,
@@ -85,8 +96,30 @@ export const ProductSearchQuery = t.Object({
 	),
 	radius: t.Optional(
 		t.Number({
-			default: 50,
-			description: "Raggio di ricerca in km (default: 50)",
+			description: "Raggio in km (opzionale, nessun limite di default)",
+		}),
+	),
+	openNow: t.Optional(
+		t.Boolean({
+			description:
+				"Solo i prodotti disponibili in un negozio aperto in questo momento (fuso Europe/Rome). Restringe anche quale negozio viene agganciato al risultato.",
+		}),
+	),
+	onSale: t.Optional(
+		t.Boolean({
+			description: "Solo i prodotti con uno sconto attivo in questo momento",
+		}),
+	),
+	minPrice: t.Optional(
+		t.Number({
+			minimum: 0,
+			description: "Prezzo minimo in €, sul prezzo scontato",
+		}),
+	),
+	maxPrice: t.Optional(
+		t.Number({
+			minimum: 0,
+			description: "Prezzo massimo in €, sul prezzo scontato",
 		}),
 	),
 });
