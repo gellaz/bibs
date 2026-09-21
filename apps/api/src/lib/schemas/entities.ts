@@ -911,6 +911,43 @@ export const ProductCardSchema = t.Object({
 	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
 });
 
+const ProductCategoryFacetSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della categoria" }),
+	productCount: t.Integer({
+		minimum: 0,
+		description: "Prodotti in questa categoria",
+	}),
+});
+
+export const ProductFacetsSchema = t.Object({
+	total: t.Integer({
+		minimum: 0,
+		description:
+			"Prodotti che corrispondono a testo, geografia, prezzo e offerta",
+	}),
+	openNowTotal: t.Integer({
+		minimum: 0,
+		description: "Quanti di quei prodotti restano accendendo «Aperti ora»",
+	}),
+	onSaleTotal: t.Integer({
+		minimum: 0,
+		description: "Quanti di quei prodotti restano accendendo «Solo in offerta»",
+	}),
+	macros: t.Array(
+		t.Object({
+			id: t.String(),
+			name: t.String({ description: "Nome della macro categoria" }),
+			productCount: t.Integer({ minimum: 0 }),
+			categories: t.Array(ProductCategoryFacetSchema),
+		}),
+		{
+			description:
+				"Macro categorie con almeno un prodotto, in ordine alfabetico",
+		},
+	),
+});
+
 // Carrello customer. Nessun campo data: Eden Treaty idrata le stringhe-data in
 // Date e manderebbe in errore il render. createdAt/updatedAt restano in tabella.
 export const CartItemSchema = t.Object({
