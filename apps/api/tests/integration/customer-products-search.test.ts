@@ -269,8 +269,29 @@ describe("searchProducts — ordinamento", () => {
 		// l'ordine atteso: senza `ORDER BY` una tabella appena troncata torna
 		// in ordine fisico/di inserimento, che qui è l'opposto di quello
 		// giusto — un `ORDER BY` mancante lo scoprirebbe.
-		await productIn(seller.profile.id, [far.id], { name: "ProdottoLontano" });
-		await productIn(seller.profile.id, [near.id], { name: "ProdottoVicino" });
+		const lontano = await productIn(seller.profile.id, [far.id], {
+			name: "ProdottoLontano",
+		});
+		const vicino = await productIn(seller.profile.id, [near.id], {
+			name: "ProdottoVicino",
+		});
+
+		// `createdAt` forzato in modo che la recency dica l'OPPOSTO della
+		// distanza (il lontano è il più recente): così, se l'ordinamento
+		// perdesse la clausola sulla distanza e ricadesse sul solo
+		// `createdAt DESC`, il lontano finirebbe comunque primo e l'assert
+		// sotto lo scoprirebbe — non solo il caso "nessun ORDER BY" già
+		// coperto sopra. Non toglierli "per pulizia": è quello che rende il
+		// test capace di distinguere "ordina per distanza" da "ordina per
+		// data di creazione".
+		await db
+			.update(product)
+			.set({ createdAt: new Date("2025-02-01T00:00:00Z") })
+			.where(eq(product.id, lontano.id));
+		await db
+			.update(product)
+			.set({ createdAt: new Date("2025-01-01T00:00:00Z") })
+			.where(eq(product.id, vicino.id));
 
 		const result = await searchProducts({ lat: ROME.lat, lng: ROME.lng });
 
