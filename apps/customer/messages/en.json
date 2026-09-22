@@ -238,5 +238,22 @@
 	"origin_choose": "Choose where to search from",
 	"origin_distances_from": "Distances from {label}",
 	"origin_search_here": "Search near here",
-	"store_distance_needs_origin": "Choose where to search from to filter by distance."
+	"store_distance_needs_origin": "Choose where to search from to filter by distance.",
+	"product_filter_availability": "Availability",
+	"product_open_now": "In shops open now",
+	"product_open_now_none": "No shop is open right now.",
+	"product_on_sale": "On sale only",
+	"product_on_sale_none": "Nothing on sale right now.",
+	"product_filter_category": "Category",
+	"product_category_all": "All",
+	"product_filter_price": "Price",
+	"product_price_min": "From",
+	"product_price_max": "To",
+	"product_price_min_aria": "Minimum price in euros",
+	"product_price_max_aria": "Maximum price in euros",
+	"product_price_hint": "On the price you pay, discounts included.",
+	"product_filter_distance": "Distance",
+	"product_distance_needs_origin": "Choose where to search from to filter by distance.",
+	"product_radius_any": "All",
+	"product_radius_km": "{km} km"
 }
