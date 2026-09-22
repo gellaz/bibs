@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { formatWeeklyHours, romeDayOfWeek } from "./format-opening-hours";
+import {
+	formatWeeklyHours,
+	hasDeclaredHours,
+	romeDayOfWeek,
+} from "./format-opening-hours";
 
 const TEST_DAY_LABELS = [
 	"Lun",
@@ -74,5 +78,22 @@ describe("romeDayOfWeek", () => {
 	it("maps a Monday to 0 and a Sunday to 6", () => {
 		expect(romeDayOfWeek(new Date("2026-06-22T12:00:00Z"))).toBe(0); // Monday
 		expect(romeDayOfWeek(new Date("2026-06-21T12:00:00Z"))).toBe(6); // Sunday
+	});
+});
+
+describe("hasDeclaredHours", () => {
+	it("is false for null, for [] and for days with no slots", () => {
+		expect(hasDeclaredHours(null)).toBe(false);
+		expect(hasDeclaredHours([])).toBe(false);
+		expect(hasDeclaredHours([{ dayOfWeek: 0, slots: [] }])).toBe(false);
+	});
+
+	it("is true as soon as one day has a slot", () => {
+		expect(
+			hasDeclaredHours([
+				{ dayOfWeek: 0, slots: [] },
+				{ dayOfWeek: 3, slots: [{ open: "09:00", close: "13:00" }] },
+			]),
+		).toBe(true);
 	});
 });

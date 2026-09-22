@@ -2,6 +2,7 @@ import { m } from "@/paraglide/messages";
 import {
 	type DayLabels,
 	formatWeeklyHours,
+	hasDeclaredHours,
 	type OpeningHoursDayInput,
 	romeDayOfWeek,
 } from "./format-opening-hours";
@@ -16,6 +17,17 @@ export function OpeningHours({
 }: {
 	openingHours: OpeningHoursDayInput[] | null;
 }) {
+	// Senza nessuna fascia dichiarata, le sette righe non sarebbero una
+	// formattazione sbagliata: sarebbero sette affermazioni sbagliate. Lo dice
+	// una riga sola, coerente col badge sulla copertina.
+	if (!hasDeclaredHours(openingHours)) {
+		return (
+			<p className="rounded-lg border border-border px-3 py-2.5 text-[0.8125rem] text-muted-foreground">
+				{m.store_hours_unknown()}
+			</p>
+		);
+	}
+
 	const dayLabels: DayLabels = [
 		m.day_monday(),
 		m.day_tuesday(),
