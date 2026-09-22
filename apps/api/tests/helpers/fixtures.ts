@@ -9,11 +9,7 @@ import type { DiscountStatus } from "@/db/schemas/discount";
 import { discount, discountProduct } from "@/db/schemas/discount";
 import { municipality, province, region } from "@/db/schemas/location";
 import { organization } from "@/db/schemas/organization";
-import {
-	product,
-	productCategoryAssignment,
-	storeProduct,
-} from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
@@ -230,17 +226,9 @@ export async function createTestProduct(
 			price: params.price ?? "10.00",
 			status: params.status ?? "active",
 			brandId: params.brandId,
+			productCategoryId: params.categoryIds?.[0] ?? null,
 		})
 		.returning();
-
-	if (params.categoryIds?.length) {
-		await db.insert(productCategoryAssignment).values(
-			params.categoryIds.map((cid) => ({
-				productId: newProduct.id,
-				productCategoryId: cid,
-			})),
-		);
-	}
 
 	return newProduct;
 }
@@ -309,14 +297,15 @@ export async function createTestCategory(
 	return category;
 }
 
-export async function createTestProductCategoryAssignment(
+export async function setTestProductCategory(
 	db: DrizzleTestDb,
 	productId: string,
 	productCategoryId: string,
 ) {
 	await db
-		.insert(productCategoryAssignment)
-		.values({ productId, productCategoryId });
+		.update(product)
+		.set({ productCategoryId })
+		.where(eq(product.id, productId));
 }
 
 export async function createTestBrand(

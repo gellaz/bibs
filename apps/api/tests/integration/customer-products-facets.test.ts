@@ -30,11 +30,11 @@ import {
 	createTestDiscountProduct,
 	createTestMacroCategory,
 	createTestProduct,
-	createTestProductCategoryAssignment,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
 	createTestStoreSubscription,
+	setTestProductCategory,
 } from "../helpers/fixtures";
 
 beforeAll(async () => {
@@ -66,7 +66,7 @@ async function visibleStore(
 async function productIn(
 	sellerProfileId: string,
 	storeId: string,
-	params: { name: string; price?: string; categoryIds?: string[] },
+	params: { name: string; price?: string; categoryId?: string },
 ) {
 	const db = getTestDb();
 	const p = await createTestProduct(db, sellerProfileId, {
@@ -74,14 +74,14 @@ async function productIn(
 		price: params.price ?? "10.00",
 	});
 	await createTestStoreProduct(db, storeId, p.id, { stock: 5 });
-	for (const c of params.categoryIds ?? []) {
-		await createTestProductCategoryAssignment(db, p.id, c);
+	if (params.categoryId) {
+		await setTestProductCategory(db, p.id, params.categoryId);
 	}
 	return p;
 }
 
 describe("getProductFacets", () => {
-	it("conta prodotti distinti per macro e per categoria, anche quando un prodotto sta in due categorie della stessa macro", async () => {
+	it("la macro aggrega le sue sotto-categorie, ognuna conta solo la propria", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const s = await visibleStore(seller.profile.id, { name: "Negozio" });
@@ -90,21 +90,28 @@ describe("getProductFacets", () => {
 		const pane = await createTestCategory(db, "Pane", macro.id);
 		const dolci = await createTestCategory(db, "Dolci", macro.id);
 
-		// Un prodotto in DUE categorie della stessa macro: la macro deve contarlo
-		// una volta sola, non sommare i figli.
-		await productIn(seller.profile.id, s.id, {
-			name: "Panettone",
-			categoryIds: [pane.id, dolci.id],
-		});
+		// Tre prodotti distinti, ciascuno in UNA sola sotto-categoria della
+		// stessa macro (un prodotto ha una sola sotto-categoria): la macro conta
+		// la somma dei prodotti delle sue categorie, ognuna conta solo i propri.
+		// Due in Pane e uno in Dolci, cosi' i conteggi non coincidono tutti a 1
+		// e la somma resta verificabile.
 		await productIn(seller.profile.id, s.id, {
 			name: "Ciabatta",
-			categoryIds: [pane.id],
+			categoryId: pane.id,
+		});
+		await productIn(seller.profile.id, s.id, {
+			name: "Baguette",
+			categoryId: pane.id,
+		});
+		await productIn(seller.profile.id, s.id, {
+			name: "Panettone",
+			categoryId: dolci.id,
 		});
 
 		const facets = await getProductFacets({});
 
 		const cibo = facets.macros.find((m) => m.name === "Cibo");
-		expect(cibo?.productCount).toBe(2);
+		expect(cibo?.productCount).toBe(3);
 		const byName = new Map(
 			cibo?.categories.map((c) => [c.name, c.productCount]),
 		);
@@ -124,11 +131,11 @@ describe("getProductFacets", () => {
 
 		await productIn(seller.profile.id, s.id, {
 			name: "InA",
-			categoryIds: [catA.id],
+			categoryId: catA.id,
 		});
 		await productIn(seller.profile.id, s.id, {
 			name: "InB",
-			categoryIds: [catB.id],
+			categoryId: catB.id,
 		});
 
 		const facets = await getProductFacets({
@@ -155,7 +162,7 @@ describe("getProductFacets", () => {
 
 		await productIn(seller.profile.id, s.id, {
 			name: "Uno",
-			categoryIds: [cat.id],
+			categoryId: cat.id,
 		});
 
 		const facets = await getProductFacets({});
@@ -178,11 +185,11 @@ describe("getProductFacets", () => {
 
 		await productIn(seller.profile.id, visible.id, {
 			name: "Buono",
-			categoryIds: [cat.id],
+			categoryId: cat.id,
 		});
 		await productIn(seller.profile.id, hidden.id, {
 			name: "Nascosto",
-			categoryIds: [cat.id],
+			categoryId: cat.id,
 		});
 
 		const facets = await getProductFacets({});

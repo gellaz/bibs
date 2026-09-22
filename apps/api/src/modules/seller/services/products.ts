@@ -1,4 +1,14 @@
-import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	inArray,
+	isNotNull,
+	or,
+	sql,
+} from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
@@ -6,7 +16,6 @@ import { productCategory } from "@/db/schemas/category";
 import {
 	type ProductStatus,
 	product,
-	productCategoryAssignment,
 	storeProduct,
 } from "@/db/schemas/product";
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
@@ -177,15 +186,15 @@ export async function listProducts(params: ListProductsParams) {
 			productCategoryIds.map((id) => sql`${id}`),
 			sql`, `,
 		);
-		conditions.push(
-			sql`EXISTS (SELECT 1 FROM product_category_assignments pca WHERE pca.product_id = ${product.id} AND pca.product_category_id IN (${idList}))`,
-		);
+		conditions.push(sql`${product.productCategoryId} IN (${idList})`);
 	}
 
 	if (productMacroCategoryId) {
-		conditions.push(
-			sql`EXISTS (SELECT 1 FROM product_category_assignments pca JOIN product_categories pc ON pc.id = pca.product_category_id WHERE pca.product_id = ${product.id} AND pc.macro_category_id = ${productMacroCategoryId})`,
-		);
+		conditions.push(sql`EXISTS (
+			SELECT 1 FROM product_categories pc
+			WHERE pc.id = ${product.productCategoryId}
+				AND pc.macro_category_id = ${productMacroCategoryId}
+		)`);
 	}
 
 	if (excludeDiscountId) {
@@ -313,9 +322,7 @@ export async function listProducts(params: ListProductsParams) {
 			: await db.query.product.findMany({
 					where: inArray(product.id, productIds),
 					with: {
-						productCategoryAssignments: {
-							with: { category: { with: { macroCategory: true } } },
-						},
+						productCategory: { with: { macroCategory: true } },
 						storeProducts: {
 							with: {
 								store: {
@@ -398,19 +405,17 @@ export async function listCategoriesInUse(params: ListCategoriesInUseParams) {
 
 	const baseQuery = storeId
 		? db
-				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
-				.from(productCategoryAssignment)
-				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
+				.selectDistinct({ id: product.productCategoryId })
+				.from(product)
 				.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
-				.where(and(...conditions))
+				.where(and(...conditions, isNotNull(product.productCategoryId)))
 		: db
-				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
-				.from(productCategoryAssignment)
-				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
-				.where(and(...conditions));
+				.selectDistinct({ id: product.productCategoryId })
+				.from(product)
+				.where(and(...conditions, isNotNull(product.productCategoryId)));
 
 	const rows = await baseQuery;
-	const ids = rows.map((r) => r.id);
+	const ids = rows.map((r) => r.id).filter((id): id is string => id !== null);
 	if (ids.length === 0) return [];
 
 	return db.query.productCategory.findMany({
@@ -507,9 +512,7 @@ export async function getProduct(params: GetProductParams) {
 			eq(product.sellerProfileId, sellerProfileId),
 		),
 		with: {
-			productCategoryAssignments: {
-				with: { category: { with: { macroCategory: true } } },
-			},
+			productCategory: { with: { macroCategory: true } },
 			storeProducts: {
 				with: {
 					store: {
@@ -551,7 +554,7 @@ interface CreateProductParams {
 	description?: string;
 	price: string;
 	vatRate?: VatRate;
-	categoryIds?: string[];
+	productCategoryId?: string | null;
 	ean?: string;
 	brandId?: string;
 	brandName?: string;
@@ -561,26 +564,12 @@ export async function createProduct(params: CreateProductParams) {
 	const {
 		sellerProfileId,
 		storeId,
-		categoryIds = [],
+		productCategoryId,
 		brandId,
 		brandName,
 		ean,
 		...productData
 	} = params;
-
-	// Validate: if multiple categories given, all belong to one macro
-	if (categoryIds.length > 1) {
-		const macros = await db
-			.selectDistinct({ macroId: productCategory.macroCategoryId })
-			.from(productCategory)
-			.where(inArray(productCategory.id, categoryIds));
-		if (macros.length > 1) {
-			throw new ServiceError(
-				400,
-				"Le categorie devono appartenere a una sola macro-categoria",
-			);
-		}
-	}
 
 	const normalizedEan = ean && ean.length > 0 ? ean : null;
 
@@ -611,6 +600,7 @@ export async function createProduct(params: CreateProductParams) {
 				...productData,
 				ean: normalizedEan,
 				brandId: resolvedBrandId,
+				productCategoryId: productCategoryId ?? null,
 			})
 			.returning();
 
@@ -620,15 +610,6 @@ export async function createProduct(params: CreateProductParams) {
 			storeId,
 			stock: 0,
 		});
-
-		if (categoryIds.length > 0) {
-			await tx.insert(productCategoryAssignment).values(
-				categoryIds.map((categoryId) => ({
-					productId: created.id,
-					productCategoryId: categoryId,
-				})),
-			);
-		}
 
 		return created;
 	});
@@ -640,7 +621,7 @@ interface UpdateProductParams {
 	productId: string;
 	sellerProfileId: string;
 	accessibleStoreIds: string[];
-	categoryIds?: string[];
+	productCategoryId?: string | null;
 	imageOrder?: string[];
 	name?: string;
 	description?: string;
@@ -656,7 +637,7 @@ export async function updateProduct(params: UpdateProductParams) {
 		productId,
 		sellerProfileId,
 		accessibleStoreIds,
-		categoryIds,
+		productCategoryId,
 		imageOrder,
 		ean,
 		brandId,
@@ -675,20 +656,6 @@ export async function updateProduct(params: UpdateProductParams) {
 	if (!existing) return null;
 	if (!isProductAccessible(existing.storeProducts, accessibleStoreIds)) {
 		return null;
-	}
-
-	// Validate: all categoryIds belong to a single macro-category
-	if (categoryIds && categoryIds.length > 1) {
-		const macros = await db
-			.selectDistinct({ macroId: productCategory.macroCategoryId })
-			.from(productCategory)
-			.where(inArray(productCategory.id, categoryIds));
-		if (macros.length > 1) {
-			throw new ServiceError(
-				400,
-				"Le categorie devono appartenere a una sola macro-categoria",
-			);
-		}
 	}
 
 	return db.transaction(async (tx) => {
@@ -720,9 +687,18 @@ export async function updateProduct(params: UpdateProductParams) {
 			);
 		}
 
+		// undefined means "leave alone", null means "remove" — the same
+		// distinction ean and brandId use just above. Assigning here also makes
+		// hasProductData true, so a category-only PATCH issues a real UPDATE
+		// instead of falling through to the SELECT branch below.
+		if (productCategoryId !== undefined) {
+			productUpdates.productCategoryId = productCategoryId;
+		}
+
 		// Only issue the UPDATE if there are plain product columns to change.
-		// With only categoryIds/imageOrder we'd call .set({}) and Drizzle throws
-		// "No values to set" — fetch the row instead so the caller still gets it.
+		// With only imageOrder (no productCategoryId, no other field) we'd call
+		// .set({}) and Drizzle throws "No values to set" — fetch the row
+		// instead so the caller still gets it.
 		const hasProductData = Object.keys(productUpdates).length > 0;
 
 		const [updated] = hasProductData
@@ -747,21 +723,6 @@ export async function updateProduct(params: UpdateProductParams) {
 					);
 
 		if (!updated) return null;
-
-		if (categoryIds) {
-			await tx
-				.delete(productCategoryAssignment)
-				.where(eq(productCategoryAssignment.productId, updated.id));
-
-			if (categoryIds.length > 0) {
-				await tx.insert(productCategoryAssignment).values(
-					categoryIds.map((categoryId) => ({
-						productId: updated.id,
-						productCategoryId: categoryId,
-					})),
-				);
-			}
-		}
 
 		if (imageOrder) {
 			for (let i = 0; i < imageOrder.length; i++) {
@@ -838,7 +799,7 @@ export interface EanLookupResult {
 	ean: string;
 	brandName: string | null;
 	macroCategoryId: string | null;
-	categoryIds: string[];
+	productCategoryId: string | null;
 }
 
 export async function lookupProductByEan(
@@ -851,19 +812,14 @@ export async function lookupProductByEan(
 		orderBy: [desc(product.createdAt)],
 		with: {
 			brand: true,
-			productCategoryAssignments: {
-				with: { category: true },
-			},
+			productCategory: true,
 		},
 	});
 
 	if (!row) return null;
 
-	const categoryIds = row.productCategoryAssignments.map(
-		(a) => a.productCategoryId,
-	);
-	const macroCategoryId =
-		row.productCategoryAssignments[0]?.category.macroCategoryId ?? null;
+	const productCategoryId = row.productCategory?.id ?? null;
+	const macroCategoryId = row.productCategory?.macroCategoryId ?? null;
 
 	return {
 		name: row.name,
@@ -871,7 +827,7 @@ export async function lookupProductByEan(
 		ean: row.ean!,
 		brandName: row.brand?.name ?? null,
 		macroCategoryId,
-		categoryIds,
+		productCategoryId,
 	};
 }
 

@@ -34,10 +34,10 @@ import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCategory,
 	createTestProduct,
-	createTestProductCategoryAssignment,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
+	setTestProductCategory,
 } from "../helpers/fixtures";
 
 beforeAll(async () => {
@@ -68,11 +68,11 @@ async function seedTwoStoreCatalog() {
 
 	const productA = await createTestProduct(db, profile.id, { name: "Prod A" });
 	await createTestStoreProduct(db, storeA.id, productA.id, { stock: 5 });
-	await createTestProductCategoryAssignment(db, productA.id, catA.id);
+	await setTestProductCategory(db, productA.id, catA.id);
 
 	const productB = await createTestProduct(db, profile.id, { name: "Prod B" });
 	await createTestStoreProduct(db, storeB.id, productB.id, { stock: 5 });
-	await createTestProductCategoryAssignment(db, productB.id, catB.id);
+	await setTestProductCategory(db, productB.id, catB.id);
 
 	const productC = await createTestProduct(db, profile.id, {
 		name: "Prod C (unassigned)",

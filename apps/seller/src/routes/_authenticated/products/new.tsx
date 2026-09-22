@@ -36,7 +36,7 @@ function NewProductPage() {
 				description: formData.description,
 				price: formData.price,
 				vatRate: formData.vatRate,
-				categoryIds: formData.categoryIds,
+				productCategoryId: formData.productCategoryId ?? null,
 				ean: formData.ean,
 				brandId: formData.brandId,
 				brandName: formData.brandName,

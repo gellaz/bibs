@@ -55,7 +55,7 @@ export interface ProductFormDefaultValues {
 	description?: string | null;
 	price: string;
 	vatRate?: "22" | "10" | "5" | "4" | "0";
-	categoryIds: string[];
+	productCategoryId: string | null | undefined;
 	ean?: string | null;
 	brandId?: string | null;
 	brandName?: string | null;
@@ -104,14 +104,14 @@ export function ProductForm({
 			description: defaultValues?.description ?? "",
 			price: defaultValues?.price ?? "",
 			vatRate: defaultValues?.vatRate ?? "22",
-			categoryIds: defaultValues?.categoryIds ?? [],
+			productCategoryId: defaultValues?.productCategoryId,
 			ean: defaultValues?.ean ?? undefined,
 			brandId: defaultValues?.brandId ?? undefined,
 			brandName: defaultValues?.brandName ?? undefined,
 		},
 	});
 
-	const selectedCategories = watch("categoryIds") ?? [];
+	const productCategoryId = watch("productCategoryId");
 	const nameValue = watch("name");
 	const eanValue = watch("ean") ?? "";
 	const brandIdValue = watch("brandId");
@@ -166,8 +166,8 @@ export function ProductForm({
 		if (overwrite || !macroCategoryId) {
 			setMacroCategoryId(lookupResult.macroCategoryId);
 		}
-		if (overwrite || (cur.categoryIds ?? []).length === 0) {
-			setValue("categoryIds", lookupResult.categoryIds, {
+		if (overwrite || !cur.productCategoryId) {
+			setValue("productCategoryId", lookupResult.productCategoryId, {
 				shouldValidate: true,
 				shouldDirty: true,
 			});
@@ -181,7 +181,7 @@ export function ProductForm({
 		!!brandIdValue ||
 		!!brandNameValue ||
 		!!macroCategoryId ||
-		(getValues("categoryIds") ?? []).length > 0;
+		!!getValues("productCategoryId");
 
 	const handleDrop = useCallback(
 		(acceptedFiles: File[]) => {
@@ -201,26 +201,21 @@ export function ProductForm({
 		setFiles(reordered);
 	};
 
-	const toggleCategory = (categoryId: string) => {
-		const current = selectedCategories;
-		const next = current.includes(categoryId)
-			? current.filter((id) => id !== categoryId)
-			: [...current, categoryId];
-		setValue("categoryIds", next, { shouldValidate: true, shouldDirty: true });
-	};
-
 	const onMacroChange = (
 		next: string | null,
 		suggestedVatRate?: "22" | "10" | "5" | "4" | "0",
 	) => {
-		const hadCategories = selectedCategories.length > 0;
+		const hadCategory = !!productCategoryId;
 		setMacroCategoryId(next);
-		setValue("categoryIds", [], { shouldValidate: true, shouldDirty: true });
+		setValue("productCategoryId", undefined, {
+			shouldValidate: true,
+			shouldDirty: true,
+		});
 		if (suggestedVatRate) {
 			setValue("vatRate", suggestedVatRate, { shouldDirty: true });
 		}
-		if (hadCategories && next !== macroCategoryId) {
-			toast.info("Categorie resettate per via del cambio di macrocategoria");
+		if (hadCategory && next !== macroCategoryId) {
+			toast.info("Categoria resettata per via del cambio di macrocategoria");
 		}
 	};
 
@@ -391,14 +386,19 @@ export function ProductForm({
 						title="Catalogo"
 						description="Dove i clienti trovano il prodotto nel negozio."
 					>
-						<Field data-invalid={!!errors.categoryIds}>
+						<Field data-invalid={!!errors.productCategoryId}>
 							<ProductCategoriesPicker
 								macroCategoryId={macroCategoryId}
-								categoryIds={selectedCategories ?? []}
+								categoryId={productCategoryId}
+								onCategoryChange={(id) =>
+									setValue("productCategoryId", id, {
+										shouldValidate: true,
+										shouldDirty: true,
+									})
+								}
 								onMacroChange={onMacroChange}
-								onToggleCategory={toggleCategory}
 							/>
-							<FieldError errors={[errors.categoryIds]} />
+							<FieldError errors={[errors.productCategoryId]} />
 						</Field>
 					</FormSection>
 				</div>

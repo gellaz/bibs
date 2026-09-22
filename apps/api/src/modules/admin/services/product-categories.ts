@@ -1,6 +1,7 @@
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
+import { product } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
 import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
@@ -77,6 +78,18 @@ export async function updateProductCategory(
 }
 
 export async function deleteProductCategory(productCategoryId: string) {
+	const [{ total }] = await db
+		.select({ total: count() })
+		.from(product)
+		.where(eq(product.productCategoryId, productCategoryId));
+
+	if (total > 0) {
+		throw new ServiceError(
+			409,
+			`Categoria non eliminabile: ${total} prodott${total === 1 ? "o la usa" : "i la usano"}. Riassegnali a un'altra categoria e riprova.`,
+		);
+	}
+
 	const [deleted] = await db
 		.delete(productCategory)
 		.where(eq(productCategory.id, productCategoryId))

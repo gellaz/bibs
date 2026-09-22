@@ -31,10 +31,9 @@ export const CreateProductBody = Type.Object({
 		error: "Il prezzo deve essere nel formato 0.00",
 	}),
 	vatRate: Type.Optional(VatRateSchema),
-	categoryIds: Type.Optional(
-		Type.Array(Type.String({ description: "ID categoria" }), {
-			description:
-				"Categorie del prodotto (opzionali). Se più di una, devono appartenere alla stessa macro-categoria",
+	productCategoryId: Type.Optional(
+		Type.Union([Type.String(), Type.Null()], {
+			description: "ID della sotto-categoria del prodotto (opzionale).",
 		}),
 	),
 	ean: Type.Optional(

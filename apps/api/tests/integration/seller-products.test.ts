@@ -35,7 +35,6 @@ import { and, eq } from "drizzle-orm";
 import { brand } from "@/db/schemas/brand";
 import {
 	product,
-	productCategoryAssignment,
 	storeProduct as storeProductTable,
 } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
@@ -161,6 +160,29 @@ describe("listProducts", () => {
 		expect(result.data.map((p) => p.name)).toEqual(["InA"]);
 		expect(result.pagination.total).toBe(1);
 	});
+
+	it("filters by productCategoryIds for a product created through the real createProduct service", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
+		const cat = await createTestCategory(db, "Espresso machines");
+
+		const created = await createProduct({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			name: "Macchina da caffè",
+			price: "199.00",
+			productCategoryId: cat.id,
+		});
+
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			productCategoryIds: [cat.id],
+		});
+
+		expect(result.data.map((p) => p.id)).toEqual([created.id]);
+	});
 });
 
 describe("listProducts appliedDiscount annotation", () => {
@@ -229,9 +251,34 @@ describe("getProduct", () => {
 		});
 
 		expect(result.id).toBe(p.id);
-		expect(result.productCategoryAssignments).toEqual([]);
+		expect(result.productCategory).toBeNull();
 		expect(result.storeProducts).toHaveLength(1);
 		expect(result.images).toEqual([]);
+	});
+
+	it("exposes the sub-category together with its macro", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		const cat = await createTestCategory(db, "Smartphone", macro.id);
+
+		const created = await createProduct({
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			name: "Telefono",
+			price: "10.00",
+			productCategoryId: cat.id,
+		});
+
+		const found = await getProduct({
+			productId: created.id,
+			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [store.id],
+		});
+
+		expect(found.productCategory?.id).toBe(cat.id);
+		expect(found.productCategory?.macroCategory.name).toBe("Elettronica");
 	});
 
 	it("throws ServiceError 404 when product belongs to another seller", async () => {
@@ -270,29 +317,47 @@ describe("getProduct", () => {
 // ── createProduct ─────────────────────────────────────────────────────────────
 
 describe("createProduct", () => {
-	it("creates a product and links the categories", async () => {
+	it("creates a product and links the sub-category", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const s = await createTestStore(db, seller.profile.id);
-		const cat1 = await createTestCategory(db, "Cat A");
-		const cat2 = await createTestCategory(db, "Cat B");
+		const cat = await createTestCategory(db, "Cat A");
 
 		const created = await createProduct({
 			sellerProfileId: seller.profile.id,
 			storeId: s.id,
 			name: "Espresso",
 			price: "1.20",
-			categoryIds: [cat1.id, cat2.id],
+			productCategoryId: cat.id,
 		});
 
 		expect(created.name).toBe("Espresso");
 		expect(created.price).toBe("1.20");
 
-		const classifications = await db
-			.select()
-			.from(productCategoryAssignment)
-			.where(eq(productCategoryAssignment.productId, created.id));
-		expect(classifications).toHaveLength(2);
+		const [row] = await db
+			.select({ categoryId: product.productCategoryId })
+			.from(product)
+			.where(eq(product.id, created.id));
+		expect(row.categoryId).toBe(cat.id);
+	});
+
+	it("writes the sub-category on the product column", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		const cat = await createTestCategory(db, "Smartphone", macro.id);
+
+		const created = await createTestProduct(db, seller.profile.id, {
+			name: "Telefono",
+			categoryIds: [cat.id],
+		});
+
+		const [row] = await db
+			.select({ categoryId: product.productCategoryId })
+			.from(product)
+			.where(eq(product.id, created.id));
+
+		expect(row.categoryId).toBe(cat.id);
 	});
 });
 
@@ -323,13 +388,15 @@ describe("createProduct with storeId", () => {
 // ── updateProduct ─────────────────────────────────────────────────────────────
 
 describe("updateProduct", () => {
-	it("updates name and price", async () => {
+	it("updates name and price, leaving the sub-category untouched when omitted", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const s = await createTestStore(db, seller.profile.id);
+		const cat = await createTestCategory(db);
 		const p = await createTestProduct(db, seller.profile.id, {
 			name: "Old",
 			price: "5.00",
+			categoryIds: [cat.id],
 		});
 		await createTestStoreProduct(db, s.id, p.id);
 
@@ -343,22 +410,22 @@ describe("updateProduct", () => {
 
 		expect(updated?.name).toBe("New");
 		expect(updated?.price).toBe("7.50");
+		expect(updated?.productCategoryId).toBe(cat.id);
 	});
 
-	it("replaces categories when categoryIds is provided", async () => {
+	it("replaces the sub-category when productCategoryId is provided", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const s = await createTestStore(db, seller.profile.id);
 		const cat1 = await createTestCategory(db, "Cat A");
 		const cat2 = await createTestCategory(db, "Cat B");
-		const cat3 = await createTestCategory(db, "Cat C");
 
 		const p = await createProduct({
 			sellerProfileId: seller.profile.id,
 			storeId: s.id,
 			name: "Prod",
 			price: "1.00",
-			categoryIds: [cat1.id, cat2.id],
+			productCategoryId: cat1.id,
 		});
 		// createProduct already creates a storeProduct row for s.id
 
@@ -366,15 +433,36 @@ describe("updateProduct", () => {
 			productId: p.id,
 			sellerProfileId: seller.profile.id,
 			accessibleStoreIds: [s.id],
-			categoryIds: [cat3.id],
+			productCategoryId: cat2.id,
 		});
 
-		const classifications = await db
-			.select()
-			.from(productCategoryAssignment)
-			.where(eq(productCategoryAssignment.productId, p.id));
-		expect(classifications).toHaveLength(1);
-		expect(classifications[0].productCategoryId).toBe(cat3.id);
+		const [row] = await db
+			.select({ categoryId: product.productCategoryId })
+			.from(product)
+			.where(eq(product.id, p.id));
+		expect(row.categoryId).toBe(cat2.id);
+	});
+
+	it("clears the sub-category when productCategoryId is null", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		const cat = await createTestCategory(db, "Smartphone", macro.id);
+		const p = await createTestProduct(db, seller.profile.id, {
+			name: "Telefono",
+			categoryIds: [cat.id],
+		});
+		await createTestStoreProduct(db, s.id, p.id);
+
+		const updated = await updateProduct({
+			productId: p.id,
+			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [s.id],
+			productCategoryId: null,
+		});
+
+		expect(updated?.productCategoryId).toBeNull();
 	});
 
 	it("returns null when product does not belong to seller", async () => {
@@ -449,7 +537,7 @@ describe("createProduct - brand and EAN", () => {
 			storeId: s.id,
 			name: "Sneakers",
 			price: "59.90",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			brandName: "Nike",
 		});
 
@@ -474,7 +562,7 @@ describe("createProduct - brand and EAN", () => {
 			storeId: s.id,
 			name: "Sneakers 2",
 			price: "59.90",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			brandName: "NIKE",
 		});
 
@@ -493,7 +581,7 @@ describe("createProduct - brand and EAN", () => {
 			storeId: s.id,
 			name: "Tee",
 			price: "19.90",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			brandId: existing.id,
 			brandName: "ShouldBeIgnored",
 		});
@@ -520,7 +608,7 @@ describe("createProduct - brand and EAN", () => {
 				storeId: sA.id,
 				name: "X",
 				price: "1.00",
-				categoryIds: [cat.id],
+				productCategoryId: cat.id,
 				brandId: brandOfB.id,
 			}),
 		).rejects.toMatchObject({ status: 404 });
@@ -539,7 +627,7 @@ describe("createProduct - brand and EAN", () => {
 			storeId: sA.id,
 			name: "Coca",
 			price: "1.00",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			ean: "5449000000996",
 		});
 		const b = await createProduct({
@@ -547,7 +635,7 @@ describe("createProduct - brand and EAN", () => {
 			storeId: sB.id,
 			name: "Coca",
 			price: "1.20",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			ean: "5449000000996",
 		});
 
@@ -566,7 +654,7 @@ describe("createProduct - brand and EAN", () => {
 			storeId: s.id,
 			name: "First",
 			price: "1.00",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			ean: "5449000000996",
 		});
 
@@ -576,30 +664,10 @@ describe("createProduct - brand and EAN", () => {
 				storeId: s.id,
 				name: "Second",
 				price: "2.00",
-				categoryIds: [cat.id],
+				productCategoryId: cat.id,
 				ean: "5449000000996",
 			}),
 		).rejects.toThrow();
-	});
-
-	it("rejects categoryIds spanning multiple macro-categories", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-		const s = await createTestStore(db, seller.profile.id);
-		const macroA = await createTestMacroCategory(db, "Macro A");
-		const macroB = await createTestMacroCategory(db, "Macro B");
-		const catA = await createTestCategory(db, "Cat A", macroA.id);
-		const catB = await createTestCategory(db, "Cat B", macroB.id);
-
-		await expect(
-			createProduct({
-				sellerProfileId: seller.profile.id,
-				storeId: s.id,
-				name: "Mixed",
-				price: "1.00",
-				categoryIds: [catA.id, catB.id],
-			}),
-		).rejects.toMatchObject({ status: 400 });
 	});
 });
 
@@ -609,7 +677,7 @@ describe("lookupProductByEan", () => {
 		expect(result).toBeNull();
 	});
 
-	it("returns the latest product across sellers, with brand and categories", async () => {
+	it("returns the latest product across sellers, with brand and sub-category", async () => {
 		const db = getTestDb();
 		const sellerA = await createTestSeller(db, { email: "a@test.com" });
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
@@ -624,7 +692,7 @@ describe("lookupProductByEan", () => {
 			storeId: sA.id,
 			name: "Old",
 			price: "1.00",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			ean: "12345678",
 			brandId: brandA.id,
 		});
@@ -637,7 +705,7 @@ describe("lookupProductByEan", () => {
 			name: "New",
 			description: "Latest version",
 			price: "2.00",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			ean: "12345678",
 			brandId: brandB.id,
 		});
@@ -650,7 +718,7 @@ describe("lookupProductByEan", () => {
 		expect(result!.ean).toBe("12345678");
 		expect(result!.brandName).toBe("BrandB");
 		expect(result!.macroCategoryId).toBe(macro.id);
-		expect(result!.categoryIds).toEqual([cat.id]);
+		expect(result!.productCategoryId).toBe(cat.id);
 	});
 });
 
@@ -670,7 +738,7 @@ describe("importProductsFromCsv - per-row EAN collision", () => {
 			storeId: s.id,
 			name: "Existing",
 			price: "1.00",
-			categoryIds: [cat.id],
+			productCategoryId: cat.id,
 			ean: "1111111111116",
 		});
 

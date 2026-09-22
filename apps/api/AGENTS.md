@@ -360,8 +360,9 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
       `Map<sellerProfileId, brand[]>` consumed by `seedProducts`
     - `products.ts` — `seedProducts()` generates 30–50 products per active seller (~3400 total) deterministically:
       EAN-13 sequential from `8000000000000`, price range per macro-category, brand assigned 90% of the time, status
-      90/5/5 active/disabled/trashed. Then `productCategoryAssignment`, `storeProduct` inventory (70% of products
-      in all of the seller's stores, 30% in one), and `productImage` placeholders pointing at picsum.photos
+      90/5/5 active/disabled/trashed. Sets `productCategoryId` on the product row (nullable FK, one sub-category
+      per product), plus `storeProduct` inventory (70% of products in all of the seller's stores, 30% in one),
+      and `productImage` placeholders pointing at picsum.photos
     - `discounts.ts` — `seedDiscounts()` fills `discounts` + `discount_products`: 0–3 promotions per active
       seller (two thirds of national sellers have at least one, four fifths of the Bologna block), 3–12 products
       each. `KIND_CYCLE` mixes the states on purpose — ~65% active and running, plus scheduled (`startsAt` in the
@@ -397,8 +398,8 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   - `store-category.ts` — store_categories
   - `store-image.ts` — store_images (S3/MinIO keys, position ordering)
   - `category.ts` — product_categories
-  - `product.ts` — products (with Italian full-text GIN index), product_classifications (many-to-many with
-      categories), store_products (stock per store)
+  - `product.ts` — products (with Italian full-text GIN index; nullable `product_category_id` FK to
+      product_categories, `ON DELETE RESTRICT`), store_products (stock per store)
   - `address.ts` — customer_addresses (PostGIS point location)
   - `employee.ts` — store_employees (status: active/banned/removed)
   - `order.ts` — orders (type, status, points, reservation expiry, idempotency key), order_items
