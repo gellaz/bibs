@@ -32,7 +32,7 @@
 |---|---|
 | `apps/api/src/db/schemas/product.ts` | `products.productCategoryId` + relazione `productCategory`; sparisce `productCategoryAssignment` |
 | `apps/api/src/db/schemas/category.ts` | perde la relazione `productCategoryAssignments` |
-| `apps/api/drizzle/*.sql` | due migrazioni: espansione (con travaso) e contrazione |
+| `apps/api/src/db/migrations/*.sql` | due migrazioni: espansione (con travaso) e contrazione |
 | `apps/api/src/modules/admin/services/product-categories.ts` | guardia 409 sulla cancellazione di categoria in uso |
 | `apps/api/src/modules/seller/services/products.ts` | filtri, facet e scrittura sulla colonna |
 | `apps/api/src/modules/seller/services/product-import.ts` | scrive la colonna |
@@ -52,7 +52,7 @@
 - Modify: `apps/api/src/db/schemas/product.ts:20-100`
 - Modify: `apps/api/src/db/seed/fixtures/products.ts:142-205`
 - Modify: `apps/api/tests/helpers/fixtures.ts:212-245`
-- Create: `apps/api/drizzle/<timestamp>_<nome-generato>.sql` (generata, poi modificata a mano)
+- Create: `apps/api/src/db/migrations/<timestamp>_<nome-generato>.sql` (generata, poi modificata a mano)
 - Test: `apps/api/tests/integration/seller-products.test.ts`
 
 **Interfaces:**
@@ -64,7 +64,7 @@
 Prima di scrivere qualunque migrazione. Il travaso ne tiene una sola: se il conteggio non è zero, si perdono dati e va saputo adesso.
 
 ```bash
-docker exec -i bibs-postgis psql -U postgres -d bibs -c "
+docker exec -i bibs-postgis psql -U pgadmin -d bibs-db -c "
 SELECT count(*) AS prodotti_con_piu_assegnazioni FROM (
   SELECT product_id FROM product_category_assignments
   GROUP BY product_id HAVING count(*) > 1
@@ -141,7 +141,7 @@ E in `productRelations`, accanto a `brand`:
 bun run db:generate
 ```
 
-Aprire il file `.sql` appena creato in `apps/api/drizzle/`. Drizzle produce l'`ADD COLUMN`, il vincolo di chiave esterna e l'indice, ma **non** il travaso.
+Aprire il file `.sql` appena creato in `apps/api/src/db/migrations/`. Drizzle produce l'`ADD COLUMN`, il vincolo di chiave esterna e l'indice, ma **non** il travaso.
 
 - [ ] **Step 6: Inserire il travaso a mano nella migrazione**
 
@@ -166,12 +166,12 @@ L'ordine conta: il travaso deve avvenire prima che il vincolo di chiave esterna 
 bun run db:migrate
 ```
 
-Se esce con 1 senza dire nulla, lo spinner sta mangiando `stderr`: quasi sempre `__drizzle_migrations` è fuori sincrono con il journal. Verificare con `docker exec -i bibs-postgis psql -U postgres -d bibs -c "SELECT * FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 5;"`.
+Se esce con 1 senza dire nulla, lo spinner sta mangiando `stderr`: quasi sempre `__drizzle_migrations` è fuori sincrono con il journal. Verificare con `docker exec -i bibs-postgis psql -U pgadmin -d bibs-db -c "SELECT * FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 5;"`.
 
 - [ ] **Step 8: Verificare il travaso sul database di sviluppo**
 
 ```bash
-docker exec -i bibs-postgis psql -U postgres -d bibs -c "
+docker exec -i bibs-postgis psql -U pgadmin -d bibs-db -c "
 SELECT
   (SELECT count(*) FROM product_category_assignments) AS assegnazioni,
   (SELECT count(*) FROM products WHERE product_category_id IS NOT NULL) AS colonna_popolata;"
@@ -222,7 +222,7 @@ bun run --cwd apps/api typecheck
 - [ ] **Step 13: Commit**
 
 ```bash
-git add apps/api/src/db/schemas/product.ts apps/api/drizzle apps/api/src/db/seed/fixtures/products.ts apps/api/tests/helpers/fixtures.ts apps/api/tests/integration/seller-products.test.ts
+git add apps/api/src/db/schemas/product.ts apps/api/src/db/migrations apps/api/src/db/seed/fixtures/products.ts apps/api/tests/helpers/fixtures.ts apps/api/tests/integration/seller-products.test.ts
 git commit -m "$(cat <<'EOF'
 feat(db): aggiungi products.product_category_id con travaso
 
@@ -481,7 +481,7 @@ Atteso: stesso numero di test superati dello Step 1, zero falliti. Se un test di
 Con il seed caricato, le due formulazioni devono dare gli stessi conteggi per macro:
 
 ```bash
-docker exec -i bibs-postgis psql -U postgres -d bibs -c "
+docker exec -i bibs-postgis psql -U pgadmin -d bibs-db -c "
 SELECT pmc.name,
        count(DISTINCT p_old.id) AS via_assegnazioni,
        count(DISTINCT p_new.id) AS via_colonna
@@ -857,7 +857,7 @@ EOF
 - Modify: `apps/api/src/db/schemas/category.ts:3,40`
 - Modify: `apps/api/src/db/seed/fixtures/products.ts:250-270`
 - Modify: `apps/api/tests/helpers/fixtures.ts:236-243,312-320`
-- Create: `apps/api/drizzle/<timestamp>_<nome-generato>.sql`
+- Create: `apps/api/src/db/migrations/<timestamp>_<nome-generato>.sql`
 
 **Interfaces:**
 - Consumes: tutto quanto prodotto dai Task 1, 3 e 4.
@@ -899,7 +899,7 @@ Il file deve contenere **solo** `DROP TABLE "product_category_assignments" CASCA
 
 ```bash
 bun run db:migrate
-docker exec -i bibs-postgis psql -U postgres -d bibs -c "\d product_category_assignments"
+docker exec -i bibs-postgis psql -U pgadmin -d bibs-db -c "\d product_category_assignments"
 ```
 
 Atteso: `Did not find any relation named "product_category_assignments"`.
@@ -929,7 +929,7 @@ bun run db:generate   # atteso: "No schema changes"
 - [ ] **Step 9: Commit**
 
 ```bash
-git add apps/api/src/db apps/api/tests/helpers/fixtures.ts apps/api/drizzle
+git add apps/api/src/db apps/api/tests/helpers/fixtures.ts apps/api/src/db/migrations
 git commit -m "$(cat <<'EOF'
 refactor(db): elimina product_category_assignments
 
