@@ -9,6 +9,12 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
 
+// Radix rifiuta value="" su un SelectItem, quindi la voce «nessuna categoria»
+// viaggia con un sentinella che il gestore ritraduce in null. È l'unico modo
+// che il venditore ha per togliere una categoria già assegnata senza passare
+// dal cambio di macro (che sovrascriverebbe anche l'aliquota IVA).
+const NO_CATEGORY = "__none__";
+
 interface ProductCategoriesPickerProps {
 	macroCategoryId: string | null;
 	categoryId: string | null;
@@ -83,12 +89,15 @@ export function ProductCategoriesPicker({
 					<Label>Categoria{required && " *"}</Label>
 					<Select
 						value={categoryId ?? ""}
-						onValueChange={(v) => onCategoryChange(v || null)}
+						onValueChange={(v) =>
+							onCategoryChange(!v || v === NO_CATEGORY ? null : v)
+						}
 					>
 						<SelectTrigger className="w-full">
 							<SelectValue placeholder="Seleziona una categoria" />
 						</SelectTrigger>
 						<SelectContent>
+							<SelectItem value={NO_CATEGORY}>Nessuna categoria</SelectItem>
 							{categories.map((c) => (
 								<SelectItem key={c.id} value={c.id}>
 									{c.name}

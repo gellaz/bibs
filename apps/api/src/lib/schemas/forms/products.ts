@@ -33,8 +33,7 @@ export const CreateProductBody = Type.Object({
 	vatRate: Type.Optional(VatRateSchema),
 	productCategoryId: Type.Optional(
 		Type.Union([Type.String(), Type.Null()], {
-			description:
-				"ID della sotto-categoria del prodotto. null per rimuoverla.",
+			description: "ID della sotto-categoria del prodotto (opzionale).",
 		}),
 	),
 	ean: Type.Optional(
