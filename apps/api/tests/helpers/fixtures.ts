@@ -230,6 +230,7 @@ export async function createTestProduct(
 			price: params.price ?? "10.00",
 			status: params.status ?? "active",
 			brandId: params.brandId,
+			productCategoryId: params.categoryIds?.[0] ?? null,
 		})
 		.returning();
 

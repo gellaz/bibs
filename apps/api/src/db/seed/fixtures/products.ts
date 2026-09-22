@@ -198,6 +198,10 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 				brandId,
 				price: priceNum.toFixed(2),
 				status,
+				productCategoryId: (() => {
+					const subs = subsByMacro.get(macro);
+					return subs && subs.length > 0 ? subs[i % subs.length].id : null;
+				})(),
 				_macro: macro,
 				_sellerRank: rank,
 				_idxInSeller: i,

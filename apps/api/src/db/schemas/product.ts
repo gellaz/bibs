@@ -35,6 +35,10 @@ export const product = pgTable(
 		brandId: text("brand_id").references(() => brand.id, {
 			onDelete: "set null",
 		}),
+		productCategoryId: text("product_category_id").references(
+			() => productCategory.id,
+			{ onDelete: "restrict" },
+		),
 		price: numeric("price", { precision: 10, scale: 2 }).notNull(),
 		vatRate: text("vat_rate", { enum: VAT_RATES })
 			.default(DEFAULT_VAT_RATE)
@@ -69,6 +73,7 @@ export const product = pgTable(
 			.where(sql`${table.ean} IS NOT NULL AND ${table.status} != 'trashed'`),
 		index("product_ean_idx").on(table.ean),
 		index("product_brand_id_idx").on(table.brandId),
+		index("product_product_category_id_idx").on(table.productCategoryId),
 		index("product_status_idx").on(table.status),
 		index("product_name_trgm_idx").using(
 			"gin",
@@ -93,6 +98,10 @@ export const productRelations = relations(product, ({ one, many }) => ({
 	brand: one(brand, {
 		fields: [product.brandId],
 		references: [brand.id],
+	}),
+	productCategory: one(productCategory, {
+		fields: [product.productCategoryId],
+		references: [productCategory.id],
 	}),
 	productCategoryAssignments: many(productCategoryAssignment),
 	storeProducts: many(storeProduct),

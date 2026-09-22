@@ -294,6 +294,25 @@ describe("createProduct", () => {
 			.where(eq(productCategoryAssignment.productId, created.id));
 		expect(classifications).toHaveLength(2);
 	});
+
+	it("scrive la sotto-categoria sulla colonna del prodotto", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		const cat = await createTestCategory(db, "Smartphone", macro.id);
+
+		const created = await createTestProduct(db, seller.profile.id, {
+			name: "Telefono",
+			categoryIds: [cat.id],
+		});
+
+		const [row] = await db
+			.select({ categoryId: product.productCategoryId })
+			.from(product)
+			.where(eq(product.id, created.id));
+
+		expect(row.categoryId).toBe(cat.id);
+	});
 });
 
 describe("createProduct with storeId", () => {
