@@ -25,7 +25,9 @@
 - I nomi delle caratteristiche e delle opzioni vivono nel database e restano **solo in italiano**, come i nomi di categoria.
 - psql: `docker exec -i bibs-postgis psql -U pgadmin -d bibs-db` — il `-i` è obbligatorio, senza scarta l'SQL in silenzio con codice 0.
 - Migrazioni in `apps/api/src/db/migrations/`.
-- **Baseline suite:** 507 pass / 0 fail / 1163 expect su 63 file in `apps/api`. Una esecuzione troncata stampa comunque `0 fail` con un totale più basso: il numero che conta è il **totale**, non i fallimenti.
+- **Test negativi sui vincoli del database**: `expect(query).rejects.toThrow()` su un query-builder Drizzle **non funziona** — il thenable non arriva a `expect().rejects`. La convenzione del repo, documentata in `apps/api/tests/integration/db-enum-check-constraints.test.ts:57-68`, è avvolgere l'insert in una funzione asincrona: `await expect(insertBogus()).rejects.toThrow()`.
+- **Esecuzione di un singolo file di test**: `bun run --cwd apps/api test <file>` **non isola nulla** — lo script `test` è composto (`test:unit && test:integration`) e Bun passa l'argomento solo all'ultimo comando. Per il file singolo: `cd apps/api && bun test <percorso>`.
+- **Baseline suite:** 511 pass / 0 fail / 1167 expect su 64 file in `apps/api` (dopo il Task 1). Una esecuzione troncata stampa comunque `0 fail` con un totale più basso: il numero che conta è il **totale**, non i fallimenti.
 
 ---
 
@@ -143,7 +145,7 @@ it("accepts a well-formed number value", async () => {
 - [ ] **Step 2: Eseguirli e verificare che falliscano**
 
 ```bash
-bun run --cwd apps/api test tests/integration/product-characteristics-schema.test.ts
+cd apps/api && bun test tests/integration/product-characteristics-schema.test.ts
 ```
 
 Atteso: FAIL di compilazione — le tabelle non esistono ancora.
@@ -382,7 +384,7 @@ ALTER TABLE "product_characteristic_values"
 
 ```bash
 bun run db:migrate
-bun run --cwd apps/api test tests/integration/product-characteristics-schema.test.ts
+cd apps/api && bun test tests/integration/product-characteristics-schema.test.ts
 ```
 
 Atteso: PASS tutti e quattro. Se il secondo test passa senza la chiave esterna composta, quella non è stata aggiunta: verificare con
@@ -641,7 +643,7 @@ Il numero di riga è 1-indicizzato più l'intestazione, come in `category-import
 - [ ] **Step 2: Eseguirli e verificare che falliscano**
 
 ```bash
-bun run --cwd apps/api test tests/integration/admin-characteristic-import.test.ts
+cd apps/api && bun test tests/integration/admin-characteristic-import.test.ts
 ```
 
 Atteso: FAIL di compilazione — `importCharacteristicsFromCsv` non esiste.
@@ -663,7 +665,7 @@ Regole, oltre a quelle dei test:
 - [ ] **Step 4: Eseguire i test**
 
 ```bash
-bun run --cwd apps/api test tests/integration/admin-characteristic-import.test.ts
+cd apps/api && bun test tests/integration/admin-characteristic-import.test.ts
 ```
 
 Atteso: PASS.
@@ -817,7 +819,7 @@ it("reports an unknown sub-category", async () => {
 - [ ] **Step 2: Eseguirli e verificare che falliscano**
 
 ```bash
-bun run --cwd apps/api test tests/integration/admin-characteristic-import.test.ts
+cd apps/api && bun test tests/integration/admin-characteristic-import.test.ts
 ```
 
 Atteso: FAIL di compilazione sui test nuovi; quelli del Task 3 restano verdi.
