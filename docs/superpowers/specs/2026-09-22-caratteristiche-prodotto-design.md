@@ -287,7 +287,7 @@ di valori incompatibili**:
 | Abbigliamento uomo/donna/bambino, Intimo, Pigiami, Costumi da bagno | XS–XXL |
 | Scarpe uomo, Scarpe donna, Sneakers | 35–48 |
 | Borse, Zaini, Valigie | piccola/media/grande, o litri |
-| Cinture, Cappelli, Gioielli | cm di vita, cm di testa, misura anello |
+| Occhiali da sole, Cinture, Cappelli, Gioielli | calibro, cm di vita, cm di testa, misura anello |
 | Pannolini | 1–6, per fasce di peso |
 
 `Taglia/Misura` è invece una voce distinta già nel foglio, su 9 sotto-categorie
