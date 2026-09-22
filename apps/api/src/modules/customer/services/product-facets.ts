@@ -51,10 +51,12 @@ export interface ProductFacets {
  * 2. `openNowTotal` e `onSaleTotal` si misurano ciascuno **senza il proprio**
  *    filtro: a filtro acceso coincidono con `total`, e la query in più si salta.
  *
- * A differenza dei negozi, qui la somma dei figli **non** dà il totale della
- * macro: un prodotto può stare in due categorie della stessa macro. Per questo
- * ci sono due query raggruppate invece di una, e si conta sempre
- * `count(DISTINCT products.id)`.
+ * Con una sola sotto-categoria per prodotto, la somma dei figli **coincide**
+ * ora con il totale della macro: un prodotto compare in una sola categoria,
+ * quindi in una sola macro. Restano comunque due query raggruppate separate
+ * — una emette la lista delle macro, l'altra quella delle categorie — e
+ * `count(DISTINCT products.id)` resta come guardia a costo zero, nel caso un
+ * join futuro torni a moltiplicare le righe.
  *
  * Qui il laterale non serve: per contare basta sapere che esiste almeno un
  * negozio idoneo, non quale sia. Un `EXISTS` sulle stesse `offerConditions()`

@@ -161,6 +161,29 @@ describe("listProducts", () => {
 		expect(result.data.map((p) => p.name)).toEqual(["InA"]);
 		expect(result.pagination.total).toBe(1);
 	});
+
+	it("filters by productCategoryIds for a product created through the real createProduct service", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
+		const cat = await createTestCategory(db, "Espresso machines");
+
+		const created = await createProduct({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			name: "Macchina da caffè",
+			price: "199.00",
+			categoryIds: [cat.id],
+		});
+
+		const result = await listProducts({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			productCategoryIds: [cat.id],
+		});
+
+		expect(result.data.map((p) => p.id)).toEqual([created.id]);
+	});
 });
 
 describe("listProducts appliedDiscount annotation", () => {

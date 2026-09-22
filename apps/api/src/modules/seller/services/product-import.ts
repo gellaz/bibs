@@ -207,6 +207,7 @@ export async function importProductsFromCsv(
 								price: p.price,
 								ean: p.ean,
 								brandId,
+								productCategoryId: p.categoryIds[0] ?? null,
 							})
 							.returning({ id: product.id });
 

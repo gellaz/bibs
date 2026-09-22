@@ -619,6 +619,7 @@ export async function createProduct(params: CreateProductParams) {
 				...productData,
 				ean: normalizedEan,
 				brandId: resolvedBrandId,
+				productCategoryId: categoryIds[0] ?? null,
 			})
 			.returning();
 
@@ -728,9 +729,18 @@ export async function updateProduct(params: UpdateProductParams) {
 			);
 		}
 
+		// Dual-write: mirrors the assignment-table rewrite below (categoryIds
+		// provided → replace, including the empty-array case, which must null
+		// the column rather than leave it stale). Removed once Task 4 replaces
+		// categoryIds with a single productCategoryId parameter.
+		if (categoryIds !== undefined) {
+			productUpdates.productCategoryId = categoryIds[0] ?? null;
+		}
+
 		// Only issue the UPDATE if there are plain product columns to change.
-		// With only categoryIds/imageOrder we'd call .set({}) and Drizzle throws
-		// "No values to set" — fetch the row instead so the caller still gets it.
+		// With only imageOrder (no categoryIds, no other field) we'd call
+		// .set({}) and Drizzle throws "No values to set" — fetch the row
+		// instead so the caller still gets it.
 		const hasProductData = Object.keys(productUpdates).length > 0;
 
 		const [updated] = hasProductData

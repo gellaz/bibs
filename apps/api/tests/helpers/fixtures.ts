@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
@@ -324,10 +324,14 @@ export async function createTestProductCategoryAssignment(
 	// this, products.product_category_id stays null and every reader that has
 	// moved to the column (seller filters/facets, customer facets/search)
 	// silently sees the product as unclassified.
+	// First wins, matching createTestProduct's `categoryIds?.[0]`: only set
+	// the column while it's still null, so a caller that assigns a product to
+	// several categories (across several calls) doesn't leave the column
+	// pointing at whichever assignment happened to insert last.
 	await db
 		.update(product)
 		.set({ productCategoryId })
-		.where(eq(product.id, productId));
+		.where(and(eq(product.id, productId), isNull(product.productCategoryId)));
 }
 
 export async function createTestBrand(
