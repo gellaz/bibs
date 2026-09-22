@@ -310,22 +310,37 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     - `fetch-locations.ts` — standalone script to refresh the location JSON from GitHub
     - `regions.json`, `provinces.json`, `municipalities.json` — generated and committed
   - `fixtures/` — test users for dev/staging only, depend on `better-auth`'s `signUpEmail`. Order matters: admins
-    → customers → sellers → extra-stores → store-images → store-profiles → team → brands → products. Each step is
-    idempotent via canary check:
+    → customers → sellers → extra-stores → billing → store-images → store-profiles → team → brands → products →
+    discounts. Each step is idempotent via canary check:
     - `index.ts` — `seedFixtures()` orchestrator
     - `admins.ts` — `seedAdmins()` (3 admin users)
     - `customers.ts` — `seedCustomers()` (~300 customers)
-    - `sellers.ts` — `seedSellers()` (~150 sellers; the first 55 are `active` → `seller1..seller55@test.com`)
-    - `extra-stores.ts` — `seedExtraStores()` adds 1–2 extra stores to 8 designated active sellers
-      (idx `[0,7,14,21,28,35,42,49]` → `seller{1,8,15,22,29,36,43,50}`); naming `<prefix> <lastName> <suffix>`
-      where suffix ∈ {Centro, Stazione, …}. Per-seller canary: only fills the names that are missing
+    - `sellers.ts` — `seedSellers()` (~190 sellers; the first 95 are `active` → `seller1..seller95@test.com`).
+      Two blocks, deliberately kept apart so one can grow without moving the other: idx 0–49 are the *national*
+      sellers (a store in one of the ten showcase municipalities — in practice Bologna or Genova, since
+      `pickHandle(idx, 5, 3)` alternates between those two), idx 50–54 are active **without** a store (the
+      back-office empty state), and idx 55–94 are the **Bologna block** (`BOLOGNA_BLOCK_START`), all with a
+      store, three fifths inside the comune and two fifths in the belt. Store coordinates come from
+      `nationalPlacement()` / `bolognaAreaPlacement()` in `utils.ts`, which scatter stores around per-district
+      anchors: the old `lat + (idx % 10) * 0.001` grid put every Bologna store inside 1 km of Piazza Maggiore,
+      with exact collisions every ten sellers — one pin on the map and a distance filter that discriminated
+      nothing
+    - `extra-stores.ts` — `seedExtraStores()` adds branches to designated sellers, all idempotent per
+      `(sellerProfileId, name)`:
+      - national: 1–2 extra stores for idx `[0,7,14,21,28,35,42,49]`, named `<prefix> <lastName> <suffix>` with
+        suffix ∈ {Centro, Stazione, …}
+      - Bologna chains: 1–2 branches for idx `[56,59,62,65,68,71,74,77]`, named `<insegna> <lastName> <zona>`
+      - Bologna incumbents opening in the belt: idx `[4,16,30]`, one branch each
+      Together with the 25 national Bologna stores and the 40 of the Bologna block this puts **~80 stores in the
+      Bologna area**, spread over the comune and 11 belt municipalities (all within ~15 km, all on the 051
+      dialling prefix)
     - `store-profiles.ts` — `seedStoreProfiles()` fills the public store profile, after `seedStoreImages()` has
       placed the cover at position 0: `categoryId`, `openingHours`, phone numbers, `websiteUrl`, a description
       matched to the business type and extra gallery photos. Three completeness tiers, derived deterministically
       from `(sellerIdx, rankInSeller)` so the split survives a reseed — `full` (~40%: hours, 2 phones, website,
       long description, 5 photos), `basic` (~30%: hours, 1 phone, short description, 3 photos), `bare` (~30%:
       left as `seedSellers` made it, so the "nothing filled in yet" states stay reproducible in dev). Opening
-      hours come from 7 archetypes keyed on `businessPrefix` (bottega with the midweek half-day, forno open
+      hours come from 8 archetypes keyed on `businessPrefix` (bottega with the midweek half-day, forno open
       Sunday morning and closed Monday, ristorazione closed Monday, negozio with Monday morning shut, …) with a
       ±30′ shift on the evening close per store, and every generated week is run through the same
       `validateOpeningHours()` the seller route uses: an incoherent archetype fails the seed instead of reaching
@@ -343,12 +358,30 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     - `brands.ts` — `seedBrands()` picks 4–8 brands per active seller from a shared pool of 20 realistic Italian
       brand names (rows are scoped per seller — schema has unique `(sellerProfileId, lower(name))`). Returns
       `Map<sellerProfileId, brand[]>` consumed by `seedProducts`
-    - `products.ts` — `seedProducts()` generates 30–50 products per active seller (~2150 total) deterministically:
+    - `products.ts` — `seedProducts()` generates 30–50 products per active seller (~3400 total) deterministically:
       EAN-13 sequential from `8000000000000`, price range per macro-category, brand assigned 90% of the time, status
       90/5/5 active/disabled/trashed. Then `productCategoryAssignment`, `storeProduct` inventory (70% of products
       in all of the seller's stores, 30% in one), and `productImage` placeholders pointing at picsum.photos
+    - `discounts.ts` — `seedDiscounts()` fills `discounts` + `discount_products`: 0–3 promotions per active
+      seller (two thirds of national sellers have at least one, four fifths of the Bologna block), 3–12 products
+      each. `KIND_CYCLE` mixes the states on purpose — ~65% active and running, plus scheduled (`startsAt` in the
+      future), expired (`endsAt` in the past), `paused` and `archived`. The customer must only see the running
+      ones, so the seed has to contain the ones it must *not* see. Slices of the same seller overlap by
+      construction, which is what exercises the `ORDER BY percent DESC` in `getBestActiveDiscount()` ("the
+      highest discount wins"). Without this fixture the customer's **In offerta** filter shows 0 and disables
+      itself, and the seller's promo column stays empty — two shipped features that were never seen working
     - `utils.ts` — shared fixture data (Italian names, cities, streets, brand pool, product nouns/adjectives,
-      `prefixToMacro` map, `genEan13`) and `pick()` helper
+      `prefixToMacro` map, `genEan13`) and `pick()` helper. Also the geography and business-type pools:
+      `SEED_MUNICIPALITIES` (10 showcase comuni) and `BOLOGNA_BELT` (11 comuni of the first belt, with real
+      ISTAT codes, coordinates and CAPs), `BOLOGNA_DISTRICTS` (14 anchors inside Bologna),
+      `PHONE_PREFIX_BY_ISTAT`, and `businessPrefixes` (25, national) / `bolognaPrefixes` (16, Bologna block)
+      resolved through `prefixForSeller(idx)`.
+
+      **Two pools, not one longer pool.** `prefixForSeller()` and `pickHandle()` index by position, so appending
+      to `businessPrefixes` or `SEED_MUNICIPALITIES` changes the modulo and reshuffles the category, opening
+      hours and whole catalogue of every seller already seeded. Same reason the strides in the placement helpers
+      are coprime with the pool length: `(idx * 7) % 14` only ever yields 0 or 7, so a stride sharing a factor
+      with the array silently collapses onto two anchors.
 
     All test users have password `password123`. For coherent data, run on a freshly reset DB
     (`bun run infra:reset && bun run db:migrate && bun run db:seed`); otherwise canary skips heal partial state

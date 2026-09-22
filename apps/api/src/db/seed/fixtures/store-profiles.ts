@@ -8,11 +8,12 @@ import { storeCategory } from "@/db/schemas/store-category";
 import { storeImage } from "@/db/schemas/store-image";
 import { config } from "@/lib/config";
 import { validateOpeningHours } from "@/lib/opening-hours";
-import { businessPrefixes } from "./sellers";
 import {
-	ISTAT_TO_SEED_HANDLE,
+	bolognaPrefixes,
+	businessPrefixes,
+	PHONE_PREFIX_BY_ISTAT,
 	pick,
-	SEED_MUNICIPALITY_PHONE_PREFIX,
+	prefixForSeller,
 } from "./utils";
 
 /**
@@ -250,6 +251,18 @@ const VERDE: HoursArchetype = {
 	},
 };
 
+/** Parrucchieri e barbieri: lunedì chiuso, giovedì lungo, sabato pieno. */
+const SALONE: HoursArchetype = {
+	id: "salone",
+	days: {
+		1: [["09:00", "18:00"]],
+		2: [["09:00", "18:00"]],
+		3: [["09:00", "20:00"]],
+		4: [["09:00", "19:00"]],
+		5: [["08:30", "17:00"]],
+	},
+};
+
 const PREFIX_TO_HOURS: Record<string, HoursArchetype> = {
 	Alimentari: BOTTEGA,
 	Macelleria: BOTTEGA,
@@ -276,15 +289,33 @@ const PREFIX_TO_HOURS: Record<string, HoursArchetype> = {
 	Ferramenta: FERRAMENTA,
 	Fiorista: VERDE,
 	Vivaio: VERDE,
+	// Blocco bolognese (`bolognaPrefixes`).
+	Pescheria: BOTTEGA,
+	Bar: CAFFETTERIA,
+	Parrucchiere: SALONE,
+	Barbiere: SALONE,
+	Fumetteria: NEGOZIO,
+	Biciclette: NEGOZIO,
+	"Articoli sportivi": NEGOZIO,
+	Giocattoli: NEGOZIO,
+	Elettronica: NEGOZIO,
+	Telefonia: NEGOZIO,
+	Copisteria: FERRAMENTA,
+	"Pet shop": NEGOZIO,
+	Parafarmacia: NEGOZIO,
+	Merceria: NEGOZIO,
+	Casalinghi: NEGOZIO,
+	"Ricambi auto": FERRAMENTA,
 };
 
 // ── Categoria negozio ─────────────────────────────────────
 
 /**
- * `businessPrefix` → nome esatto in `store_categories`. Diciassette prefissi
- * combaciano già; gli altri hanno un alias qui sotto. `Ottica` non ha una
- * categoria corrispondente e resta volutamente senza: serve almeno un negozio
- * con `categoryId` nullo per verificare la scheda senza chip di categoria.
+ * `businessPrefix` → nome esatto in `store_categories`. Quasi tutti i prefissi
+ * combaciano già (i sedici del blocco bolognese sono presi alla lettera dal
+ * CSV); gli altri hanno un alias qui sotto. `Ottica` non ha una categoria
+ * corrispondente e resta volutamente senza: serve almeno un negozio con
+ * `categoryId` nullo per verificare la scheda senza chip di categoria.
  */
 const PREFIX_TO_CATEGORY: Record<string, string> = {
 	Panificio: "Panetteria",
@@ -381,6 +412,16 @@ const COPY_BY_ARCHETYPE: Record<string, ArchetypeCopy> = {
 			"Utensili, idraulica ed elettrico, con la minuteria che non si trova più.",
 		],
 	},
+	salone: {
+		long: [
+			"Tagliamo su appuntamento, un cliente per volta: preferiamo prenderci il tempo che serve invece di far aspettare tre persone in poltrona.\n\nLavoriamo con prodotti senza siliconi e senza solfati; se avete cute sensibile ditecelo prima, cambiamo linea senza sovrapprezzo.",
+			"Bottega storica, stesso posto dal 1981. Taglio classico, barba con panno caldo e rasoio a mano libera. Il giovedì restiamo aperti fino alle otto per chi finisce tardi di lavorare.",
+		],
+		short: [
+			"Su appuntamento, un cliente per volta, prodotti senza siliconi.",
+			"Taglio classico e barba col rasoio, dallo stesso posto dal 1981.",
+		],
+	},
 	verde: {
 		long: [
 			"Fiori freschi tre volte a settimana dal mercato, piante da interno ed esterno coltivate da noi in serra.\n\nPer matrimoni e cerimonie ci sediamo un attimo insieme: serve capire la stagione prima di promettere una peonia a novembre.",
@@ -407,8 +448,7 @@ const PHONE_LABELS = [
 ] as const;
 
 function landline(istatCode: string, idx: number): string {
-	const handle = ISTAT_TO_SEED_HANDLE[istatCode];
-	const prefix = handle ? SEED_MUNICIPALITY_PHONE_PREFIX[handle] : "02";
+	const prefix = PHONE_PREFIX_BY_ISTAT[istatCode] ?? "02";
 	return `+39 ${prefix} 555${String(1000 + (idx % 9000))}`;
 }
 
@@ -520,7 +560,7 @@ export async function seedStoreProfiles() {
 	// ── Categorie per nome ────────────────────────────────
 	const wantedCategories = [
 		...new Set(
-			businessPrefixes
+			[...businessPrefixes, ...bolognaPrefixes]
 				.map(categoryNameFor)
 				.filter((n): n is string => n !== null),
 		),
@@ -583,8 +623,7 @@ export async function seedStoreProfiles() {
 		// Resta comunque un negozio "completo" — è quello dello smoke test.
 		const match = row.email.match(/^seller(\d+)@test\.com$/);
 		const sellerIdx = match ? Number.parseInt(match[1], 10) - 1 : null;
-		const prefix =
-			sellerIdx !== null ? pick(businessPrefixes, sellerIdx, 1) : null;
+		const prefix = sellerIdx !== null ? prefixForSeller(sellerIdx) : null;
 		const tier =
 			sellerIdx !== null ? tierFor(sellerIdx, rank) : ("full" as Tier);
 		counts[tier] += 1;

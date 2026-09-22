@@ -8,10 +8,17 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { auth } from "@/lib/auth";
 import {
+	type AnyMunicipalityHandle,
+	BOLOGNA_BLOCK_START,
+	bolognaAreaPlacement,
 	firstNames,
-	getSeedMunicipalityIds,
+	getAllMunicipalityIds,
+	insegnaFor,
 	lastNames,
+	makeBolognaStoreName,
+	nationalPlacement,
 	pick,
+	prefixForSeller,
 	SEED_MUNICIPALITIES,
 	SEED_MUNICIPALITY_COORDS,
 	type SeedMunicipalityHandle,
@@ -29,35 +36,7 @@ const legalForms = [
 	"Cooperativa",
 ];
 
-// ── Business types & store names ──────────────────────────
-
-export const businessPrefixes = [
-	"Alimentari",
-	"Panificio",
-	"Pasticceria",
-	"Macelleria",
-	"Enoteca",
-	"Ristorante",
-	"Trattoria",
-	"Boutique",
-	"Gioielleria",
-	"Libreria",
-	"Erboristeria",
-	"Fiorista",
-	"Ferramenta",
-	"Ceramiche",
-	"Pelletteria",
-	"Gelateria",
-	"Pizzeria",
-	"Osteria",
-	"Caffetteria",
-	"Sartoria",
-	"Ottica",
-	"Profumeria",
-	"Cartoleria",
-	"Vivaio",
-	"Gastronomia",
-];
+// ── Store names ───────────────────────────────────────────
 
 function makeStoreName(prefix: string, lastName: string, idx: number): string {
 	const patterns = [
@@ -136,32 +115,32 @@ export interface SellerSeedData {
 		birthCountry: string | null;
 		birthDate: string | null;
 		residenceCountry: string | null;
-		residenceMunicipalityHandle: SeedMunicipalityHandle | null;
+		residenceMunicipalityHandle: AnyMunicipalityHandle | null;
 		residenceAddress: string | null;
 		residenceZipCode: string | null;
 		documentNumber: string | null;
 		documentExpiry: string | null;
-		documentIssuedMunicipalityHandle: SeedMunicipalityHandle | null;
+		documentIssuedMunicipalityHandle: AnyMunicipalityHandle | null;
 	};
 	org: {
 		businessName: string;
 		legalForm: string;
 		addressLine1: string;
-		municipalityHandle: SeedMunicipalityHandle;
+		municipalityHandle: AnyMunicipalityHandle;
 		zipCode: string;
 	};
 	store: {
 		name: string;
 		description: string;
 		addressLine1: string;
-		municipalityHandle: SeedMunicipalityHandle;
+		municipalityHandle: AnyMunicipalityHandle;
 		zipCode: string;
 		lat: number;
 		lng: number;
 	} | null;
 }
 
-// ── Status distribution (150 sellers total) ───────────────
+// ── Status distribution (190 sellers total) ───────────────
 
 interface StatusConfig {
 	status: OnboardingStatus;
@@ -170,7 +149,9 @@ interface StatusConfig {
 }
 
 const statusDistribution: readonly StatusConfig[] = [
-	{ status: "active", count: 55, vatStatus: "verified" }, // first 50 get a store; last 5 active-no-store (empty state test)
+	// idx 0..49 negozio nei comuni vetrina, 50..54 attivi senza negozio (empty
+	// state), 55..94 il blocco dell'area bolognese — tutti con negozio.
+	{ status: "active", count: 95, vatStatus: "verified" },
 	{ status: "pending_review", count: 52, vatStatus: "pending" },
 	{ status: "pending_company", count: 10, vatStatus: "pending" },
 	{ status: "pending_document", count: 10, vatStatus: "pending" },
@@ -179,8 +160,17 @@ const statusDistribution: readonly StatusConfig[] = [
 	{ status: "rejected", count: 7, vatStatus: "rejected" },
 ];
 
-/** Among the 55 active sellers, the first N get a store; the rest stay store-less. */
+/** Fra i venditori nazionali attivi, i primi N hanno un negozio. */
 const ACTIVE_WITH_STORE_COUNT = 50;
+
+/**
+ * Chi ha un negozio: i primi 50 del blocco nazionale e tutto il blocco
+ * bolognese. In mezzo restano i cinque attivi senza negozio, che tengono vivo
+ * l'empty state del back-office.
+ */
+function hasStoreFor(idx: number): boolean {
+	return idx < ACTIVE_WITH_STORE_COUNT || idx >= BOLOGNA_BLOCK_START;
+}
 
 // ── Generator ─────────────────────────────────────────────
 
@@ -192,15 +182,34 @@ function generateSellersSeedData(): SellerSeedData[] {
 		for (let i = 0; i < config.count; i++) {
 			const firstName = pick(firstNames, idx, 1);
 			const lastName = pick(lastNames, idx, 3, 7);
-			const residenceHandle = pickHandle(idx, 2, 5);
-			const orgHandle = pickHandle(idx, 3, 11);
-			const storeHandle = pickHandle(idx, 5, 3);
 			const street = pick(streets, idx, 7, 13);
 			const orgStreet = pick(streets, idx, 11, 17);
 			const storeStreet = pick(streets, idx, 13, 19);
 			const legalForm = pick(legalForms, idx, 1, 2);
-			const businessPrefix = pick(businessPrefixes, idx, 1);
+			const businessPrefix = prefixForSeller(idx);
 			const storeDesc = pick(storeDescriptions, idx, 1, 3);
+
+			// Il blocco bolognese sta tutto nell'area: negozio, residenza e sede
+			// legale nello stesso comune. I venditori nazionali restano sparsi fra
+			// i comuni vetrina, come prima.
+			const isBologna = idx >= BOLOGNA_BLOCK_START;
+			const placement = isBologna
+				? bolognaAreaPlacement(idx)
+				: nationalPlacement(pickHandle(idx, 5, 3), idx);
+			const nationalResidence = pickHandle(idx, 2, 5);
+			const nationalOrg = pickHandle(idx, 3, 11);
+			const residenceHandle: AnyMunicipalityHandle = isBologna
+				? placement.municipalityHandle
+				: nationalResidence;
+			const residenceZip = isBologna
+				? placement.zipCode
+				: SEED_MUNICIPALITY_COORDS[nationalResidence].zip;
+			const orgHandle: AnyMunicipalityHandle = isBologna
+				? placement.municipalityHandle
+				: nationalOrg;
+			const orgZip = isBologna
+				? placement.zipCode
+				: SEED_MUNICIPALITY_COORDS[nationalOrg].zip;
 
 			const stage = getStageIndex(config.status);
 			const streetNum = (idx % 120) + 1;
@@ -218,19 +227,15 @@ function generateSellersSeedData(): SellerSeedData[] {
 
 			const hasPersonal = stage >= 2;
 			const hasDocument = stage >= 3;
-			const hasStore =
-				config.status === "active" && i < ACTIVE_WITH_STORE_COUNT;
+			const hasStore = config.status === "active" && hasStoreFor(idx);
 
+			const insegna = insegnaFor(businessPrefix);
 			const businessName =
 				legalForm === "Ditta Individuale"
 					? `${firstName} ${lastName}`
 					: legalForm === "Cooperativa"
-						? `Cooperativa ${businessPrefix} ${lastName}`
-						: `${businessPrefix} ${lastName}`;
-
-			const residenceCoords = SEED_MUNICIPALITY_COORDS[residenceHandle];
-			const storeCoords = SEED_MUNICIPALITY_COORDS[storeHandle];
-			const orgCoords = SEED_MUNICIPALITY_COORDS[orgHandle];
+						? `Cooperativa ${insegna} ${lastName}`
+						: `${insegna} ${lastName}`;
 
 			sellers.push({
 				email: `seller${idx + 1}@test.com`,
@@ -247,7 +252,7 @@ function generateSellersSeedData(): SellerSeedData[] {
 					residenceCountry: hasPersonal ? "IT" : null,
 					residenceMunicipalityHandle: hasPersonal ? residenceHandle : null,
 					residenceAddress: hasPersonal ? `${street}, ${streetNum}` : null,
-					residenceZipCode: hasPersonal ? residenceCoords.zip : null,
+					residenceZipCode: hasPersonal ? residenceZip : null,
 					documentNumber: hasDocument
 						? `AX${String(idx + 1).padStart(7, "0")}`
 						: null,
@@ -261,17 +266,24 @@ function generateSellersSeedData(): SellerSeedData[] {
 					legalForm,
 					addressLine1: `${orgStreet}, ${(idx % 200) + 1}`,
 					municipalityHandle: orgHandle,
-					zipCode: orgCoords.zip,
+					zipCode: orgZip,
 				},
 				store: hasStore
 					? {
-							name: makeStoreName(businessPrefix, lastName, idx),
+							name: isBologna
+								? makeBolognaStoreName(
+										businessPrefix,
+										lastName,
+										placement.place,
+										idx,
+									)
+								: makeStoreName(businessPrefix, lastName, idx),
 							description: storeDesc,
 							addressLine1: `${storeStreet}, ${(idx % 150) + 1}`,
-							municipalityHandle: storeHandle,
-							zipCode: storeCoords.zip,
-							lat: storeCoords.lat + (idx % 10) * 0.001,
-							lng: storeCoords.lng + (idx % 7) * 0.001,
+							municipalityHandle: placement.municipalityHandle,
+							zipCode: placement.zipCode,
+							lat: placement.lat,
+							lng: placement.lng,
 						}
 					: null,
 			});
@@ -298,7 +310,7 @@ export async function seedSellers() {
 	console.log(`  👥 Seeding ${sellersData.length} sellers...`);
 
 	// Resolve municipality IDs once for all handles
-	const municipalityIds = await getSeedMunicipalityIds();
+	const municipalityIds = await getAllMunicipalityIds();
 
 	// Phase 1: Create users via auth (sequential — password hashing)
 	const created: Array<{ userId: string; data: SellerSeedData }> = [];
