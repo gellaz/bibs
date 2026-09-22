@@ -101,7 +101,7 @@ non le rimetta in discussione.
 | D1 | Schema **tipizzato dal primo giorno**, scheda prodotto adesso, filtri customer dopo | accendere i filtri più avanti non deve richiedere né una migrazione né una ricompilazione da parte dei seller |
 | D2 | Un prodotto appartiene a **una sola sotto-categoria** | la matrice è per singola coppia; l'unione su più sotto-categorie gonfia il form, l'intersezione lo svuota |
 | D3 | Il tipo vive sulla **caratteristica** (dizionario globale), non sulla coppia | 200 voci da tipizzare invece di 1952; i filtri trasversali restano possibili |
-| D4 | I conflitti di dominio si risolvono **sdoppiando la voce** nel dizionario | `Taglia abbigliamento` / `Taglia calzature` invece di un meccanismo di override per categoria; il foglio già lo fa (`Materiale tomaia` / `Materiale suola`) |
+| D4 | I conflitti di dominio si risolvono **sdoppiando la voce** nel dizionario | invece di un meccanismo di override per categoria; il foglio già lo fa (`Materiale tomaia` / `Materiale suola`). Il criterio è **se cambia la lista dei valori ammessi**, non se la voce compare sotto macro diverse — `Sistema operativo` copre smartwatch ed smartphone con lo stesso significato. Vedi § Sdoppiamenti |
 | D5 | Gestione admin: **import CSV per il grosso, interfaccia per i ritocchi** | ricalca il modello già in uso per le categorie |
 | D6 | Import matrice **solo additivo**, con rapporto di divergenza | il giorno 1 additivo e sostitutivo coincidono; il sostitutivo introduce una modalità distruttiva che fra sei mesi qualcuno accende senza ricordarne la semantica. La divergenza va **segnalata**, non risolta cancellando |
 | D7 | Import dizionario **in aggiornamento** | correggere un errore di tipizzazione deve poter passare dal CSV |
@@ -276,6 +276,25 @@ Le 200 voci ricadono in quattro famiglie:
   `Grado IP`, `Tipo chiusura`, `Materiale`, …
 - **testo** — solo ciò che è davvero prosa: `Modello`, `Ingredienti`,
   `Avvertenze`, `Valori nutrizionali`, `Compatibilità`
+
+### Sdoppiamenti
+
+Il caso peggiore è `Taglia`, presente su 17 sotto-categorie con **cinque sistemi
+di valori incompatibili**:
+
+| Sotto-categorie | Valori |
+|---|---|
+| Abbigliamento uomo/donna/bambino, Intimo, Pigiami, Costumi da bagno | XS–XXL |
+| Scarpe uomo, Scarpe donna, Sneakers | 35–48 |
+| Borse, Zaini, Valigie | piccola/media/grande, o litri |
+| Cinture, Cappelli, Gioielli | cm di vita, cm di testa, misura anello |
+| Pannolini | 1–6, per fasce di peso |
+
+`Taglia/Misura` è invece una voce distinta già nel foglio, su 9 sotto-categorie
+sportive. `Materiale`, presente su tutte e 179, e i tre generici `Tipologia` (66),
+`Uso previsto` (60) e `Compatibilità` (75) attraversano domini troppo lontani
+perché una lista chiusa unica abbia senso: sono i candidati naturali a restare
+testo libero, o a essere sdoppiati.
 
 Insieme ai file va scritta una **nota di revisione** che elenca le sole decisioni
 non ovvie — circa quaranta: gli sdoppiamenti (D4), le liste di valori inventate
