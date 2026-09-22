@@ -6,7 +6,6 @@ import {
 	okRes,
 	ProductCategorySchema,
 	withConflictErrors,
-	withErrors,
 } from "@/lib/schemas";
 import { withAdmin } from "../context";
 import {
@@ -139,11 +138,11 @@ export const productCategoriesWriteRoutes = new Elysia()
 					description: "ID della categoria prodotto",
 				}),
 			}),
-			response: withErrors({ 200: OkMessage }),
+			response: withConflictErrors({ 200: OkMessage }),
 			detail: {
 				summary: "Elimina categoria prodotto",
 				description:
-					"Elimina una sotto-categoria prodotto. Fallisce se la categoria non esiste.",
+					"Elimina una sotto-categoria prodotto. Fallisce se la categoria non esiste o con 409 se ci sono prodotti collegati.",
 				tags: ["Admin"],
 			},
 		},
