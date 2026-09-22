@@ -97,25 +97,44 @@ function Dashboard() {
 	const openStatus =
 		storesList?.find((s) => s.id === activeStore?.id)?.openStatus ?? null;
 
-	const hoursAction: ActionItem | null =
-		openStatus && !openStatus.isOpen
-			? {
-					id: "hours-status",
-					urgency: openStatus.status === "closed_holiday" ? "medium" : "low",
-					title:
-						openStatus.status === "closed_holiday"
-							? "Oggi il negozio è chiuso"
-							: "Negozio chiuso ora",
-					subtitle:
-						openStatus.status === "closed_holiday"
-							? "Festività o chiusura programmata"
-							: openStatus.opensAt
-								? `Riapre il ${toYMD(openStatus.opensAt.date)} alle ${openStatus.opensAt.time}`
-								: "Nessun orario impostato",
-					href: "/store/closures",
-					icon: Clock,
-				}
-			: null;
+	// Tre esiti distinti (nessun avviso / orari mai impostati / chiuso adesso)
+	// non stanno in un ternario leggibile: IIFE con tipo di ritorno esplicito.
+	const hoursAction = ((): ActionItem | null => {
+		if (!openStatus) return null;
+
+		// Non e' "chiuso": e' un profilo incompleto, e la conseguenza concreta
+		// e' che il negozio sparisce dai risultati "Aperti ora".
+		if (openStatus.status === "unknown") {
+			return {
+				id: "hours-missing",
+				urgency: "medium",
+				title: "Orari non ancora impostati",
+				subtitle:
+					'Senza orari il negozio non compare nei risultati "Aperti ora"',
+				href: "/store",
+				icon: Clock,
+			};
+		}
+
+		if (openStatus.isOpen) return null;
+
+		return {
+			id: "hours-status",
+			urgency: openStatus.status === "closed_holiday" ? "medium" : "low",
+			title:
+				openStatus.status === "closed_holiday"
+					? "Oggi il negozio è chiuso"
+					: "Negozio chiuso ora",
+			subtitle:
+				openStatus.status === "closed_holiday"
+					? "Festività o chiusura programmata"
+					: openStatus.opensAt
+						? `Riapre il ${toYMD(openStatus.opensAt.date)} alle ${openStatus.opensAt.time}`
+						: "Nessuna riapertura nei prossimi 60 giorni",
+			href: "/store/closures",
+			icon: Clock,
+		};
+	})();
 
 	const actions: ActionItem[] = hoursAction
 		? [...ACTIONS, hoursAction]

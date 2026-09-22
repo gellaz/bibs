@@ -118,6 +118,7 @@ export function StoreForm({
 	const openingHoursDirty =
 		serializeOpeningHours(openingHours) !==
 		serializeOpeningHours(initialOpeningHours);
+	const hasDeclaredHours = openingHours.some((d) => d.slots.length > 0);
 
 	const hoursErrors = useMemo(
 		() => validateOpeningHours(openingHours),
@@ -282,6 +283,12 @@ export function StoreForm({
 				title="Orari di apertura"
 				description="Fasce orarie per ogni giorno. Le festività particolari si gestiscono dal calendario."
 			>
+				{!hasDeclaredHours && (
+					<p className="mb-4 rounded-md border border-warm-line bg-warm-paper px-3 py-2 text-muted-foreground text-sm">
+						Senza orari il negozio non compare nei risultati «Aperti ora» della
+						ricerca.
+					</p>
+				)}
 				<OpeningHoursEditor
 					value={openingHours}
 					onChange={setOpeningHours}
