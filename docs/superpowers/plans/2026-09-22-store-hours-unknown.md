@@ -303,7 +303,9 @@ describe("openStatusLabel", () => {
 - [ ] **Step 11: Esegui il test e verifica che fallisca**
 
 Run: `cd apps/customer && bun test src/features/stores/open-status.test.ts`
-Expected: FAIL sul primo caso — errore di tipo su `status: "unknown"` (l'union FE non lo conosce ancora) oppure `expect "Chiuso" to be "Orari non indicati"`.
+Expected: FAIL sul primo caso con `expect "Chiuso" to be "Orari non indicati"`.
+
+Nota: `bun test` esegue TypeScript senza typecheck, quindi `status: "unknown"` **non** produce un errore di tipo qui, anche se l'union FE non lo conosce ancora — il rosso arriva dall'asserzione. Il typecheck vero è lo step 15.
 
 - [ ] **Step 12: Allinea l'union FE e aggiungi il ramo nell'etichetta**
 
