@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, like } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
@@ -29,12 +29,9 @@ function pickBrandsForSeller(rank: number, count: number): readonly string[] {
 export async function seedBrands(): Promise<BrandsBySellerProfileId> {
 	const map: BrandsBySellerProfileId = new Map();
 
-	// ── Resolve active sellers (idx 0..54 → seller1..seller55) ─
-	const activeEmails = Array.from(
-		{ length: 55 },
-		(_, i) => `seller${i + 1}@test.com`,
-	);
-
+	// ── Resolve active sellers ────────────────────────────
+	// Come in `seedProducts`: pattern invece di una lista a lunghezza fissa, così
+	// i blocchi aggiunti a `statusDistribution` entrano senza toccare questo file.
 	const sellerRows = await db
 		.select({
 			email: user.email,
@@ -44,7 +41,7 @@ export async function seedBrands(): Promise<BrandsBySellerProfileId> {
 		.innerJoin(user, eq(user.id, sellerProfile.userId))
 		.where(
 			and(
-				inArray(user.email, activeEmails),
+				like(user.email, "seller%@test.com"),
 				eq(sellerProfile.onboardingStatus, "active"),
 			),
 		)

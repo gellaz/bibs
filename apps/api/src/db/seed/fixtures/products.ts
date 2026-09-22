@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, like } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { productCategory } from "@/db/schemas/category";
@@ -12,10 +12,10 @@ import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import type { BrandsBySellerProfileId } from "./brands";
-import { businessPrefixes } from "./sellers";
 import {
 	genEan13,
 	pick,
+	prefixForSeller,
 	prefixToMacro,
 	productAdjectives,
 	productDescriptions,
@@ -33,6 +33,12 @@ const priceRangeByMacro: Record<string, { min: number; spread: number }> = {
 	"Libri e media": { min: 8, spread: 32 },
 	"Ufficio e scuola": { min: 3, spread: 27 },
 	"Giardino e outdoor": { min: 5, spread: 65 },
+	"Sport e tempo libero": { min: 12, spread: 130 },
+	Infanzia: { min: 6, spread: 54 },
+	Elettronica: { min: 9, spread: 190 },
+	"Animali domestici": { min: 4, spread: 46 },
+	"Hobby e creatività": { min: 3, spread: 32 },
+	"Auto e moto": { min: 7, spread: 110 },
 };
 
 const DEFAULT_PRICE_RANGE = { min: 10, spread: 90 };
@@ -49,11 +55,9 @@ function chunked<T>(arr: T[], size = CHUNK): T[][] {
 
 export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 	// ── Resolve active sellers ────────────────────────────
-	const activeEmails = Array.from(
-		{ length: 55 },
-		(_, i) => `seller${i + 1}@test.com`,
-	);
-
+	// Filtro sul pattern, non su una lista di lunghezza fissa: così i blocchi
+	// aggiunti a `statusDistribution` entrano da soli. `seller@dev.bibs` resta
+	// fuori — non finisce in `seller%@test.com` — e tiene il suo catalogo vuoto.
 	const sellerRows = await db
 		.select({
 			email: user.email,
@@ -63,7 +67,7 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 		.innerJoin(user, eq(user.id, sellerProfile.userId))
 		.where(
 			and(
-				inArray(user.email, activeEmails),
+				like(user.email, "seller%@test.com"),
 				eq(sellerProfile.onboardingStatus, "active"),
 			),
 		)
@@ -150,7 +154,7 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 		if (!m) return;
 		const idx = Number.parseInt(m[1], 10) - 1;
 
-		const prefix = pick(businessPrefixes, idx, 1);
+		const prefix = prefixForSeller(idx);
 		const macro = prefixToMacro[prefix];
 		if (!macro) {
 			throw new Error(
