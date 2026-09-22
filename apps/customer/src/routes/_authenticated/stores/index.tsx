@@ -21,6 +21,7 @@ import { originLabel } from "@/features/location/origin-label";
 import { useSearchOrigin } from "@/features/location/search-origin";
 import { useNearParam } from "@/features/location/use-near-param";
 import { SearchField } from "@/features/search/search-field";
+import { SearchTabs } from "@/features/search/search-tabs";
 import { useSearchTextParam } from "@/features/search/use-search-text-param";
 import type { StoreFilterValue } from "@/features/stores/store-filters";
 import { StoreFilters } from "@/features/stores/store-filters";
@@ -386,6 +387,9 @@ function StoresPage() {
 			</section>
 
 			<div className="mt-6">
+				<div className="mb-4">
+					<SearchTabs q={q} near={near} radius={radius} openNow={openNow} />
+				</div>
 				<SearchField
 					value={text}
 					onChange={setText}
