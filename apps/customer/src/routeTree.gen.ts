@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as PreviewOpenStatusRouteImport } from './routes/preview-open-status'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
@@ -36,11 +35,6 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PreviewOpenStatusRoute = PreviewOpenStatusRouteImport.update({
-  id: '/preview-open-status',
-  path: '/preview-open-status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -101,7 +95,6 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/preview-open-status': typeof PreviewOpenStatusRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -115,7 +108,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/preview-open-status': typeof PreviewOpenStatusRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -132,7 +124,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
-  '/preview-open-status': typeof PreviewOpenStatusRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -150,7 +141,6 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
-    | '/preview-open-status'
     | '/register'
     | '/reset-password'
     | '/verify-email'
@@ -164,7 +154,6 @@ export interface FileRouteTypes {
   to:
     | '/forgot-password'
     | '/login'
-    | '/preview-open-status'
     | '/register'
     | '/reset-password'
     | '/verify-email'
@@ -180,7 +169,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/forgot-password'
     | '/login'
-    | '/preview-open-status'
     | '/register'
     | '/reset-password'
     | '/verify-email'
@@ -197,7 +185,6 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
-  PreviewOpenStatusRoute: typeof PreviewOpenStatusRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
@@ -224,13 +211,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/preview-open-status': {
-      id: '/preview-open-status'
-      path: '/preview-open-status'
-      fullPath: '/preview-open-status'
-      preLoaderRoute: typeof PreviewOpenStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -334,7 +314,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
-  PreviewOpenStatusRoute: PreviewOpenStatusRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   VerifyEmailRoute: VerifyEmailRoute,
