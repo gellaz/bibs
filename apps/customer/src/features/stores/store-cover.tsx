@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, Clock } from "lucide-react";
+import { ChevronLeft, Clock, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { PAGE_CONTAINER } from "@/components/page";
 import { type OpenStatusView, openStatusLabel } from "./open-status";
@@ -24,6 +24,7 @@ export function StoreCover({
 	const [failed, setFailed] = useState(false);
 	const showImage = imageUrl && !failed;
 	const initial = name.trim().charAt(0).toUpperCase() || "?";
+	const StatusIcon = openStatus.status === "unknown" ? HelpCircle : Clock;
 
 	return (
 		<div className="relative h-64 w-full overflow-hidden sm:h-80 xl:h-96">
@@ -74,7 +75,7 @@ export function StoreCover({
 					{city} ({province})
 				</p>
 				<span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-cream px-2.5 py-1 font-medium text-ink text-xs">
-					<Clock
+					<StatusIcon
 						className={`size-3.5 ${
 							openStatus.isOpen ? "text-saffron-deep" : "text-ink/60"
 						}`}
