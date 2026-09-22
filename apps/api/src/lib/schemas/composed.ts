@@ -85,13 +85,6 @@ export const EmployeeWithUserSchema = t.Object({
 	}),
 });
 
-// Product category assignment with category (includes parent macro)
-const ProductCategoryAssignmentWithCategory = t.Object({
-	productId: t.String(),
-	productCategoryId: t.String(),
-	category: ProductCategoryWithMacroSchema,
-});
-
 // StoreProduct + store (location excluded — PostGIS EWKB fails in nested relational queries)
 const StoreProductWithStore = t.Object({
 	...StoreProductSchema.properties,
@@ -101,7 +94,7 @@ const StoreProductWithStore = t.Object({
 // Product with full relations (seller product list)
 export const ProductWithRelationsSchema = t.Object({
 	...ProductSchema.properties,
-	productCategoryAssignments: t.Array(ProductCategoryAssignmentWithCategory),
+	productCategory: t.Nullable(ProductCategoryWithMacroSchema),
 	storeProducts: t.Array(StoreProductWithStore),
 	images: t.Array(ProductImageSchema),
 	brand: t.Nullable(BrandSchema),

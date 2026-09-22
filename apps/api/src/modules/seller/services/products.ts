@@ -16,7 +16,6 @@ import { productCategory } from "@/db/schemas/category";
 import {
 	type ProductStatus,
 	product,
-	productCategoryAssignment,
 	storeProduct,
 } from "@/db/schemas/product";
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
@@ -323,9 +322,7 @@ export async function listProducts(params: ListProductsParams) {
 			: await db.query.product.findMany({
 					where: inArray(product.id, productIds),
 					with: {
-						productCategoryAssignments: {
-							with: { category: { with: { macroCategory: true } } },
-						},
+						productCategory: { with: { macroCategory: true } },
 						storeProducts: {
 							with: {
 								store: {
@@ -515,9 +512,7 @@ export async function getProduct(params: GetProductParams) {
 			eq(product.sellerProfileId, sellerProfileId),
 		),
 		with: {
-			productCategoryAssignments: {
-				with: { category: { with: { macroCategory: true } } },
-			},
+			productCategory: { with: { macroCategory: true } },
 			storeProducts: {
 				with: {
 					store: {
@@ -559,7 +554,7 @@ interface CreateProductParams {
 	description?: string;
 	price: string;
 	vatRate?: VatRate;
-	categoryIds?: string[];
+	productCategoryId?: string | null;
 	ean?: string;
 	brandId?: string;
 	brandName?: string;
@@ -569,26 +564,12 @@ export async function createProduct(params: CreateProductParams) {
 	const {
 		sellerProfileId,
 		storeId,
-		categoryIds = [],
+		productCategoryId,
 		brandId,
 		brandName,
 		ean,
 		...productData
 	} = params;
-
-	// Validate: if multiple categories given, all belong to one macro
-	if (categoryIds.length > 1) {
-		const macros = await db
-			.selectDistinct({ macroId: productCategory.macroCategoryId })
-			.from(productCategory)
-			.where(inArray(productCategory.id, categoryIds));
-		if (macros.length > 1) {
-			throw new ServiceError(
-				400,
-				"Le categorie devono appartenere a una sola macro-categoria",
-			);
-		}
-	}
 
 	const normalizedEan = ean && ean.length > 0 ? ean : null;
 
@@ -619,7 +600,7 @@ export async function createProduct(params: CreateProductParams) {
 				...productData,
 				ean: normalizedEan,
 				brandId: resolvedBrandId,
-				productCategoryId: categoryIds[0] ?? null,
+				productCategoryId: productCategoryId ?? null,
 			})
 			.returning();
 
@@ -629,15 +610,6 @@ export async function createProduct(params: CreateProductParams) {
 			storeId,
 			stock: 0,
 		});
-
-		if (categoryIds.length > 0) {
-			await tx.insert(productCategoryAssignment).values(
-				categoryIds.map((categoryId) => ({
-					productId: created.id,
-					productCategoryId: categoryId,
-				})),
-			);
-		}
 
 		return created;
 	});
@@ -649,7 +621,7 @@ interface UpdateProductParams {
 	productId: string;
 	sellerProfileId: string;
 	accessibleStoreIds: string[];
-	categoryIds?: string[];
+	productCategoryId?: string | null;
 	imageOrder?: string[];
 	name?: string;
 	description?: string;
@@ -665,7 +637,7 @@ export async function updateProduct(params: UpdateProductParams) {
 		productId,
 		sellerProfileId,
 		accessibleStoreIds,
-		categoryIds,
+		productCategoryId,
 		imageOrder,
 		ean,
 		brandId,
@@ -684,20 +656,6 @@ export async function updateProduct(params: UpdateProductParams) {
 	if (!existing) return null;
 	if (!isProductAccessible(existing.storeProducts, accessibleStoreIds)) {
 		return null;
-	}
-
-	// Validate: all categoryIds belong to a single macro-category
-	if (categoryIds && categoryIds.length > 1) {
-		const macros = await db
-			.selectDistinct({ macroId: productCategory.macroCategoryId })
-			.from(productCategory)
-			.where(inArray(productCategory.id, categoryIds));
-		if (macros.length > 1) {
-			throw new ServiceError(
-				400,
-				"Le categorie devono appartenere a una sola macro-categoria",
-			);
-		}
 	}
 
 	return db.transaction(async (tx) => {
@@ -729,16 +687,16 @@ export async function updateProduct(params: UpdateProductParams) {
 			);
 		}
 
-		// Dual-write: mirrors the assignment-table rewrite below (categoryIds
-		// provided → replace, including the empty-array case, which must null
-		// the column rather than leave it stale). Removed once Task 4 replaces
-		// categoryIds with a single productCategoryId parameter.
-		if (categoryIds !== undefined) {
-			productUpdates.productCategoryId = categoryIds[0] ?? null;
+		// undefined means "leave alone", null means "remove" — the same
+		// distinction ean and brandId use just above. Assigning here also makes
+		// hasProductData true, so a category-only PATCH issues a real UPDATE
+		// instead of falling through to the SELECT branch below.
+		if (productCategoryId !== undefined) {
+			productUpdates.productCategoryId = productCategoryId;
 		}
 
 		// Only issue the UPDATE if there are plain product columns to change.
-		// With only imageOrder (no categoryIds, no other field) we'd call
+		// With only imageOrder (no productCategoryId, no other field) we'd call
 		// .set({}) and Drizzle throws "No values to set" — fetch the row
 		// instead so the caller still gets it.
 		const hasProductData = Object.keys(productUpdates).length > 0;
@@ -765,21 +723,6 @@ export async function updateProduct(params: UpdateProductParams) {
 					);
 
 		if (!updated) return null;
-
-		if (categoryIds) {
-			await tx
-				.delete(productCategoryAssignment)
-				.where(eq(productCategoryAssignment.productId, updated.id));
-
-			if (categoryIds.length > 0) {
-				await tx.insert(productCategoryAssignment).values(
-					categoryIds.map((categoryId) => ({
-						productId: updated.id,
-						productCategoryId: categoryId,
-					})),
-				);
-			}
-		}
 
 		if (imageOrder) {
 			for (let i = 0; i < imageOrder.length; i++) {
@@ -869,19 +812,14 @@ export async function lookupProductByEan(
 		orderBy: [desc(product.createdAt)],
 		with: {
 			brand: true,
-			productCategoryAssignments: {
-				with: { category: true },
-			},
+			productCategory: true,
 		},
 	});
 
 	if (!row) return null;
 
-	const categoryIds = row.productCategoryAssignments.map(
-		(a) => a.productCategoryId,
-	);
-	const macroCategoryId =
-		row.productCategoryAssignments[0]?.category.macroCategoryId ?? null;
+	const categoryIds = row.productCategory ? [row.productCategory.id] : [];
+	const macroCategoryId = row.productCategory?.macroCategoryId ?? null;
 
 	return {
 		name: row.name,

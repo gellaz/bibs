@@ -455,33 +455,16 @@ function ProductsListPage() {
 					cellClassName: "text-sm",
 				},
 				cell: ({ row }) => {
-					const assignments = row.original.productCategoryAssignments;
-					if (assignments.length === 0) {
+					const cat = row.original.productCategory;
+					if (!cat) {
 						return <span className="text-muted-foreground">—</span>;
 					}
-					const macroName = assignments[0].category.macroCategory.name;
-					const cats = assignments.map((a) => a.category);
-					const MAX_VISIBLE = 2;
-					const visible = cats.slice(0, MAX_VISIBLE);
-					const overflow = cats.length - visible.length;
 					return (
-						<div
-							className="flex flex-col gap-1 leading-tight"
-							title={cats.map((c) => c.name).join(", ")}
-						>
+						<div className="flex flex-col gap-1 leading-tight">
 							<span className="text-muted-foreground text-[0.65rem] font-medium tracking-[0.06em] uppercase">
-								{macroName}
+								{cat.macroCategory.name}
 							</span>
-							<div className="flex flex-wrap items-center gap-1">
-								{visible.map((c) => (
-									<Badge key={c.id}>{c.name}</Badge>
-								))}
-								{overflow > 0 && (
-									<span className="text-muted-foreground text-xs">
-										+{overflow}
-									</span>
-								)}
-							</div>
+							<span>{cat.name}</span>
 						</div>
 					);
 				},

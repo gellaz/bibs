@@ -1,10 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import {
-	product,
-	productCategoryAssignment,
-	storeProduct,
-} from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
@@ -207,18 +203,11 @@ export async function importProductsFromCsv(
 								price: p.price,
 								ean: p.ean,
 								brandId,
+								// Il CSV può elencare più categorie: il prodotto ne tiene
+								// una sola, la prima.
 								productCategoryId: p.categoryIds[0] ?? null,
 							})
 							.returning({ id: product.id });
-
-						if (p.categoryIds.length > 0) {
-							await nested.insert(productCategoryAssignment).values(
-								p.categoryIds.map((categoryId) => ({
-									productId: inserted.id,
-									productCategoryId: categoryId,
-								})),
-							);
-						}
 
 						await nested.insert(storeProduct).values({
 							productId: inserted.id,

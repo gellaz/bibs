@@ -291,7 +291,7 @@ export const productsRoutes = new Elysia()
 			detail: {
 				summary: "Dettaglio prodotto",
 				description:
-					"Restituisce un singolo prodotto con categorie, disponibilità per negozio e immagini.",
+					"Restituisce un singolo prodotto con la sua sotto-categoria, disponibilità per negozio e immagini.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -317,7 +317,7 @@ export const productsRoutes = new Elysia()
 					productId: data.id,
 					productName: data.name,
 					storeId: body.storeId,
-					categoryIds: body.categoryIds,
+					productCategoryId: body.productCategoryId,
 					ean: data.ean,
 					brandId: data.brandId,
 					action: "product_created",
@@ -333,7 +333,7 @@ export const productsRoutes = new Elysia()
 			detail: {
 				summary: "Crea prodotto",
 				description:
-					"Crea un nuovo prodotto e lo associa alle categorie indicate. Il prodotto è attivo di default.",
+					"Crea un nuovo prodotto e lo associa alla sotto-categoria indicata. Il prodotto è attivo di default.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -359,10 +359,10 @@ export const productsRoutes = new Elysia()
 				productId: t.String({ description: "ID del prodotto" }),
 			}),
 			body: t.Object({
-				categoryIds: t.Optional(
-					t.Array(t.String(), {
+				productCategoryId: t.Optional(
+					t.Union([t.String(), t.Null()], {
 						description:
-							"Nuove categorie (sostituisce le precedenti). Array vuoto per rimuoverle tutte.",
+							"ID della sotto-categoria del prodotto. null per rimuoverla.",
 					}),
 				),
 				name: t.Optional(
@@ -414,7 +414,7 @@ export const productsRoutes = new Elysia()
 			detail: {
 				summary: "Aggiorna prodotto",
 				description:
-					"Aggiorna i dati di un prodotto. Se vengono fornite categoryIds, le classificazioni vengono sostituite.",
+					"Aggiorna i dati di un prodotto. Se viene fornita productCategoryId, la classificazione viene sostituita; null la rimuove.",
 				tags: ["Seller - Products"],
 			},
 		},

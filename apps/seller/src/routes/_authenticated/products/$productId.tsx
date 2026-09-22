@@ -83,7 +83,7 @@ function EditProductPage() {
 					description: formData.description,
 					price: formData.price,
 					vatRate: formData.vatRate,
-					categoryIds: formData.categoryIds,
+					productCategoryId: formData.productCategoryId ?? null,
 					imageOrder: formData.imageOrder,
 					ean: formData.ean ?? null,
 					brandId: formData.brandId ?? null,
@@ -136,8 +136,7 @@ function EditProductPage() {
 		);
 	}
 
-	const firstAssignment = product.productCategoryAssignments[0];
-	const macroCategoryId = firstAssignment?.category.macroCategoryId ?? null;
+	const macroCategoryId = product.productCategory?.macroCategoryId ?? null;
 
 	return (
 		<div className="mx-auto w-full max-w-7xl space-y-10">
@@ -154,9 +153,7 @@ function EditProductPage() {
 					description: product.description,
 					price: product.price,
 					vatRate: product.vatRate,
-					categoryIds: product.productCategoryAssignments.map(
-						(a) => a.productCategoryId,
-					),
+					productCategoryId: product.productCategory?.id ?? null,
 					ean: product.ean,
 					brandId: product.brand?.id,
 					brandName: product.brand?.name,
