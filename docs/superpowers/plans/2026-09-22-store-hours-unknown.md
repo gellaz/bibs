@@ -767,7 +767,7 @@ e nella `FormSection` «Orari di apertura» (riga ~281), sopra `<OpeningHoursEdi
 
 - [ ] **Step 3: Verifica a schermo sul seller autenticato**
 
-Il seller gira su `http://localhost:3003` (`bun run dev:seller`). Accedi con `seller@dev.bibs` / `password123` — la verifica va fatta su una pagina autenticata vera, non su un mock.
+Il seller gira su `http://localhost:3002` (`bun run dev:seller`); `:3003` è l'admin. Accedi con `seller@dev.bibs` / `password123` — la verifica va fatta su una pagina autenticata vera, non su un mock.
 
 1. Dashboard: se il negozio attivo non ha orari, l'avviso deve dire «Orari non ancora impostati», non «Negozio chiuso ora», con il pallino `medium`.
 2. Clicca l'avviso: deve portare a `/store`, non a `/store/closures`.
@@ -868,7 +868,7 @@ Su UI il gate è «Marco l'ha provata», non «i test sono verdi». Prima di apr
 2. `/stores` — vista mappa: popup con la stessa etichetta.
 3. `/stores` — toggle «Aperti ora»: i negozi senza orari spariscono, il conteggio del facet non è cambiato di forma.
 4. Scheda negozio: badge in copertina e rail orari **concordi**, niente «Chiuso».
-5. Seller su `:3003`: avviso in dashboard, link a `/store`, sollecito nel form.
+5. Seller su `:3002`: avviso in dashboard, link a `/store`, sollecito nel form.
 6. Tutto quanto sopra anche in dark.
 
 Riporta cosa hai verificato e cosa no. Poi apri la PR con `/commit-commands:commit-push-pr`.
