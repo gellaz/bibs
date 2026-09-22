@@ -55,7 +55,7 @@ export interface ProductFormDefaultValues {
 	description?: string | null;
 	price: string;
 	vatRate?: "22" | "10" | "5" | "4" | "0";
-	productCategoryId: string | null;
+	productCategoryId: string | null | undefined;
 	ean?: string | null;
 	brandId?: string | null;
 	brandName?: string | null;
@@ -104,14 +104,14 @@ export function ProductForm({
 			description: defaultValues?.description ?? "",
 			price: defaultValues?.price ?? "",
 			vatRate: defaultValues?.vatRate ?? "22",
-			productCategoryId: defaultValues?.productCategoryId ?? null,
+			productCategoryId: defaultValues?.productCategoryId,
 			ean: defaultValues?.ean ?? undefined,
 			brandId: defaultValues?.brandId ?? undefined,
 			brandName: defaultValues?.brandName ?? undefined,
 		},
 	});
 
-	const productCategoryId = watch("productCategoryId") ?? null;
+	const productCategoryId = watch("productCategoryId");
 	const nameValue = watch("name");
 	const eanValue = watch("ean") ?? "";
 	const brandIdValue = watch("brandId");
@@ -207,7 +207,7 @@ export function ProductForm({
 	) => {
 		const hadCategory = !!productCategoryId;
 		setMacroCategoryId(next);
-		setValue("productCategoryId", null, {
+		setValue("productCategoryId", undefined, {
 			shouldValidate: true,
 			shouldDirty: true,
 		});

@@ -17,7 +17,7 @@ const NO_CATEGORY = "__none__";
 
 interface ProductCategoriesPickerProps {
 	macroCategoryId: string | null;
-	categoryId: string | null;
+	categoryId: string | null | undefined;
 	onMacroChange: (
 		macroId: string | null,
 		suggestedVatRate?: "22" | "10" | "5" | "4" | "0",
@@ -88,13 +88,19 @@ export function ProductCategoriesPicker({
 				<div className="space-y-2">
 					<Label>Categoria{required && " *"}</Label>
 					<Select
-						value={categoryId ?? NO_CATEGORY}
+						value={
+							categoryId === undefined
+								? ""
+								: categoryId === null
+									? NO_CATEGORY
+									: categoryId
+						}
 						onValueChange={(v) =>
 							onCategoryChange(!v || v === NO_CATEGORY ? null : v)
 						}
 					>
 						<SelectTrigger className="w-full">
-							<SelectValue />
+							<SelectValue placeholder="Seleziona una categoria" />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value={NO_CATEGORY}>Nessuna categoria</SelectItem>

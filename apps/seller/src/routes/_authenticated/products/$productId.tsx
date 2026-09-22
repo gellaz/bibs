@@ -153,7 +153,7 @@ function EditProductPage() {
 					description: product.description,
 					price: product.price,
 					vatRate: product.vatRate,
-					productCategoryId: product.productCategory?.id ?? null,
+					productCategoryId: product.productCategory?.id,
 					ean: product.ean,
 					brandId: product.brand?.id,
 					brandName: product.brand?.name,
