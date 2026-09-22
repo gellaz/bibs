@@ -749,7 +749,7 @@ e nella `FormSection` «Orari di apertura» (riga ~281), sopra `<OpeningHoursEdi
 				description="Fasce orarie per ogni giorno. Le festività particolari si gestiscono dal calendario."
 			>
 				{!hasDeclaredHours && (
-					<p className="mb-4 rounded-md border border-warm-line bg-warm-paper px-3 py-2 text-muted-foreground text-sm">
+					<p className="mb-4 rounded-md border border-border bg-muted px-3 py-2 text-muted-foreground text-sm">
 						Senza orari il negozio non compare nei risultati «Aperti ora» della
 						ricerca.
 					</p>
@@ -763,7 +763,7 @@ e nella `FormSection` «Orari di apertura» (riga ~281), sopra `<OpeningHoursEdi
 			</FormSection>
 ```
 
-`warm-line` e `warm-paper` sono token esistenti del tema seller; non inventarne altri.
+`border`/`muted` sono token semantici theme-aware del tema seller; `warm-line`/`warm-paper` sono fissi e NON si ridefiniscono in dark, quindi non vanno usati qui (fallirebbero il contrasto AA in dark — vedi Step 3).
 
 - [ ] **Step 3: Verifica a schermo sul seller autenticato**
 
@@ -773,6 +773,7 @@ Il seller gira su `http://localhost:3002` (`bun run dev:seller`); `:3003` è l'a
 2. Clicca l'avviso: deve portare a `/store`, non a `/store/closures`.
 3. Su `/store`, la sezione «Orari di apertura» deve mostrare la riga di sollecito sopra l'editor.
 4. Compila una fascia e salva: la riga di sollecito sparisce e l'avviso in dashboard cambia di conseguenza.
+5. Ripeti in dark (`localStorage.setItem('theme','dark')` e ricarica): la riga di sollecito deve restare un pannello leggibile, non un riquadro quasi bianco con testo grigio chiaro sopra.
 
 Se il negozio del seller di sviluppo ha già gli orari, usane uno senza (nel seed sono il 27%) o svuota le fasce e salva.
 

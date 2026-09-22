@@ -110,7 +110,7 @@ function Dashboard() {
 				urgency: "medium",
 				title: "Orari non ancora impostati",
 				subtitle:
-					'Senza orari il negozio non compare nei risultati "Aperti ora"',
+					"Senza orari il negozio non compare nei risultati «Aperti ora»",
 				href: "/store",
 				icon: Clock,
 			};

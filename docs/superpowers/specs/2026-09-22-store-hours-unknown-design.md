@@ -182,8 +182,12 @@ distinguerla: l'etichetta nuova arriva da sola tramite `openStatusLabel`, e il
 ramo `!isOpen` già applica `text-muted-foreground`. **Nessuna modifica.**
 
 **`opening-hours.tsx`** — quando non c'è nessuno slot dichiarato, il componente
-**non rende la tabella dei sette giorni**: rende una riga sola con lo stesso
-testo del badge. Sette righe «Chiuso» non sono una formattazione sbagliata, sono
+**non rende la tabella dei sette giorni**: rende una riga sola. **Decisione
+presa in esecuzione:** questa riga NON riusa il testo del badge — usa una
+stringa paraglide propria, più lunga (`store_hours_unknown`), perché un
+pannello a piena larghezza non è un chip: lo spazio in più regge una frase
+completa, e riusare l'etichetta compressa del badge ci avrebbe sprecato quello
+spazio. Sette righe «Chiuso» non sono una formattazione sbagliata, sono
 sette affermazioni sbagliate. Serve un messaggio paraglide nuovo
 (`store_hours_unknown`) in `apps/customer/messages/it.json` e `en.json`, perché
 questo componente è i18n'd (a differenza di `open-status.ts`).

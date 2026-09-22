@@ -80,9 +80,7 @@ describe("getOpenStatus — orari mai dichiarati", () => {
 			closedDates: new Set(),
 			now: romeSummer(10),
 		});
-		expect(s.status).toBe("unknown");
-		expect(s.isOpen).toBe(false);
-		expect(s.opensAt).toBeUndefined();
+		expect(s).toEqual({ isOpen: false, status: "unknown" });
 	});
 
 	it("returns unknown for an empty array", () => {

@@ -284,7 +284,7 @@ export function StoreForm({
 				description="Fasce orarie per ogni giorno. Le festività particolari si gestiscono dal calendario."
 			>
 				{!hasDeclaredHours && (
-					<p className="mb-4 rounded-md border border-warm-line bg-warm-paper px-3 py-2 text-muted-foreground text-sm">
+					<p className="mb-4 rounded-md border border-border bg-muted px-3 py-2 text-muted-foreground text-sm">
 						Senza orari il negozio non compare nei risultati «Aperti ora» della
 						ricerca.
 					</p>

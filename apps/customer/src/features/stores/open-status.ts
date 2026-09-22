@@ -29,7 +29,7 @@ export function describeOpensAt(opensAt: {
 	return `apre ${label} alle ${opensAt.time}`;
 }
 
-/** "Aperto · chiude alle 19:30" / "Chiuso · apre …" / "Orari non indicati". */
+/** "Aperto · chiude alle 19:30" / "Aperto" / "Chiuso · apre …" / "Chiuso" / "Orari non indicati". */
 export function openStatusLabel(status: OpenStatusView): string {
 	// Senza orari dichiarati non possiamo dire né aperto né chiuso. Prima di
 	// `isOpen`, che per questo stato è `false` e porterebbe a "Chiuso".
