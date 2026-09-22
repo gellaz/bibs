@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **Nessun commit diretto su `main`.** Branch `feat/product-characteristics-dictionary`, già creato da `main` a `43c35da`.
-- **Conventional Commits** con scope dalla lista del repo: qui `db`, `api`, `products`, `categories`. Descrizione minuscola, imperativa, prima riga sotto i 72 caratteri.
+- **Conventional Commits** con scope dalla lista del repo: qui `db`, `api`, `products`, `categories`. Descrizione minuscola, imperativa, **prima riga sotto i 72 caratteri — misurala, non fidarti del testo prescritto qui sotto**: un oggetto di questo piano era gia' di 78.
 - **Ogni commit chiude con** `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`.
 - **Mai `db:push`**: sempre `bun run db:generate`, **leggere l'SQL generato**, poi `bun run db:migrate`.
 - **Mai `--no-verify`**. Mai `bun run db:reset` o `infra:reset` senza conferma esplicita dell'utente.
@@ -402,7 +402,7 @@ bun run db:generate   # atteso: "No schema changes"
 ```bash
 git add apps/api/src/db apps/api/tests/integration/product-characteristics-schema.test.ts
 git commit -m "$(cat <<'EOF'
-feat(db): aggiungi dizionario, opzioni, matrice e valori delle caratteristiche
+feat(db): aggiungi le quattro tabelle delle caratteristiche
 
 I vincoli portano il peso: CHECK sul tipo di valore e chiave esterna
 composta perche' la copia di data_type non possa divergere.
@@ -507,7 +507,7 @@ Ogni sezione dice cosa cambiare e dove, se la risposta è «no».
 ```bash
 git add apps/api/src/db/seed/data docs/products/caratteristiche-nota-di-revisione.md
 git commit -m "$(cat <<'EOF'
-feat(products): redigi dizionario tipizzato e matrice delle caratteristiche
+feat(products): redigi dizionario e matrice delle caratteristiche
 
 1773 righe di matrice, Marca esclusa perche' e' gia' products.brandId,
 Taglia sdoppiata nei suoi cinque sistemi di valori.
