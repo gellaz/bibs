@@ -318,6 +318,16 @@ export async function createTestProductCategoryAssignment(
 	await db
 		.insert(productCategoryAssignment)
 		.values({ productId, productCategoryId });
+	// Dual-write, mirroring the real writers (see createTestProduct above):
+	// callers of this fixture assign a product's category directly on the
+	// assignment table, bypassing createTestProduct's own dual-write. Without
+	// this, products.product_category_id stays null and every reader that has
+	// moved to the column (seller filters/facets, customer facets/search)
+	// silently sees the product as unclassified.
+	await db
+		.update(product)
+		.set({ productCategoryId })
+		.where(eq(product.id, productId));
 }
 
 export async function createTestBrand(

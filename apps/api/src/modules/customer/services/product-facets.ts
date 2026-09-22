@@ -1,11 +1,7 @@
 import { eq, exists, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
-import {
-	product,
-	productCategoryAssignment,
-	storeProduct,
-} from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { store } from "@/db/schemas/store";
 import { openNowCondition } from "@/lib/store-open-status";
@@ -115,12 +111,8 @@ export async function getProductFacets(
 				})
 				.from(product)
 				.innerJoin(
-					productCategoryAssignment,
-					sql`${productCategoryAssignment.productId} = ${product.id}`,
-				)
-				.innerJoin(
 					productCategory,
-					eq(productCategory.id, productCategoryAssignment.productCategoryId),
+					eq(productCategory.id, product.productCategoryId),
 				)
 				.innerJoin(
 					productMacroCategory,
@@ -138,12 +130,8 @@ export async function getProductFacets(
 				})
 				.from(product)
 				.innerJoin(
-					productCategoryAssignment,
-					sql`${productCategoryAssignment.productId} = ${product.id}`,
-				)
-				.innerJoin(
 					productCategory,
-					eq(productCategory.id, productCategoryAssignment.productCategoryId),
+					eq(productCategory.id, product.productCategoryId),
 				)
 				.innerJoin(
 					productMacroCategory,

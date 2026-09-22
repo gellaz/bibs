@@ -81,7 +81,7 @@ async function productIn(
 }
 
 describe("getProductFacets", () => {
-	it("conta prodotti distinti per macro e per categoria, anche quando un prodotto sta in due categorie della stessa macro", async () => {
+	it("la macro aggrega le sue sotto-categorie, ognuna conta solo la propria", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const s = await visibleStore(seller.profile.id, { name: "Negozio" });
@@ -90,15 +90,16 @@ describe("getProductFacets", () => {
 		const pane = await createTestCategory(db, "Pane", macro.id);
 		const dolci = await createTestCategory(db, "Dolci", macro.id);
 
-		// Un prodotto in DUE categorie della stessa macro: la macro deve contarlo
-		// una volta sola, non sommare i figli.
-		await productIn(seller.profile.id, s.id, {
-			name: "Panettone",
-			categoryIds: [pane.id, dolci.id],
-		});
+		// Due prodotti distinti, ciascuno in UNA sola sotto-categoria della
+		// stessa macro (un prodotto ha una sola sotto-categoria): la macro conta
+		// la somma dei prodotti delle sue categorie, ognuna conta solo i propri.
 		await productIn(seller.profile.id, s.id, {
 			name: "Ciabatta",
 			categoryIds: [pane.id],
+		});
+		await productIn(seller.profile.id, s.id, {
+			name: "Panettone",
+			categoryIds: [dolci.id],
 		});
 
 		const facets = await getProductFacets({});
@@ -108,7 +109,7 @@ describe("getProductFacets", () => {
 		const byName = new Map(
 			cibo?.categories.map((c) => [c.name, c.productCount]),
 		);
-		expect(byName.get("Pane")).toBe(2);
+		expect(byName.get("Pane")).toBe(1);
 		expect(byName.get("Dolci")).toBe(1);
 	});
 

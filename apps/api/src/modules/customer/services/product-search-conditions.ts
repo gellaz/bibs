@@ -1,10 +1,6 @@
 import { sql } from "drizzle-orm";
 import { productCategory } from "@/db/schemas/category";
-import {
-	product,
-	productCategoryAssignment,
-	storeProduct,
-} from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import {
@@ -62,16 +58,11 @@ export function productConditions(
 	// `categoryId` vince su `macroCategoryId`: la foglia sta già dentro la sua
 	// macro, applicarli entrambi restringerebbe allo stesso insieme.
 	if (p.categoryId) {
-		conditions.push(sql`EXISTS (
-			SELECT 1 FROM ${productCategoryAssignment} pca
-			WHERE pca.product_id = products.id
-				AND pca.product_category_id = ${p.categoryId}
-		)`);
+		conditions.push(sql`products.product_category_id = ${p.categoryId}`);
 	} else if (p.macroCategoryId) {
 		conditions.push(sql`EXISTS (
-			SELECT 1 FROM ${productCategoryAssignment} pca
-			JOIN ${productCategory} pc ON pc.id = pca.product_category_id
-			WHERE pca.product_id = products.id
+			SELECT 1 FROM ${productCategory} pc
+			WHERE pc.id = products.product_category_id
 				AND pc.macro_category_id = ${p.macroCategoryId}
 		)`);
 	}

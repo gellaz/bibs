@@ -1,4 +1,14 @@
-import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	inArray,
+	isNotNull,
+	or,
+	sql,
+} from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
@@ -177,15 +187,15 @@ export async function listProducts(params: ListProductsParams) {
 			productCategoryIds.map((id) => sql`${id}`),
 			sql`, `,
 		);
-		conditions.push(
-			sql`EXISTS (SELECT 1 FROM product_category_assignments pca WHERE pca.product_id = ${product.id} AND pca.product_category_id IN (${idList}))`,
-		);
+		conditions.push(sql`${product.productCategoryId} IN (${idList})`);
 	}
 
 	if (productMacroCategoryId) {
-		conditions.push(
-			sql`EXISTS (SELECT 1 FROM product_category_assignments pca JOIN product_categories pc ON pc.id = pca.product_category_id WHERE pca.product_id = ${product.id} AND pc.macro_category_id = ${productMacroCategoryId})`,
-		);
+		conditions.push(sql`EXISTS (
+			SELECT 1 FROM product_categories pc
+			WHERE pc.id = ${product.productCategoryId}
+				AND pc.macro_category_id = ${productMacroCategoryId}
+		)`);
 	}
 
 	if (excludeDiscountId) {
@@ -398,19 +408,17 @@ export async function listCategoriesInUse(params: ListCategoriesInUseParams) {
 
 	const baseQuery = storeId
 		? db
-				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
-				.from(productCategoryAssignment)
-				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
+				.selectDistinct({ id: product.productCategoryId })
+				.from(product)
 				.innerJoin(storeProduct, eq(storeProduct.productId, product.id))
-				.where(and(...conditions))
+				.where(and(...conditions, isNotNull(product.productCategoryId)))
 		: db
-				.selectDistinct({ id: productCategoryAssignment.productCategoryId })
-				.from(productCategoryAssignment)
-				.innerJoin(product, eq(productCategoryAssignment.productId, product.id))
-				.where(and(...conditions));
+				.selectDistinct({ id: product.productCategoryId })
+				.from(product)
+				.where(and(...conditions, isNotNull(product.productCategoryId)));
 
 	const rows = await baseQuery;
-	const ids = rows.map((r) => r.id);
+	const ids = rows.map((r) => r.id).filter((id): id is string => id !== null);
 	if (ids.length === 0) return [];
 
 	return db.query.productCategory.findMany({
