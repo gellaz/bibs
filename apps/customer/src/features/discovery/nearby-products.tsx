@@ -82,7 +82,13 @@ export function NearbyProducts() {
 					<ul className={GRID}>
 						{products.map((product) => (
 							<li key={product.id}>
-								<ProductTile product={product} showDistance={coords !== null} />
+								<ProductTile
+									product={{
+										...product,
+										distance: product.distance ?? undefined,
+									}}
+									showDistance={coords !== null}
+								/>
 							</li>
 						))}
 					</ul>
