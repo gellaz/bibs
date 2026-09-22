@@ -88,13 +88,13 @@ export function ProductCategoriesPicker({
 				<div className="space-y-2">
 					<Label>Categoria{required && " *"}</Label>
 					<Select
-						value={categoryId ?? ""}
+						value={categoryId ?? NO_CATEGORY}
 						onValueChange={(v) =>
 							onCategoryChange(!v || v === NO_CATEGORY ? null : v)
 						}
 					>
 						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Seleziona una categoria" />
+							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value={NO_CATEGORY}>Nessuna categoria</SelectItem>

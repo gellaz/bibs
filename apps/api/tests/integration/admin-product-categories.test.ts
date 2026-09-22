@@ -66,7 +66,9 @@ describe("deleteProductCategory", () => {
 
 		expect(caught).toBeInstanceOf(ServiceError);
 		expect((caught as ServiceError).status).toBe(409);
-		expect((caught as ServiceError).message).toContain("1");
+		expect((caught as ServiceError).message).toBe(
+			"Categoria non eliminabile: 1 prodotto la usa. Riassegnali a un'altra categoria e riprova.",
+		);
 	});
 
 	it("deletes a category with no products", async () => {

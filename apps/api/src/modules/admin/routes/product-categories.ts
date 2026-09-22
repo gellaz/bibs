@@ -142,7 +142,7 @@ export const productCategoriesWriteRoutes = new Elysia()
 			detail: {
 				summary: "Elimina categoria prodotto",
 				description:
-					"Elimina una sotto-categoria prodotto. Fallisce se la categoria non esiste o con 409 se ci sono prodotti collegati.",
+					"Elimina una sotto-categoria prodotto. Fallisce se la categoria non esiste (404) o se ci sono prodotti collegati (409).",
 				tags: ["Admin"],
 			},
 		},

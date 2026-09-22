@@ -388,13 +388,15 @@ describe("createProduct with storeId", () => {
 // ── updateProduct ─────────────────────────────────────────────────────────────
 
 describe("updateProduct", () => {
-	it("updates name and price", async () => {
+	it("updates name and price, leaving the sub-category untouched when omitted", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const s = await createTestStore(db, seller.profile.id);
+		const cat = await createTestCategory(db);
 		const p = await createTestProduct(db, seller.profile.id, {
 			name: "Old",
 			price: "5.00",
+			categoryIds: [cat.id],
 		});
 		await createTestStoreProduct(db, s.id, p.id);
 
@@ -408,6 +410,7 @@ describe("updateProduct", () => {
 
 		expect(updated?.name).toBe("New");
 		expect(updated?.price).toBe("7.50");
+		expect(updated?.productCategoryId).toBe(cat.id);
 	});
 
 	it("replaces the sub-category when productCategoryId is provided", async () => {
@@ -674,7 +677,7 @@ describe("lookupProductByEan", () => {
 		expect(result).toBeNull();
 	});
 
-	it("returns the latest product across sellers, with brand and categories", async () => {
+	it("returns the latest product across sellers, with brand and sub-category", async () => {
 		const db = getTestDb();
 		const sellerA = await createTestSeller(db, { email: "a@test.com" });
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
@@ -715,7 +718,7 @@ describe("lookupProductByEan", () => {
 		expect(result!.ean).toBe("12345678");
 		expect(result!.brandName).toBe("BrandB");
 		expect(result!.macroCategoryId).toBe(macro.id);
-		expect(result!.categoryIds).toEqual([cat.id]);
+		expect(result!.productCategoryId).toBe(cat.id);
 	});
 });
 

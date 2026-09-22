@@ -133,6 +133,13 @@ export async function importProductsFromCsv(
 			continue;
 		}
 
+		if (categoryNames.length > 1) {
+			errors.push({
+				row: rowNum,
+				message: `Più categorie indicate (${categoryNames.join(", ")}): il prodotto viene creato con solo la prima, "${categoryNames[0]}"`,
+			});
+		}
+
 		const eanRaw = eanIdx >= 0 ? (row[eanIdx]?.trim() ?? "") : "";
 		const ean = eanRaw.length > 0 ? eanRaw : null;
 		if (ean !== null && !EAN_REGEX.test(ean)) {

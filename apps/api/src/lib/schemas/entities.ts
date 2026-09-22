@@ -340,6 +340,9 @@ export const ProductSchema = t.Object({
 	),
 	ean: t.Nullable(t.String({ description: "Codice EAN-8 o EAN-13" })),
 	brandId: t.Nullable(t.String({ description: "ID del brand del venditore" })),
+	productCategoryId: t.Nullable(
+		t.String({ description: "ID della sotto-categoria del prodotto" }),
+	),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
 });
@@ -410,7 +413,9 @@ export const EanLookupResultSchema = t.Object({
 		}),
 	),
 	macroCategoryId: t.Nullable(t.String()),
-	categoryIds: t.Array(t.String()),
+	productCategoryId: t.Nullable(
+		t.String({ description: "ID della sotto-categoria del prodotto sorgente" }),
+	),
 });
 
 export const ProductImageSchema = t.Object({

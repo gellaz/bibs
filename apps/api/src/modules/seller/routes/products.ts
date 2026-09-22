@@ -464,7 +464,7 @@ export const productsRoutes = new Elysia()
 			detail: {
 				summary: "Importa prodotti da CSV",
 				description:
-					"Importa prodotti in blocco da un file CSV. Colonne attese: name, description, price, categories (nomi separati da ';'). Colonne opzionali: ean (8 o 13 cifre), brand (match-or-create per venditore). Restituisce il numero di prodotti creati, le righe saltate per EAN duplicato, e gli eventuali errori per riga.",
+					"Importa prodotti in blocco da un file CSV. Colonne attese: name, description, price, categories (una o più categorie separate da ';'; il prodotto ne tiene solo la prima, le altre vengono segnalate come errore di riga). Colonne opzionali: ean (8 o 13 cifre), brand (match-or-create per venditore). Restituisce il numero di prodotti creati, le righe saltate per EAN duplicato, e gli eventuali errori per riga.",
 				tags: ["Seller - Products"],
 			},
 		},

@@ -799,7 +799,7 @@ export interface EanLookupResult {
 	ean: string;
 	brandName: string | null;
 	macroCategoryId: string | null;
-	categoryIds: string[];
+	productCategoryId: string | null;
 }
 
 export async function lookupProductByEan(
@@ -818,7 +818,7 @@ export async function lookupProductByEan(
 
 	if (!row) return null;
 
-	const categoryIds = row.productCategory ? [row.productCategory.id] : [];
+	const productCategoryId = row.productCategory?.id ?? null;
 	const macroCategoryId = row.productCategory?.macroCategoryId ?? null;
 
 	return {
@@ -827,7 +827,7 @@ export async function lookupProductByEan(
 		ean: row.ean!,
 		brandName: row.brand?.name ?? null,
 		macroCategoryId,
-		categoryIds,
+		productCategoryId,
 	};
 }
 

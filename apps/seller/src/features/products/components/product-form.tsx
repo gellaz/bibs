@@ -167,7 +167,7 @@ export function ProductForm({
 			setMacroCategoryId(lookupResult.macroCategoryId);
 		}
 		if (overwrite || !cur.productCategoryId) {
-			setValue("productCategoryId", lookupResult.categoryIds[0] ?? null, {
+			setValue("productCategoryId", lookupResult.productCategoryId, {
 				shouldValidate: true,
 				shouldDirty: true,
 			});
