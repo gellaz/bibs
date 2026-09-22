@@ -11,17 +11,17 @@ import {
 	Compass,
 	Map as MapIcon,
 	RotateCw,
-	Search,
 	SlidersHorizontal,
-	X,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Notice } from "@/components/notice";
 import { PAGE_CONTAINER } from "@/components/page";
 import { TileSkeleton } from "@/components/tile";
 import { originLabel } from "@/features/location/origin-label";
 import { useSearchOrigin } from "@/features/location/search-origin";
-import { nearFromOrigin } from "@/features/location/search-origin-state";
+import { useNearParam } from "@/features/location/use-near-param";
+import { SearchField } from "@/features/search/search-field";
+import { useSearchTextParam } from "@/features/search/use-search-text-param";
 import type { StoreFilterValue } from "@/features/stores/store-filters";
 import { StoreFilters } from "@/features/stores/store-filters";
 import { StoreTile } from "@/features/stores/store-tile";
@@ -98,78 +98,19 @@ function StoresPage() {
 	const navigate = Route.useNavigate();
 	const { q, categoryId, macroCategoryId, radius, openNow, view, near } =
 		Route.useSearch();
-	const [text, setText] = useState(q ?? "");
 	const [filtersOpen, setFiltersOpen] = useState(false);
-	const {
-		origin,
-		coords,
-		geoStatus,
-		isAddressesPending,
-		adoptNear,
-		setPickerOpen,
-	} = useSearchOrigin();
+	const { origin, coords, geoStatus, setPickerOpen } = useSearchOrigin();
 
-	// Debounce the text input into the URL search param.
-	useEffect(() => {
-		const id = setTimeout(() => {
-			void navigate({
-				search: (prev) => ({ ...prev, q: text || undefined }),
-				replace: true,
-			});
-		}, 300);
-		return () => clearTimeout(id);
-	}, [text, navigate]);
+	const [text, setText] = useSearchTextParam(q, (next) => {
+		void navigate({ search: (prev) => ({ ...prev, q: next }), replace: true });
+	});
 
-	// Sync the controlled input when `q` changes externally (browser back/forward, deep-link).
-	const prevQ = useRef(q);
-	useEffect(() => {
-		if (q !== prevQ.current) {
-			prevQ.current = q;
-			setText(q ?? "");
-		}
-	}, [q]);
-
-	// `near` ⇄ origine, in due effetti con memoria.
-	//
-	// All'arrivo **vince il link**: `adoptedNear` ricorda quale valore dell'URL
-	// abbiamo già consumato, così non lo si riadotta a ogni render. Un `near`
-	// che non risolve nulla (l'indirizzo di un altro cliente, o `gps` senza
-	// consenso) viene tolto dall'URL invece di restare lì a promettere
-	// un'origine che non c'è.
-	const adoptedNear = useRef<string | null>(null);
-	useEffect(() => {
-		// Un id di indirizzo non si può giudicare finché la rubrica non ha risposto.
-		if (isAddressesPending) return;
-		const key = near ?? null;
-		if (adoptedNear.current === key) return;
-		adoptedNear.current = key;
-		if (key === null) return;
-		if (!adoptNear(key)) {
-			void navigate({
-				search: (prev) => ({ ...prev, near: undefined }),
-				replace: true,
-			});
-		}
-	}, [near, isAddressesPending, adoptNear, navigate]);
-
-	// …e da lì in poi **vince il chip**: quando l'origine cambia, l'URL la
-	// rispecchia, così quello che si condivide è la vista che si sta guardando.
-	// `lastOriginKey` parte indefinito di proposito: al primo giro non si scrive
-	// niente, altrimenti l'origine ancora in avvio cancellerebbe il `near` del
-	// link appena aperto.
-	const lastOriginKey = useRef<string | null | undefined>(undefined);
-	useEffect(() => {
-		const key = nearFromOrigin(origin) ?? null;
-		const changed =
-			lastOriginKey.current !== undefined && lastOriginKey.current !== key;
-		lastOriginKey.current = key;
-		if (!changed || (near ?? null) === key) return;
-		adoptedNear.current = key;
+	useNearParam(near, (next) => {
 		void navigate({
-			search: (prev) => ({ ...prev, near: key ?? undefined }),
+			search: (prev) => ({ ...prev, near: next }),
 			replace: true,
 		});
-	}, [origin, near, navigate]);
+	});
 
 	const facets = useStoreFacets({ q, coords, radius, openNow });
 
@@ -445,30 +386,13 @@ function StoresPage() {
 			</section>
 
 			<div className="mt-6">
-				<div className="relative">
-					<Search
-						className="-translate-y-1/2 absolute top-1/2 left-4 size-4.5 text-muted-foreground"
-						aria-hidden
-					/>
-					<input
-						type="search"
-						value={text}
-						onChange={(e) => setText(e.target.value)}
-						placeholder={m.store_search_placeholder()}
-						aria-label={m.store_search_aria()}
-						className="h-12 w-full rounded-lg border border-border bg-background pr-11 pl-11 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-saffron [&::-webkit-search-cancel-button]:hidden"
-					/>
-					{text && (
-						<button
-							type="button"
-							onClick={() => setText("")}
-							aria-label={m.store_search_clear()}
-							className="-translate-y-1/2 absolute top-1/2 right-2 rounded-md p-2 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron"
-						>
-							<X className="size-4" aria-hidden />
-						</button>
-					)}
-				</div>
+				<SearchField
+					value={text}
+					onChange={setText}
+					placeholder={m.store_search_placeholder()}
+					ariaLabel={m.store_search_aria()}
+					clearLabel={m.store_search_clear()}
+				/>
 			</div>
 
 			<div className={`mt-8 ${LAYOUT_GRID}`}>
