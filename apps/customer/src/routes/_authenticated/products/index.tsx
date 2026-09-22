@@ -291,7 +291,13 @@ function ProductsPage() {
 
 			<div className="mt-6">
 				<div className="mb-4">
-					<SearchTabs q={q} near={near} radius={radius} openNow={openNow} />
+					<SearchTabs
+						current="products"
+						q={q}
+						near={near}
+						radius={radius}
+						openNow={openNow}
+					/>
 				</div>
 				<SearchField
 					value={text}

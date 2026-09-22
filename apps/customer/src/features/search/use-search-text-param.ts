@@ -16,8 +16,14 @@ export function useSearchTextParam(
 ) {
 	const [text, setText] = useState(q ?? "");
 
+	// L'assegnazione sta in un effetto (non durante il render) perché il React
+	// Compiler rifiuta le scritture a un ref in fase di render; gira prima
+	// del debounce dichiarato sotto, quindi il ref è già aggiornato quando
+	// scatta il timer.
 	const onChangeRef = useRef(onChange);
-	onChangeRef.current = onChange;
+	useEffect(() => {
+		onChangeRef.current = onChange;
+	});
 
 	useEffect(() => {
 		const id = setTimeout(

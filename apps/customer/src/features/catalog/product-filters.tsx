@@ -181,7 +181,9 @@ function PriceBox({
 	const commit = () => {
 		const trimmed = draft.trim();
 		if (trimmed === "") return onCommit(undefined);
-		const parsed = Number(trimmed);
+		// La virgola è il separatore decimale italiano: senza normalizzarla
+		// "12,50" darebbe NaN e l'input verrebbe scartato in silenzio.
+		const parsed = Number(trimmed.replace(",", "."));
 		// Un valore non numerico o negativo non è un filtro: si torna com'era.
 		if (!Number.isFinite(parsed) || parsed < 0) {
 			setDraft(value === undefined ? "" : String(value));
@@ -195,7 +197,7 @@ function PriceBox({
 			<span className="shrink-0 text-muted-foreground text-xs">{label}</span>
 			<input
 				type="number"
-				inputMode="numeric"
+				inputMode="decimal"
 				min={0}
 				step={1}
 				value={draft}
@@ -251,7 +253,10 @@ export function ProductFilters({
 		<div className="space-y-7">
 			<FilterSection title={m.product_filter_availability()}>
 				{isPending ? (
-					<Skeleton className="h-6 w-2/5" />
+					<div className="-mx-2 space-y-1.5" aria-hidden>
+						<Skeleton className="h-11 lg:h-9" />
+						<Skeleton className="h-11 lg:h-9" />
+					</div>
 				) : (
 					<div className="-mx-2">
 						<ToggleRow

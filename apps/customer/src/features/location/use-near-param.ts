@@ -23,8 +23,15 @@ export function useNearParam(
 ) {
 	const { origin, isAddressesPending, adoptNear } = useSearchOrigin();
 
+	// `setNear` vive in un ref perché il chiamante lo ricrea a ogni render, e
+	// qui serve stabile dentro gli effetti sotto. L'assegnazione sta in un
+	// effetto (non durante il render) perché il React Compiler rifiuta le
+	// scritture a un ref in fase di render; gira prima degli altri effetti
+	// dichiarati sotto, quindi il ref è già aggiornato quando servono.
 	const setNearRef = useRef(setNear);
-	setNearRef.current = setNear;
+	useEffect(() => {
+		setNearRef.current = setNear;
+	});
 
 	const adoptedNear = useRef<string | null>(null);
 	useEffect(() => {

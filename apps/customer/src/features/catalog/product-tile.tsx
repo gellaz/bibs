@@ -75,7 +75,7 @@ export function ProductTile({
 				{product.store && (
 					<p className="mt-0.5 flex min-w-0 items-start gap-1 text-muted-foreground text-xs leading-snug">
 						<StoreIcon className="mt-0.5 size-3 shrink-0" aria-hidden />
-						<span className="min-w-0">
+						<span className="min-w-0 break-words">
 							<Link
 								to="/stores/$storeId"
 								params={{ storeId: product.store.id }}
