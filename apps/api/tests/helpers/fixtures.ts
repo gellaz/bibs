@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
@@ -9,11 +9,7 @@ import type { DiscountStatus } from "@/db/schemas/discount";
 import { discount, discountProduct } from "@/db/schemas/discount";
 import { municipality, province, region } from "@/db/schemas/location";
 import { organization } from "@/db/schemas/organization";
-import {
-	product,
-	productCategoryAssignment,
-	storeProduct,
-} from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
@@ -234,15 +230,6 @@ export async function createTestProduct(
 		})
 		.returning();
 
-	if (params.categoryIds?.length) {
-		await db.insert(productCategoryAssignment).values(
-			params.categoryIds.map((cid) => ({
-				productId: newProduct.id,
-				productCategoryId: cid,
-			})),
-		);
-	}
-
 	return newProduct;
 }
 
@@ -310,28 +297,15 @@ export async function createTestCategory(
 	return category;
 }
 
-export async function createTestProductCategoryAssignment(
+export async function setTestProductCategory(
 	db: DrizzleTestDb,
 	productId: string,
 	productCategoryId: string,
 ) {
 	await db
-		.insert(productCategoryAssignment)
-		.values({ productId, productCategoryId });
-	// Dual-write, mirroring the real writers (see createTestProduct above):
-	// callers of this fixture assign a product's category directly on the
-	// assignment table, bypassing createTestProduct's own dual-write. Without
-	// this, products.product_category_id stays null and every reader that has
-	// moved to the column (seller filters/facets, customer facets/search)
-	// silently sees the product as unclassified.
-	// First wins, matching createTestProduct's `categoryIds?.[0]`: only set
-	// the column while it's still null, so a caller that assigns a product to
-	// several categories (across several calls) doesn't leave the column
-	// pointing at whichever assignment happened to insert last.
-	await db
 		.update(product)
 		.set({ productCategoryId })
-		.where(and(eq(product.id, productId), isNull(product.productCategoryId)));
+		.where(eq(product.id, productId));
 }
 
 export async function createTestBrand(

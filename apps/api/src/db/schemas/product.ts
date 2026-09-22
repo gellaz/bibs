@@ -5,7 +5,6 @@ import {
 	integer,
 	numeric,
 	pgTable,
-	primaryKey,
 	text,
 	timestamp,
 	uniqueIndex,
@@ -103,42 +102,9 @@ export const productRelations = relations(product, ({ one, many }) => ({
 		fields: [product.productCategoryId],
 		references: [productCategory.id],
 	}),
-	productCategoryAssignments: many(productCategoryAssignment),
 	storeProducts: many(storeProduct),
 	images: many(productImage),
 }));
-
-export const productCategoryAssignment = pgTable(
-	"product_category_assignments",
-	{
-		productId: text("product_id")
-			.notNull()
-			.references(() => product.id, { onDelete: "cascade" }),
-		productCategoryId: text("product_category_id")
-			.notNull()
-			.references(() => productCategory.id, { onDelete: "cascade" }),
-	},
-	(table) => [
-		primaryKey({ columns: [table.productId, table.productCategoryId] }),
-		index("product_category_assignments_category_id_idx").on(
-			table.productCategoryId,
-		),
-	],
-);
-
-export const productCategoryAssignmentRelations = relations(
-	productCategoryAssignment,
-	({ one }) => ({
-		product: one(product, {
-			fields: [productCategoryAssignment.productId],
-			references: [product.id],
-		}),
-		category: one(productCategory, {
-			fields: [productCategoryAssignment.productCategoryId],
-			references: [productCategory.id],
-		}),
-	}),
-);
 
 export const storeProduct = pgTable(
 	"store_products",

@@ -43,6 +43,13 @@
       "when": 1790097873968,
       "tag": "0005_medical_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790106130502,
+      "tag": "0006_quick_maggott",
+      "breakpoints": true
     }
   ]
 }

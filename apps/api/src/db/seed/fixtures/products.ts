@@ -2,11 +2,7 @@ import { and, asc, count, eq, inArray, like } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { productCategory } from "@/db/schemas/category";
-import {
-	product,
-	productCategoryAssignment,
-	storeProduct,
-} from "@/db/schemas/product";
+import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
@@ -253,26 +249,6 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 		};
 	});
 
-	// ── productCategoryAssignment ─────────────────────────
-	const categoryAssignmentRows: Array<{
-		productId: string;
-		productCategoryId: string;
-	}> = [];
-
-	for (const p of productMeta) {
-		const subs = subsByMacro.get(p.macro);
-		if (!subs || subs.length === 0) continue;
-		const sub = subs[p.idxInSeller % subs.length];
-		categoryAssignmentRows.push({
-			productId: p.id,
-			productCategoryId: sub.id,
-		});
-	}
-
-	for (const chunk of chunked(categoryAssignmentRows)) {
-		await db.insert(productCategoryAssignment).values(chunk);
-	}
-
 	// ── storeProduct (inventory) ──────────────────────────
 	const storeProductRows: Array<{
 		productId: string;
@@ -331,6 +307,6 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 	}
 
 	console.log(
-		`  ✓ ${insertedProducts.length} products, ${categoryAssignmentRows.length} category assignments, ${storeProductRows.length} store inventory rows, ${imageRows.length} images`,
+		`  ✓ ${insertedProducts.length} products, ${storeProductRows.length} store inventory rows, ${imageRows.length} images`,
 	);
 }

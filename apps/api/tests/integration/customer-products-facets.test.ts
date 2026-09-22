@@ -30,11 +30,11 @@ import {
 	createTestDiscountProduct,
 	createTestMacroCategory,
 	createTestProduct,
-	createTestProductCategoryAssignment,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
 	createTestStoreSubscription,
+	setTestProductCategory,
 } from "../helpers/fixtures";
 
 beforeAll(async () => {
@@ -66,7 +66,7 @@ async function visibleStore(
 async function productIn(
 	sellerProfileId: string,
 	storeId: string,
-	params: { name: string; price?: string; categoryIds?: string[] },
+	params: { name: string; price?: string; categoryId?: string },
 ) {
 	const db = getTestDb();
 	const p = await createTestProduct(db, sellerProfileId, {
@@ -74,8 +74,8 @@ async function productIn(
 		price: params.price ?? "10.00",
 	});
 	await createTestStoreProduct(db, storeId, p.id, { stock: 5 });
-	for (const c of params.categoryIds ?? []) {
-		await createTestProductCategoryAssignment(db, p.id, c);
+	if (params.categoryId) {
+		await setTestProductCategory(db, p.id, params.categoryId);
 	}
 	return p;
 }
@@ -97,15 +97,15 @@ describe("getProductFacets", () => {
 		// e la somma resta verificabile.
 		await productIn(seller.profile.id, s.id, {
 			name: "Ciabatta",
-			categoryIds: [pane.id],
+			categoryId: pane.id,
 		});
 		await productIn(seller.profile.id, s.id, {
 			name: "Baguette",
-			categoryIds: [pane.id],
+			categoryId: pane.id,
 		});
 		await productIn(seller.profile.id, s.id, {
 			name: "Panettone",
-			categoryIds: [dolci.id],
+			categoryId: dolci.id,
 		});
 
 		const facets = await getProductFacets({});
@@ -131,11 +131,11 @@ describe("getProductFacets", () => {
 
 		await productIn(seller.profile.id, s.id, {
 			name: "InA",
-			categoryIds: [catA.id],
+			categoryId: catA.id,
 		});
 		await productIn(seller.profile.id, s.id, {
 			name: "InB",
-			categoryIds: [catB.id],
+			categoryId: catB.id,
 		});
 
 		const facets = await getProductFacets({
@@ -162,7 +162,7 @@ describe("getProductFacets", () => {
 
 		await productIn(seller.profile.id, s.id, {
 			name: "Uno",
-			categoryIds: [cat.id],
+			categoryId: cat.id,
 		});
 
 		const facets = await getProductFacets({});
@@ -185,11 +185,11 @@ describe("getProductFacets", () => {
 
 		await productIn(seller.profile.id, visible.id, {
 			name: "Buono",
-			categoryIds: [cat.id],
+			categoryId: cat.id,
 		});
 		await productIn(seller.profile.id, hidden.id, {
 			name: "Nascosto",
-			categoryIds: [cat.id],
+			categoryId: cat.id,
 		});
 
 		const facets = await getProductFacets({});

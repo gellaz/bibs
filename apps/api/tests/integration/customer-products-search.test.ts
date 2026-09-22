@@ -33,11 +33,11 @@ import {
 	createTestDiscountProduct,
 	createTestMacroCategory,
 	createTestProduct,
-	createTestProductCategoryAssignment,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
 	createTestStoreSubscription,
+	setTestProductCategory,
 } from "../helpers/fixtures";
 
 beforeAll(async () => {
@@ -502,9 +502,9 @@ describe("searchProducts — testo, categoria, paginazione", () => {
 		const inA1 = await productIn(seller.profile.id, [s.id], { name: "InA1" });
 		const inA2 = await productIn(seller.profile.id, [s.id], { name: "InA2" });
 		const inB1 = await productIn(seller.profile.id, [s.id], { name: "InB1" });
-		await createTestProductCategoryAssignment(db, inA1.id, catA1.id);
-		await createTestProductCategoryAssignment(db, inA2.id, catA2.id);
-		await createTestProductCategoryAssignment(db, inB1.id, catB1.id);
+		await setTestProductCategory(db, inA1.id, catA1.id);
+		await setTestProductCategory(db, inA2.id, catA2.id);
+		await setTestProductCategory(db, inB1.id, catB1.id);
 
 		const byLeaf = await searchProducts({ categoryId: catA1.id });
 		expect(byLeaf.data.map((r) => r.name)).toEqual(["InA1"]);
