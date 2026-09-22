@@ -157,7 +157,7 @@ export async function getStoreMapPins(
 				},
 				distance: r.distance,
 				image: r.imageUrl ? { url: r.imageUrl } : null,
-				openStatus: statusMap.get(r.id) ?? { isOpen: false, status: "closed" },
+				openStatus: statusMap.get(r.id) ?? { isOpen: false, status: "unknown" },
 			},
 		];
 	});

@@ -444,14 +444,24 @@ describe("searchStores — open status", () => {
 		expect(result.data[0].openStatus.status).toBe("open");
 	});
 
-	it("reports closed when openingHours is unset", async () => {
+	it("reports unknown when openingHours is unset", async () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
-		await visibleStore(profile.id, { name: "Chiuso" });
+		await visibleStore(profile.id, { name: "SenzaOrari" });
 
 		const result = await searchStores({});
 		expect(result.data[0].openStatus.isOpen).toBe(false);
-		expect(result.data[0].openStatus.status).toBe("closed");
+		// Non "closed": non sappiamo se è chiuso, sappiamo che non ce l'ha detto.
+		expect(result.data[0].openStatus.status).toBe("unknown");
+	});
+
+	it("keeps a store without hours out of the openNow filter", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		await visibleStore(profile.id, { name: "SenzaOrari" });
+
+		const filtered = await searchStores({ openNow: true, limit: 100 });
+		expect(filtered.data.map((s) => s.name)).not.toContain("SenzaOrari");
 	});
 });
 

@@ -145,7 +145,7 @@ export async function searchStores(params: StoreSearchParams) {
 		image: r.imageUrl ? { url: r.imageUrl } : null,
 		// statusMap always has the key (resolveOpenStatuses returns one per row);
 		// the fallback keeps the type non-optional.
-		openStatus: statusMap.get(r.id) ?? { isOpen: false, status: "closed" },
+		openStatus: statusMap.get(r.id) ?? { isOpen: false, status: "unknown" },
 	}));
 
 	return { data, pagination: { page, limit, total } };

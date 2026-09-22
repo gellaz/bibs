@@ -23,7 +23,13 @@ export interface OpeningHoursDay {
 
 export interface OpenStatus {
 	isOpen: boolean;
-	status: "open" | "closed" | "closed_holiday";
+	/**
+	 * `unknown` = il negozio non ha mai dichiarato gli orari. Non è una
+	 * chiusura: è l'assenza del dato. Tenerlo distinto da `closed` è il punto
+	 * di tutto — "Chiuso" è un'affermazione che in quel caso non possiamo
+	 * sostenere.
+	 */
+	status: "open" | "closed" | "closed_holiday" | "unknown";
 	/** "HH:mm" the store closes today, when currently open. */
 	closesAt?: string;
 	/** Next opening when currently closed. */

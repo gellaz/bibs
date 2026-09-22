@@ -109,6 +109,6 @@ export async function getStoreDetail(id: string): Promise<StoreDetail> {
 		phoneNumbers,
 		websiteUrl: row.websiteUrl,
 		openingHours: row.openingHours as OpeningHoursDay[] | null,
-		openStatus: statusMap.get(row.id) ?? { isOpen: false, status: "closed" },
+		openStatus: statusMap.get(row.id) ?? { isOpen: false, status: "unknown" },
 	};
 }

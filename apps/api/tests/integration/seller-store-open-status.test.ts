@@ -61,12 +61,13 @@ describe("listStores openStatus", () => {
 		expect(result.data[0].openStatus?.status).toBe("open");
 	});
 
-	it("openStatus.status is closed when openingHours is null", async () => {
+	it("openStatus.status is unknown when openingHours is null", async () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		await createTestStore(db, profile.id); // no openingHours set
 		const result = await listStores({ sellerProfileId: profile.id });
 		expect(result.data[0].openStatus?.isOpen).toBe(false);
-		expect(result.data[0].openStatus?.status).toBe("closed");
+		// Non "closed": non sappiamo se è chiuso, sappiamo che non ce l'ha detto.
+		expect(result.data[0].openStatus?.status).toBe("unknown");
 	});
 });

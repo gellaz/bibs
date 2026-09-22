@@ -97,6 +97,7 @@ export const OpenStatusSchema = t.Object({
 		t.Literal("open"),
 		t.Literal("closed"),
 		t.Literal("closed_holiday"),
+		t.Literal("unknown"),
 	]),
 	closesAt: t.Optional(
 		t.String({ description: "Orario chiusura odierno (HH:mm)" }),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { addDaysYMD } from "@/lib/holidays";
 import { getOpenStatus } from "@/lib/holidays/open-status";
 import type { OpeningHoursDay } from "@/lib/holidays/types";
 
@@ -70,13 +71,63 @@ describe("getOpenStatus", () => {
 		expect(s.status).toBe("closed_holiday");
 		expect(s.opensAt).toEqual({ date: "2026-05-26", time: "09:00" });
 	});
+});
 
-	it("null opening hours → closed, no opensAt", () => {
+describe("getOpenStatus — orari mai dichiarati", () => {
+	it("returns unknown when openingHours is null", () => {
 		const s = getOpenStatus({
 			openingHours: null,
 			closedDates: new Set(),
 			now: romeSummer(10),
 		});
-		expect(s).toEqual({ isOpen: false, status: "closed" });
+		expect(s.status).toBe("unknown");
+		expect(s.isOpen).toBe(false);
+		expect(s.opensAt).toBeUndefined();
+	});
+
+	it("returns unknown for an empty array", () => {
+		const s = getOpenStatus({
+			openingHours: [],
+			closedDates: new Set(),
+			now: romeSummer(10),
+		});
+		expect(s.status).toBe("unknown");
+	});
+
+	it("returns unknown when every declared day has zero slots", () => {
+		const s = getOpenStatus({
+			openingHours: [
+				{ dayOfWeek: 0, slots: [] },
+				{ dayOfWeek: 1, slots: [] },
+			],
+			closedDates: new Set(),
+			now: romeSummer(10),
+		});
+		expect(s.status).toBe("unknown");
+	});
+
+	it("unknown wins over closed_holiday: with no hours there is nothing to close", () => {
+		const s = getOpenStatus({
+			openingHours: null,
+			closedDates: new Set(["2026-05-25"]),
+			now: romeSummer(10),
+		});
+		expect(s.status).toBe("unknown");
+	});
+
+	// Questo test è il motivo per cui `unknown` sta nel dominio e non nel
+	// frontend: un negozio CON orari, in ferie oltre i 60 giorni di lookahead,
+	// esce senza `opensAt` esattamente come uno senza orari. Dedurre "non lo so"
+	// dall'assenza di `opensAt` lo etichetterebbe male.
+	it("a store WITH hours on a closure longer than the lookahead stays closed", () => {
+		const closed = new Set<string>();
+		for (let i = 1; i <= 70; i++) closed.add(addDaysYMD("2026-05-25", i));
+		const s = getOpenStatus({
+			openingHours: hours,
+			closedDates: closed,
+			now: romeSummer(20), // dopo la chiusura delle 19:00
+		});
+		expect(s.status).toBe("closed");
+		expect(s.opensAt).toBeUndefined();
 	});
 });
