@@ -255,5 +255,8 @@
 	"product_filter_distance": "Distanza",
 	"product_distance_needs_origin": "Scegli da dove cercare per filtrare per distanza.",
 	"product_radius_any": "Tutte",
-	"product_radius_km": "{km} km"
+	"product_radius_km": "{km} km",
+	"product_other_stores": "anche in altri {count} negozi",
+	"product_other_stores_one": "anche in un altro negozio",
+	"product_store_link_aria": "Vai alla scheda di {store}"
 }
