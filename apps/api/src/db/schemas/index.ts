@@ -18,6 +18,7 @@ export * from "./points";
 export * from "./pricing-config";
 export * from "./product";
 export * from "./product-audit-log";
+export * from "./product-characteristic";
 export * from "./product-image";
 export * from "./product-macro-category";
 export * from "./seller";

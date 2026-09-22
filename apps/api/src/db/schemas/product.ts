@@ -12,6 +12,7 @@ import {
 import { DEFAULT_VAT_RATE, VAT_RATES } from "@/lib/vat";
 import { brand } from "./brand";
 import { productCategory } from "./category";
+import { productCharacteristicValue } from "./product-characteristic";
 import { productImage } from "./product-image";
 import { sellerProfile } from "./seller";
 import { store } from "./store";
@@ -104,6 +105,7 @@ export const productRelations = relations(product, ({ one, many }) => ({
 	}),
 	storeProducts: many(storeProduct),
 	images: many(productImage),
+	characteristicValues: many(productCharacteristicValue),
 }));
 
 export const storeProduct = pgTable(
