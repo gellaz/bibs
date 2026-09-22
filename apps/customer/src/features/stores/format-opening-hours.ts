@@ -43,6 +43,18 @@ export function formatWeeklyHours(
 	});
 }
 
+/**
+ * Il negozio ha dichiarato almeno una fascia? `[]` e `slots: []` valgono quanto
+ * `null`. Gemella del predicato che decide `status: "unknown"` lato API
+ * (`apps/api/src/lib/holidays/open-status.ts`): badge e rail stanno sulla
+ * stessa schermata, quindi devono rispondere alla stessa domanda.
+ */
+export function hasDeclaredHours(
+	openingHours: OpeningHoursDayInput[] | null,
+): boolean {
+	return openingHours?.some((d) => d.slots.length > 0) ?? false;
+}
+
 /** Day of week 0=Lun..6=Dom in Europe/Rome for the given instant. */
 export function romeDayOfWeek(now: Date): number {
 	const weekday = new Intl.DateTimeFormat("en-US", {

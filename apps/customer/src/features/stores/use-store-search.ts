@@ -2,6 +2,7 @@ import { toYMD } from "@bibs/ui/lib/date";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/location/coords";
 import { api } from "@/lib/api";
+import type { OpenStatusView } from "./open-status";
 
 export interface StoreCardView {
 	id: string;
@@ -13,12 +14,7 @@ export interface StoreCardView {
 	/** meters, or null when no geo / store has no location */
 	distance: number | null;
 	imageUrl: string | null;
-	openStatus: {
-		isOpen: boolean;
-		status: "open" | "closed" | "closed_holiday";
-		closesAt?: string;
-		opensAt?: { date: string; time: string };
-	};
+	openStatus: OpenStatusView;
 }
 
 interface UseStoreSearchArgs {

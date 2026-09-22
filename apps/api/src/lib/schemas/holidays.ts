@@ -93,11 +93,18 @@ export const CustomClosureSchema = t.Object({
 
 export const OpenStatusSchema = t.Object({
 	isOpen: t.Boolean(),
-	status: t.Union([
-		t.Literal("open"),
-		t.Literal("closed"),
-		t.Literal("closed_holiday"),
-	]),
+	status: t.Union(
+		[
+			t.Literal("open"),
+			t.Literal("closed"),
+			t.Literal("closed_holiday"),
+			t.Literal("unknown"),
+		],
+		{
+			description:
+				"Stato del negozio; unknown significa che non ha mai dichiarato orari, non che è chiuso",
+		},
+	),
 	closesAt: t.Optional(
 		t.String({ description: "Orario chiusura odierno (HH:mm)" }),
 	),

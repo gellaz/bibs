@@ -42,6 +42,20 @@ export function getOpenStatus(input: {
 	now: Date;
 }): OpenStatus {
 	const { openingHours, closedDates } = input;
+
+	// "Non lo so" precede tutto: senza una fascia dichiarata non c'è nulla su
+	// cui decidere aperto o chiuso, nemmeno se oggi è festivo. `[]` e
+	// `slots: []` valgono quanto `null` — il predicato non si appoggia al
+	// `minItems: 1` della route del seller, perché il dato può arrivare da
+	// seed o migrazioni.
+	// Gemello di `hasDeclaredHours` in
+	// `apps/customer/src/features/stores/format-opening-hours.ts`: badge e
+	// rail stanno sulla stessa schermata, quindi un drift tra i due predicati
+	// si vedrebbe come un'autocontraddizione a schermo.
+	if (!openingHours?.some((d) => d.slots.length > 0)) {
+		return { isOpen: false, status: "unknown" };
+	}
+
 	const { date: today, minutes } = nowInRome(input.now);
 	const closedToday = closedDates.has(today);
 
