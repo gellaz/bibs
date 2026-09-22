@@ -107,9 +107,10 @@ Table definitions live in `apps/api/src/db/schemas/` (one file per concern; barr
   days); `store_images`; `store_categories`; `holiday_definitions` +
   `store_holiday_optouts` (admin-defined Italian holidays, per-store opt-out);
   `store_subscriptions` (one Stripe subscription per store).
-- **Catalog** — `products` (gross prices, VAT rate), `product_images`, `brands`,
-  `product_categories` + `product_category_assignments` (m:n), `product_macro_categories`,
-  `store_products` (per-store stock), `product_audit_log`, `discounts`.
+- **Catalog** — `products` (gross prices, VAT rate, nullable `product_category_id` FK to
+  `product_categories` with `ON DELETE RESTRICT`), `product_images`, `brands`,
+  `product_categories`, `product_macro_categories`, `store_products` (per-store stock),
+  `product_audit_log`, `discounts`.
 - **Orders & loyalty** — `orders` (type, status, totals in cents, VAT breakdown),
   `order_items` (price + VAT snapshot at purchase), `point_transactions`
   (earned/redeemed/refunded), `customer_addresses` (PostGIS).
@@ -130,7 +131,7 @@ erDiagram
     seller_profile ||--o{ pending_store_creation : "checkout in flight"
     store ||--o{ store_product : stocks
     product ||--o{ store_product : "stocked as"
-    product }o--o{ product_category : "classified in"
+    product }o--o| product_category : "classified in"
     customer_profile ||--o{ order : places
     order ||--o{ order_item : contains
     order }o--|| store : "fulfilled by"
