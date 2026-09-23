@@ -292,8 +292,18 @@ export function ProductForm({
 	};
 
 	const onFormSubmit: SubmitHandler<ProductFormData> = (data) => {
-		// Il pulsante è disabilitato mentre la matrice carica; è una rete.
-		if (!definitions) return;
+		if (!definitions) {
+			// Il caricamento fallito lascia il pulsante attivo (isLoading è false):
+			// un avviso più il retry, non un click che non fa nulla.
+			if (characteristics.isError) {
+				toast.error(
+					"Impossibile caricare le caratteristiche della sotto-categoria. Riprova.",
+				);
+				void characteristics.refetch();
+			}
+			// Mentre la matrice carica il pulsante è già disabilitato: è una rete.
+			return;
+		}
 
 		const missing = requiredToFill({
 			defs: definitions,
