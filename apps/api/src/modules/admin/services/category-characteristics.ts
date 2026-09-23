@@ -18,10 +18,7 @@ import {
 } from "@/db/schemas/product-characteristic";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { ServiceError } from "@/lib/errors";
-import {
-	assertImpactConfirmed,
-	countCategoryCharacteristicValues,
-} from "./characteristic-impact";
+import { assertImpactConfirmed } from "./characteristic-impact";
 import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
 interface ListAdminProductCategoriesParams extends ListByNameParams {
@@ -188,16 +185,14 @@ export async function removeCategoryCharacteristic(params: {
 	const { productCategoryId, characteristicId } = params;
 
 	return db.transaction(async (tx) => {
-		const affected = await countCategoryCharacteristicValues(
-			productCategoryId,
-			characteristicId,
-			tx,
-		);
-		assertImpactConfirmed(affected, params.confirmAffected);
-
 		// Prima i valori dei prodotti di QUESTA sotto-categoria (D10): la stessa
-		// caratteristica resta valida, con i suoi valori, sulle altre.
-		await tx
+		// caratteristica resta valida, con i suoi valori, sulle altre. Il
+		// conteggio di conferma è sulle righe EFFETTIVAMENTE cancellate: sotto
+		// READ COMMITTED un valore scritto tra un conteggio separato e questo
+		// DELETE verrebbe cancellato senza essere mai stato confermato. Se supera
+		// `confirmAffected` l'assert lancia e la transazione va in rollback,
+		// quindi il DELETE non ha comunque effetto.
+		const deletedValueRows = await tx
 			.delete(productCharacteristicValue)
 			.where(
 				and(
@@ -210,7 +205,9 @@ export async function removeCategoryCharacteristic(params: {
 							.where(eq(product.productCategoryId, productCategoryId)),
 					),
 				),
-			);
+			)
+			.returning({ productId: productCharacteristicValue.productId });
+		assertImpactConfirmed(deletedValueRows.length, params.confirmAffected);
 
 		const [deleted] = await tx
 			.delete(productCategoryCharacteristic)
@@ -231,6 +228,6 @@ export async function removeCategoryCharacteristic(params: {
 				"Caratteristica non presente in questa sotto-categoria",
 			);
 		}
-		return { deletedValues: affected };
+		return { deletedValues: deletedValueRows.length };
 	});
 }

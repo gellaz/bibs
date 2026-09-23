@@ -159,6 +159,17 @@ describe("createProductCharacteristic", () => {
 			).message,
 		).toBe(`Opzione ripetuta: "Rosso"`);
 	});
+
+	it("rejects a whitespace-only name", async () => {
+		const err = await caught(() =>
+			createProductCharacteristic({
+				name: "   ",
+				dataType: "text",
+			}),
+		);
+		expect(err.status).toBe(400);
+		expect(err.message).toBe("Il nome della caratteristica è obbligatorio");
+	});
 });
 
 describe("listProductCharacteristics", () => {
@@ -469,5 +480,22 @@ describe("updateProductCharacteristic", () => {
 			}),
 		);
 		expect(err.status).toBe(404);
+	});
+
+	it("rejects a whitespace-only name and changes nothing", async () => {
+		const { colore } = await coloreWithRosso();
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: colore.id,
+				name: "   ",
+				confirmAffected: 0,
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toBe("Il nome della caratteristica è obbligatorio");
+		const [c] = await getTestDb().select().from(productCharacteristic);
+		expect(c.name).toBe("Colore");
 	});
 });

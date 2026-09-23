@@ -11,7 +11,6 @@ import {
 	assertImpactConfirmed,
 	countValuesByCharacteristic,
 	countValuesByOption,
-	sumCounts,
 } from "./characteristic-impact";
 import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
@@ -127,11 +126,15 @@ export async function createProductCharacteristic(
 	params: CreateProductCharacteristicParams,
 ) {
 	const { unit, options } = normalizeDefinition(params);
+	const name = params.name.trim();
+	if (!name) {
+		throw new ServiceError(400, "Il nome della caratteristica è obbligatorio");
+	}
 
 	return db.transaction(async (tx) => {
 		const [created] = await tx
 			.insert(productCharacteristic)
-			.values({ name: params.name.trim(), dataType: params.dataType, unit })
+			.values({ name, dataType: params.dataType, unit })
 			.returning();
 
 		if (options.length > 0) {
@@ -153,17 +156,18 @@ export async function deleteProductCharacteristic(
 	confirmAffected: number,
 ) {
 	return db.transaction(async (tx) => {
-		const affected =
-			(await countValuesByCharacteristic([characteristicId], tx)).get(
-				characteristicId,
-			) ?? 0;
-		assertImpactConfirmed(affected, confirmAffected);
-
 		// Prima i valori, poi la definizione (D10): le chiavi esterne dei valori
-		// sono RESTRICT apposta. Opzioni e righe di matrice vanno in CASCADE.
-		await tx
+		// sono RESTRICT apposta. Opzioni e righe di matrice vanno in CASCADE. Il
+		// conteggio di conferma è sulle righe EFFETTIVAMENTE cancellate: sotto
+		// READ COMMITTED un valore scritto tra un conteggio separato e questo
+		// DELETE verrebbe cancellato senza essere mai stato confermato. Se supera
+		// `confirmAffected` l'assert lancia e la transazione va in rollback, quindi
+		// il DELETE non ha comunque effetto.
+		const deletedValueRows = await tx
 			.delete(productCharacteristicValue)
-			.where(eq(productCharacteristicValue.characteristicId, characteristicId));
+			.where(eq(productCharacteristicValue.characteristicId, characteristicId))
+			.returning({ productId: productCharacteristicValue.productId });
+		assertImpactConfirmed(deletedValueRows.length, confirmAffected);
 
 		const [deleted] = await tx
 			.delete(productCharacteristic)
@@ -171,7 +175,7 @@ export async function deleteProductCharacteristic(
 			.returning();
 
 		if (!deleted) throw new ServiceError(404, "Caratteristica non trovata");
-		return { deleted, deletedValues: affected };
+		return { deleted, deletedValues: deletedValueRows.length };
 	});
 }
 
@@ -194,6 +198,11 @@ export async function updateProductCharacteristic(
 	params: UpdateProductCharacteristicParams,
 ) {
 	const { characteristicId } = params;
+	const trimmedName =
+		params.name !== undefined ? params.name.trim() : undefined;
+	if (trimmedName === "") {
+		throw new ServiceError(400, "Il nome della caratteristica è obbligatorio");
+	}
 
 	return db.transaction(async (tx) => {
 		const current = await tx.query.productCharacteristic.findFirst({
@@ -240,25 +249,32 @@ export async function updateProductCharacteristic(
 			.filter((o) => !keptIds.has(o.id))
 			.map((o) => o.id);
 
-		const affected = typeChanged
-			? ((await countValuesByCharacteristic([characteristicId], tx)).get(
-					characteristicId,
-				) ?? 0)
-			: sumCounts(await countValuesByOption(removedOptionIds, tx));
-		assertImpactConfirmed(affected, params.confirmAffected);
-
-		// Prima i valori (D10), poi le opzioni: option_id è RESTRICT.
+		// Prima i valori (D10), poi le opzioni: option_id è RESTRICT. Il conteggio
+		// di conferma è sulle righe EFFETTIVAMENTE cancellate (non su un conteggio
+		// separato prima del DELETE): sotto READ COMMITTED un valore scritto nel
+		// frattempo verrebbe incluso nella cancellazione senza essere mai stato
+		// confermato. Se supera `confirmAffected` l'assert lancia e la transazione
+		// va in rollback, quindi anche questo primo DELETE resta senza effetto.
+		let deletedValues = 0;
 		if (typeChanged) {
-			await tx
-				.delete(productCharacteristicValue)
-				.where(
-					eq(productCharacteristicValue.characteristicId, characteristicId),
-				);
+			deletedValues = (
+				await tx
+					.delete(productCharacteristicValue)
+					.where(
+						eq(productCharacteristicValue.characteristicId, characteristicId),
+					)
+					.returning({ productId: productCharacteristicValue.productId })
+			).length;
 		} else if (removedOptionIds.length > 0) {
-			await tx
-				.delete(productCharacteristicValue)
-				.where(inArray(productCharacteristicValue.optionId, removedOptionIds));
+			deletedValues = (
+				await tx
+					.delete(productCharacteristicValue)
+					.where(inArray(productCharacteristicValue.optionId, removedOptionIds))
+					.returning({ productId: productCharacteristicValue.productId })
+			).length;
 		}
+		assertImpactConfirmed(deletedValues, params.confirmAffected);
+
 		if (removedOptionIds.length > 0) {
 			await tx
 				.delete(productCharacteristicOption)
@@ -270,7 +286,7 @@ export async function updateProductCharacteristic(
 		const [updated] = await tx
 			.update(productCharacteristic)
 			.set({
-				...(params.name !== undefined ? { name: params.name.trim() } : {}),
+				...(trimmedName !== undefined ? { name: trimmedName } : {}),
 				dataType,
 				unit,
 			})
@@ -307,6 +323,6 @@ export async function updateProductCharacteristic(
 			await tx.insert(productCharacteristicOption).values(inserted);
 		}
 
-		return { updated, deletedValues: affected };
+		return { updated, deletedValues };
 	});
 }
