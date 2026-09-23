@@ -30,6 +30,7 @@ import { s3 } from "@/lib/s3";
 import type { VatRate } from "@/lib/vat";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
+import { listProductCharacteristicValues } from "./product-characteristics";
 
 // ── Brand resolution helper ───────────────────────────────────────────────────
 //
@@ -542,6 +543,7 @@ export async function getProduct(params: GetProductParams) {
 				municipality: toMunicipalityCompact(store.municipality),
 			},
 		})),
+		characteristicValues: await listProductCharacteristicValues(found.id),
 	};
 }
 

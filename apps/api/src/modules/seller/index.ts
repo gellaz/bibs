@@ -19,6 +19,7 @@ import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
 import { onboardingRoutes } from "./routes/onboarding";
 import { ordersRoutes } from "./routes/orders";
+import { productCharacteristicsRoutes } from "./routes/product-characteristics";
 import { productsRoutes } from "./routes/products";
 import { profileRoutes } from "./routes/profile";
 import { settingsRoutes } from "./routes/settings";
@@ -133,6 +134,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 				.use(closuresRoutes)
 				.use(checkoutRoutes)
 				.use(productsRoutes)
+				.use(productCharacteristicsRoutes)
 				.use(brandsRoutes)
 				.use(imagesRoutes)
 				.use(storeImagesRoutes)

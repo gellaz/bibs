@@ -17,7 +17,7 @@ import {
 	ProductSchema,
 	ProductStatusBody,
 	ProductStatusCounts,
-	ProductWithRelationsSchema,
+	SellerProductDetailSchema,
 	SellerProductListItemSchema,
 	withConflictErrors,
 	withErrors,
@@ -287,11 +287,11 @@ export const productsRoutes = new Elysia()
 			params: t.Object({
 				productId: t.String({ description: "ID del prodotto" }),
 			}),
-			response: withErrors({ 200: okRes(ProductWithRelationsSchema) }),
+			response: withErrors({ 200: okRes(SellerProductDetailSchema) }),
 			detail: {
 				summary: "Dettaglio prodotto",
 				description:
-					"Restituisce un singolo prodotto con la sua sotto-categoria, disponibilità per negozio e immagini.",
+					"Restituisce un singolo prodotto con la sua sotto-categoria, disponibilità per negozio, immagini e i valori delle caratteristiche.",
 				tags: ["Seller - Products"],
 			},
 		},
