@@ -1,6 +1,7 @@
 import { seedAdmins } from "./admins";
 import { seedBillingSubscriptions } from "./billing-subscriptions";
 import { seedBrands } from "./brands";
+import { seedCharacteristicValues } from "./characteristic-values";
 import { seedCustomers } from "./customers";
 import { seedDevSeller } from "./dev-seller";
 import { seedDiscounts } from "./discounts";
@@ -30,5 +31,7 @@ export async function seedFixtures() {
 	await seedTeam();
 	const brandsBySeller = await seedBrands();
 	await seedProducts(brandsBySeller);
+	// Dopo i prodotti: serve la loro product_category_id già valorizzata.
+	await seedCharacteristicValues();
 	await seedDiscounts();
 }

@@ -452,6 +452,47 @@ export const CsvImportResultSchema = t.Object({
 	),
 });
 
+// Per l'import della matrice categoria-caratteristiche: solo additivo (non
+// cancella mai), quindi `skipped` resta onesto come in CsvImportResultSchema
+// — una riga già presente è saltata, non aggiornata. Si estende con `missing`
+// per segnalare la divergenza invece di risolverla cancellando (D6).
+export const CsvImportWithMissingResultSchema = t.Object({
+	...CsvImportResultSchema.properties,
+	missing: t.Array(
+		t.Object({
+			subcategory: t.String(),
+			macroCategory: t.String({
+				description:
+					'Macro categoria della sotto-categoria: il nome della sotto-categoria da solo non è univoco (si ripete sotto macro diverse, es. "Stampanti").',
+			}),
+			characteristics: t.Array(t.String()),
+		}),
+		{
+			description:
+				"Righe presenti nel database e assenti dal file, per sotto-categoria. L'import non cancella nulla: servono a vedere dove il foglio e il database divergono.",
+		},
+	),
+});
+
+// Per gli import "in aggiornamento" (una riga il cui identificatore esiste
+// già aggiorna la voce invece di essere saltata): a differenza di
+// CsvImportResultSchema, qui non c'è alcuna riga "saltata" da riportare, solo
+// create o aggiornate. Schema dedicato per non travisare CsvImportResultSchema
+// (il cui `skipped` resta onesto per le importazioni di categorie).
+export const CsvUpsertResultSchema = t.Object({
+	created: t.Number({ description: "Numero di righe create con successo" }),
+	updated: t.Number({
+		description: "Numero di righe già presenti e aggiornate",
+	}),
+	failed: t.Number({ description: "Numero di righe con errori" }),
+	errors: t.Array(
+		t.Object({
+			row: t.Number({ description: "Numero di riga nel CSV (partendo da 2)" }),
+			message: t.String({ description: "Descrizione dell'errore" }),
+		}),
+	),
+});
+
 export const StoreProductSchema = t.Object({
 	id: t.String(),
 	productId: t.String(),

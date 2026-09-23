@@ -1,0 +1,1774 @@
+macro_category,subcategory,characteristic,required
+Elettronica,Smartphone,Modello,false
+Elettronica,Smartphone,Colore,false
+Elettronica,Smartphone,Materiale,false
+Elettronica,Smartphone,Dimensioni,false
+Elettronica,Smartphone,Peso,false
+Elettronica,Smartphone,Sistema operativo,false
+Elettronica,Smartphone,RAM,false
+Elettronica,Smartphone,Memoria interna,false
+Elettronica,Smartphone,Dimensione display,false
+Elettronica,Smartphone,Risoluzione display,false
+Elettronica,Smartphone,Fotocamera,false
+Elettronica,Smartphone,Connettività,false
+Elettronica,Smartphone,5G,false
+Elettronica,Smartphone,Dual SIM,false
+Elettronica,Smartphone,Capacità batteria,false
+Elettronica,Smartphone,Tipo connettore,false
+Elettronica,Custodie smartphone,Modello,false
+Elettronica,Custodie smartphone,Colore,false
+Elettronica,Custodie smartphone,Materiale,false
+Elettronica,Custodie smartphone,Dimensioni,false
+Elettronica,Custodie smartphone,Peso,false
+Elettronica,Custodie smartphone,Sistema operativo,false
+Elettronica,Custodie smartphone,RAM,false
+Elettronica,Custodie smartphone,Memoria interna,false
+Elettronica,Custodie smartphone,Dimensione display,false
+Elettronica,Custodie smartphone,Risoluzione display,false
+Elettronica,Custodie smartphone,Fotocamera,false
+Elettronica,Custodie smartphone,Connettività,false
+Elettronica,Custodie smartphone,5G,false
+Elettronica,Custodie smartphone,Dual SIM,false
+Elettronica,Custodie smartphone,Capacità batteria,false
+Elettronica,Custodie smartphone,Tipo connettore,false
+Elettronica,Custodie smartphone,Compatibilità,false
+Elettronica,Custodie smartphone,Dimensione compatibile,false
+Elettronica,Custodie smartphone,Tipo chiusura,false
+Elettronica,Custodie smartphone,Protezione,false
+Elettronica,Caricabatterie,Modello,false
+Elettronica,Caricabatterie,Colore,false
+Elettronica,Caricabatterie,Materiale,false
+Elettronica,Caricabatterie,Dimensioni,false
+Elettronica,Caricabatterie,Peso,false
+Elettronica,Caricabatterie,Potenza,false
+Elettronica,Caricabatterie,Tensione ingresso,false
+Elettronica,Caricabatterie,Tensione uscita,false
+Elettronica,Caricabatterie,Corrente uscita,false
+Elettronica,Caricabatterie,Numero porte,false
+Elettronica,Caricabatterie,Tipo connettore,false
+Elettronica,Caricabatterie,Ricarica rapida,false
+Elettronica,Caricabatterie,Compatibilità,false
+Elettronica,Power bank,Modello,false
+Elettronica,Power bank,Colore,false
+Elettronica,Power bank,Materiale,false
+Elettronica,Power bank,Dimensioni,false
+Elettronica,Power bank,Peso,false
+Elettronica,Power bank,Capacità batteria,false
+Elettronica,Power bank,Potenza uscita,false
+Elettronica,Power bank,Numero porte,false
+Elettronica,Power bank,Tipo connettore,false
+Elettronica,Power bank,Ricarica rapida,false
+Elettronica,Power bank,Indicatore carica,false
+Elettronica,Laptop,Modello,false
+Elettronica,Laptop,Colore,false
+Elettronica,Laptop,Materiale,false
+Elettronica,Laptop,Dimensioni,false
+Elettronica,Laptop,Peso,false
+Elettronica,Laptop,Sistema operativo,false
+Elettronica,Laptop,Processore,false
+Elettronica,Laptop,RAM,false
+Elettronica,Laptop,Memoria/Storage,false
+Elettronica,Laptop,Tipo storage,false
+Elettronica,Laptop,Scheda grafica,false
+Elettronica,Laptop,Dimensione display,false
+Elettronica,Laptop,Risoluzione display,false
+Elettronica,Laptop,Porte,false
+Elettronica,Laptop,Wi-Fi,false
+Elettronica,Laptop,Bluetooth,false
+Elettronica,Laptop,Batteria,false
+Elettronica,Notebook gaming,Modello,false
+Elettronica,Notebook gaming,Colore,false
+Elettronica,Notebook gaming,Materiale,false
+Elettronica,Notebook gaming,Dimensioni,false
+Elettronica,Notebook gaming,Peso,false
+Elettronica,Notebook gaming,Sistema operativo,false
+Elettronica,Notebook gaming,Processore,false
+Elettronica,Notebook gaming,RAM,false
+Elettronica,Notebook gaming,Memoria/Storage,false
+Elettronica,Notebook gaming,Tipo storage,false
+Elettronica,Notebook gaming,Scheda grafica,false
+Elettronica,Notebook gaming,Dimensione display,false
+Elettronica,Notebook gaming,Risoluzione display,false
+Elettronica,Notebook gaming,Porte,false
+Elettronica,Notebook gaming,Wi-Fi,false
+Elettronica,Notebook gaming,Bluetooth,false
+Elettronica,Notebook gaming,Batteria,false
+Elettronica,Tablet,Modello,false
+Elettronica,Tablet,Colore,false
+Elettronica,Tablet,Materiale,false
+Elettronica,Tablet,Dimensioni,false
+Elettronica,Tablet,Peso,false
+Elettronica,Tablet,Sistema operativo,false
+Elettronica,Tablet,RAM,false
+Elettronica,Tablet,Memoria interna,false
+Elettronica,Tablet,Dimensione display,false
+Elettronica,Tablet,Risoluzione display,false
+Elettronica,Tablet,Connettività,false
+Elettronica,Tablet,Wi-Fi,false
+Elettronica,Tablet,Bluetooth,false
+Elettronica,Tablet,Batteria,false
+Elettronica,eReader,Modello,false
+Elettronica,eReader,Colore,false
+Elettronica,eReader,Materiale,false
+Elettronica,eReader,Dimensioni,false
+Elettronica,eReader,Peso,false
+Elettronica,eReader,Sistema operativo,false
+Elettronica,eReader,RAM,false
+Elettronica,eReader,Memoria interna,false
+Elettronica,eReader,Dimensione display,false
+Elettronica,eReader,Risoluzione display,false
+Elettronica,eReader,Connettività,false
+Elettronica,eReader,Wi-Fi,false
+Elettronica,eReader,Bluetooth,false
+Elettronica,eReader,Batteria,false
+Elettronica,Monitor,Modello,false
+Elettronica,Monitor,Colore,false
+Elettronica,Monitor,Materiale,false
+Elettronica,Monitor,Dimensioni,false
+Elettronica,Monitor,Peso,false
+Elettronica,Monitor,Dimensione display,false
+Elettronica,Monitor,Risoluzione,false
+Elettronica,Monitor,Tecnologia pannello,false
+Elettronica,Monitor,Refresh rate,false
+Elettronica,Monitor,Tempo di risposta,false
+Elettronica,Monitor,Luminosità,false
+Elettronica,Monitor,Formato schermo,false
+Elettronica,Monitor,Porte video,false
+Elettronica,Monitor,VESA,false
+Elettronica,Stampanti,Modello,false
+Elettronica,Stampanti,Colore,false
+Elettronica,Stampanti,Materiale,false
+Elettronica,Stampanti,Dimensioni,false
+Elettronica,Stampanti,Peso,false
+Elettronica,Stampanti,Tecnologia di stampa,false
+Elettronica,Stampanti,Colore/Monocromatica,false
+Elettronica,Stampanti,Formato carta,false
+Elettronica,Stampanti,Risoluzione stampa,false
+Elettronica,Stampanti,Velocità stampa,false
+Elettronica,Stampanti,Fronte-retro,false
+Elettronica,Stampanti,Connettività,false
+Elettronica,Stampanti,Wi-Fi,false
+Elettronica,Stampanti,Scanner integrato,false
+Elettronica,Scanner,Modello,false
+Elettronica,Scanner,Colore,false
+Elettronica,Scanner,Materiale,false
+Elettronica,Scanner,Dimensioni,false
+Elettronica,Scanner,Peso,false
+Elettronica,Scanner,Tipologia scanner,false
+Elettronica,Scanner,Formato massimo,false
+Elettronica,Scanner,Risoluzione ottica,false
+Elettronica,Scanner,Velocità scansione,false
+Elettronica,Scanner,Alimentatore automatico,false
+Elettronica,Scanner,Connettività,false
+Elettronica,Tastiere,Modello,false
+Elettronica,Tastiere,Colore,false
+Elettronica,Tastiere,Materiale,false
+Elettronica,Tastiere,Dimensioni,false
+Elettronica,Tastiere,Peso,false
+Elettronica,Tastiere,Layout,false
+Elettronica,Tastiere,Tipo tasti/switch,false
+Elettronica,Tastiere,Connessione,false
+Elettronica,Tastiere,Wireless,false
+Elettronica,Tastiere,Retroilluminazione,false
+Elettronica,Tastiere,Compatibilità,false
+Elettronica,Tastiere,Alimentazione,false
+Elettronica,Mouse,Modello,false
+Elettronica,Mouse,Colore,false
+Elettronica,Mouse,Materiale,false
+Elettronica,Mouse,Dimensioni,false
+Elettronica,Mouse,Peso,false
+Elettronica,Mouse,Connessione,false
+Elettronica,Mouse,Wireless,false
+Elettronica,Mouse,DPI,false
+Elettronica,Mouse,Numero tasti,false
+Elettronica,Mouse,Sensore,false
+Elettronica,Mouse,Ergonomia,false
+Elettronica,Mouse,Compatibilità,false
+Elettronica,Mouse,Alimentazione,false
+Elettronica,Webcam,Modello,false
+Elettronica,Webcam,Colore,false
+Elettronica,Webcam,Materiale,false
+Elettronica,Webcam,Dimensioni,false
+Elettronica,Webcam,Peso,false
+Elettronica,Webcam,Risoluzione video,false
+Elettronica,Webcam,Frame rate,false
+Elettronica,Webcam,Messa a fuoco,false
+Elettronica,Webcam,Microfono integrato,false
+Elettronica,Webcam,Campo visivo,false
+Elettronica,Webcam,Connessione,false
+Elettronica,Webcam,Compatibilità,false
+Elettronica,TV,Modello,false
+Elettronica,TV,Colore,false
+Elettronica,TV,Materiale,false
+Elettronica,TV,Dimensioni,false
+Elettronica,TV,Peso,false
+Elettronica,TV,Dimensione schermo,false
+Elettronica,TV,Risoluzione,false
+Elettronica,TV,Tecnologia display,false
+Elettronica,TV,Smart TV,false
+Elettronica,TV,Sistema operativo,false
+Elettronica,TV,HDR,false
+Elettronica,TV,Refresh rate,false
+Elettronica,TV,HDMI,false
+Elettronica,TV,Wi-Fi,false
+Elettronica,TV,Classe energetica,false
+Elettronica,Smart TV,Modello,false
+Elettronica,Smart TV,Colore,false
+Elettronica,Smart TV,Materiale,false
+Elettronica,Smart TV,Dimensioni,false
+Elettronica,Smart TV,Peso,false
+Elettronica,Smart TV,Dimensione schermo,false
+Elettronica,Smart TV,Risoluzione,false
+Elettronica,Smart TV,Tecnologia display,false
+Elettronica,Smart TV,Smart TV,false
+Elettronica,Smart TV,Sistema operativo,false
+Elettronica,Smart TV,HDR,false
+Elettronica,Smart TV,Refresh rate,false
+Elettronica,Smart TV,HDMI,false
+Elettronica,Smart TV,Wi-Fi,false
+Elettronica,Smart TV,Classe energetica,false
+Elettronica,Proiettori,Modello,false
+Elettronica,Proiettori,Colore,false
+Elettronica,Proiettori,Materiale,false
+Elettronica,Proiettori,Dimensioni,false
+Elettronica,Proiettori,Peso,false
+Elettronica,Proiettori,Alimentazione,false
+Elettronica,Proiettori,Potenza,false
+Elettronica,Proiettori,Connettività,false
+Elettronica,Proiettori,Compatibilità,false
+Elettronica,Proiettori,Garanzia,false
+Elettronica,Cuffie,Modello,false
+Elettronica,Cuffie,Colore,false
+Elettronica,Cuffie,Materiale,false
+Elettronica,Cuffie,Dimensioni,false
+Elettronica,Cuffie,Peso,false
+Elettronica,Cuffie,Tipologia,false
+Elettronica,Cuffie,Connessione,false
+Elettronica,Cuffie,Bluetooth,false
+Elettronica,Cuffie,Cancellazione rumore,false
+Elettronica,Cuffie,Microfono,false
+Elettronica,Cuffie,Autonomia,false
+Elettronica,Cuffie,Impedenza,false
+Elettronica,Cuffie,Risposta in frequenza,false
+Elettronica,Auricolari,Modello,false
+Elettronica,Auricolari,Colore,false
+Elettronica,Auricolari,Materiale,false
+Elettronica,Auricolari,Dimensioni,false
+Elettronica,Auricolari,Peso,false
+Elettronica,Auricolari,Tipologia,false
+Elettronica,Auricolari,Connessione,false
+Elettronica,Auricolari,Bluetooth,false
+Elettronica,Auricolari,Cancellazione rumore,false
+Elettronica,Auricolari,Microfono,false
+Elettronica,Auricolari,Autonomia,false
+Elettronica,Auricolari,Impedenza,false
+Elettronica,Auricolari,Risposta in frequenza,false
+Elettronica,Speaker Bluetooth,Modello,false
+Elettronica,Speaker Bluetooth,Colore,false
+Elettronica,Speaker Bluetooth,Materiale,false
+Elettronica,Speaker Bluetooth,Dimensioni,false
+Elettronica,Speaker Bluetooth,Peso,false
+Elettronica,Speaker Bluetooth,Potenza,false
+Elettronica,Speaker Bluetooth,Canali audio,false
+Elettronica,Speaker Bluetooth,Connessione,false
+Elettronica,Speaker Bluetooth,Bluetooth,false
+Elettronica,Speaker Bluetooth,Wi-Fi,false
+Elettronica,Speaker Bluetooth,Risposta in frequenza,false
+Elettronica,Speaker Bluetooth,Alimentazione,false
+Elettronica,Console,Modello,false
+Elettronica,Console,Colore,false
+Elettronica,Console,Materiale,false
+Elettronica,Console,Dimensioni,false
+Elettronica,Console,Peso,false
+Elettronica,Console,Alimentazione,false
+Elettronica,Console,Potenza,false
+Elettronica,Console,Connettività,false
+Elettronica,Console,Compatibilità,false
+Elettronica,Console,Garanzia,false
+Elettronica,Accessori console,Modello,false
+Elettronica,Accessori console,Colore,false
+Elettronica,Accessori console,Materiale,false
+Elettronica,Accessori console,Dimensioni,false
+Elettronica,Accessori console,Peso,false
+Elettronica,Accessori console,Alimentazione,false
+Elettronica,Accessori console,Potenza,false
+Elettronica,Accessori console,Connettività,false
+Elettronica,Accessori console,Compatibilità,false
+Elettronica,Accessori console,Garanzia,false
+Elettronica,Videogiochi,Modello,false
+Elettronica,Videogiochi,Colore,false
+Elettronica,Videogiochi,Materiale,false
+Elettronica,Videogiochi,Dimensioni,false
+Elettronica,Videogiochi,Peso,false
+Elettronica,Videogiochi,Alimentazione,false
+Elettronica,Videogiochi,Potenza,false
+Elettronica,Videogiochi,Connettività,false
+Elettronica,Videogiochi,Compatibilità,false
+Elettronica,Videogiochi,Garanzia,false
+Elettronica,Fotocamere reflex,Modello,false
+Elettronica,Fotocamere reflex,Colore,false
+Elettronica,Fotocamere reflex,Materiale,false
+Elettronica,Fotocamere reflex,Dimensioni,false
+Elettronica,Fotocamere reflex,Peso,false
+Elettronica,Fotocamere reflex,Tipologia sensore,false
+Elettronica,Fotocamere reflex,Risoluzione sensore,false
+Elettronica,Fotocamere reflex,Obiettivo/Attacco,false
+Elettronica,Fotocamere reflex,Zoom,false
+Elettronica,Fotocamere reflex,Stabilizzazione,false
+Elettronica,Fotocamere reflex,Risoluzione video,false
+Elettronica,Fotocamere reflex,ISO,false
+Elettronica,Fotocamere reflex,Connettività,false
+Elettronica,Fotocamere reflex,Memoria supportata,false
+Elettronica,Mirrorless,Modello,false
+Elettronica,Mirrorless,Colore,false
+Elettronica,Mirrorless,Materiale,false
+Elettronica,Mirrorless,Dimensioni,false
+Elettronica,Mirrorless,Peso,false
+Elettronica,Mirrorless,Alimentazione,false
+Elettronica,Mirrorless,Potenza,false
+Elettronica,Mirrorless,Connettività,false
+Elettronica,Mirrorless,Compatibilità,false
+Elettronica,Mirrorless,Garanzia,false
+Elettronica,Obiettivi,Modello,false
+Elettronica,Obiettivi,Colore,false
+Elettronica,Obiettivi,Materiale,false
+Elettronica,Obiettivi,Dimensioni,false
+Elettronica,Obiettivi,Peso,false
+Elettronica,Obiettivi,Attacco,false
+Elettronica,Obiettivi,Lunghezza focale,false
+Elettronica,Obiettivi,Apertura massima,false
+Elettronica,Obiettivi,Stabilizzazione,false
+Elettronica,Obiettivi,Autofocus,false
+Elettronica,Obiettivi,Diametro filtro,false
+Elettronica,Droni,Modello,false
+Elettronica,Droni,Colore,false
+Elettronica,Droni,Materiale,false
+Elettronica,Droni,Dimensioni,false
+Elettronica,Droni,Peso,false
+Elettronica,Droni,Alimentazione,false
+Elettronica,Droni,Potenza,false
+Elettronica,Droni,Connettività,false
+Elettronica,Droni,Compatibilità,false
+Elettronica,Droni,Garanzia,false
+Elettronica,Action cam,Modello,false
+Elettronica,Action cam,Colore,false
+Elettronica,Action cam,Materiale,false
+Elettronica,Action cam,Dimensioni,false
+Elettronica,Action cam,Peso,false
+Elettronica,Action cam,Alimentazione,false
+Elettronica,Action cam,Potenza,false
+Elettronica,Action cam,Connettività,false
+Elettronica,Action cam,Compatibilità,false
+Elettronica,Action cam,Garanzia,false
+Elettronica,Smartwatch,Modello,false
+Elettronica,Smartwatch,Colore,false
+Elettronica,Smartwatch,Materiale,false
+Elettronica,Smartwatch,Dimensioni,false
+Elettronica,Smartwatch,Peso,false
+Elettronica,Smartwatch,Tipo display,false
+Elettronica,Smartwatch,Dimensione display,false
+Elettronica,Smartwatch,Sistema operativo,false
+Elettronica,Smartwatch,Compatibilità smartphone,false
+Elettronica,Smartwatch,GPS,false
+Elettronica,Smartwatch,Sensori,false
+Elettronica,Smartwatch,Resistenza acqua,false
+Elettronica,Smartwatch,Connettività,false
+Elettronica,Smartwatch,Autonomia,false
+Elettronica,Fitness tracker,Modello,false
+Elettronica,Fitness tracker,Colore,false
+Elettronica,Fitness tracker,Materiale,false
+Elettronica,Fitness tracker,Dimensioni,false
+Elettronica,Fitness tracker,Peso,false
+Elettronica,Fitness tracker,Tipo display,false
+Elettronica,Fitness tracker,Dimensione display,false
+Elettronica,Fitness tracker,Sistema operativo,false
+Elettronica,Fitness tracker,Compatibilità smartphone,false
+Elettronica,Fitness tracker,GPS,false
+Elettronica,Fitness tracker,Sensori,false
+Elettronica,Fitness tracker,Resistenza acqua,false
+Elettronica,Fitness tracker,Connettività,false
+Elettronica,Fitness tracker,Autonomia,false
+Elettronica,Domotica,Modello,false
+Elettronica,Domotica,Colore,false
+Elettronica,Domotica,Materiale,false
+Elettronica,Domotica,Dimensioni,false
+Elettronica,Domotica,Peso,false
+Elettronica,Domotica,Alimentazione,false
+Elettronica,Domotica,Potenza,false
+Elettronica,Domotica,Connettività,false
+Elettronica,Domotica,Compatibilità,false
+Elettronica,Domotica,Garanzia,false
+Elettronica,Assistenti vocali,Modello,false
+Elettronica,Assistenti vocali,Colore,false
+Elettronica,Assistenti vocali,Materiale,false
+Elettronica,Assistenti vocali,Dimensioni,false
+Elettronica,Assistenti vocali,Peso,false
+Elettronica,Assistenti vocali,Alimentazione,false
+Elettronica,Assistenti vocali,Potenza,false
+Elettronica,Assistenti vocali,Connettività,false
+Elettronica,Assistenti vocali,Compatibilità,false
+Elettronica,Assistenti vocali,Garanzia,false
+Elettronica,Sicurezza smart,Modello,false
+Elettronica,Sicurezza smart,Colore,false
+Elettronica,Sicurezza smart,Materiale,false
+Elettronica,Sicurezza smart,Dimensioni,false
+Elettronica,Sicurezza smart,Peso,false
+Elettronica,Sicurezza smart,Alimentazione,false
+Elettronica,Sicurezza smart,Potenza,false
+Elettronica,Sicurezza smart,Connettività,false
+Elettronica,Sicurezza smart,Compatibilità,false
+Elettronica,Sicurezza smart,Garanzia,false
+Abbigliamento,Abbigliamento uomo,Modello,false
+Abbigliamento,Abbigliamento uomo,Colore,false
+Abbigliamento,Abbigliamento uomo,Materiale,false
+Abbigliamento,Abbigliamento uomo,Dimensioni,false
+Abbigliamento,Abbigliamento uomo,Peso,false
+Abbigliamento,Abbigliamento uomo,Genere,false
+Abbigliamento,Abbigliamento uomo,Taglia abbigliamento,false
+Abbigliamento,Abbigliamento uomo,Composizione,false
+Abbigliamento,Abbigliamento uomo,Vestibilità,false
+Abbigliamento,Abbigliamento uomo,Stagione,false
+Abbigliamento,Abbigliamento donna,Modello,false
+Abbigliamento,Abbigliamento donna,Colore,false
+Abbigliamento,Abbigliamento donna,Materiale,false
+Abbigliamento,Abbigliamento donna,Dimensioni,false
+Abbigliamento,Abbigliamento donna,Peso,false
+Abbigliamento,Abbigliamento donna,Genere,false
+Abbigliamento,Abbigliamento donna,Taglia abbigliamento,false
+Abbigliamento,Abbigliamento donna,Composizione,false
+Abbigliamento,Abbigliamento donna,Vestibilità,false
+Abbigliamento,Abbigliamento donna,Stagione,false
+Abbigliamento,Abbigliamento bambino,Modello,false
+Abbigliamento,Abbigliamento bambino,Colore,false
+Abbigliamento,Abbigliamento bambino,Materiale,false
+Abbigliamento,Abbigliamento bambino,Dimensioni,false
+Abbigliamento,Abbigliamento bambino,Peso,false
+Abbigliamento,Abbigliamento bambino,Genere,false
+Abbigliamento,Abbigliamento bambino,Taglia abbigliamento,false
+Abbigliamento,Abbigliamento bambino,Composizione,false
+Abbigliamento,Abbigliamento bambino,Vestibilità,false
+Abbigliamento,Abbigliamento bambino,Stagione,false
+Abbigliamento,Intimo,Modello,false
+Abbigliamento,Intimo,Colore,false
+Abbigliamento,Intimo,Materiale,false
+Abbigliamento,Intimo,Dimensioni,false
+Abbigliamento,Intimo,Peso,false
+Abbigliamento,Intimo,Genere,false
+Abbigliamento,Intimo,Taglia abbigliamento,false
+Abbigliamento,Intimo,Vestibilità,false
+Abbigliamento,Intimo,Composizione,false
+Abbigliamento,Intimo,Fantasia,false
+Abbigliamento,Intimo,Stagione,false
+Abbigliamento,Intimo,Istruzioni lavaggio,false
+Abbigliamento,Pigiami,Modello,false
+Abbigliamento,Pigiami,Colore,false
+Abbigliamento,Pigiami,Materiale,false
+Abbigliamento,Pigiami,Dimensioni,false
+Abbigliamento,Pigiami,Peso,false
+Abbigliamento,Pigiami,Genere,false
+Abbigliamento,Pigiami,Taglia abbigliamento,false
+Abbigliamento,Pigiami,Composizione,false
+Abbigliamento,Pigiami,Vestibilità,false
+Abbigliamento,Pigiami,Stagione,false
+Abbigliamento,Costumi da bagno,Modello,false
+Abbigliamento,Costumi da bagno,Colore,false
+Abbigliamento,Costumi da bagno,Materiale,false
+Abbigliamento,Costumi da bagno,Dimensioni,false
+Abbigliamento,Costumi da bagno,Peso,false
+Abbigliamento,Costumi da bagno,Genere,false
+Abbigliamento,Costumi da bagno,Taglia abbigliamento,false
+Abbigliamento,Costumi da bagno,Composizione,false
+Abbigliamento,Costumi da bagno,Vestibilità,false
+Abbigliamento,Costumi da bagno,Stagione,false
+Abbigliamento,Scarpe uomo,Modello,false
+Abbigliamento,Scarpe uomo,Colore,false
+Abbigliamento,Scarpe uomo,Materiale,false
+Abbigliamento,Scarpe uomo,Dimensioni,false
+Abbigliamento,Scarpe uomo,Peso,false
+Abbigliamento,Scarpe uomo,Genere,false
+Abbigliamento,Scarpe uomo,Taglia calzature,false
+Abbigliamento,Scarpe uomo,Materiale tomaia,false
+Abbigliamento,Scarpe uomo,Materiale suola,false
+Abbigliamento,Scarpe uomo,Tipo chiusura,false
+Abbigliamento,Scarpe uomo,Altezza tacco,false
+Abbigliamento,Scarpe uomo,Impermeabile,false
+Abbigliamento,Scarpe donna,Modello,false
+Abbigliamento,Scarpe donna,Colore,false
+Abbigliamento,Scarpe donna,Materiale,false
+Abbigliamento,Scarpe donna,Dimensioni,false
+Abbigliamento,Scarpe donna,Peso,false
+Abbigliamento,Scarpe donna,Genere,false
+Abbigliamento,Scarpe donna,Taglia calzature,false
+Abbigliamento,Scarpe donna,Materiale tomaia,false
+Abbigliamento,Scarpe donna,Materiale suola,false
+Abbigliamento,Scarpe donna,Tipo chiusura,false
+Abbigliamento,Scarpe donna,Altezza tacco,false
+Abbigliamento,Scarpe donna,Impermeabile,false
+Abbigliamento,Sneakers,Modello,false
+Abbigliamento,Sneakers,Colore,false
+Abbigliamento,Sneakers,Materiale,false
+Abbigliamento,Sneakers,Dimensioni,false
+Abbigliamento,Sneakers,Peso,false
+Abbigliamento,Sneakers,Genere,false
+Abbigliamento,Sneakers,Taglia calzature,false
+Abbigliamento,Sneakers,Materiale tomaia,false
+Abbigliamento,Sneakers,Materiale suola,false
+Abbigliamento,Sneakers,Tipo chiusura,false
+Abbigliamento,Sneakers,Altezza tacco,false
+Abbigliamento,Sneakers,Impermeabile,false
+Abbigliamento,Borse,Modello,false
+Abbigliamento,Borse,Colore,false
+Abbigliamento,Borse,Materiale,false
+Abbigliamento,Borse,Dimensioni,false
+Abbigliamento,Borse,Peso,false
+Abbigliamento,Borse,Genere,false
+Abbigliamento,Borse,Taglia bagagli,false
+Abbigliamento,Borse,Composizione,false
+Abbigliamento,Borse,Vestibilità,false
+Abbigliamento,Borse,Stagione,false
+Abbigliamento,Zaini,Modello,false
+Abbigliamento,Zaini,Colore,false
+Abbigliamento,Zaini,Materiale,false
+Abbigliamento,Zaini,Dimensioni,false
+Abbigliamento,Zaini,Peso,false
+Abbigliamento,Zaini,Genere,false
+Abbigliamento,Zaini,Taglia bagagli,false
+Abbigliamento,Zaini,Composizione,false
+Abbigliamento,Zaini,Vestibilità,false
+Abbigliamento,Zaini,Stagione,false
+Abbigliamento,Valigie,Modello,false
+Abbigliamento,Valigie,Colore,false
+Abbigliamento,Valigie,Materiale,false
+Abbigliamento,Valigie,Dimensioni,false
+Abbigliamento,Valigie,Peso,false
+Abbigliamento,Valigie,Genere,false
+Abbigliamento,Valigie,Taglia bagagli,false
+Abbigliamento,Valigie,Composizione,false
+Abbigliamento,Valigie,Vestibilità,false
+Abbigliamento,Valigie,Stagione,false
+Abbigliamento,Occhiali da sole,Modello,false
+Abbigliamento,Occhiali da sole,Colore,false
+Abbigliamento,Occhiali da sole,Materiale,false
+Abbigliamento,Occhiali da sole,Dimensioni,false
+Abbigliamento,Occhiali da sole,Peso,false
+Abbigliamento,Occhiali da sole,Genere,false
+Abbigliamento,Occhiali da sole,Taglia accessori,false
+Abbigliamento,Occhiali da sole,Composizione,false
+Abbigliamento,Occhiali da sole,Vestibilità,false
+Abbigliamento,Occhiali da sole,Stagione,false
+Abbigliamento,Cinture,Modello,false
+Abbigliamento,Cinture,Colore,false
+Abbigliamento,Cinture,Materiale,false
+Abbigliamento,Cinture,Dimensioni,false
+Abbigliamento,Cinture,Peso,false
+Abbigliamento,Cinture,Genere,false
+Abbigliamento,Cinture,Taglia accessori,false
+Abbigliamento,Cinture,Composizione,false
+Abbigliamento,Cinture,Vestibilità,false
+Abbigliamento,Cinture,Stagione,false
+Abbigliamento,Cappelli,Modello,false
+Abbigliamento,Cappelli,Colore,false
+Abbigliamento,Cappelli,Materiale,false
+Abbigliamento,Cappelli,Dimensioni,false
+Abbigliamento,Cappelli,Peso,false
+Abbigliamento,Cappelli,Genere,false
+Abbigliamento,Cappelli,Taglia accessori,false
+Abbigliamento,Cappelli,Composizione,false
+Abbigliamento,Cappelli,Vestibilità,false
+Abbigliamento,Cappelli,Stagione,false
+Abbigliamento,Gioielli,Modello,false
+Abbigliamento,Gioielli,Colore,false
+Abbigliamento,Gioielli,Materiale,false
+Abbigliamento,Gioielli,Dimensioni,false
+Abbigliamento,Gioielli,Peso,false
+Abbigliamento,Gioielli,Genere,false
+Abbigliamento,Gioielli,Taglia accessori,false
+Abbigliamento,Gioielli,Composizione,false
+Abbigliamento,Gioielli,Vestibilità,false
+Abbigliamento,Gioielli,Stagione,false
+Abbigliamento,Orologi,Modello,false
+Abbigliamento,Orologi,Colore,false
+Abbigliamento,Orologi,Materiale,false
+Abbigliamento,Orologi,Dimensioni,false
+Abbigliamento,Orologi,Peso,false
+Abbigliamento,Orologi,Tipo display,false
+Abbigliamento,Orologi,Dimensione display,false
+Abbigliamento,Orologi,Sistema operativo,false
+Abbigliamento,Orologi,Compatibilità smartphone,false
+Abbigliamento,Orologi,GPS,false
+Abbigliamento,Orologi,Sensori,false
+Abbigliamento,Orologi,Resistenza acqua,false
+Abbigliamento,Orologi,Connettività,false
+Abbigliamento,Orologi,Autonomia,false
+Casa e cucina,Mobili soggiorno,Modello,false
+Casa e cucina,Mobili soggiorno,Colore,false
+Casa e cucina,Mobili soggiorno,Materiale,false
+Casa e cucina,Mobili soggiorno,Dimensioni,false
+Casa e cucina,Mobili soggiorno,Peso,false
+Casa e cucina,Mobili soggiorno,Larghezza,false
+Casa e cucina,Mobili soggiorno,Altezza,false
+Casa e cucina,Mobili soggiorno,Profondità,false
+Casa e cucina,Mobili soggiorno,Stile,false
+Casa e cucina,Mobili soggiorno,Montaggio richiesto,false
+Casa e cucina,Mobili camera,Modello,false
+Casa e cucina,Mobili camera,Colore,false
+Casa e cucina,Mobili camera,Materiale,false
+Casa e cucina,Mobili camera,Dimensioni,false
+Casa e cucina,Mobili camera,Peso,false
+Casa e cucina,Mobili camera,Larghezza,false
+Casa e cucina,Mobili camera,Altezza,false
+Casa e cucina,Mobili camera,Profondità,false
+Casa e cucina,Mobili camera,Stile,false
+Casa e cucina,Mobili camera,Montaggio richiesto,false
+Casa e cucina,Mobili cucina,Modello,false
+Casa e cucina,Mobili cucina,Colore,false
+Casa e cucina,Mobili cucina,Materiale,false
+Casa e cucina,Mobili cucina,Dimensioni,false
+Casa e cucina,Mobili cucina,Peso,false
+Casa e cucina,Mobili cucina,Larghezza,false
+Casa e cucina,Mobili cucina,Altezza,false
+Casa e cucina,Mobili cucina,Profondità,false
+Casa e cucina,Mobili cucina,Stile,false
+Casa e cucina,Mobili cucina,Montaggio richiesto,false
+Casa e cucina,Illuminazione,Modello,false
+Casa e cucina,Illuminazione,Colore,false
+Casa e cucina,Illuminazione,Materiale,false
+Casa e cucina,Illuminazione,Dimensioni,false
+Casa e cucina,Illuminazione,Peso,false
+Casa e cucina,Illuminazione,Tipo sorgente luminosa,false
+Casa e cucina,Illuminazione,Attacco lampadina,false
+Casa e cucina,Illuminazione,Potenza,false
+Casa e cucina,Illuminazione,Flusso luminoso,false
+Casa e cucina,Illuminazione,Temperatura colore,false
+Casa e cucina,Illuminazione,Dimmerabile,false
+Casa e cucina,Illuminazione,Grado IP,false
+Casa e cucina,Illuminazione,Tensione,false
+Casa e cucina,Lampade,Modello,false
+Casa e cucina,Lampade,Colore,false
+Casa e cucina,Lampade,Materiale,false
+Casa e cucina,Lampade,Dimensioni,false
+Casa e cucina,Lampade,Peso,false
+Casa e cucina,Lampade,Tipo sorgente luminosa,false
+Casa e cucina,Lampade,Attacco lampadina,false
+Casa e cucina,Lampade,Potenza,false
+Casa e cucina,Lampade,Flusso luminoso,false
+Casa e cucina,Lampade,Temperatura colore,false
+Casa e cucina,Lampade,Dimmerabile,false
+Casa e cucina,Lampade,Grado IP,false
+Casa e cucina,Lampade,Tensione,false
+Casa e cucina,Pentole,Modello,false
+Casa e cucina,Pentole,Colore,false
+Casa e cucina,Pentole,Materiale,false
+Casa e cucina,Pentole,Dimensioni,false
+Casa e cucina,Pentole,Peso,false
+Casa e cucina,Pentole,Larghezza,false
+Casa e cucina,Pentole,Altezza,false
+Casa e cucina,Pentole,Profondità,false
+Casa e cucina,Pentole,Stile,false
+Casa e cucina,Pentole,Montaggio richiesto,false
+Casa e cucina,Padelle,Modello,false
+Casa e cucina,Padelle,Colore,false
+Casa e cucina,Padelle,Materiale,false
+Casa e cucina,Padelle,Dimensioni,false
+Casa e cucina,Padelle,Peso,false
+Casa e cucina,Padelle,Larghezza,false
+Casa e cucina,Padelle,Altezza,false
+Casa e cucina,Padelle,Profondità,false
+Casa e cucina,Padelle,Stile,false
+Casa e cucina,Padelle,Montaggio richiesto,false
+Casa e cucina,Utensili cucina,Modello,false
+Casa e cucina,Utensili cucina,Colore,false
+Casa e cucina,Utensili cucina,Materiale,false
+Casa e cucina,Utensili cucina,Dimensioni,false
+Casa e cucina,Utensili cucina,Peso,false
+Casa e cucina,Utensili cucina,Potenza,false
+Casa e cucina,Utensili cucina,Alimentazione,false
+Casa e cucina,Utensili cucina,Tensione batteria,false
+Casa e cucina,Utensili cucina,Velocità,false
+Casa e cucina,Utensili cucina,Diametro/Capacità,false
+Casa e cucina,Utensili cucina,Accessori inclusi,false
+Casa e cucina,Piccoli elettrodomestici,Modello,false
+Casa e cucina,Piccoli elettrodomestici,Colore,false
+Casa e cucina,Piccoli elettrodomestici,Materiale,false
+Casa e cucina,Piccoli elettrodomestici,Dimensioni,false
+Casa e cucina,Piccoli elettrodomestici,Peso,false
+Casa e cucina,Piccoli elettrodomestici,Larghezza,false
+Casa e cucina,Piccoli elettrodomestici,Altezza,false
+Casa e cucina,Piccoli elettrodomestici,Profondità,false
+Casa e cucina,Piccoli elettrodomestici,Stile,false
+Casa e cucina,Piccoli elettrodomestici,Montaggio richiesto,false
+Casa e cucina,Robot cucina,Modello,false
+Casa e cucina,Robot cucina,Colore,false
+Casa e cucina,Robot cucina,Materiale,false
+Casa e cucina,Robot cucina,Dimensioni,false
+Casa e cucina,Robot cucina,Peso,false
+Casa e cucina,Robot cucina,Larghezza,false
+Casa e cucina,Robot cucina,Altezza,false
+Casa e cucina,Robot cucina,Profondità,false
+Casa e cucina,Robot cucina,Stile,false
+Casa e cucina,Robot cucina,Montaggio richiesto,false
+Casa e cucina,Macchine caffè,Modello,false
+Casa e cucina,Macchine caffè,Colore,false
+Casa e cucina,Macchine caffè,Materiale,false
+Casa e cucina,Macchine caffè,Dimensioni,false
+Casa e cucina,Macchine caffè,Peso,false
+Casa e cucina,Macchine caffè,Formato/Peso netto,false
+Casa e cucina,Macchine caffè,Ingredienti,false
+Casa e cucina,Macchine caffè,Allergeni,false
+Casa e cucina,Macchine caffè,Valori nutrizionali,false
+Casa e cucina,Macchine caffè,Paese di origine,false
+Casa e cucina,Macchine caffè,Conservazione,false
+Casa e cucina,Macchine caffè,Scadenza/TMC,false
+Casa e cucina,Frigoriferi,Modello,false
+Casa e cucina,Frigoriferi,Colore,false
+Casa e cucina,Frigoriferi,Materiale,false
+Casa e cucina,Frigoriferi,Dimensioni,false
+Casa e cucina,Frigoriferi,Peso,false
+Casa e cucina,Frigoriferi,Capacità netta,false
+Casa e cucina,Frigoriferi,Classe energetica,false
+Casa e cucina,Frigoriferi,Consumo annuo,false
+Casa e cucina,Frigoriferi,Rumorosità,false
+Casa e cucina,Frigoriferi,Sistema di raffreddamento,false
+Casa e cucina,Frigoriferi,No Frost,false
+Casa e cucina,Frigoriferi,Numero porte,false
+Casa e cucina,Forni,Modello,false
+Casa e cucina,Forni,Colore,false
+Casa e cucina,Forni,Materiale,false
+Casa e cucina,Forni,Dimensioni,false
+Casa e cucina,Forni,Peso,false
+Casa e cucina,Forni,Larghezza,false
+Casa e cucina,Forni,Altezza,false
+Casa e cucina,Forni,Profondità,false
+Casa e cucina,Forni,Stile,false
+Casa e cucina,Forni,Montaggio richiesto,false
+Casa e cucina,Biancheria letto,Modello,false
+Casa e cucina,Biancheria letto,Colore,false
+Casa e cucina,Biancheria letto,Materiale,false
+Casa e cucina,Biancheria letto,Dimensioni,false
+Casa e cucina,Biancheria letto,Peso,false
+Casa e cucina,Biancheria letto,Larghezza,false
+Casa e cucina,Biancheria letto,Altezza,false
+Casa e cucina,Biancheria letto,Profondità,false
+Casa e cucina,Biancheria letto,Stile,false
+Casa e cucina,Biancheria letto,Montaggio richiesto,false
+Casa e cucina,Tende,Modello,false
+Casa e cucina,Tende,Colore,false
+Casa e cucina,Tende,Materiale,false
+Casa e cucina,Tende,Dimensioni,false
+Casa e cucina,Tende,Peso,false
+Casa e cucina,Tende,Larghezza,false
+Casa e cucina,Tende,Altezza,false
+Casa e cucina,Tende,Profondità,false
+Casa e cucina,Tende,Stile,false
+Casa e cucina,Tende,Montaggio richiesto,false
+Casa e cucina,Tappeti,Modello,false
+Casa e cucina,Tappeti,Colore,false
+Casa e cucina,Tappeti,Materiale,false
+Casa e cucina,Tappeti,Dimensioni,false
+Casa e cucina,Tappeti,Peso,false
+Casa e cucina,Tappeti,Larghezza,false
+Casa e cucina,Tappeti,Altezza,false
+Casa e cucina,Tappeti,Profondità,false
+Casa e cucina,Tappeti,Stile,false
+Casa e cucina,Tappeti,Montaggio richiesto,false
+Casa e cucina,Decorazioni casa,Modello,false
+Casa e cucina,Decorazioni casa,Colore,false
+Casa e cucina,Decorazioni casa,Materiale,false
+Casa e cucina,Decorazioni casa,Dimensioni,false
+Casa e cucina,Decorazioni casa,Peso,false
+Casa e cucina,Decorazioni casa,Larghezza,false
+Casa e cucina,Decorazioni casa,Altezza,false
+Casa e cucina,Decorazioni casa,Profondità,false
+Casa e cucina,Decorazioni casa,Stile,false
+Casa e cucina,Decorazioni casa,Montaggio richiesto,false
+Casa e cucina,Candele,Modello,false
+Casa e cucina,Candele,Colore,false
+Casa e cucina,Candele,Materiale,false
+Casa e cucina,Candele,Dimensioni,false
+Casa e cucina,Candele,Peso,false
+Casa e cucina,Candele,Larghezza,false
+Casa e cucina,Candele,Altezza,false
+Casa e cucina,Candele,Profondità,false
+Casa e cucina,Candele,Stile,false
+Casa e cucina,Candele,Montaggio richiesto,false
+Casa e cucina,Quadri,Modello,false
+Casa e cucina,Quadri,Colore,false
+Casa e cucina,Quadri,Materiale,false
+Casa e cucina,Quadri,Dimensioni,false
+Casa e cucina,Quadri,Peso,false
+Casa e cucina,Quadri,Larghezza,false
+Casa e cucina,Quadri,Altezza,false
+Casa e cucina,Quadri,Profondità,false
+Casa e cucina,Quadri,Stile,false
+Casa e cucina,Quadri,Montaggio richiesto,false
+Bellezza e cura personale,Creme viso,Modello,false
+Bellezza e cura personale,Creme viso,Colore,false
+Bellezza e cura personale,Creme viso,Materiale,false
+Bellezza e cura personale,Creme viso,Dimensioni,false
+Bellezza e cura personale,Creme viso,Peso,false
+Bellezza e cura personale,Creme viso,Formato,false
+Bellezza e cura personale,Creme viso,Tipo pelle/capelli,false
+Bellezza e cura personale,Creme viso,Beneficio/Funzione,false
+Bellezza e cura personale,Creme viso,Ingredienti principali,false
+Bellezza e cura personale,Sieri,Modello,false
+Bellezza e cura personale,Sieri,Colore,false
+Bellezza e cura personale,Sieri,Materiale,false
+Bellezza e cura personale,Sieri,Dimensioni,false
+Bellezza e cura personale,Sieri,Peso,false
+Bellezza e cura personale,Sieri,Formato,false
+Bellezza e cura personale,Sieri,Tipo pelle/capelli,false
+Bellezza e cura personale,Sieri,Beneficio/Funzione,false
+Bellezza e cura personale,Sieri,Ingredienti principali,false
+Bellezza e cura personale,Maschere viso,Modello,false
+Bellezza e cura personale,Maschere viso,Colore,false
+Bellezza e cura personale,Maschere viso,Materiale,false
+Bellezza e cura personale,Maschere viso,Dimensioni,false
+Bellezza e cura personale,Maschere viso,Peso,false
+Bellezza e cura personale,Maschere viso,Formato,false
+Bellezza e cura personale,Maschere viso,Tipo pelle/capelli,false
+Bellezza e cura personale,Maschere viso,Beneficio/Funzione,false
+Bellezza e cura personale,Maschere viso,Ingredienti principali,false
+Bellezza e cura personale,Make-up viso,Modello,false
+Bellezza e cura personale,Make-up viso,Colore,false
+Bellezza e cura personale,Make-up viso,Materiale,false
+Bellezza e cura personale,Make-up viso,Dimensioni,false
+Bellezza e cura personale,Make-up viso,Peso,false
+Bellezza e cura personale,Make-up viso,Tonalità,false
+Bellezza e cura personale,Make-up viso,Finish,false
+Bellezza e cura personale,Make-up viso,Formato,false
+Bellezza e cura personale,Make-up viso,Tipo pelle,false
+Bellezza e cura personale,Make-up viso,Effetto,false
+Bellezza e cura personale,Make-up viso,Waterproof,false
+Bellezza e cura personale,Make-up occhi,Modello,false
+Bellezza e cura personale,Make-up occhi,Colore,false
+Bellezza e cura personale,Make-up occhi,Materiale,false
+Bellezza e cura personale,Make-up occhi,Dimensioni,false
+Bellezza e cura personale,Make-up occhi,Peso,false
+Bellezza e cura personale,Make-up occhi,Tonalità,false
+Bellezza e cura personale,Make-up occhi,Finish,false
+Bellezza e cura personale,Make-up occhi,Formato,false
+Bellezza e cura personale,Make-up occhi,Tipo pelle,false
+Bellezza e cura personale,Make-up occhi,Effetto,false
+Bellezza e cura personale,Make-up occhi,Waterproof,false
+Bellezza e cura personale,Make-up labbra,Modello,false
+Bellezza e cura personale,Make-up labbra,Colore,false
+Bellezza e cura personale,Make-up labbra,Materiale,false
+Bellezza e cura personale,Make-up labbra,Dimensioni,false
+Bellezza e cura personale,Make-up labbra,Peso,false
+Bellezza e cura personale,Make-up labbra,Tonalità,false
+Bellezza e cura personale,Make-up labbra,Finish,false
+Bellezza e cura personale,Make-up labbra,Formato,false
+Bellezza e cura personale,Make-up labbra,Tipo pelle,false
+Bellezza e cura personale,Make-up labbra,Effetto,false
+Bellezza e cura personale,Make-up labbra,Waterproof,false
+Bellezza e cura personale,Shampoo,Modello,false
+Bellezza e cura personale,Shampoo,Colore,false
+Bellezza e cura personale,Shampoo,Materiale,false
+Bellezza e cura personale,Shampoo,Dimensioni,false
+Bellezza e cura personale,Shampoo,Peso,false
+Bellezza e cura personale,Shampoo,Tipo pelle/capelli,false
+Bellezza e cura personale,Shampoo,Formato,false
+Bellezza e cura personale,Shampoo,Ingredienti principali,false
+Bellezza e cura personale,Shampoo,Beneficio/Funzione,false
+Bellezza e cura personale,Shampoo,Modalità d'uso,false
+Bellezza e cura personale,Balsamo,Modello,false
+Bellezza e cura personale,Balsamo,Colore,false
+Bellezza e cura personale,Balsamo,Materiale,false
+Bellezza e cura personale,Balsamo,Dimensioni,false
+Bellezza e cura personale,Balsamo,Peso,false
+Bellezza e cura personale,Balsamo,Tipo pelle/capelli,false
+Bellezza e cura personale,Balsamo,Formato,false
+Bellezza e cura personale,Balsamo,Ingredienti principali,false
+Bellezza e cura personale,Balsamo,Beneficio/Funzione,false
+Bellezza e cura personale,Balsamo,Modalità d'uso,false
+Bellezza e cura personale,Styling capelli,Modello,false
+Bellezza e cura personale,Styling capelli,Colore,false
+Bellezza e cura personale,Styling capelli,Materiale,false
+Bellezza e cura personale,Styling capelli,Dimensioni,false
+Bellezza e cura personale,Styling capelli,Peso,false
+Bellezza e cura personale,Styling capelli,Formato,false
+Bellezza e cura personale,Styling capelli,Tipo pelle/capelli,false
+Bellezza e cura personale,Styling capelli,Beneficio/Funzione,false
+Bellezza e cura personale,Styling capelli,Ingredienti principali,false
+Bellezza e cura personale,Profumi uomo,Modello,false
+Bellezza e cura personale,Profumi uomo,Colore,false
+Bellezza e cura personale,Profumi uomo,Materiale,false
+Bellezza e cura personale,Profumi uomo,Dimensioni,false
+Bellezza e cura personale,Profumi uomo,Peso,false
+Bellezza e cura personale,Profumi uomo,Formato,false
+Bellezza e cura personale,Profumi uomo,Tipo pelle/capelli,false
+Bellezza e cura personale,Profumi uomo,Beneficio/Funzione,false
+Bellezza e cura personale,Profumi uomo,Ingredienti principali,false
+Bellezza e cura personale,Profumi donna,Modello,false
+Bellezza e cura personale,Profumi donna,Colore,false
+Bellezza e cura personale,Profumi donna,Materiale,false
+Bellezza e cura personale,Profumi donna,Dimensioni,false
+Bellezza e cura personale,Profumi donna,Peso,false
+Bellezza e cura personale,Profumi donna,Formato,false
+Bellezza e cura personale,Profumi donna,Tipo pelle/capelli,false
+Bellezza e cura personale,Profumi donna,Beneficio/Funzione,false
+Bellezza e cura personale,Profumi donna,Ingredienti principali,false
+Bellezza e cura personale,Epilatori,Modello,false
+Bellezza e cura personale,Epilatori,Colore,false
+Bellezza e cura personale,Epilatori,Materiale,false
+Bellezza e cura personale,Epilatori,Dimensioni,false
+Bellezza e cura personale,Epilatori,Peso,false
+Bellezza e cura personale,Epilatori,Formato,false
+Bellezza e cura personale,Epilatori,Tipo pelle/capelli,false
+Bellezza e cura personale,Epilatori,Beneficio/Funzione,false
+Bellezza e cura personale,Epilatori,Ingredienti principali,false
+Bellezza e cura personale,Rasoi elettrici,Modello,false
+Bellezza e cura personale,Rasoi elettrici,Colore,false
+Bellezza e cura personale,Rasoi elettrici,Materiale,false
+Bellezza e cura personale,Rasoi elettrici,Dimensioni,false
+Bellezza e cura personale,Rasoi elettrici,Peso,false
+Bellezza e cura personale,Rasoi elettrici,Formato,false
+Bellezza e cura personale,Rasoi elettrici,Tipo pelle/capelli,false
+Bellezza e cura personale,Rasoi elettrici,Beneficio/Funzione,false
+Bellezza e cura personale,Rasoi elettrici,Ingredienti principali,false
+Bellezza e cura personale,Dispositivi estetici,Modello,false
+Bellezza e cura personale,Dispositivi estetici,Colore,false
+Bellezza e cura personale,Dispositivi estetici,Materiale,false
+Bellezza e cura personale,Dispositivi estetici,Dimensioni,false
+Bellezza e cura personale,Dispositivi estetici,Peso,false
+Bellezza e cura personale,Dispositivi estetici,Formato,false
+Bellezza e cura personale,Dispositivi estetici,Tipo pelle/capelli,false
+Bellezza e cura personale,Dispositivi estetici,Beneficio/Funzione,false
+Bellezza e cura personale,Dispositivi estetici,Ingredienti principali,false
+Bellezza e cura personale,Massaggiatori,Modello,false
+Bellezza e cura personale,Massaggiatori,Colore,false
+Bellezza e cura personale,Massaggiatori,Materiale,false
+Bellezza e cura personale,Massaggiatori,Dimensioni,false
+Bellezza e cura personale,Massaggiatori,Peso,false
+Bellezza e cura personale,Massaggiatori,Formato,false
+Bellezza e cura personale,Massaggiatori,Tipo pelle/capelli,false
+Bellezza e cura personale,Massaggiatori,Beneficio/Funzione,false
+Bellezza e cura personale,Massaggiatori,Ingredienti principali,false
+Bellezza e cura personale,Integratori,Modello,false
+Bellezza e cura personale,Integratori,Colore,false
+Bellezza e cura personale,Integratori,Materiale,false
+Bellezza e cura personale,Integratori,Dimensioni,false
+Bellezza e cura personale,Integratori,Peso,false
+Bellezza e cura personale,Integratori,Formato,false
+Bellezza e cura personale,Integratori,Tipo pelle/capelli,false
+Bellezza e cura personale,Integratori,Beneficio/Funzione,false
+Bellezza e cura personale,Integratori,Ingredienti principali,false
+Bellezza e cura personale,Vitamine,Modello,false
+Bellezza e cura personale,Vitamine,Colore,false
+Bellezza e cura personale,Vitamine,Materiale,false
+Bellezza e cura personale,Vitamine,Dimensioni,false
+Bellezza e cura personale,Vitamine,Peso,false
+Bellezza e cura personale,Vitamine,Formato,false
+Bellezza e cura personale,Vitamine,Tipo pelle/capelli,false
+Bellezza e cura personale,Vitamine,Beneficio/Funzione,false
+Bellezza e cura personale,Vitamine,Ingredienti principali,false
+Infanzia,Giocattoli educativi,Modello,false
+Infanzia,Giocattoli educativi,Colore,false
+Infanzia,Giocattoli educativi,Materiale,false
+Infanzia,Giocattoli educativi,Dimensioni,false
+Infanzia,Giocattoli educativi,Peso,false
+Infanzia,Giocattoli educativi,Età consigliata,false
+Infanzia,Giocattoli educativi,Numero giocatori,false
+Infanzia,Giocattoli educativi,Durata partita,false
+Infanzia,Giocattoli educativi,Batterie richieste,false
+Infanzia,Giocattoli educativi,Lingua,false
+Infanzia,Giocattoli educativi,Avvertenze,false
+Infanzia,Peluche,Modello,false
+Infanzia,Peluche,Colore,false
+Infanzia,Peluche,Materiale,false
+Infanzia,Peluche,Dimensioni,false
+Infanzia,Peluche,Peso,false
+Infanzia,Peluche,Tipologia,false
+Infanzia,Peluche,Uso previsto,false
+Infanzia,Peluche,Compatibilità,false
+Infanzia,Costruzioni,Modello,false
+Infanzia,Costruzioni,Colore,false
+Infanzia,Costruzioni,Materiale,false
+Infanzia,Costruzioni,Dimensioni,false
+Infanzia,Costruzioni,Peso,false
+Infanzia,Costruzioni,Tipologia,false
+Infanzia,Costruzioni,Uso previsto,false
+Infanzia,Costruzioni,Compatibilità,false
+Infanzia,Passeggini,Modello,false
+Infanzia,Passeggini,Colore,false
+Infanzia,Passeggini,Materiale,false
+Infanzia,Passeggini,Dimensioni,false
+Infanzia,Passeggini,Peso,false
+Infanzia,Passeggini,Età consigliata,false
+Infanzia,Passeggini,Peso massimo,false
+Infanzia,Passeggini,Peso prodotto,false
+Infanzia,Passeggini,Tipo chiusura passeggino,false
+Infanzia,Passeggini,Reclinabile,false
+Infanzia,Passeggini,Dimensioni chiuso,false
+Infanzia,Passeggini,Accessori inclusi,false
+Infanzia,Seggiolini auto,Modello,false
+Infanzia,Seggiolini auto,Colore,false
+Infanzia,Seggiolini auto,Materiale,false
+Infanzia,Seggiolini auto,Dimensioni,false
+Infanzia,Seggiolini auto,Peso,false
+Infanzia,Seggiolini auto,Tipologia,false
+Infanzia,Seggiolini auto,Uso previsto,false
+Infanzia,Seggiolini auto,Compatibilità,false
+Infanzia,Culle,Modello,false
+Infanzia,Culle,Colore,false
+Infanzia,Culle,Materiale,false
+Infanzia,Culle,Dimensioni,false
+Infanzia,Culle,Peso,false
+Infanzia,Culle,Tipologia,false
+Infanzia,Culle,Uso previsto,false
+Infanzia,Culle,Compatibilità,false
+Infanzia,Lettini,Modello,false
+Infanzia,Lettini,Colore,false
+Infanzia,Lettini,Materiale,false
+Infanzia,Lettini,Dimensioni,false
+Infanzia,Lettini,Peso,false
+Infanzia,Lettini,Tipologia,false
+Infanzia,Lettini,Uso previsto,false
+Infanzia,Lettini,Compatibilità,false
+Infanzia,Prodotti allattamento,Modello,false
+Infanzia,Prodotti allattamento,Colore,false
+Infanzia,Prodotti allattamento,Materiale,false
+Infanzia,Prodotti allattamento,Dimensioni,false
+Infanzia,Prodotti allattamento,Peso,false
+Infanzia,Prodotti allattamento,Tipologia,false
+Infanzia,Prodotti allattamento,Uso previsto,false
+Infanzia,Prodotti allattamento,Compatibilità,false
+Infanzia,Pannolini,Modello,false
+Infanzia,Pannolini,Colore,false
+Infanzia,Pannolini,Materiale,false
+Infanzia,Pannolini,Dimensioni,false
+Infanzia,Pannolini,Peso,false
+Infanzia,Pannolini,Taglia pannolini,false
+Infanzia,Pannolini,Peso bambino,false
+Infanzia,Pannolini,Numero pezzi,false
+Infanzia,Pannolini,Tipologia,false
+Infanzia,Pannolini,Assorbenza,false
+Infanzia,Abbigliamento neonati,Modello,false
+Infanzia,Abbigliamento neonati,Colore,false
+Infanzia,Abbigliamento neonati,Materiale,false
+Infanzia,Abbigliamento neonati,Dimensioni,false
+Infanzia,Abbigliamento neonati,Peso,false
+Infanzia,Abbigliamento neonati,Tipologia,false
+Infanzia,Abbigliamento neonati,Uso previsto,false
+Infanzia,Abbigliamento neonati,Compatibilità,false
+Sport e tempo libero,Attrezzi palestra,Modello,false
+Sport e tempo libero,Attrezzi palestra,Colore,false
+Sport e tempo libero,Attrezzi palestra,Materiale,false
+Sport e tempo libero,Attrezzi palestra,Dimensioni,false
+Sport e tempo libero,Attrezzi palestra,Peso,false
+Sport e tempo libero,Attrezzi palestra,Sport/Disciplina,false
+Sport e tempo libero,Attrezzi palestra,Taglia/Misura,false
+Sport e tempo libero,Attrezzi palestra,Livello utilizzo,false
+Sport e tempo libero,Tapis roulant,Modello,false
+Sport e tempo libero,Tapis roulant,Colore,false
+Sport e tempo libero,Tapis roulant,Materiale,false
+Sport e tempo libero,Tapis roulant,Dimensioni,false
+Sport e tempo libero,Tapis roulant,Peso,false
+Sport e tempo libero,Tapis roulant,Sport/Disciplina,false
+Sport e tempo libero,Tapis roulant,Taglia/Misura,false
+Sport e tempo libero,Tapis roulant,Livello utilizzo,false
+Sport e tempo libero,Pesi,Modello,false
+Sport e tempo libero,Pesi,Colore,false
+Sport e tempo libero,Pesi,Materiale,false
+Sport e tempo libero,Pesi,Dimensioni,false
+Sport e tempo libero,Pesi,Peso,false
+Sport e tempo libero,Pesi,Sport/Disciplina,false
+Sport e tempo libero,Pesi,Taglia/Misura,false
+Sport e tempo libero,Pesi,Livello utilizzo,false
+Sport e tempo libero,Yoga,Modello,false
+Sport e tempo libero,Yoga,Colore,false
+Sport e tempo libero,Yoga,Materiale,false
+Sport e tempo libero,Yoga,Dimensioni,false
+Sport e tempo libero,Yoga,Peso,false
+Sport e tempo libero,Yoga,Sport/Disciplina,false
+Sport e tempo libero,Yoga,Taglia/Misura,false
+Sport e tempo libero,Yoga,Livello utilizzo,false
+Sport e tempo libero,Pilates,Modello,false
+Sport e tempo libero,Pilates,Colore,false
+Sport e tempo libero,Pilates,Materiale,false
+Sport e tempo libero,Pilates,Dimensioni,false
+Sport e tempo libero,Pilates,Peso,false
+Sport e tempo libero,Pilates,Sport/Disciplina,false
+Sport e tempo libero,Pilates,Taglia/Misura,false
+Sport e tempo libero,Pilates,Livello utilizzo,false
+Sport e tempo libero,Biciclette,Modello,false
+Sport e tempo libero,Biciclette,Colore,false
+Sport e tempo libero,Biciclette,Materiale,false
+Sport e tempo libero,Biciclette,Dimensioni,false
+Sport e tempo libero,Biciclette,Peso,false
+Sport e tempo libero,Biciclette,Tipologia,false
+Sport e tempo libero,Biciclette,Misura telaio,false
+Sport e tempo libero,Biciclette,Materiale telaio,false
+Sport e tempo libero,Biciclette,Diametro ruote,false
+Sport e tempo libero,Biciclette,Numero velocità,false
+Sport e tempo libero,Biciclette,Tipo freni,false
+Sport e tempo libero,Biciclette,Sospensioni,false
+Sport e tempo libero,Biciclette,Peso massimo supportato,false
+Sport e tempo libero,Accessori bici,Modello,false
+Sport e tempo libero,Accessori bici,Colore,false
+Sport e tempo libero,Accessori bici,Materiale,false
+Sport e tempo libero,Accessori bici,Dimensioni,false
+Sport e tempo libero,Accessori bici,Peso,false
+Sport e tempo libero,Accessori bici,Tipologia,false
+Sport e tempo libero,Accessori bici,Misura telaio,false
+Sport e tempo libero,Accessori bici,Materiale telaio,false
+Sport e tempo libero,Accessori bici,Diametro ruote,false
+Sport e tempo libero,Accessori bici,Numero velocità,false
+Sport e tempo libero,Accessori bici,Tipo freni,false
+Sport e tempo libero,Accessori bici,Sospensioni,false
+Sport e tempo libero,Accessori bici,Peso massimo supportato,false
+Sport e tempo libero,Camping,Modello,false
+Sport e tempo libero,Camping,Colore,false
+Sport e tempo libero,Camping,Materiale,false
+Sport e tempo libero,Camping,Dimensioni,false
+Sport e tempo libero,Camping,Peso,false
+Sport e tempo libero,Camping,Sport/Disciplina,false
+Sport e tempo libero,Camping,Taglia/Misura,false
+Sport e tempo libero,Camping,Livello utilizzo,false
+Sport e tempo libero,Escursionismo,Modello,false
+Sport e tempo libero,Escursionismo,Colore,false
+Sport e tempo libero,Escursionismo,Materiale,false
+Sport e tempo libero,Escursionismo,Dimensioni,false
+Sport e tempo libero,Escursionismo,Peso,false
+Sport e tempo libero,Escursionismo,Sport/Disciplina,false
+Sport e tempo libero,Escursionismo,Taglia/Misura,false
+Sport e tempo libero,Escursionismo,Livello utilizzo,false
+Sport e tempo libero,Sport acquatici,Modello,false
+Sport e tempo libero,Sport acquatici,Colore,false
+Sport e tempo libero,Sport acquatici,Materiale,false
+Sport e tempo libero,Sport acquatici,Dimensioni,false
+Sport e tempo libero,Sport acquatici,Peso,false
+Sport e tempo libero,Sport acquatici,Sport/Disciplina,false
+Sport e tempo libero,Sport acquatici,Taglia/Misura,false
+Sport e tempo libero,Sport acquatici,Livello utilizzo,false
+Sport e tempo libero,Sport invernali,Modello,false
+Sport e tempo libero,Sport invernali,Colore,false
+Sport e tempo libero,Sport invernali,Materiale,false
+Sport e tempo libero,Sport invernali,Dimensioni,false
+Sport e tempo libero,Sport invernali,Peso,false
+Sport e tempo libero,Sport invernali,Sport/Disciplina,false
+Sport e tempo libero,Sport invernali,Taglia/Misura,false
+Sport e tempo libero,Sport invernali,Livello utilizzo,false
+Auto e moto,Autoradio,Modello,false
+Auto e moto,Autoradio,Colore,false
+Auto e moto,Autoradio,Materiale,false
+Auto e moto,Autoradio,Dimensioni,false
+Auto e moto,Autoradio,Peso,false
+Auto e moto,Autoradio,Compatibilità veicolo,false
+Auto e moto,Autoradio,Anno compatibilità,false
+Auto e moto,Autoradio,Omologazione,false
+Auto e moto,Autoradio,Posizione montaggio,false
+Auto e moto,Navigatori GPS,Modello,false
+Auto e moto,Navigatori GPS,Colore,false
+Auto e moto,Navigatori GPS,Materiale,false
+Auto e moto,Navigatori GPS,Dimensioni,false
+Auto e moto,Navigatori GPS,Peso,false
+Auto e moto,Navigatori GPS,Compatibilità veicolo,false
+Auto e moto,Navigatori GPS,Anno compatibilità,false
+Auto e moto,Navigatori GPS,Omologazione,false
+Auto e moto,Navigatori GPS,Posizione montaggio,false
+Auto e moto,Accessori interni auto,Modello,false
+Auto e moto,Accessori interni auto,Colore,false
+Auto e moto,Accessori interni auto,Materiale,false
+Auto e moto,Accessori interni auto,Dimensioni,false
+Auto e moto,Accessori interni auto,Peso,false
+Auto e moto,Accessori interni auto,Compatibilità veicolo,false
+Auto e moto,Accessori interni auto,Anno compatibilità,false
+Auto e moto,Accessori interni auto,Omologazione,false
+Auto e moto,Accessori interni auto,Posizione montaggio,false
+Auto e moto,Accessori esterni auto,Modello,false
+Auto e moto,Accessori esterni auto,Colore,false
+Auto e moto,Accessori esterni auto,Materiale,false
+Auto e moto,Accessori esterni auto,Dimensioni,false
+Auto e moto,Accessori esterni auto,Peso,false
+Auto e moto,Accessori esterni auto,Compatibilità veicolo,false
+Auto e moto,Accessori esterni auto,Anno compatibilità,false
+Auto e moto,Accessori esterni auto,Omologazione,false
+Auto e moto,Accessori esterni auto,Posizione montaggio,false
+Auto e moto,Oli motore,Modello,false
+Auto e moto,Oli motore,Colore,false
+Auto e moto,Oli motore,Materiale,false
+Auto e moto,Oli motore,Dimensioni,false
+Auto e moto,Oli motore,Peso,false
+Auto e moto,Oli motore,Compatibilità veicolo,false
+Auto e moto,Oli motore,Anno compatibilità,false
+Auto e moto,Oli motore,Omologazione,false
+Auto e moto,Oli motore,Posizione montaggio,false
+Auto e moto,Batterie auto,Modello,false
+Auto e moto,Batterie auto,Colore,false
+Auto e moto,Batterie auto,Materiale,false
+Auto e moto,Batterie auto,Dimensioni,false
+Auto e moto,Batterie auto,Peso,false
+Auto e moto,Batterie auto,Compatibilità veicolo,false
+Auto e moto,Batterie auto,Anno compatibilità,false
+Auto e moto,Batterie auto,Omologazione,false
+Auto e moto,Batterie auto,Posizione montaggio,false
+Auto e moto,Ricambi meccanici,Modello,false
+Auto e moto,Ricambi meccanici,Colore,false
+Auto e moto,Ricambi meccanici,Materiale,false
+Auto e moto,Ricambi meccanici,Dimensioni,false
+Auto e moto,Ricambi meccanici,Peso,false
+Auto e moto,Ricambi meccanici,Compatibilità veicolo,false
+Auto e moto,Ricambi meccanici,Anno compatibilità,false
+Auto e moto,Ricambi meccanici,Omologazione,false
+Auto e moto,Ricambi meccanici,Posizione montaggio,false
+Auto e moto,Pneumatici,Modello,false
+Auto e moto,Pneumatici,Colore,false
+Auto e moto,Pneumatici,Materiale,false
+Auto e moto,Pneumatici,Dimensioni,false
+Auto e moto,Pneumatici,Peso,false
+Auto e moto,Pneumatici,Larghezza pneumatico,false
+Auto e moto,Pneumatici,Rapporto d'aspetto,false
+Auto e moto,Pneumatici,Diametro cerchio,false
+Auto e moto,Pneumatici,Indice di carico,false
+Auto e moto,Pneumatici,Indice di velocità,false
+Auto e moto,Pneumatici,Stagione pneumatici,false
+Auto e moto,Pneumatici,Runflat,false
+Auto e moto,Caschi moto,Modello,false
+Auto e moto,Caschi moto,Colore,false
+Auto e moto,Caschi moto,Materiale,false
+Auto e moto,Caschi moto,Dimensioni,false
+Auto e moto,Caschi moto,Peso,false
+Auto e moto,Caschi moto,Compatibilità veicolo,false
+Auto e moto,Caschi moto,Anno compatibilità,false
+Auto e moto,Caschi moto,Omologazione,false
+Auto e moto,Caschi moto,Posizione montaggio,false
+Auto e moto,Accessori moto,Modello,false
+Auto e moto,Accessori moto,Colore,false
+Auto e moto,Accessori moto,Materiale,false
+Auto e moto,Accessori moto,Dimensioni,false
+Auto e moto,Accessori moto,Peso,false
+Auto e moto,Accessori moto,Compatibilità veicolo,false
+Auto e moto,Accessori moto,Anno compatibilità,false
+Auto e moto,Accessori moto,Omologazione,false
+Auto e moto,Accessori moto,Posizione montaggio,false
+Animali domestici,Cibo cani,Modello,false
+Animali domestici,Cibo cani,Colore,false
+Animali domestici,Cibo cani,Materiale,false
+Animali domestici,Cibo cani,Dimensioni,false
+Animali domestici,Cibo cani,Peso,false
+Animali domestici,Cibo cani,Specie,false
+Animali domestici,Cibo cani,Età animale,false
+Animali domestici,Cibo cani,Formato/Peso netto,false
+Animali domestici,Cibo cani,Gusto/Proteina,false
+Animali domestici,Cibo cani,Ingredienti,false
+Animali domestici,Cibo cani,Esigenza specifica,false
+Animali domestici,Cibo gatti,Modello,false
+Animali domestici,Cibo gatti,Colore,false
+Animali domestici,Cibo gatti,Materiale,false
+Animali domestici,Cibo gatti,Dimensioni,false
+Animali domestici,Cibo gatti,Peso,false
+Animali domestici,Cibo gatti,Specie,false
+Animali domestici,Cibo gatti,Età animale,false
+Animali domestici,Cibo gatti,Formato/Peso netto,false
+Animali domestici,Cibo gatti,Gusto/Proteina,false
+Animali domestici,Cibo gatti,Ingredienti,false
+Animali domestici,Cibo gatti,Esigenza specifica,false
+Animali domestici,Snack animali,Modello,false
+Animali domestici,Snack animali,Colore,false
+Animali domestici,Snack animali,Materiale,false
+Animali domestici,Snack animali,Dimensioni,false
+Animali domestici,Snack animali,Peso,false
+Animali domestici,Snack animali,Tipologia,false
+Animali domestici,Snack animali,Uso previsto,false
+Animali domestici,Snack animali,Compatibilità,false
+Animali domestici,Cucce,Modello,false
+Animali domestici,Cucce,Colore,false
+Animali domestici,Cucce,Materiale,false
+Animali domestici,Cucce,Dimensioni,false
+Animali domestici,Cucce,Peso,false
+Animali domestici,Cucce,Tipologia,false
+Animali domestici,Cucce,Uso previsto,false
+Animali domestici,Cucce,Compatibilità,false
+Animali domestici,Trasportini,Modello,false
+Animali domestici,Trasportini,Colore,false
+Animali domestici,Trasportini,Materiale,false
+Animali domestici,Trasportini,Dimensioni,false
+Animali domestici,Trasportini,Peso,false
+Animali domestici,Trasportini,Tipologia,false
+Animali domestici,Trasportini,Uso previsto,false
+Animali domestici,Trasportini,Compatibilità,false
+Animali domestici,Guinzagli,Modello,false
+Animali domestici,Guinzagli,Colore,false
+Animali domestici,Guinzagli,Materiale,false
+Animali domestici,Guinzagli,Dimensioni,false
+Animali domestici,Guinzagli,Peso,false
+Animali domestici,Guinzagli,Tipologia,false
+Animali domestici,Guinzagli,Uso previsto,false
+Animali domestici,Guinzagli,Compatibilità,false
+Animali domestici,Collari,Modello,false
+Animali domestici,Collari,Colore,false
+Animali domestici,Collari,Materiale,false
+Animali domestici,Collari,Dimensioni,false
+Animali domestici,Collari,Peso,false
+Animali domestici,Collari,Tipologia,false
+Animali domestici,Collari,Uso previsto,false
+Animali domestici,Collari,Compatibilità,false
+Animali domestici,Giochi animali,Modello,false
+Animali domestici,Giochi animali,Colore,false
+Animali domestici,Giochi animali,Materiale,false
+Animali domestici,Giochi animali,Dimensioni,false
+Animali domestici,Giochi animali,Peso,false
+Animali domestici,Giochi animali,Tipologia,false
+Animali domestici,Giochi animali,Uso previsto,false
+Animali domestici,Giochi animali,Compatibilità,false
+Animali domestici,Prodotti igiene,Modello,false
+Animali domestici,Prodotti igiene,Colore,false
+Animali domestici,Prodotti igiene,Materiale,false
+Animali domestici,Prodotti igiene,Dimensioni,false
+Animali domestici,Prodotti igiene,Peso,false
+Animali domestici,Prodotti igiene,Tipologia,false
+Animali domestici,Prodotti igiene,Uso previsto,false
+Animali domestici,Prodotti igiene,Compatibilità,false
+Libri e media,Romanzi,Modello,false
+Libri e media,Romanzi,Colore,false
+Libri e media,Romanzi,Materiale,false
+Libri e media,Romanzi,Dimensioni,false
+Libri e media,Romanzi,Peso,false
+Libri e media,Romanzi,Tipologia,false
+Libri e media,Romanzi,Uso previsto,false
+Libri e media,Romanzi,Compatibilità,false
+Libri e media,Saggistica,Modello,false
+Libri e media,Saggistica,Colore,false
+Libri e media,Saggistica,Materiale,false
+Libri e media,Saggistica,Dimensioni,false
+Libri e media,Saggistica,Peso,false
+Libri e media,Saggistica,Tipologia,false
+Libri e media,Saggistica,Uso previsto,false
+Libri e media,Saggistica,Compatibilità,false
+Libri e media,Manuali,Modello,false
+Libri e media,Manuali,Colore,false
+Libri e media,Manuali,Materiale,false
+Libri e media,Manuali,Dimensioni,false
+Libri e media,Manuali,Peso,false
+Libri e media,Manuali,Tipologia,false
+Libri e media,Manuali,Uso previsto,false
+Libri e media,Manuali,Compatibilità,false
+Libri e media,Libri scolastici,Modello,false
+Libri e media,Libri scolastici,Colore,false
+Libri e media,Libri scolastici,Materiale,false
+Libri e media,Libri scolastici,Dimensioni,false
+Libri e media,Libri scolastici,Peso,false
+Libri e media,Libri scolastici,Tipologia,false
+Libri e media,Libri scolastici,Uso previsto,false
+Libri e media,Libri scolastici,Compatibilità,false
+Libri e media,Fumetti,Modello,false
+Libri e media,Fumetti,Colore,false
+Libri e media,Fumetti,Materiale,false
+Libri e media,Fumetti,Dimensioni,false
+Libri e media,Fumetti,Peso,false
+Libri e media,Fumetti,Tipologia,false
+Libri e media,Fumetti,Uso previsto,false
+Libri e media,Fumetti,Compatibilità,false
+Libri e media,Ebook,Modello,false
+Libri e media,Ebook,Colore,false
+Libri e media,Ebook,Materiale,false
+Libri e media,Ebook,Dimensioni,false
+Libri e media,Ebook,Peso,false
+Libri e media,Ebook,Tipologia,false
+Libri e media,Ebook,Uso previsto,false
+Libri e media,Ebook,Compatibilità,false
+Libri e media,Audiolibri,Modello,false
+Libri e media,Audiolibri,Colore,false
+Libri e media,Audiolibri,Materiale,false
+Libri e media,Audiolibri,Dimensioni,false
+Libri e media,Audiolibri,Peso,false
+Libri e media,Audiolibri,Tipologia,false
+Libri e media,Audiolibri,Uso previsto,false
+Libri e media,Audiolibri,Compatibilità,false
+Libri e media,DVD,Modello,false
+Libri e media,DVD,Colore,false
+Libri e media,DVD,Materiale,false
+Libri e media,DVD,Dimensioni,false
+Libri e media,DVD,Peso,false
+Libri e media,DVD,Tipologia,false
+Libri e media,DVD,Uso previsto,false
+Libri e media,DVD,Compatibilità,false
+Libri e media,Blu-ray,Modello,false
+Libri e media,Blu-ray,Colore,false
+Libri e media,Blu-ray,Materiale,false
+Libri e media,Blu-ray,Dimensioni,false
+Libri e media,Blu-ray,Peso,false
+Libri e media,Blu-ray,Tipologia,false
+Libri e media,Blu-ray,Uso previsto,false
+Libri e media,Blu-ray,Compatibilità,false
+Libri e media,Vinili,Modello,false
+Libri e media,Vinili,Colore,false
+Libri e media,Vinili,Materiale,false
+Libri e media,Vinili,Dimensioni,false
+Libri e media,Vinili,Peso,false
+Libri e media,Vinili,Tipologia,false
+Libri e media,Vinili,Uso previsto,false
+Libri e media,Vinili,Compatibilità,false
+Fai da te e industria,Trapani,Modello,false
+Fai da te e industria,Trapani,Colore,false
+Fai da te e industria,Trapani,Materiale,false
+Fai da te e industria,Trapani,Dimensioni,false
+Fai da te e industria,Trapani,Peso,false
+Fai da te e industria,Trapani,Tipologia,false
+Fai da te e industria,Trapani,Uso previsto,false
+Fai da te e industria,Trapani,Compatibilità,false
+Fai da te e industria,Avvitatori,Modello,false
+Fai da te e industria,Avvitatori,Colore,false
+Fai da te e industria,Avvitatori,Materiale,false
+Fai da te e industria,Avvitatori,Dimensioni,false
+Fai da te e industria,Avvitatori,Peso,false
+Fai da te e industria,Avvitatori,Tipologia,false
+Fai da te e industria,Avvitatori,Uso previsto,false
+Fai da te e industria,Avvitatori,Compatibilità,false
+Fai da te e industria,Seghe,Modello,false
+Fai da te e industria,Seghe,Colore,false
+Fai da te e industria,Seghe,Materiale,false
+Fai da te e industria,Seghe,Dimensioni,false
+Fai da te e industria,Seghe,Peso,false
+Fai da te e industria,Seghe,Tipologia,false
+Fai da te e industria,Seghe,Uso previsto,false
+Fai da te e industria,Seghe,Compatibilità,false
+Fai da te e industria,Vernici,Modello,false
+Fai da te e industria,Vernici,Colore,false
+Fai da te e industria,Vernici,Materiale,false
+Fai da te e industria,Vernici,Dimensioni,false
+Fai da te e industria,Vernici,Peso,false
+Fai da te e industria,Vernici,Tipologia,false
+Fai da te e industria,Vernici,Uso previsto,false
+Fai da te e industria,Vernici,Compatibilità,false
+Fai da te e industria,Pennelli,Modello,false
+Fai da te e industria,Pennelli,Colore,false
+Fai da te e industria,Pennelli,Materiale,false
+Fai da te e industria,Pennelli,Dimensioni,false
+Fai da te e industria,Pennelli,Peso,false
+Fai da te e industria,Pennelli,Tipologia,false
+Fai da te e industria,Pennelli,Uso previsto,false
+Fai da te e industria,Pennelli,Compatibilità,false
+Fai da te e industria,Materiali edilizia,Modello,false
+Fai da te e industria,Materiali edilizia,Colore,false
+Fai da te e industria,Materiali edilizia,Materiale,false
+Fai da te e industria,Materiali edilizia,Dimensioni,false
+Fai da te e industria,Materiali edilizia,Peso,false
+Fai da te e industria,Materiali edilizia,Tipologia,false
+Fai da te e industria,Materiali edilizia,Uso previsto,false
+Fai da te e industria,Materiali edilizia,Compatibilità,false
+Fai da te e industria,Ferramenta,Modello,false
+Fai da te e industria,Ferramenta,Colore,false
+Fai da te e industria,Ferramenta,Materiale,false
+Fai da te e industria,Ferramenta,Dimensioni,false
+Fai da te e industria,Ferramenta,Peso,false
+Fai da te e industria,Ferramenta,Tipologia,false
+Fai da te e industria,Ferramenta,Uso previsto,false
+Fai da te e industria,Ferramenta,Compatibilità,false
+Fai da te e industria,Sicurezza lavoro,Modello,false
+Fai da te e industria,Sicurezza lavoro,Colore,false
+Fai da te e industria,Sicurezza lavoro,Materiale,false
+Fai da te e industria,Sicurezza lavoro,Dimensioni,false
+Fai da te e industria,Sicurezza lavoro,Peso,false
+Fai da te e industria,Sicurezza lavoro,Tipologia,false
+Fai da te e industria,Sicurezza lavoro,Uso previsto,false
+Fai da te e industria,Sicurezza lavoro,Compatibilità,false
+Alimentari e bevande,Pasta,Modello,false
+Alimentari e bevande,Pasta,Colore,false
+Alimentari e bevande,Pasta,Materiale,false
+Alimentari e bevande,Pasta,Dimensioni,false
+Alimentari e bevande,Pasta,Peso,false
+Alimentari e bevande,Pasta,Formato/Peso netto,false
+Alimentari e bevande,Pasta,Ingredienti,false
+Alimentari e bevande,Pasta,Allergeni,false
+Alimentari e bevande,Pasta,Valori nutrizionali,false
+Alimentari e bevande,Pasta,Paese di origine,false
+Alimentari e bevande,Pasta,Conservazione,false
+Alimentari e bevande,Pasta,Scadenza/TMC,false
+Alimentari e bevande,Riso,Modello,false
+Alimentari e bevande,Riso,Colore,false
+Alimentari e bevande,Riso,Materiale,false
+Alimentari e bevande,Riso,Dimensioni,false
+Alimentari e bevande,Riso,Peso,false
+Alimentari e bevande,Riso,Formato/Peso netto,false
+Alimentari e bevande,Riso,Ingredienti,false
+Alimentari e bevande,Riso,Allergeni,false
+Alimentari e bevande,Riso,Valori nutrizionali,false
+Alimentari e bevande,Riso,Paese di origine,false
+Alimentari e bevande,Riso,Conservazione,false
+Alimentari e bevande,Riso,Scadenza/TMC,false
+Alimentari e bevande,Conserve,Modello,false
+Alimentari e bevande,Conserve,Colore,false
+Alimentari e bevande,Conserve,Materiale,false
+Alimentari e bevande,Conserve,Dimensioni,false
+Alimentari e bevande,Conserve,Peso,false
+Alimentari e bevande,Conserve,Tipologia,false
+Alimentari e bevande,Conserve,Uso previsto,false
+Alimentari e bevande,Conserve,Compatibilità,false
+Alimentari e bevande,Snack,Modello,false
+Alimentari e bevande,Snack,Colore,false
+Alimentari e bevande,Snack,Materiale,false
+Alimentari e bevande,Snack,Dimensioni,false
+Alimentari e bevande,Snack,Peso,false
+Alimentari e bevande,Snack,Tipologia,false
+Alimentari e bevande,Snack,Uso previsto,false
+Alimentari e bevande,Snack,Compatibilità,false
+Alimentari e bevande,Dolci,Modello,false
+Alimentari e bevande,Dolci,Colore,false
+Alimentari e bevande,Dolci,Materiale,false
+Alimentari e bevande,Dolci,Dimensioni,false
+Alimentari e bevande,Dolci,Peso,false
+Alimentari e bevande,Dolci,Tipologia,false
+Alimentari e bevande,Dolci,Uso previsto,false
+Alimentari e bevande,Dolci,Compatibilità,false
+Alimentari e bevande,Bevande analcoliche,Modello,false
+Alimentari e bevande,Bevande analcoliche,Colore,false
+Alimentari e bevande,Bevande analcoliche,Materiale,false
+Alimentari e bevande,Bevande analcoliche,Dimensioni,false
+Alimentari e bevande,Bevande analcoliche,Peso,false
+Alimentari e bevande,Bevande analcoliche,Tipologia,false
+Alimentari e bevande,Bevande analcoliche,Uso previsto,false
+Alimentari e bevande,Bevande analcoliche,Compatibilità,false
+Alimentari e bevande,Succhi,Modello,false
+Alimentari e bevande,Succhi,Colore,false
+Alimentari e bevande,Succhi,Materiale,false
+Alimentari e bevande,Succhi,Dimensioni,false
+Alimentari e bevande,Succhi,Peso,false
+Alimentari e bevande,Succhi,Tipologia,false
+Alimentari e bevande,Succhi,Uso previsto,false
+Alimentari e bevande,Succhi,Compatibilità,false
+Alimentari e bevande,Caffè,Modello,false
+Alimentari e bevande,Caffè,Colore,false
+Alimentari e bevande,Caffè,Materiale,false
+Alimentari e bevande,Caffè,Dimensioni,false
+Alimentari e bevande,Caffè,Peso,false
+Alimentari e bevande,Caffè,Formato/Peso netto,false
+Alimentari e bevande,Caffè,Ingredienti,false
+Alimentari e bevande,Caffè,Allergeni,false
+Alimentari e bevande,Caffè,Valori nutrizionali,false
+Alimentari e bevande,Caffè,Paese di origine,false
+Alimentari e bevande,Caffè,Conservazione,false
+Alimentari e bevande,Caffè,Scadenza/TMC,false
+Alimentari e bevande,Tè,Modello,false
+Alimentari e bevande,Tè,Colore,false
+Alimentari e bevande,Tè,Materiale,false
+Alimentari e bevande,Tè,Dimensioni,false
+Alimentari e bevande,Tè,Peso,false
+Alimentari e bevande,Tè,Tipologia,false
+Alimentari e bevande,Tè,Uso previsto,false
+Alimentari e bevande,Tè,Compatibilità,false
+Alimentari e bevande,Prodotti bio,Modello,false
+Alimentari e bevande,Prodotti bio,Colore,false
+Alimentari e bevande,Prodotti bio,Materiale,false
+Alimentari e bevande,Prodotti bio,Dimensioni,false
+Alimentari e bevande,Prodotti bio,Peso,false
+Alimentari e bevande,Prodotti bio,Tipologia,false
+Alimentari e bevande,Prodotti bio,Uso previsto,false
+Alimentari e bevande,Prodotti bio,Compatibilità,false
+Alimentari e bevande,Senza glutine,Modello,false
+Alimentari e bevande,Senza glutine,Colore,false
+Alimentari e bevande,Senza glutine,Materiale,false
+Alimentari e bevande,Senza glutine,Dimensioni,false
+Alimentari e bevande,Senza glutine,Peso,false
+Alimentari e bevande,Senza glutine,Tipologia,false
+Alimentari e bevande,Senza glutine,Uso previsto,false
+Alimentari e bevande,Senza glutine,Compatibilità,false
+Ufficio e scuola,Penne,Modello,false
+Ufficio e scuola,Penne,Colore,false
+Ufficio e scuola,Penne,Materiale,false
+Ufficio e scuola,Penne,Dimensioni,false
+Ufficio e scuola,Penne,Peso,false
+Ufficio e scuola,Penne,Tipologia,false
+Ufficio e scuola,Penne,Uso previsto,false
+Ufficio e scuola,Penne,Compatibilità,false
+Ufficio e scuola,Matite,Modello,false
+Ufficio e scuola,Matite,Colore,false
+Ufficio e scuola,Matite,Materiale,false
+Ufficio e scuola,Matite,Dimensioni,false
+Ufficio e scuola,Matite,Peso,false
+Ufficio e scuola,Matite,Tipologia,false
+Ufficio e scuola,Matite,Uso previsto,false
+Ufficio e scuola,Matite,Compatibilità,false
+Ufficio e scuola,Quaderni,Modello,false
+Ufficio e scuola,Quaderni,Colore,false
+Ufficio e scuola,Quaderni,Materiale,false
+Ufficio e scuola,Quaderni,Dimensioni,false
+Ufficio e scuola,Quaderni,Peso,false
+Ufficio e scuola,Quaderni,Tipologia,false
+Ufficio e scuola,Quaderni,Uso previsto,false
+Ufficio e scuola,Quaderni,Compatibilità,false
+Ufficio e scuola,Agende,Modello,false
+Ufficio e scuola,Agende,Colore,false
+Ufficio e scuola,Agende,Materiale,false
+Ufficio e scuola,Agende,Dimensioni,false
+Ufficio e scuola,Agende,Peso,false
+Ufficio e scuola,Agende,Tipologia,false
+Ufficio e scuola,Agende,Uso previsto,false
+Ufficio e scuola,Agende,Compatibilità,false
+Ufficio e scuola,Organizer,Modello,false
+Ufficio e scuola,Organizer,Colore,false
+Ufficio e scuola,Organizer,Materiale,false
+Ufficio e scuola,Organizer,Dimensioni,false
+Ufficio e scuola,Organizer,Peso,false
+Ufficio e scuola,Organizer,Tipologia,false
+Ufficio e scuola,Organizer,Uso previsto,false
+Ufficio e scuola,Organizer,Compatibilità,false
+Ufficio e scuola,Scrivanie,Modello,false
+Ufficio e scuola,Scrivanie,Colore,false
+Ufficio e scuola,Scrivanie,Materiale,false
+Ufficio e scuola,Scrivanie,Dimensioni,false
+Ufficio e scuola,Scrivanie,Peso,false
+Ufficio e scuola,Scrivanie,Materiale struttura,false
+Ufficio e scuola,Scrivanie,Larghezza,false
+Ufficio e scuola,Scrivanie,Altezza,false
+Ufficio e scuola,Scrivanie,Profondità,false
+Ufficio e scuola,Scrivanie,Numero ripiani/cassetti,false
+Ufficio e scuola,Scrivanie,Portata massima,false
+Ufficio e scuola,Scrivanie,Montaggio richiesto,false
+Ufficio e scuola,Sedie ufficio,Modello,false
+Ufficio e scuola,Sedie ufficio,Colore,false
+Ufficio e scuola,Sedie ufficio,Materiale,false
+Ufficio e scuola,Sedie ufficio,Dimensioni,false
+Ufficio e scuola,Sedie ufficio,Peso,false
+Ufficio e scuola,Sedie ufficio,Tipologia,false
+Ufficio e scuola,Sedie ufficio,Uso previsto,false
+Ufficio e scuola,Sedie ufficio,Compatibilità,false
+Ufficio e scuola,Zaini scuola,Modello,false
+Ufficio e scuola,Zaini scuola,Colore,false
+Ufficio e scuola,Zaini scuola,Materiale,false
+Ufficio e scuola,Zaini scuola,Dimensioni,false
+Ufficio e scuola,Zaini scuola,Peso,false
+Ufficio e scuola,Zaini scuola,Tipologia,false
+Ufficio e scuola,Zaini scuola,Uso previsto,false
+Ufficio e scuola,Zaini scuola,Compatibilità,false
+Ufficio e scuola,Stampanti,Modello,false
+Ufficio e scuola,Stampanti,Colore,false
+Ufficio e scuola,Stampanti,Materiale,false
+Ufficio e scuola,Stampanti,Dimensioni,false
+Ufficio e scuola,Stampanti,Peso,false
+Ufficio e scuola,Stampanti,Tecnologia di stampa,false
+Ufficio e scuola,Stampanti,Colore/Monocromatica,false
+Ufficio e scuola,Stampanti,Formato carta,false
+Ufficio e scuola,Stampanti,Risoluzione stampa,false
+Ufficio e scuola,Stampanti,Velocità stampa,false
+Ufficio e scuola,Stampanti,Fronte-retro,false
+Ufficio e scuola,Stampanti,Connettività,false
+Ufficio e scuola,Stampanti,Wi-Fi,false
+Ufficio e scuola,Stampanti,Scanner integrato,false
+Ufficio e scuola,Cartucce,Modello,false
+Ufficio e scuola,Cartucce,Colore,false
+Ufficio e scuola,Cartucce,Materiale,false
+Ufficio e scuola,Cartucce,Dimensioni,false
+Ufficio e scuola,Cartucce,Peso,false
+Ufficio e scuola,Cartucce,Tipologia,false
+Ufficio e scuola,Cartucce,Uso previsto,false
+Ufficio e scuola,Cartucce,Compatibilità,false
+Hobby e creatività,Colori,Modello,false
+Hobby e creatività,Colori,Colore,false
+Hobby e creatività,Colori,Materiale,false
+Hobby e creatività,Colori,Dimensioni,false
+Hobby e creatività,Colori,Peso,false
+Hobby e creatività,Colori,Tipologia,false
+Hobby e creatività,Colori,Uso previsto,false
+Hobby e creatività,Colori,Compatibilità,false
+Hobby e creatività,Pennelli,Modello,false
+Hobby e creatività,Pennelli,Colore,false
+Hobby e creatività,Pennelli,Materiale,false
+Hobby e creatività,Pennelli,Dimensioni,false
+Hobby e creatività,Pennelli,Peso,false
+Hobby e creatività,Pennelli,Tipologia,false
+Hobby e creatività,Pennelli,Uso previsto,false
+Hobby e creatività,Pennelli,Compatibilità,false
+Hobby e creatività,Tele pittura,Modello,false
+Hobby e creatività,Tele pittura,Colore,false
+Hobby e creatività,Tele pittura,Materiale,false
+Hobby e creatività,Tele pittura,Dimensioni,false
+Hobby e creatività,Tele pittura,Peso,false
+Hobby e creatività,Tele pittura,Tipologia,false
+Hobby e creatività,Tele pittura,Finitura,false
+Hobby e creatività,Tele pittura,Resa,false
+Hobby e creatività,Tele pittura,Volume,false
+Hobby e creatività,Tele pittura,Superficie applicabile,false
+Hobby e creatività,Tele pittura,Tempo asciugatura,false
+Hobby e creatività,Kit fai da te,Modello,false
+Hobby e creatività,Kit fai da te,Colore,false
+Hobby e creatività,Kit fai da te,Materiale,false
+Hobby e creatività,Kit fai da te,Dimensioni,false
+Hobby e creatività,Kit fai da te,Peso,false
+Hobby e creatività,Kit fai da te,Tipologia,false
+Hobby e creatività,Kit fai da te,Uso previsto,false
+Hobby e creatività,Kit fai da te,Compatibilità,false
+Hobby e creatività,Cucito,Modello,false
+Hobby e creatività,Cucito,Colore,false
+Hobby e creatività,Cucito,Materiale,false
+Hobby e creatività,Cucito,Dimensioni,false
+Hobby e creatività,Cucito,Peso,false
+Hobby e creatività,Cucito,Tipologia,false
+Hobby e creatività,Cucito,Uso previsto,false
+Hobby e creatività,Cucito,Compatibilità,false
+Hobby e creatività,Maglia,Modello,false
+Hobby e creatività,Maglia,Colore,false
+Hobby e creatività,Maglia,Materiale,false
+Hobby e creatività,Maglia,Dimensioni,false
+Hobby e creatività,Maglia,Peso,false
+Hobby e creatività,Maglia,Tipologia,false
+Hobby e creatività,Maglia,Uso previsto,false
+Hobby e creatività,Maglia,Compatibilità,false
+Hobby e creatività,Modellismo,Modello,false
+Hobby e creatività,Modellismo,Colore,false
+Hobby e creatività,Modellismo,Materiale,false
+Hobby e creatività,Modellismo,Dimensioni,false
+Hobby e creatività,Modellismo,Peso,false
+Hobby e creatività,Modellismo,Tipologia,false
+Hobby e creatività,Modellismo,Uso previsto,false
+Hobby e creatività,Modellismo,Compatibilità,false
+Giardino e outdoor,Fiori,Modello,false
+Giardino e outdoor,Fiori,Colore,false
+Giardino e outdoor,Fiori,Materiale,false
+Giardino e outdoor,Fiori,Dimensioni,false
+Giardino e outdoor,Fiori,Peso,false
+Giardino e outdoor,Fiori,Tipologia,false
+Giardino e outdoor,Fiori,Uso previsto,false
+Giardino e outdoor,Fiori,Compatibilità,false
+Giardino e outdoor,Piante,Modello,false
+Giardino e outdoor,Piante,Colore,false
+Giardino e outdoor,Piante,Materiale,false
+Giardino e outdoor,Piante,Dimensioni,false
+Giardino e outdoor,Piante,Peso,false
+Giardino e outdoor,Piante,Tipologia,false
+Giardino e outdoor,Piante,Uso previsto,false
+Giardino e outdoor,Piante,Compatibilità,false
+Giardino e outdoor,Semi,Modello,false
+Giardino e outdoor,Semi,Colore,false
+Giardino e outdoor,Semi,Materiale,false
+Giardino e outdoor,Semi,Dimensioni,false
+Giardino e outdoor,Semi,Peso,false
+Giardino e outdoor,Semi,Tipologia,false
+Giardino e outdoor,Semi,Uso previsto,false
+Giardino e outdoor,Semi,Compatibilità,false
+Giardino e outdoor,Attrezzi giardino,Modello,false
+Giardino e outdoor,Attrezzi giardino,Colore,false
+Giardino e outdoor,Attrezzi giardino,Materiale,false
+Giardino e outdoor,Attrezzi giardino,Dimensioni,false
+Giardino e outdoor,Attrezzi giardino,Peso,false
+Giardino e outdoor,Attrezzi giardino,Tipologia,false
+Giardino e outdoor,Attrezzi giardino,Uso previsto,false
+Giardino e outdoor,Attrezzi giardino,Compatibilità,false
+Giardino e outdoor,Irrigazione,Modello,false
+Giardino e outdoor,Irrigazione,Colore,false
+Giardino e outdoor,Irrigazione,Materiale,false
+Giardino e outdoor,Irrigazione,Dimensioni,false
+Giardino e outdoor,Irrigazione,Peso,false
+Giardino e outdoor,Irrigazione,Tipologia,false
+Giardino e outdoor,Irrigazione,Uso previsto,false
+Giardino e outdoor,Irrigazione,Compatibilità,false
+Giardino e outdoor,Arredo giardino,Modello,false
+Giardino e outdoor,Arredo giardino,Colore,false
+Giardino e outdoor,Arredo giardino,Materiale,false
+Giardino e outdoor,Arredo giardino,Dimensioni,false
+Giardino e outdoor,Arredo giardino,Peso,false
+Giardino e outdoor,Arredo giardino,Tipologia,false
+Giardino e outdoor,Arredo giardino,Uso previsto,false
+Giardino e outdoor,Arredo giardino,Compatibilità,false
+Giardino e outdoor,Barbecue,Modello,false
+Giardino e outdoor,Barbecue,Colore,false
+Giardino e outdoor,Barbecue,Materiale,false
+Giardino e outdoor,Barbecue,Dimensioni,false
+Giardino e outdoor,Barbecue,Peso,false
+Giardino e outdoor,Barbecue,Alimentazione,false
+Giardino e outdoor,Barbecue,Superficie cottura,false
+Giardino e outdoor,Barbecue,Numero bruciatori,false
+Giardino e outdoor,Barbecue,Potenza,false
+Giardino e outdoor,Barbecue,Materiale griglia,false
+Giardino e outdoor,Barbecue,Termometro,false

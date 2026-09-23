@@ -101,7 +101,7 @@ non le rimetta in discussione.
 | D1 | Schema **tipizzato dal primo giorno**, scheda prodotto adesso, filtri customer dopo | accendere i filtri più avanti non deve richiedere né una migrazione né una ricompilazione da parte dei seller |
 | D2 | Un prodotto appartiene a **una sola sotto-categoria** | la matrice è per singola coppia; l'unione su più sotto-categorie gonfia il form, l'intersezione lo svuota |
 | D3 | Il tipo vive sulla **caratteristica** (dizionario globale), non sulla coppia | 200 voci da tipizzare invece di 1952; i filtri trasversali restano possibili |
-| D4 | I conflitti di dominio si risolvono **sdoppiando la voce** nel dizionario | `Taglia abbigliamento` / `Taglia calzature` invece di un meccanismo di override per categoria; il foglio già lo fa (`Materiale tomaia` / `Materiale suola`) |
+| D4 | I conflitti di dominio si risolvono **sdoppiando la voce** nel dizionario | invece di un meccanismo di override per categoria; il foglio già lo fa (`Materiale tomaia` / `Materiale suola`). Il criterio è **se cambia la lista dei valori ammessi**, non se la voce compare sotto macro diverse — `Sistema operativo` copre smartwatch ed smartphone con lo stesso significato. Vedi § Sdoppiamenti |
 | D5 | Gestione admin: **import CSV per il grosso, interfaccia per i ritocchi** | ricalca il modello già in uso per le categorie |
 | D6 | Import matrice **solo additivo**, con rapporto di divergenza | il giorno 1 additivo e sostitutivo coincidono; il sostitutivo introduce una modalità distruttiva che fra sei mesi qualcuno accende senza ricordarne la semantica. La divergenza va **segnalata**, non risolta cancellando |
 | D7 | Import dizionario **in aggiornamento** | correggere un errore di tipizzazione deve poter passare dal CSV |
@@ -277,6 +277,25 @@ Le 200 voci ricadono in quattro famiglie:
 - **testo** — solo ciò che è davvero prosa: `Modello`, `Ingredienti`,
   `Avvertenze`, `Valori nutrizionali`, `Compatibilità`
 
+### Sdoppiamenti
+
+Il caso peggiore è `Taglia`, presente su 17 sotto-categorie con **cinque sistemi
+di valori incompatibili**:
+
+| Sotto-categorie | Valori |
+|---|---|
+| Abbigliamento uomo/donna/bambino, Intimo, Pigiami, Costumi da bagno | XS–XXL |
+| Scarpe uomo, Scarpe donna, Sneakers | 35–48 |
+| Borse, Zaini, Valigie | piccola/media/grande, o litri |
+| Occhiali da sole, Cinture, Cappelli, Gioielli | calibro, cm di vita, cm di testa, misura anello |
+| Pannolini | 1–6, per fasce di peso |
+
+`Taglia/Misura` è invece una voce distinta già nel foglio, su 9 sotto-categorie
+sportive. `Materiale`, presente su tutte e 179, e i tre generici `Tipologia` (66),
+`Uso previsto` (60) e `Compatibilità` (75) attraversano domini troppo lontani
+perché una lista chiusa unica abbia senso: sono i candidati naturali a restare
+testo libero, o a essere sdoppiati.
+
 Insieme ai file va scritta una **nota di revisione** che elenca le sole decisioni
 non ovvie — circa quaranta: gli sdoppiamenti (D4), le liste di valori inventate
 che vanno confermate (`Colore`: quante tonalità? `Materiale`: quale
@@ -286,11 +305,15 @@ una passata sola, senza leggere 200 righe di CSV.
 ## Import
 
 Due endpoint ricalcati su `apps/api/src/modules/admin/routes/category-imports.ts`,
-stessa forma di risposta (`CsvImportResultSchema`: creati / saltati / falliti più
-gli errori con numero di riga), stessa idempotenza:
+stessa idempotenza ma **forma di risposta diversa fra i due**, perché il
+significato di "riga già presente" non coincide: in aggiornamento (D7) diventa
+"aggiornata", solo additivo (D6) resta "saltata".
 
-- `POST /admin/product-characteristics/import` — **in aggiornamento** (D7): una
-  riga il cui `name` esiste già aggiorna tipo, unità e opzioni.
+- `POST /admin/product-characteristics/import` risponde con
+  `CsvUpsertResultSchema` (creati / **aggiornati** / falliti, più gli errori con
+  numero di riga — niente `skipped`: essendo in aggiornamento (D7), una riga
+  il cui `name` esiste già aggiorna tipo, unità e opzioni invece di essere
+  saltata, e `skipped` sarebbe stato un nome fuorviante per "aggiornato").
 
   Un caso va gestito esplicitamente, perché il database lo rifiuterà comunque:
   cambiare il `data_type` di una caratteristica che ha già valori viola la chiave
@@ -300,10 +323,14 @@ gli errori con numero di riga), stessa idempotenza:
   passare tutte le altre righe. Cambiare il tipo di una caratteristica in uso è
   un atto deliberato e passa dall'interfaccia admin, con la conferma di D10 che
   cancella i valori esistenti.
-- `POST /admin/product-category-characteristics/import` — **solo additivo** (D6),
-  con in più nel risultato l'elenco delle **righe presenti nel database e assenti
-  dal file**, raggruppate per sotto-categoria. Il confronto si calcola comunque
-  per decidere cosa inserire, quindi riportarlo non costa nulla.
+- `POST /admin/product-category-characteristics/import` risponde con
+  `CsvImportWithMissingResultSchema` (creati / **saltati** / falliti, più gli
+  errori con numero di riga, più `missing` — qui `skipped` resta onesto perché
+  l'import è **solo additivo** (D6): una riga già presente viene lasciata
+  invariata, non aggiornata). `missing` è in più nel risultato: l'elenco delle
+  **righe presenti nel database e assenti dal file**, raggruppate per
+  sotto-categoria. Il confronto si calcola comunque per decidere cosa inserire,
+  quindi riportarlo non costa nulla.
 
 Il seed riusa i service di import come già fa `seedProductCategories()`
 (`apps/api/src/db/seed/base/categories.ts:33`), e popola valori veri su una fetta

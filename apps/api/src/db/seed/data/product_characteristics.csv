@@ -1,0 +1,208 @@
+name,data_type,unit,options
+Modello,text,,
+Colore,enum,,Nero|Bianco|Grigio|Argento|Oro|Beige|Marrone|Rosso|Rosa|Arancione|Giallo|Verde|Blu|Azzurro|Viola|Multicolore|Trasparente
+Materiale,text,,
+Dimensioni,text,,
+Peso,number,g,
+Sistema operativo,enum,,Android|iOS|iPadOS|Windows|macOS|ChromeOS|Linux|watchOS|Wear OS|HarmonyOS|Tizen|webOS|Android TV|Fire OS|Altro
+RAM,number,GB,
+Memoria interna,number,GB,
+Dimensione display,number,pollici,
+Risoluzione display,text,,
+Fotocamera,text,,
+Connettività,text,,
+5G,boolean,,
+Dual SIM,boolean,,
+Capacità batteria,number,mAh,
+Tipo connettore,enum,,USB-C|Micro USB|Lightning|USB-A|Jack audio
+Compatibilità,text,,
+Dimensione compatibile,text,,
+Tipo chiusura,enum,,Lacci|Strappo|Zip|Elastico|Fibbia|Magnetica|Senza chiusura
+Tipo chiusura passeggino,enum,,A libro|A ombrello|A trolley|Non pieghevole
+Protezione,text,,
+Potenza,number,W,
+Tensione ingresso,number,V,
+Tensione uscita,number,V,
+Corrente uscita,number,A,
+Numero porte,number,,
+Ricarica rapida,boolean,,
+Potenza uscita,number,W,
+Indicatore carica,boolean,,
+Processore,text,,
+Memoria/Storage,number,GB,
+Tipo storage,enum,,SSD|HDD|eMMC|Ibrido (SSD + HDD)
+Scheda grafica,text,,
+Porte,text,,
+Wi-Fi,enum,,Wi-Fi 4|Wi-Fi 5|Wi-Fi 6|Wi-Fi 6E|Wi-Fi 7
+Bluetooth,enum,,Bluetooth 4.0|Bluetooth 4.2|Bluetooth 5.0|Bluetooth 5.1|Bluetooth 5.2|Bluetooth 5.3|Bluetooth 5.4
+Batteria,text,,
+Risoluzione,enum,,HD|Full HD|Quad HD|4K UHD|8K UHD
+Risoluzione sensore,number,MP,
+Tecnologia pannello,enum,,IPS|VA|TN|OLED|QD-OLED|Mini LED
+Refresh rate,number,Hz,
+Tempo di risposta,number,ms,
+Luminosità,number,cd/m²,
+Formato,enum,,Crema|Gel|Siero|Olio|Lozione|Latte|Spray|Mousse|Stick|Matita|Polvere|Liquido|Salviette|Capsule|Compresse|Fiale
+Formato schermo,enum,,16:9|16:10|21:9|32:9|4:3
+Porte video,text,,
+VESA,boolean,,
+Tecnologia di stampa,enum,,Getto d'inchiostro|Laser|LED|Sublimazione|Termica
+Colore/Monocromatica,enum,,Colore|Monocromatica
+Formato carta,enum,,A4|A3|A5|A6|Letter|Legal
+Risoluzione stampa,text,,
+Velocità stampa,number,ppm,
+Fronte-retro,boolean,,
+Scanner integrato,boolean,,
+Tipologia scanner,enum,,Piano|Portatile|A rullo|Per pellicole
+Formato massimo,enum,,A4|A3|A5|A6|Letter|Legal
+Risoluzione ottica,number,dpi,
+Velocità scansione,number,ppm,
+Alimentatore automatico,boolean,,
+Layout,enum,,Italiano QWERTY|Inglese US QWERTY|Inglese UK QWERTY|Tedesco QWERTZ|Francese AZERTY
+Tipo tasti/switch,enum,,Membrana|A forbice|Meccanico|Ottico|Ibrido
+Connessione,enum,,Cablata|Wireless|Bluetooth|Ibrida
+Wireless,boolean,,
+Retroilluminazione,boolean,,
+Alimentazione,enum,,Rete elettrica|Batteria integrata|Pile sostituibili|USB|Gas|Carbonella|Pellet|Legna
+DPI,number,dpi,
+Numero tasti,number,,
+Sensore,enum,,Ottico|Laser
+Ergonomia,enum,,Ambidestra|Destrorsa|Mancina|Verticale|Trackball
+Risoluzione video,enum,,HD 720p|Full HD 1080p|1440p|4K|6K|8K
+Frame rate,number,fps,
+Messa a fuoco,enum,,Fissa|Automatica|Manuale
+Microfono integrato,boolean,,
+Campo visivo,number,gradi,
+Dimensione schermo,number,pollici,
+Tecnologia display,enum,,LED|QLED|OLED|Mini LED|Micro LED|LCD
+Smart TV,boolean,,
+HDR,boolean,,
+HDMI,enum,,HDMI 1.4|HDMI 2.0|HDMI 2.1
+Classe energetica,enum,,A|B|C|D|E|F|G
+Garanzia,number,mesi,
+Tipologia,text,,
+Cancellazione rumore,enum,,Assente|Passiva|Attiva (ANC)|Attiva adattiva
+Microfono,boolean,,
+Autonomia,number,h,
+Impedenza,number,Ω,
+Risposta in frequenza,text,,
+Canali audio,enum,,Mono|Stereo|2.1|5.1|7.1
+Tipologia sensore,enum,,Full frame|APS-C|Micro 4/3|1 pollice|Medio formato
+Obiettivo/Attacco,text,,
+Zoom,text,,
+Stabilizzazione,boolean,,
+ISO,text,,
+Memoria supportata,enum,,SD|SDHC|SDXC|microSD|CFexpress|CFast|XQD
+Attacco,text,,
+Lunghezza focale,number,mm,
+Apertura massima,text,,
+Autofocus,boolean,,
+Diametro filtro,number,mm,
+Tipo display,enum,,AMOLED|OLED|LCD|TFT|E-ink|Analogico
+Compatibilità smartphone,enum,,Android|iOS|Android e iOS
+GPS,boolean,,
+Sensori,text,,
+Resistenza acqua,enum,,Nessuna|IPX4|IPX7|IPX8|IP67|IP68|3 ATM|5 ATM|10 ATM|20 ATM
+Genere,enum,,Uomo|Donna|Unisex|Bambino|Bambina|Neonato
+Taglia abbigliamento,enum,,XS|S|M|L|XL|XXL|XXXL
+Taglia calzature,enum,,35|36|37|38|39|40|41|42|43|44|45|46|47|48
+Taglia bagagli,enum,,Piccola|Media|Grande
+Taglia accessori,text,,
+Taglia pannolini,enum,,1|2|3|4|5|6
+Composizione,text,,
+Vestibilità,enum,,Aderente|Slim|Regular|Comoda|Oversize
+Stagione,enum,,Primavera/Estate|Autunno/Inverno|Tutto l'anno
+Stagione pneumatici,enum,,Estive|Invernali|Quattro stagioni
+Fantasia,enum,,Tinta unita|Righe|Pois|Quadri|Floreale|Animalier|Stampa
+Istruzioni lavaggio,text,,
+Materiale tomaia,enum,,Pelle|Camoscio|Tessuto|Sintetico|Mesh|Tela|Gomma
+Materiale suola,enum,,Gomma|EVA|Poliuretano|Cuoio|Sintetico
+Altezza tacco,number,cm,
+Impermeabile,boolean,,
+Larghezza,number,cm,
+Altezza,number,cm,
+Profondità,number,cm,
+Stile,enum,,Moderno|Classico|Industriale|Scandinavo|Vintage|Rustico|Minimal
+Montaggio richiesto,boolean,,
+Tipo sorgente luminosa,enum,,LED|Alogena|Fluorescente|Incandescenza|Neon
+Attacco lampadina,enum,,E27|E14|GU10|G9|GU5.3|B22|G4|R7s
+Flusso luminoso,number,lm,
+Temperatura colore,number,K,
+Dimmerabile,boolean,,
+Grado IP,enum,,IP20|IP44|IP54|IP65|IP66|IP67|IP68
+Tensione,number,V,
+Tensione batteria,number,V,
+Velocità,number,,
+Diametro/Capacità,text,,
+Accessori inclusi,text,,
+Formato/Peso netto,text,,
+Ingredienti,text,,
+Allergeni,text,,
+Valori nutrizionali,text,,
+Paese di origine,text,,
+Conservazione,text,,
+Scadenza/TMC,text,,
+Capacità netta,number,l,
+Consumo annuo,number,kWh,
+Rumorosità,number,dB,
+Sistema di raffreddamento,enum,,Statico|Ventilato|Misto
+No Frost,boolean,,
+Tipo pelle/capelli,enum,,Pelle normale|Pelle secca|Pelle grassa|Pelle mista|Pelle sensibile|Capelli normali|Capelli secchi|Capelli grassi|Capelli fini|Capelli ricci|Capelli colorati|Tutti i tipi
+Beneficio/Funzione,text,,
+Ingredienti principali,text,,
+Tonalità,text,,
+Finish,enum,,Matte|Satinato|Luminoso|Glitter|Metallizzato|Naturale
+Tipo pelle,enum,,Normale|Secca|Grassa|Mista|Sensibile|Tutti i tipi
+Effetto,enum,,Volumizzante|Allungante|Incurvante|Rimpolpante|Coprente|Illuminante|Opacizzante|Idratante
+Waterproof,boolean,,
+Modalità d'uso,text,,
+Età consigliata,enum,,0-6 mesi|6-12 mesi|1-3 anni|3-6 anni|6-9 anni|9-12 anni|12+ anni
+Numero giocatori,number,,
+Durata partita,number,min,
+Batterie richieste,boolean,,
+Lingua,enum,,Italiano|Inglese|Multilingue|Senza testo
+Avvertenze,text,,
+Uso previsto,text,,
+Peso massimo,number,kg,
+Peso prodotto,number,kg,
+Reclinabile,boolean,,
+Dimensioni chiuso,text,,
+Peso bambino,text,,
+Numero pezzi,number,,
+Assorbenza,enum,,Normale|Alta|Extra|Notte
+Sport/Disciplina,text,,
+Taglia/Misura,text,,
+Livello utilizzo,enum,,Principiante|Intermedio|Avanzato|Professionale
+Misura telaio,text,,
+Materiale telaio,enum,,Alluminio|Acciaio|Carbonio|Titanio|Cromoly
+Diametro ruote,number,pollici,
+Numero velocità,number,,
+Tipo freni,enum,,A disco idraulici|A disco meccanici|A pattino|Contropedale
+Sospensioni,enum,,Rigida|Anteriore|Full suspension
+Peso massimo supportato,number,kg,
+Compatibilità veicolo,text,,
+Anno compatibilità,text,,
+Omologazione,text,,
+Posizione montaggio,enum,,Anteriore|Posteriore|Laterale|Interno|Esterno|Tetto
+Larghezza pneumatico,number,mm,
+Rapporto d'aspetto,number,%,
+Diametro cerchio,number,pollici,
+Indice di carico,text,,
+Indice di velocità,enum,,Q|R|S|T|H|V|W|Y|ZR
+Runflat,boolean,,
+Specie,enum,,Cane|Gatto
+Età animale,enum,,Cucciolo|Adulto|Senior|Tutte le età
+Gusto/Proteina,text,,
+Esigenza specifica,text,,
+Materiale struttura,enum,,Legno|Metallo|Vetro|Plastica|Melaminico
+Numero ripiani/cassetti,number,,
+Portata massima,number,kg,
+Finitura,enum,,Opaca|Satinata|Lucida|Semilucida
+Resa,number,m²,
+Volume,number,l,
+Superficie applicabile,text,,
+Tempo asciugatura,number,h,
+Superficie cottura,number,cm²,
+Numero bruciatori,number,,
+Materiale griglia,enum,,Ghisa|Acciaio inox|Acciaio smaltato|Cromata
+Termometro,boolean,,

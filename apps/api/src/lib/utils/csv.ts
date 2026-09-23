@@ -5,6 +5,11 @@ import { ServiceError } from "@/lib/errors";
  * (RFC 4180): le virgolette possono contenere newline, virgole e `""` escapate.
  * Comportamenti preservati dai consumer (product-import, category-import):
  * header lowercased, campi trimmati, righe vuote saltate, input vuoto → 400.
+ *
+ * `apps/api/src/db/seed/data/validate-characteristics.ts` ne tiene una copia
+ * quasi verbatim (deve girare senza l'alias `@/`): se cambi le semantiche qui
+ * — incluso il `trim()` dei campi — aggiorna anche quella, o il gate di
+ * validazione dei CSV di seed diverge silenziosamente da questo importer.
  */
 export function parseCsv(text: string): {
 	headers: string[];
