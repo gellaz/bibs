@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import {
@@ -7,7 +7,10 @@ import {
 	productCharacteristicOption,
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
-import type { Executor } from "@/lib/characteristic-impact";
+import {
+	assertValueLossConfirmed,
+	type Executor,
+} from "@/lib/characteristic-impact";
 import {
 	type CharacteristicDefinition,
 	type CharacteristicValueInput,
@@ -140,6 +143,48 @@ interface SaveProductCharacteristicsParams {
 }
 
 /**
+ * D10 al cambio di sotto-categoria: via i valori delle caratteristiche che la
+ * nuova matrice non prevede. Quelle in comune restano, con il loro valore: tipo
+ * e opzioni stanno sul dizionario, quindi il valore è ancora valido. Il
+ * confronto con la conferma è sulle righe EFFETTIVAMENTE cancellate: se sono
+ * di più, l'assert lancia e la transazione va in rollback.
+ */
+async function dropValuesOutsideMatrix(
+	tx: Executor,
+	productId: string,
+	keepIds: string[],
+	confirmAffected: number,
+) {
+	const dropped = await tx
+		.delete(productCharacteristicValue)
+		.where(
+			and(
+				eq(productCharacteristicValue.productId, productId),
+				keepIds.length > 0
+					? notInArray(productCharacteristicValue.characteristicId, keepIds)
+					: undefined,
+			),
+		)
+		.returning({ id: productCharacteristicValue.characteristicId });
+	if (dropped.length === 0) return;
+
+	const names = await tx
+		.select({ name: productCharacteristic.name })
+		.from(productCharacteristic)
+		.where(
+			inArray(
+				productCharacteristic.id,
+				dropped.map((d) => d.id),
+			),
+		)
+		.orderBy(asc(productCharacteristic.name));
+	assertValueLossConfirmed(
+		names.map((n) => n.name),
+		confirmAffected,
+	);
+}
+
+/**
  * Scrive i valori delle caratteristiche di un prodotto dentro la transazione
  * di chi chiama. Una voce con valore aggiorna, una voce vuota cancella, una
  * caratteristica assente dalla lista resta com'è. Ogni errore lancia, e la
@@ -155,6 +200,15 @@ export async function saveProductCharacteristics(
 	const definitions = productCategoryId
 		? await listFormCharacteristics(productCategoryId, tx)
 		: [];
+
+	if (mode === "change") {
+		await dropValuesOutsideMatrix(
+			tx,
+			productId,
+			definitions.map((d) => d.id),
+			params.confirmAffected,
+		);
+	}
 
 	const existing = await tx
 		.select({ id: productCharacteristicValue.characteristicId })

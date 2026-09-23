@@ -37,6 +37,18 @@ interface ImportProductsParams {
 	csvText: string;
 }
 
+/**
+ * L'import CREA soltanto: una riga con un EAN già usato viene saltata e il
+ * prodotto esistente resta intatto. Per questo non può cambiare la
+ * sotto-categoria di un prodotto che ha valori, e non gli serve la conferma di
+ * D10 che il form chiede. I prodotti creati da qui nascono senza caratteristiche
+ * (il CSV non ha le loro colonne), anche dove alcune sono obbligatorie.
+ *
+ * Se un giorno l'import aggiornerà prodotti esistenti, un cambio di
+ * sotto-categoria che fa perdere valori va RIFIUTATO come errore di riga, con
+ * l'elenco dei valori persi: un CSV non ha un dialog, e un file ricaricato
+ * identico non deve cancellare dati a sorpresa.
+ */
 export async function importProductsFromCsv(
 	params: ImportProductsParams,
 ): Promise<ImportResult> {
