@@ -18,10 +18,19 @@ export function toFormValues(
 	saved: SavedCharacteristicValue[],
 ): CharacteristicFormValues {
 	return Object.fromEntries(
-		saved.map((v) => [
-			v.characteristicId,
-			typeof v.value === "number" ? String(v.value) : v.value,
-		]),
+		saved.map((v) => {
+			// Difesa: se il fetch ha comunque revivificato una data (Eden con
+			// parseDate: true su un testo tipo "05/03/2027"), il testo originale
+			// non è più recuperabile. Meglio un campo vuoto visibile che un valore
+			// sbagliato salvato in silenzio. Il fix vero è a monte, nel fetch
+			// (vedi apiNoDates in apps/seller/src/lib/api.ts).
+			if ((v.value as unknown) instanceof Date)
+				return [v.characteristicId, null];
+			return [
+				v.characteristicId,
+				typeof v.value === "number" ? String(v.value) : v.value,
+			];
+		}),
 	);
 }
 
