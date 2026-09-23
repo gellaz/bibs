@@ -452,6 +452,24 @@ export const CsvImportResultSchema = t.Object({
 	),
 });
 
+// Per l'import della matrice categoria-caratteristiche: solo additivo (non
+// cancella mai), quindi `skipped` resta onesto come in CsvImportResultSchema
+// — una riga già presente è saltata, non aggiornata. Si estende con `missing`
+// per segnalare la divergenza invece di risolverla cancellando (D6).
+export const CsvImportWithMissingResultSchema = t.Object({
+	...CsvImportResultSchema.properties,
+	missing: t.Array(
+		t.Object({
+			subcategory: t.String(),
+			characteristics: t.Array(t.String()),
+		}),
+		{
+			description:
+				"Righe presenti nel database e assenti dal file, per sotto-categoria. L'import non cancella nulla: servono a vedere dove il foglio e il database divergono.",
+		},
+	),
+});
+
 // Per gli import "in aggiornamento" (una riga il cui identificatore esiste
 // già aggiorna la voce invece di essere saltata): a differenza di
 // CsvImportResultSchema, qui non c'è alcuna riga "saltata" da riportare, solo

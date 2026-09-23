@@ -1,12 +1,15 @@
 import { count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
+import { productCategory } from "@/db/schemas/category";
 import {
 	CHARACTERISTIC_DATA_TYPES,
 	type CharacteristicDataType,
+	productCategoryCharacteristic,
 	productCharacteristic,
 	productCharacteristicOption,
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
+import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
 
@@ -363,4 +366,301 @@ export async function importCharacteristicsFromCsv(
 	}
 
 	return { created, updated, failed: errors.length, errors };
+}
+
+// ────────────────────────────────────────────
+// Category ↔ characteristic matrix
+// ────────────────────────────────────────────
+
+const MATRIX_HEADERS = [
+	"macro_category",
+	"subcategory",
+	"characteristic",
+	"required",
+];
+
+export interface MissingCategoryCharacteristics {
+	subcategory: string;
+	characteristics: string[];
+}
+
+export interface CategoryCharacteristicImportResult {
+	created: number;
+	skipped: number;
+	failed: number;
+	errors: ImportError[];
+	missing: MissingCategoryCharacteristics[];
+}
+
+interface MatrixParsedRow {
+	rowNum: number;
+	macroName: string;
+	subName: string;
+	charName: string;
+	required: boolean;
+}
+
+interface MatrixResolvedRow {
+	rowNum: number;
+	categoryId: string;
+	characteristicId: string;
+	required: boolean;
+}
+
+// Chiave composta macro+sotto-categoria (o categoria+caratteristica): il nome
+// della sotto-categoria da solo NON è univoco, si ripete sotto macro diverse
+// (es. "Stampanti" in Elettronica e in Ufficio e scuola).
+function pairKey(a: string, b: string): string {
+	return `${a}\u0000${b}`;
+}
+
+/**
+ * Importa la matrice categoria-caratteristiche da CSV: quali caratteristiche
+ * si applicano a quale sotto-categoria prodotto, con `required` per riga.
+ *
+ * L'import è **solo additivo**: non cancella mai una riga esistente nel
+ * database. In cambio calcola comunque il confronto e riporta in `missing`
+ * le righe presenti nel database e assenti dal file, raggruppate per
+ * sotto-categoria — solo per le sotto-categorie che il file cita (una
+ * sotto-categoria assente dal file non compare: il file non dice nulla su di
+ * lei, quindi non c'è divergenza da segnalare).
+ */
+export async function importCategoryCharacteristicsFromCsv(
+	csvText: string,
+): Promise<CategoryCharacteristicImportResult> {
+	const { headers, rows } = parseCsv(csvText);
+	assertHeaders(headers, MATRIX_HEADERS);
+
+	if (rows.length === 0) {
+		throw new ServiceError(400, "CSV file contains no data rows");
+	}
+
+	const macroIdx = headers.indexOf("macro_category");
+	const subIdx = headers.indexOf("subcategory");
+	const charIdx = headers.indexOf("characteristic");
+	const requiredIdx = headers.indexOf("required");
+
+	const errors: ImportError[] = [];
+	const parsedRows: MatrixParsedRow[] = [];
+
+	for (let i = 0; i < rows.length; i++) {
+		const row = rows[i];
+		const rowNum = i + 2; // 1-indicizzato + intestazione
+
+		const macroName = (row[macroIdx] ?? "").trim();
+		const subName = (row[subIdx] ?? "").trim();
+		const charName = (row[charIdx] ?? "").trim();
+		const requiredRaw = (row[requiredIdx] ?? "").trim().toLowerCase();
+
+		if (!macroName) {
+			errors.push({ row: rowNum, message: "Macro categoria mancante" });
+			continue;
+		}
+		if (!subName) {
+			errors.push({ row: rowNum, message: "Sotto-categoria mancante" });
+			continue;
+		}
+		if (!charName) {
+			errors.push({ row: rowNum, message: "Caratteristica mancante" });
+			continue;
+		}
+		if (requiredRaw !== "true" && requiredRaw !== "false") {
+			errors.push({
+				row: rowNum,
+				message: `Valore non valido per "required": "${row[requiredIdx] ?? ""}". Valori ammessi: true, false.`,
+			});
+			continue;
+		}
+
+		parsedRows.push({
+			rowNum,
+			macroName,
+			subName,
+			charName,
+			required: requiredRaw === "true",
+		});
+	}
+
+	if (parsedRows.length === 0) {
+		return {
+			created: 0,
+			skipped: 0,
+			failed: errors.length,
+			errors,
+			missing: [],
+		};
+	}
+
+	// Risolvere sotto-categoria (macro+nome, perché il nome da solo si ripete)
+	// e caratteristica (nome, univoco nel dizionario) verso i rispettivi id.
+	const macroNames = Array.from(new Set(parsedRows.map((r) => r.macroName)));
+	const categoryRows = await db
+		.select({
+			id: productCategory.id,
+			subName: productCategory.name,
+			macroName: productMacroCategory.name,
+		})
+		.from(productCategory)
+		.innerJoin(
+			productMacroCategory,
+			eq(productCategory.macroCategoryId, productMacroCategory.id),
+		)
+		.where(inArray(productMacroCategory.name, macroNames));
+
+	const categoryByPair = new Map(
+		categoryRows.map((c) => [pairKey(c.macroName, c.subName), c]),
+	);
+
+	const charNames = Array.from(new Set(parsedRows.map((r) => r.charName)));
+	const characteristics = await db
+		.select({ id: productCharacteristic.id, name: productCharacteristic.name })
+		.from(productCharacteristic)
+		.where(inArray(productCharacteristic.name, charNames));
+
+	const characteristicByName = new Map(characteristics.map((c) => [c.name, c]));
+
+	// Sotto-categorie "citate dal file": lo sono anche se una riga cita una
+	// caratteristica inesistente, perché il file parla comunque di quella
+	// sotto-categoria — solo le sotto-categorie MAI nominate restano fuori
+	// dal rapporto di `missing`.
+	const mentionedCategoryNames = new Map<string, string>();
+	const resolvedRows: MatrixResolvedRow[] = [];
+
+	for (const r of parsedRows) {
+		const category = categoryByPair.get(pairKey(r.macroName, r.subName));
+		if (!category) {
+			errors.push({
+				row: r.rowNum,
+				message: `Sotto-categoria sconosciuta: "${r.subName}" (macro "${r.macroName}").`,
+			});
+			continue;
+		}
+		mentionedCategoryNames.set(category.id, category.subName);
+
+		const characteristic = characteristicByName.get(r.charName);
+		if (!characteristic) {
+			errors.push({
+				row: r.rowNum,
+				message: `Caratteristica sconosciuta: "${r.charName}".`,
+			});
+			continue;
+		}
+
+		resolvedRows.push({
+			rowNum: r.rowNum,
+			categoryId: category.id,
+			characteristicId: characteristic.id,
+			required: r.required,
+		});
+	}
+
+	// sortOrder contato per sotto-categoria (non globalmente): la prima
+	// caratteristica di ogni sotto-categoria nel file è 0. Consuma una
+	// posizione anche una riga già presente nel database — è l'ordine nel
+	// FILE a contare, non l'ordine di inserimento.
+	const sortCounters = new Map<string, number>();
+	const seenPairs = new Set<string>();
+	const candidateRows: {
+		categoryId: string;
+		characteristicId: string;
+		required: boolean;
+		sortOrder: number;
+	}[] = [];
+
+	for (const row of resolvedRows) {
+		const nextSortOrder = sortCounters.get(row.categoryId) ?? 0;
+		sortCounters.set(row.categoryId, nextSortOrder + 1);
+
+		const key = pairKey(row.categoryId, row.characteristicId);
+		if (seenPairs.has(key)) continue; // stessa riga ripetuta nel file
+		seenPairs.add(key);
+
+		candidateRows.push({
+			categoryId: row.categoryId,
+			characteristicId: row.characteristicId,
+			required: row.required,
+			sortOrder: nextSortOrder,
+		});
+	}
+
+	const categoryIds = Array.from(mentionedCategoryNames.keys());
+	const existingLinks =
+		categoryIds.length > 0
+			? await db
+					.select({
+						categoryId: productCategoryCharacteristic.productCategoryId,
+						characteristicId: productCategoryCharacteristic.characteristicId,
+						characteristicName: productCharacteristic.name,
+					})
+					.from(productCategoryCharacteristic)
+					.innerJoin(
+						productCharacteristic,
+						eq(
+							productCategoryCharacteristic.characteristicId,
+							productCharacteristic.id,
+						),
+					)
+					.where(
+						inArray(
+							productCategoryCharacteristic.productCategoryId,
+							categoryIds,
+						),
+					)
+			: [];
+
+	const existingKeySet = new Set(
+		existingLinks.map((l) => pairKey(l.categoryId, l.characteristicId)),
+	);
+
+	let skipped = 0;
+	const toInsert: typeof candidateRows = [];
+	for (const row of candidateRows) {
+		const key = pairKey(row.categoryId, row.characteristicId);
+		if (existingKeySet.has(key)) {
+			skipped++;
+		} else {
+			toInsert.push(row);
+		}
+	}
+
+	let created = 0;
+	if (toInsert.length > 0) {
+		await db.insert(productCategoryCharacteristic).values(
+			toInsert.map((r) => ({
+				productCategoryId: r.categoryId,
+				characteristicId: r.characteristicId,
+				required: r.required,
+				sortOrder: r.sortOrder,
+			})),
+		);
+		created = toInsert.length;
+	}
+
+	// missing: righe nel database (per le sotto-categorie citate dal file)
+	// la cui caratteristica il file non menziona per quella sotto-categoria.
+	const fileCharsByCategory = new Map<string, Set<string>>();
+	for (const row of resolvedRows) {
+		const set = fileCharsByCategory.get(row.categoryId) ?? new Set<string>();
+		set.add(row.characteristicId);
+		fileCharsByCategory.set(row.categoryId, set);
+	}
+
+	const missingByCategory = new Map<string, string[]>();
+	for (const link of existingLinks) {
+		const fileChars = fileCharsByCategory.get(link.categoryId);
+		if (fileChars?.has(link.characteristicId)) continue;
+
+		const names = missingByCategory.get(link.categoryId) ?? [];
+		names.push(link.characteristicName);
+		missingByCategory.set(link.categoryId, names);
+	}
+
+	const missing = Array.from(missingByCategory.entries())
+		.map(([categoryId, characteristics]) => ({
+			subcategory: mentionedCategoryNames.get(categoryId) ?? "",
+			characteristics: characteristics.sort((a, b) => a.localeCompare(b)),
+		}))
+		.sort((a, b) => a.subcategory.localeCompare(b.subcategory));
+
+	return { created, skipped, failed: errors.length, errors, missing };
 }

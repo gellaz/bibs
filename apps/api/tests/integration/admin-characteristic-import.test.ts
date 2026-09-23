@@ -24,13 +24,22 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import {
+	productCategoryCharacteristic,
 	productCharacteristic,
 	productCharacteristicOption,
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
-import { importCharacteristicsFromCsv } from "@/modules/admin/services/characteristic-import";
+import {
+	importCategoryCharacteristicsFromCsv,
+	importCharacteristicsFromCsv,
+} from "@/modules/admin/services/characteristic-import";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestProduct, createTestSeller } from "../helpers/fixtures";
+import {
+	createTestCategory,
+	createTestMacroCategory,
+	createTestProduct,
+	createTestSeller,
+} from "../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -220,5 +229,111 @@ describe("importCharacteristicsFromCsv", () => {
 		expect(remainingOptions.find((o) => o.value === "Rosso")?.id).toBe(
 			rosso.id,
 		);
+	});
+});
+
+describe("importCategoryCharacteristicsFromCsv", () => {
+	it("links characteristics to a sub-category", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		await createTestCategory(db, "Smartphone", macro.id);
+		await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Peso,number,g,", "5G,boolean,,"].join(
+				"\n",
+			),
+		);
+
+		const result = await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Peso,false",
+				"Elettronica,Smartphone,5G,false",
+			].join("\n"),
+		);
+
+		expect(result.created).toBe(2);
+		const rows = await db.select().from(productCategoryCharacteristic);
+		expect(rows).toHaveLength(2);
+		expect(rows.every((r) => r.required === false)).toBe(true);
+	});
+
+	it("is idempotent: a second import creates nothing", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		await createTestCategory(db, "Smartphone", macro.id);
+		await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Peso,number,g,"].join("\n"),
+		);
+		const csv = [
+			"macro_category,subcategory,characteristic,required",
+			"Elettronica,Smartphone,Peso,false",
+		].join("\n");
+		await importCategoryCharacteristicsFromCsv(csv);
+
+		const result = await importCategoryCharacteristicsFromCsv(csv);
+
+		expect(result.created).toBe(0);
+		expect(result.skipped).toBe(1);
+	});
+
+	it("never deletes, and reports what the file does not contain", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		await createTestCategory(db, "Smartphone", macro.id);
+		await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Peso,number,g,", "5G,boolean,,"].join(
+				"\n",
+			),
+		);
+		await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Peso,false",
+				"Elettronica,Smartphone,5G,false",
+			].join("\n"),
+		);
+
+		// il file nuovo non cita piu' 5G
+		const result = await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Peso,false",
+			].join("\n"),
+		);
+
+		const rows = await db.select().from(productCategoryCharacteristic);
+		expect(rows).toHaveLength(2); // nulla e' stato cancellato
+		expect(result.missing).toEqual([
+			{ subcategory: "Smartphone", characteristics: ["5G"] },
+		]);
+	});
+
+	it("reports an unknown characteristic with its row number", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		await createTestCategory(db, "Smartphone", macro.id);
+
+		const result = await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Inesistente,false",
+			].join("\n"),
+		);
+
+		expect(result.failed).toBe(1);
+		expect(result.errors[0].row).toBe(2);
+		expect(result.errors[0].message).toContain("Inesistente");
+	});
+
+	it("reports an unknown sub-category", async () => {
+		const result = await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Inesistente,Peso,false",
+			].join("\n"),
+		);
+
+		expect(result.failed).toBe(1);
+		expect(result.errors[0].message).toContain("Inesistente");
 	});
 });
