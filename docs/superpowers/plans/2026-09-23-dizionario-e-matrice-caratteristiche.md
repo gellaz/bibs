@@ -26,6 +26,7 @@
 - psql: `docker exec -i bibs-postgis psql -U pgadmin -d bibs-db` — il `-i` è obbligatorio, senza scarta l'SQL in silenzio con codice 0.
 - Migrazioni in `apps/api/src/db/migrations/`.
 - **Test negativi sui vincoli del database**: `expect(query).rejects.toThrow()` su un query-builder Drizzle **non funziona** — il thenable non arriva a `expect().rejects`. La convenzione del repo, documentata in `apps/api/tests/integration/db-enum-check-constraints.test.ts:57-68`, è avvolgere l'insert in una funzione asincrona: `await expect(insertBogus()).rejects.toThrow()`.
+- **Suite completa**: sempre `bun run --cwd apps/api test`, mai `cd apps/api && bun test` nudo. Senza argomenti Bun salta `--isolate`, e il repo ha una guardia apposta — `tests/integration/isolation-guard-2.test.ts` — che fallisce proprio in quel caso. Un rosso lì non è una regressione, è l'invocazione sbagliata.
 - **Esecuzione di un singolo file di test**: `bun run --cwd apps/api test <file>` **non isola nulla** — lo script `test` è composto (`test:unit && test:integration`) e Bun passa l'argomento solo all'ultimo comando. Per il file singolo: `cd apps/api && bun test <percorso>`.
 - **Baseline suite:** 511 pass / 0 fail / 1167 expect su 64 file in `apps/api` (dopo il Task 1). Una esecuzione troncata stampa comunque `0 fail` con un totale più basso: il numero che conta è il **totale**, non i fallimenti.
 
