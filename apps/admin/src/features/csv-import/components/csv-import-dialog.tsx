@@ -19,12 +19,13 @@ import {
 } from "@bibs/ui/components/table";
 import { useEffect, useState } from "react";
 
-export interface CsvImportResult {
+// Category imports are additive and report skipped rows; the dictionary's
+// import is in-place update and reports updated rows.
+export type CsvImportResult = {
 	created: number;
-	skipped: number;
 	failed: number;
 	errors: Array<{ row: number; message: string }>;
-}
+} & ({ skipped: number } | { updated: number });
 
 interface CsvImportDialogProps {
 	open: boolean;
@@ -68,7 +69,10 @@ export function CsvImportDialog({
 			setResult(data);
 			if (data.failed === 0) {
 				onSuccess?.();
-			} else if (data.created > 0 || data.skipped > 0) {
+			} else if (
+				data.created > 0 ||
+				("skipped" in data ? data.skipped : data.updated) > 0
+			) {
 				// Partial success: still refresh the underlying list.
 				onSuccess?.();
 			}
@@ -99,9 +103,11 @@ export function CsvImportDialog({
 								</div>
 							</div>
 							<div className="bg-muted/50 rounded-lg border p-3">
-								<div className="text-muted-foreground text-xs">Saltate</div>
+								<div className="text-muted-foreground text-xs">
+									{"updated" in result ? "Aggiornate" : "Saltate"}
+								</div>
 								<div className="text-2xl font-semibold tabular-nums">
-									{result.skipped}
+									{"updated" in result ? result.updated : result.skipped}
 								</div>
 							</div>
 							<div className="bg-muted/50 rounded-lg border p-3">

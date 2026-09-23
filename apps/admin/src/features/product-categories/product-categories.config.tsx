@@ -5,6 +5,7 @@ import {
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { TagsIcon } from "lucide-react";
+import { CategoryCharacteristicsButton } from "@/features/category-characteristics/components/category-characteristics-button";
 import type {
 	CategoryCrudConfig,
 	CrudFormProps,
@@ -24,6 +25,7 @@ interface ProductCategory {
 	name: string;
 	macroCategoryId: string;
 	macroCategory: MacroCategory;
+	characteristicCount: number;
 	createdAt: Date | string;
 }
 
@@ -94,6 +96,13 @@ const macroColumn: DataTableColumnDef<ProductCategory> = {
 	cell: ({ row }) => row.original.macroCategory?.name ?? "—",
 };
 
+const characteristicsColumn: DataTableColumnDef<ProductCategory> = {
+	id: "characteristics",
+	header: "Caratteristiche",
+	meta: { menuLabel: "Caratteristiche" },
+	cell: ({ row }) => <CategoryCharacteristicsButton category={row.original} />,
+};
+
 export const productCategoriesConfig: CategoryCrudConfig<
 	ProductCategory,
 	ProductCategoryFormData
@@ -103,7 +112,7 @@ export const productCategoriesConfig: CategoryCrudConfig<
 	extraInvalidate: [["admin-configurations-counts"]],
 
 	list: (q) =>
-		api()["product-categories"].get({
+		api().admin["product-categories"].get({
 			query: {
 				page: q.page,
 				limit: q.limit,
@@ -127,7 +136,7 @@ export const productCategoriesConfig: CategoryCrudConfig<
 	remove: (id) =>
 		api().admin["product-categories"]({ productCategoryId: id }).delete(),
 
-	extraColumns: [macroColumn],
+	extraColumns: [macroColumn, characteristicsColumn],
 	emptyIcon: <TagsIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ConnectedProductCategoryForm {...p} />,

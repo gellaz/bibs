@@ -2,11 +2,13 @@ import { Elysia } from "elysia";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
 import { adminBillingRoutes } from "./routes/billing";
+import { categoryCharacteristicsRoutes } from "./routes/category-characteristics";
 import { categoryImportsRoutes } from "./routes/category-imports";
 import { characteristicImportsRoutes } from "./routes/characteristic-imports";
 import { configurationsRoutes } from "./routes/configurations";
 import { holidayDefinitionsRoutes } from "./routes/holiday-definitions";
 import { productCategoriesWriteRoutes } from "./routes/product-categories";
+import { productCharacteristicsRoutes } from "./routes/product-characteristics";
 import { productMacroCategoriesWriteRoutes } from "./routes/product-macro-categories";
 import { sellerChangesRoutes } from "./routes/seller-changes";
 import { sellersRoutes } from "./routes/sellers";
@@ -31,11 +33,13 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				})
 				.use(productMacroCategoriesWriteRoutes)
 				.use(productCategoriesWriteRoutes)
+				.use(categoryCharacteristicsRoutes)
 				.use(configurationsRoutes)
 				.use(storeMacroCategoriesWriteRoutes)
 				.use(storeCategoriesWriteRoutes)
 				.use(holidayDefinitionsRoutes)
 				.use(categoryImportsRoutes)
+				.use(productCharacteristicsRoutes)
 				.use(characteristicImportsRoutes)
 				.use(sellersRoutes)
 				.use(sellerChangesRoutes)

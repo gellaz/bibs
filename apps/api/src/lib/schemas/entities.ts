@@ -140,6 +140,13 @@ export const ProductCategoryWithMacroSchema = t.Object({
 	macroCategory: ProductMacroCategorySchema,
 });
 
+export const AdminProductCategorySchema = t.Object({
+	...ProductCategoryWithMacroSchema.properties,
+	characteristicCount: t.Integer({
+		description: "Numero di caratteristiche assegnate alla sotto-categoria",
+	}),
+});
+
 export const MunicipalityCompactSchema = t.Object(
 	{
 		id: t.String({ description: "Identificatore univoco del comune" }),
@@ -491,6 +498,73 @@ export const CsvUpsertResultSchema = t.Object({
 			message: t.String({ description: "Descrizione dell'errore" }),
 		}),
 	),
+});
+
+export const CharacteristicDataTypeSchema = t.Union(
+	[
+		t.Literal("text"),
+		t.Literal("number"),
+		t.Literal("boolean"),
+		t.Literal("enum"),
+	],
+	{
+		description:
+			"Tipo di dato: text (testo libero), number (numero, con unità facoltativa), boolean (sì/no), enum (lista chiusa di opzioni)",
+	},
+);
+
+export const ProductCharacteristicSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della caratteristica" }),
+	dataType: CharacteristicDataTypeSchema,
+	unit: t.Nullable(
+		t.String({ description: "Unità di misura, solo per il tipo number" }),
+	),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
+export const AdminProductCharacteristicSchema = t.Object({
+	...ProductCharacteristicSchema.properties,
+	valueCount: t.Integer({
+		description:
+			"Numero di prodotti che hanno un valore per questa caratteristica",
+	}),
+	options: t.Array(
+		t.Object({
+			id: t.String(),
+			value: t.String({ description: "Valore ammesso" }),
+			sortOrder: t.Integer({ description: "Posizione nella lista" }),
+			valueCount: t.Integer({
+				description: "Numero di prodotti che hanno scelto questa opzione",
+			}),
+		}),
+		{ description: "Opzioni della lista chiusa, vuota per gli altri tipi" },
+	),
+});
+
+export const CategoryCharacteristicStateSchema = t.Object({
+	id: t.String({ description: "ID della caratteristica" }),
+	name: t.String({ description: "Nome della caratteristica" }),
+	dataType: CharacteristicDataTypeSchema,
+	unit: t.Nullable(t.String()),
+	included: t.Boolean({
+		description: "La caratteristica è assegnata alla sotto-categoria",
+	}),
+	required: t.Boolean({
+		description: "Il venditore deve compilarla (sempre false se non inclusa)",
+	}),
+	valueCount: t.Integer({
+		description:
+			"Prodotti della sotto-categoria che hanno già un valore per questa caratteristica",
+	}),
+});
+
+export const CategoryCharacteristicLinkSchema = t.Object({
+	productCategoryId: t.String(),
+	characteristicId: t.String(),
+	required: t.Boolean(),
+	sortOrder: t.Integer({ description: "Posizione nel form del venditore" }),
 });
 
 export const StoreProductSchema = t.Object({

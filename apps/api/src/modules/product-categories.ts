@@ -1,5 +1,5 @@
-import { Elysia, t } from "elysia";
-import { CategoryListQuery } from "@/lib/queries";
+import { Elysia } from "elysia";
+import { ProductCategoryListQuery } from "@/lib/queries";
 import { okPage } from "@/lib/responses";
 import {
 	okPageRes,
@@ -7,15 +7,6 @@ import {
 	withErrors,
 } from "@/lib/schemas";
 import { listProductCategories } from "./admin/services/product-categories";
-
-const ProductCategoryListQuery = t.Composite([
-	CategoryListQuery,
-	t.Object({
-		macroCategoryId: t.Optional(
-			t.String({ description: "Filtra per ID della macro categoria" }),
-		),
-	}),
-]);
 
 export const productCategoriesModule = new Elysia().get(
 	"/product-categories",

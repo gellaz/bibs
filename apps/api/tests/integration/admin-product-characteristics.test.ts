@@ -1,0 +1,501 @@
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	mock,
+} from "bun:test";
+
+import {
+	getTestDb,
+	setupTestContainer,
+	teardownTestContainer,
+} from "../helpers/test-db";
+
+mock.module("@/db", () => ({
+	db: new Proxy({} as any, {
+		get(_, prop) {
+			return (getTestDb() as any)[prop];
+		},
+	}),
+}));
+
+import { eq } from "drizzle-orm";
+import {
+	productCategoryCharacteristic,
+	productCharacteristic,
+	productCharacteristicOption,
+	productCharacteristicValue,
+} from "@/db/schemas/product-characteristic";
+import { ServiceError } from "@/lib/errors";
+import { countConfigurations } from "@/modules/admin/services/configurations";
+import {
+	createProductCharacteristic,
+	deleteProductCharacteristic,
+	listProductCharacteristics,
+	updateProductCharacteristic,
+} from "@/modules/admin/services/product-characteristics";
+import { truncateAll } from "../helpers/cleanup";
+import {
+	createTestCategory,
+	createTestMacroCategory,
+	createTestProduct,
+	createTestSeller,
+} from "../helpers/fixtures";
+
+beforeAll(async () => {
+	await setupTestContainer();
+}, 120_000);
+
+afterAll(async () => {
+	await teardownTestContainer();
+});
+
+beforeEach(async () => {
+	await truncateAll(getTestDb());
+});
+
+async function caught(fn: () => Promise<unknown>): Promise<ServiceError> {
+	try {
+		await fn();
+	} catch (e) {
+		if (e instanceof ServiceError) return e;
+		throw e;
+	}
+	throw new Error("expected a ServiceError");
+}
+
+// Un prodotto con Colore = Rosso.
+async function giveRossoToOneProduct(colore: { id: string }) {
+	const db = getTestDb();
+	const seller = await createTestSeller(db);
+	const p = await createTestProduct(db, seller.profile.id, { name: "P" });
+	const [rosso] = await db
+		.select()
+		.from(productCharacteristicOption)
+		.where(eq(productCharacteristicOption.value, "Rosso"));
+	await db.insert(productCharacteristicValue).values({
+		productId: p.id,
+		characteristicId: colore.id,
+		dataType: "enum",
+		optionId: rosso.id,
+	});
+	return { product: p, rosso };
+}
+
+describe("createProductCharacteristic", () => {
+	it("creates an enum with its options in order", async () => {
+		const c = await createProductCharacteristic({
+			name: " Colore ",
+			dataType: "enum",
+			options: [{ value: "Rosso" }, { value: " Blu " }, { value: "" }],
+		});
+
+		expect(c.name).toBe("Colore");
+		const opts = await getTestDb()
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.characteristicId, c.id));
+		expect(
+			opts.sort((a, b) => a.sortOrder - b.sortOrder).map((o) => o.value),
+		).toEqual(["Rosso", "Blu"]);
+	});
+
+	it("keeps the unit only for numbers", async () => {
+		const peso = await createProductCharacteristic({
+			name: "Peso",
+			dataType: "number",
+			unit: "g",
+		});
+		expect(peso.unit).toBe("g");
+
+		const err = await caught(() =>
+			createProductCharacteristic({
+				name: "Modello",
+				dataType: "text",
+				unit: "g",
+			}),
+		);
+		expect(err.status).toBe(400);
+		expect(err.message).toBe(
+			`L'unità di misura ha senso solo per il tipo "number"`,
+		);
+	});
+
+	it("rejects an enum without options, options on a non-enum and duplicates", async () => {
+		expect(
+			(
+				await caught(() =>
+					createProductCharacteristic({
+						name: "Colore",
+						dataType: "enum",
+						options: [],
+					}),
+				)
+			).message,
+		).toBe(`Il tipo "enum" richiede almeno un'opzione`);
+		expect(
+			(
+				await caught(() =>
+					createProductCharacteristic({
+						name: "5G",
+						dataType: "boolean",
+						options: [{ value: "Sì" }],
+					}),
+				)
+			).message,
+		).toBe(`Le opzioni hanno senso solo per il tipo "enum"`);
+		expect(
+			(
+				await caught(() =>
+					createProductCharacteristic({
+						name: "Colore",
+						dataType: "enum",
+						options: [{ value: "Rosso" }, { value: "Rosso " }],
+					}),
+				)
+			).message,
+		).toBe(`Opzione ripetuta: "Rosso"`);
+	});
+
+	it("rejects a whitespace-only name", async () => {
+		const err = await caught(() =>
+			createProductCharacteristic({
+				name: "   ",
+				dataType: "text",
+			}),
+		);
+		expect(err.status).toBe(400);
+		expect(err.message).toBe("Il nome della caratteristica è obbligatorio");
+	});
+});
+
+describe("listProductCharacteristics", () => {
+	it("returns options in order with per-option and per-characteristic value counts", async () => {
+		const colore = await createProductCharacteristic({
+			name: "Colore",
+			dataType: "enum",
+			options: [{ value: "Rosso" }, { value: "Blu" }],
+		});
+		await createProductCharacteristic({
+			name: "Peso",
+			dataType: "number",
+			unit: "g",
+		});
+		await giveRossoToOneProduct(colore);
+
+		const result = await listProductCharacteristics({
+			sortBy: "name",
+			sortOrder: "asc",
+		});
+
+		expect(result.pagination.total).toBe(2);
+		const [c, p] = result.data;
+		expect(c.name).toBe("Colore");
+		expect(c.valueCount).toBe(1);
+		expect(c.options.map((o) => [o.value, o.valueCount])).toEqual([
+			["Rosso", 1],
+			["Blu", 0],
+		]);
+		expect(p.name).toBe("Peso");
+		expect(p.valueCount).toBe(0);
+		expect(p.options).toEqual([]);
+	});
+
+	it("filters by data type", async () => {
+		await createProductCharacteristic({
+			name: "Peso",
+			dataType: "number",
+			unit: "g",
+		});
+		await createProductCharacteristic({ name: "Modello", dataType: "text" });
+
+		const result = await listProductCharacteristics({ dataType: "number" });
+
+		expect(result.data.map((c) => c.name)).toEqual(["Peso"]);
+		expect(result.pagination.total).toBe(1);
+	});
+});
+
+describe("deleteProductCharacteristic", () => {
+	it("refuses with 409 when products have values and nothing is confirmed", async () => {
+		const colore = await createProductCharacteristic({
+			name: "Colore",
+			dataType: "enum",
+			options: [{ value: "Rosso" }],
+		});
+		await giveRossoToOneProduct(colore);
+
+		const err = await caught(() => deleteProductCharacteristic(colore.id, 0));
+
+		expect(err.status).toBe(409);
+		const still = await getTestDb()
+			.select()
+			.from(productCharacteristic)
+			.where(eq(productCharacteristic.id, colore.id));
+		expect(still).toHaveLength(1);
+		expect(
+			await getTestDb().select().from(productCharacteristicValue),
+		).toHaveLength(1);
+	});
+
+	it("deletes values, options and matrix rows with the definition once confirmed", async () => {
+		const db = getTestDb();
+		const colore = await createProductCharacteristic({
+			name: "Colore",
+			dataType: "enum",
+			options: [{ value: "Rosso" }],
+		});
+		await giveRossoToOneProduct(colore);
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		const cat = await createTestCategory(db, "Smartphone", macro.id);
+		await db.insert(productCategoryCharacteristic).values({
+			productCategoryId: cat.id,
+			characteristicId: colore.id,
+			sortOrder: 0,
+		});
+
+		const result = await deleteProductCharacteristic(colore.id, 1);
+
+		expect(result.deletedValues).toBe(1);
+		expect(await db.select().from(productCharacteristic)).toHaveLength(0);
+		expect(await db.select().from(productCharacteristicOption)).toHaveLength(0);
+		expect(await db.select().from(productCharacteristicValue)).toHaveLength(0);
+		expect(await db.select().from(productCategoryCharacteristic)).toHaveLength(
+			0,
+		);
+	});
+
+	it("returns 404 for an unknown characteristic", async () => {
+		const err = await caught(() => deleteProductCharacteristic("missing", 0));
+		expect(err.status).toBe(404);
+	});
+});
+
+describe("countConfigurations", () => {
+	it("counts the dictionary", async () => {
+		await createProductCharacteristic({ name: "Modello", dataType: "text" });
+		expect((await countConfigurations()).productCharacteristics).toBe(1);
+	});
+});
+
+describe("updateProductCharacteristic", () => {
+	async function coloreWithRosso() {
+		const colore = await createProductCharacteristic({
+			name: "Colore",
+			dataType: "enum",
+			options: [{ value: "Rosso" }, { value: "Blu" }],
+		});
+		const { product, rosso } = await giveRossoToOneProduct(colore);
+		const [blu] = await getTestDb()
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.value, "Blu"));
+		return { colore, product, rosso, blu };
+	}
+
+	it("renames an option in place, keeping the product value", async () => {
+		const { colore, rosso, blu } = await coloreWithRosso();
+
+		const { deletedValues } = await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [
+				{ id: rosso.id, value: "Rosso scuro" },
+				{ id: blu.id, value: "Blu" },
+			],
+			confirmAffected: 0,
+		});
+
+		expect(deletedValues).toBe(0);
+		const [value] = await getTestDb().select().from(productCharacteristicValue);
+		expect(value.optionId).toBe(rosso.id);
+		const [renamed] = await getTestDb()
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.id, rosso.id));
+		expect(renamed.value).toBe("Rosso scuro");
+	});
+
+	it("swaps two option values without tripping the unique constraint", async () => {
+		const { colore, rosso, blu } = await coloreWithRosso();
+
+		await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [
+				{ id: rosso.id, value: "Blu" },
+				{ id: blu.id, value: "Rosso" },
+			],
+			confirmAffected: 0,
+		});
+
+		const opts = await getTestDb().select().from(productCharacteristicOption);
+		expect(opts.find((o) => o.id === rosso.id)?.value).toBe("Blu");
+		expect(opts.find((o) => o.id === blu.id)?.value).toBe("Rosso");
+	});
+
+	it("adds new options after the kept ones, in the given order", async () => {
+		const { colore, rosso, blu } = await coloreWithRosso();
+
+		await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [
+				{ id: blu.id, value: "Blu" },
+				{ value: "Verde" },
+				{ id: rosso.id, value: "Rosso" },
+			],
+			confirmAffected: 0,
+		});
+
+		const opts = await getTestDb().select().from(productCharacteristicOption);
+		expect(
+			opts.sort((a, b) => a.sortOrder - b.sortOrder).map((o) => o.value),
+		).toEqual(["Blu", "Verde", "Rosso"]);
+	});
+
+	it("refuses to drop a used option without confirmation and changes nothing", async () => {
+		const { colore, blu } = await coloreWithRosso();
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: colore.id,
+				name: "Colore principale",
+				options: [{ id: blu.id, value: "Blu" }],
+				confirmAffected: 0,
+			}),
+		);
+
+		expect(err.status).toBe(409);
+		expect(
+			await getTestDb().select().from(productCharacteristicOption),
+		).toHaveLength(2);
+		const [c] = await getTestDb().select().from(productCharacteristic);
+		expect(c.name).toBe("Colore");
+	});
+
+	it("drops a used option and its values once confirmed", async () => {
+		const { colore, blu } = await coloreWithRosso();
+
+		const { deletedValues } = await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [{ id: blu.id, value: "Blu" }],
+			confirmAffected: 1,
+		});
+
+		expect(deletedValues).toBe(1);
+		expect(
+			await getTestDb().select().from(productCharacteristicValue),
+		).toHaveLength(0);
+		const opts = await getTestDb().select().from(productCharacteristicOption);
+		expect(opts.map((o) => o.value)).toEqual(["Blu"]);
+	});
+
+	it("changes the type once confirmed, dropping values and options", async () => {
+		const { colore } = await coloreWithRosso();
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: colore.id,
+				dataType: "text",
+				confirmAffected: 0,
+			}),
+		);
+		expect(err.status).toBe(409);
+
+		const { updated, deletedValues } = await updateProductCharacteristic({
+			characteristicId: colore.id,
+			dataType: "text",
+			confirmAffected: 1,
+		});
+
+		expect(updated.dataType).toBe("text");
+		expect(deletedValues).toBe(1);
+		expect(
+			await getTestDb().select().from(productCharacteristicValue),
+		).toHaveLength(0);
+		expect(
+			await getTestDb().select().from(productCharacteristicOption),
+		).toHaveLength(0);
+	});
+
+	it("keeps the current options when only the name changes", async () => {
+		const { colore } = await coloreWithRosso();
+
+		await updateProductCharacteristic({
+			characteristicId: colore.id,
+			name: "Colore principale",
+			confirmAffected: 0,
+		});
+
+		expect(
+			await getTestDb().select().from(productCharacteristicOption),
+		).toHaveLength(2);
+		expect(
+			await getTestDb().select().from(productCharacteristicValue),
+		).toHaveLength(1);
+	});
+
+	it("drops the unit when leaving the number type", async () => {
+		const peso = await createProductCharacteristic({
+			name: "Peso",
+			dataType: "number",
+			unit: "g",
+		});
+
+		const { updated } = await updateProductCharacteristic({
+			characteristicId: peso.id,
+			dataType: "text",
+			confirmAffected: 0,
+		});
+
+		expect(updated.unit).toBeNull();
+	});
+
+	it("rejects an option id that belongs to another characteristic", async () => {
+		const { rosso } = await coloreWithRosso();
+		const taglia = await createProductCharacteristic({
+			name: "Taglia",
+			dataType: "enum",
+			options: [{ value: "M" }],
+		});
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: taglia.id,
+				options: [{ id: rosso.id, value: "M" }],
+				confirmAffected: 0,
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toBe(`Opzione sconosciuta per "Taglia"`);
+	});
+
+	it("returns 404 for an unknown characteristic", async () => {
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: "missing",
+				confirmAffected: 0,
+			}),
+		);
+		expect(err.status).toBe(404);
+	});
+
+	it("rejects a whitespace-only name and changes nothing", async () => {
+		const { colore } = await coloreWithRosso();
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: colore.id,
+				name: "   ",
+				confirmAffected: 0,
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toBe("Il nome della caratteristica è obbligatorio");
+		const [c] = await getTestDb().select().from(productCharacteristic);
+		expect(c.name).toBe("Colore");
+	});
+});

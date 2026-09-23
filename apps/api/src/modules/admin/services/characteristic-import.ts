@@ -1,4 +1,4 @@
-import { count, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import {
@@ -7,11 +7,15 @@ import {
 	productCategoryCharacteristic,
 	productCharacteristic,
 	productCharacteristicOption,
-	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
+import {
+	countValuesByCharacteristic,
+	countValuesByOption,
+	sumCounts,
+} from "./characteristic-impact";
 
 const CHARACTERISTIC_HEADERS = ["name", "data_type", "unit", "options"];
 
@@ -186,10 +190,8 @@ export async function importCharacteristicsFromCsv(
 		// rifiuterebbe comunque, ma con un errore Postgres inutilizzabile
 		// dall'amministratore.
 		if (current.dataType !== parsed.dataType) {
-			const [{ valueCount }] = await db
-				.select({ valueCount: count() })
-				.from(productCharacteristicValue)
-				.where(eq(productCharacteristicValue.characteristicId, current.id));
+			const valueCount =
+				(await countValuesByCharacteristic([current.id])).get(current.id) ?? 0;
 
 			if (valueCount > 0) {
 				errors.push({
@@ -222,29 +224,16 @@ export async function importCharacteristicsFromCsv(
 		);
 
 		if (toDeleteOptions.length > 0) {
-			const referencedRows = await db
-				.select({
-					optionId: productCharacteristicValue.optionId,
-					cnt: count(),
-				})
-				.from(productCharacteristicValue)
-				.where(
-					inArray(
-						productCharacteristicValue.optionId,
-						toDeleteOptions.map((o) => o.id),
-					),
-				)
-				.groupBy(productCharacteristicValue.optionId);
+			const referenced = await countValuesByOption(
+				toDeleteOptions.map((o) => o.id),
+			);
 
-			if (referencedRows.length > 0) {
+			if (referenced.size > 0) {
 				const valueById = new Map(existingOptions.map((o) => [o.id, o.value]));
-				const stillUsedValues = referencedRows.map(
-					(r) => valueById.get(r.optionId as string) ?? "?",
+				const stillUsedValues = Array.from(referenced.keys()).map(
+					(id) => valueById.get(id) ?? "?",
 				);
-				const totalReferenced = referencedRows.reduce(
-					(sum, r) => sum + r.cnt,
-					0,
-				);
+				const totalReferenced = sumCounts(referenced);
 				const optionsPhrase =
 					stillUsedValues.length === 1
 						? `all'opzione ${stillUsedValues[0]}`
