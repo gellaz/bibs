@@ -679,6 +679,24 @@ export async function updateProduct(params: UpdateProductParams) {
 	}
 
 	return db.transaction(async (tx) => {
+		// Ricarica la sotto-categoria con lock di riga (SELECT ... FOR UPDATE):
+		// `existing` è stato letto fuori dalla transazione, quindi tra quel
+		// SELECT e questo UPDATE un'altra transazione potrebbe aver spostato il
+		// prodotto. categoryChanged va calcolato sul valore bloccato, non su
+		// quello stale, altrimenti un salvataggio concorrente lascia valori
+		// fuori matrice (D10).
+		const [locked] = await tx
+			.select({ productCategoryId: product.productCategoryId })
+			.from(product)
+			.where(
+				and(
+					eq(product.id, productId),
+					eq(product.sellerProfileId, sellerProfileId),
+				),
+			)
+			.for("update");
+		if (!locked) return null;
+
 		// Build product update payload including optional ean/brandId fields
 		const productUpdates: Record<string, unknown> = { ...productData };
 
@@ -745,10 +763,11 @@ export async function updateProduct(params: UpdateProductParams) {
 		if (!updated) return null;
 
 		// Il form di modifica rimanda sempre la sotto-categoria, anche invariata:
-		// è un cambio solo se diversa da quella salvata.
+		// è un cambio solo se diversa da quella bloccata sopra (non dalla lettura
+		// stale di `existing`, fatta prima della transazione).
 		const categoryChanged =
 			productCategoryId !== undefined &&
-			productCategoryId !== existing.productCategoryId;
+			productCategoryId !== locked.productCategoryId;
 		await saveProductCharacteristics(tx, {
 			productId: updated.id,
 			productCategoryId: updated.productCategoryId,
