@@ -12,6 +12,31 @@ export const VatRateSchema = Type.Union(
 	{ description: "Aliquota IVA (%): 22, 10, 5, 4 o 0", default: "22" },
 );
 
+export const CharacteristicValueInputSchema = Type.Object({
+	characteristicId: Type.String({ description: "ID della caratteristica" }),
+	value: Type.Union(
+		[
+			Type.String({ maxLength: 2000 }),
+			Type.Number(),
+			Type.Boolean(),
+			Type.Null(),
+		],
+		{
+			description:
+				"Testo, numero o sì/no secondo il tipo; per le liste chiuse l'ID dell'opzione. null o testo vuoto cancella il valore",
+		},
+	),
+});
+
+export const CharacteristicValuesField = Type.Array(
+	CharacteristicValueInputSchema,
+	{
+		maxItems: 100,
+		description:
+			"Valori delle caratteristiche della sotto-categoria. Una voce con valore aggiorna, una vuota cancella, una caratteristica assente resta com'è",
+	},
+);
+
 export const CreateProductBody = Type.Object({
 	name: Type.String({
 		minLength: 1,
@@ -55,6 +80,7 @@ export const CreateProductBody = Type.Object({
 				"Nome di un brand da creare (ignorato se brandId è valorizzato)",
 		}),
 	),
+	characteristicValues: Type.Optional(CharacteristicValuesField),
 	storeId: Type.String({
 		description:
 			"ID del negozio in cui creare il prodotto (autoassegnazione store_products)",

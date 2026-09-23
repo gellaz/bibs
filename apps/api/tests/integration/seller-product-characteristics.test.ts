@@ -26,6 +26,8 @@ mock.module("@/lib/s3", () => ({
 	s3: { delete: mock(async () => {}) },
 }));
 
+import { eq } from "drizzle-orm";
+import { product } from "@/db/schemas/product";
 import {
 	productCategoryCharacteristic,
 	productCharacteristic,
@@ -37,7 +39,11 @@ import {
 	getFormCharacteristics,
 	listProductCharacteristicValues,
 } from "@/modules/seller/services/product-characteristics";
-import { getProduct } from "@/modules/seller/services/products";
+import {
+	createProduct,
+	getProduct,
+	updateProduct,
+} from "@/modules/seller/services/products";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCategory,
@@ -162,6 +168,14 @@ async function seedPhoneWithValues(c: Awaited<ReturnType<typeof seedCatalog>>) {
 	return p;
 }
 
+async function valuesOf(productId: string) {
+	const rows = await getTestDb()
+		.select({ id: productCharacteristicValue.characteristicId })
+		.from(productCharacteristicValue)
+		.where(eq(productCharacteristicValue.productId, productId));
+	return new Set(rows.map((r) => r.id));
+}
+
 describe("getFormCharacteristics", () => {
 	it("orders by sortOrder, then by name, with the options of closed lists", async () => {
 		const c = await seedCatalog();
@@ -226,5 +240,186 @@ describe("product detail values", () => {
 			categoryIds: [c.phones.id],
 		});
 		expect(await listProductCharacteristicValues(p.id)).toEqual([]);
+	});
+});
+
+describe("createProduct with characteristics", () => {
+	it("stores one value per type", async () => {
+		const c = await seedCatalog();
+
+		const created = await createProduct({
+			sellerProfileId: c.seller.profile.id,
+			storeId: c.store.id,
+			name: "Telefono",
+			price: "199.00",
+			productCategoryId: c.phones.id,
+			characteristicValues: [
+				{ characteristicId: c.peso.id, value: 180 },
+				{ characteristicId: c.modello.id, value: "X1" },
+				{ characteristicId: c.g5.id, value: false },
+				{ characteristicId: c.colore.id, value: c.bianco.id },
+			],
+		});
+
+		expect(await listProductCharacteristicValues(created.id)).toEqual([
+			{ characteristicId: c.g5.id, name: "5G", value: false },
+			{ characteristicId: c.colore.id, name: "Colore", value: c.bianco.id },
+			{ characteristicId: c.modello.id, name: "Modello", value: "X1" },
+			{ characteristicId: c.peso.id, name: "Peso", value: 180 },
+		]);
+	});
+
+	it("saves a product with an empty section when nothing is required (D8)", async () => {
+		const c = await seedCatalog();
+		const created = await createProduct({
+			sellerProfileId: c.seller.profile.id,
+			storeId: c.store.id,
+			name: "Tablet",
+			price: "299.00",
+			productCategoryId: c.tablets.id,
+		});
+		expect((await valuesOf(created.id)).size).toBe(0);
+	});
+
+	it("refuses a new product that leaves a required characteristic empty", async () => {
+		const c = await seedCatalog();
+
+		const err = await caught(() =>
+			createProduct({
+				sellerProfileId: c.seller.profile.id,
+				storeId: c.store.id,
+				name: "Telefono",
+				price: "199.00",
+				productCategoryId: c.phones.id,
+				characteristicValues: [{ characteristicId: c.peso.id, value: 180 }],
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toContain("Modello");
+		// La transazione è annullata: nessun prodotto a metà.
+		const rows = await c.db.select().from(product);
+		expect(rows).toHaveLength(0);
+	});
+
+	it("refuses an invalid value and writes nothing", async () => {
+		const c = await seedCatalog();
+
+		const err = await caught(() =>
+			createProduct({
+				sellerProfileId: c.seller.profile.id,
+				storeId: c.store.id,
+				name: "Telefono",
+				price: "199.00",
+				productCategoryId: c.phones.id,
+				characteristicValues: [
+					{ characteristicId: c.modello.id, value: "X1" },
+					{ characteristicId: c.peso.id, value: "tanto" },
+				],
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toContain("Peso: atteso un numero");
+		expect(await c.db.select().from(product)).toHaveLength(0);
+	});
+
+	it("refuses values on a product without a subcategory", async () => {
+		const c = await seedCatalog();
+
+		const err = await caught(() =>
+			createProduct({
+				sellerProfileId: c.seller.profile.id,
+				storeId: c.store.id,
+				name: "Senza categoria",
+				price: "1.00",
+				productCategoryId: null,
+				characteristicValues: [{ characteristicId: c.peso.id, value: 1 }],
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toContain("non prevista");
+	});
+});
+
+describe("updateProduct in the same subcategory", () => {
+	it("updates, clears and leaves alone according to the list", async () => {
+		const c = await seedCatalog();
+		const p = await seedPhoneWithValues(c);
+
+		await updateProduct({
+			productId: p.id,
+			sellerProfileId: c.seller.profile.id,
+			accessibleStoreIds: [c.store.id],
+			productCategoryId: c.phones.id,
+			characteristicValues: [
+				{ characteristicId: c.peso.id, value: 200 },
+				{ characteristicId: c.g5.id, value: null },
+			],
+		});
+
+		expect(await listProductCharacteristicValues(p.id)).toEqual([
+			{ characteristicId: c.colore.id, name: "Colore", value: c.nero.id },
+			{ characteristicId: c.modello.id, name: "Modello", value: "X1" },
+			{ characteristicId: c.peso.id, name: "Peso", value: 200 },
+		]);
+	});
+
+	it("leaves values alone when the list is omitted", async () => {
+		const c = await seedCatalog();
+		const p = await seedPhoneWithValues(c);
+
+		await updateProduct({
+			productId: p.id,
+			sellerProfileId: c.seller.profile.id,
+			accessibleStoreIds: [c.store.id],
+			name: "Nuovo nome",
+		});
+
+		expect((await valuesOf(p.id)).size).toBe(4);
+	});
+
+	it("tolerates a required characteristic that was never filled (P1)", async () => {
+		const c = await seedCatalog();
+		const p = await createTestProduct(c.db, c.seller.profile.id, {
+			categoryIds: [c.phones.id],
+		});
+		await createTestStoreProduct(c.db, c.store.id, p.id);
+
+		const updated = await updateProduct({
+			productId: p.id,
+			sellerProfileId: c.seller.profile.id,
+			accessibleStoreIds: [c.store.id],
+			productCategoryId: c.phones.id,
+			price: "12.00",
+			characteristicValues: [
+				{ characteristicId: c.peso.id, value: 150 },
+				{ characteristicId: c.modello.id, value: null },
+			],
+		});
+
+		expect(updated?.price).toBe("12.00");
+		expect([...(await valuesOf(p.id))]).toEqual([c.peso.id]);
+	});
+
+	it("refuses to clear a required characteristic already filled", async () => {
+		const c = await seedCatalog();
+		const p = await seedPhoneWithValues(c);
+
+		const err = await caught(() =>
+			updateProduct({
+				productId: p.id,
+				sellerProfileId: c.seller.profile.id,
+				accessibleStoreIds: [c.store.id],
+				productCategoryId: c.phones.id,
+				characteristicValues: [{ characteristicId: c.modello.id, value: "" }],
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toContain("Non puoi svuotare");
+		expect(err.message).toContain("Modello");
+		expect((await valuesOf(p.id)).has(c.modello.id)).toBe(true);
 	});
 });
