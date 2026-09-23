@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
 import {
-	CsvImportResultSchema,
+	CsvUpsertResultSchema,
 	okRes,
 	withConflictErrors,
 } from "@/lib/schemas";
@@ -21,7 +21,7 @@ export const characteristicImportsRoutes = new Elysia().post(
 			{
 				adminId: user.id,
 				created: result.created,
-				skipped: result.skipped,
+				updated: result.updated,
 				failed: result.failed,
 				action: "product_characteristics_imported",
 			},
@@ -36,7 +36,7 @@ export const characteristicImportsRoutes = new Elysia().post(
 				description: "File CSV con il dizionario delle caratteristiche",
 			}),
 		}),
-		response: withConflictErrors({ 200: okRes(CsvImportResultSchema) }),
+		response: withConflictErrors({ 200: okRes(CsvUpsertResultSchema) }),
 		detail: {
 			summary: "Importa il dizionario delle caratteristiche da CSV",
 			description:

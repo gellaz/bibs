@@ -143,4 +143,82 @@ describe("importCharacteristicsFromCsv", () => {
 		expect(result.created).toBe(0);
 		expect(result.failed).toBe(1);
 	});
+
+	it("refuses removing an option still referenced by a product value", async () => {
+		const db = getTestDb();
+		await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Colore,enum,,Rosso|Blu"].join("\n"),
+		);
+		const [c] = await db.select().from(productCharacteristic);
+		const options = await db
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.characteristicId, c.id));
+		const rosso = options.find((o) => o.value === "Rosso")!;
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id, { name: "P" });
+		await db.insert(productCharacteristicValue).values({
+			productId: p.id,
+			characteristicId: c.id,
+			dataType: "enum",
+			optionId: rosso.id,
+		});
+
+		const result = await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Colore,enum,,Blu"].join("\n"),
+		);
+
+		expect(result.failed).toBe(1);
+		expect(result.errors[0].message).toContain("Colore");
+		expect(result.errors[0].message).toContain("1");
+		const remainingOptions = await db
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.characteristicId, c.id));
+		expect(remainingOptions.map((o) => o.value).sort()).toEqual([
+			"Blu",
+			"Rosso",
+		]);
+	});
+
+	it("succeeds re-importing an unchanged option list on a characteristic with values", async () => {
+		const db = getTestDb();
+		await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Colore,enum,,Rosso|Blu"].join("\n"),
+		);
+		const [c] = await db.select().from(productCharacteristic);
+		const options = await db
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.characteristicId, c.id));
+		const rosso = options.find((o) => o.value === "Rosso")!;
+		const seller = await createTestSeller(db);
+		const p = await createTestProduct(db, seller.profile.id, { name: "P" });
+		await db.insert(productCharacteristicValue).values({
+			productId: p.id,
+			characteristicId: c.id,
+			dataType: "enum",
+			optionId: rosso.id,
+		});
+
+		const result = await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Colore,enum,,Rosso|Blu"].join("\n"),
+		);
+
+		expect(result.failed).toBe(0);
+		expect(result.updated).toBe(1);
+		const remainingOptions = await db
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.characteristicId, c.id));
+		expect(remainingOptions.map((o) => o.value).sort()).toEqual([
+			"Blu",
+			"Rosso",
+		]);
+		// L'id dell'opzione referenziata resta lo stesso: il valore prodotto
+		// creato sopra continua a puntare a un'opzione viva.
+		expect(remainingOptions.find((o) => o.value === "Rosso")?.id).toBe(
+			rosso.id,
+		);
+	});
 });

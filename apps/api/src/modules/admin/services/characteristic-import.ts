@@ -9,7 +9,6 @@ import {
 } from "@/db/schemas/product-characteristic";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
-import type { CategoryImportResult } from "./category-import";
 
 const CHARACTERISTIC_HEADERS = ["name", "data_type", "unit", "options"];
 
@@ -24,12 +23,38 @@ function assertHeaders(actual: string[], expected: string[]) {
 	}
 }
 
+interface ImportError {
+	row: number;
+	message: string;
+}
+
+export interface CharacteristicImportResult {
+	created: number;
+	updated: number;
+	failed: number;
+	errors: ImportError[];
+}
+
 interface ParsedRow {
 	rowNum: number;
 	name: string;
 	dataType: CharacteristicDataType;
 	unit: string | null;
 	options: string[];
+}
+
+interface OptionSyncPlan {
+	// Opzioni esistenti che restano: stesso id, nuovo sortOrder. Preservare
+	// l'id e' il punto — un valore prodotto che referenzia quell'opzione
+	// resta valido, e un CSV con la stessa lista diventa un no-op pulito.
+	keep: { id: string; sortOrder: number }[];
+	insert: { value: string; sortOrder: number }[];
+	deleteIds: string[];
+}
+
+interface PlannedUpdate extends ParsedRow {
+	id: string;
+	optionSync: OptionSyncPlan;
 }
 
 /**
@@ -42,7 +67,7 @@ interface ParsedRow {
  */
 export async function importCharacteristicsFromCsv(
 	csvText: string,
-): Promise<CategoryImportResult> {
+): Promise<CharacteristicImportResult> {
 	const { headers, rows } = parseCsv(csvText);
 	assertHeaders(headers, CHARACTERISTIC_HEADERS);
 
@@ -55,7 +80,7 @@ export async function importCharacteristicsFromCsv(
 	const unitIdx = headers.indexOf("unit");
 	const optionsIdx = headers.indexOf("options");
 
-	const errors: { row: number; message: string }[] = [];
+	const errors: ImportError[] = [];
 	// Map, non array: una riga che ricorre nello stesso CSV con lo stesso nome
 	// vince l'ultima, cosi' come in aggiornamento vince l'ultimo import.
 	const parsedByName = new Map<string, ParsedRow>();
@@ -126,7 +151,7 @@ export async function importCharacteristicsFromCsv(
 	}
 
 	if (parsedByName.size === 0) {
-		return { created: 0, skipped: 0, failed: errors.length, errors };
+		return { created: 0, updated: 0, failed: errors.length, errors };
 	}
 
 	const names = Array.from(parsedByName.keys());
@@ -144,7 +169,7 @@ export async function importCharacteristicsFromCsv(
 	);
 
 	const toCreate: ParsedRow[] = [];
-	const toUpdate: (ParsedRow & { id: string })[] = [];
+	const toUpdate: PlannedUpdate[] = [];
 
 	for (const parsed of parsedByName.values()) {
 		const current = existingByName.get(parsed.name);
@@ -166,46 +191,97 @@ export async function importCharacteristicsFromCsv(
 			if (valueCount > 0) {
 				errors.push({
 					row: parsed.rowNum,
-					message: `Impossibile cambiare il tipo di "${parsed.name}": ${valueCount} valore/i prodotto già registrato/i con il tipo attuale.`,
+					message: `Impossibile cambiare il tipo di "${parsed.name}": ${valueCount} valor${valueCount === 1 ? "e" : "i"} prodotto già registrat${valueCount === 1 ? "o" : "i"} con il tipo attuale.`,
 				});
 				continue;
 			}
 		}
 
-		// Le opzioni si sostituiscono per intero (DELETE + INSERT): un'opzione
-		// ancora referenziata da un valore prodotto farebbe fallire il DELETE
-		// per via del RESTRICT. Stesso principio del controllo sopra: si conta
-		// prima, invece di lasciar scattare il vincolo.
+		// Le opzioni si sincronizzano per valore, non si sostituiscono per
+		// intero: un'opzione il cui valore compare sia nell'elenco esistente
+		// che in quello nuovo mantiene id (e sortOrder aggiornato), cosi' un
+		// valore prodotto che la referenzia resta valido e ri-importare lo
+		// stesso elenco e' un no-op. Solo le opzioni assenti dal nuovo elenco
+		// vengono cancellate — ed e' solo su QUELLE che si conta prima il
+		// riferimento, per intercettare il RESTRICT con un errore leggibile
+		// invece di lasciarlo scattare sul DELETE.
 		const existingOptions = await db
-			.select({ id: productCharacteristicOption.id })
+			.select({
+				id: productCharacteristicOption.id,
+				value: productCharacteristicOption.value,
+			})
 			.from(productCharacteristicOption)
 			.where(eq(productCharacteristicOption.characteristicId, current.id));
 
-		if (existingOptions.length > 0) {
-			const [{ referencedCount }] = await db
-				.select({ referencedCount: count() })
+		const newValues = new Set(parsed.options);
+		const toDeleteOptions = existingOptions.filter(
+			(o) => !newValues.has(o.value),
+		);
+
+		if (toDeleteOptions.length > 0) {
+			const referencedRows = await db
+				.select({
+					optionId: productCharacteristicValue.optionId,
+					cnt: count(),
+				})
 				.from(productCharacteristicValue)
 				.where(
 					inArray(
 						productCharacteristicValue.optionId,
-						existingOptions.map((o) => o.id),
+						toDeleteOptions.map((o) => o.id),
 					),
-				);
+				)
+				.groupBy(productCharacteristicValue.optionId);
 
-			if (referencedCount > 0) {
+			if (referencedRows.length > 0) {
+				const valueById = new Map(existingOptions.map((o) => [o.id, o.value]));
+				const stillUsedValues = referencedRows.map(
+					(r) => valueById.get(r.optionId as string) ?? "?",
+				);
+				const totalReferenced = referencedRows.reduce(
+					(sum, r) => sum + r.cnt,
+					0,
+				);
+				const optionsPhrase =
+					stillUsedValues.length === 1
+						? `all'opzione ${stillUsedValues[0]}`
+						: `alle opzioni ${stillUsedValues.join(", ")}`;
+
 				errors.push({
 					row: parsed.rowNum,
-					message: `Impossibile aggiornare le opzioni di "${parsed.name}": ${referencedCount} valore/i prodotto ancora collegato/i alle opzioni esistenti.`,
+					message: `Impossibile rimuovere le opzioni di "${parsed.name}": ${totalReferenced} valor${totalReferenced === 1 ? "e" : "i"} prodotto ${totalReferenced === 1 ? "è ancora collegato" : "sono ancora collegati"} ${optionsPhrase}.`,
 				});
 				continue;
 			}
 		}
 
-		toUpdate.push({ ...parsed, id: current.id });
+		const existingIdByValue = new Map(
+			existingOptions.map((o) => [o.value, o.id]),
+		);
+		const keep: OptionSyncPlan["keep"] = [];
+		const insert: OptionSyncPlan["insert"] = [];
+		parsed.options.forEach((value, sortOrder) => {
+			const existingId = existingIdByValue.get(value);
+			if (existingId) {
+				keep.push({ id: existingId, sortOrder });
+			} else {
+				insert.push({ value, sortOrder });
+			}
+		});
+
+		toUpdate.push({
+			...parsed,
+			id: current.id,
+			optionSync: {
+				keep,
+				insert,
+				deleteIds: toDeleteOptions.map((o) => o.id),
+			},
+		});
 	}
 
 	let created = 0;
-	let skipped = 0;
+	let updated = 0;
 
 	if (toCreate.length > 0 || toUpdate.length > 0) {
 		await db.transaction(async (tx) => {
@@ -256,24 +332,35 @@ export async function importCharacteristicsFromCsv(
 					.set({ dataType: r.dataType, unit: r.unit })
 					.where(eq(productCharacteristic.id, r.id));
 
-				await tx
-					.delete(productCharacteristicOption)
-					.where(eq(productCharacteristicOption.characteristicId, r.id));
+				if (r.optionSync.deleteIds.length > 0) {
+					await tx
+						.delete(productCharacteristicOption)
+						.where(
+							inArray(productCharacteristicOption.id, r.optionSync.deleteIds),
+						);
+				}
 
-				if (r.dataType === "enum" && r.options.length > 0) {
+				for (const k of r.optionSync.keep) {
+					await tx
+						.update(productCharacteristicOption)
+						.set({ sortOrder: k.sortOrder })
+						.where(eq(productCharacteristicOption.id, k.id));
+				}
+
+				if (r.optionSync.insert.length > 0) {
 					await tx.insert(productCharacteristicOption).values(
-						r.options.map((value, sortOrder) => ({
+						r.optionSync.insert.map((o) => ({
 							characteristicId: r.id,
-							value,
-							sortOrder,
+							value: o.value,
+							sortOrder: o.sortOrder,
 						})),
 					);
 				}
 
-				skipped++;
+				updated++;
 			}
 		});
 	}
 
-	return { created, skipped, failed: errors.length, errors };
+	return { created, updated, failed: errors.length, errors };
 }

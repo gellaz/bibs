@@ -452,6 +452,25 @@ export const CsvImportResultSchema = t.Object({
 	),
 });
 
+// Per gli import "in aggiornamento" (una riga il cui identificatore esiste
+// già aggiorna la voce invece di essere saltata): a differenza di
+// CsvImportResultSchema, qui non c'è alcuna riga "saltata" da riportare, solo
+// create o aggiornate. Schema dedicato per non travisare CsvImportResultSchema
+// (il cui `skipped` resta onesto per le importazioni di categorie).
+export const CsvUpsertResultSchema = t.Object({
+	created: t.Number({ description: "Numero di righe create con successo" }),
+	updated: t.Number({
+		description: "Numero di righe già presenti e aggiornate",
+	}),
+	failed: t.Number({ description: "Numero di righe con errori" }),
+	errors: t.Array(
+		t.Object({
+			row: t.Number({ description: "Numero di riga nel CSV (partendo da 2)" }),
+			message: t.String({ description: "Descrizione dell'errore" }),
+		}),
+	),
+});
+
 export const StoreProductSchema = t.Object({
 	id: t.String(),
 	productId: t.String(),
