@@ -42,7 +42,7 @@ export function CategoryCharacteristicsButton({
 				{n} caratteristic{n === 1 ? "a" : "he"}
 			</Button>
 			<Sheet open={open} onOpenChange={setOpen}>
-				<SheetContent className="w-full data-[side=right]:sm:max-w-2xl">
+				<SheetContent className="data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
 					<SheetHeader>
 						<SheetTitle>{category.name}</SheetTitle>
 						<SheetDescription>
