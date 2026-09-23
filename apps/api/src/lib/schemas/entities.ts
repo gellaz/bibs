@@ -493,6 +493,49 @@ export const CsvUpsertResultSchema = t.Object({
 	),
 });
 
+export const CharacteristicDataTypeSchema = t.Union(
+	[
+		t.Literal("text"),
+		t.Literal("number"),
+		t.Literal("boolean"),
+		t.Literal("enum"),
+	],
+	{
+		description:
+			"Tipo di dato: text (testo libero), number (numero, con unità facoltativa), boolean (sì/no), enum (lista chiusa di opzioni)",
+	},
+);
+
+export const ProductCharacteristicSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome della caratteristica" }),
+	dataType: CharacteristicDataTypeSchema,
+	unit: t.Nullable(
+		t.String({ description: "Unità di misura, solo per il tipo number" }),
+	),
+	createdAt: t.Date(),
+	updatedAt: t.Date(),
+});
+
+export const AdminProductCharacteristicSchema = t.Object({
+	...ProductCharacteristicSchema.properties,
+	valueCount: t.Integer({
+		description:
+			"Numero di prodotti che hanno un valore per questa caratteristica",
+	}),
+	options: t.Array(
+		t.Object({
+			id: t.String(),
+			value: t.String({ description: "Valore ammesso" }),
+			sortOrder: t.Integer({ description: "Posizione nella lista" }),
+			valueCount: t.Integer({
+				description: "Numero di prodotti che hanno scelto questa opzione",
+			}),
+		}),
+		{ description: "Opzioni della lista chiusa, vuota per gli altri tipi" },
+	),
+});
+
 export const StoreProductSchema = t.Object({
 	id: t.String(),
 	productId: t.String(),

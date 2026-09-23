@@ -189,3 +189,22 @@ export const CategoryListQuery = t.Object({
 		}),
 	),
 });
+
+/**
+ * Pagination + optional search/sort/dataType filter for characteristic list
+ * endpoints.
+ */
+export const CharacteristicListQuery = t.Object({
+	...CategoryListQuery.properties,
+	dataType: t.Optional(
+		t.Union(
+			[
+				t.Literal("text"),
+				t.Literal("number"),
+				t.Literal("boolean"),
+				t.Literal("enum"),
+			],
+			{ description: "Filtra per tipo di dato" },
+		),
+	),
+});
