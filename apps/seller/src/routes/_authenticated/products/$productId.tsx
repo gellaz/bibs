@@ -88,6 +88,8 @@ function EditProductPage() {
 					ean: formData.ean ?? null,
 					brandId: formData.brandId ?? null,
 					brandName: formData.brandName,
+					characteristicValues: formData.characteristicValues,
+					confirmAffected: formData.confirmAffected,
 				});
 
 			const data = unwrap(response, "Errore nell'aggiornamento");
@@ -114,6 +116,9 @@ function EditProductPage() {
 			goBack();
 		},
 		onError: (error: Error) => {
+			// Dopo un 409 per conferma vecchia, savedCharacteristicValues arriva
+			// aggiornato e il prossimo dialog mostra il numero nuovo.
+			void queryClient.invalidateQueries({ queryKey: ["product", productId] });
 			toast.error(error.message || "Errore durante l'aggiornamento");
 		},
 	});
@@ -159,6 +164,7 @@ function EditProductPage() {
 					brandName: product.brand?.name,
 					macroCategoryId,
 				}}
+				savedCharacteristicValues={product.characteristicValues}
 				existingImages={existingImages}
 				onDeleteExisting={(imageId) => deleteImageMutation.mutate(imageId)}
 				onSubmit={(values) => updateMutation.mutate(values)}

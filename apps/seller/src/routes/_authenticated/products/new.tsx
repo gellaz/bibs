@@ -40,6 +40,7 @@ function NewProductPage() {
 				ean: formData.ean,
 				brandId: formData.brandId,
 				brandName: formData.brandName,
+				characteristicValues: formData.characteristicValues,
 				storeId,
 			});
 
