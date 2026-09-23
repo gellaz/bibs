@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
 	type CharacteristicDataType,
@@ -11,6 +11,7 @@ import {
 	assertImpactConfirmed,
 	countValuesByCharacteristic,
 	countValuesByOption,
+	sumCounts,
 } from "./characteristic-impact";
 import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
@@ -171,5 +172,141 @@ export async function deleteProductCharacteristic(
 
 		if (!deleted) throw new ServiceError(404, "Caratteristica non trovata");
 		return { deleted, deletedValues: affected };
+	});
+}
+
+interface UpdateProductCharacteristicParams {
+	characteristicId: string;
+	name?: string;
+	dataType?: CharacteristicDataType;
+	unit?: string | null;
+	options?: CharacteristicOptionInput[];
+	confirmAffected: number;
+}
+
+/**
+ * Modifica una voce del dizionario. Le opzioni si sincronizzano per id: una
+ * che arriva con il suo id resta la stessa riga anche se cambia testo, quindi
+ * i valori che la usano sopravvivono. Due atti cancellano valori (D10) e
+ * passano solo se confermati: rimuovere un'opzione in uso e cambiare il tipo.
+ */
+export async function updateProductCharacteristic(
+	params: UpdateProductCharacteristicParams,
+) {
+	const { characteristicId } = params;
+
+	return db.transaction(async (tx) => {
+		const current = await tx.query.productCharacteristic.findFirst({
+			where: eq(productCharacteristic.id, characteristicId),
+			with: { options: true },
+		});
+		if (!current) throw new ServiceError(404, "Caratteristica non trovata");
+
+		const dataType = params.dataType ?? current.dataType;
+		const typeChanged = dataType !== current.dataType;
+
+		// Campi omessi = invariati. Ma un cambio di tipo non eredita né l'unità
+		// né le opzioni del tipo precedente.
+		const proposedOptions =
+			params.options ??
+			(typeChanged
+				? []
+				: current.options.map((o) => ({ id: o.id, value: o.value })));
+		const proposedUnit =
+			params.unit !== undefined
+				? params.unit
+				: typeChanged
+					? null
+					: current.unit;
+
+		const { unit, options } = normalizeDefinition({
+			dataType,
+			unit: proposedUnit,
+			options: proposedOptions,
+		});
+
+		const currentOptionIds = new Set(current.options.map((o) => o.id));
+		for (const o of options) {
+			if (o.id && !currentOptionIds.has(o.id)) {
+				throw new ServiceError(
+					400,
+					`Opzione sconosciuta per "${current.name}"`,
+				);
+			}
+		}
+
+		const keptIds = new Set(options.flatMap((o) => (o.id ? [o.id] : [])));
+		const removedOptionIds = current.options
+			.filter((o) => !keptIds.has(o.id))
+			.map((o) => o.id);
+
+		const affected = typeChanged
+			? ((await countValuesByCharacteristic([characteristicId], tx)).get(
+					characteristicId,
+				) ?? 0)
+			: sumCounts(await countValuesByOption(removedOptionIds, tx));
+		assertImpactConfirmed(affected, params.confirmAffected);
+
+		// Prima i valori (D10), poi le opzioni: option_id è RESTRICT.
+		if (typeChanged) {
+			await tx
+				.delete(productCharacteristicValue)
+				.where(
+					eq(productCharacteristicValue.characteristicId, characteristicId),
+				);
+		} else if (removedOptionIds.length > 0) {
+			await tx
+				.delete(productCharacteristicValue)
+				.where(inArray(productCharacteristicValue.optionId, removedOptionIds));
+		}
+		if (removedOptionIds.length > 0) {
+			await tx
+				.delete(productCharacteristicOption)
+				.where(inArray(productCharacteristicOption.id, removedOptionIds));
+		}
+
+		// La chiave esterna composta (id, data_type) dei valori accetta il nuovo
+		// tipo solo perché i valori del tipo vecchio sono già stati cancellati.
+		const [updated] = await tx
+			.update(productCharacteristic)
+			.set({
+				...(params.name !== undefined ? { name: params.name.trim() } : {}),
+				dataType,
+				unit,
+			})
+			.where(eq(productCharacteristic.id, characteristicId))
+			.returning();
+
+		// Opzioni tenute in due passi: prima un valore provvisorio univoco per
+		// quelle che cambiano testo, poi quello definitivo. Senza, uno scambio
+		// (Rosso↔Blu) violerebbe UNIQUE (characteristic_id, value) a metà strada.
+		const valueById = new Map(current.options.map((o) => [o.id, o.value]));
+		const kept = options.flatMap((o, sortOrder) =>
+			o.id ? [{ id: o.id, value: o.value, sortOrder }] : [],
+		);
+		for (const k of kept) {
+			if (valueById.get(k.id) === k.value) continue;
+			await tx
+				.update(productCharacteristicOption)
+				// Postgres rifiuta il byte NUL nei testi: il prefisso basta a non
+				// collidere, perché nessun valore reale inizia così.
+				.set({ value: `__rinomina__${k.id}` })
+				.where(eq(productCharacteristicOption.id, k.id));
+		}
+		for (const k of kept) {
+			await tx
+				.update(productCharacteristicOption)
+				.set({ value: k.value, sortOrder: k.sortOrder })
+				.where(eq(productCharacteristicOption.id, k.id));
+		}
+
+		const inserted = options.flatMap((o, sortOrder) =>
+			o.id ? [] : [{ characteristicId, value: o.value, sortOrder }],
+		);
+		if (inserted.length > 0) {
+			await tx.insert(productCharacteristicOption).values(inserted);
+		}
+
+		return { updated, deletedValues: affected };
 	});
 }

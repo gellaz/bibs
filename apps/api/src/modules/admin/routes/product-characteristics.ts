@@ -17,6 +17,7 @@ import {
 	createProductCharacteristic,
 	deleteProductCharacteristic,
 	listProductCharacteristics,
+	updateProductCharacteristic,
 } from "../services/product-characteristics";
 
 const OptionsBody = t.Array(
@@ -94,6 +95,73 @@ export const productCharacteristicsRoutes = new Elysia()
 				summary: "Crea caratteristica prodotto",
 				description:
 					"Aggiunge una voce al dizionario. L'unità è ammessa solo per il tipo number, le opzioni solo (e almeno una) per il tipo enum. Il nome deve essere univoco.",
+				tags: ["Admin"],
+			},
+		},
+	)
+	.patch(
+		"/product-characteristics/:characteristicId",
+		async (ctx) => {
+			const { params, body, store, user } = withAdmin(ctx);
+			const { updated, deletedValues } = await updateProductCharacteristic({
+				characteristicId: params.characteristicId,
+				name: body.name,
+				dataType: body.dataType,
+				unit: body.unit,
+				options: body.options,
+				confirmAffected: body.confirmAffected ?? 0,
+			});
+
+			getLogger(store).info(
+				{
+					adminId: user.id,
+					characteristicId: updated.id,
+					characteristicName: updated.name,
+					dataType: updated.dataType,
+					deletedValues,
+					action: "product_characteristic_updated",
+				},
+				"Caratteristica prodotto aggiornata",
+			);
+
+			return ok(updated);
+		},
+		{
+			params: t.Object({
+				characteristicId: t.String({ description: "ID della caratteristica" }),
+			}),
+			body: t.Object({
+				name: t.Optional(
+					t.String({
+						minLength: 1,
+						maxLength: 100,
+						description: "Nuovo nome della caratteristica",
+					}),
+				),
+				dataType: t.Optional(CharacteristicDataTypeSchema),
+				unit: t.Optional(
+					t.Nullable(
+						t.String({
+							maxLength: 20,
+							description: "Unità di misura, solo per il tipo number",
+						}),
+					),
+				),
+				options: t.Optional(OptionsBody),
+				confirmAffected: t.Optional(
+					t.Integer({
+						minimum: 0,
+						default: 0,
+						description:
+							"Numero di prodotti con un valore che l'interfaccia ha mostrato nella conferma. Serve quando la modifica rimuove opzioni in uso o cambia il tipo: se i prodotti coinvolti sono di più, 409 e nulla cambia.",
+					}),
+				),
+			}),
+			response: withConflictErrors({ 200: okRes(ProductCharacteristicSchema) }),
+			detail: {
+				summary: "Aggiorna caratteristica prodotto",
+				description:
+					"Modifica nome, tipo, unità e opzioni. Le opzioni inviate con il loro id restano le stesse righe anche se cambiano testo, e i valori dei prodotti sopravvivono; quelle esistenti non inviate sono rimosse insieme ai valori che le usano. Un cambio di tipo elimina tutti i valori della caratteristica. Entrambi gli atti richiedono confirmAffected.",
 				tags: ["Admin"],
 			},
 		},

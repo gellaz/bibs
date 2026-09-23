@@ -35,6 +35,7 @@ import {
 	createProductCharacteristic,
 	deleteProductCharacteristic,
 	listProductCharacteristics,
+	updateProductCharacteristic,
 } from "@/modules/admin/services/product-characteristics";
 import { truncateAll } from "../helpers/cleanup";
 import {
@@ -266,5 +267,207 @@ describe("countConfigurations", () => {
 	it("counts the dictionary", async () => {
 		await createProductCharacteristic({ name: "Modello", dataType: "text" });
 		expect((await countConfigurations()).productCharacteristics).toBe(1);
+	});
+});
+
+describe("updateProductCharacteristic", () => {
+	async function coloreWithRosso() {
+		const colore = await createProductCharacteristic({
+			name: "Colore",
+			dataType: "enum",
+			options: [{ value: "Rosso" }, { value: "Blu" }],
+		});
+		const { product, rosso } = await giveRossoToOneProduct(colore);
+		const [blu] = await getTestDb()
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.value, "Blu"));
+		return { colore, product, rosso, blu };
+	}
+
+	it("renames an option in place, keeping the product value", async () => {
+		const { colore, rosso, blu } = await coloreWithRosso();
+
+		const { deletedValues } = await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [
+				{ id: rosso.id, value: "Rosso scuro" },
+				{ id: blu.id, value: "Blu" },
+			],
+			confirmAffected: 0,
+		});
+
+		expect(deletedValues).toBe(0);
+		const [value] = await getTestDb().select().from(productCharacteristicValue);
+		expect(value.optionId).toBe(rosso.id);
+		const [renamed] = await getTestDb()
+			.select()
+			.from(productCharacteristicOption)
+			.where(eq(productCharacteristicOption.id, rosso.id));
+		expect(renamed.value).toBe("Rosso scuro");
+	});
+
+	it("swaps two option values without tripping the unique constraint", async () => {
+		const { colore, rosso, blu } = await coloreWithRosso();
+
+		await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [
+				{ id: rosso.id, value: "Blu" },
+				{ id: blu.id, value: "Rosso" },
+			],
+			confirmAffected: 0,
+		});
+
+		const opts = await getTestDb().select().from(productCharacteristicOption);
+		expect(opts.find((o) => o.id === rosso.id)?.value).toBe("Blu");
+		expect(opts.find((o) => o.id === blu.id)?.value).toBe("Rosso");
+	});
+
+	it("adds new options after the kept ones, in the given order", async () => {
+		const { colore, rosso, blu } = await coloreWithRosso();
+
+		await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [
+				{ id: blu.id, value: "Blu" },
+				{ value: "Verde" },
+				{ id: rosso.id, value: "Rosso" },
+			],
+			confirmAffected: 0,
+		});
+
+		const opts = await getTestDb().select().from(productCharacteristicOption);
+		expect(
+			opts.sort((a, b) => a.sortOrder - b.sortOrder).map((o) => o.value),
+		).toEqual(["Blu", "Verde", "Rosso"]);
+	});
+
+	it("refuses to drop a used option without confirmation and changes nothing", async () => {
+		const { colore, blu } = await coloreWithRosso();
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: colore.id,
+				name: "Colore principale",
+				options: [{ id: blu.id, value: "Blu" }],
+				confirmAffected: 0,
+			}),
+		);
+
+		expect(err.status).toBe(409);
+		expect(
+			await getTestDb().select().from(productCharacteristicOption),
+		).toHaveLength(2);
+		const [c] = await getTestDb().select().from(productCharacteristic);
+		expect(c.name).toBe("Colore");
+	});
+
+	it("drops a used option and its values once confirmed", async () => {
+		const { colore, blu } = await coloreWithRosso();
+
+		const { deletedValues } = await updateProductCharacteristic({
+			characteristicId: colore.id,
+			options: [{ id: blu.id, value: "Blu" }],
+			confirmAffected: 1,
+		});
+
+		expect(deletedValues).toBe(1);
+		expect(
+			await getTestDb().select().from(productCharacteristicValue),
+		).toHaveLength(0);
+		const opts = await getTestDb().select().from(productCharacteristicOption);
+		expect(opts.map((o) => o.value)).toEqual(["Blu"]);
+	});
+
+	it("changes the type once confirmed, dropping values and options", async () => {
+		const { colore } = await coloreWithRosso();
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: colore.id,
+				dataType: "text",
+				confirmAffected: 0,
+			}),
+		);
+		expect(err.status).toBe(409);
+
+		const { updated, deletedValues } = await updateProductCharacteristic({
+			characteristicId: colore.id,
+			dataType: "text",
+			confirmAffected: 1,
+		});
+
+		expect(updated.dataType).toBe("text");
+		expect(deletedValues).toBe(1);
+		expect(
+			await getTestDb().select().from(productCharacteristicValue),
+		).toHaveLength(0);
+		expect(
+			await getTestDb().select().from(productCharacteristicOption),
+		).toHaveLength(0);
+	});
+
+	it("keeps the current options when only the name changes", async () => {
+		const { colore } = await coloreWithRosso();
+
+		await updateProductCharacteristic({
+			characteristicId: colore.id,
+			name: "Colore principale",
+			confirmAffected: 0,
+		});
+
+		expect(
+			await getTestDb().select().from(productCharacteristicOption),
+		).toHaveLength(2);
+		expect(
+			await getTestDb().select().from(productCharacteristicValue),
+		).toHaveLength(1);
+	});
+
+	it("drops the unit when leaving the number type", async () => {
+		const peso = await createProductCharacteristic({
+			name: "Peso",
+			dataType: "number",
+			unit: "g",
+		});
+
+		const { updated } = await updateProductCharacteristic({
+			characteristicId: peso.id,
+			dataType: "text",
+			confirmAffected: 0,
+		});
+
+		expect(updated.unit).toBeNull();
+	});
+
+	it("rejects an option id that belongs to another characteristic", async () => {
+		const { rosso } = await coloreWithRosso();
+		const taglia = await createProductCharacteristic({
+			name: "Taglia",
+			dataType: "enum",
+			options: [{ value: "M" }],
+		});
+
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: taglia.id,
+				options: [{ id: rosso.id, value: "M" }],
+				confirmAffected: 0,
+			}),
+		);
+
+		expect(err.status).toBe(400);
+		expect(err.message).toBe(`Opzione sconosciuta per "Taglia"`);
+	});
+
+	it("returns 404 for an unknown characteristic", async () => {
+		const err = await caught(() =>
+			updateProductCharacteristic({
+				characteristicId: "missing",
+				confirmAffected: 0,
+			}),
+		);
+		expect(err.status).toBe(404);
 	});
 });
