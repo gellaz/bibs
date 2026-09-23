@@ -31,7 +31,7 @@ export const CharacteristicValueInputSchema = Type.Object({
 export const CharacteristicValuesField = Type.Array(
 	CharacteristicValueInputSchema,
 	{
-		maxItems: 100,
+		maxItems: 300,
 		description:
 			"Valori delle caratteristiche della sotto-categoria. Una voce con valore aggiorna, una vuota cancella, una caratteristica assente resta com'è",
 	},
