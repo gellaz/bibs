@@ -140,6 +140,13 @@ export const ProductCategoryWithMacroSchema = t.Object({
 	macroCategory: ProductMacroCategorySchema,
 });
 
+export const AdminProductCategorySchema = t.Object({
+	...ProductCategoryWithMacroSchema.properties,
+	characteristicCount: t.Integer({
+		description: "Numero di caratteristiche assegnate alla sotto-categoria",
+	}),
+});
+
 export const MunicipalityCompactSchema = t.Object(
 	{
 		id: t.String({ description: "Identificatore univoco del comune" }),
@@ -534,6 +541,30 @@ export const AdminProductCharacteristicSchema = t.Object({
 		}),
 		{ description: "Opzioni della lista chiusa, vuota per gli altri tipi" },
 	),
+});
+
+export const CategoryCharacteristicStateSchema = t.Object({
+	id: t.String({ description: "ID della caratteristica" }),
+	name: t.String({ description: "Nome della caratteristica" }),
+	dataType: CharacteristicDataTypeSchema,
+	unit: t.Nullable(t.String()),
+	included: t.Boolean({
+		description: "La caratteristica è assegnata alla sotto-categoria",
+	}),
+	required: t.Boolean({
+		description: "Il venditore deve compilarla (sempre false se non inclusa)",
+	}),
+	valueCount: t.Integer({
+		description:
+			"Prodotti della sotto-categoria che hanno già un valore per questa caratteristica",
+	}),
+});
+
+export const CategoryCharacteristicLinkSchema = t.Object({
+	productCategoryId: t.String(),
+	characteristicId: t.String(),
+	required: t.Boolean(),
+	sortOrder: t.Integer({ description: "Posizione nel form del venditore" }),
 });
 
 export const StoreProductSchema = t.Object({

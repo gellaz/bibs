@@ -208,3 +208,14 @@ export const CharacteristicListQuery = t.Object({
 		),
 	),
 });
+
+/**
+ * Pagination + optional search/sort/macroCategoryId filter for product
+ * category list endpoints (public and admin).
+ */
+export const ProductCategoryListQuery = t.Object({
+	...CategoryListQuery.properties,
+	macroCategoryId: t.Optional(
+		t.String({ description: "Filtra per ID della macro categoria" }),
+	),
+});
