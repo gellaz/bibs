@@ -2,6 +2,18 @@ import { treaty } from "@elysiajs/eden";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import type { Elysia } from "elysia";
 
+export interface CreateApiClientOptions {
+	/**
+	 * Passato a Eden treaty. Default `true` (comportamento storico): Eden
+	 * revivifica ogni stringa JSON che somiglia a una data (dd/mm/yyyy,
+	 * dd-mm-yyyy, yyyy-mm-dd, ISO datetime) in un oggetto `Date`. Va disattivato
+	 * per un fetch che può contenere testo libero simile a una data (es. una
+	 * caratteristica di testo "05/03/2027"), altrimenti Eden la trasforma in
+	 * silenzio in un `Date` sbagliato.
+	 */
+	parseDate?: boolean;
+}
+
 /**
  * Eden Treaty client isomorfo per TanStack Start, parametrizzato sul tipo `App`
  * del backend (così `@bibs/ui` non dipende da `@bibs/api`: ogni app passa il
@@ -14,16 +26,19 @@ import type { Elysia } from "elysia";
  */
 export function createApiClient<
 	App extends Elysia<any, any, any, any, any, any, any>,
->(apiUrl: string) {
+>(apiUrl: string, options?: CreateApiClientOptions) {
+	const parseDate = options?.parseDate ?? true;
 	return createIsomorphicFn()
 		.server(() =>
 			treaty<App>(apiUrl, {
 				fetch: { credentials: "include" as RequestCredentials },
+				parseDate,
 			}),
 		)
 		.client(() =>
 			treaty<App>(apiUrl, {
 				fetch: { credentials: "include" as RequestCredentials },
+				parseDate,
 			}),
 		);
 }
