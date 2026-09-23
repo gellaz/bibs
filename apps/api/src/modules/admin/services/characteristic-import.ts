@@ -432,7 +432,7 @@ export async function importCategoryCharacteristicsFromCsv(
 	assertHeaders(headers, MATRIX_HEADERS);
 
 	if (rows.length === 0) {
-		throw new ServiceError(400, "CSV file contains no data rows");
+		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
 	}
 
 	const macroIdx = headers.indexOf("macro_category");
@@ -519,10 +519,14 @@ export async function importCategoryCharacteristicsFromCsv(
 
 	const characteristicByName = new Map(characteristics.map((c) => [c.name, c]));
 
-	// Sotto-categorie "citate dal file": lo sono anche se una riga cita una
-	// caratteristica inesistente, perché il file parla comunque di quella
-	// sotto-categoria — solo le sotto-categorie MAI nominate restano fuori
-	// dal rapporto di `missing`.
+	// Sotto-categorie "citate dal file": lo sono SOLO se almeno una riga vi si
+	// riferisce risolvendo per intero (sotto-categoria E caratteristica). Una
+	// riga con la sotto-categoria giusta ma la caratteristica sbagliata non
+	// basta: altrimenti un singolo refuso farebbe apparire come "mancanti"
+	// tutte le caratteristiche già collegate a quella sotto-categoria, lo
+	// stesso "muro di falsi allarmi" che la regola sulle sotto-categorie mai
+	// citate esiste per evitare — solo innescato da una citazione parziale
+	// invece che dall'assenza totale.
 	const mentionedCategoryNames = new Map<string, string>();
 	const resolvedRows: MatrixResolvedRow[] = [];
 
@@ -535,7 +539,6 @@ export async function importCategoryCharacteristicsFromCsv(
 			});
 			continue;
 		}
-		mentionedCategoryNames.set(category.id, category.subName);
 
 		const characteristic = characteristicByName.get(r.charName);
 		if (!characteristic) {
@@ -546,6 +549,7 @@ export async function importCategoryCharacteristicsFromCsv(
 			continue;
 		}
 
+		mentionedCategoryNames.set(category.id, category.subName);
 		resolvedRows.push({
 			rowNum: r.rowNum,
 			categoryId: category.id,

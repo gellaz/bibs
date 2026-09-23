@@ -336,4 +336,80 @@ describe("importCategoryCharacteristicsFromCsv", () => {
 		expect(result.failed).toBe(1);
 		expect(result.errors[0].message).toContain("Inesistente");
 	});
+
+	it("does not report missing when the file's only mention of a sub-category has an unknown characteristic", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		await createTestCategory(db, "Smartphone", macro.id);
+		await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Peso,number,g,", "5G,boolean,,"].join(
+				"\n",
+			),
+		);
+		await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Peso,false",
+				"Elettronica,Smartphone,5G,false",
+			].join("\n"),
+		);
+
+		// unico riferimento a Smartphone nel file, e cita una caratteristica
+		// che non esiste: la sotto-categoria non risulta "citata per intero".
+		const result = await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Inesistente,false",
+			].join("\n"),
+		);
+
+		expect(result.failed).toBe(1);
+		expect(result.missing).toEqual([]);
+	});
+
+	it("counts sortOrder per sub-category, not globally", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		const smartphone = await createTestCategory(db, "Smartphone", macro.id);
+		const tablet = await createTestCategory(db, "Tablet", macro.id);
+		await importCharacteristicsFromCsv(
+			[
+				"name,data_type,unit,options",
+				"Peso,number,g,",
+				"5G,boolean,,",
+				"Colore,text,,",
+				"Materiale,text,,",
+			].join("\n"),
+		);
+
+		// Interlacciate: se il contatore fosse globale invece che per
+		// sotto-categoria, Smartphone/5G e Tablet/Materiale prenderebbero 2 e 3
+		// invece di 1 e 1.
+		await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Peso,false",
+				"Elettronica,Tablet,Colore,false",
+				"Elettronica,Smartphone,5G,false",
+				"Elettronica,Tablet,Materiale,false",
+			].join("\n"),
+		);
+
+		const characteristics = await db.select().from(productCharacteristic);
+		const characteristicIdByName = new Map(
+			characteristics.map((c) => [c.name, c.id]),
+		);
+		const links = await db.select().from(productCategoryCharacteristic);
+		const sortOrderFor = (categoryId: string, characteristicName: string) =>
+			links.find(
+				(l) =>
+					l.productCategoryId === categoryId &&
+					l.characteristicId === characteristicIdByName.get(characteristicName),
+			)?.sortOrder;
+
+		expect(sortOrderFor(smartphone.id, "Peso")).toBe(0);
+		expect(sortOrderFor(smartphone.id, "5G")).toBe(1);
+		expect(sortOrderFor(tablet.id, "Colore")).toBe(0);
+		expect(sortOrderFor(tablet.id, "Materiale")).toBe(1);
+	});
 });
