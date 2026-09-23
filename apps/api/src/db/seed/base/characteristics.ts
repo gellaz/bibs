@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { count } from "drizzle-orm";
 import { db } from "@/db";
-import { productCharacteristic } from "@/db/schemas/product-characteristic";
+import {
+	productCategoryCharacteristic,
+	productCharacteristic,
+} from "@/db/schemas/product-characteristic";
 import {
 	importCategoryCharacteristicsFromCsv,
 	importCharacteristicsFromCsv,
@@ -23,12 +26,18 @@ const CATEGORY_CHARACTERISTICS_CSV = resolve(
  * Il dizionario va importato PRIMA della matrice: la matrice referenzia le
  * caratteristiche per nome, e senza il dizionario già popolato fallirebbe su
  * ogni riga.
+ *
+ * Il canary controlla ENTRAMBE le tabelle, non solo il dizionario: se un
+ * crash interrompesse il seed fra il commit del dizionario e la fine
+ * dell'import della matrice, un `seedBase()` successivo vedrebbe il
+ * dizionario già popolato e non ritenterebbe mai più la matrice.
  */
 export async function seedProductCharacteristics() {
-	const [{ total }] = await db
-		.select({ total: count() })
-		.from(productCharacteristic);
-	if (total > 0) {
+	const [[{ dictionaryTotal }], [{ matrixTotal }]] = await Promise.all([
+		db.select({ dictionaryTotal: count() }).from(productCharacteristic),
+		db.select({ matrixTotal: count() }).from(productCategoryCharacteristic),
+	]);
+	if (dictionaryTotal > 0 && matrixTotal > 0) {
 		console.log("  ⏭ Product characteristics already seeded, skipping");
 		return;
 	}

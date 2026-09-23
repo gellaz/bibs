@@ -22,10 +22,18 @@ import {
  * ricadrebbe sempre sulle stesse posizioni, es. `(idx*7)%14` con soli 2
  * valori distinti).
  *
- * Per ogni prodotto scelto, si valorizzano le prime `n` caratteristiche della
- * sua sotto-categoria in `sortOrder`, con `n` fra 3 e il totale, scelto con
- * lo stesso schema a passo coprimo (stavolta rispetto a `totale - 2`, la
- * dimensione dell'intervallo `[3, totale]`).
+ * Per ogni prodotto scelto, si valorizzano `n` caratteristiche della sua
+ * sotto-categoria (ordinate per `sortOrder`), con `n` fra 3 e il totale,
+ * scelto con lo stesso schema a passo coprimo (stavolta rispetto a
+ * `totale - 2`, la dimensione dell'intervallo `[3, totale]`).
+ *
+ * Le `n` caratteristiche NON sono le prime `n` della lista: sarebbe un
+ * prefisso fisso, e nel CSV del Task 2 le caratteristiche booleane tendono a
+ * comparire in coda a ogni sotto-categoria, quindi un prefisso le
+ * raggiungerebbe quasi mai. Si campionano invece con un altro passo coprimo
+ * — stavolta rispetto alla lunghezza dell'intera lista — a partire da un
+ * offset che varia per prodotto (hash di prodotto + categoria), così
+ * l'esposizione si spalma su tutta la lista e varia da prodotto a prodotto.
  */
 
 const CHUNK = 500;
@@ -92,6 +100,16 @@ function randomInRange(range: NumRange, seed: number): number {
 	const value = minScaled + (seed % span);
 	return value / scale;
 }
+
+// Nota: le tabelle sotto usano come chiave solo il NOME della
+// sotto-categoria, non la coppia (macro, sotto-categoria). Due nomi si
+// ripetono sotto macro diverse nella matrice — "Stampanti" (Elettronica,
+// Ufficio e scuola) e "Pennelli" (Fai da te e industria, Hobby e
+// creatività) — e oggi nessuno dei due compare in queste tabelle, quindi
+// non c'è ambiguità. Se in futuro si aggiunge una voce per uno dei due nomi,
+// si applicherebbe a ENTRAMBE le macro anche se le dimensioni reali
+// differissero: a quel punto la chiave deve diventare (macroName, subName),
+// non solo subName.
 
 /** Sotto-categorie di mobili/elettrodomestici pesanti: decine di migliaia di grammi. */
 const WEIGHT_HEAVY = [
@@ -705,6 +723,31 @@ export async function seedCharacteristicValues() {
 		return 3 + ((posInCategory * stride) % range);
 	}
 
+	/**
+	 * Campiona `n` posizioni distinte su `chars` (già ordinato per
+	 * `sortOrder`), NON un prefisso: un prefisso fisso raggiungerebbe quasi
+	 * mai le caratteristiche di coda (tipicamente i booleani, nel CSV del
+	 * Task 2). Passo coprimo rispetto a `chars.length` a partire da un
+	 * `offset` che varia per prodotto — così prodotti diversi della stessa
+	 * sotto-categoria campionano porzioni diverse della lista, e su tanti
+	 * prodotti l'intera lista viene coperta.
+	 */
+	function sampleCharacteristics(
+		chars: CategoryCharacteristic[],
+		n: number,
+		offset: number,
+	): CategoryCharacteristic[] {
+		const length = chars.length;
+		const stride = coprimeStride(11, length);
+		const picked = new Set<number>();
+		for (let j = 0; j < n; j++) {
+			picked.add((offset + j * stride) % length);
+		}
+		return Array.from(picked)
+			.sort((a, b) => a - b)
+			.map((idx) => chars[idx]);
+	}
+
 	type ValueInsert = typeof productCharacteristicValue.$inferInsert;
 	const valueRows: ValueInsert[] = [];
 	// Istogramma "quante caratteristiche per prodotto", per la verifica a
@@ -719,7 +762,10 @@ export async function seedCharacteristicValues() {
 		countHistogram.set(n, (countHistogram.get(n) ?? 0) + 1);
 		const subName = categoryNameById.get(p.productCategoryId) ?? "";
 
-		for (const c of chars.slice(0, n)) {
+		const offset = hashSeed(p.id, p.productCategoryId) % chars.length;
+		const picked = sampleCharacteristics(chars, n, offset);
+
+		for (const c of picked) {
 			const seed = hashSeed(p.id, c.characteristicId);
 			const row: ValueInsert = {
 				productId: p.id,
