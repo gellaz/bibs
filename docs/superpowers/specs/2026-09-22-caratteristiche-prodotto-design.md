@@ -305,11 +305,15 @@ una passata sola, senza leggere 200 righe di CSV.
 ## Import
 
 Due endpoint ricalcati su `apps/api/src/modules/admin/routes/category-imports.ts`,
-stessa forma di risposta (`CsvImportResultSchema`: creati / saltati / falliti più
-gli errori con numero di riga), stessa idempotenza:
+stessa idempotenza ma **forma di risposta diversa fra i due**, perché il
+significato di "riga già presente" non coincide: in aggiornamento (D7) diventa
+"aggiornata", solo additivo (D6) resta "saltata".
 
-- `POST /admin/product-characteristics/import` — **in aggiornamento** (D7): una
-  riga il cui `name` esiste già aggiorna tipo, unità e opzioni.
+- `POST /admin/product-characteristics/import` risponde con
+  `CsvUpsertResultSchema` (creati / **aggiornati** / falliti, più gli errori con
+  numero di riga — niente `skipped`: essendo in aggiornamento (D7), una riga
+  il cui `name` esiste già aggiorna tipo, unità e opzioni invece di essere
+  saltata, e `skipped` sarebbe stato un nome fuorviante per "aggiornato").
 
   Un caso va gestito esplicitamente, perché il database lo rifiuterà comunque:
   cambiare il `data_type` di una caratteristica che ha già valori viola la chiave
@@ -319,10 +323,14 @@ gli errori con numero di riga), stessa idempotenza:
   passare tutte le altre righe. Cambiare il tipo di una caratteristica in uso è
   un atto deliberato e passa dall'interfaccia admin, con la conferma di D10 che
   cancella i valori esistenti.
-- `POST /admin/product-category-characteristics/import` — **solo additivo** (D6),
-  con in più nel risultato l'elenco delle **righe presenti nel database e assenti
-  dal file**, raggruppate per sotto-categoria. Il confronto si calcola comunque
-  per decidere cosa inserire, quindi riportarlo non costa nulla.
+- `POST /admin/product-category-characteristics/import` risponde con
+  `CsvImportWithMissingResultSchema` (creati / **saltati** / falliti, più gli
+  errori con numero di riga, più `missing` — qui `skipped` resta onesto perché
+  l'import è **solo additivo** (D6): una riga già presente viene lasciata
+  invariata, non aggiornata). `missing` è in più nel risultato: l'elenco delle
+  **righe presenti nel database e assenti dal file**, raggruppate per
+  sotto-categoria. Il confronto si calcola comunque per decidere cosa inserire,
+  quindi riportarlo non costa nulla.
 
 Il seed riusa i service di import come già fa `seedProductCategories()`
 (`apps/api/src/db/seed/base/categories.ts:33`), e popola valori veri su una fetta
