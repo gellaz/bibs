@@ -100,7 +100,7 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 	list: (q: CrudListQuery) => Promise<EdenRes<CrudListResult<TEntity>>>;
 	create: (form: TForm) => Promise<EdenRes<unknown>>;
 	update: (id: string, form: TForm) => Promise<EdenRes<unknown>>;
-	remove: (id: string) => Promise<EdenRes<unknown>>;
+	remove: (id: string, entity: TEntity) => Promise<EdenRes<unknown>>;
 
 	extraColumns?: DataTableColumnDef<TEntity>[];
 	emptyIcon: ReactNode;
@@ -125,7 +125,7 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 		total: (n: number) => string;
 		createDialog: { title: string; description: string };
 		editDialog: { title: string; description: string };
-		deleteDescription: (name: string) => ReactNode;
+		deleteDescription: (name: string, entity: TEntity) => ReactNode;
 		toasts: { createOk: string; updateOk: string; deleteOk: string };
 		rowAria: { edit: string; delete: string };
 	};
@@ -230,26 +230,35 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			setSelected(null);
 			toast.success(config.labels.toasts.updateOk);
 		},
-		onError: (e: Error) =>
-			toast.error(e.message || "Errore durante l'aggiornamento"),
+		onError: (e: Error) => {
+			// The form measured impact against the list's counts: if those were
+			// stale (409 from the server), invalidating refreshes them before the
+			// admin reopens the confirmation.
+			invalidateAll();
+			toast.error(e.message || "Errore durante l'aggiornamento");
+		},
 	});
 
 	const deleteMutation = useMutation({
-		mutationFn: (id: string) =>
-			unwrap(config.remove(id), "Errore durante l'eliminazione"),
+		mutationFn: (entity: TEntity) =>
+			unwrap(config.remove(entity.id, entity), "Errore durante l'eliminazione"),
 		onSuccess: () => {
 			invalidateAll();
 			setDeleteOpen(false);
 			setSelected(null);
 			toast.success(config.labels.toasts.deleteOk);
 		},
-		onError: (e: Error) =>
-			toast.error(e.message || "Errore durante l'eliminazione"),
+		onError: (e: Error) => {
+			// Same reasoning: a stale confirmation count reloads before the admin
+			// sees the confirmation dialog again.
+			invalidateAll();
+			toast.error(e.message || "Errore durante l'eliminazione");
+		},
 	});
 
 	const handleDelete = () => {
 		if (!selected) return;
-		deleteMutation.mutate(selected.id);
+		deleteMutation.mutate(selected);
 	};
 
 	const columns = useMemo<DataTableColumnDef<TEntity>[]>(() => {
@@ -466,7 +475,9 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					<AlertDialogHeader>
 						<AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
 						<AlertDialogDescription>
-							{selected ? config.labels.deleteDescription(selected.name) : null}
+							{selected
+								? config.labels.deleteDescription(selected.name, selected)
+								: null}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>

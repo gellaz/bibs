@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { CategoryCrudPanel } from "@/features/crud/category-crud-panel";
 import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
 import { productCategoriesConfig } from "@/features/product-categories/product-categories.config";
+import { productCharacteristicsConfig } from "@/features/product-characteristics/product-characteristics.config";
 import { productMacroCategoriesConfig } from "@/features/product-macro-categories/product-macro-categories.config";
 import { storeCategoriesConfig } from "@/features/store-categories/store-categories.config";
 import { storeMacroCategoriesConfig } from "@/features/store-macro-categories/store-macro-categories.config";
@@ -45,6 +46,11 @@ function ConfigurationsPage() {
 			count: countsData?.productCategories ?? null,
 		},
 		{
+			value: "product-characteristics",
+			label: "Caratteristiche Prodotto",
+			count: countsData?.productCharacteristics ?? null,
+		},
+		{
 			value: "store-macro-categories",
 			label: "Macro Categorie Negozio",
 			count: countsData?.storeMacroCategories ?? null,
@@ -75,7 +81,11 @@ function ConfigurationsPage() {
 
 			<TabNav tabs={tabs} activeTab={tab} onTabChange={handleTabChange}>
 				<CreateButton onClick={() => setCreateOpen(true)}>
-					{tab === "holidays" ? "Nuova Festività" : "Nuova Categoria"}
+					{tab === "holidays"
+						? "Nuova Festività"
+						: tab === "product-characteristics"
+							? "Nuova Caratteristica"
+							: "Nuova Categoria"}
 				</CreateButton>
 			</TabNav>
 
@@ -89,6 +99,13 @@ function ConfigurationsPage() {
 			{tab === "product-categories" && (
 				<CategoryCrudPanel
 					config={productCategoriesConfig}
+					createOpen={createOpen}
+					onCreateOpenChange={setCreateOpen}
+				/>
+			)}
+			{tab === "product-characteristics" && (
+				<CategoryCrudPanel
+					config={productCharacteristicsConfig}
 					createOpen={createOpen}
 					onCreateOpenChange={setCreateOpen}
 				/>
