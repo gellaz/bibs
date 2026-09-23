@@ -91,17 +91,23 @@ describe("importCharacteristicsFromCsv", () => {
 		expect(row.unit).toBe("g");
 	});
 
-	it("replaces the option list on update", async () => {
+	it("syncs the option list on update", async () => {
+		const db = getTestDb();
 		await importCharacteristicsFromCsv(
 			["name,data_type,unit,options", "Colore,enum,,Rosso|Blu"].join("\n"),
 		);
+		const optionsBefore = await db.select().from(productCharacteristicOption);
+		const rossoBefore = optionsBefore.find((o) => o.value === "Rosso")!;
 
 		await importCharacteristicsFromCsv(
 			["name,data_type,unit,options", "Colore,enum,,Rosso|Verde"].join("\n"),
 		);
 
-		const opts = await getTestDb().select().from(productCharacteristicOption);
+		const opts = await db.select().from(productCharacteristicOption);
 		expect(opts.map((o) => o.value).sort()).toEqual(["Rosso", "Verde"]);
+		// L'opzione sopravvissuta mantiene l'id: e' un sync per valore, non una
+		// sostituzione dell'intero elenco.
+		expect(opts.find((o) => o.value === "Rosso")?.id).toBe(rossoBefore.id);
 	});
 
 	it("refuses a type change on a characteristic that already has values", async () => {
@@ -304,7 +310,11 @@ describe("importCategoryCharacteristicsFromCsv", () => {
 		const rows = await db.select().from(productCategoryCharacteristic);
 		expect(rows).toHaveLength(2); // nulla e' stato cancellato
 		expect(result.missing).toEqual([
-			{ subcategory: "Smartphone", characteristics: ["5G"] },
+			{
+				subcategory: "Smartphone",
+				macroCategory: "Elettronica",
+				characteristics: ["5G"],
+			},
 		]);
 	});
 

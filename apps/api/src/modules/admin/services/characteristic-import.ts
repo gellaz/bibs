@@ -75,7 +75,7 @@ export async function importCharacteristicsFromCsv(
 	assertHeaders(headers, CHARACTERISTIC_HEADERS);
 
 	if (rows.length === 0) {
-		throw new ServiceError(400, "CSV file contains no data rows");
+		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
 	}
 
 	const nameIdx = headers.indexOf("name");
@@ -381,6 +381,10 @@ const MATRIX_HEADERS = [
 
 export interface MissingCategoryCharacteristics {
 	subcategory: string;
+	// Il nome della sotto-categoria da solo non è univoco (vedi `pairKey`):
+	// senza la macro, "Stampanti" o "Pennelli" comparirebbero come due voci
+	// identiche e indistinguibili nel rapporto.
+	macroCategory: string;
 	characteristics: string[];
 }
 
@@ -527,7 +531,10 @@ export async function importCategoryCharacteristicsFromCsv(
 	// stesso "muro di falsi allarmi" che la regola sulle sotto-categorie mai
 	// citate esiste per evitare — solo innescato da una citazione parziale
 	// invece che dall'assenza totale.
-	const mentionedCategoryNames = new Map<string, string>();
+	const mentionedCategoryNames = new Map<
+		string,
+		{ subName: string; macroName: string }
+	>();
 	const resolvedRows: MatrixResolvedRow[] = [];
 
 	for (const r of parsedRows) {
@@ -549,7 +556,10 @@ export async function importCategoryCharacteristicsFromCsv(
 			continue;
 		}
 
-		mentionedCategoryNames.set(category.id, category.subName);
+		mentionedCategoryNames.set(category.id, {
+			subName: category.subName,
+			macroName: category.macroName,
+		});
 		resolvedRows.push({
 			rowNum: r.rowNum,
 			categoryId: category.id,
@@ -660,11 +670,23 @@ export async function importCategoryCharacteristicsFromCsv(
 	}
 
 	const missing = Array.from(missingByCategory.entries())
-		.map(([categoryId, characteristics]) => ({
-			subcategory: mentionedCategoryNames.get(categoryId) ?? "",
-			characteristics: characteristics.sort((a, b) => a.localeCompare(b)),
-		}))
-		.sort((a, b) => a.subcategory.localeCompare(b.subcategory));
+		.map(([categoryId, characteristics]) => {
+			const names = mentionedCategoryNames.get(categoryId);
+			return {
+				subcategory: names?.subName ?? "",
+				macroCategory: names?.macroName ?? "",
+				characteristics: characteristics.sort((a, b) => a.localeCompare(b)),
+			};
+		})
+		// Ordina sulla coppia (macro, sotto-categoria): il solo nome della
+		// sotto-categoria non è univoco (vedi `pairKey`), quindi due voci
+		// omonime sotto macro diverse finirebbero adiacenti e indistinguibili.
+		.sort((a, b) => {
+			const macroCompare = a.macroCategory.localeCompare(b.macroCategory);
+			return macroCompare !== 0
+				? macroCompare
+				: a.subcategory.localeCompare(b.subcategory);
+		});
 
 	return { created, skipped, failed: errors.length, errors, missing };
 }

@@ -101,15 +101,15 @@ function randomInRange(range: NumRange, seed: number): number {
 	return value / scale;
 }
 
-// Nota: le tabelle sotto usano come chiave solo il NOME della
-// sotto-categoria, non la coppia (macro, sotto-categoria). Due nomi si
-// ripetono sotto macro diverse nella matrice — "Stampanti" (Elettronica,
-// Ufficio e scuola) e "Pennelli" (Fai da te e industria, Hobby e
-// creatività) — e oggi nessuno dei due compare in queste tabelle, quindi
-// non c'è ambiguità. Se in futuro si aggiunge una voce per uno dei due nomi,
-// si applicherebbe a ENTRAMBE le macro anche se le dimensioni reali
-// differissero: a quel punto la chiave deve diventare (macroName, subName),
-// non solo subName.
+// Nota: le tabelle sotto sono chiavate sul solo NOME della sotto-categoria,
+// non sulla coppia (macro, sotto-categoria), e `classify()` confronta per
+// PREFISSO, non per uguaglianza. Due nomi si ripetono sotto macro diverse
+// nella matrice: "Stampanti" (Elettronica, Ufficio e scuola) e "Pennelli"
+// (Fai da te e industria, Hobby e creatività). Entrambi sono già coperti:
+// "Stampanti" per appartenenza a WEIGHT_MEDIUM_HEAVY, "Pennelli" per il
+// prefisso "Penne" in WEIGHT_LIGHT. In tutti e due i casi l'intervallo vale
+// per ENTRAMBE le macro, e oggi va bene perché l'oggetto è lo stesso. Se
+// servisse distinguerli, la chiave deve diventare (macroName, subName).
 
 /** Sotto-categorie di mobili/elettrodomestici pesanti: decine di migliaia di grammi. */
 const WEIGHT_HEAVY = [
@@ -655,6 +655,11 @@ export async function seedCharacteristicValues() {
 		.orderBy(
 			asc(productCategoryCharacteristic.productCategoryId),
 			asc(productCategoryCharacteristic.sortOrder),
+			// Tie-break: sortOrder deriva dalla posizione nel file d'import e non
+			// e' toccato dagli import successivi, quindi due righe possono
+			// condividere lo stesso (categoria, sortOrder). Il nome rende
+			// l'ordine deterministico anche in quel caso.
+			asc(productCharacteristic.name),
 		);
 
 	const charsByCategory = new Map<string, CategoryCharacteristic[]>();
@@ -759,11 +764,15 @@ export async function seedCharacteristicValues() {
 		if (chars.length === 0) continue;
 
 		const n = pickCount(p.productCategoryId, chars.length);
-		countHistogram.set(n, (countHistogram.get(n) ?? 0) + 1);
 		const subName = categoryNameById.get(p.productCategoryId) ?? "";
 
 		const offset = hashSeed(p.id, p.productCategoryId) % chars.length;
 		const picked = sampleCharacteristics(chars, n, offset);
+
+		// Contata DOPO il loop, non su `n`: un enum senza opzioni fa `continue`
+		// senza inserire nulla, quindi `n` da solo sovrastimerebbe l'istogramma
+		// rispetto a quanto scritto davvero.
+		let written = 0;
 
 		for (const c of picked) {
 			const seed = hashSeed(p.id, c.characteristicId);
@@ -798,7 +807,10 @@ export async function seedCharacteristicValues() {
 			}
 
 			valueRows.push(row);
+			written++;
 		}
+
+		countHistogram.set(written, (countHistogram.get(written) ?? 0) + 1);
 	}
 
 	// ── Verifica a secco: istogrammi PRIMA di scrivere sul database ──

@@ -34,7 +34,15 @@ type MatrixRow = {
 	line: number;
 };
 
-/** Parser CSV minimale ma corretto sui campi quotati (RFC 4180). */
+/**
+ * Parser CSV minimale ma corretto sui campi quotati (RFC 4180).
+ *
+ * Copia quasi verbatim di `@/lib/utils/csv` (duplicata solo perché questo
+ * script gira senza l'alias `@/`, vedi sopra). Le semantiche coincidono oggi,
+ * incluso il `trim()` dei campi: se cambia una delle due, verifica l'altra —
+ * altrimenti questo gate di validazione e l'importer reale possono
+ * silenziosamente divergere.
+ */
 function parseCsv(text: string): { headers: string[]; rows: string[][] } {
 	const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 	const records: string[][] = [];

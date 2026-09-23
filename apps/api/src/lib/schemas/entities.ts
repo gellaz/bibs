@@ -461,6 +461,10 @@ export const CsvImportWithMissingResultSchema = t.Object({
 	missing: t.Array(
 		t.Object({
 			subcategory: t.String(),
+			macroCategory: t.String({
+				description:
+					'Macro categoria della sotto-categoria: il nome della sotto-categoria da solo non è univoco (si ripete sotto macro diverse, es. "Stampanti").',
+			}),
 			characteristics: t.Array(t.String()),
 		}),
 		{
