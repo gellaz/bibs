@@ -141,23 +141,32 @@ export function ProductCharacteristicForm({
 						<Field data-invalid={!!errors.options}>
 							<FieldLabel>Opzioni</FieldLabel>
 							<div className="space-y-2">
-								{fields.map((field, index) => (
-									<div key={field.id} className="flex items-center gap-2">
-										<Input
-											aria-label={`Opzione ${index + 1}`}
-											{...register(`options.${index}.value`)}
-										/>
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon-sm"
-											aria-label={`Rimuovi opzione ${index + 1}`}
-											onClick={() => remove(index)}
-										>
-											<XIcon className="size-4" />
-										</Button>
-									</div>
-								))}
+								{/* Colore, il caso reale più estremo, ha 17 opzioni: senza un
+								limite di altezza qui la finestra di dialogo (che non ha un suo
+								scroll) sfora il viewport e il pulsante Salva diventa
+								irraggiungibile senza ridimensionare il browser. */}
+								<div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+									{fields.map((field, index) => (
+										<div key={field.id} className="space-y-1">
+											<div className="flex items-center gap-2">
+												<Input
+													aria-label={`Opzione ${index + 1}`}
+													{...register(`options.${index}.value`)}
+												/>
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon-sm"
+													aria-label={`Rimuovi opzione ${index + 1}`}
+													onClick={() => remove(index)}
+												>
+													<XIcon className="size-4" />
+												</Button>
+											</div>
+											<FieldError errors={[errors.options?.[index]?.value]} />
+										</div>
+									))}
+								</div>
 								<Button
 									type="button"
 									variant="outline"
