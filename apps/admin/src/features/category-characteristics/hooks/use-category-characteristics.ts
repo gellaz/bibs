@@ -25,13 +25,17 @@ export function useCategoryCharacteristics(categoryId: string) {
 		},
 	});
 
-	// Il pannello e la pastiglia nella tabella delle sotto-categorie (che mostra
-	// il conteggio) leggono da due query diverse: si aggiornano entrambe.
+	// Il pannello, la pastiglia nella tabella delle sotto-categorie (che mostra
+	// il conteggio) e la tabella del dizionario (che mostra il valueCount per
+	// caratteristica/opzione) leggono da tre query diverse: si aggiornano tutte.
 	const refresh = () => {
 		void queryClient.invalidateQueries({
 			queryKey: categoryCharacteristicsKey(categoryId),
 		});
 		void queryClient.invalidateQueries({ queryKey: ["product-categories"] });
+		void queryClient.invalidateQueries({
+			queryKey: ["product-characteristics"],
+		});
 	};
 
 	const include = useMutation({

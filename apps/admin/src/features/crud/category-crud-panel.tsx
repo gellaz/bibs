@@ -231,9 +231,10 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			toast.success(config.labels.toasts.updateOk);
 		},
 		onError: (e: Error) => {
-			// The form measured impact against the list's counts: if those were
-			// stale (409 from the server), invalidating refreshes them before the
-			// admin reopens the confirmation.
+			// The 409 means the count the form confirmed against is stale.
+			// Invalidating refetches the list; the dialog stays open (it reads
+			// `current`, derived from the fresh row) so a retry sends the real
+			// count instead of looping on the same confirmation forever.
 			invalidateAll();
 			toast.error(e.message || "Errore durante l'aggiornamento");
 		},
@@ -249,16 +250,23 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			toast.success(config.labels.toasts.deleteOk);
 		},
 		onError: (e: Error) => {
-			// Same reasoning: a stale confirmation count reloads before the admin
-			// sees the confirmation dialog again.
+			// Same reasoning as above: refetch so the confirmation dialog (still
+			// open, reading `current`) shows the up-to-date count on retry.
 			invalidateAll();
 			toast.error(e.message || "Errore durante l'eliminazione");
 		},
 	});
 
+	// Dialogs are opened with the row captured at click time (`selected`), but
+	// a 409 refetches the list: re-deriving `current` from the fresh data on
+	// every render is what makes the retry send the real, up-to-date count
+	// instead of the stale one `selected` was opened with.
+	const current =
+		(selected && data?.data.find((e) => e.id === selected.id)) ?? selected;
+
 	const handleDelete = () => {
-		if (!selected) return;
-		deleteMutation.mutate(selected);
+		if (!current) return;
+		deleteMutation.mutate(current);
 	};
 
 	const columns = useMemo<DataTableColumnDef<TEntity>[]>(() => {
@@ -439,10 +447,10 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 							{config.labels.editDialog.description}
 						</DialogDescription>
 					</DialogHeader>
-					{selected && (
+					{selected && current && (
 						<div key={selected.id}>
 							{config.renderForm({
-								defaultValues: config.editDefaults(selected),
+								defaultValues: config.editDefaults(current),
 								onSubmit: (form) =>
 									updateMutation.mutate({ id: selected.id, form }),
 								onCancel: () => {
@@ -475,8 +483,8 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					<AlertDialogHeader>
 						<AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
 						<AlertDialogDescription>
-							{selected
-								? config.labels.deleteDescription(selected.name, selected)
+							{current
+								? config.labels.deleteDescription(current.name, current)
 								: null}
 						</AlertDialogDescription>
 					</AlertDialogHeader>

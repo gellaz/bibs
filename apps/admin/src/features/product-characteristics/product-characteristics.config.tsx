@@ -111,8 +111,13 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 	queryKeyBase: "product-characteristics",
 	storageKey: "admin.product-characteristics.columns",
 	// La pastiglia delle sotto-categorie conta le voci della matrice, che una
-	// cancellazione dal dizionario porta via in cascata.
-	extraInvalidate: [["admin-configurations-counts"], ["product-categories"]],
+	// cancellazione dal dizionario porta via in cascata; il pannello matrice di
+	// ogni sotto-categoria mostra le stesse voci e i loro valueCount.
+	extraInvalidate: [
+		["admin-configurations-counts"],
+		["product-categories"],
+		["admin-category-characteristics"],
+	],
 
 	list: (q) =>
 		api().admin["product-characteristics"].get({

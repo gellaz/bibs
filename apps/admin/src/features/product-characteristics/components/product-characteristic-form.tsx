@@ -145,7 +145,7 @@ export function ProductCharacteristicForm({
 								limite di altezza qui la finestra di dialogo (che non ha un suo
 								scroll) sfora il viewport e il pulsante Salva diventa
 								irraggiungibile senza ridimensionare il browser. */}
-								<div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+								<div className="max-h-[min(18rem,35vh)] space-y-2 overflow-y-auto pr-1">
 									{fields.map((field, index) => (
 										<div key={field.id} className="space-y-1">
 											<div className="flex items-center gap-2">
