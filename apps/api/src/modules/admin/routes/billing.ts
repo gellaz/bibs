@@ -134,7 +134,11 @@ export const adminBillingRoutes = new Elysia({ prefix: "/billing" })
 				currency: t.String({ minLength: 3, maxLength: 3 }),
 				suspendedAutoCancelDays: t.Integer({ minimum: 7, maximum: 365 }),
 				pendingCreationExpiryHours: t.Integer({ minimum: 1, maximum: 168 }),
-				productId: t.String(),
+				productId: t.String({
+					pattern: "^prod_[A-Za-z0-9]+$",
+					description:
+						"ID del prodotto Stripe (prod_…) a cui agganciare il nuovo prezzo",
+				}),
 			}),
 			response: withConflictErrors({
 				200: okRes(t.Object({ newPriceId: t.String() })),
