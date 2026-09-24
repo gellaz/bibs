@@ -153,7 +153,7 @@ export const storesRoutes = new Elysia()
 								description: "Numero di telefono",
 							}),
 							position: t.Optional(
-								t.Number({
+								t.Integer({
 									minimum: 0,
 									description: "Posizione di ordinamento",
 								}),

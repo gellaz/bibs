@@ -35,6 +35,7 @@ import {
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
+	createTestStoreSubscription,
 } from "../helpers/fixtures";
 
 beforeAll(async () => {
@@ -59,6 +60,7 @@ async function seedDeliveryScenario() {
 
 	const { profile: seller } = await createTestSeller(db);
 	const store = await createTestStore(db, seller.id);
+	await createTestStoreSubscription(db, store.id);
 	const product = await createTestProduct(db, seller.id, { price: "10.00" });
 	const sp = await createTestStoreProduct(db, store.id, product.id, {
 		stock: 10,

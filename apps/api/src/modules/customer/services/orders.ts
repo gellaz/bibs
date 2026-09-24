@@ -6,12 +6,14 @@ import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
+import { store as storeTable } from "@/db/schemas/store";
 import { config } from "@/lib/config";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
 import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
+import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { buildCastelletto, scorporo } from "@/lib/vat";
 import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
 
@@ -212,6 +214,16 @@ export async function createOrder(params: CreateOrderParams) {
 	// Created eagerly so the idempotency .catch below can be attached
 	// synchronously (no reindent of the transaction body).
 	const pendingOrder = db.transaction(async (tx) => {
+		// Stessa definizione di «vendibile» del carrello: negozio visibile al
+		// pubblico, prodotto attivo. Controllato dentro la tx, prima dello stock,
+		// così una riga non vendibile annulla l'intero ordine.
+		const [sellableStore] = await tx
+			.select({ id: storeTable.id })
+			.from(storeTable)
+			.where(and(eq(storeTable.id, storeId), publiclyVisibleStore()))
+			.limit(1);
+		if (!sellableStore) throw new ServiceError(404, "Negozio non disponibile");
+
 		// Verify stock availability and calculate total (in cents to avoid float errors)
 		let totalCents = 0;
 		const resolvedItems: {
@@ -253,6 +265,10 @@ export async function createOrder(params: CreateOrderParams) {
 					404,
 					`Store product ${item.storeProductId} not found`,
 				);
+			// Un prodotto non attivo collassa nello stesso 404 del carrello: non si
+			// conferma l'esistenza di righe che non si possono comprare.
+			if (sp.product.status !== "active")
+				throw new ServiceError(404, "Prodotto non disponibile");
 			if (sp.stock < item.quantity)
 				throw new ServiceError(
 					400,
@@ -445,13 +461,16 @@ export async function createOrder(params: CreateOrderParams) {
 	});
 }
 
+const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
+const RESERVATION_EXPIRED = Symbol("reservation-expired");
+
 export async function pickupOrder(params: {
 	orderId: string;
 	customerProfileId: string;
 }) {
 	const { orderId, customerProfileId } = params;
 
-	return db.transaction(async (tx) => {
+	const result = await db.transaction(async (tx) => {
 		const existing = await tx.query.order.findFirst({
 			where: and(
 				eq(order.id, orderId),
@@ -461,6 +480,15 @@ export async function pickupOrder(params: {
 		});
 
 		if (!existing) throw new ServiceError(404, "Order not found");
+
+		// Il ritiro è l'unica mossa del cliente: vale solo per ordini da ritirare
+		// che il negozio ha segnato pronti. Il resto della macchina a stati
+		// (confirmed → completed, shipped → completed) resta del seller.
+		if (
+			!PICKUP_TYPES.includes(existing.type as OrderType) ||
+			existing.status !== "ready_for_pickup"
+		)
+			throw new ServiceError(400, "L'ordine non è pronto per il ritiro");
 
 		assertTransition(
 			existing.status as OrderStatus,
@@ -488,7 +516,9 @@ export async function pickupOrder(params: {
 				await refundStockAndPoints(tx, existing);
 			}
 
-			throw new ServiceError(400, "Reservation has expired");
+			// Not a throw: throwing here would roll back the expiry and the
+			// refund we just wrote. Commit first, report after.
+			return RESERVATION_EXPIRED;
 		}
 
 		// Compare-and-swap: claim the completion before awarding points, so two
@@ -517,6 +547,10 @@ export async function pickupOrder(params: {
 
 		return updated;
 	});
+
+	if (result === RESERVATION_EXPIRED)
+		throw new ServiceError(400, "Reservation has expired");
+	return result;
 }
 
 export async function cancelOrder(params: {

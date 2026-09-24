@@ -46,7 +46,7 @@ export const stockRoutes = new Elysia()
 					description: "Negozi in cui rendere disponibile il prodotto",
 				}),
 				stock: t.Optional(
-					t.Number({
+					t.Integer({
 						minimum: 0,
 						description:
 							"Stock iniziale per i negozi appena collegati (default: 0). Se omesso, lo stock dei negozi già collegati viene preservato; se valorizzato, sovrascrive anche i link esistenti.",
@@ -81,7 +81,10 @@ export const stockRoutes = new Elysia()
 				storeId: t.String({ description: "ID del negozio" }),
 			}),
 			body: t.Object({
-				stock: t.Number({ minimum: 0, description: "Nuova quantità di stock" }),
+				stock: t.Integer({
+					minimum: 0,
+					description: "Nuova quantità di stock",
+				}),
 			}),
 			response: withErrors({ 200: okRes(StoreProductSchema) }),
 			detail: {

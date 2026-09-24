@@ -44,6 +44,7 @@ import {
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
+	createTestStoreSubscription,
 } from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ async function seedDiscountedFixtures(
 	const db = getTestDb();
 	const seller = await createTestSeller(db);
 	const testStore = await createTestStore(db, seller.profile.id);
+	await createTestStoreSubscription(db, testStore.id);
 	const prod = await createTestProduct(db, seller.profile.id, {
 		price: opts.price ?? "100.00",
 	});

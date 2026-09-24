@@ -6,10 +6,10 @@ import { findOrCreateBrandByName, listBrands } from "../services/brands";
 
 const ListBrandsQuery = t.Object({
 	page: t.Optional(
-		t.Number({ minimum: 1, default: 1, description: "Numero di pagina" }),
+		t.Integer({ minimum: 1, default: 1, description: "Numero di pagina" }),
 	),
 	limit: t.Optional(
-		t.Number({
+		t.Integer({
 			minimum: 1,
 			maximum: 100,
 			default: 20,
