@@ -37,11 +37,10 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 
 | ID | Item | Evidenza | Note | Effort |
 |---|---|---|---|---|
-| **P1.1** | **Checkout customer** (creazione ordine dal carrello) | `apps/customer/src/routes/_authenticated/cart.tsx:70` (commento: nessun CTA perché non esiste la pagina) | Include: svuotare le righe ordinate dal carrello (debito #163), P0.4 come prerequisito, apportionment sconto punti sul castelletto (P6.2) | L |
+| **P1.1** | **Checkout customer** (creazione ordine dal carrello) | `apps/customer/src/routes/_authenticated/cart.tsx:70` (commento: nessun CTA perché non esiste la pagina) | Include: svuotare le righe ordinate dal carrello (debito #163). Spec: [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato) | L |
 | **P1.2** | **Pagina ordini seller** + castelletto IVA (`order.vatBreakdown`) | nessuna route orders in `apps/seller/src/routes/_authenticated/` | Il seller non può vedere né evadere ordini; i dati API ci sono (#82) | M–L |
 | **P1.3** | **Home seller con dati veri** | `apps/seller/src/routes/_authenticated/index.tsx:23` (`TODAY_LABEL = "Venerdì 22 maggio"`), `:25-30` stats "—", `:44-86` azioni finte ("3 ordini da preparare" `:49`) | Solo l'alert orari è reale. Dipende in parte da P1.2. Include i rimandi di #183: funzione pura estratta dall'IIFE (`:103-137`), ordinamento per urgenza (`:139-141`) | M |
 | **P1.4** | **Geocoding dei negozi creati dal seller** | nessun uso di geocode/location in `apps/seller/src` | Un negozio creato dal seller non ha coordinate → invisibile nelle ricerche per prossimità. L'API di geocoding esiste (#175) | M |
-| **P1.5** | **Snapshot indirizzo sugli ordini** | `apps/api/src/db/schemas/order.ts:55-57` (`onDelete: "set null"`) | Cancellando un indirizzo dalla rubrica gli ordini passati lo perdono. Cura come lo snapshot IVA (#82). Naturale insieme a P1.1 | S |
 | **P1.6** | **Account hub customer**: storico ordini e movimenti punti | `customer/routes/points.ts:9`, `customer/routes/orders.ts:24` inutilizzati; FE usa solo `profile.data.points` (`profile-identity.tsx:118`) | Dopo P1.1 | M |
 | **P1.7** | **Billing seller**: email di dunning/cancellazione; riattivazione self-service di negozi `canceled` | `packages/emails/emails/` (3 template); `seller/services/stores.ts:352` (reactivate solo `canceling`) | Un negozio `canceled` è morto senza intervento manuale | M |
 
@@ -130,7 +129,7 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 
 ### Gate di go-live (rinvii consapevoli: diventano bloccanti al primo deploy)
 - **P6.1 Security**: stati di registrazione distinguibili (enumeration, `registration/services.ts:28-50`); rate limiter in memoria (`plugins/rate-limit.ts:121`); bucket S3 pubblico (`lib/s3.ts:33`); redact pino solo top-level (`lib/logger.ts:26`); non-admin sull'app admin vedono solo un bottone di logout (`admin/_authenticated.tsx:45-58`).
-- **P6.2 Fiscale**: castelletto costruito prima dello sconto punti (`customer/services/orders.ts:294-302`) — da fare con P1.1 o col layer fatturazione; SDI/XML, scontrino telematico, Stripe Tax, codici natura.
+- **P6.2 Fiscale**: layer di fatturazione — SDI/XML, scontrino telematico, Stripe Tax, codici natura. (La ripartizione dello sconto punti sul castelletto è chiusa, vedi «Chiusi».)
 - **P6.3 Stripe**: nessun cron di riconciliazione né endpoint di replay (`api/jobs/`); `current_period_end` letto da `items[0]` (`subscription-updated.ts:43`); `productId` non validato in `updatePricing` (`admin/services/billing.ts:89`).
 - **P6.4 Geocoding hardening** (#175): due chiamate Photon in sequenza (worst case ~10 s), fallimento della seconda fa fallire tutto, promozione a un livello, scrittura cache dentro il try, niente cron di retention su `geocoding_lookups`, niente versionamento del jsonb, limiter per IP — `locations/services/geocode.ts:57-81,160-163`, `locations/routes/locations.ts:183-186`.
 - **P6.5 Storage/audit**: GC degli oggetti S3 orfani (avatar, negozi cancellati); UI e purge di `product_audit_log`.
@@ -167,6 +166,8 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | **P0.6** | Rettifica dell'evidenza: il `NaN` non arrivava a Stripe (l'API lo rifiutava con 422); i buchi erano `productId` libero (ora `^prod_…`) e il dialog (stato stringa, limiti dell'API, massimo due decimali, Conferma disabilitato con messaggio). `changeData` validato con lo schema di scrittura prima di applicarlo (400, resta `pending`); `reject-change` con body tipato | #195 |
 | **P0.8** | La macro-categoria suggerisce l'aliquota solo finché non è una scelta del seller (in modifica quella salvata conta come scelta); altrimenti toast con l'aliquota mantenuta | #195 |
 | **P2.1** | Le 9 voci TanStack del catalog (non 10: `react-table` era già pinnata) passano da `latest` a pin esatti sulle versioni del lockfile; nuovo job CI `web-build` (vite build per app + `git diff --exit-code` sui generati) | #196 |
+| **P1.5** | Snapshot dell'indirizzo sull'ordine (`orders.shipping_address_snapshot`), scritto da `placeOrder`; la FK resta `set null` | #NN |
+| **P6.2 (punti)** | Castelletto costruito sul lordo già scontato dai punti, ripartito tra le aliquote a resti maggiori (`apportionDiscount`): Σ castelletto = totale. Corretta anche la conversione punti→centesimi in virgola mobile (232 punti valevano 2,31 €) | #NN |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
