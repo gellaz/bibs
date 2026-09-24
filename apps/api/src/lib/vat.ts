@@ -53,3 +53,51 @@ export function buildCastelletto(
 			};
 		});
 }
+/**
+ * Ripartisce uno sconto sull'ordine (es. punti fedeltà) tra le aliquote, in
+ * proporzione al lordo di ciascuna. Lo sconto incondizionato riduce la base
+ * imponibile di ogni aliquota, quindi il castelletto va costruito sul lordo che
+ * esce di qui: così Σ(imponibile + imposta) == totale pagato.
+ *
+ * Metodo dei resti maggiori al centesimo: la somma ripartita è esattamente
+ * `discountCents`. A parità di resto vince l'aliquota più alta, per
+ * determinismo. Output aggregato per aliquota, ordinato per aliquota desc.
+ */
+export function apportionDiscount(
+	lines: { grossCents: number; rate: number }[],
+	discountCents: number,
+): { grossCents: number; rate: number }[] {
+	const grossByRate = new Map<number, number>();
+	for (const l of lines) {
+		grossByRate.set(l.rate, (grossByRate.get(l.rate) ?? 0) + l.grossCents);
+	}
+	const buckets = [...grossByRate.entries()]
+		.sort((a, b) => b[0] - a[0])
+		.map(([rate, grossCents]) => ({ rate, grossCents }));
+	const totalGross = buckets.reduce((s, b) => s + b.grossCents, 0);
+
+	if (discountCents < 0 || discountCents > totalGross)
+		throw new RangeError(
+			`discountCents ${discountCents} fuori da [0, ${totalGross}]`,
+		);
+	if (discountCents === 0 || totalGross === 0) return buckets;
+
+	const shares = buckets.map((b) => {
+		const exact = (discountCents * b.grossCents) / totalGross;
+		const base = Math.floor(exact);
+		return { rate: b.rate, base, fraction: exact - base };
+	});
+	let residual = discountCents - shares.reduce((s, x) => s + x.base, 0);
+	// Già ordinati per aliquota desc: il sort stabile tiene quell'ordine a parità.
+	const byFraction = [...shares].sort((a, b) => b.fraction - a.fraction);
+	for (const share of byFraction) {
+		if (residual === 0) break;
+		share.base += 1;
+		residual -= 1;
+	}
+
+	return buckets.map((b, i) => ({
+		rate: b.rate,
+		grossCents: b.grossCents - shares[i].base,
+	}));
+}
