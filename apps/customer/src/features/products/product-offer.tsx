@@ -42,7 +42,7 @@ export function ProductOffer({ product }: { product: ProductDetailView }) {
 						<Link
 							to="/stores/$storeId"
 							params={{ storeId: offer.store.id }}
-							className="font-medium text-foreground hover:underline"
+							className="font-medium text-foreground hover:underline focus-visible:underline"
 						>
 							{offer.store.name}
 						</Link>

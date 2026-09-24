@@ -19,7 +19,12 @@ export function ProductGallery({
 	return (
 		<div className="space-y-3">
 			<div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
-				<TileImage url={current?.url} name={name} />
+				<TileImage
+					key={current?.url}
+					url={current?.url}
+					name={name}
+					loading="eager"
+				/>
 			</div>
 			{images.length > 1 && (
 				<ul

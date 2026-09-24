@@ -94,7 +94,11 @@ function ProductDetailPage() {
 	return (
 		<div className={`${PAGE_CONTAINER} py-8 sm:py-10`}>
 			<div className={LAYOUT_GRID}>
-				<ProductGallery images={product.images} name={product.name} />
+				<ProductGallery
+					key={product.id}
+					images={product.images}
+					name={product.name}
+				/>
 
 				<div className="min-w-0 space-y-6">
 					<header className="space-y-2">

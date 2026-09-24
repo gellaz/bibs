@@ -36,7 +36,7 @@ export function ProductCharacteristics({
 						<tr key={row.id} className="border-border border-b last:border-b-0">
 							<th
 								scope="row"
-								className="w-2/5 py-2.5 pr-4 text-left align-top font-normal text-muted-foreground"
+								className="w-2/5 break-words py-2.5 pr-4 text-left align-top font-normal text-muted-foreground [overflow-wrap:anywhere]"
 							>
 								{row.name}
 							</th>

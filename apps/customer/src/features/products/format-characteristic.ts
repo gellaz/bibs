@@ -37,7 +37,7 @@ export function formatCharacteristicValue(
 			if (typeof value !== "number" || !Number.isFinite(value)) return null;
 			const n = NUMBER.format(value);
 			if (!c.unit) return n;
-			return c.unit === "%" ? `${n}%` : `${n} ${c.unit}`;
+			return c.unit === "%" ? `${n}%` : `${n}\u00a0${c.unit}`;
 		}
 		case "text":
 		case "enum":

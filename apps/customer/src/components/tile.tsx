@@ -27,9 +27,12 @@ export function formatDistance(meters: number): string {
 export function TileImage({
 	url,
 	name,
+	loading = "lazy",
 }: {
 	url: string | null | undefined;
 	name: string;
+	/** La foto principale, sopra la piega, non deve essere pigra. */
+	loading?: "lazy" | "eager";
 }) {
 	const [failed, setFailed] = useState(false);
 
@@ -51,7 +54,7 @@ export function TileImage({
 		<img
 			src={url}
 			alt={name}
-			loading="lazy"
+			loading={loading}
 			decoding="async"
 			onError={() => setFailed(true)}
 			className="size-full object-cover"

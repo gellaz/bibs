@@ -6,7 +6,7 @@ import {
 import type { ProductCharacteristicView } from "./product-detail-api";
 
 const labels = { yes: "Sì", no: "No" };
-const NBSP = " ";
+const NBSP = "\u00a0";
 
 function c(
 	partial: Partial<ProductCharacteristicView> &

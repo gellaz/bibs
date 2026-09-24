@@ -11,7 +11,7 @@ export function useProductDetail(
 	productId: string,
 	storeId: string | undefined,
 ) {
-	const { coords } = useSearchOrigin();
+	const { coords, isBooting } = useSearchOrigin();
 	return useQuery({
 		queryKey: [
 			"product-detail",
@@ -21,6 +21,10 @@ export function useProductDetail(
 			coords?.lng ?? null,
 		],
 		staleTime: 60_000,
+		// Con uno `storeId` in URL le coordinate non decidono il negozio: si può
+		// partire subito. Senza, si aspetta il boot per non agganciare prima il
+		// negozio per nome e poi cambiarlo appena arrivano le coordinate.
+		enabled: !!storeId || !isBooting,
 		queryFn: () => fetchProductDetail(productId, { storeId, coords }),
 	});
 }
