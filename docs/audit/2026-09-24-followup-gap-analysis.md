@@ -51,7 +51,6 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 
 | ID | Item | Evidenza | Effort |
 |---|---|---|---|
-| **P2.1** | TanStack ancora a `latest` nel catalog (10 voci) + **nessun job `vite build`** per i 3 frontend | `package.json:46-54`; `.github/workflows/ci.yml` (solo lint/typecheck/api-test) | S |
 | **P2.2** | Seller senza test né script `test`; admin con vitest/jsdom/testing-library installati ma **zero test** (infra morta) | `apps/admin/package.json:15,55,57`; nessun `*.test.*` in `apps/seller` | M (decidere: rimuovere infra admin o gate FE vero) |
 | **P2.3** | Nessun job CI `docker build` di `apps/api/Dockerfile` | `ci.yml` | S |
 | **P2.4** | ~~Test HTTP dei guard owner-only su employees/settings/billing~~ (fatto in #192, più stores e checkout); restano l'e2e del rollback di `acceptInvite` e il test d'integrazione del resend pending-email | `apps/api/tests/integration/registration-accept-invite.test.ts` | S |
@@ -167,6 +166,7 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | **P0.5** | Input interi `t.Integer` (stock, position anche multipart, quantity, pointsToSpend, `PaginationQuery` condivisa); `birthDate`/`documentExpiry` con `format: "calendar-date"` | #194 |
 | **P0.6** | Rettifica dell'evidenza: il `NaN` non arrivava a Stripe (l'API lo rifiutava con 422); i buchi erano `productId` libero (ora `^prod_…`) e il dialog (stato stringa, limiti dell'API, massimo due decimali, Conferma disabilitato con messaggio). `changeData` validato con lo schema di scrittura prima di applicarlo (400, resta `pending`); `reject-change` con body tipato | #195 |
 | **P0.8** | La macro-categoria suggerisce l'aliquota solo finché non è una scelta del seller (in modifica quella salvata conta come scelta); altrimenti toast con l'aliquota mantenuta | #195 |
+| **P2.1** | Le 9 voci TanStack del catalog (non 10: `react-table` era già pinnata) passano da `latest` a pin esatti sulle versioni del lockfile; nuovo job CI `web-build` (vite build per app + `git diff --exit-code` sui generati) | #196 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -184,7 +184,7 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 ## Sequenza consigliata
 
 1. **P0** in 3 PR (A authz+stato con test di guard, B ordini+schema, C form) — prima di toccare il checkout.
-2. **P2.1** (pin TanStack + job `vite build`): mezz'ora, protegge tutto il resto.
+2. ~~**P2.1** (pin TanStack + job `vite build`)~~ — fatto in #196.
 3. **P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller** e **P1.3 home**.
 4. **P1.4 geocoding negozi seller**: senza, la ricerca per prossimità non vede i negozi reali.
 5. Una sweep P3 ogni tanto come lavoro a basso rischio; P4/P5 quando si tocca la zona.
