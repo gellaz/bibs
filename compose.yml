@@ -24,11 +24,14 @@ services:
       start_period: 5s
 
   bibs-minio:
-    # MinIO no longer publishes to Docker Hub (`minio/minio` answers "pull access
-    # denied"): official images live on quay.io only. No community release has
-    # shipped since 2025-09-07; the newer `.hotfix.*` tag is amd64-only and would
-    # run emulated on Apple Silicon, so we stay on this multi-arch release.
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # MinIO stopped publishing community images: `minio/minio` is gone from
+    # Docker Hub and `quay.io/minio/minio` now denies anonymous pulls. Chainguard
+    # rebuilds upstream MinIO from source (same binary, same `server` CLI,
+    # multi-arch, public). Its free tier only serves `latest`, so pin the digest
+    # and bump it deliberately: `docker pull cgr.dev/chainguard/minio:latest`,
+    # then copy the digest from `docker image inspect`. This one is
+    # RELEASE.2026-09-22T19-25-18Z.
+    image: cgr.dev/chainguard/minio@sha256:bd014394a80898e68c149f2311fdf8d5a2c2f3bb2c33b9327ae6d02b4b065ae1
     container_name: bibs-minio
     ports:
       - "9000:9000"
