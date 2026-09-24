@@ -20,6 +20,7 @@ import {
 } from "@/db/schemas/product";
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
+import type { CharacteristicValueInput } from "@/lib/characteristic-values";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import {
 	municipalityCompactWith,
@@ -30,6 +31,10 @@ import { s3 } from "@/lib/s3";
 import type { VatRate } from "@/lib/vat";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
+import {
+	listProductCharacteristicValues,
+	saveProductCharacteristics,
+} from "./product-characteristics";
 
 // ── Brand resolution helper ───────────────────────────────────────────────────
 //
@@ -542,6 +547,7 @@ export async function getProduct(params: GetProductParams) {
 				municipality: toMunicipalityCompact(store.municipality),
 			},
 		})),
+		characteristicValues: await listProductCharacteristicValues(found.id),
 	};
 }
 
@@ -558,6 +564,7 @@ interface CreateProductParams {
 	ean?: string;
 	brandId?: string;
 	brandName?: string;
+	characteristicValues?: CharacteristicValueInput[];
 }
 
 export async function createProduct(params: CreateProductParams) {
@@ -568,6 +575,7 @@ export async function createProduct(params: CreateProductParams) {
 		brandId,
 		brandName,
 		ean,
+		characteristicValues,
 		...productData
 	} = params;
 
@@ -611,6 +619,14 @@ export async function createProduct(params: CreateProductParams) {
 			stock: 0,
 		});
 
+		await saveProductCharacteristics(tx, {
+			productId: created.id,
+			productCategoryId: created.productCategoryId,
+			inputs: characteristicValues ?? [],
+			mode: "create",
+			confirmAffected: 0,
+		});
+
 		return created;
 	});
 }
@@ -630,6 +646,8 @@ interface UpdateProductParams {
 	ean?: string | null;
 	brandId?: string | null;
 	brandName?: string;
+	characteristicValues?: CharacteristicValueInput[];
+	confirmAffected?: number;
 }
 
 export async function updateProduct(params: UpdateProductParams) {
@@ -642,6 +660,8 @@ export async function updateProduct(params: UpdateProductParams) {
 		ean,
 		brandId,
 		brandName,
+		characteristicValues,
+		confirmAffected,
 		...productData
 	} = params;
 
@@ -659,6 +679,24 @@ export async function updateProduct(params: UpdateProductParams) {
 	}
 
 	return db.transaction(async (tx) => {
+		// Ricarica la sotto-categoria con lock di riga (SELECT ... FOR UPDATE):
+		// `existing` è stato letto fuori dalla transazione, quindi tra quel
+		// SELECT e questo UPDATE un'altra transazione potrebbe aver spostato il
+		// prodotto. categoryChanged va calcolato sul valore bloccato, non su
+		// quello stale, altrimenti un salvataggio concorrente lascia valori
+		// fuori matrice (D10).
+		const [locked] = await tx
+			.select({ productCategoryId: product.productCategoryId })
+			.from(product)
+			.where(
+				and(
+					eq(product.id, productId),
+					eq(product.sellerProfileId, sellerProfileId),
+				),
+			)
+			.for("update");
+		if (!locked) return null;
+
 		// Build product update payload including optional ean/brandId fields
 		const productUpdates: Record<string, unknown> = { ...productData };
 
@@ -723,6 +761,20 @@ export async function updateProduct(params: UpdateProductParams) {
 					);
 
 		if (!updated) return null;
+
+		// Il form di modifica rimanda sempre la sotto-categoria, anche invariata:
+		// è un cambio solo se diversa da quella bloccata sopra (non dalla lettura
+		// stale di `existing`, fatta prima della transazione).
+		const categoryChanged =
+			productCategoryId !== undefined &&
+			productCategoryId !== locked.productCategoryId;
+		await saveProductCharacteristics(tx, {
+			productId: updated.id,
+			productCategoryId: updated.productCategoryId,
+			inputs: characteristicValues ?? [],
+			mode: categoryChanged ? "change" : "stay",
+			confirmAffected: confirmAffected ?? 0,
+		});
 
 		if (imageOrder) {
 			for (let i = 0; i < imageOrder.length; i++) {

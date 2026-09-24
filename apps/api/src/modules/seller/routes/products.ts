@@ -17,12 +17,16 @@ import {
 	ProductSchema,
 	ProductStatusBody,
 	ProductStatusCounts,
-	ProductWithRelationsSchema,
+	SellerProductDetailSchema,
 	SellerProductListItemSchema,
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
-import { CreateProductBody, VatRateSchema } from "@/lib/schemas/forms";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+	VatRateSchema,
+} from "@/lib/schemas/forms";
 import { ensureStoreAccess, withSeller } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
@@ -287,11 +291,11 @@ export const productsRoutes = new Elysia()
 			params: t.Object({
 				productId: t.String({ description: "ID del prodotto" }),
 			}),
-			response: withErrors({ 200: okRes(ProductWithRelationsSchema) }),
+			response: withErrors({ 200: okRes(SellerProductDetailSchema) }),
 			detail: {
 				summary: "Dettaglio prodotto",
 				description:
-					"Restituisce un singolo prodotto con la sua sotto-categoria, disponibilità per negozio e immagini.",
+					"Restituisce un singolo prodotto con la sua sotto-categoria, disponibilità per negozio, immagini e i valori delle caratteristiche.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -333,7 +337,7 @@ export const productsRoutes = new Elysia()
 			detail: {
 				summary: "Crea prodotto",
 				description:
-					"Crea un nuovo prodotto e lo associa alla sotto-categoria indicata. Il prodotto è attivo di default.",
+					"Crea un nuovo prodotto e lo associa alla sotto-categoria indicata. Il prodotto è attivo di default. Salva anche i valori delle caratteristiche: le obbligatorie della sotto-categoria vanno tutte compilate.",
 				tags: ["Seller - Products"],
 			},
 		},
@@ -409,12 +413,20 @@ export const productsRoutes = new Elysia()
 							"Nome brand da creare (ignorato se brandId valorizzato)",
 					}),
 				),
+				characteristicValues: t.Optional(CharacteristicValuesField),
+				confirmAffected: t.Optional(
+					t.Integer({
+						minimum: 0,
+						description:
+							"Solo al cambio di sotto-categoria: quanti valori già salvati, fuori dalla nuova matrice, l'interfaccia ha mostrato nella conferma. Se se ne perdono di più, 409 e nulla cambia. Assente vale 0.",
+					}),
+				),
 			}),
 			response: withConflictErrors({ 200: okRes(ProductSchema) }),
 			detail: {
 				summary: "Aggiorna prodotto",
 				description:
-					"Aggiorna i dati di un prodotto. Se viene fornita productCategoryId, la classificazione viene sostituita; null la rimuove.",
+					"Aggiorna i dati di un prodotto. Se viene fornita productCategoryId, la classificazione viene sostituita; null la rimuove. Salva i valori delle caratteristiche; un'obbligatoria già compilata non si può svuotare. Cambiando sotto-categoria si perdono i valori fuori dalla nuova matrice, dietro confirmAffected, e le nuove obbligatorie vanno compilate.",
 				tags: ["Seller - Products"],
 			},
 		},

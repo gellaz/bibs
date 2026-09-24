@@ -102,3 +102,33 @@ export function assertImpactConfirmed(affected: number, confirmed: number) {
 		`I valori da eliminare sono cambiati: ora riguardano ${productsPhrase(affected)}, la conferma ne copriva ${confirmed}. Ricarica e conferma di nuovo.`,
 	);
 }
+
+export function valuesPhrase(n: number): string {
+	return `${n} valor${n === 1 ? "e" : "i"}`;
+}
+
+/**
+ * La guardia di D10 per il cambio di sotto-categoria di UN prodotto. Qui si
+ * contano valori, non prodotti, e i nomi entrano nel messaggio perché il
+ * venditore sappia che cosa perde. La regola è quella di
+ * assertImpactConfirmed: passa solo se i valori effettivamente cancellati non
+ * superano quelli che l'interfaccia ha mostrato.
+ */
+export function assertValueLossConfirmed(
+	lostNames: string[],
+	confirmed: number,
+) {
+	const n = lostNames.length;
+	if (n <= confirmed) return;
+	const what = `${valuesPhrase(n)} già compilat${n === 1 ? "o" : "i"} (${lostNames.join(", ")})`;
+	if (confirmed === 0) {
+		throw new ServiceError(
+			409,
+			`Cambiando sotto-categoria si perdono ${what}: serve una conferma esplicita.`,
+		);
+	}
+	throw new ServiceError(
+		409,
+		`I valori da eliminare sono cambiati: ora si perdono ${what}, la conferma ne copriva ${confirmed}. Ricarica e conferma di nuovo.`,
+	);
+}

@@ -12,7 +12,7 @@ import {
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
 import { ProductStockManager } from "@/features/products/components/product-stock-manager";
-import { api, unwrap } from "@/lib/api";
+import { api, apiNoDates, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products/$productId")({
@@ -41,7 +41,10 @@ function EditProductPage() {
 	} = useQuery({
 		queryKey: ["product", productId],
 		queryFn: async () => {
-			const response = await api().seller.products({ productId }).get();
+			// apiNoDates: le caratteristiche di tipo testo (es. "Scadenza/TMC")
+			// possono contenere un testo simile a una data ("05/03/2027"); il
+			// client di default di Eden lo revivificherebbe in un `Date` sbagliato.
+			const response = await apiNoDates().seller.products({ productId }).get();
 
 			return unwrap(response, "Errore nel caricamento prodotto").data;
 		},
@@ -88,6 +91,8 @@ function EditProductPage() {
 					ean: formData.ean ?? null,
 					brandId: formData.brandId ?? null,
 					brandName: formData.brandName,
+					characteristicValues: formData.characteristicValues,
+					confirmAffected: formData.confirmAffected,
 				});
 
 			const data = unwrap(response, "Errore nell'aggiornamento");
@@ -114,6 +119,9 @@ function EditProductPage() {
 			goBack();
 		},
 		onError: (error: Error) => {
+			// Dopo un 409 per conferma vecchia, savedCharacteristicValues arriva
+			// aggiornato e il prossimo dialog mostra il numero nuovo.
+			void queryClient.invalidateQueries({ queryKey: ["product", productId] });
 			toast.error(error.message || "Errore durante l'aggiornamento");
 		},
 	});
@@ -159,6 +167,7 @@ function EditProductPage() {
 					brandName: product.brand?.name,
 					macroCategoryId,
 				}}
+				savedCharacteristicValues={product.characteristicValues}
 				existingImages={existingImages}
 				onDeleteExisting={(imageId) => deleteImageMutation.mutate(imageId)}
 				onSubmit={(values) => updateMutation.mutate(values)}

@@ -9,13 +9,13 @@ import {
 	productCharacteristicOption,
 } from "@/db/schemas/product-characteristic";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
-import { ServiceError } from "@/lib/errors";
-import { parseCsv } from "@/lib/utils/csv";
 import {
 	countValuesByCharacteristic,
 	countValuesByOption,
 	sumCounts,
-} from "./characteristic-impact";
+} from "@/lib/characteristic-impact";
+import { ServiceError } from "@/lib/errors";
+import { parseCsv } from "@/lib/utils/csv";
 
 const CHARACTERISTIC_HEADERS = ["name", "data_type", "unit", "options"];
 

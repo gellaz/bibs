@@ -6,12 +6,12 @@ import {
 	productCharacteristicOption,
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
-import { ServiceError } from "@/lib/errors";
 import {
 	assertImpactConfirmed,
 	countValuesByCharacteristic,
 	countValuesByOption,
-} from "./characteristic-impact";
+} from "@/lib/characteristic-impact";
+import { ServiceError } from "@/lib/errors";
 import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
 export interface CharacteristicOptionInput {

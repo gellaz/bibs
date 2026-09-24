@@ -9,6 +9,7 @@ import {
 	OrganizationSchema,
 	PaymentMethodSchema,
 	ProductCategoryWithMacroSchema,
+	ProductCharacteristicValueSchema,
 	ProductImageSchema,
 	ProductSchema,
 	SellerProfileChangeSchema,
@@ -98,6 +99,13 @@ export const ProductWithRelationsSchema = t.Object({
 	storeProducts: t.Array(StoreProductWithStore),
 	images: t.Array(ProductImageSchema),
 	brand: t.Nullable(BrandSchema),
+});
+
+export const SellerProductDetailSchema = t.Object({
+	...ProductWithRelationsSchema.properties,
+	characteristicValues: t.Array(ProductCharacteristicValueSchema, {
+		description: "Valori compilati delle caratteristiche, ordinati per nome",
+	}),
 });
 
 export const AppliedDiscountSchema = t.Object({

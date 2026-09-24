@@ -567,6 +567,40 @@ export const CategoryCharacteristicLinkSchema = t.Object({
 	sortOrder: t.Integer({ description: "Posizione nel form del venditore" }),
 });
 
+export const SellerCategoryCharacteristicSchema = t.Object({
+	id: t.String({ description: "ID della caratteristica" }),
+	name: t.String({ description: "Nome della caratteristica" }),
+	dataType: CharacteristicDataTypeSchema,
+	unit: t.Nullable(
+		t.String({ description: "Unità di misura, solo per il tipo number" }),
+	),
+	required: t.Boolean({
+		description:
+			"Obbligatoria: va compilata quando il prodotto nasce o cambia sotto-categoria, e una volta compilata non si può svuotare",
+	}),
+	options: t.Array(
+		t.Object({
+			id: t.String({ description: "ID dell'opzione, il valore da inviare" }),
+			value: t.String({ description: "Etichetta dell'opzione" }),
+		}),
+		{ description: "Opzioni della lista chiusa, vuota per gli altri tipi" },
+	),
+});
+
+export const CharacteristicOutputValueSchema = t.Union(
+	[t.String(), t.Number(), t.Boolean()],
+	{
+		description:
+			"Testo, numero o sì/no secondo il tipo; per le liste chiuse, l'ID dell'opzione",
+	},
+);
+
+export const ProductCharacteristicValueSchema = t.Object({
+	characteristicId: t.String({ description: "ID della caratteristica" }),
+	name: t.String({ description: "Nome della caratteristica" }),
+	value: CharacteristicOutputValueSchema,
+});
+
 export const StoreProductSchema = t.Object({
 	id: t.String(),
 	productId: t.String(),

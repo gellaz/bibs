@@ -27,15 +27,16 @@ import {
 	productCharacteristicOption,
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
-import { ServiceError } from "@/lib/errors";
 import {
 	assertImpactConfirmed,
+	assertValueLossConfirmed,
 	countCategoryCharacteristicValues,
 	countValuesByCharacteristic,
 	countValuesByOption,
 	productsPhrase,
 	sumCounts,
-} from "@/modules/admin/services/characteristic-impact";
+} from "@/lib/characteristic-impact";
+import { ServiceError } from "@/lib/errors";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCategory,
@@ -207,5 +208,45 @@ describe("assertImpactConfirmed", () => {
 		expect(productsPhrase(1)).toBe("1 prodotto");
 		expect(productsPhrase(0)).toBe("0 prodotti");
 		expect(productsPhrase(12)).toBe("12 prodotti");
+	});
+});
+
+describe("assertValueLossConfirmed", () => {
+	async function caught(fn: () => void): Promise<ServiceError> {
+		try {
+			fn();
+		} catch (e) {
+			if (e instanceof ServiceError) return e;
+			throw e;
+		}
+		throw new Error("expected a ServiceError");
+	}
+
+	it("passes when nothing is lost or the confirmation covers the loss", () => {
+		expect(() => assertValueLossConfirmed([], 0)).not.toThrow();
+		expect(() => assertValueLossConfirmed(["Peso", "RAM"], 2)).not.toThrow();
+		expect(() => assertValueLossConfirmed(["Peso"], 3)).not.toThrow();
+	});
+
+	it("asks for an explicit confirmation naming the lost values", async () => {
+		const err = await caught(() =>
+			assertValueLossConfirmed(["Peso", "RAM"], 0),
+		);
+		expect(err.status).toBe(409);
+		expect(err.message).toContain("2 valori già compilati (Peso, RAM)");
+		expect(err.message).toContain("serve una conferma esplicita");
+	});
+
+	it("uses the singular for a single lost value", async () => {
+		const err = await caught(() => assertValueLossConfirmed(["Peso"], 0));
+		expect(err.message).toContain("1 valore già compilato (Peso)");
+	});
+
+	it("rejects a stale confirmation that covered fewer values", async () => {
+		const err = await caught(() =>
+			assertValueLossConfirmed(["Peso", "RAM"], 1),
+		);
+		expect(err.status).toBe(409);
+		expect(err.message).toContain("la conferma ne copriva 1");
 	});
 });

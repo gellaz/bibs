@@ -17,8 +17,8 @@ import {
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
+import { assertImpactConfirmed } from "@/lib/characteristic-impact";
 import { ServiceError } from "@/lib/errors";
-import { assertImpactConfirmed } from "./characteristic-impact";
 import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
 
 interface ListAdminProductCategoriesParams extends ListByNameParams {
