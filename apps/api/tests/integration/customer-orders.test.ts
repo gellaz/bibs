@@ -578,10 +578,7 @@ describe("createOrder — sellable only", () => {
 		["a suspended store", { subscription: "suspended" }],
 		["a canceled store", { subscription: "canceled" }],
 		["an archived store", { archived: true }],
-		[
-			"a disabled product (and rolls back the sellable line)",
-			{ secondStatus: "disabled" },
-		],
+		["a disabled product next to a sellable one", { secondStatus: "disabled" }],
 		["a trashed product", { secondStatus: "trashed" }],
 	];
 

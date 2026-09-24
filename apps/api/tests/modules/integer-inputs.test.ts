@@ -108,6 +108,9 @@ describe("integer inputs reject fractions with 422", () => {
 		["POST store image position", () => multipart("/stores/s/images", "1.5")],
 		["GET /brands limit", () => get("/brands?limit=2.5")],
 		["GET /brands page", () => get("/brands?page=1.5")],
+		// The shared PaginationQuery, spread into ~19 routes.
+		["GET /stores (PaginationQuery) limit", () => get("/stores?limit=2.5")],
+		["GET /orders (PaginationQuery) page", () => get("/orders?page=1.5")],
 		["GET /geocode limit", () => get("/geocode?q=Via%20Roma&limit=2.5")],
 		[
 			"POST /orders quantity",
