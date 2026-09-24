@@ -32,9 +32,16 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { customerProfile } from "@/db/schemas/customer";
-import { order, orderItem } from "@/db/schemas/order";
+import {
+	type OrderStatus,
+	type OrderType,
+	order,
+	orderItem,
+} from "@/db/schemas/order";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
+import { store as storeTable } from "@/db/schemas/store";
+import type { StoreSubscriptionStatus } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import {
 	cancelOrder,
@@ -45,10 +52,12 @@ import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestBrand,
 	createTestCustomer,
+	createTestCustomerAddress,
 	createTestProduct,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
+	createTestStoreSubscription,
 } from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -71,6 +80,7 @@ async function seedBasicFixtures() {
 	const db = getTestDb();
 	const seller = await createTestSeller(db);
 	const testStore = await createTestStore(db, seller.profile.id);
+	await createTestStoreSubscription(db, testStore.id);
 	const prod = await createTestProduct(db, seller.profile.id, {
 		price: "10.00",
 	});
@@ -126,6 +136,7 @@ describe("createOrder — direct", () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db, { email: "snap@test.com" });
 		const testStore = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, testStore.id);
 		const b = await createTestBrand(db, seller.profile.id, "Acme");
 		const prod = await createTestProduct(db, seller.profile.id, {
 			name: "Pizza Margherita",
@@ -173,6 +184,7 @@ describe("createOrder — direct", () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const testStore = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, testStore.id);
 		const prod = await createTestProduct(db, seller.profile.id, {
 			price: "10.00",
 		});
@@ -245,6 +257,7 @@ describe("createOrder — points discount", () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const testStore = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, testStore.id);
 		const prod = await createTestProduct(db, seller.profile.id, {
 			price: "10.00",
 		});
@@ -280,6 +293,7 @@ describe("createOrder — points CAS guard", () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const testStore = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, testStore.id);
 		const prod = await createTestProduct(db, seller.profile.id, {
 			price: "10.00",
 		});
@@ -448,6 +462,7 @@ describe("cancelOrder", () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const testStore = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, testStore.id);
 		const prod = await createTestProduct(db, seller.profile.id, {
 			price: "10.00",
 		});
@@ -497,10 +512,95 @@ describe("cancelOrder", () => {
 	});
 });
 
+// ── createOrder: only sellable goods ──────────────────────────────────────────
+
+describe("createOrder — sellable only", () => {
+	/** A store with two products; `tweak` makes it (or them) unsellable. */
+	async function seedSellable(opts: {
+		subscription?: StoreSubscriptionStatus | null;
+		archived?: boolean;
+		secondStatus?: "active" | "disabled" | "trashed";
+	}) {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const testStore = await createTestStore(db, seller.profile.id);
+		if (opts.subscription !== null)
+			await createTestStoreSubscription(db, testStore.id, {
+				status: opts.subscription ?? "active",
+			});
+		if (opts.archived)
+			await db
+				.update(storeTable)
+				.set({ deletedAt: new Date() })
+				.where(eq(storeTable.id, testStore.id));
+		const p1 = await createTestProduct(db, seller.profile.id);
+		const p2 = await createTestProduct(db, seller.profile.id, {
+			status: opts.secondStatus ?? "active",
+		});
+		const sp1 = await createTestStoreProduct(db, testStore.id, p1.id, {
+			stock: 10,
+		});
+		const sp2 = await createTestStoreProduct(db, testStore.id, p2.id, {
+			stock: 10,
+		});
+		const customer = await createTestCustomer(db);
+		return { store: testStore, sp1, sp2, customer };
+	}
+
+	async function order2(f: Awaited<ReturnType<typeof seedSellable>>) {
+		return createOrder({
+			customerProfileId: f.customer.profile.id,
+			customerPoints: 0,
+			type: "pay_pickup",
+			storeId: f.store.id,
+			items: [
+				{ storeProductId: f.sp1.id, quantity: 1 },
+				{ storeProductId: f.sp2.id, quantity: 1 },
+			],
+		});
+	}
+
+	async function expectNothingOrdered(
+		f: Awaited<ReturnType<typeof seedSellable>>,
+	) {
+		const db = getTestDb();
+		const stocks = await db
+			.select({ stock: storeProduct.stock })
+			.from(storeProduct)
+			.where(eq(storeProduct.storeId, f.store.id));
+		expect(stocks.map((r) => r.stock)).toEqual([10, 10]);
+		const orders = await db.select({ id: order.id }).from(order);
+		expect(orders).toHaveLength(0);
+	}
+
+	const unsellable: Array<[string, Parameters<typeof seedSellable>[0]]> = [
+		["a store without subscription", { subscription: null }],
+		["a suspended store", { subscription: "suspended" }],
+		["a canceled store", { subscription: "canceled" }],
+		["an archived store", { archived: true }],
+		["a disabled product next to a sellable one", { secondStatus: "disabled" }],
+		["a trashed product", { secondStatus: "trashed" }],
+	];
+
+	for (const [label, opts] of unsellable) {
+		it(`refuses an order with ${label}`, async () => {
+			const f = await seedSellable(opts);
+			await expect(order2(f)).rejects.toMatchObject({ status: 404 });
+			await expectNothingOrdered(f);
+		});
+	}
+
+	it("accepts an order from a canceling store (still public)", async () => {
+		const f = await seedSellable({ subscription: "canceling" });
+		const created = await order2(f);
+		expect(created.status).toBe("confirmed");
+	});
+});
+
 // ── pickupOrder ───────────────────────────────────────────────────────────────
 
 describe("pickupOrder", () => {
-	it("completes a confirmed pay_pickup order and awards points", async () => {
+	it("completes a ready_for_pickup pay_pickup order and awards points", async () => {
 		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
 		const db = getTestDb();
 
@@ -512,6 +612,11 @@ describe("pickupOrder", () => {
 			items: [{ storeProductId: sp.id, quantity: 1 }], // 10.00€
 		});
 		expect(newOrder.status).toBe("confirmed");
+		// The store marks it ready; only then is the pickup the customer's move.
+		await db
+			.update(order)
+			.set({ status: "ready_for_pickup" })
+			.where(eq(order.id, newOrder.id));
 
 		const completed = await pickupOrder({
 			orderId: newOrder.id,
@@ -549,5 +654,81 @@ describe("pickupOrder", () => {
 				customerProfileId: otherCustomer.profile.id,
 			}),
 		).rejects.toMatchObject({ status: 404 });
+	});
+
+	/** An order of `type` forced to `status`, as if the store had moved it. */
+	async function orderAt(type: OrderType, status: OrderStatus) {
+		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
+		const db = getTestDb();
+		const address =
+			type === "pay_deliver"
+				? await createTestCustomerAddress(db, customer.profile.id)
+				: null;
+		const created = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: type as "pay_pickup" | "reserve_pickup" | "pay_deliver",
+			storeId: store.id,
+			items: [{ storeProductId: sp.id, quantity: 1 }],
+			shippingAddressId: address?.id,
+		});
+		await db.update(order).set({ status }).where(eq(order.id, created.id));
+		return { orderId: created.id, customer };
+	}
+
+	for (const [type, status] of [
+		["pay_pickup", "confirmed"],
+		["reserve_pickup", "confirmed"],
+		["pay_deliver", "shipped"],
+		["pay_deliver", "ready_for_pickup"],
+	] as const) {
+		it(`refuses a customer pickup of a ${type} order in ${status}`, async () => {
+			const { orderId, customer } = await orderAt(type, status);
+			const db = getTestDb();
+
+			await expect(
+				pickupOrder({ orderId, customerProfileId: customer.profile.id }),
+			).rejects.toMatchObject({ status: 400 });
+
+			const [after] = await db
+				.select({ status: order.status })
+				.from(order)
+				.where(eq(order.id, orderId));
+			expect(after.status).toBe(status);
+			const [profile] = await db
+				.select({ points: customerProfile.points })
+				.from(customerProfile)
+				.where(eq(customerProfile.id, customer.profile.id));
+			expect(profile.points).toBe(0);
+		});
+	}
+
+	it("expires a ready reservation past its deadline instead of completing it", async () => {
+		const { orderId, customer } = await orderAt(
+			"reserve_pickup",
+			"ready_for_pickup",
+		);
+		const db = getTestDb();
+		await db
+			.update(order)
+			.set({ reservationExpiresAt: new Date(Date.now() - 60_000) })
+			.where(eq(order.id, orderId));
+
+		await expect(
+			pickupOrder({ orderId, customerProfileId: customer.profile.id }),
+		).rejects.toMatchObject({ status: 400 });
+
+		const [after] = await db
+			.select({ status: order.status })
+			.from(order)
+			.where(eq(order.id, orderId));
+		expect(after.status).toBe("expired");
+		// The refund survives the 400: the reserved unit is back on the shelf.
+		const [sp] = await db
+			.select({ stock: storeProduct.stock })
+			.from(storeProduct)
+			.innerJoin(orderItem, eq(orderItem.storeProductId, storeProduct.id))
+			.where(eq(orderItem.orderId, orderId));
+		expect(sp.stock).toBe(10);
 	});
 });

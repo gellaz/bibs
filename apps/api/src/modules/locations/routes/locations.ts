@@ -157,7 +157,7 @@ export const locationsRoutes = new Elysia()
 					description: "Testo dell'indirizzo da cercare",
 				}),
 				limit: t.Optional(
-					t.Number({
+					t.Integer({
 						minimum: 1,
 						maximum: 10,
 						default: 5,

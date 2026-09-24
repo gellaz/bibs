@@ -28,14 +28,11 @@ Path relativi alla root del repo. `api/…` = `apps/api/src/…` salvo dove indi
 
 | ID | Item | Evidenza (@200ed0d) | Impatto | Effort |
 |---|---|---|---|---|
-| **P0.3** | `pickupOrder` non controlla il tipo d'ordine: il cliente completa da sé un `pay_deliver` spedito o un `pay_pickup` confermato prima che il seller lo segni pronto | `apps/api/src/lib/order-state-machine.ts:24-26`, `customer/services/orders.ts:465` | Stato ordine falsificabile dal cliente | S |
-| **P0.4** | `createOrder` controlla solo `storeProduct.storeId`: niente `publiclyVisibleStore()`, niente stato prodotto → via API si ordinano prodotti nascosti/disabilitati o da negozi sospesi | `apps/api/src/modules/customer/services/orders.ts:~234-258` | Ordini su merce non vendibile; prerequisito del checkout | S–M |
-| **P0.5** | Campi interi dichiarati `t.Number` (stock, position, quantity): un frazionario arriva al DB (22P02, non mappato) → probabile 500. Date validate solo da regex (`2024-13-45` passa) | `seller/routes/images.ts:60`, `seller/routes/stores.ts:155`, `seller/routes/stock.ts:48`, `customer/routes/orders.ts:70`, `lib/schemas/forms/onboarding.ts:30,70` | 500 su input banale; dati invalidi | S |
 | **P0.6** | Dialog prezzi admin: `parseFloat/parseInt` senza guardia → campo svuotato manda `NaN` a Stripe; Conferma disabilitato solo durante il pending. `changeData` delle richieste di modifica applicato con cast `as string` senza validazione per tipo; `reject-change` legge `(ctx as any).body?.reason` | `apps/admin/src/routes/_authenticated/billing/pricing.tsx:118,124,130,142`; `apps/api/src/modules/admin/services/sellers.ts:419-499`; `admin/routes/seller-changes.ts:83` | Prezzi Stripe corrotti; dati seller non validati | S |
 | **P0.8** | Cambiare macro-categoria nel form prodotto **sovrascrive sempre** `vatRate`, anche se impostata a mano | `apps/seller/src/features/products/components/product-form.tsx:275-277` | Dato fiscale perso in silenzio | S |
 
 **Taglio suggerito**: ~~PR A = P0.1 + P0.2 + P0.7~~ (fatta, #192) ·
-PR B = P0.3 + P0.4 + P0.5 (ordini e schema) · PR C = P0.6 + P0.8 (form admin/seller).
+~~PR B = P0.3 + P0.4 + P0.5~~ (fatta, #194) · PR C = P0.6 + P0.8 (form admin/seller).
 
 ---
 
@@ -165,6 +162,9 @@ PR B = P0.3 + P0.4 + P0.5 (ordini e schema) · PR C = P0.6 + P0.8 (form admin/se
 | **P0.1** | Parità owner/employee: `requireOwner` su `/stores/archived` e sulle 3 route di checkout; il ramo employee del guard controlla `onboardingStatus` (`resolveSellerAccess()` in `seller/context.ts`); «Archivio» nascosto ai dipendenti nel seller | #192 |
 | **P0.2** | Prefill EAN: tra seller ma solo prodotti `active` in un negozio `publiclyVisibleStore()` (dati già pubblici); cestinati, disabilitati e negozi nascosti esclusi | #192 |
 | **P0.7** | `verifySeller`/`rejectSeller`: CAS su `pending_review`, 404 se il seller non esiste, 409 altrimenti, nessun effetto su `vatStatus` | #192 |
+| **P0.3** | `pickupOrder` solo per `pay_pickup`/`reserve_pickup` in `ready_for_pickup`; la scadenza della prenotazione ora persiste (il 400 annullava expire e rimborso) | #194 |
+| **P0.4** | `createOrder` solo su negozi `publiclyVisibleStore()` e prodotti `active`, dentro la tx (stessa regola del carrello) | #194 |
+| **P0.5** | Input interi `t.Integer` (stock, position anche multipart, quantity, pointsToSpend, `PaginationQuery` condivisa); `birthDate`/`documentExpiry` con `format: "calendar-date"` | #194 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 

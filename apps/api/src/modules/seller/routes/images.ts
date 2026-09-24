@@ -58,7 +58,7 @@ export const imagesRoutes = new Elysia()
 					description: "Immagini (max 5MB ciascuna, solo formati immagine)",
 				}),
 				position: t.Optional(
-					t.Number({
+					t.Integer({
 						minimum: 0,
 						description: "Posizione di ordinamento (default: indice del file)",
 					}),

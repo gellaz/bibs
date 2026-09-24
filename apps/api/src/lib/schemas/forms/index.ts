@@ -1,3 +1,6 @@
+// Side effect: registers `format: "calendar-date"` for TypeCompiler users (seller forms).
+import "./formats";
+
 export {
 	AcceptInviteBody,
 	CompanyBody,
