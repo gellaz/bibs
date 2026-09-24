@@ -14,7 +14,7 @@ import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
-import { buildCastelletto, scorporo } from "@/lib/vat";
+import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
 import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
 
 export type OrderTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -301,30 +301,37 @@ export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
 		});
 	}
 
-	// Castelletto IVA: scorporo per-aliquota sui lordi di riga (PRIMA dello
-	// sconto punti — l'apportionment dello sconto punti tra aliquote è demandato
-	// al futuro layer di fatturazione).
-	const vatBreakdown = buildCastelletto(
-		resolvedItems.map((it) => ({
-			grossCents: toCents(it.unitPrice) * it.quantity,
-			rate: Number(it.vatRate),
-		})),
-	);
-
 	// Points discount (all in cents)
 	let discountCents = 0;
 	if (pointsToSpend > 0) {
 		if (pointsToSpend > customerPoints)
 			throw new ServiceError(400, "Insufficient points");
+		// Aritmetica intera: (punti / 100) * 100 in virgola mobile perde un
+		// centesimo su migliaia di valori (232 punti → 231 centesimi).
 		discountCents = Math.floor(
-			(pointsToSpend / config.pointsPerEuroDiscount) * 100,
+			(pointsToSpend * 100) / config.pointsPerEuroDiscount,
 		);
 		if (discountCents > totalCents) discountCents = totalCents;
 	}
 	const actualPointsSpent = Math.floor(
-		(discountCents / 100) * config.pointsPerEuroDiscount,
+		(discountCents * config.pointsPerEuroDiscount) / 100,
 	);
 	const finalTotalCents = totalCents - discountCents;
+
+	// Castelletto IVA sul lordo GIÀ scontato dai punti: lo sconto punti è
+	// incondizionato, riduce la base imponibile di ogni aliquota in proporzione
+	// (resti maggiori, vedi apportionDiscount). Così Σ castelletto == total.
+	// order_items.vatAmount resta lo scorporo della riga prima dei punti:
+	// l'unica fonte fiscale dell'ordine è vatBreakdown.
+	const vatBreakdown = buildCastelletto(
+		apportionDiscount(
+			resolvedItems.map((it) => ({
+				grossCents: toCents(it.unitPrice) * it.quantity,
+				rate: Number(it.vatRate),
+			})),
+			discountCents,
+		),
+	);
 
 	const initialStatus = type === "direct" ? "completed" : "confirmed";
 
