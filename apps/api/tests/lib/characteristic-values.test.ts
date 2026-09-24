@@ -4,6 +4,7 @@ import {
 	filledAfter,
 	MAX_TEXT_LENGTH,
 	missingRequired,
+	toCharacteristicDisplayValue,
 	toCharacteristicOutputValue,
 	validateCharacteristicValues,
 } from "@/lib/characteristic-values";
@@ -299,5 +300,92 @@ describe("toCharacteristicOutputValue", () => {
 				optionId: "o-nero",
 			}),
 		).toBe("o-nero");
+	});
+});
+
+describe("toCharacteristicDisplayValue", () => {
+	const empty = {
+		valueText: null,
+		valueNumber: null,
+		valueBoolean: null,
+		optionId: null,
+	};
+
+	it("returns the option label for an enum, not the option id", () => {
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "enum", optionId: "opt-1" },
+				"Nero",
+			),
+		).toBe("Nero");
+	});
+
+	it("returns null for an enum whose label is missing", () => {
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "enum", optionId: "opt-1" },
+				null,
+			),
+		).toBeNull();
+	});
+
+	it("returns the text unchanged, date-like included", () => {
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "text", valueText: "05/03/2027" },
+				null,
+			),
+		).toBe("05/03/2027");
+	});
+
+	it("returns null for a blank text", () => {
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "text", valueText: "   " },
+				null,
+			),
+		).toBeNull();
+	});
+
+	it("drops the trailing zeros of numeric", () => {
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "number", valueNumber: "12.0000" },
+				null,
+			),
+		).toBe(12);
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "number", valueNumber: "6.1000" },
+				null,
+			),
+		).toBe(6.1);
+	});
+
+	it("returns null for a missing number instead of zero", () => {
+		expect(
+			toCharacteristicDisplayValue({ ...empty, dataType: "number" }, null),
+		).toBeNull();
+	});
+
+	it("keeps a boolean false", () => {
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "boolean", valueBoolean: false },
+				null,
+			),
+		).toBe(false);
+		expect(
+			toCharacteristicDisplayValue(
+				{ ...empty, dataType: "boolean", valueBoolean: true },
+				null,
+			),
+		).toBe(true);
+	});
+
+	it("returns null for a missing boolean", () => {
+		expect(
+			toCharacteristicDisplayValue({ ...empty, dataType: "boolean" }, null),
+		).toBeNull();
 	});
 });

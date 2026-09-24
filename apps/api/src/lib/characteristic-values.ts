@@ -206,3 +206,30 @@ export function toCharacteristicOutputValue(
 			return stored.optionId as string;
 	}
 }
+
+/**
+ * Il valore come lo legge il cliente sulla scheda prodotto. A differenza di
+ * toCharacteristicOutputValue (il seller rimanda l'id), una lista chiusa
+ * diventa l'etichetta dell'opzione. `null` vuol dire «niente da mostrare»: la
+ * riga non esce. Un `false` invece è un valore («No»), non un vuoto.
+ */
+export function toCharacteristicDisplayValue(
+	stored: StoredCharacteristicValue,
+	optionValue: string | null,
+): string | number | boolean | null {
+	switch (stored.dataType) {
+		case "enum":
+			return optionValue?.trim() ? optionValue : null;
+		case "text":
+			return stored.valueText?.trim() ? stored.valueText : null;
+		case "number": {
+			// Number(null) è 0: senza questo controllo un numero assente
+			// diventerebbe una riga «0 g».
+			if (stored.valueNumber === null) return null;
+			const n = Number(stored.valueNumber);
+			return Number.isFinite(n) ? n : null;
+		}
+		case "boolean":
+			return stored.valueBoolean;
+	}
+}

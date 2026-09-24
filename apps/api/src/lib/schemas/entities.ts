@@ -1065,6 +1065,92 @@ export const ProductCardSchema = t.Object({
 	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
 });
 
+// Scheda prodotto customer. Nessun campo data: Eden idraterebbe le
+// stringhe-data in `Date`. Il customer la legge comunque con parseDate: false,
+// perché un valore di testo può somigliare a una data ("05/03/2027").
+export const CustomerProductCharacteristicSchema = t.Object({
+	characteristicId: t.String({ description: "ID della caratteristica" }),
+	name: t.String({ description: "Nome della caratteristica" }),
+	dataType: CharacteristicDataTypeSchema,
+	unit: t.Nullable(
+		t.String({ description: "Unità di misura, solo per il tipo number" }),
+	),
+	value: t.Union([t.String(), t.Number(), t.Boolean()], {
+		description:
+			"Testo, numero o sì/no secondo il tipo; per le liste chiuse, l'etichetta dell'opzione",
+	}),
+});
+
+export const CustomerProductDetailSchema = t.Object({
+	id: t.String(),
+	name: t.String({ description: "Nome del prodotto" }),
+	description: t.Nullable(
+		t.String({ description: "Descrizione del prodotto" }),
+	),
+	price: t.String({ description: "Prezzo di listino in formato decimale" }),
+	discountedPrice: t.Nullable(
+		t.String({ description: "Prezzo scontato, se promo attiva" }),
+	),
+	discountPercent: t.Nullable(t.Integer({ minimum: 1, maximum: 99 })),
+	brandName: t.Nullable(t.String({ description: "Marca del prodotto" })),
+	category: t.Nullable(
+		t.Object({
+			id: t.String(),
+			name: t.String({ description: "Sotto-categoria" }),
+			macroCategory: t.Object({
+				id: t.String(),
+				name: t.String({ description: "Macro-categoria" }),
+			}),
+		}),
+	),
+	images: t.Array(
+		t.Object({
+			id: t.String(),
+			url: t.String({ description: "URL dell'immagine" }),
+			position: t.Number({ minimum: 0 }),
+		}),
+		{ description: "Immagini del prodotto ordinate per posizione" },
+	),
+	offer: t.Object(
+		{
+			storeProductId: t.String({
+				description: "ID della riga store_products, da usare per il carrello",
+			}),
+			stock: t.Integer({
+				minimum: 0,
+				description: "Disponibilità nel negozio agganciato",
+			}),
+			distance: t.Nullable(
+				t.Number({
+					minimum: 0,
+					description: "Distanza in metri dall'origine (null senza origine)",
+				}),
+			),
+			store: t.Object({
+				id: t.String(),
+				name: t.String({ description: "Nome del negozio" }),
+				municipality: MunicipalityCompactSchema,
+			}),
+		},
+		{
+			description:
+				"Il negozio agganciato: quello richiesto se ce l'ha, altrimenti il più vicino, altrimenti il primo per nome",
+		},
+	),
+	otherStoreCount: t.Integer({
+		minimum: 0,
+		description: "Altri negozi visibili che lo hanno disponibile",
+	}),
+	requestedStoreUnavailable: t.Boolean({
+		description:
+			"Il negozio richiesto non ha il prodotto disponibile: ne è stato agganciato un altro",
+	}),
+	characteristics: t.Array(CustomerProductCharacteristicSchema, {
+		description:
+			"Solo le caratteristiche valorizzate, nell'ordine della matrice della sotto-categoria",
+	}),
+});
+
 const ProductCategoryFacetSchema = t.Object({
 	id: t.String(),
 	name: t.String({ description: "Nome della categoria" }),
