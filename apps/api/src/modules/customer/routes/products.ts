@@ -94,7 +94,7 @@ export const productsRoutes = new Elysia()
 					productId: params.id,
 					requestedStoreId: query.storeId,
 					attachedStoreId: detail.offer.store.id,
-					hasGeo: !!(query.lat && query.lng),
+					hasGeo: query.lat !== undefined && query.lng !== undefined,
 					characteristicCount: detail.characteristics.length,
 					action: "product_detail",
 				},
