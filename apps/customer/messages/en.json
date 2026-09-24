@@ -282,5 +282,21 @@
 	"product_radius_km": "{km} km",
 	"product_other_stores": "also in {count} other shops",
 	"product_other_stores_one": "also in one other shop",
-	"product_store_link_aria": "Go to {store}'s page"
+	"product_store_link_aria": "Go to {store}'s page",
+	"product_detail_characteristics_title": "Specifications",
+	"product_detail_yes": "Yes",
+	"product_detail_no": "No",
+	"product_detail_description_title": "Description",
+	"product_detail_sold_by": "Available at",
+	"product_detail_other_stores_one": "Also in one other store",
+	"product_detail_other_stores": "Also in {count} other stores",
+	"product_detail_requested_store_unavailable": "It is no longer available at the store you came from. You can find it here:",
+	"product_detail_gallery_aria": "Product photos",
+	"product_detail_photo_aria": "Show photo {index}",
+	"product_detail_not_found_title": "Product not found",
+	"product_detail_not_found_description": "This product does not exist or is no longer available in any store.",
+	"product_detail_back_to_products": "Back to products",
+	"product_detail_load_error_title": "We couldn't load the product",
+	"product_detail_load_error_description": "Check your connection and try again.",
+	"product_detail_retry": "Retry"
 }
