@@ -37,6 +37,8 @@ import {
 	product,
 	storeProduct as storeProductTable,
 } from "@/db/schemas/product";
+import { store } from "@/db/schemas/store";
+import type { StoreSubscriptionStatus } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import { importProductsFromCsv } from "@/modules/seller/services/product-import";
 import {
@@ -58,6 +60,7 @@ import {
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
+	createTestStoreSubscription,
 } from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -683,6 +686,8 @@ describe("lookupProductByEan", () => {
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
 		const sA = await createTestStore(db, sellerA.profile.id);
 		const sB = await createTestStore(db, sellerB.profile.id);
+		await createTestStoreSubscription(db, sA.id);
+		await createTestStoreSubscription(db, sB.id);
 		const macro = await createTestMacroCategory(db, "Foo");
 		const cat = await createTestCategory(db, "Bar", macro.id);
 		const brandA = await createTestBrand(db, sellerA.profile.id, "BrandA");
@@ -719,6 +724,92 @@ describe("lookupProductByEan", () => {
 		expect(result!.brandName).toBe("BrandB");
 		expect(result!.macroCategoryId).toBe(macro.id);
 		expect(result!.productCategoryId).toBe(cat.id);
+	});
+
+	// The prefill crosses sellers, so it may only surface what the customer
+	// site already shows: an active product in a publicly visible store.
+	async function seedEanProduct(opts: {
+		ean: string;
+		name: string;
+		status?: "active" | "disabled" | "trashed";
+		/** null = the store has no subscription at all */
+		subscription?: StoreSubscriptionStatus | null;
+		archivedStore?: boolean;
+		inStore?: boolean;
+	}) {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const s = await createTestStore(db, profile.id);
+		if (opts.subscription !== null)
+			await createTestStoreSubscription(db, s.id, {
+				status: opts.subscription ?? "active",
+			});
+		if (opts.archivedStore)
+			await db
+				.update(store)
+				.set({ deletedAt: new Date() })
+				.where(eq(store.id, s.id));
+		const p = await createTestProduct(db, profile.id, {
+			name: opts.name,
+			status: opts.status ?? "active",
+		});
+		await db.update(product).set({ ean: opts.ean }).where(eq(product.id, p.id));
+		if (opts.inStore !== false) await createTestStoreProduct(db, s.id, p.id);
+		return p;
+	}
+
+	const hidden: Array<[string, Partial<Parameters<typeof seedEanProduct>[0]>]> =
+		[
+			["trashed", { status: "trashed" }],
+			["disabled", { status: "disabled" }],
+			["in no store", { inStore: false }],
+			["in a store without subscription", { subscription: null }],
+			["in a suspended store", { subscription: "suspended" }],
+			["in a canceled store", { subscription: "canceled" }],
+			["in an archived store", { archivedStore: true }],
+		];
+
+	for (const [label, opts] of hidden) {
+		it(`ignores a product ${label}`, async () => {
+			await seedEanProduct({ ean: "87654321", name: "Hidden", ...opts });
+			expect(await lookupProductByEan({ ean: "87654321" })).toBeNull();
+		});
+	}
+
+	it("keeps a product in a canceling store (still public)", async () => {
+		await seedEanProduct({
+			ean: "87654321",
+			name: "Canceling",
+			subscription: "canceling",
+		});
+		const result = await lookupProductByEan({ ean: "87654321" });
+		expect(result?.name).toBe("Canceling");
+	});
+
+	it("falls back to an older public product when the newest is hidden", async () => {
+		await seedEanProduct({ ean: "87654321", name: "Public old" });
+		await new Promise((r) => setTimeout(r, 10));
+		await seedEanProduct({
+			ean: "87654321",
+			name: "Trashed new",
+			status: "trashed",
+		});
+		const result = await lookupProductByEan({ ean: "87654321" });
+		expect(result?.name).toBe("Public old");
+	});
+
+	it("checks store visibility per product, not for the EAN as a whole", async () => {
+		// Another product with the same EAN is public: an uncorrelated EXISTS
+		// would let the newer, storeless one through.
+		await seedEanProduct({ ean: "87654321", name: "Public old" });
+		await new Promise((r) => setTimeout(r, 10));
+		await seedEanProduct({
+			ean: "87654321",
+			name: "Storeless new",
+			inStore: false,
+		});
+		const result = await lookupProductByEan({ ean: "87654321" });
+		expect(result?.name).toBe("Public old");
 	});
 });
 

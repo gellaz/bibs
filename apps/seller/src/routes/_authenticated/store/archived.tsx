@@ -15,7 +15,9 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import { api, unwrap } from "@/lib/api";
 
 export const Route = createFileRoute("/_authenticated/store/archived")({
@@ -37,6 +39,16 @@ function formatDate(d: Date | string): string {
 }
 
 function ArchivedPage() {
+	const navigate = useNavigate();
+	const isOwner = useIsOwner();
+
+	// The archive is owner-only (the API enforces requireOwner). Employees who
+	// deep-link here are redirected home; the query stays disabled so it never
+	// fires a request that would 403 and render a false "no archived stores".
+	useEffect(() => {
+		if (!isOwner) void navigate({ to: "/" });
+	}, [isOwner, navigate]);
+
 	const { data, isLoading } = useQuery({
 		queryKey: ["seller", "stores", "archived"],
 		queryFn: async () => {
@@ -45,6 +57,7 @@ function ArchivedPage() {
 			});
 			return unwrap(r, "Errore").data;
 		},
+		enabled: isOwner,
 	});
 
 	return (

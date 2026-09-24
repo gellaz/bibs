@@ -1,15 +1,7 @@
-import { and, eq } from "drizzle-orm";
 import { Elysia } from "elysia";
-import { db } from "@/db";
-import { storeEmployee } from "@/db/schemas/employee";
-import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
-import {
-	type AccessCtx,
-	getAccessibleStoreIdsFor,
-	getSellerStoreIds,
-} from "./context";
+import { resolveSellerAccess } from "./context";
 import { billingRoutes } from "./routes/billing";
 import { brandsRoutes } from "./routes/brands";
 import { checkoutRoutes } from "./routes/checkout";
@@ -57,77 +49,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 		},
 		(app) =>
 			app
-				.resolve(async ({ user: u }) => {
-					// Owner path: user is a seller with completed onboarding
-					if (u.role === "seller") {
-						const profile = await db.query.sellerProfile.findFirst({
-							where: eq(sellerProfile.userId, u.id),
-						});
-
-						if (!profile)
-							throw new ServiceError(403, "Seller profile not found");
-						if (profile.onboardingStatus !== "active")
-							throw new ServiceError(403, "Seller onboarding not completed");
-
-						const accessCtx: AccessCtx = {
-							userId: u.id,
-							sellerProfileId: profile.id,
-							isOwner: true,
-						};
-
-						let cached: Promise<string[]> | null = null;
-						const getStoreIds = () =>
-							(cached ??= getSellerStoreIds(profile.id));
-
-						let cachedAccessible: Promise<string[]> | null = null;
-						const getAccessibleStoreIds = () =>
-							(cachedAccessible ??= getAccessibleStoreIdsFor(accessCtx));
-
-						return {
-							sellerProfile: profile,
-							isOwner: true as const,
-							accessCtx,
-							getStoreIds,
-							getAccessibleStoreIds,
-						};
-					}
-
-					// Employee path: user is an active employee
-					if (u.role === "employee") {
-						const emp = await db.query.storeEmployee.findFirst({
-							where: and(
-								eq(storeEmployee.userId, u.id),
-								eq(storeEmployee.status, "active"),
-							),
-							with: { sellerProfile: true },
-						});
-
-						if (!emp) throw new ServiceError(403, "Employee access denied");
-						const accessCtx: AccessCtx = {
-							userId: u.id,
-							sellerProfileId: emp.sellerProfile.id,
-							isOwner: false,
-						};
-
-						let cached: Promise<string[]> | null = null;
-						const getStoreIds = () =>
-							(cached ??= getSellerStoreIds(emp.sellerProfile.id));
-
-						let cachedAccessible: Promise<string[]> | null = null;
-						const getAccessibleStoreIds = () =>
-							(cachedAccessible ??= getAccessibleStoreIdsFor(accessCtx));
-
-						return {
-							sellerProfile: emp.sellerProfile,
-							isOwner: false as const,
-							accessCtx,
-							getStoreIds,
-							getAccessibleStoreIds,
-						};
-					}
-
-					throw new ServiceError(403, "Not a seller or employee");
-				})
+				.resolve(({ user: u }) => resolveSellerAccess(u))
 				// Mount all sub-route plugins
 				.use(billingRoutes)
 				.use(storesRoutes)

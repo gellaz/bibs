@@ -57,6 +57,7 @@ const navItems = [
 		to: "/store/archived" as const,
 		icon: ArchiveIcon,
 		match: (p: string) => p.startsWith("/store/archived"),
+		ownerOnly: true,
 	},
 	{
 		title: "Billing",
