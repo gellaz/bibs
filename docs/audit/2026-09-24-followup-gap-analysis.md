@@ -26,13 +26,10 @@ Path relativi alla root del repo. `api/…` = `apps/api/src/…` salvo dove indi
 
 ## P0 — Bug attivi di sicurezza/correttezza
 
-| ID | Item | Evidenza (@200ed0d) | Impatto | Effort |
-|---|---|---|---|---|
-| **P0.6** | Dialog prezzi admin: `parseFloat/parseInt` senza guardia → campo svuotato manda `NaN` a Stripe; Conferma disabilitato solo durante il pending. `changeData` delle richieste di modifica applicato con cast `as string` senza validazione per tipo; `reject-change` legge `(ctx as any).body?.reason` | `apps/admin/src/routes/_authenticated/billing/pricing.tsx:118,124,130,142`; `apps/api/src/modules/admin/services/sellers.ts:419-499`; `admin/routes/seller-changes.ts:83` | Prezzi Stripe corrotti; dati seller non validati | S |
-| **P0.8** | Cambiare macro-categoria nel form prodotto **sovrascrive sempre** `vatRate`, anche se impostata a mano | `apps/seller/src/features/products/components/product-form.tsx:275-277` | Dato fiscale perso in silenzio | S |
+Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 
 **Taglio suggerito**: ~~PR A = P0.1 + P0.2 + P0.7~~ (fatta, #192) ·
-~~PR B = P0.3 + P0.4 + P0.5~~ (fatta, #194) · PR C = P0.6 + P0.8 (form admin/seller).
+~~PR B = P0.3 + P0.4 + P0.5~~ (fatta, #194) · ~~PR C = P0.6 + P0.8~~ (fatta, #195).
 
 ---
 
@@ -73,6 +70,9 @@ Path relativi alla root del repo. `api/…` = `apps/api/src/…` salvo dove indi
 - **Telefono indirizzo non svuotabile** (opzionale, `minLength 5`, non nullable; attenzione: union TypeBox nel body collassa l'inference Eden) — `customer/routes/addresses.ts:121-127`, `customer/services/addresses.ts:145`.
 - **Settings seller**: nessun check di collisione P.IVA alla richiesta (emerge all'approvazione); upload S3 prima dell'insert (file orfani); tutte le richieste caricate e filtrate in JS — `seller/services/settings.ts:54,94,266-304,326-345`.
 - **Invito dipendente**: re-invito → 409, nessuna route di resend (un commento sostiene il contrario) — `seller/services/employees.ts:114-123,151`.
+- **Retry su errori definitivi**: `GET /seller/billing/invoices` risponde 404 «Nessun Customer Stripe per questo seller» (tutti i seller del seed) e React Query lo riprova 3 volte; pickup «non pronto» e «scaduto» sono entrambi 400 con messaggi misti IT/EN — trovati nella PR B/C.
+- **Prefill EAN senza aliquota**: `applyLookup` imposta la macro-categoria senza passare da `onMacroChange`, quindi non applica `suggestedVatRate` — `seller/features/products/components/product-form.tsx` (review #195).
+- **Richieste di modifica, residui**: `documentImageKey` senza `documentImageUrl` passa il controllo (serve un «entrambi o nessuno»); `pricing_config` non salva lo `stripeProductId`, quindi il dialog prezzi non può precompilarlo — `admin/services/sellers.ts`, `admin/services/billing.ts` (review #195).
 - **`/ready`**: `HeadBucket` S3 senza timeout (la probe può appendersi); `x-request-id` in ingresso ignorato — `api/lib/s3.ts:22-30,95-101`, `plugins/request-id.ts:6`.
 
 ### P3.2 — Seller/Admin FE sweep
@@ -165,6 +165,8 @@ Path relativi alla root del repo. `api/…` = `apps/api/src/…` salvo dove indi
 | **P0.3** | `pickupOrder` solo per `pay_pickup`/`reserve_pickup` in `ready_for_pickup`; la scadenza della prenotazione ora persiste (il 400 annullava expire e rimborso) | #194 |
 | **P0.4** | `createOrder` solo su negozi `publiclyVisibleStore()` e prodotti `active`, dentro la tx (stessa regola del carrello) | #194 |
 | **P0.5** | Input interi `t.Integer` (stock, position anche multipart, quantity, pointsToSpend, `PaginationQuery` condivisa); `birthDate`/`documentExpiry` con `format: "calendar-date"` | #194 |
+| **P0.6** | Rettifica dell'evidenza: il `NaN` non arrivava a Stripe (l'API lo rifiutava con 422); i buchi erano `productId` libero (ora `^prod_…`) e il dialog (stato stringa, limiti dell'API, massimo due decimali, Conferma disabilitato con messaggio). `changeData` validato con lo schema di scrittura prima di applicarlo (400, resta `pending`); `reject-change` con body tipato | #195 |
+| **P0.8** | La macro-categoria suggerisce l'aliquota solo finché non è una scelta del seller (in modifica quella salvata conta come scelta); altrimenti toast con l'aliquota mantenuta | #195 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
