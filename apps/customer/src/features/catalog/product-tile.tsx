@@ -64,20 +64,22 @@ export function ProductTile({
 
 	return (
 		<article className="flex h-full flex-col gap-3">
-			<Link
-				{...linkProps}
-				tabIndex={-1}
-				aria-hidden
-				className="relative block aspect-square overflow-hidden rounded-lg border border-border"
-			>
-				<TileImage url={cover} name={product.name} />
+			<div className="relative aspect-square overflow-hidden rounded-lg border border-border">
+				<Link
+					{...linkProps}
+					tabIndex={-1}
+					aria-hidden
+					className="block size-full"
+				>
+					<TileImage url={cover} name={product.name} />
+				</Link>
 				{hasDistance && (
-					<span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-cream px-2 py-1 font-medium font-mono text-ink text-xs tabular-nums shadow-sm">
+					<span className="pointer-events-none absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-cream px-2 py-1 font-medium font-mono text-ink text-xs tabular-nums shadow-sm">
 						<MapPin className="size-3 text-saffron-deep" aria-hidden />
 						{formatDistance(product.distance ?? 0)}
 					</span>
 				)}
-			</Link>
+			</div>
 			<div className="flex flex-1 flex-col gap-1">
 				<h3 className="line-clamp-2 font-medium text-[0.9375rem] text-foreground leading-snug">
 					<Link
