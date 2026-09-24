@@ -48,8 +48,12 @@ function PricingPage() {
 		setFields((prev) => ({ ...prev, [name]: value }));
 		setTouched((prev) => new Set(prev).add(name));
 	};
+	// productId is never prefilled (the API doesn't return it), so its error
+	// shows from the start: otherwise Conferma is disabled with no reason given.
 	const shownError = (name: keyof PricingFields) =>
-		touched.has(name) && errors[name] ? [{ message: errors[name] }] : undefined;
+		(touched.has(name) || name === "productId") && errors[name]
+			? [{ message: errors[name] }]
+			: undefined;
 
 	const mutation = useMutation({
 		mutationFn: async (value: PricingValue) => {
@@ -228,10 +232,14 @@ function parsePricingForm(
 	| { errors: Partial<Record<keyof PricingFields, string>> } {
 	const errors: Partial<Record<keyof PricingFields, string>> = {};
 
-	const fee = Number(f.fee.trim().replace(",", "."));
-	const feeCents = Math.round(fee * 100);
-	if (f.fee.trim() === "" || !Number.isFinite(fee) || feeCents < 100)
-		errors.fee = "Inserisci una quota di almeno 1,00 €";
+	// Euro and cents, at most two decimals: no silent rounding of a price.
+	const feeRaw = f.fee.trim().replace(",", ".");
+	const feeCents = /^\d+(\.\d{1,2})?$/.test(feeRaw)
+		? Math.round(Number(feeRaw) * 100)
+		: Number.NaN;
+	if (!(feeCents >= 100))
+		errors.fee =
+			"Inserisci una quota di almeno 1,00 €, con al massimo due decimali";
 
 	const days = parseWhole(f.days, 7, 365);
 	if (days === null) errors.days = "Un numero intero di giorni tra 7 e 365";
