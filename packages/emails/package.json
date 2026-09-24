@@ -14,7 +14,7 @@
 		"react-email": "catalog:"
 	},
 	"devDependencies": {
-		"@react-email/ui": "^6.9.5",
+		"@react-email/ui": "^6.11.0",
 		"@types/react": "catalog:",
 		"bun-types": "1.4.2"
 	},
