@@ -3,7 +3,7 @@ import { ServiceError } from "@/lib/errors";
 import { ok } from "@/lib/responses";
 import { okRes, withErrors } from "@/lib/schemas";
 import { CreateStoreBody } from "@/lib/schemas/forms";
-import { withSeller } from "../context";
+import { requireOwner, withSeller } from "../context";
 import {
 	createCheckoutSession,
 	getCheckoutStatus,
@@ -33,7 +33,8 @@ export const checkoutRoutes = new Elysia()
 	.post(
 		"/stores/checkout",
 		async (ctx) => {
-			const { sellerProfile: sp, body } = withSeller(ctx);
+			const { sellerProfile: sp, body, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			if (sp.onboardingStatus !== "active") {
 				throw new ServiceError(403, "Seller must be active to add stores");
 			}
@@ -57,7 +58,8 @@ export const checkoutRoutes = new Elysia()
 	.get(
 		"/checkout-sessions/:sessionId/status",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const data = await getCheckoutStatus({
 				sellerProfileId: sp.id,
 				stripeCheckoutSessionId: params.sessionId,
@@ -77,7 +79,8 @@ export const checkoutRoutes = new Elysia()
 	.get(
 		"/stores/checkout/:pendingId",
 		async (ctx) => {
-			const { sellerProfile: sp, params } = withSeller(ctx);
+			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
 			const data = await getPendingForResume({
 				sellerProfileId: sp.id,
 				pendingId: params.pendingId,

@@ -233,7 +233,8 @@ export const storesRoutes = new Elysia()
 	.get(
 		"/stores/archived",
 		async (ctx) => {
-			const { sellerProfile: sp, query } = withSeller(ctx);
+			const { sellerProfile: sp, isOwner, query } = withSeller(ctx);
+			requireOwner(isOwner);
 			const data = await listArchivedStores({
 				sellerProfileId: sp.id,
 				page: query.page ?? 1,

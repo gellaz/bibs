@@ -4,6 +4,7 @@ import {
 	count,
 	desc,
 	eq,
+	exists,
 	inArray,
 	isNotNull,
 	or,
@@ -20,6 +21,7 @@ import {
 } from "@/db/schemas/product";
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
+import { store } from "@/db/schemas/store";
 import type { CharacteristicValueInput } from "@/lib/characteristic-values";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import {
@@ -28,6 +30,7 @@ import {
 } from "@/lib/municipality";
 import { parsePagination } from "@/lib/pagination";
 import { s3 } from "@/lib/s3";
+import { publiclyVisibleStore } from "@/lib/store-visibility";
 import type { VatRate } from "@/lib/vat";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
@@ -860,7 +863,25 @@ export async function lookupProductByEan(
 	const { ean } = params;
 
 	const row = await db.query.product.findFirst({
-		where: eq(product.ean, ean),
+		// The lookup crosses sellers, so it only reads what the customer site
+		// already shows: an active product stocked in a publicly visible store.
+		// Trashed/disabled products or hidden stores would leak another
+		// seller's drafts. Callback form: the relational query aliases the
+		// table, so the correlated subquery must use the aliased `p.id`.
+		where: (p) =>
+			and(
+				eq(p.ean, ean),
+				eq(p.status, "active"),
+				exists(
+					db
+						.select({ one: sql`1` })
+						.from(storeProduct)
+						.innerJoin(store, eq(store.id, storeProduct.storeId))
+						.where(
+							and(eq(storeProduct.productId, p.id), publiclyVisibleStore()),
+						),
+				),
+			),
 		orderBy: [desc(product.createdAt)],
 		with: {
 			brand: true,

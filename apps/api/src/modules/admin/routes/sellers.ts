@@ -7,6 +7,7 @@ import {
 	okRes,
 	SellerProfileSchema,
 	SellerProfileWithUserSchema,
+	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { withAdmin } from "../context";
@@ -102,11 +103,11 @@ export const sellersRoutes = new Elysia()
 			params: t.Object({
 				sellerId: t.String({ description: "ID del profilo venditore" }),
 			}),
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
+			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Verifica venditore",
 				description:
-					"Approva il venditore e imposta l'onboarding come completato. Abilita il venditore a operare sulla piattaforma.",
+					"Approva il venditore e imposta l'onboarding come completato. Abilita il venditore a operare sulla piattaforma. Solo da pending_review: 409 se la candidatura è già stata decisa.",
 				tags: ["Admin"],
 			},
 		},
@@ -134,11 +135,11 @@ export const sellersRoutes = new Elysia()
 			params: t.Object({
 				sellerId: t.String({ description: "ID del profilo venditore" }),
 			}),
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
+			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Rifiuta venditore",
 				description:
-					"Rifiuta il venditore. Il venditore dovrà aggiornare i dati e ripresentare la richiesta.",
+					"Rifiuta il venditore. Il venditore dovrà aggiornare i dati e ripresentare la richiesta. Solo da pending_review: 409 se la candidatura è già stata decisa.",
 				tags: ["Admin"],
 			},
 		},
