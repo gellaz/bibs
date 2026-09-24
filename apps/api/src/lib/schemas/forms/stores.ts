@@ -15,7 +15,7 @@ const PhoneNumber = Type.Object({
 		error: "Il numero è obbligatorio (minimo 5 caratteri)",
 	}),
 	position: Type.Optional(
-		Type.Number({
+		Type.Integer({
 			minimum: 0,
 			description: "Posizione di ordinamento",
 		}),

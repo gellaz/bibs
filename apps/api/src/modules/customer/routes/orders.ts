@@ -67,7 +67,7 @@ export const ordersRoutes = new Elysia()
 				items: t.Array(
 					t.Object({
 						storeProductId: t.String({ description: "ID dello store_product" }),
-						quantity: t.Number({ minimum: 1, description: "Quantità" }),
+						quantity: t.Integer({ minimum: 1, description: "Quantità" }),
 					}),
 					{ minItems: 1, description: "Articoli dell'ordine (almeno uno)" },
 				),
@@ -78,7 +78,7 @@ export const ordersRoutes = new Elysia()
 					}),
 				),
 				pointsToSpend: t.Optional(
-					t.Number({
+					t.Integer({
 						minimum: 0,
 						description: "Punti fedeltà da utilizzare come sconto",
 					}),
