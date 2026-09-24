@@ -1,14 +1,16 @@
 import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
-import { ProductSearchQuery } from "@/lib/queries";
+import { ProductDetailQuery, ProductSearchQuery } from "@/lib/queries";
 import { ok, okPage } from "@/lib/responses";
 import {
+	CustomerProductDetailSchema,
 	okPageRes,
 	okRes,
 	ProductCardSchema,
 	ProductFacetsSchema,
 	withErrors,
 } from "@/lib/schemas";
+import { getProductDetail } from "../services/product-detail";
 import { getProductFacets } from "../services/product-facets";
 import { searchProducts } from "../services/product-search";
 
@@ -78,6 +80,36 @@ export const productsRoutes = new Elysia()
 				summary: "Facet di ricerca prodotti",
 				description:
 					"Conteggi per macro categoria e categoria sui prodotti che corrispondono a testo, geografia, prezzo e offerta. Non applica mai la categoria già selezionata: il rail deve mostrare le alternative. Le macro senza prodotti non vengono restituite. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		},
+	)
+	.get(
+		"/products/:id",
+		async ({ params, query, store }) => {
+			const pino = getLogger(store);
+			const detail = await getProductDetail(params.id, query);
+			pino.info(
+				{
+					productId: params.id,
+					requestedStoreId: query.storeId,
+					attachedStoreId: detail.offer.store.id,
+					hasGeo: !!(query.lat && query.lng),
+					characteristicCount: detail.characteristics.length,
+					action: "product_detail",
+				},
+				"Scheda prodotto richiesta",
+			);
+			return ok(detail);
+		},
+		{
+			params: t.Object({ id: t.String({ description: "ID del prodotto" }) }),
+			query: ProductDetailQuery,
+			response: withErrors({ 200: okRes(CustomerProductDetailSchema) }),
+			detail: {
+				summary: "Scheda prodotto",
+				description:
+					"Scheda pubblica di un prodotto con un negozio agganciato: quello indicato da `storeId` se lo ha disponibile, altrimenti il più vicino all'origine, altrimenti il primo per nome. Include le sole caratteristiche valorizzate, con l'etichetta delle opzioni. Restituisce 404 se il prodotto non è attivo o nessun negozio visibile lo ha disponibile. Non richiede autenticazione.",
 				tags: ["Customer - Search"],
 			},
 		},

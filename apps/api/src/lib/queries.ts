@@ -219,3 +219,33 @@ export const ProductCategoryListQuery = t.Object({
 		t.String({ description: "Filtra per ID della macro categoria" }),
 	),
 });
+
+/**
+ * Negozio, lat/lng opzionali per la scheda prodotto customer: `storeId`
+ * indica il negozio da cui arriva il cliente, lat/lng scelgono il più vicino
+ * fra quelli idonei quando quello richiesto non c'è (o non è indicato).
+ */
+export const ProductDetailQuery = t.Object({
+	storeId: t.Optional(
+		t.String({
+			description:
+				"Negozio da cui arriva il cliente: viene agganciato se ha il prodotto disponibile",
+		}),
+	),
+	lat: t.Optional(
+		t.Number({
+			minimum: -90,
+			maximum: 90,
+			description:
+				"Latitudine dell'origine, per scegliere il negozio più vicino",
+		}),
+	),
+	lng: t.Optional(
+		t.Number({
+			minimum: -180,
+			maximum: 180,
+			description:
+				"Longitudine dell'origine, per scegliere il negozio più vicino",
+		}),
+	),
+});
