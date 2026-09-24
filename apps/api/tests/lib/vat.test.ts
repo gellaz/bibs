@@ -131,6 +131,26 @@ describe("apportionDiscount", () => {
 		]);
 	});
 
+	it("a parità esatta di resto vince l'aliquota più alta anche con quote diverse", () => {
+		// 3 su 1 (22%) + 1 (10%) + 7 (4%): quote 1/3, 1/3, 7/3 → resti tutti 1/3.
+		// In virgola mobile il resto della 4% esce 0,3333…35 e ruberebbe il
+		// centesimo: il confronto va fatto sui resti interi.
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 1, rate: 22 },
+					{ grossCents: 1, rate: 10 },
+					{ grossCents: 7, rate: 4 },
+				],
+				3,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 0 },
+			{ rate: 10, grossCents: 1 },
+			{ rate: 4, grossCents: 5 },
+		]);
+	});
+
 	it("il resto maggiore vince sull'aliquota", () => {
 		// 10 su 700 (22%) + 300 (10%): quote 7,0 e 3,0 → nessun residuo;
 		// 11 su 700 + 300: quote 7,7 e 3,3 → base 7+3, residuo 1 alla 22% (0,7 > 0,3)

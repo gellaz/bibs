@@ -82,15 +82,21 @@ export function apportionDiscount(
 		);
 	if (discountCents === 0 || totalGross === 0) return buckets;
 
+	// Resti interi, non frazioni in virgola mobile: due resti uguali in aritmetica
+	// esatta devono risultare uguali, o il rumore decide chi prende il centesimo.
 	const shares = buckets.map((b) => {
-		const exact = (discountCents * b.grossCents) / totalGross;
-		const base = Math.floor(exact);
-		return { rate: b.rate, base, fraction: exact - base };
+		const scaled = discountCents * b.grossCents;
+		const remainder = scaled % totalGross;
+		return {
+			rate: b.rate,
+			base: (scaled - remainder) / totalGross,
+			remainder,
+		};
 	});
 	let residual = discountCents - shares.reduce((s, x) => s + x.base, 0);
 	// Già ordinati per aliquota desc: il sort stabile tiene quell'ordine a parità.
-	const byFraction = [...shares].sort((a, b) => b.fraction - a.fraction);
-	for (const share of byFraction) {
+	const byRemainder = [...shares].sort((a, b) => b.remainder - a.remainder);
+	for (const share of byRemainder) {
 		if (residual === 0) break;
 		share.base += 1;
 		residual -= 1;
