@@ -32,7 +32,12 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { customerProfile } from "@/db/schemas/customer";
-import { order, orderItem } from "@/db/schemas/order";
+import {
+	type OrderStatus,
+	type OrderType,
+	order,
+	orderItem,
+} from "@/db/schemas/order";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { ServiceError } from "@/lib/errors";
@@ -45,6 +50,7 @@ import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestBrand,
 	createTestCustomer,
+	createTestCustomerAddress,
 	createTestProduct,
 	createTestSeller,
 	createTestStore,
@@ -500,7 +506,7 @@ describe("cancelOrder", () => {
 // ── pickupOrder ───────────────────────────────────────────────────────────────
 
 describe("pickupOrder", () => {
-	it("completes a confirmed pay_pickup order and awards points", async () => {
+	it("completes a ready_for_pickup pay_pickup order and awards points", async () => {
 		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
 		const db = getTestDb();
 
@@ -512,6 +518,11 @@ describe("pickupOrder", () => {
 			items: [{ storeProductId: sp.id, quantity: 1 }], // 10.00€
 		});
 		expect(newOrder.status).toBe("confirmed");
+		// The store marks it ready; only then is the pickup the customer's move.
+		await db
+			.update(order)
+			.set({ status: "ready_for_pickup" })
+			.where(eq(order.id, newOrder.id));
 
 		const completed = await pickupOrder({
 			orderId: newOrder.id,
@@ -549,5 +560,81 @@ describe("pickupOrder", () => {
 				customerProfileId: otherCustomer.profile.id,
 			}),
 		).rejects.toMatchObject({ status: 404 });
+	});
+
+	/** An order of `type` forced to `status`, as if the store had moved it. */
+	async function orderAt(type: OrderType, status: OrderStatus) {
+		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
+		const db = getTestDb();
+		const address =
+			type === "pay_deliver"
+				? await createTestCustomerAddress(db, customer.profile.id)
+				: null;
+		const created = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: type as "pay_pickup" | "reserve_pickup" | "pay_deliver",
+			storeId: store.id,
+			items: [{ storeProductId: sp.id, quantity: 1 }],
+			shippingAddressId: address?.id,
+		});
+		await db.update(order).set({ status }).where(eq(order.id, created.id));
+		return { orderId: created.id, customer };
+	}
+
+	for (const [type, status] of [
+		["pay_pickup", "confirmed"],
+		["reserve_pickup", "confirmed"],
+		["pay_deliver", "shipped"],
+		["pay_deliver", "ready_for_pickup"],
+	] as const) {
+		it(`refuses a customer pickup of a ${type} order in ${status}`, async () => {
+			const { orderId, customer } = await orderAt(type, status);
+			const db = getTestDb();
+
+			await expect(
+				pickupOrder({ orderId, customerProfileId: customer.profile.id }),
+			).rejects.toMatchObject({ status: 400 });
+
+			const [after] = await db
+				.select({ status: order.status })
+				.from(order)
+				.where(eq(order.id, orderId));
+			expect(after.status).toBe(status);
+			const [profile] = await db
+				.select({ points: customerProfile.points })
+				.from(customerProfile)
+				.where(eq(customerProfile.id, customer.profile.id));
+			expect(profile.points).toBe(0);
+		});
+	}
+
+	it("expires a ready reservation past its deadline instead of completing it", async () => {
+		const { orderId, customer } = await orderAt(
+			"reserve_pickup",
+			"ready_for_pickup",
+		);
+		const db = getTestDb();
+		await db
+			.update(order)
+			.set({ reservationExpiresAt: new Date(Date.now() - 60_000) })
+			.where(eq(order.id, orderId));
+
+		await expect(
+			pickupOrder({ orderId, customerProfileId: customer.profile.id }),
+		).rejects.toMatchObject({ status: 400 });
+
+		const [after] = await db
+			.select({ status: order.status })
+			.from(order)
+			.where(eq(order.id, orderId));
+		expect(after.status).toBe("expired");
+		// The refund survives the 400: the reserved unit is back on the shelf.
+		const [sp] = await db
+			.select({ stock: storeProduct.stock })
+			.from(storeProduct)
+			.innerJoin(orderItem, eq(orderItem.storeProductId, storeProduct.id))
+			.where(eq(orderItem.orderId, orderId));
+		expect(sp.stock).toBe(10);
 	});
 });

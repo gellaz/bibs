@@ -445,13 +445,16 @@ export async function createOrder(params: CreateOrderParams) {
 	});
 }
 
+const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
+const RESERVATION_EXPIRED = Symbol("reservation-expired");
+
 export async function pickupOrder(params: {
 	orderId: string;
 	customerProfileId: string;
 }) {
 	const { orderId, customerProfileId } = params;
 
-	return db.transaction(async (tx) => {
+	const result = await db.transaction(async (tx) => {
 		const existing = await tx.query.order.findFirst({
 			where: and(
 				eq(order.id, orderId),
@@ -461,6 +464,15 @@ export async function pickupOrder(params: {
 		});
 
 		if (!existing) throw new ServiceError(404, "Order not found");
+
+		// Il ritiro è l'unica mossa del cliente: vale solo per ordini da ritirare
+		// che il negozio ha segnato pronti. Il resto della macchina a stati
+		// (confirmed → completed, shipped → completed) resta del seller.
+		if (
+			!PICKUP_TYPES.includes(existing.type as OrderType) ||
+			existing.status !== "ready_for_pickup"
+		)
+			throw new ServiceError(400, "L'ordine non è pronto per il ritiro");
 
 		assertTransition(
 			existing.status as OrderStatus,
@@ -488,7 +500,9 @@ export async function pickupOrder(params: {
 				await refundStockAndPoints(tx, existing);
 			}
 
-			throw new ServiceError(400, "Reservation has expired");
+			// Not a throw: throwing here would roll back the expiry and the
+			// refund we just wrote. Commit first, report after.
+			return RESERVATION_EXPIRED;
 		}
 
 		// Compare-and-swap: claim the completion before awarding points, so two
@@ -517,6 +531,10 @@ export async function pickupOrder(params: {
 
 		return updated;
 	});
+
+	if (result === RESERVATION_EXPIRED)
+		throw new ServiceError(400, "Reservation has expired");
+	return result;
 }
 
 export async function cancelOrder(params: {
