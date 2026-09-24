@@ -32,6 +32,7 @@ import {
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
+	createTestStoreSubscription,
 } from "../helpers/fixtures";
 
 beforeAll(async () => {
@@ -49,6 +50,7 @@ describe("createOrder — VAT snapshot + castelletto", () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const store = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, store.id);
 
 		// Product A: 12.20 € @ 22% → net 10.00, vat 2.20
 		const prodA = await createTestProduct(db, seller.profile.id, {
