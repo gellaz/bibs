@@ -1,3 +1,5 @@
+import { type Static, Type } from "@sinclair/typebox";
+import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
@@ -7,6 +9,11 @@ import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
+import {
+	DocumentChangeBody,
+	PaymentChangeBody,
+	VatChangeBody,
+} from "@/lib/schemas/forms";
 
 /** Statuses visible to admins (past onboarding steps). */
 const REVIEWABLE_STATUSES: OnboardingStatus[] = [
@@ -425,9 +432,22 @@ export async function listPendingChanges(params: ListPendingChangesParams) {
 	return { data, pagination: { page, limit, total } };
 }
 
-interface ApplyChangeData {
-	[key: string]: unknown;
-}
+// changeData is JSON written by the seller settings routes. Approval re-checks
+// it against the same schema those routes validate, so a row that drifted
+// (older shape, manual edit) can't write garbage into live seller data.
+const StoredDocumentChange = Type.Composite([
+	DocumentChangeBody,
+	Type.Object({
+		documentImageKey: Type.Optional(Type.String()),
+		documentImageUrl: Type.Optional(Type.String()),
+	}),
+]);
+
+const changeDataCheckers = {
+	vat: TypeCompiler.Compile(VatChangeBody),
+	document: TypeCompiler.Compile(StoredDocumentChange),
+	payment: TypeCompiler.Compile(PaymentChangeBody),
+};
 
 export async function approveChange(changeId: string, adminUserId: string) {
 	const change = await db.query.sellerProfileChange.findFirst({
@@ -436,7 +456,10 @@ export async function approveChange(changeId: string, adminUserId: string) {
 
 	if (!change) throw new ServiceError(404, "Change request not found");
 
-	const changeData = change.changeData as ApplyChangeData;
+	if (!changeDataCheckers[change.changeType].Check(change.changeData))
+		throw new ServiceError(400, "Dati della richiesta non validi");
+	// Narrowed per branch below; the check above guarantees the shape.
+	const changeData = change.changeData;
 
 	return db.transaction(async (tx) => {
 		// Atomic compare-and-swap gate: flip pending -> approved guarded by the
@@ -469,7 +492,7 @@ export async function approveChange(changeId: string, adminUserId: string) {
 			await tx
 				.update(organization)
 				.set({
-					vatNumber: changeData.vatNumber as string,
+					vatNumber: (changeData as Static<typeof VatChangeBody>).vatNumber,
 					vatStatus: "verified",
 				})
 				.where(eq(organization.sellerProfileId, change.sellerProfileId));
@@ -482,17 +505,17 @@ export async function approveChange(changeId: string, adminUserId: string) {
 		}
 
 		if (change.changeType === "document") {
+			const doc = changeData as Static<typeof StoredDocumentChange>;
 			await tx
 				.update(sellerProfile)
 				.set({
-					documentNumber: changeData.documentNumber as string,
-					documentExpiry: changeData.documentExpiry as string,
-					documentIssuedMunicipalityId:
-						changeData.documentIssuedMunicipalityId as string,
-					...(changeData.documentImageKey
+					documentNumber: doc.documentNumber,
+					documentExpiry: doc.documentExpiry,
+					documentIssuedMunicipalityId: doc.documentIssuedMunicipalityId,
+					...(doc.documentImageKey
 						? {
-								documentImageKey: changeData.documentImageKey as string,
-								documentImageUrl: changeData.documentImageUrl as string,
+								documentImageKey: doc.documentImageKey,
+								documentImageUrl: doc.documentImageUrl,
 							}
 						: {}),
 				})
@@ -500,6 +523,9 @@ export async function approveChange(changeId: string, adminUserId: string) {
 		}
 
 		if (change.changeType === "payment") {
+			const { stripeAccountId } = changeData as Static<
+				typeof PaymentChangeBody
+			>;
 			// Update existing default payment method or create a new one
 			const existing = await tx.query.paymentMethod.findFirst({
 				where: and(
@@ -511,12 +537,12 @@ export async function approveChange(changeId: string, adminUserId: string) {
 			if (existing) {
 				await tx
 					.update(paymentMethod)
-					.set({ stripeAccountId: changeData.stripeAccountId as string })
+					.set({ stripeAccountId })
 					.where(eq(paymentMethod.id, existing.id));
 			} else {
 				await tx.insert(paymentMethod).values({
 					sellerProfileId: change.sellerProfileId,
-					stripeAccountId: changeData.stripeAccountId as string,
+					stripeAccountId,
 				});
 			}
 		}

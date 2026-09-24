@@ -75,12 +75,12 @@ export const sellerChangesRoutes = new Elysia()
 	.patch(
 		"/sellers/changes/:changeId/reject",
 		async (ctx) => {
-			const { params, store, user } = withAdmin(ctx);
+			const { params, body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
 			const data = await rejectChange({
 				changeId: params.changeId,
 				adminUserId: user.id,
-				reason: (ctx as any).body?.reason,
+				reason: body.reason,
 			});
 
 			pino.warn(

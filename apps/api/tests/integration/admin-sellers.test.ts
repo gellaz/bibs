@@ -47,7 +47,11 @@ import {
 	verifySeller,
 } from "@/modules/admin/services/sellers";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestOrganization, createTestSeller } from "../helpers/fixtures";
+import {
+	createTestMunicipality,
+	createTestOrganization,
+	createTestSeller,
+} from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -329,6 +333,85 @@ describe("getSellerDetail", () => {
 // ── approveChange ─────────────────────────────────────────────────────────────
 
 describe("approveChange", () => {
+	// changeData is JSON written by the seller settings routes; approval must
+	// re-check it against the same schema before touching live seller data.
+	for (const [changeType, changeData] of [
+		["vat", { vatNumber: 123 }],
+		["document", { documentNumber: "x" }],
+		["payment", {}],
+	] as const) {
+		it(`refuses a ${changeType} change whose data doesn't match its schema`, async () => {
+			const db = getTestDb();
+			const seller = await createTestSeller(db, {
+				email: `bad-${changeType}@test.com`,
+			});
+			await createTestOrganization(db, seller.profile.id, {
+				vatStatus: "pending",
+				vatNumber: "00000000000",
+			});
+			const adminId = await seedAdmin(`bad-${changeType}-admin@test.com`);
+			const change = await seedChange({
+				sellerProfileId: seller.profile.id,
+				changeType,
+				changeData: changeData as Record<string, unknown>,
+			});
+			const [before] = await db
+				.select()
+				.from(sellerProfile)
+				.where(eq(sellerProfile.id, seller.profile.id));
+
+			await expect(approveChange(change.id, adminId)).rejects.toMatchObject({
+				status: 400,
+			});
+
+			const [row] = await db
+				.select()
+				.from(sellerProfileChange)
+				.where(eq(sellerProfileChange.id, change.id));
+			expect(row.status).toBe("pending");
+			const [org] = await db
+				.select()
+				.from(organization)
+				.where(eq(organization.sellerProfileId, seller.profile.id));
+			expect(org.vatNumber).toBe("00000000000");
+			const [after] = await db
+				.select()
+				.from(sellerProfile)
+				.where(eq(sellerProfile.id, seller.profile.id));
+			expect(after.documentNumber).toBe(before.documentNumber);
+			const methods = await db
+				.select()
+				.from(paymentMethod)
+				.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
+			expect(methods).toHaveLength(0);
+		});
+	}
+
+	it("applies a valid document change without a new image", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "doc-ok@test.com" });
+		const municipality = await createTestMunicipality(db);
+		const adminId = await seedAdmin("doc-ok-admin@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "document",
+			changeData: {
+				documentNumber: "CA12345",
+				documentExpiry: "2030-01-01",
+				documentIssuedMunicipalityId: municipality.id,
+			},
+		});
+
+		const updated = await approveChange(change.id, adminId);
+
+		expect(updated.status).toBe("approved");
+		const [profile] = await db
+			.select()
+			.from(sellerProfile)
+			.where(eq(sellerProfile.id, seller.profile.id));
+		expect(profile.documentNumber).toBe("CA12345");
+	});
+
 	it("applies VAT side effects once and flips the change to approved", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db, { email: "vat-ok@test.com" });
@@ -344,7 +427,7 @@ describe("approveChange", () => {
 		const change = await seedChange({
 			sellerProfileId: seller.profile.id,
 			changeType: "vat",
-			changeData: { vatNumber: "IT99999999999" },
+			changeData: { vatNumber: "99999999999" },
 		});
 
 		const updated = await approveChange(change.id, adminId);
@@ -357,7 +440,7 @@ describe("approveChange", () => {
 			.select()
 			.from(organization)
 			.where(eq(organization.sellerProfileId, seller.profile.id));
-		expect(org.vatNumber).toBe("IT99999999999");
+		expect(org.vatNumber).toBe("99999999999");
 		expect(org.vatStatus).toBe("verified");
 
 		const [profile] = await db
@@ -406,7 +489,7 @@ describe("approveChange", () => {
 		const change = await seedChange({
 			sellerProfileId: seller.profile.id,
 			changeType: "vat",
-			changeData: { vatNumber: "IT11111111111" },
+			changeData: { vatNumber: "11111111111" },
 			status: "approved",
 			reviewedBy: firstAdmin,
 		});
