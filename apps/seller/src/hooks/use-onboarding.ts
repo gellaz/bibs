@@ -4,7 +4,12 @@ import { api, unwrap } from "@/lib/api";
 /**
  * Hook to fetch the current onboarding status and data.
  */
-export function useOnboardingStatus() {
+export function useOnboardingStatus({
+	enabled = true,
+}: {
+	/** Only sellers have an onboarding: the route answers 403 to employees. */
+	enabled?: boolean;
+} = {}) {
 	return useQuery({
 		queryKey: ["seller", "onboarding", "status"],
 		queryFn: async () => {
@@ -15,6 +20,7 @@ export function useOnboardingStatus() {
 				"Errore durante il caricamento dello stato onboarding",
 			).data;
 		},
+		enabled,
 	});
 }
 

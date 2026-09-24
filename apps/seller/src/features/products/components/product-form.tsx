@@ -16,7 +16,7 @@ import { typeboxResolver } from "@hookform/resolvers/typebox";
 import { type Static, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
 import { api, unwrap } from "@/lib/api";
@@ -262,6 +262,11 @@ export function ProductForm({
 		setFiles(reordered);
 	};
 
+	// The macro category only *suggests* a VAT rate. Once the rate is the
+	// seller's own choice — picked in this form, or already saved on an edited
+	// product — a category change must not overwrite a fiscal value silently.
+	const vatRateChosen = useRef(isEdit);
+
 	const onMacroChange = (
 		next: string | null,
 		suggestedVatRate?: "22" | "10" | "5" | "4" | "0",
@@ -273,7 +278,14 @@ export function ProductForm({
 			shouldDirty: true,
 		});
 		if (suggestedVatRate) {
-			setValue("vatRate", suggestedVatRate, { shouldDirty: true });
+			const current = getValues("vatRate");
+			if (!vatRateChosen.current) {
+				setValue("vatRate", suggestedVatRate, { shouldDirty: true });
+			} else if (current !== suggestedVatRate) {
+				toast.info(
+					`Aliquota IVA mantenuta al ${current}% (suggerita per questa categoria: ${suggestedVatRate}%)`,
+				);
+			}
 		}
 		if (hadCategory && next !== macroCategoryId) {
 			toast.info("Categoria resettata per via del cambio di macrocategoria");
@@ -457,7 +469,13 @@ export function ProductForm({
 								control={control}
 								name="vatRate"
 								render={({ field }) => (
-									<Select value={field.value} onValueChange={field.onChange}>
+									<Select
+										value={field.value}
+										onValueChange={(value) => {
+											vatRateChosen.current = true;
+											field.onChange(value);
+										}}
+									>
 										<SelectTrigger id="product-vat-rate" className="w-full">
 											<SelectValue placeholder="22%" />
 										</SelectTrigger>

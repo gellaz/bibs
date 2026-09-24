@@ -7,6 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import { useStores } from "@/hooks/use-stores";
 import { api, unwrap } from "@/lib/api";
 
@@ -57,6 +58,7 @@ export function ActiveStoreProvider({
 	enabled?: boolean;
 }) {
 	const { data: stores, isLoading } = useStores({ enabled });
+	const isOwner = useIsOwner();
 	const [activeStoreId, setActiveStoreIdState] = useState<string | null>(() => {
 		if (typeof window === "undefined") return null;
 		return window.localStorage.getItem(STORAGE_KEY);
@@ -68,7 +70,8 @@ export function ActiveStoreProvider({
 			const r = await api().seller.billing.subscriptions.get();
 			return (unwrap(r, "Errore").data ?? []) as Subscription[];
 		},
-		enabled,
+		// Billing is owner-only: an employee would only collect 403s.
+		enabled: enabled && isOwner,
 	});
 
 	const setActiveStoreId = useCallback((storeId: string) => {
