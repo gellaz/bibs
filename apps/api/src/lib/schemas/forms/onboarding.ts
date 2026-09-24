@@ -29,8 +29,9 @@ export const PersonalInfoBody = Type.Object({
 	}),
 	birthDate: Type.String({
 		pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+		format: "calendar-date",
 		description: "Data di nascita (YYYY-MM-DD)",
-		error: "Formato data non valido (AAAA-MM-GG)",
+		error: "Data non valida (AAAA-MM-GG)",
 	}),
 	residenceCountry: Type.String({
 		minLength: 2,
@@ -69,8 +70,9 @@ export const DocumentBody = Type.Object({
 	}),
 	documentExpiry: Type.String({
 		pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+		format: "calendar-date",
 		description: "Scadenza documento (YYYY-MM-DD)",
-		error: "Formato data non valido (AAAA-MM-GG)",
+		error: "Data non valida (AAAA-MM-GG)",
 	}),
 	documentIssuedMunicipalityId: Type.String({
 		minLength: 1,
