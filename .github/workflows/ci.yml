@@ -55,3 +55,27 @@ jobs:
       # Integration tests spin up Postgres/PostGIS via testcontainers; Docker is preinstalled on ubuntu-24.04.
       # Env vars required by @/lib/env are injected in apps/api/tests/preload.ts, no secrets needed here.
       - run: bun run test
+
+  web-build:
+    name: Build (${{ matrix.app }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [admin, customer, seller]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      # tsc doesn't catch what only the bundler sees: SSR-only breakage (a
+      # TanStack Start bump broke SSR once), DOM-only libs imported in a server
+      # route, broken asset imports. VITE_API_URL has a localhost fallback, so no
+      # env is needed. One job per app, so a failure names the app.
+      - run: bun run build
+        working-directory: apps/${{ matrix.app }}
+      # The build regenerates routeTree.gen.ts (tracked): a route added without
+      # committing it shows up here instead of as a confusing typecheck error.
+      - name: Generated files are committed
+        run: git diff --exit-code

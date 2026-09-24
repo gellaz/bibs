@@ -207,7 +207,7 @@ Run all four steps, in order:
 
 ```bash
 bun outdated --filter '*'   # what is behind, across the catalog and every workspace
-bun update                  # root catalog: refreshes the `latest` tags and bumps the `^` floors
+bun update                  # root catalog: bumps the `^` floors (exact pins stay put)
 bun update --filter '*'     # workspace-level deps — the previous step does NOT reach them
 bun outdated --filter '*'   # confirm only the intentional majors are left
 ```
@@ -217,11 +217,11 @@ bun outdated --filter '*'   # confirm only the intentional majors are left
 Rules that bite:
 
 - **Never `bun update <package-name>`.** Bun reads the name as "add this to the root package" and injects a spurious root `dependencies` block instead of re-resolving the catalog entry (#128). To recover, delete that block and re-run `bun install`.
-- **A `latest` tag is not a hold.** It can cross a major in silence — the lock sat on `@tanstack/react-table` 8.21.3 while `latest` had already moved to 9.2.4 (#149). Every sweep, compare the `Latest` column against the locked major for each `latest`-tagged row; to actually hold a major, replace the tag with a caret floor.
+- **No `latest` tags in the catalog.** A `latest` tag is not a hold: it crosses majors in silence (the lock sat on `@tanstack/react-table` 8.21.3 while `latest` had moved to 9.2.4, #149). The TanStack Start/Router/Query/Devtools entries are **exact pins** since P2.1, like `elysia` and `better-auth`: `bun update` leaves them alone. Bump them by hand, together (they release in lockstep): read the target versions from `bun outdated --filter '*'`, edit the pins, `bun install`, then the SSR smoke below.
 - **One major per PR.** Majors fall outside the caret ranges and stay put on their own; port them deliberately, never folded into a sweep.
 - **`@types/node` stays on `^22`.** Transitives (testcontainers, `@types/pg`, bun-types) resolve their own nested copies higher; only the catalog entry is ours.
 
-The three `ci.yml` jobs (`lint`, `typecheck`, `api-test`) gate the merge, but run the full set locally before opening the PR:
+The `ci.yml` jobs (`lint`, `typecheck`, `api-test`, and `web-build` — a `vite build` per frontend that also fails on an uncommitted `routeTree.gen.ts`) gate the merge, but run the full set locally before opening the PR:
 
 ```bash
 bun run lint
@@ -230,6 +230,7 @@ for w in packages/ui packages/emails apps/api apps/admin apps/customer apps/sell
 done                        # per workspace: `--filter '*'` can swallow a single-workspace failure
 bun run test
 bun run --cwd apps/api build
+for a in admin customer seller; do bun run --cwd "apps/$a" build || echo "FAILED: $a"; done
 bun run db:generate         # expect "No schema changes"
 ```
 
