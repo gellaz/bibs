@@ -1,7 +1,7 @@
 import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
-import { organization } from "@/db/schemas/organization";
+import { organization, type VatStatus } from "@/db/schemas/organization";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
@@ -176,17 +176,41 @@ async function fetchProfileWithMunicipalities(sellerId: string) {
 	};
 }
 
-export async function verifySeller(sellerId: string) {
+interface ReviewOutcome {
+	onboardingStatus: Extract<OnboardingStatus, "active" | "rejected">;
+	vatStatus: Extract<VatStatus, "verified" | "rejected">;
+}
+
+// Moderation only decides pending_review applications. The status predicate in
+// the UPDATE makes it a compare-and-set: a second click or a stale tab can't
+// re-verify a rejected seller or reject an active one. The organization is
+// touched only after the profile row actually moved.
+async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 	await db.transaction(async (tx) => {
-		await tx
-			.update(organization)
-			.set({ vatStatus: "verified" })
-			.where(eq(organization.sellerProfileId, sellerId));
+		const [moved] = await tx
+			.update(sellerProfile)
+			.set({ onboardingStatus: outcome.onboardingStatus })
+			.where(
+				and(
+					eq(sellerProfile.id, sellerId),
+					eq(sellerProfile.onboardingStatus, "pending_review"),
+				),
+			)
+			.returning({ id: sellerProfile.id });
+
+		if (!moved) {
+			const exists = await tx.query.sellerProfile.findFirst({
+				where: eq(sellerProfile.id, sellerId),
+				columns: { id: true },
+			});
+			if (!exists) throw new ServiceError(404, "Seller profile not found");
+			throw new ServiceError(409, "La candidatura è già stata decisa");
+		}
 
 		await tx
-			.update(sellerProfile)
-			.set({ onboardingStatus: "active" })
-			.where(eq(sellerProfile.id, sellerId));
+			.update(organization)
+			.set({ vatStatus: outcome.vatStatus })
+			.where(eq(organization.sellerProfileId, sellerId));
 	});
 
 	const updated = await fetchProfileWithMunicipalities(sellerId);
@@ -194,22 +218,18 @@ export async function verifySeller(sellerId: string) {
 	return updated;
 }
 
-export async function rejectSeller(sellerId: string) {
-	await db.transaction(async (tx) => {
-		await tx
-			.update(organization)
-			.set({ vatStatus: "rejected" })
-			.where(eq(organization.sellerProfileId, sellerId));
-
-		await tx
-			.update(sellerProfile)
-			.set({ onboardingStatus: "rejected" })
-			.where(eq(sellerProfile.id, sellerId));
+export function verifySeller(sellerId: string) {
+	return decideReview(sellerId, {
+		onboardingStatus: "active",
+		vatStatus: "verified",
 	});
+}
 
-	const updated = await fetchProfileWithMunicipalities(sellerId);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
-	return updated;
+export function rejectSeller(sellerId: string) {
+	return decideReview(sellerId, {
+		onboardingStatus: "rejected",
+		vatStatus: "rejected",
+	});
 }
 
 interface SellerStatusCounts {

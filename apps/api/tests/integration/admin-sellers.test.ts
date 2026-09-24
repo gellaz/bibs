@@ -81,6 +81,45 @@ async function createSellerAtStatus(
 	return seller;
 }
 
+async function expectServiceError(
+	p: Promise<unknown>,
+	status: ServiceError["status"],
+) {
+	const err = await p.then(
+		() => null,
+		(e) => e,
+	);
+	expect(err).toBeInstanceOf(ServiceError);
+	expect((err as ServiceError).status).toBe(status);
+}
+
+/** Moderation outside pending_review must 409 and leave both statuses as they were. */
+async function expectConflictUnchanged(
+	decide: (sellerId: string) => Promise<unknown>,
+	status: OnboardingStatus,
+	vatStatus: "pending" | "verified" | "rejected",
+) {
+	const db = getTestDb();
+	const seller = await createSellerAtStatus(
+		`${status}@test.com`,
+		status,
+		vatStatus,
+	);
+
+	await expectServiceError(decide(seller.profile.id), 409);
+
+	const [profile] = await db
+		.select()
+		.from(sellerProfile)
+		.where(eq(sellerProfile.id, seller.profile.id));
+	expect(profile.onboardingStatus).toBe(status);
+	const [org] = await db
+		.select()
+		.from(organization)
+		.where(eq(organization.sellerProfileId, seller.profile.id));
+	expect(org.vatStatus).toBe(vatStatus);
+}
+
 // ── Helpers for approveChange / rejectChange ──────────────────────────────────
 
 /** Inserts an admin user row and returns its id (valid FK for reviewedBy). */
@@ -190,10 +229,18 @@ describe("verifySeller", () => {
 	});
 
 	it("throws ServiceError 404 when seller does not exist", async () => {
-		await expect(verifySeller(crypto.randomUUID())).rejects.toBeInstanceOf(
-			ServiceError,
-		);
+		await expectServiceError(verifySeller(crypto.randomUUID()), 404);
 	});
+
+	for (const [status, vat] of [
+		["rejected", "rejected"],
+		["active", "verified"],
+		["pending_document", "pending"],
+	] as const) {
+		it(`throws 409 and changes nothing when the seller is ${status}`, async () => {
+			await expectConflictUnchanged(verifySeller, status, vat);
+		});
+	}
 });
 
 // ── rejectSeller ──────────────────────────────────────────────────────────────
@@ -221,6 +268,20 @@ describe("rejectSeller", () => {
 			.where(eq(organization.sellerProfileId, seller.profile.id));
 		expect(org.vatStatus).toBe("rejected");
 	});
+
+	it("throws ServiceError 404 when seller does not exist", async () => {
+		await expectServiceError(rejectSeller(crypto.randomUUID()), 404);
+	});
+
+	for (const [status, vat] of [
+		["active", "verified"],
+		["rejected", "rejected"],
+		["pending_company", "pending"],
+	] as const) {
+		it(`throws 409 and changes nothing when the seller is ${status}`, async () => {
+			await expectConflictUnchanged(rejectSeller, status, vat);
+		});
+	}
 });
 
 // ── countSellersByStatus ──────────────────────────────────────────────────────
