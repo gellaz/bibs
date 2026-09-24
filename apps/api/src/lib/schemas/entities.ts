@@ -652,6 +652,24 @@ export const OrderSchema = t.Object({
 	),
 	total: t.String({ description: "Totale in formato decimale" }),
 	shippingAddressId: t.Nullable(t.String()),
+	shippingAddressSnapshot: t.Nullable(
+		t.Object(
+			{
+				recipientName: t.Nullable(t.String()),
+				phone: t.Nullable(t.String()),
+				addressLine1: t.String(),
+				addressLine2: t.Nullable(t.String()),
+				zipCode: t.String(),
+				municipalityName: t.String(),
+				provinceAcronym: t.String(),
+				country: t.String(),
+			},
+			{
+				description:
+					"Copia dell'indirizzo di spedizione al momento dell'ordine. NULL per ordini senza spedizione o storici",
+			},
+		),
+	),
 	shippingCost: t.Nullable(
 		t.String({ description: "Costo di spedizione in formato decimale" }),
 	),

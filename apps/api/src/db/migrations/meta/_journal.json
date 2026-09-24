@@ -57,6 +57,13 @@
       "when": 1790117025630,
       "tag": "0007_stiff_barracuda",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790284639560,
+      "tag": "0008_fancy_goliath",
+      "breakpoints": true
     }
   ]
 }

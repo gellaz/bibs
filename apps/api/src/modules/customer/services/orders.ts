@@ -2,7 +2,11 @@ import { and, count, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAddress } from "@/db/schemas/address";
 import { customerProfile } from "@/db/schemas/customer";
-import type { OrderStatus, OrderType } from "@/db/schemas/order";
+import type {
+	OrderStatus,
+	OrderType,
+	ShippingAddressSnapshot,
+} from "@/db/schemas/order";
 import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
@@ -196,19 +200,33 @@ export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
 	}
 
 	// IDOR guard: the shipping address must belong to the ordering customer.
-	// The FK alone only proves existence, not ownership.
+	// The FK alone only proves existence, not ownership. La stessa lettura
+	// produce lo snapshot salvato sull'ordine.
+	let shippingAddressSnapshot: ShippingAddressSnapshot | null = null;
 	if (type === "pay_deliver" && shippingAddressId) {
-		const [addr] = await tx
-			.select({ id: customerAddress.id })
-			.from(customerAddress)
-			.where(
-				and(
-					eq(customerAddress.id, shippingAddressId),
-					eq(customerAddress.customerProfileId, customerProfileId),
-				),
-			)
-			.limit(1);
+		const addr = await tx.query.customerAddress.findFirst({
+			where: and(
+				eq(customerAddress.id, shippingAddressId),
+				eq(customerAddress.customerProfileId, customerProfileId),
+			),
+			with: {
+				municipality: {
+					columns: { name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+			},
+		});
 		if (!addr) throw new ServiceError(404, "Shipping address not found");
+		shippingAddressSnapshot = {
+			recipientName: addr.recipientName,
+			phone: addr.phone,
+			addressLine1: addr.addressLine1,
+			addressLine2: addr.addressLine2,
+			zipCode: addr.zipCode,
+			municipalityName: addr.municipality.name,
+			provinceAcronym: addr.municipality.province.acronym,
+			country: addr.country,
+		};
 	}
 
 	// Stessa definizione di «vendibile» del carrello: negozio visibile al
@@ -350,6 +368,7 @@ export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
 			status: initialStatus,
 			total: fromCents(finalTotalCents),
 			shippingAddressId: type === "pay_deliver" ? shippingAddressId : null,
+			shippingAddressSnapshot,
 			shippingCost,
 			reservationExpiresAt,
 			pointsEarned: 0,
