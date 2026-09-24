@@ -28,16 +28,13 @@ Path relativi alla root del repo. `api/…` = `apps/api/src/…` salvo dove indi
 
 | ID | Item | Evidenza (@200ed0d) | Impatto | Effort |
 |---|---|---|---|---|
-| **P0.1** | Tre buchi di parità owner/employee: `/stores/archived` senza `requireOwner` (l'employee vede i negozi archiviati con `cancelReason`); `/checkout` senza `requireOwner`; il ramo employee salta il controllo `onboardingStatus` | `apps/api/src/modules/seller/routes/stores.ts:234`, `seller/routes/checkout.ts:34`, `seller/index.ts:96-110` | Leak di dati di pagamento verso i dipendenti | S |
-| **P0.2** | Prefill da EAN cerca tra i prodotti di **qualunque seller**, cestinati inclusi → espone nome/descrizione altrui | `apps/api/src/modules/seller/services/products.ts:862-869` | Leak cross-seller | S |
 | **P0.3** | `pickupOrder` non controlla il tipo d'ordine: il cliente completa da sé un `pay_deliver` spedito o un `pay_pickup` confermato prima che il seller lo segni pronto | `apps/api/src/lib/order-state-machine.ts:24-26`, `customer/services/orders.ts:465` | Stato ordine falsificabile dal cliente | S |
 | **P0.4** | `createOrder` controlla solo `storeProduct.storeId`: niente `publiclyVisibleStore()`, niente stato prodotto → via API si ordinano prodotti nascosti/disabilitati o da negozi sospesi | `apps/api/src/modules/customer/services/orders.ts:~234-258` | Ordini su merce non vendibile; prerequisito del checkout | S–M |
 | **P0.5** | Campi interi dichiarati `t.Number` (stock, position, quantity): un frazionario arriva al DB (22P02, non mappato) → probabile 500. Date validate solo da regex (`2024-13-45` passa) | `seller/routes/images.ts:60`, `seller/routes/stores.ts:155`, `seller/routes/stock.ts:48`, `customer/routes/orders.ts:70`, `lib/schemas/forms/onboarding.ts:30,70` | 500 su input banale; dati invalidi | S |
 | **P0.6** | Dialog prezzi admin: `parseFloat/parseInt` senza guardia → campo svuotato manda `NaN` a Stripe; Conferma disabilitato solo durante il pending. `changeData` delle richieste di modifica applicato con cast `as string` senza validazione per tipo; `reject-change` legge `(ctx as any).body?.reason` | `apps/admin/src/routes/_authenticated/billing/pricing.tsx:118,124,130,142`; `apps/api/src/modules/admin/services/sellers.ts:419-499`; `admin/routes/seller-changes.ts:83` | Prezzi Stripe corrotti; dati seller non validati | S |
-| **P0.7** | `verifySeller`/`rejectSeller` senza guardie di stato: si può ri-verificare un rifiutato o rifiutare un attivo | `apps/api/src/modules/admin/services/sellers.ts:179-213` | Transizioni di stato illegali | S |
 | **P0.8** | Cambiare macro-categoria nel form prodotto **sovrascrive sempre** `vatRate`, anche se impostata a mano | `apps/seller/src/features/products/components/product-form.tsx:275-277` | Dato fiscale perso in silenzio | S |
 
-**Taglio suggerito**: PR A = P0.1 + P0.2 + P0.7 (authz/stato) con test HTTP di guard (vedi P2.4) ·
+**Taglio suggerito**: ~~PR A = P0.1 + P0.2 + P0.7~~ (fatta, #192) ·
 PR B = P0.3 + P0.4 + P0.5 (ordini e schema) · PR C = P0.6 + P0.8 (form admin/seller).
 
 ---
@@ -63,7 +60,7 @@ PR B = P0.3 + P0.4 + P0.5 (ordini e schema) · PR C = P0.6 + P0.8 (form admin/se
 | **P2.1** | TanStack ancora a `latest` nel catalog (10 voci) + **nessun job `vite build`** per i 3 frontend | `package.json:46-54`; `.github/workflows/ci.yml` (solo lint/typecheck/api-test) | S |
 | **P2.2** | Seller senza test né script `test`; admin con vitest/jsdom/testing-library installati ma **zero test** (infra morta) | `apps/admin/package.json:15,55,57`; nessun `*.test.*` in `apps/seller` | M (decidere: rimuovere infra admin o gate FE vero) |
 | **P2.3** | Nessun job CI `docker build` di `apps/api/Dockerfile` | `ci.yml` | S |
-| **P2.4** | Test HTTP dei guard owner-only su employees/settings/billing; e2e del rollback di `acceptInvite`; test d'integrazione del resend pending-email | `apps/api/tests/integration/registration-accept-invite.test.ts`, `tests/modules/seller-*-owner-only.test.ts` (solo discounts/closures) | M — va con PR A del P0 |
+| **P2.4** | ~~Test HTTP dei guard owner-only su employees/settings/billing~~ (fatto in #192, più stores e checkout); restano l'e2e del rollback di `acceptInvite` e il test d'integrazione del resend pending-email | `apps/api/tests/integration/registration-accept-invite.test.ts` | S |
 | **P2.5** | Biome spento su tutto `packages/ui/**`, componenti bibs-authored inclusi | `biome.json:59-63` | S–M |
 
 ---
@@ -160,6 +157,14 @@ PR B = P0.3 + P0.4 + P0.5 (ordini e schema) · PR C = P0.6 + P0.8 (form admin/se
 - **#52 P7/P8/P9**: colonna di `/profile` stretta (`max-w-4xl`), header di `/products` verboso, piede della sidebar che nasconde logout/profilo — da giudicare a occhio.
 
 ---
+
+## Chiusi
+
+| ID | Item | PR |
+|---|---|---|
+| **P0.1** | Parità owner/employee: `requireOwner` su `/stores/archived` e sulle 3 route di checkout; il ramo employee del guard controlla `onboardingStatus` (`resolveSellerAccess()` in `seller/context.ts`); «Archivio» nascosto ai dipendenti nel seller | #192 |
+| **P0.2** | Prefill EAN: tra seller ma solo prodotti `active` in un negozio `publiclyVisibleStore()` (dati già pubblici); cestinati, disabilitati e negozi nascosti esclusi | #192 |
+| **P0.7** | `verifySeller`/`rejectSeller`: CAS su `pending_review`, 404 se il seller non esiste, 409 altrimenti, nessun effetto su `vatStatus` | #192 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
