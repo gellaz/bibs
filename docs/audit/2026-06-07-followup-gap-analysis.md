@@ -1,5 +1,7 @@
 # Analisi dei follow-up non implementati — 2026-06-07
 
+> **Superata** da [`2026-09-24-followup-gap-analysis.md`](2026-09-24-followup-gap-analysis.md), riverificata contro `main` dopo #190.
+
 > Analisi multi-agente di **tutti i follow-up, deferral e "sviluppi futuri" dichiarati nelle PR #1–#90** (più audit report, plan doc, doc di repo e TODO nel codice), verificati uno a uno contro `main` (post-#90, `245141b`) per stabilire cosa è stato davvero implementato nel frattempo e cosa resta scoperto. Output ordinato per priorità, pensato come input per i prossimi piani di implementazione.
 
 ## Metodologia
