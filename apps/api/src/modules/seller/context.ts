@@ -1,8 +1,9 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
+import { storeEmployee } from "@/db/schemas/employee";
 import { product, storeProduct } from "@/db/schemas/product";
-import type { sellerProfile } from "@/db/schemas/seller";
+import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { getEmployeeAssignedStoreIds } from "./services/access";
@@ -178,4 +179,86 @@ export interface SellerAuthContext {
 /** Type-safe context helper for profile routes (no VAT verification). */
 export function withSellerAuth<T>(ctx: T) {
 	return ctx as T & SellerAuthContext;
+}
+
+/**
+ * The seller guard's resolve: who is calling and which seller they act for.
+ * Owners and employees must both belong to a seller whose onboarding is
+ * active. Extracted from the module so it can be tested against the DB.
+ */
+export async function resolveSellerAccess(u: {
+	id: string;
+	role?: string | null;
+}) {
+	// Owner path: user is a seller with completed onboarding
+	if (u.role === "seller") {
+		const profile = await db.query.sellerProfile.findFirst({
+			where: eq(sellerProfile.userId, u.id),
+		});
+
+		if (!profile) throw new ServiceError(403, "Seller profile not found");
+		if (profile.onboardingStatus !== "active")
+			throw new ServiceError(403, "Seller onboarding not completed");
+
+		const accessCtx: AccessCtx = {
+			userId: u.id,
+			sellerProfileId: profile.id,
+			isOwner: true,
+		};
+
+		let cached: Promise<string[]> | null = null;
+		const getStoreIds = () => (cached ??= getSellerStoreIds(profile.id));
+
+		let cachedAccessible: Promise<string[]> | null = null;
+		const getAccessibleStoreIds = () =>
+			(cachedAccessible ??= getAccessibleStoreIdsFor(accessCtx));
+
+		return {
+			sellerProfile: profile,
+			isOwner: true as const,
+			accessCtx,
+			getStoreIds,
+			getAccessibleStoreIds,
+		};
+	}
+
+	// Employee path: user is an active employee
+	if (u.role === "employee") {
+		const emp = await db.query.storeEmployee.findFirst({
+			where: and(
+				eq(storeEmployee.userId, u.id),
+				eq(storeEmployee.status, "active"),
+			),
+			with: { sellerProfile: true },
+		});
+
+		if (!emp) throw new ServiceError(403, "Employee access denied");
+		// Same gate as the owner path: a rejected or not-yet-verified seller's
+		// staff must not operate on its behalf.
+		if (emp.sellerProfile.onboardingStatus !== "active")
+			throw new ServiceError(403, "Seller onboarding not completed");
+		const accessCtx: AccessCtx = {
+			userId: u.id,
+			sellerProfileId: emp.sellerProfile.id,
+			isOwner: false,
+		};
+
+		let cached: Promise<string[]> | null = null;
+		const getStoreIds = () =>
+			(cached ??= getSellerStoreIds(emp.sellerProfile.id));
+
+		let cachedAccessible: Promise<string[]> | null = null;
+		const getAccessibleStoreIds = () =>
+			(cachedAccessible ??= getAccessibleStoreIdsFor(accessCtx));
+
+		return {
+			sellerProfile: emp.sellerProfile,
+			isOwner: false as const,
+			accessCtx,
+			getStoreIds,
+			getAccessibleStoreIds,
+		};
+	}
+
+	throw new ServiceError(403, "Not a seller or employee");
 }
