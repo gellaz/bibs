@@ -24,6 +24,7 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { orderItem } from "@/db/schemas/order";
 import { product as productTable } from "@/db/schemas/product";
+import { config } from "@/lib/config";
 import { createOrder } from "@/modules/customer/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
@@ -105,5 +106,66 @@ describe("createOrder — VAT snapshot + castelletto", () => {
 		expect(byProduct.get(prodA.id)?.vatAmount).toBe("2.20");
 		expect(Number(byProduct.get(prodB.id)?.vatRate)).toBe(10);
 		expect(byProduct.get(prodB.id)?.vatAmount).toBe("1.00");
+	});
+
+	it("con punti spesi il castelletto torna col totale pagato", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, store.id);
+
+		const prodA = await createTestProduct(db, seller.profile.id, {
+			price: "12.20",
+		});
+		await db
+			.update(productTable)
+			.set({ vatRate: "22" })
+			.where(eq(productTable.id, prodA.id));
+		const prodB = await createTestProduct(db, seller.profile.id, {
+			price: "11.00",
+		});
+		await db
+			.update(productTable)
+			.set({ vatRate: "10" })
+			.where(eq(productTable.id, prodB.id));
+		const spA = await createTestStoreProduct(db, store.id, prodA.id, {
+			stock: 5,
+		});
+		const spB = await createTestStoreProduct(db, store.id, prodB.id, {
+			stock: 5,
+		});
+
+		// 2,32 € di sconto punti
+		const points = (232 * config.pointsPerEuroDiscount) / 100;
+		const customer = await createTestCustomer(db, { points });
+
+		const newOrder = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: points,
+			type: "reserve_pickup",
+			storeId: store.id,
+			items: [
+				{ storeProductId: spA.id, quantity: 1 },
+				{ storeProductId: spB.id, quantity: 1 },
+			],
+			pointsToSpend: points,
+		});
+
+		expect(newOrder.total).toBe("20.88");
+		expect(newOrder.pointsSpent).toBe(points);
+		// 22%: 12,20 − 1,22 = 10,98 → 9,00 + 1,98
+		// 10%: 11,00 − 1,10 =  9,90 → 9,00 + 0,90
+		expect(newOrder.vatBreakdown).toEqual([
+			{ rate: 22, taxableAmount: "9.00", taxAmount: "1.98" },
+			{ rate: 10, taxableAmount: "9.00", taxAmount: "0.90" },
+		]);
+		const castellettoCents = (newOrder.vatBreakdown ?? []).reduce(
+			(s, l) =>
+				s +
+				Math.round(Number(l.taxableAmount) * 100) +
+				Math.round(Number(l.taxAmount) * 100),
+			0,
+		);
+		expect(castellettoCents).toBe(2088);
 	});
 });

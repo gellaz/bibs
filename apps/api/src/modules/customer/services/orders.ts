@@ -2,7 +2,11 @@ import { and, count, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAddress } from "@/db/schemas/address";
 import { customerProfile } from "@/db/schemas/customer";
-import type { OrderStatus, OrderType } from "@/db/schemas/order";
+import type {
+	OrderStatus,
+	OrderType,
+	ShippingAddressSnapshot,
+} from "@/db/schemas/order";
 import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
@@ -14,8 +18,10 @@ import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
-import { buildCastelletto, scorporo } from "@/lib/vat";
+import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
 import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
+
+export type OrderTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 interface ListCustomerOrdersParams {
 	customerProfileId: string;
@@ -154,7 +160,7 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 	};
 }
 
-interface CreateOrderParams {
+export interface PlaceOrderParams {
 	customerProfileId: string;
 	customerPoints: number;
 	type: "direct" | "reserve_pickup" | "pay_pickup" | "pay_deliver";
@@ -165,7 +171,13 @@ interface CreateOrderParams {
 	idempotencyKey?: string;
 }
 
-export async function createOrder(params: CreateOrderParams) {
+export type CreateOrderParams = PlaceOrderParams;
+
+/**
+ * Crea un ordine dentro una transazione esistente. Non gestisce l'idempotenza:
+ * è compito del chiamante (`createOrder` per ordine, il checkout per checkout).
+ */
+export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
 	const {
 		customerProfileId,
 		customerPoints,
@@ -176,14 +188,6 @@ export async function createOrder(params: CreateOrderParams) {
 		pointsToSpend = 0,
 		idempotencyKey,
 	} = params;
-
-	// Idempotency: return existing order if key was already used
-	if (idempotencyKey) {
-		const existing = await db.query.order.findFirst({
-			where: eq(order.idempotencyKey, idempotencyKey),
-		});
-		if (existing) return existing;
-	}
 
 	// Shipping cost is determined server-side
 	const shippingCost = type === "pay_deliver" ? config.shippingCost : null;
@@ -196,254 +200,285 @@ export async function createOrder(params: CreateOrderParams) {
 	}
 
 	// IDOR guard: the shipping address must belong to the ordering customer.
-	// The FK alone only proves existence, not ownership.
+	// The FK alone only proves existence, not ownership. La stessa lettura
+	// produce lo snapshot salvato sull'ordine.
+	let shippingAddressSnapshot: ShippingAddressSnapshot | null = null;
 	if (type === "pay_deliver" && shippingAddressId) {
-		const [addr] = await db
-			.select({ id: customerAddress.id })
-			.from(customerAddress)
-			.where(
-				and(
-					eq(customerAddress.id, shippingAddressId),
-					eq(customerAddress.customerProfileId, customerProfileId),
-				),
-			)
-			.limit(1);
+		const addr = await tx.query.customerAddress.findFirst({
+			where: and(
+				eq(customerAddress.id, shippingAddressId),
+				eq(customerAddress.customerProfileId, customerProfileId),
+			),
+			with: {
+				municipality: {
+					columns: { name: true },
+					with: { province: { columns: { acronym: true } } },
+				},
+			},
+		});
 		if (!addr) throw new ServiceError(404, "Shipping address not found");
+		shippingAddressSnapshot = {
+			recipientName: addr.recipientName,
+			phone: addr.phone,
+			addressLine1: addr.addressLine1,
+			addressLine2: addr.addressLine2,
+			zipCode: addr.zipCode,
+			municipalityName: addr.municipality.name,
+			provinceAcronym: addr.municipality.province.acronym,
+			country: addr.country,
+		};
 	}
 
-	// Created eagerly so the idempotency .catch below can be attached
-	// synchronously (no reindent of the transaction body).
-	const pendingOrder = db.transaction(async (tx) => {
-		// Stessa definizione di «vendibile» del carrello: negozio visibile al
-		// pubblico, prodotto attivo. Controllato dentro la tx, prima dello stock,
-		// così una riga non vendibile annulla l'intero ordine.
-		const [sellableStore] = await tx
-			.select({ id: storeTable.id })
-			.from(storeTable)
-			.where(and(eq(storeTable.id, storeId), publiclyVisibleStore()))
-			.limit(1);
-		if (!sellableStore) throw new ServiceError(404, "Negozio non disponibile");
+	// Stessa definizione di «vendibile» del carrello: negozio visibile al
+	// pubblico, prodotto attivo. Controllato dentro la tx, prima dello stock,
+	// così una riga non vendibile annulla l'intero ordine.
+	const [sellableStore] = await tx
+		.select({ id: storeTable.id })
+		.from(storeTable)
+		.where(and(eq(storeTable.id, storeId), publiclyVisibleStore()))
+		.limit(1);
+	if (!sellableStore) throw new ServiceError(404, "Negozio non disponibile");
 
-		// Verify stock availability and calculate total (in cents to avoid float errors)
-		let totalCents = 0;
-		const resolvedItems: {
-			storeProductId: string;
-			productId: string;
-			productName: string;
-			productEan: string | null;
-			brandName: string | null;
-			productImageUrl: string | null;
-			quantity: number;
-			unitPrice: string;
-			listPrice: string;
-			discountPercent: number | null;
-			vatRate: string;
-			vatAmount: string;
-		}[] = [];
+	// Verify stock availability and calculate total (in cents to avoid float errors)
+	let totalCents = 0;
+	const resolvedItems: {
+		storeProductId: string;
+		productId: string;
+		productName: string;
+		productEan: string | null;
+		brandName: string | null;
+		productImageUrl: string | null;
+		quantity: number;
+		unitPrice: string;
+		listPrice: string;
+		discountPercent: number | null;
+		vatRate: string;
+		vatAmount: string;
+	}[] = [];
 
-		for (const item of items) {
-			const sp = await tx.query.storeProduct.findFirst({
-				where: and(
-					eq(storeProduct.id, item.storeProductId),
-					eq(storeProduct.storeId, storeId),
-				),
-				with: {
-					product: {
-						with: {
-							brand: true,
-							images: {
-								orderBy: (img, { asc }) => [asc(img.position)],
-								limit: 1,
-							},
+	for (const item of items) {
+		const sp = await tx.query.storeProduct.findFirst({
+			where: and(
+				eq(storeProduct.id, item.storeProductId),
+				eq(storeProduct.storeId, storeId),
+			),
+			with: {
+				product: {
+					with: {
+						brand: true,
+						images: {
+							orderBy: (img, { asc }) => [asc(img.position)],
+							limit: 1,
 						},
 					},
 				},
-			});
+			},
+		});
 
-			if (!sp)
-				throw new ServiceError(
-					404,
-					`Store product ${item.storeProductId} not found`,
-				);
-			// Un prodotto non attivo collassa nello stesso 404 del carrello: non si
-			// conferma l'esistenza di righe che non si possono comprare.
-			if (sp.product.status !== "active")
-				throw new ServiceError(404, "Prodotto non disponibile");
-			if (sp.stock < item.quantity)
-				throw new ServiceError(
-					400,
-					`Insufficient stock for ${sp.product.name}`,
-				);
+		if (!sp)
+			throw new ServiceError(
+				404,
+				`Store product ${item.storeProductId} not found`,
+			);
+		// Un prodotto non attivo collassa nello stesso 404 del carrello: non si
+		// conferma l'esistenza di righe che non si possono comprare.
+		if (sp.product.status !== "active")
+			throw new ServiceError(404, "Prodotto non disponibile");
+		if (sp.stock < item.quantity)
+			throw new ServiceError(400, `Insufficient stock for ${sp.product.name}`);
 
-			// Sconto venditore: prezzo unitario scontato PRIMA dello sconto punti,
-			// con lo stesso rounding del prezzo mostrato al cliente
-			// (ROUND(price * (1 - percent/100), 2) per unità, half-away-from-zero).
-			// Semantica last-word: se la promo viene messa in pausa/archiviata tra
-			// display e checkout, si paga il listino. Lookup per-riga DENTRO la tx
-			// (N+1 deliberato: carrelli piccoli, consistenza transazionale con le
-			// letture di stock/prezzo; per batch esiste getBestActiveDiscounts).
-			const discountInfo = await getBestActiveDiscount(sp.product.id, tx);
-			const listUnitCents = toCents(sp.product.price);
-			const unitCents = discountInfo
-				? Math.round((listUnitCents * (100 - discountInfo.percent)) / 100)
-				: listUnitCents;
+		// Sconto venditore: prezzo unitario scontato PRIMA dello sconto punti,
+		// con lo stesso rounding del prezzo mostrato al cliente
+		// (ROUND(price * (1 - percent/100), 2) per unità, half-away-from-zero).
+		// Semantica last-word: se la promo viene messa in pausa/archiviata tra
+		// display e checkout, si paga il listino. Lookup per-riga DENTRO la tx
+		// (N+1 deliberato: carrelli piccoli, consistenza transazionale con le
+		// letture di stock/prezzo; per batch esiste getBestActiveDiscounts).
+		const discountInfo = await getBestActiveDiscount(sp.product.id, tx);
+		const listUnitCents = toCents(sp.product.price);
+		const unitCents = discountInfo
+			? Math.round((listUnitCents * (100 - discountInfo.percent)) / 100)
+			: listUnitCents;
 
-			const lineGrossCents = unitCents * item.quantity;
-			totalCents += lineGrossCents;
-			const { vatCents } = scorporo(lineGrossCents, Number(sp.product.vatRate));
-			resolvedItems.push({
-				storeProductId: sp.id,
-				productId: sp.product.id,
-				productName: sp.product.name,
-				productEan: sp.product.ean ?? null,
-				brandName: sp.product.brand?.name ?? null,
-				productImageUrl: sp.product.images[0]?.url ?? null,
-				quantity: item.quantity,
-				unitPrice: fromCents(unitCents),
-				listPrice: sp.product.price,
-				discountPercent: discountInfo?.percent ?? null,
-				vatRate: sp.product.vatRate,
-				vatAmount: fromCents(vatCents),
-			});
-		}
+		const lineGrossCents = unitCents * item.quantity;
+		totalCents += lineGrossCents;
+		const { vatCents } = scorporo(lineGrossCents, Number(sp.product.vatRate));
+		resolvedItems.push({
+			storeProductId: sp.id,
+			productId: sp.product.id,
+			productName: sp.product.name,
+			productEan: sp.product.ean ?? null,
+			brandName: sp.product.brand?.name ?? null,
+			productImageUrl: sp.product.images[0]?.url ?? null,
+			quantity: item.quantity,
+			unitPrice: fromCents(unitCents),
+			listPrice: sp.product.price,
+			discountPercent: discountInfo?.percent ?? null,
+			vatRate: sp.product.vatRate,
+			vatAmount: fromCents(vatCents),
+		});
+	}
 
-		// Castelletto IVA: scorporo per-aliquota sui lordi di riga (PRIMA dello
-		// sconto punti — l'apportionment dello sconto punti tra aliquote è demandato
-		// al futuro layer di fatturazione).
-		const vatBreakdown = buildCastelletto(
+	// Points discount (all in cents)
+	let discountCents = 0;
+	if (pointsToSpend > 0) {
+		if (pointsToSpend > customerPoints)
+			throw new ServiceError(400, "Insufficient points");
+		// Aritmetica intera: (punti / 100) * 100 in virgola mobile perde un
+		// centesimo su migliaia di valori (232 punti → 231 centesimi).
+		discountCents = Math.floor(
+			(pointsToSpend * 100) / config.pointsPerEuroDiscount,
+		);
+		if (discountCents > totalCents) discountCents = totalCents;
+	}
+	const actualPointsSpent = Math.floor(
+		(discountCents * config.pointsPerEuroDiscount) / 100,
+	);
+	const finalTotalCents = totalCents - discountCents;
+
+	// Castelletto IVA sul lordo GIÀ scontato dai punti: lo sconto punti è
+	// incondizionato, riduce la base imponibile di ogni aliquota in proporzione
+	// (resti maggiori, vedi apportionDiscount). Così Σ castelletto == total.
+	// order_items.vatAmount resta lo scorporo della riga prima dei punti:
+	// l'unica fonte fiscale dell'ordine è vatBreakdown.
+	const vatBreakdown = buildCastelletto(
+		apportionDiscount(
 			resolvedItems.map((it) => ({
 				grossCents: toCents(it.unitPrice) * it.quantity,
 				rate: Number(it.vatRate),
 			})),
-		);
+			discountCents,
+		),
+	);
 
-		// Points discount (all in cents)
-		let discountCents = 0;
-		if (pointsToSpend > 0) {
-			if (pointsToSpend > customerPoints)
-				throw new ServiceError(400, "Insufficient points");
-			discountCents = Math.floor(
-				(pointsToSpend / config.pointsPerEuroDiscount) * 100,
-			);
-			if (discountCents > totalCents) discountCents = totalCents;
-		}
-		const actualPointsSpent = Math.floor(
-			(discountCents / 100) * config.pointsPerEuroDiscount,
-		);
-		const finalTotalCents = totalCents - discountCents;
+	const initialStatus = type === "direct" ? "completed" : "confirmed";
 
-		const initialStatus = type === "direct" ? "completed" : "confirmed";
+	const reservationExpiresAt =
+		type === "reserve_pickup"
+			? new Date(Date.now() + config.reservationHours * 60 * 60 * 1000)
+			: null;
 
-		const reservationExpiresAt =
-			type === "reserve_pickup"
-				? new Date(Date.now() + config.reservationHours * 60 * 60 * 1000)
-				: null;
+	// Create order
+	const [newOrder] = await tx
+		.insert(order)
+		.values({
+			customerProfileId,
+			storeId,
+			type,
+			status: initialStatus,
+			total: fromCents(finalTotalCents),
+			shippingAddressId: type === "pay_deliver" ? shippingAddressId : null,
+			shippingAddressSnapshot,
+			shippingCost,
+			reservationExpiresAt,
+			pointsEarned: 0,
+			pointsSpent: actualPointsSpent,
+			idempotencyKey: idempotencyKey ?? null,
+			vatBreakdown,
+		})
+		.returning();
 
-		// Create order
-		const [newOrder] = await tx
-			.insert(order)
-			.values({
-				customerProfileId,
-				storeId,
-				type,
-				status: initialStatus,
-				total: fromCents(finalTotalCents),
-				shippingAddressId: type === "pay_deliver" ? shippingAddressId : null,
-				shippingCost,
-				reservationExpiresAt,
-				pointsEarned: 0,
-				pointsSpent: actualPointsSpent,
-				idempotencyKey: idempotencyKey ?? null,
-				vatBreakdown,
-			})
+	// Create order items with product snapshot for historical integrity
+	await tx.insert(orderItem).values(
+		resolvedItems.map((item) => ({
+			orderId: newOrder.id,
+			storeProductId: item.storeProductId,
+			productId: item.productId,
+			productName: item.productName,
+			productEan: item.productEan,
+			brandName: item.brandName,
+			productImageUrl: item.productImageUrl,
+			quantity: item.quantity,
+			unitPrice: item.unitPrice,
+			listPrice: item.listPrice,
+			discountPercent: item.discountPercent,
+			vatRate: item.vatRate,
+			vatAmount: item.vatAmount,
+		})),
+	);
+
+	// Atomically decrement stock for all order types
+	for (const item of resolvedItems) {
+		const [updated] = await tx
+			.update(storeProduct)
+			.set({ stock: sql`${storeProduct.stock} - ${item.quantity}` })
+			.where(
+				and(
+					eq(storeProduct.id, item.storeProductId),
+					sql`${storeProduct.stock} >= ${item.quantity}`,
+				),
+			)
 			.returning();
 
-		// Create order items with product snapshot for historical integrity
-		await tx.insert(orderItem).values(
-			resolvedItems.map((item) => ({
-				orderId: newOrder.id,
-				storeProductId: item.storeProductId,
-				productId: item.productId,
-				productName: item.productName,
-				productEan: item.productEan,
-				brandName: item.brandName,
-				productImageUrl: item.productImageUrl,
-				quantity: item.quantity,
-				unitPrice: item.unitPrice,
-				listPrice: item.listPrice,
-				discountPercent: item.discountPercent,
-				vatRate: item.vatRate,
-				vatAmount: item.vatAmount,
-			})),
-		);
+		if (!updated)
+			throw new ServiceError(409, "Stock changed during order, please retry");
+	}
 
-		// Atomically decrement stock for all order types
-		for (const item of resolvedItems) {
+	// Deduct points spent
+	if (actualPointsSpent > 0) {
+		// CAS on the live balance inside the tx, mirroring the stock decrement
+		// above. The affordability check near the top reads a points snapshot
+		// taken OUTSIDE this tx, so without this guard two concurrent checkouts
+		// by the same customer could both pass that check and over-spend.
+		const [debited] = await tx
+			.update(customerProfile)
+			.set({
+				points: sql`${customerProfile.points} - ${actualPointsSpent}`,
+			})
+			.where(
+				and(
+					eq(customerProfile.id, customerProfileId),
+					sql`${customerProfile.points} >= ${actualPointsSpent}`,
+				),
+			)
+			.returning();
+
+		if (!debited) throw new ServiceError(409, "Punti insufficienti, riprova");
+
+		await tx.insert(pointTransaction).values({
+			customerProfileId,
+			orderId: newOrder.id,
+			amount: actualPointsSpent,
+			type: "redeemed",
+			description: `Redeemed ${actualPointsSpent} points for order`,
+		});
+	}
+
+	// Award points immediately for direct purchase
+	if (type === "direct") {
+		const pointsEarned = await awardPoints(tx, {
+			customerProfileId,
+			orderId: newOrder.id,
+			totalCents: finalTotalCents,
+			description: "Earned points from direct purchase",
+		});
+		if (pointsEarned > 0) {
 			const [updated] = await tx
-				.update(storeProduct)
-				.set({ stock: sql`${storeProduct.stock} - ${item.quantity}` })
-				.where(
-					and(
-						eq(storeProduct.id, item.storeProductId),
-						sql`${storeProduct.stock} >= ${item.quantity}`,
-					),
-				)
+				.update(order)
+				.set({ pointsEarned })
+				.where(eq(order.id, newOrder.id))
 				.returning();
-
-			if (!updated)
-				throw new ServiceError(409, "Stock changed during order, please retry");
+			return updated;
 		}
+	}
 
-		// Deduct points spent
-		if (actualPointsSpent > 0) {
-			// CAS on the live balance inside the tx, mirroring the stock decrement
-			// above. The affordability check near the top reads a points snapshot
-			// taken OUTSIDE this tx, so without this guard two concurrent checkouts
-			// by the same customer could both pass that check and over-spend.
-			const [debited] = await tx
-				.update(customerProfile)
-				.set({
-					points: sql`${customerProfile.points} - ${actualPointsSpent}`,
-				})
-				.where(
-					and(
-						eq(customerProfile.id, customerProfileId),
-						sql`${customerProfile.points} >= ${actualPointsSpent}`,
-					),
-				)
-				.returning();
+	return newOrder;
+}
 
-			if (!debited) throw new ServiceError(409, "Punti insufficienti, riprova");
+export async function createOrder(params: CreateOrderParams) {
+	const { idempotencyKey } = params;
 
-			await tx.insert(pointTransaction).values({
-				customerProfileId,
-				orderId: newOrder.id,
-				amount: actualPointsSpent,
-				type: "redeemed",
-				description: `Redeemed ${actualPointsSpent} points for order`,
-			});
-		}
+	// Idempotency: return existing order if key was already used
+	if (idempotencyKey) {
+		const existing = await db.query.order.findFirst({
+			where: eq(order.idempotencyKey, idempotencyKey),
+		});
+		if (existing) return existing;
+	}
 
-		// Award points immediately for direct purchase
-		if (type === "direct") {
-			const pointsEarned = await awardPoints(tx, {
-				customerProfileId,
-				orderId: newOrder.id,
-				totalCents: finalTotalCents,
-				description: "Earned points from direct purchase",
-			});
-			if (pointsEarned > 0) {
-				const [updated] = await tx
-					.update(order)
-					.set({ pointsEarned })
-					.where(eq(order.id, newOrder.id))
-					.returning();
-				return updated;
-			}
-		}
-
-		return newOrder;
-	});
+	// Created eagerly so the idempotency .catch below can be attached
+	// synchronously.
+	const pendingOrder = db.transaction((tx) => placeOrder(tx, params));
 
 	return pendingOrder.catch(async (err: unknown) => {
 		// Idempotency race: a concurrent caller inserted the same idempotencyKey

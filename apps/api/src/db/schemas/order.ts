@@ -37,6 +37,18 @@ export const orderStatuses = [
 ] as const;
 export type OrderStatus = (typeof orderStatuses)[number];
 
+/** Copia dell'indirizzo di spedizione al momento dell'ordine. */
+export interface ShippingAddressSnapshot {
+	recipientName: string | null;
+	phone: string | null;
+	addressLine1: string;
+	addressLine2: string | null;
+	zipCode: string;
+	municipalityName: string;
+	provinceAcronym: string;
+	country: string;
+}
+
 export const order = pgTable(
 	"orders",
 	{
@@ -56,6 +68,11 @@ export const order = pgTable(
 			() => customerAddress.id,
 			{ onDelete: "set null" },
 		),
+		// Snapshot dell'indirizzo al momento dell'ordine: la FK qui sopra va a NULL
+		// se il cliente cancella l'indirizzo dalla rubrica, lo snapshot resta.
+		shippingAddressSnapshot: jsonb(
+			"shipping_address_snapshot",
+		).$type<ShippingAddressSnapshot>(),
 		shippingCost: numeric("shipping_cost", { precision: 10, scale: 2 }),
 		vatBreakdown: jsonb("vat_breakdown").$type<CastellettoLine[]>(),
 		reservationExpiresAt: timestamp("reservation_expires_at", {

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { buildCastelletto, scorporo, VAT_RATES } from "@/lib/vat";
+import {
+	apportionDiscount,
+	buildCastelletto,
+	scorporo,
+	VAT_RATES,
+} from "@/lib/vat";
 
 describe("VAT_RATES", () => {
 	it("lists the five Italian rates as strings, default-first", () => {
@@ -61,5 +66,154 @@ describe("buildCastelletto", () => {
 
 	it("returns an empty array for no lines", () => {
 		expect(buildCastelletto([])).toEqual([]);
+	});
+});
+
+describe("apportionDiscount", () => {
+	it("con sconto zero restituisce il lordo aggregato per aliquota", () => {
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 1100, rate: 10 },
+					{ grossCents: 1220, rate: 22 },
+				],
+				0,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 1220 },
+			{ rate: 10, grossCents: 1100 },
+		]);
+	});
+
+	it("aggrega le righe con la stessa aliquota prima di ripartire", () => {
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 500, rate: 22 },
+					{ grossCents: 500, rate: 22 },
+				],
+				100,
+			),
+		).toEqual([{ rate: 22, grossCents: 900 }]);
+	});
+
+	it("ripartisce in proporzione al lordo di ciascuna aliquota", () => {
+		// 2,32 € su 23,20 €: 1,22 alla 22% (1220/2320), 1,10 alla 10%
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 1220, rate: 22 },
+					{ grossCents: 1100, rate: 10 },
+				],
+				232,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 1098 },
+			{ rate: 10, grossCents: 990 },
+		]);
+	});
+
+	it("assegna i centesimi residui coi resti maggiori, a parità all'aliquota più alta", () => {
+		// 100 su tre quote uguali: 33 ciascuna + 1 residuo → alla 22%
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 100, rate: 4 },
+					{ grossCents: 100, rate: 22 },
+					{ grossCents: 100, rate: 10 },
+				],
+				100,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 66 },
+			{ rate: 10, grossCents: 67 },
+			{ rate: 4, grossCents: 67 },
+		]);
+	});
+
+	it("a parità esatta di resto vince l'aliquota più alta anche con quote diverse", () => {
+		// 3 su 1 (22%) + 1 (10%) + 7 (4%): quote 1/3, 1/3, 7/3 → resti tutti 1/3.
+		// In virgola mobile il resto della 4% esce 0,3333…35 e ruberebbe il
+		// centesimo: il confronto va fatto sui resti interi.
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 1, rate: 22 },
+					{ grossCents: 1, rate: 10 },
+					{ grossCents: 7, rate: 4 },
+				],
+				3,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 0 },
+			{ rate: 10, grossCents: 1 },
+			{ rate: 4, grossCents: 5 },
+		]);
+	});
+
+	it("il resto maggiore vince sull'aliquota", () => {
+		// 10 su 700 (22%) + 300 (10%): quote 7,0 e 3,0 → nessun residuo;
+		// 11 su 700 + 300: quote 7,7 e 3,3 → base 7+3, residuo 1 alla 22% (0,7 > 0,3)
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 300, rate: 10 },
+					{ grossCents: 700, rate: 22 },
+				],
+				11,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 692 },
+			{ rate: 10, grossCents: 297 },
+		]);
+		// 13 su 700 + 300: quote 9,1 e 3,9 → residuo alla 10% (0,9 > 0,1)
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 700, rate: 22 },
+					{ grossCents: 300, rate: 10 },
+				],
+				13,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 691 },
+			{ rate: 10, grossCents: 296 },
+		]);
+	});
+
+	it("con sconto pari al totale azzera ogni aliquota", () => {
+		expect(
+			apportionDiscount(
+				[
+					{ grossCents: 1220, rate: 22 },
+					{ grossCents: 1100, rate: 10 },
+				],
+				2320,
+			),
+		).toEqual([
+			{ rate: 22, grossCents: 0 },
+			{ rate: 10, grossCents: 0 },
+		]);
+	});
+
+	it("conserva sempre il totale scontato e non va mai sotto zero", () => {
+		const lines = [
+			{ grossCents: 1999, rate: 22 },
+			{ grossCents: 347, rate: 10 },
+			{ grossCents: 58, rate: 5 },
+			{ grossCents: 1, rate: 4 },
+		];
+		const gross = lines.reduce((s, l) => s + l.grossCents, 0);
+		for (let d = 0; d <= gross; d += 7) {
+			const out = apportionDiscount(lines, d);
+			expect(out.reduce((s, l) => s + l.grossCents, 0)).toBe(gross - d);
+			for (const l of out) expect(l.grossCents).toBeGreaterThanOrEqual(0);
+		}
+	});
+
+	it("rifiuta uno sconto negativo o superiore al lordo", () => {
+		const lines = [{ grossCents: 100, rate: 22 }];
+		expect(() => apportionDiscount(lines, -1)).toThrow(RangeError);
+		expect(() => apportionDiscount(lines, 101)).toThrow(RangeError);
 	});
 });
