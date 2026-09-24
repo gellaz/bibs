@@ -192,7 +192,7 @@ export const productsRoutes = new Elysia()
 			detail: {
 				summary: "Lookup prodotto per EAN",
 				description:
-					"Restituisce i dati pre-compilabili dell'ultimo prodotto creato con questo EAN (cross-seller). Esclude prezzo e immagini. Ritorna null se nessun prodotto matcha.",
+					"Restituisce i dati pre-compilabili dell'ultimo prodotto attivo con questo EAN presente in un negozio visibile al pubblico (tra venditori: solo dati già pubblici sul sito). Esclude prezzo e immagini. Ritorna null se nessun prodotto matcha.",
 				tags: ["Seller - Products"],
 			},
 		},
