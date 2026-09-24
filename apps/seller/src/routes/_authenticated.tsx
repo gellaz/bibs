@@ -42,7 +42,7 @@ function AuthenticatedLayout() {
 		data: onboarding,
 		isPending: onboardingPending,
 		isError: onboardingError,
-	} = useOnboardingStatus();
+	} = useOnboardingStatus({ enabled: session?.user.role === "seller" });
 	const navigate = useNavigate();
 	const location = useLocation();
 
