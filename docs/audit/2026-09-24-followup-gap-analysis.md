@@ -166,8 +166,8 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | **P0.6** | Rettifica dell'evidenza: il `NaN` non arrivava a Stripe (l'API lo rifiutava con 422); i buchi erano `productId` libero (ora `^prod_…`) e il dialog (stato stringa, limiti dell'API, massimo due decimali, Conferma disabilitato con messaggio). `changeData` validato con lo schema di scrittura prima di applicarlo (400, resta `pending`); `reject-change` con body tipato | #195 |
 | **P0.8** | La macro-categoria suggerisce l'aliquota solo finché non è una scelta del seller (in modifica quella salvata conta come scelta); altrimenti toast con l'aliquota mantenuta | #195 |
 | **P2.1** | Le 9 voci TanStack del catalog (non 10: `react-table` era già pinnata) passano da `latest` a pin esatti sulle versioni del lockfile; nuovo job CI `web-build` (vite build per app + `git diff --exit-code` sui generati) | #196 |
-| **P1.5** | Snapshot dell'indirizzo sull'ordine (`orders.shipping_address_snapshot`), scritto da `placeOrder`; la FK resta `set null` | #NN |
-| **P6.2 (punti)** | Castelletto costruito sul lordo già scontato dai punti, ripartito tra le aliquote a resti maggiori (`apportionDiscount`): Σ castelletto = totale. Corretta anche la conversione punti→centesimi in virgola mobile (232 punti valevano 2,31 €) | #NN |
+| **P1.5** | Snapshot dell'indirizzo sull'ordine (`orders.shipping_address_snapshot`), scritto da `placeOrder`; la FK resta `set null` | #197 |
+| **P6.2 (punti)** | Castelletto costruito sul lordo già scontato dai punti, ripartito tra le aliquote a resti maggiori (`apportionDiscount`): Σ castelletto = totale. Corretta anche la conversione punti→centesimi in virgola mobile (232 punti valevano 2,31 €) | #197 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
