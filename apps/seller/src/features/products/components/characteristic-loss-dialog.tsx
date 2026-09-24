@@ -35,7 +35,10 @@ export function CharacteristicLossDialog({
 					<AlertDialogTitle>Cambiare sotto-categoria?</AlertDialogTitle>
 					<AlertDialogDescription>
 						Cambiando categoria perderai {filledPhrase(lost.length)}:{" "}
-						{lost.map((v) => v.name).join(", ")}. Non si potranno recuperare.
+						{lost.map((v) => v.name).join(", ")}.{" "}
+						{lost.length === 1
+							? "Non si potrà recuperare."
+							: "Non si potranno recuperare."}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

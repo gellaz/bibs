@@ -67,8 +67,9 @@ export function ProductCharacteristicsSection({
 					role="status"
 					className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
 				>
-					Al salvataggio verranno eliminati {filledPhrase(pendingLoss.length)}{" "}
-					della categoria precedente:{" "}
+					Al salvataggio{" "}
+					{pendingLoss.length === 1 ? "verrà eliminato" : "verranno eliminati"}{" "}
+					{filledPhrase(pendingLoss.length)} della categoria precedente:{" "}
 					{pendingLoss.map((v) => v.name).join(", ")}.
 				</p>
 			)}
