@@ -33,26 +33,43 @@ interface ProductTileProps {
 	 * risultato, qui va `AddToCart` con il suo `storeProductId`.
 	 */
 	action?: ReactNode;
+	/**
+	 * Il negozio da mettere nel link alla scheda quando il prodotto non ne
+	 * porta uno (catalogo della scheda negozio: il negozio è la pagina).
+	 */
+	storeId?: string;
 }
 
 /**
- * Tile prodotto presentazionale. Il tile nel suo complesso non è un link: non
- * esiste ancora una pagina di dettaglio prodotto, e un controllo morto è
- * peggio di nessun controllo. L'unico link è il nome del negozio, che porta
- * alla sua scheda.
+ * Tile prodotto presentazionale. Portano alla scheda l'immagine e il nome, non
+ * l'intero riquadro: dentro ci sono altri controlli (il link al negozio, lo
+ * stepper del carrello) e un'area cliccabile che li contiene darebbe click
+ * ambigui. Il link porta con sé il negozio del tile, così la scheda aggancia
+ * lo stesso.
  */
 export function ProductTile({
 	product,
 	showDistance,
 	action,
+	storeId,
 }: ProductTileProps) {
 	const cover = product.images[0]?.url;
 	const hasDistance = showDistance && (product.distance ?? 0) > 0;
 	const others = product.otherStoreCount ?? 0;
+	const linkProps = {
+		to: "/products/$productId",
+		params: { productId: product.id },
+		search: { store: product.store?.id ?? storeId },
+	} as const;
 
 	return (
 		<article className="flex h-full flex-col gap-3">
-			<div className="relative aspect-square overflow-hidden rounded-lg border border-border">
+			<Link
+				{...linkProps}
+				tabIndex={-1}
+				aria-hidden
+				className="relative block aspect-square overflow-hidden rounded-lg border border-border"
+			>
 				<TileImage url={cover} name={product.name} />
 				{hasDistance && (
 					<span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-cream px-2 py-1 font-medium font-mono text-ink text-xs tabular-nums shadow-sm">
@@ -60,10 +77,15 @@ export function ProductTile({
 						{formatDistance(product.distance ?? 0)}
 					</span>
 				)}
-			</div>
+			</Link>
 			<div className="flex flex-1 flex-col gap-1">
 				<h3 className="line-clamp-2 font-medium text-[0.9375rem] text-foreground leading-snug">
-					{product.name}
+					<Link
+						{...linkProps}
+						className="hover:underline focus-visible:underline"
+					>
+						{product.name}
+					</Link>
 				</h3>
 				<DiscountedPrice
 					size="sm"

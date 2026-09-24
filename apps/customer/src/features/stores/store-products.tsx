@@ -59,6 +59,7 @@ export function StoreProducts({ storeId }: { storeId: string }) {
 							<li key={product.id}>
 								<ProductTile
 									product={product}
+									storeId={storeId}
 									showDistance={false}
 									action={
 										<AddToCart
