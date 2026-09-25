@@ -43,6 +43,10 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | **P1.6** | **Account hub customer**: storico ordini e movimenti punti | `customer/routes/points.ts:9`, `customer/routes/orders.ts:24` inutilizzati; FE usa solo `profile.data.points` (`profile-identity.tsx:118`) | La sezione «Ordini» esiste (#199: tab Prenotazioni/Pagati, dettaglio, annullamento); restano movimenti punti e storico completo | M |
 | **P1.7** | **Billing seller**: email di dunning/cancellazione; riattivazione self-service di negozi `canceled` | `packages/emails/emails/` (3 template); `seller/services/stores.ts:352` (reactivate solo `canceling`) | Un negozio `canceled` è morto senza intervento manuale | M |
 
+**P1.1, buco aperto**: `POST /customer/orders` accetta ancora `pay_pickup`/`pay_deliver` e crea ordini
+`confirmed` senza pagamento (buco preesistente, fuori dal checkout): lo chiude la PR F (PR2 nasce
+`pending` o si applica `offeredOrderTypes` anche lì); **blocca qualunque deploy**.
+
 ---
 
 ## P2 — Rete di sicurezza CI/test
