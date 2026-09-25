@@ -16,7 +16,6 @@ import {
 	createOrder,
 	getCustomerOrder,
 	listCustomerOrders,
-	pickupOrder,
 } from "../services/orders";
 
 export const ordersRoutes = new Elysia()
@@ -142,43 +141,6 @@ export const ordersRoutes = new Elysia()
 				summary: "Dettaglio ordine",
 				description:
 					"Restituisce i dettagli completi di un singolo ordine del cliente.",
-				tags: ["Customer - Orders"],
-			},
-		},
-	)
-	.post(
-		"/orders/:orderId/pickup",
-		async (ctx) => {
-			const { customerProfile: cp, params, store, user } = withCustomer(ctx);
-			const pino = getLogger(store);
-
-			const data = await pickupOrder({
-				orderId: params.orderId,
-				customerProfileId: cp.id,
-			});
-
-			pino.info(
-				{
-					userId: user.id,
-					customerProfileId: cp.id,
-					orderId: data.id,
-					orderType: data.type,
-					action: "order_picked_up",
-				},
-				"Ordine ritirato dal cliente",
-			);
-
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				orderId: t.String({ description: "ID dell'ordine" }),
-			}),
-			response: withConflictErrors({ 200: okRes(OrderSchema) }),
-			detail: {
-				summary: "Ritira ordine",
-				description:
-					"Conferma il ritiro di un ordine di tipo pickup. L'ordine deve essere in stato 'ready_for_pickup'.",
 				tags: ["Customer - Orders"],
 			},
 		},

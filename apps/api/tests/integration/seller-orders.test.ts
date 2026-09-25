@@ -485,6 +485,40 @@ describe("ritiro con codice", () => {
 		expect(cp.points).toBe(earned[0].amount);
 	});
 
+	it("un pay_pickup pronto per il ritiro si completa per codice con i punti", async () => {
+		const db = getTestDb();
+		const {
+			seller,
+			store,
+			customer,
+			order: ord,
+		} = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+			customerPoints: 0,
+			pointsSpent: 0,
+			pickupCode: "K7XM4P",
+		});
+		await db
+			.update(order)
+			.set({
+				type: "pay_pickup",
+				status: "ready_for_pickup",
+				reservationExpiresAt: null,
+			})
+			.where(eq(order.id, ord.id));
+		const done = await completePickupByCode({
+			storeId: store.id,
+			code: "K7XM4P",
+			sellerProfileId: seller.profile.id,
+		});
+		expect(done.status).toBe("completed");
+		const [cp] = await db
+			.select()
+			.from(customerProfile)
+			.where(eq(customerProfile.id, customer.profile.id));
+		expect(cp.points).toBeGreaterThan(0);
+	});
+
 	it("una prenotazione scaduta non ancora spazzata: scade, rimborsa e risponde 400", async () => {
 		const db = getTestDb();
 		const {
