@@ -38,7 +38,7 @@
 		"@tanstack/react-start": "catalog:",
 		"@tanstack/react-table": "catalog:",
 		"@tanstack/router-plugin": "catalog:",
-		"barcode-detector": "^3.2.2",
+		"barcode-detector": "3.2.2",
 		"better-auth": "catalog:",
 		"lucide-react": "catalog:",
 		"react": "catalog:",
