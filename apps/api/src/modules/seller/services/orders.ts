@@ -139,6 +139,8 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 				items: { with: { storeProduct: { with: { product: true } } } },
 				customerProfile: { with: { user: true } },
 				store: {
+					// PostGIS: drizzle non legge la geometria in una relazione annidata.
+					columns: { location: false },
 					with: {
 						municipality: municipalityCompactWith,
 					},
@@ -176,6 +178,8 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 			items: { with: { storeProduct: { with: { product: true } } } },
 			customerProfile: { with: { user: true } },
 			store: {
+				// PostGIS: drizzle non legge la geometria in una relazione annidata.
+				columns: { location: false },
 				with: {
 					municipality: municipalityCompactWith,
 				},
