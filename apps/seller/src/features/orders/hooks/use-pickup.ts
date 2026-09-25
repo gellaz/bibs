@@ -28,8 +28,17 @@ export function useConfirmPickup() {
 			if (res.error?.status === 404) throw new Error(m.pickup_not_found());
 			return unwrap(res, m.pickup_confirm_failed()).data;
 		},
-		// Anche sull'errore: una prenotazione scaduta alla conferma cambia stato.
-		onSettled: () => {
+		// Dopo il successo l'anteprima di quel codice non esiste più: rifarla
+		// darebbe solo un 404. Sull'errore invece si riallinea tutto (una
+		// prenotazione scaduta alla conferma cambia stato).
+		onSuccess: () => {
+			qc.removeQueries({ queryKey: ["orders", "pickup"] });
+			void qc.invalidateQueries({
+				queryKey: ["orders"],
+				predicate: (q) => q.queryKey[1] !== "pickup",
+			});
+		},
+		onError: () => {
 			void qc.invalidateQueries({ queryKey: ["orders"] });
 		},
 	});
