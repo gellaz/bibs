@@ -1,5 +1,6 @@
 import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Link } from "@tanstack/react-router";
+import { ReceiptText } from "lucide-react";
 import { CartBadge } from "@/features/cart/cart-badge";
 import { SearchOriginChip } from "@/features/location/search-origin-chip";
 import { m } from "@/paraglide/messages";
@@ -55,6 +56,17 @@ export function SiteHeader() {
 						className="rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground"
 					>
 						{m.nav_stores()}
+					</Link>
+					{/* Sotto `sm` solo l'icona, da 44px come la borsa: il testo non ci
+					    sta accanto a identità e navigazione. */}
+					<Link
+						to="/orders"
+						search={{ tab: "reserved", page: 1 }}
+						aria-label={m.nav_orders()}
+						className="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground max-sm:size-11 max-sm:justify-center max-sm:px-0"
+					>
+						<ReceiptText className="size-5 sm:size-4" aria-hidden />
+						<span className="max-sm:sr-only">{m.nav_orders()}</span>
 					</Link>
 					<CartBadge />
 				</nav>

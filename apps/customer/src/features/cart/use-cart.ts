@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
-const CART_KEY = ["cart"] as const;
+export const CART_KEY = ["cart"] as const;
 
 // `unwrap` (da @bibs/ui/lib/api-client) lancia il messaggio dell'API se c'è,
 // altrimenti il fallback: è così che il testo specifico del server — "Ne
