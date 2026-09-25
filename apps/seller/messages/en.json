@@ -260,5 +260,6 @@
 	"orders_detail_created": "Created on {date}",
 	"orders_detail_deadline": "Pick up by {date}",
 	"orders_detail_shipping": "Shipping",
-	"orders_detail_not_found": "Order not found"
+	"orders_detail_not_found": "Order not found",
+	"orders_picked_up_back": "Not yet"
 }

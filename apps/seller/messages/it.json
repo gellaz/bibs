@@ -260,5 +260,6 @@
 	"orders_detail_created": "Creato il {date}",
 	"orders_detail_deadline": "Ritiro entro {date}",
 	"orders_detail_shipping": "Spedizione",
-	"orders_detail_not_found": "Ordine non trovato"
+	"orders_detail_not_found": "Ordine non trovato",
+	"orders_picked_up_back": "Non ancora"
 }

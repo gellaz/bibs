@@ -34,7 +34,7 @@ export function useOrderCounts(params: { storeId?: string; type?: OrderType }) {
 			const res = await api().seller.orders.counts.get({
 				query: { storeId, type },
 			});
-			return unwrap(res, "Errore caricamento conteggi");
+			return unwrap(res, "Errore caricamento conteggi").data;
 		},
 		enabled: !!storeId,
 	});
@@ -45,7 +45,7 @@ export function useOrder(orderId: string) {
 		queryKey: [...ORDERS_KEY, "detail", orderId],
 		queryFn: async () => {
 			const res = await api().seller.orders({ orderId }).get();
-			return unwrap(res, "Errore caricamento ordine");
+			return unwrap(res, "Errore caricamento ordine").data;
 		},
 	});
 }
