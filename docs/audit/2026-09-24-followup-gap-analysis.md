@@ -37,10 +37,10 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 
 | ID | Item | Evidenza | Note | Effort |
 |---|---|---|---|---|
-| **P1.1** | **Checkout customer** (creazione ordine dal carrello) | `apps/customer/src/routes/_authenticated/cart.tsx:70` (commento: nessun CTA perché non esiste la pagina) | Include: svuotare le righe ordinate dal carrello (debito #163). Spec: [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato). **PP1 fatto in #NN**; restano QR (D), Connect (E) e PR2 (F) | L |
+| **P1.1** | **Checkout customer** (creazione ordine dal carrello) | `apps/customer/src/routes/_authenticated/cart.tsx:70` (commento: nessun CTA perché non esiste la pagina) | Include: svuotare le righe ordinate dal carrello (debito #163). Spec: [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato). **PP1 fatto in #199**; restano QR (D), Connect (E) e PR2 (F) | L |
 | **P1.3** | **Home seller con dati veri** | `apps/seller/src/routes/_authenticated/index.tsx:23` (`TODAY_LABEL = "Venerdì 22 maggio"`), `:25-30` stats "—", `:44-86` azioni finte ("3 ordini da preparare" `:49`) | Solo l'alert orari è reale. La card «ordini da preparare» può leggere `GET /seller/orders/counts` (#198). Include i rimandi di #183: funzione pura estratta dall'IIFE (`:103-137`), ordinamento per urgenza (`:139-141`) | M |
 | **P1.4** | **Geocoding dei negozi creati dal seller** | nessun uso di geocode/location in `apps/seller/src` | Un negozio creato dal seller non ha coordinate → invisibile nelle ricerche per prossimità. L'API di geocoding esiste (#175) | M |
-| **P1.6** | **Account hub customer**: storico ordini e movimenti punti | `customer/routes/points.ts:9`, `customer/routes/orders.ts:24` inutilizzati; FE usa solo `profile.data.points` (`profile-identity.tsx:118`) | La sezione «Ordini» esiste (#NN: tab Prenotazioni/Pagati, dettaglio, annullamento); restano movimenti punti e storico completo | M |
+| **P1.6** | **Account hub customer**: storico ordini e movimenti punti | `customer/routes/points.ts:9`, `customer/routes/orders.ts:24` inutilizzati; FE usa solo `profile.data.points` (`profile-identity.tsx:118`) | La sezione «Ordini» esiste (#199: tab Prenotazioni/Pagati, dettaglio, annullamento); restano movimenti punti e storico completo | M |
 | **P1.7** | **Billing seller**: email di dunning/cancellazione; riattivazione self-service di negozi `canceled` | `packages/emails/emails/` (3 template); `seller/services/stores.ts:352` (reactivate solo `canceling`) | Un negozio `canceled` è morto senza intervento manuale | M |
 
 ---
@@ -168,7 +168,7 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | **P1.5** | Snapshot dell'indirizzo sull'ordine (`orders.shipping_address_snapshot`), scritto da `placeOrder`; la FK resta `set null` | #197 |
 | **P6.2 (punti)** | Castelletto costruito sul lordo già scontato dai punti, ripartito tra le aliquote a resti maggiori (`apportionDiscount`): Σ castelletto = totale. Corretta anche la conversione punti→centesimi in virgola mobile (232 punti valevano 2,31 €) | #197 |
 | **P1.2** | Pagina ordini seller: lista del negozio attivo con tab per stato (conteggi da `GET /seller/orders/counts`) e filtro tipologia, dettaglio con righe, riepilogo e castelletto IVA, azioni pronto/ritirato/annulla. Annullamento seller con rimborso di stock e punti (`PATCH /seller/orders/:id/cancel`). Corretto anche il crash delle letture ordini (seller e customer) sui negozi con coordinate: la geometria PostGIS non si legge nelle relazioni annidate | #198 |
-| **Debito #163** | Le righe ordinate escono dal carrello nella stessa transazione del checkout (`createCheckout`); quelle non disponibili restano | #NN |
+| **Debito #163** | Le righe ordinate escono dal carrello nella stessa transazione del checkout (`createCheckout`); quelle non disponibili restano | #199 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
