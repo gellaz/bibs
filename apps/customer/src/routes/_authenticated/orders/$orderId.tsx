@@ -20,6 +20,7 @@ import { TileImage } from "@/components/tile";
 import { canCustomerCancel } from "@/features/orders/order-display";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
+import { PickupQr } from "@/features/orders/pickup-qr";
 import { useCancelOrder, useCustomerOrder } from "@/features/orders/use-orders";
 import { m } from "@/paraglide/messages";
 
@@ -70,6 +71,10 @@ function OrderDetailPage() {
 		order.type === "reserve_pickup" &&
 		order.reservationExpiresAt &&
 		(order.status === "confirmed" || order.status === "ready_for_pickup");
+	const pickupCode =
+		order.status === "confirmed" || order.status === "ready_for_pickup"
+			? order.pickupCode
+			: null;
 
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
@@ -87,6 +92,15 @@ function OrderDetailPage() {
 					<PickupCountdown expiresAt={order.reservationExpiresAt} />
 				)}
 			</header>
+
+			{pickupCode && (
+				<section className="space-y-3 rounded-xl border border-border p-4">
+					<PickupQr code={pickupCode} />
+					<p className="text-center text-muted-foreground text-sm">
+						{m.orders_pickup_qr_hint()}
+					</p>
+				</section>
+			)}
 
 			<section className="space-y-2 rounded-xl border border-border p-4">
 				<h2 className="font-medium text-muted-foreground text-sm">
