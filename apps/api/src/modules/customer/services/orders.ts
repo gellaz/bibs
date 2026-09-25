@@ -608,8 +608,12 @@ export async function cancelOrder(params: {
 		if (!updated)
 			throw new ServiceError(409, "L'ordine è già stato aggiornato");
 
+		// `updated` (la riga appena letta dal CAS), non `existing` (letta prima):
+		// un trasferimento può essere partito tra le due letture (settleCheckoutPayment
+		// concorrente), e senza lo storno rimborsiamo il cliente senza recuperare i
+		// soldi dal negozio.
 		if (existing.type === "pay_pickup" && existing.status === "confirmed")
-			await refundOrderPayment(tx, existing);
+			await refundOrderPayment(tx, updated);
 
 		await refundStockAndPoints(tx, existing);
 

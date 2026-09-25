@@ -275,6 +275,22 @@ describe("payment_intent.succeeded", () => {
 		expect(other.stripeTransferId).toMatch(/^tr_/);
 	});
 
+	it("un ordine già annullato e rimborsato (fuori dal checkout, es. il negozio l'ha annullato) non genera un trasferimento", async () => {
+		const { orders } = await seedPaidCheckout();
+		await getTestDb()
+			.update(order)
+			.set({ status: "cancelled", stripeRefundId: "re_X" })
+			.where(eq(order.id, orders[0].order.id));
+
+		await deliver(piEvent("evt_skip", "payment_intent.succeeded"));
+
+		expect(refundsCreate).not.toHaveBeenCalled();
+		const skipped = await reload(orders[0].order.id);
+		expect(skipped.status).toBe("cancelled");
+		expect(skipped.stripeTransferId).toBeNull();
+		expect(transfersCreate).toHaveBeenCalledTimes(1); // solo l'altro ordine
+	});
+
 	it("PI sconosciuto → ignorato senza errori", async () => {
 		await seedPaidCheckout();
 		await deliver({

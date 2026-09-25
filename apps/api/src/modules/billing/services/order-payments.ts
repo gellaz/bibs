@@ -90,6 +90,11 @@ export async function refundOrderPayment(
 		stripeTransferId: string | null;
 	},
 ): Promise<void> {
+	// Stripe rifiuta un rimborso di importo 0 (nessun pagamento da restituire):
+	// un PR2 a saldo zero (es. interamente coperto da punti) si annulla senza
+	// toccare Stripe.
+	if (toCents(o.total) === 0) return;
+
 	const co = o.checkoutId
 		? await tx.query.checkout.findFirst({
 				where: eq(checkout.id, o.checkoutId),
@@ -255,7 +260,8 @@ export async function settleCheckoutPayment(
 	for (const o of payable) {
 		const amount = toCents(o.total) - toCents(o.platformFee);
 		if (amount <= 0) continue;
-		if (!o.destination) {
+		const destination = o.destination;
+		if (!destination) {
 			logger.error(
 				{ orderId: o.id },
 				"Trasferimento impossibile: negozio senza conto Connect",
@@ -264,21 +270,44 @@ export async function settleCheckoutPayment(
 			continue;
 		}
 		try {
-			const transfer = await stripe.transfers.create(
-				{
-					amount,
-					currency: "eur",
-					destination: o.destination,
-					source_transaction: chargeId,
-					transfer_group: co.id,
-					metadata: { orderId: o.id, checkoutId: co.id },
-				},
-				{ idempotencyKey: `transfer:${o.id}` },
-			);
-			await db
-				.update(order)
-				.set({ stripeTransferId: transfer.id })
-				.where(and(eq(order.id, o.id), isNull(order.stripeTransferId)));
+			await db.transaction(async (tx) => {
+				// Rilettura lockata: `payable` sopra è una foto di prima. Tra quella
+				// select e qui un cancel concorrente (refundOrderPayment) può aver già
+				// annullato l'ordine. Il lock fa attendere il CAS di annullamento in
+				// corso: o il cancel vince e qui si salta (ordine non più pagato), o
+				// questo trasferimento scrive stripeTransferId per primo e il cancel,
+				// che legge dopo, lo trova e lo storna.
+				const [row] = await tx
+					.select({
+						status: order.status,
+						stripeTransferId: order.stripeTransferId,
+					})
+					.from(order)
+					.where(eq(order.id, o.id))
+					.for("update");
+				if (
+					!row ||
+					!(PAID_STATUSES as readonly string[]).includes(row.status) ||
+					row.stripeTransferId
+				)
+					return;
+
+				const transfer = await stripe.transfers.create(
+					{
+						amount,
+						currency: "eur",
+						destination,
+						source_transaction: chargeId,
+						transfer_group: co.id,
+						metadata: { orderId: o.id, checkoutId: co.id },
+					},
+					{ idempotencyKey: `transfer:${o.id}` },
+				);
+				await tx
+					.update(order)
+					.set({ stripeTransferId: transfer.id })
+					.where(eq(order.id, o.id));
+			});
 		} catch (err) {
 			logger.error({ err, orderId: o.id }, "stripe.transfers.create failed");
 			transferFailed.push(o.id);

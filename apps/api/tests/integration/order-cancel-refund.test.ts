@@ -64,7 +64,10 @@ beforeEach(async () => {
 async function seedPr2(
 	status: "pending" | "confirmed",
 	transferId: string | null = "tr_1",
+	amounts: { total?: string; platformFee?: string } = {},
 ) {
+	const total = amounts.total ?? "10.00";
+	const platformFee = amounts.platformFee ?? "0.50";
 	const db = getTestDb();
 	const customer = await createTestCustomer(db);
 	const seller = await createTestSeller(db);
@@ -89,8 +92,8 @@ async function seedPr2(
 			storeId: store.id,
 			type: "pay_pickup",
 			status,
-			total: "10.00",
-			platformFee: "0.50",
+			total,
+			platformFee,
 			checkoutId: co.id,
 			stripeTransferId: status === "confirmed" ? transferId : null,
 		})
@@ -101,7 +104,7 @@ async function seedPr2(
 		productId: product.id,
 		storeProductId: sp.id,
 		quantity: 1,
-		unitPrice: "10.00",
+		unitPrice: total,
 	});
 	return { customer, store, order: o, sp };
 }
@@ -194,6 +197,17 @@ describe("annullamento PR2 confermato", () => {
 		]);
 		expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
 		expect(refundsCreate).toHaveBeenCalledTimes(1);
+	});
+
+	it("importo zero (es. coperto interamente da punti): annullamento senza toccare Stripe", async () => {
+		const s = await seedPr2("confirmed", null, {
+			total: "0.00",
+			platformFee: "0.00",
+		});
+		await cancelSellerOrder({ orderId: s.order.id, storeIds: [s.store.id] });
+		expect(refundsCreate).not.toHaveBeenCalled();
+		expect(createReversal).not.toHaveBeenCalled();
+		expect((await reload(s.order.id)).status).toBe("cancelled");
 	});
 });
 
