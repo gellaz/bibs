@@ -655,6 +655,11 @@ export const OrderSchema = t.Object({
 	checkoutId: t.Nullable(
 		t.String({ description: "Checkout che ha creato l'ordine" }),
 	),
+	pickupCode: t.Nullable(
+		t.String({
+			description: "Codice di ritiro al banco (solo ordini da ritirare)",
+		}),
+	),
 	shippingAddressSnapshot: t.Nullable(
 		t.Object(
 			{

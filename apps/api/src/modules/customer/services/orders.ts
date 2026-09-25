@@ -1,4 +1,4 @@
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAddress } from "@/db/schemas/address";
 import { customerProfile } from "@/db/schemas/customer";
@@ -17,6 +17,7 @@ import { fromCents, toCents } from "@/lib/money";
 import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
+import { generatePickupCode } from "@/lib/pickup-code";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
 import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
@@ -185,6 +186,36 @@ export interface CreateOrderParams extends PlaceOrderParams {
  * chiamante: `createOrder` passa la sua key, il checkout nessuna (una key unica
  * su N ordini violerebbe l'indice) e lega gli ordini col `checkoutId`.
  */
+const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
+const OPEN_STATUSES = ["pending", "confirmed", "ready_for_pickup"] as const;
+
+/**
+ * Codice libero tra gli ordini aperti del negozio. Il pre-controllo copre il
+ * caso normale; l'indice unico parziale resta la rete per una race (409).
+ */
+export async function assignPickupCode(
+	tx: OrderTx,
+	storeId: string,
+	generate: () => string = generatePickupCode,
+): Promise<string> {
+	for (let attempt = 0; attempt < 5; attempt++) {
+		const code = generate();
+		const [taken] = await tx
+			.select({ id: order.id })
+			.from(order)
+			.where(
+				and(
+					eq(order.storeId, storeId),
+					eq(order.pickupCode, code),
+					inArray(order.status, [...OPEN_STATUSES]),
+				),
+			)
+			.limit(1);
+		if (!taken) return code;
+	}
+	throw new ServiceError(409, "Riprova: codice di ritiro non disponibile");
+}
+
 export async function placeOrder(
 	tx: OrderTx,
 	params: PlaceOrderParams,
@@ -369,6 +400,10 @@ export async function placeOrder(
 			? new Date(Date.now() + config.reservationHours * 60 * 60 * 1000)
 			: null;
 
+	const pickupCode = PICKUP_TYPES.includes(type)
+		? await assignPickupCode(tx, storeId)
+		: null;
+
 	// Create order
 	const [newOrder] = await tx
 		.insert(order)
@@ -386,6 +421,7 @@ export async function placeOrder(
 			pointsSpent: actualPointsSpent,
 			idempotencyKey: link.idempotencyKey ?? null,
 			checkoutId: link.checkoutId ?? null,
+			pickupCode,
 			vatBreakdown,
 		})
 		.returning();
@@ -508,98 +544,6 @@ export async function createOrder(params: CreateOrderParams) {
 		}
 		throw err;
 	});
-}
-
-const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
-const RESERVATION_EXPIRED = Symbol("reservation-expired");
-
-export async function pickupOrder(params: {
-	orderId: string;
-	customerProfileId: string;
-}) {
-	const { orderId, customerProfileId } = params;
-
-	const result = await db.transaction(async (tx) => {
-		const existing = await tx.query.order.findFirst({
-			where: and(
-				eq(order.id, orderId),
-				eq(order.customerProfileId, customerProfileId),
-			),
-			with: { items: true },
-		});
-
-		if (!existing) throw new ServiceError(404, "Order not found");
-
-		// Il ritiro è l'unica mossa del cliente: vale solo per ordini da ritirare
-		// che il negozio ha segnato pronti. Il resto della macchina a stati
-		// (confirmed → completed, shipped → completed) resta del seller.
-		if (
-			!PICKUP_TYPES.includes(existing.type as OrderType) ||
-			existing.status !== "ready_for_pickup"
-		)
-			throw new ServiceError(400, "L'ordine non è pronto per il ritiro");
-
-		assertTransition(
-			existing.status as OrderStatus,
-			"completed",
-			existing.type as OrderType,
-		);
-
-		// Check reservation expiry — refund points and restock
-		if (
-			existing.type === "reserve_pickup" &&
-			existing.reservationExpiresAt &&
-			existing.reservationExpiresAt < new Date()
-		) {
-			// Compare-and-swap so a concurrent expirer (cron sweep / seller
-			// completion) can't double-refund: only refund if we claim the flip.
-			const [claimed] = await tx
-				.update(order)
-				.set({ status: "expired" })
-				.where(
-					and(eq(order.id, existing.id), eq(order.status, existing.status)),
-				)
-				.returning();
-
-			if (claimed) {
-				await refundStockAndPoints(tx, existing);
-			}
-
-			// Not a throw: throwing here would roll back the expiry and the
-			// refund we just wrote. Commit first, report after.
-			return RESERVATION_EXPIRED;
-		}
-
-		// Compare-and-swap: claim the completion before awarding points, so two
-		// concurrent pickups can't both award loyalty points.
-		const [claimed] = await tx
-			.update(order)
-			.set({ status: "completed" })
-			.where(and(eq(order.id, existing.id), eq(order.status, existing.status)))
-			.returning();
-		if (!claimed)
-			throw new ServiceError(409, "L'ordine è già stato aggiornato");
-
-		const pointsEarned = await awardPoints(tx, {
-			customerProfileId,
-			orderId: existing.id,
-			totalCents: toCents(existing.total),
-			description: "Earned points from order pickup",
-		});
-
-		if (pointsEarned === 0) return claimed;
-		const [updated] = await tx
-			.update(order)
-			.set({ pointsEarned })
-			.where(eq(order.id, existing.id))
-			.returning();
-
-		return updated;
-	});
-
-	if (result === RESERVATION_EXPIRED)
-		throw new ServiceError(400, "Reservation has expired");
-	return result;
 }
 
 export async function cancelOrder(params: {

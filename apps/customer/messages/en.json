@@ -357,6 +357,10 @@
 	"orders_changed": "The order changed in the meantime: here is its current status.",
 	"orders_not_found": "We can't find this order.",
 	"orders_load_failed": "We couldn't load your orders.",
+	"orders_pickup_code_label": "Pickup code",
+	"orders_pickup_qr_aria": "Pickup QR code {code}",
+	"orders_pickup_qr_hint": "Show it in store: the shopkeeper scans it and hands you your items.",
+	"orders_show_qr": "Show QR",
 	"checkout_edit_choice": "Change option",
 	"checkout_retry": "We couldn't confirm. Try again: if the reservation already went through, it won't be duplicated."
 }

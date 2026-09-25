@@ -18,6 +18,7 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedPickupRouteImport } from './routes/_authenticated/pickup'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
@@ -85,6 +86,11 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
 const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPickupRoute = AuthenticatedPickupRouteImport.update({
+  id: '/pickup',
+  path: '/pickup',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/orders': typeof AuthenticatedOrdersRouteWithChildren
+  '/pickup': typeof AuthenticatedPickupRoute
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/promotions': typeof AuthenticatedPromotionsRouteWithChildren
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/billing': typeof AuthenticatedBillingRoute
+  '/pickup': typeof AuthenticatedPickupRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AuthenticatedIndexRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
+  '/_authenticated/pickup': typeof AuthenticatedPickupRoute
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRouteWithChildren
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/billing'
     | '/orders'
+    | '/pickup'
     | '/products'
     | '/profile'
     | '/promotions'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/billing'
+    | '/pickup'
     | '/profile'
     | '/invite/$token'
     | '/'
@@ -396,6 +407,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/billing'
     | '/_authenticated/orders'
+    | '/_authenticated/pickup'
     | '/_authenticated/products'
     | '/_authenticated/profile'
     | '/_authenticated/promotions'
@@ -496,6 +508,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pickup': {
+      id: '/_authenticated/pickup'
+      path: '/pickup'
+      fullPath: '/pickup'
+      preLoaderRoute: typeof AuthenticatedPickupRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/products': {
@@ -762,6 +781,7 @@ const AuthenticatedTeamRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
+  AuthenticatedPickupRoute: typeof AuthenticatedPickupRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRouteWithChildren
@@ -777,6 +797,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
+  AuthenticatedPickupRoute: AuthenticatedPickupRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRouteWithChildren,

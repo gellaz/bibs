@@ -87,6 +87,9 @@ export const order = pgTable(
 		checkoutId: text("checkout_id").references(() => checkout.id, {
 			onDelete: "set null",
 		}),
+		// Codice di ritiro al banco (lib/pickup-code.ts): solo per gli ordini da
+		// ritirare, unico tra gli ordini aperti dello stesso negozio.
+		pickupCode: text("pickup_code"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -115,6 +118,11 @@ export const order = pgTable(
 		uniqueIndex("order_idempotency_key_idx")
 			.on(table.idempotencyKey)
 			.where(sql`${table.idempotencyKey} IS NOT NULL`),
+		uniqueIndex("order_open_pickup_code_idx")
+			.on(table.storeId, table.pickupCode)
+			.where(
+				sql`${table.pickupCode} IS NOT NULL AND ${table.status} IN ('pending','confirmed','ready_for_pickup')`,
+			),
 		check("order_total_non_negative", sql`${table.total} >= 0`),
 		check("order_shipping_cost_non_negative", sql`${table.shippingCost} >= 0`),
 		check("order_points_earned_non_negative", sql`${table.pointsEarned} >= 0`),

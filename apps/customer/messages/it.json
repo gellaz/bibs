@@ -357,6 +357,10 @@
 	"orders_changed": "L'ordine è cambiato nel frattempo: ecco lo stato aggiornato.",
 	"orders_not_found": "Non troviamo questo ordine.",
 	"orders_load_failed": "Non siamo riusciti a caricare gli ordini.",
+	"orders_pickup_code_label": "Codice di ritiro",
+	"orders_pickup_qr_aria": "Codice QR di ritiro {code}",
+	"orders_pickup_qr_hint": "Mostralo in negozio: il negoziante lo scansiona e ti consegna la merce.",
+	"orders_show_qr": "Mostra QR",
 	"checkout_edit_choice": "Modifica modalità",
 	"checkout_retry": "Non siamo riusciti a confermare. Riprova: se la prenotazione era già partita, non verrà duplicata."
 }

@@ -5,6 +5,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, SearchX } from "lucide-react";
 import { NoticePage } from "@/components/notice";
 import { useCheckout } from "@/features/checkout/use-checkout";
+import { formatPickupCode } from "@/features/orders/pickup-code";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
 import { m } from "@/paraglide/messages";
 
@@ -79,6 +80,25 @@ function CheckoutDonePage() {
 							{o.store.municipality.name} (
 							{o.store.municipality.provinceAcronym})
 						</p>
+						{o.pickupCode && (
+							<div className="flex flex-wrap items-baseline justify-between gap-x-3">
+								<span className="text-sm">
+									<span className="text-muted-foreground">
+										{m.orders_pickup_code_label()}
+									</span>{" "}
+									<span className="font-mono font-semibold text-foreground tracking-widest">
+										{formatPickupCode(o.pickupCode)}
+									</span>
+								</span>
+								<Link
+									to="/orders/$orderId"
+									params={{ orderId: o.id }}
+									className="inline-flex min-h-11 items-center font-medium text-sm text-primary hover:underline"
+								>
+									{m.orders_show_qr()}
+								</Link>
+							</div>
+						)}
 						<ul className="space-y-0.5 text-foreground text-sm">
 							{o.items.map((i) => (
 								<li key={i.id}>
