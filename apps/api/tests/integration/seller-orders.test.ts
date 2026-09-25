@@ -117,7 +117,11 @@ describe("transitionOrder — reserve_pickup expiry", () => {
 
 		await expect(
 			transitionOrder(ord.id, seller.profile.id, "completed", [store.id]),
-		).rejects.toMatchObject({ status: 400 });
+		).rejects.toMatchObject({
+			status: 400,
+			// Arriva tale e quale nel toast del seller.
+			message: "La prenotazione è scaduta",
+		});
 
 		// Order expired, not completed.
 		const fresh = await db.query.order.findFirst({

@@ -68,7 +68,7 @@ export async function transitionOrder(
 			existing.reservationExpiresAt < new Date()
 		) {
 			await expireSingleReservation(orderId);
-			throw new ServiceError(400, "Reservation has expired");
+			throw new ServiceError(400, "La prenotazione è scaduta");
 		}
 
 		const updated = await db.transaction(async (tx) => {
