@@ -1,5 +1,4 @@
 import { Elysia, t } from "elysia";
-import { ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
@@ -181,13 +180,8 @@ export const storesRoutes = new Elysia()
 	.get(
 		"/stores/:storeId/order-types",
 		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params } = sellerCtx;
-			if (!sellerCtx.isOwner) {
-				const allowed = await sellerCtx.getAccessibleStoreIds();
-				if (!allowed.includes(params.storeId))
-					throw new ServiceError(404, "Negozio non trovato");
-			}
+			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+			requireOwner(isOwner);
 			return ok(
 				await getStoreOrderTypes({
 					sellerProfileId: sp.id,
@@ -203,7 +197,7 @@ export const storesRoutes = new Elysia()
 			detail: {
 				summary: "Tipologie d'acquisto del negozio",
 				description:
-					"Tipologie configurate, quelle offerte davvero ai clienti e se il venditore può incassare online.",
+					"Tipologie configurate, quelle offerte davvero ai clienti e se il venditore può incassare online. Solo il titolare.",
 				tags: ["Seller - Stores"],
 			},
 		},

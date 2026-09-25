@@ -11,6 +11,7 @@ export const ERROR_CODES = {
 	429: "TOO_MANY_REQUESTS",
 	// 5xx Server Errors
 	500: "INTERNAL_ERROR",
+	502: "BAD_GATEWAY",
 	503: "SERVICE_UNAVAILABLE",
 } as const;
 

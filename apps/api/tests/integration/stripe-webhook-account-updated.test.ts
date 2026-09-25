@@ -206,4 +206,45 @@ describe("account.updated", () => {
 			.where(eq(stripeEvent.eventId, "evt_FAIL"));
 		expect(ev.processedAt).toBeNull();
 	});
+
+	it("scope connect ignora un invoice.payment_succeeded", async () => {
+		await seedAccount();
+		currentEvent = {
+			id: "evt_INV",
+			type: "invoice.payment_succeeded",
+			data: { object: { id: "in_1" } },
+		};
+		await handleStripeWebhook({
+			payload: "raw",
+			signature: "sig",
+			scope: "connect",
+		});
+		expect(accountsRetrieve).not.toHaveBeenCalled();
+		const [ev] = await getTestDb()
+			.select()
+			.from(stripeEvent)
+			.where(eq(stripeEvent.eventId, "evt_INV"));
+		expect(ev.processedAt).toBeTruthy();
+	});
+
+	it("account.updated sulla route piattaforma è ignorato", async () => {
+		await seedAccount();
+		currentEvent = accountEvent("evt_PLAT");
+		await handleStripeWebhook({
+			payload: "raw",
+			signature: "sig",
+			scope: "platform",
+		});
+		expect(accountsRetrieve).not.toHaveBeenCalled();
+		expect(await row()).toMatchObject({
+			chargesEnabled: false,
+			payoutsEnabled: false,
+			detailsSubmitted: false,
+		});
+		const [ev] = await getTestDb()
+			.select()
+			.from(stripeEvent)
+			.where(eq(stripeEvent.eventId, "evt_PLAT"));
+		expect(ev.processedAt).toBeTruthy();
+	});
 });

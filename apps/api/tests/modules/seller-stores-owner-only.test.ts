@@ -72,4 +72,9 @@ describe("seller stores routes are owner-only", () => {
 		});
 		expect(res.status).toBe(403);
 	});
+
+	it("GET /stores/:id/order-types → 403 for a non-owner", async () => {
+		const res = await call("GET", "/stores/some-id/order-types");
+		expect(res.status).toBe(403);
+	});
 });

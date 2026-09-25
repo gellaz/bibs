@@ -77,7 +77,7 @@ export async function handleStripeWebhook(
 	}
 
 	try {
-		await dispatch(event);
+		await dispatch(event, scope);
 		await db
 			.update(stripeEvent)
 			.set({ processedAt: new Date() })
@@ -94,10 +94,25 @@ export async function handleStripeWebhook(
 	}
 }
 
-async function dispatch(event: Stripe.Event): Promise<void> {
+/**
+ * connect scope handles only account.updated: everything else a connected
+ * account can emit (charges, payment intents, ...) is out of scope for now
+ * and just logged, not routed into the platform-scope switch below.
+ */
+async function dispatch(
+	event: Stripe.Event,
+	scope: "platform" | "connect",
+): Promise<void> {
+	if (scope === "connect") {
+		if (event.type === "account.updated") return handleAccountUpdated(event);
+		logger.info(
+			{ eventId: event.id, type: event.type },
+			"Stripe Connect event received but not handled",
+		);
+		return;
+	}
+
 	switch (event.type) {
-		case "account.updated":
-			return handleAccountUpdated(event);
 		case "checkout.session.completed":
 			return handleCheckoutCompleted(event);
 		case "customer.subscription.updated":
@@ -109,6 +124,8 @@ async function dispatch(event: Stripe.Event): Promise<void> {
 		case "invoice.payment_failed":
 			return handleInvoiceFailed(event);
 		default:
+			// account.updated on the platform route is unexpected (it belongs to
+			// the connect scope) and falls through here too: log + ignore.
 			logger.info(
 				{ eventId: event.id, type: event.type },
 				"Stripe event received but not handled",

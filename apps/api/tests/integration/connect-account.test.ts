@@ -51,6 +51,7 @@ mock.module("@/lib/env", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import Stripe from "stripe";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import {
 	createOnboardingLink,
@@ -109,9 +110,9 @@ describe("createOnboardingLink", () => {
 			},
 			metadata: { sellerProfileId: seller.profile.id },
 		});
-		expect(opts).toEqual({
-			idempotencyKey: `connect-account:${seller.profile.id}`,
-		});
+		// Nessuna idempotency key fissa: un retry dopo un errore reale non deve
+		// essere bloccato per 24h dallo stesso conto fallito (vedi il test sotto).
+		expect(opts).toBeUndefined();
 		expect(accountLinksCreate.mock.calls[0][0]).toEqual({
 			account: "acct_NEW",
 			type: "account_onboarding",
@@ -166,6 +167,10 @@ describe("createOnboardingLink", () => {
 		expect(rows[0].stripeAccountId).toBe("acct_NEW");
 	});
 
+	// L'harness di test serializza le transazioni (vedi feedback_testcontainer_serializes_tx):
+	// questo Promise.all dimostra che il secondo `ensureConnectAccount` rilegge
+	// payment_methods sotto il lock e trova il conto scritto dal primo, non la
+	// race stessa (che richiederebbe interleaving reale in produzione).
 	it("doppio click: due chiamate insieme → un solo conto e una sola riga", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
@@ -179,6 +184,77 @@ describe("createOnboardingLink", () => {
 			.from(paymentMethod)
 			.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
 		expect(rows).toHaveLength(1);
+	});
+
+	it("accounts.create rifiuta → nessuna riga, 502, e un secondo tentativo riesce", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "boom@test.it" });
+
+		accountsCreate.mockImplementationOnce(async () => {
+			throw new Stripe.errors.StripeAPIError({
+				message: "boom",
+				type: "api_error",
+			} as any);
+		});
+
+		await expect(
+			createOnboardingLink({
+				sellerProfileId: seller.profile.id,
+				email: "boom@test.it",
+			}),
+		).rejects.toMatchObject({ status: 502 });
+
+		const rowsAfterFailure = await db
+			.select()
+			.from(paymentMethod)
+			.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
+		expect(rowsAfterFailure).toHaveLength(0);
+
+		const res = await createOnboardingLink({
+			sellerProfileId: seller.profile.id,
+			email: "boom@test.it",
+		});
+		expect(res.url).toBe("https://connect.stripe.test/setup/abc");
+
+		const rows = await db
+			.select()
+			.from(paymentMethod)
+			.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
+		expect(rows).toHaveLength(1);
+		expect(rows[0].stripeAccountId).toBe("acct_NEW");
+	});
+
+	it("accountLinks.create rifiuta: la riga col conto resta salvata (tx già committata), risposta 502, il retry riusa il conto senza un secondo accounts.create", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "link-boom@test.it" });
+
+		accountLinksCreate.mockImplementationOnce(async () => {
+			throw new Stripe.errors.StripeAPIError({
+				message: "link boom",
+				type: "api_error",
+			} as any);
+		});
+
+		await expect(
+			createOnboardingLink({
+				sellerProfileId: seller.profile.id,
+				email: "link-boom@test.it",
+			}),
+		).rejects.toMatchObject({ status: 502 });
+
+		const rows = await db
+			.select()
+			.from(paymentMethod)
+			.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
+		expect(rows).toHaveLength(1);
+		expect(rows[0].stripeAccountId).toBe("acct_NEW");
+
+		const res = await createOnboardingLink({
+			sellerProfileId: seller.profile.id,
+			email: "link-boom@test.it",
+		});
+		expect(res.url).toBe("https://connect.stripe.test/setup/abc");
+		expect(accountsCreate).toHaveBeenCalledTimes(1);
 	});
 });
 
@@ -230,6 +306,33 @@ describe("refreshConnectAccount", () => {
 	it("conto sconosciuto → null, nessuna chiamata a Stripe", async () => {
 		expect(await refreshConnectAccount("acct_GHOST")).toBeNull();
 		expect(accountsRetrieve).not.toHaveBeenCalled();
+	});
+
+	it("retrieve rifiuta con resource_missing → riga degradata a false, nessun errore", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await db.insert(paymentMethod).values({
+			sellerProfileId: seller.profile.id,
+			stripeAccountId: "acct_NEW",
+			chargesEnabled: true,
+			payoutsEnabled: true,
+			detailsSubmitted: true,
+		});
+		accountsRetrieve.mockImplementationOnce(async () => {
+			throw new Stripe.errors.StripeInvalidRequestError({
+				message: "No such account",
+				type: "invalid_request_error",
+				code: "resource_missing",
+			} as any);
+		});
+
+		const row = await refreshConnectAccount("acct_NEW");
+
+		expect(row).toMatchObject({
+			chargesEnabled: false,
+			payoutsEnabled: false,
+			detailsSubmitted: false,
+		});
 	});
 });
 

@@ -1,10 +1,12 @@
 import { and, eq } from "drizzle-orm";
+import Stripe from "stripe";
 import { db } from "@/db";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
 import { type ConnectStatus, connectStatus } from "@/lib/connect-status";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -42,8 +44,14 @@ export function getDefaultPaymentMethod(
 /**
  * Il conto Connect del seller, creato alla prima richiesta. Il lock sulla riga
  * seller_profiles serializza due click ravvicinati: il secondo rilegge
- * payment_methods dopo il primo e trova il conto. L'idempotency key copre il
- * caso in cui la tx fallisca dopo accounts.create (retry → stesso conto).
+ * payment_methods dopo il primo e trova il conto creato dal primo.
+ *
+ * Trade-off accettato: se la transazione fallisce dopo una accounts.create
+ * riuscita, resta un conto Express mai onboardato orfano su Stripe (taggato
+ * `metadata.sellerProfileId`, nessuna fee finché non viene attivato). Non
+ * usiamo un'idempotency key fissa per evitarlo: replicherebbe per 24h anche
+ * una accounts.create fallita per un motivo reale (es. email invalida),
+ * bloccando ogni retry dell'utente con lo stesso errore.
  */
 async function ensureConnectAccount(
 	sellerProfileId: string,
@@ -62,8 +70,9 @@ async function ensureConnectAccount(
 		// Controller properties equivalenti a un conto Express (Stripe marca
 		// `type` come legacy). card_payments + transfers: charges_enabled
 		// significa "può incassare", e la PR F trasferisce con separate charges.
-		const account = await stripe.accounts.create(
-			{
+		let account: Stripe.Response<Stripe.Account>;
+		try {
+			account = await stripe.accounts.create({
 				country: "IT",
 				email,
 				controller: {
@@ -77,9 +86,17 @@ async function ensureConnectAccount(
 					transfers: { requested: true },
 				},
 				metadata: { sellerProfileId },
-			},
-			{ idempotencyKey: `connect-account:${sellerProfileId}` },
-		);
+			});
+		} catch (err) {
+			if (err instanceof Stripe.errors.StripeError) {
+				logger.error({ sellerProfileId, err }, "stripe.accounts.create failed");
+				throw new ServiceError(
+					502,
+					"Non è stato possibile attivare i pagamenti online. Riprova tra qualche minuto.",
+				);
+			}
+			throw err;
+		}
 
 		if (existing) {
 			await tx
@@ -104,19 +121,52 @@ export async function createOnboardingLink(params: {
 		params.sellerProfileId,
 		params.email,
 	);
-	const link = await stripe.accountLinks.create({
-		account,
-		type: "account_onboarding",
-		return_url: `${env.SELLER_APP_URL}/payments/return`,
-		refresh_url: `${env.SELLER_APP_URL}/payments/refresh`,
-	});
-	return { url: link.url };
+	try {
+		const link = await stripe.accountLinks.create({
+			account,
+			type: "account_onboarding",
+			return_url: `${env.SELLER_APP_URL}/payments/return`,
+			refresh_url: `${env.SELLER_APP_URL}/payments/refresh`,
+		});
+		return { url: link.url };
+	} catch (err) {
+		if (err instanceof Stripe.errors.StripeError) {
+			logger.error(
+				{ sellerProfileId: params.sellerProfileId, err },
+				"stripe.accountLinks.create failed",
+			);
+			throw new ServiceError(
+				502,
+				"Non è stato possibile attivare i pagamenti online. Riprova tra qualche minuto.",
+			);
+		}
+		throw err;
+	}
+}
+
+/**
+ * True per gli errori Stripe che non si risolveranno mai da soli su un
+ * retry: il conto è stato disconnesso/cancellato (`resource_missing`,
+ * `account_invalid`) o la piattaforma ha perso i permessi su di esso
+ * (`StripePermissionError`). Distinto da errori transitori (rete, 5xx Stripe)
+ * che devono continuare a rifar fallire il webhook per il retry di Stripe.
+ */
+function isPermanentlyInaccessible(err: unknown): boolean {
+	if (!(err instanceof Stripe.errors.StripeError)) return false;
+	if (err instanceof Stripe.errors.StripePermissionError) return true;
+	return err.code === "resource_missing" || err.code === "account_invalid";
 }
 
 /**
  * Rilegge il conto da Stripe e ne copia lo stato. Usata dal webhook
  * account.updated e dal sync al ritorno dall'onboarding: rileggere invece di
  * fidarsi dello snapshot dell'evento rende innocui gli eventi fuori ordine.
+ *
+ * Un conto permanentemente irraggiungibile (cancellato lato Stripe, permessi
+ * revocati) non deve far fallire il webhook per giorni: viene invece
+ * degradato a "nessun incasso" localmente. Altri errori (rete, 5xx Stripe)
+ * risalgono invariati così che il chiamante (webhook → 500) faccia ritentare
+ * Stripe.
  */
 export async function refreshConnectAccount(
 	stripeAccountId: string,
@@ -126,7 +176,27 @@ export async function refreshConnectAccount(
 	});
 	if (!known) return null;
 
-	const account = await stripe.accounts.retrieve(stripeAccountId);
+	let account: Stripe.Response<Stripe.Account>;
+	try {
+		account = await stripe.accounts.retrieve(stripeAccountId);
+	} catch (err) {
+		if (!isPermanentlyInaccessible(err)) throw err;
+		logger.warn(
+			{ stripeAccountId, err },
+			"Stripe Connect account permanently inaccessible, flagging as disabled",
+		);
+		const [row] = await db
+			.update(paymentMethod)
+			.set({
+				chargesEnabled: false,
+				payoutsEnabled: false,
+				detailsSubmitted: false,
+			})
+			.where(eq(paymentMethod.id, known.id))
+			.returning();
+		return row;
+	}
+
 	const [row] = await db
 		.update(paymentMethod)
 		.set({
