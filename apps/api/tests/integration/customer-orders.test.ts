@@ -646,6 +646,7 @@ describe("createOrder — sellable only", () => {
 	it("accepts an order from a canceling store (still public)", async () => {
 		const f = await seedSellable({ subscription: "canceling" });
 		const created = await order2(f);
-		expect(created.status).toBe("confirmed");
+		// pay_pickup nasce in attesa di pagamento
+		expect(created.status).toBe("pending");
 	});
 });
