@@ -4,6 +4,7 @@ import type { OrderStatus } from "../order-labels";
 
 export type OrderTab =
 	| "all"
+	| "pending"
 	| "confirmed"
 	| "ready_for_pickup"
 	| "completed"
@@ -11,6 +12,7 @@ export type OrderTab =
 	| "expired";
 export const ORDER_TABS: readonly OrderTab[] = [
 	"all",
+	"pending",
 	"confirmed",
 	"ready_for_pickup",
 	"completed",
@@ -21,6 +23,7 @@ export const ORDER_TABS: readonly OrderTab[] = [
 /** Tab = insieme di ordini: al plurale. */
 const LABEL: Record<OrderTab, () => string> = {
 	all: m.orders_tab_all,
+	pending: m.orders_tab_pending,
 	confirmed: m.orders_tab_confirmed,
 	ready_for_pickup: m.orders_tab_ready_for_pickup,
 	completed: m.orders_tab_completed,

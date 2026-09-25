@@ -209,7 +209,9 @@ function OrderDetailPage() {
 						)}
 						{order.type === "pay_pickup" && (
 							<p className="text-muted-foreground text-xs">
-								{m.orders_detail_paid_online()}
+								{order.status === "pending"
+									? m.orders_detail_awaiting_payment()
+									: m.orders_detail_paid_online()}
 							</p>
 						)}
 					</Card>
