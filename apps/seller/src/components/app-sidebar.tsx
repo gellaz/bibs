@@ -17,6 +17,7 @@ import {
 	BoxesIcon,
 	CreditCardIcon,
 	HomeIcon,
+	ReceiptIcon,
 	SettingsIcon,
 	TagIcon,
 } from "lucide-react";
@@ -38,6 +39,12 @@ const navItems = [
 		to: "/products" as const,
 		icon: BoxesIcon,
 		match: (p: string) => p.startsWith("/products"),
+	},
+	{
+		title: "Ordini",
+		to: "/orders" as const,
+		icon: ReceiptIcon,
+		match: (p: string) => p.startsWith("/orders"),
 	},
 	{
 		title: "Promozioni",

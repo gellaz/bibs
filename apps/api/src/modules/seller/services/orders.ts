@@ -1,7 +1,7 @@
 import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
-import { order } from "@/db/schemas/order";
+import { order, orderStatuses } from "@/db/schemas/order";
 import { ServiceError } from "@/lib/errors";
 import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
 import { toCents } from "@/lib/money";
@@ -9,7 +9,7 @@ import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
 } from "@/lib/municipality";
-import { awardPoints } from "@/lib/order-helpers";
+import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 
@@ -68,7 +68,7 @@ export async function transitionOrder(
 			existing.reservationExpiresAt < new Date()
 		) {
 			await expireSingleReservation(orderId);
-			throw new ServiceError(400, "Reservation has expired");
+			throw new ServiceError(400, "La prenotazione è scaduta");
 		}
 
 		const updated = await db.transaction(async (tx) => {
@@ -139,6 +139,8 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 				items: { with: { storeProduct: { with: { product: true } } } },
 				customerProfile: { with: { user: true } },
 				store: {
+					// PostGIS: drizzle non legge la geometria in una relazione annidata.
+					columns: { location: false },
 					with: {
 						municipality: municipalityCompactWith,
 					},
@@ -176,6 +178,8 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 			items: { with: { storeProduct: { with: { product: true } } } },
 			customerProfile: { with: { user: true } },
 			store: {
+				// PostGIS: drizzle non legge la geometria in una relazione annidata.
+				columns: { location: false },
 				with: {
 					municipality: municipalityCompactWith,
 				},
@@ -195,4 +199,65 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 			municipality: toMunicipalityCompact(store.municipality),
 		},
 	};
+}
+
+/**
+ * Annullamento dal negozio: stesse regole della macchina a stati del cliente
+ * (da `pending` o `confirmed`), con rimborso di stock e punti nella stessa tx.
+ * CAS sullo stato prima del rimborso, così un annullamento concorrente (cliente
+ * o seller) non rimborsa due volte.
+ */
+export async function cancelSellerOrder(params: {
+	orderId: string;
+	storeIds: string[];
+}) {
+	const { orderId, storeIds } = params;
+
+	return db.transaction(async (tx) => {
+		const existing = await tx.query.order.findFirst({
+			where: eq(order.id, orderId),
+			with: { items: true },
+		});
+		if (!existing || !storeIds.includes(existing.storeId))
+			throw new ServiceError(404, "Order not found");
+
+		assertTransition(
+			existing.status as OrderStatus,
+			"cancelled",
+			existing.type as OrderType,
+		);
+
+		const [updated] = await tx
+			.update(order)
+			.set({ status: "cancelled" })
+			.where(and(eq(order.id, existing.id), eq(order.status, existing.status)))
+			.returning();
+		if (!updated)
+			throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
+		await refundStockAndPoints(tx, existing);
+
+		return updated;
+	});
+}
+
+export async function countSellerOrdersByStatus(params: {
+	storeId: string;
+	type?: OrderType;
+}): Promise<Record<OrderStatus, number>> {
+	const conditions = [eq(order.storeId, params.storeId)];
+	if (params.type) conditions.push(eq(order.type, params.type));
+
+	const rows = await db
+		.select({ status: order.status, n: count() })
+		.from(order)
+		.where(and(...conditions))
+		.groupBy(order.status);
+
+	const counts = Object.fromEntries(orderStatuses.map((s) => [s, 0])) as Record<
+		OrderStatus,
+		number
+	>;
+	for (const r of rows) counts[r.status as OrderStatus] = r.n;
+	return counts;
 }

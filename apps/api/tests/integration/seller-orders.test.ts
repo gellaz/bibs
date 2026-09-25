@@ -32,7 +32,11 @@ import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
 import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
-import { transitionOrder } from "@/modules/seller/services/orders";
+import {
+	cancelSellerOrder,
+	countSellerOrdersByStatus,
+	transitionOrder,
+} from "@/modules/seller/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,
@@ -113,7 +117,11 @@ describe("transitionOrder — reserve_pickup expiry", () => {
 
 		await expect(
 			transitionOrder(ord.id, seller.profile.id, "completed", [store.id]),
-		).rejects.toMatchObject({ status: 400 });
+		).rejects.toMatchObject({
+			status: 400,
+			// Arriva tale e quale nel toast del seller.
+			message: "La prenotazione è scaduta",
+		});
 
 		// Order expired, not completed.
 		const fresh = await db.query.order.findFirst({
@@ -250,5 +258,146 @@ describe("transitionOrder — reserve_pickup expiry", () => {
 			where: eq(pointTransaction.orderId, ord.id),
 		});
 		expect(txns.filter((t) => t.type === "refunded")).toHaveLength(1);
+	});
+});
+
+describe("cancelSellerOrder", () => {
+	it("annulla l'ordine e restituisce stock e punti", async () => {
+		const db = getTestDb();
+		const {
+			store,
+			customer,
+			sp,
+			order: ord,
+		} = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+			customerPoints: 100,
+			pointsSpent: 50,
+		});
+
+		const cancelled = await cancelSellerOrder({
+			orderId: ord.id,
+			storeIds: [store.id],
+		});
+
+		expect(cancelled.status).toBe("cancelled");
+		const [spAfter] = await db
+			.select()
+			.from(storeProductTable)
+			.where(eq(storeProductTable.id, sp.id));
+		expect(spAfter.stock).toBe(12); // 10 + 2 restituiti
+		const [cpAfter] = await db
+			.select()
+			.from(customerProfile)
+			.where(eq(customerProfile.id, customer.profile.id));
+		expect(cpAfter.points).toBe(150); // 100 + 50 rimborsati
+		const refunds = await db
+			.select()
+			.from(pointTransaction)
+			.where(
+				and(
+					eq(pointTransaction.orderId, ord.id),
+					eq(pointTransaction.type, "refunded"),
+				),
+			);
+		expect(refunds).toHaveLength(1);
+	});
+
+	it("un secondo annullamento fallisce e non rimborsa due volte", async () => {
+		const db = getTestDb();
+		const {
+			store,
+			customer,
+			order: ord,
+		} = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+			customerPoints: 100,
+			pointsSpent: 50,
+		});
+
+		await cancelSellerOrder({ orderId: ord.id, storeIds: [store.id] });
+		await expect(
+			cancelSellerOrder({ orderId: ord.id, storeIds: [store.id] }),
+		).rejects.toMatchObject({ status: 400 });
+
+		const [cpAfter] = await db
+			.select()
+			.from(customerProfile)
+			.where(eq(customerProfile.id, customer.profile.id));
+		expect(cpAfter.points).toBe(150);
+	});
+
+	it("un ordine di un negozio non accessibile è 404", async () => {
+		const db = getTestDb();
+		const { order: ord } = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+		});
+
+		await expect(
+			cancelSellerOrder({ orderId: ord.id, storeIds: ["altro-negozio"] }),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("un ordine pronto per il ritiro non si annulla", async () => {
+		const db = getTestDb();
+		const { store, order: ord } = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+		});
+		await db
+			.update(order)
+			.set({ status: "ready_for_pickup" })
+			.where(eq(order.id, ord.id));
+
+		await expect(
+			cancelSellerOrder({ orderId: ord.id, storeIds: [store.id] }),
+		).rejects.toMatchObject({ status: 400 });
+	});
+});
+
+describe("countSellerOrdersByStatus", () => {
+	it("conta per stato solo gli ordini del negozio, con zeri espliciti", async () => {
+		const db = getTestDb();
+		const { store, customer } = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+		});
+		await db.insert(order).values([
+			{
+				customerProfileId: customer.profile.id,
+				storeId: store.id,
+				type: "pay_pickup",
+				status: "ready_for_pickup",
+				total: "5.00",
+			},
+			{
+				customerProfileId: customer.profile.id,
+				storeId: store.id,
+				type: "reserve_pickup",
+				status: "cancelled",
+				total: "5.00",
+			},
+		]);
+		// Rumore: ordine di un altro negozio
+		await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+		});
+
+		const counts = await countSellerOrdersByStatus({ storeId: store.id });
+		expect(counts).toEqual({
+			pending: 0,
+			confirmed: 1,
+			ready_for_pickup: 1,
+			shipped: 0,
+			delivered: 0,
+			completed: 0,
+			cancelled: 1,
+			expired: 0,
+		});
+
+		const onlyPayPickup = await countSellerOrdersByStatus({
+			storeId: store.id,
+			type: "pay_pickup",
+		});
+		expect(onlyPayPickup.ready_for_pickup).toBe(1);
+		expect(onlyPayPickup.confirmed).toBe(0);
 	});
 });

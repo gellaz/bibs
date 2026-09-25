@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
+import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPromotionsRouteImport } from './routes/_authenticated/promotions'
@@ -27,6 +28,8 @@ import { Route as AuthenticatedOnboardingCompanyRouteImport } from './routes/_au
 import { Route as AuthenticatedOnboardingDocumentRouteImport } from './routes/_authenticated/onboarding/document'
 import { Route as AuthenticatedOnboardingPendingRouteImport } from './routes/_authenticated/onboarding/pending'
 import { Route as AuthenticatedOnboardingPersonalInfoRouteImport } from './routes/_authenticated/onboarding/personal-info'
+import { Route as AuthenticatedOrdersIndexRouteImport } from './routes/_authenticated/orders/index'
+import { Route as AuthenticatedOrdersOrderIdRouteImport } from './routes/_authenticated/orders/$orderId'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products/$productId'
 import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenticated/products/new'
@@ -77,6 +80,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
@@ -132,6 +140,18 @@ const AuthenticatedOnboardingPersonalInfoRoute =
     id: '/onboarding/personal-info',
     path: '/onboarding/personal-info',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedOrdersIndexRoute =
+  AuthenticatedOrdersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOrdersRoute,
+  } as any)
+const AuthenticatedOrdersOrderIdRoute =
+  AuthenticatedOrdersOrderIdRouteImport.update({
+    id: '/$orderId',
+    path: '/$orderId',
+    getParentRoute: () => AuthenticatedOrdersRoute,
   } as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
@@ -211,6 +231,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/billing': typeof AuthenticatedBillingRoute
+  '/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/products': typeof AuthenticatedProductsRouteWithChildren
   '/profile': typeof AuthenticatedProfileRoute
   '/promotions': typeof AuthenticatedPromotionsRouteWithChildren
@@ -221,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
+  '/orders/$orderId': typeof AuthenticatedOrdersOrderIdRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -228,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/store/archived': typeof AuthenticatedStoreArchivedRoute
   '/store/closures': typeof AuthenticatedStoreClosuresRoute
   '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
+  '/orders/': typeof AuthenticatedOrdersIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/store/': typeof AuthenticatedStoreIndexRoute
@@ -248,6 +271,7 @@ export interface FileRoutesByTo {
   '/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
+  '/orders/$orderId': typeof AuthenticatedOrdersOrderIdRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -255,6 +279,7 @@ export interface FileRoutesByTo {
   '/store/archived': typeof AuthenticatedStoreArchivedRoute
   '/store/closures': typeof AuthenticatedStoreClosuresRoute
   '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
+  '/orders': typeof AuthenticatedOrdersIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/promotions': typeof AuthenticatedPromotionsIndexRoute
   '/store': typeof AuthenticatedStoreIndexRoute
@@ -270,6 +295,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
+  '/_authenticated/orders': typeof AuthenticatedOrdersRouteWithChildren
   '/_authenticated/products': typeof AuthenticatedProductsRouteWithChildren
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/promotions': typeof AuthenticatedPromotionsRouteWithChildren
@@ -281,6 +307,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding/document': typeof AuthenticatedOnboardingDocumentRoute
   '/_authenticated/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/_authenticated/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
+  '/_authenticated/orders/$orderId': typeof AuthenticatedOrdersOrderIdRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
   '/_authenticated/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -288,6 +315,7 @@ export interface FileRoutesById {
   '/_authenticated/store/archived': typeof AuthenticatedStoreArchivedRoute
   '/_authenticated/store/closures': typeof AuthenticatedStoreClosuresRoute
   '/_authenticated/store/new': typeof AuthenticatedStoreNewRouteWithChildren
+  '/_authenticated/orders/': typeof AuthenticatedOrdersIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/_authenticated/store/': typeof AuthenticatedStoreIndexRoute
@@ -304,6 +332,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/billing'
+    | '/orders'
     | '/products'
     | '/profile'
     | '/promotions'
@@ -314,6 +343,7 @@ export interface FileRouteTypes {
     | '/onboarding/document'
     | '/onboarding/pending'
     | '/onboarding/personal-info'
+    | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
@@ -321,6 +351,7 @@ export interface FileRouteTypes {
     | '/store/archived'
     | '/store/closures'
     | '/store/new'
+    | '/orders/'
     | '/products/'
     | '/promotions/'
     | '/store/'
@@ -341,6 +372,7 @@ export interface FileRouteTypes {
     | '/onboarding/document'
     | '/onboarding/pending'
     | '/onboarding/personal-info'
+    | '/orders/$orderId'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
@@ -348,6 +380,7 @@ export interface FileRouteTypes {
     | '/store/archived'
     | '/store/closures'
     | '/store/new'
+    | '/orders'
     | '/products'
     | '/promotions'
     | '/store'
@@ -362,6 +395,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/_authenticated/billing'
+    | '/_authenticated/orders'
     | '/_authenticated/products'
     | '/_authenticated/profile'
     | '/_authenticated/promotions'
@@ -373,6 +407,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding/document'
     | '/_authenticated/onboarding/pending'
     | '/_authenticated/onboarding/personal-info'
+    | '/_authenticated/orders/$orderId'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/new'
     | '/_authenticated/promotions/$discountId'
@@ -380,6 +415,7 @@ export interface FileRouteTypes {
     | '/_authenticated/store/archived'
     | '/_authenticated/store/closures'
     | '/_authenticated/store/new'
+    | '/_authenticated/orders/'
     | '/_authenticated/products/'
     | '/_authenticated/promotions/'
     | '/_authenticated/store/'
@@ -455,6 +491,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/orders': {
+      id: '/_authenticated/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/products': {
       id: '/_authenticated/products'
       path: '/products'
@@ -524,6 +567,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding/personal-info'
       preLoaderRoute: typeof AuthenticatedOnboardingPersonalInfoRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/orders/': {
+      id: '/_authenticated/orders/'
+      path: '/'
+      fullPath: '/orders/'
+      preLoaderRoute: typeof AuthenticatedOrdersIndexRouteImport
+      parentRoute: typeof AuthenticatedOrdersRoute
+    }
+    '/_authenticated/orders/$orderId': {
+      id: '/_authenticated/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof AuthenticatedOrdersOrderIdRouteImport
+      parentRoute: typeof AuthenticatedOrdersRoute
     }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
@@ -612,6 +669,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedOrdersRouteChildren {
+  AuthenticatedOrdersOrderIdRoute: typeof AuthenticatedOrdersOrderIdRoute
+  AuthenticatedOrdersIndexRoute: typeof AuthenticatedOrdersIndexRoute
+}
+
+const AuthenticatedOrdersRouteChildren: AuthenticatedOrdersRouteChildren = {
+  AuthenticatedOrdersOrderIdRoute: AuthenticatedOrdersOrderIdRoute,
+  AuthenticatedOrdersIndexRoute: AuthenticatedOrdersIndexRoute,
+}
+
+const AuthenticatedOrdersRouteWithChildren =
+  AuthenticatedOrdersRoute._addFileChildren(AuthenticatedOrdersRouteChildren)
+
 interface AuthenticatedProductsRouteChildren {
   AuthenticatedProductsProductIdRoute: typeof AuthenticatedProductsProductIdRoute
   AuthenticatedProductsNewRoute: typeof AuthenticatedProductsNewRoute
@@ -691,6 +761,7 @@ const AuthenticatedTeamRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
+  AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRouteWithChildren
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRouteWithChildren
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedPromotionsRoute: typeof AuthenticatedPromotionsRouteWithChildren
@@ -705,6 +776,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
+  AuthenticatedOrdersRoute: AuthenticatedOrdersRouteWithChildren,
   AuthenticatedProductsRoute: AuthenticatedProductsRouteWithChildren,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedPromotionsRoute: AuthenticatedPromotionsRouteWithChildren,

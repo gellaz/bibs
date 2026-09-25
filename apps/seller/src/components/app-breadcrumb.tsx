@@ -11,6 +11,7 @@ import { Fragment } from "react";
 
 const SEGMENT_LABEL: Record<string, string> = {
 	products: "Prodotti",
+	orders: "Ordini",
 	promotions: "Promozioni",
 	store: "Negozio",
 	team: "Team",

@@ -232,6 +232,12 @@ Nessuna transizione nuova in `order-state-machine.ts`: bastano quelle esistenti.
   calcolata alla creazione (`Math.round(totalCents * 5 / 100)`), per gli ordini non
   PR2 resta 0. Le fee Stripe restano a bibs e le copre la commissione.
 - `orders.stripe_transfer_id` per lo storno all'annullamento.
+- **Annullamento seller di un PR2** (vincolo emerso nella review della PR B): oggi
+  `PATCH /seller/orders/:id/cancel` rimborsa solo stock e punti. Con la PR F:
+  da `confirmed` deve rimborsare anche il pagamento e stornare il trasferimento;
+  da `pending` deve annullare il PaymentIntent nello stesso flusso (o essere
+  vietato), altrimenti un ordine annullato può risultare pagato. Il testo del
+  dialog seller va aggiornato con il rimborso; serve anche una tab `pending`.
 - FE: `@stripe/stripe-js` + `@stripe/react-stripe-js`, Payment Element su
   `/checkout/$checkoutId/pay` con il `clientSecret` del checkout; `return_url` porta
   alla pagina di ordine effettuato, che legge lo stato dall'API (non dall'URL).

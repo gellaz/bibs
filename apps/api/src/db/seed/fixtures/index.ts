@@ -6,6 +6,7 @@ import { seedCustomers } from "./customers";
 import { seedDevSeller } from "./dev-seller";
 import { seedDiscounts } from "./discounts";
 import { seedExtraStores } from "./extra-stores";
+import { seedOrders } from "./orders";
 import { seedPricingConfig } from "./pricing-config";
 import { seedProducts } from "./products";
 import { seedSellers } from "./sellers";
@@ -34,4 +35,6 @@ export async function seedFixtures() {
 	// Dopo i prodotti: serve la loro product_category_id già valorizzata.
 	await seedCharacteristicValues();
 	await seedDiscounts();
+	// Dopo prodotti e sconti: gli ordini leggono prezzi e promo vere.
+	await seedOrders();
 }

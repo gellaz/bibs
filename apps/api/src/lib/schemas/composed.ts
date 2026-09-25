@@ -145,14 +145,16 @@ export const SellerOrderWithRelationsSchema = t.Object({
 	...OrderSchema.properties,
 	items: t.Array(OrderItemWithProduct),
 	customerProfile: CustomerProfileWithUser,
-	store: StoreSchema,
+	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
+	store: t.Omit(StoreSchema, ["location"]),
 });
 
 // Order with relations — customer view
 export const CustomerOrderWithRelationsSchema = t.Object({
 	...OrderSchema.properties,
 	items: t.Array(OrderItemWithProduct),
-	store: StoreSchema,
+	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
+	store: t.Omit(StoreSchema, ["location"]),
 	shippingAddress: t.Nullable(CustomerAddressSchema),
 });
 
