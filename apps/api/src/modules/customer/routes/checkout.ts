@@ -27,6 +27,7 @@ export const checkoutRoutes = new Elysia()
 					customerProfileId: cp.id,
 					checkoutId: data.id,
 					orderCount: data.orders.length,
+					amountDueOnline: data.amountDueOnline,
 					action: "checkout_created",
 				},
 				"Checkout creato",
@@ -55,7 +56,7 @@ export const checkoutRoutes = new Elysia()
 			detail: {
 				summary: "Conferma checkout",
 				description:
-					"Crea un ordine per ogni negozio scelto, leggendo le righe dal carrello, in un'unica transazione. Le righe ordinate escono dal carrello; quelle non disponibili restano. 409 se il carrello è cambiato.",
+					"Crea un ordine per ogni negozio scelto, leggendo le righe dal carrello, in un'unica transazione. Le righe ordinate escono dal carrello; quelle non disponibili restano. 409 se il carrello è cambiato. Con ordini Paga e ritira crea un unico pagamento: la risposta porta `payment.clientSecret`. 502 se il pagamento online non è disponibile.",
 				tags: ["Customer - Checkout"],
 			},
 		},

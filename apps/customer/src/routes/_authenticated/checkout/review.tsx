@@ -96,7 +96,9 @@ function CheckoutReviewPage() {
 			{
 				onSuccess: (data) =>
 					void navigate({
-						to: "/checkout/$checkoutId",
+						to: data.payment
+							? "/checkout/$checkoutId/pay"
+							: "/checkout/$checkoutId",
 						params: { checkoutId: data.id },
 						replace: true,
 					}),

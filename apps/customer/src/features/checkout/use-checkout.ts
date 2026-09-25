@@ -4,6 +4,7 @@ import { CART_KEY } from "@/features/cart/use-cart";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import { type CheckoutType, checkoutFailure } from "./checkout-choice";
+import { paymentState } from "./payment-state";
 
 /** Errore di conferma con lo status HTTP (assente se la rete non ha risposto). */
 export class CheckoutError extends Error {
@@ -57,7 +58,10 @@ export function useCreateCheckout() {
 	});
 }
 
-export function useCheckout(checkoutId: string) {
+export function useCheckout(
+	checkoutId: string,
+	opts: { pollWhileAwaiting?: boolean } = {},
+) {
 	return useQuery({
 		queryKey: ["customer", "checkout", checkoutId],
 		queryFn: async () =>
@@ -65,5 +69,15 @@ export function useCheckout(checkoutId: string) {
 				await api().customer.checkouts({ checkoutId }).get(),
 				m.checkout_not_found(),
 			).data,
+		// Dopo il pagamento la conferma arriva dal webhook: si rilegge finché i
+		// PR2 escono da pending. Un PI ancora pagabile (payment != null) vuol dire
+		// che il cliente deve agire: niente da confermare, niente da interrogare.
+		refetchInterval: (q) => {
+			const data = q.state.data;
+			if (!opts.pollWhileAwaiting || !data) return false;
+			return paymentState(data.orders) === "awaiting" && data.payment == null
+				? 2000
+				: false;
+		},
 	});
 }

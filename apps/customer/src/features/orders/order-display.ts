@@ -48,13 +48,13 @@ export function pickupDeadline(
 	return { expired: false, date, left: m.orders_pickup_left({ time }) };
 }
 
-/** Rispecchia la macchina a stati dell'API: il cliente annulla solo finché il
- *  negozio non ha preparato. L'API resta l'autorità. */
+/** Rispecchia l'API: si annulla finché il negozio non ha preparato; un Paga e
+ *  ritira in attesa di pagamento no (si annulla da solo). L'API resta
+ *  l'autorità. */
 export function canCustomerCancel(o: { status: string; type: string }) {
-	return (
-		(o.type === "reserve_pickup" || o.type === "pay_pickup") &&
-		(o.status === "pending" || o.status === "confirmed")
-	);
+	if (o.type === "reserve_pickup")
+		return o.status === "pending" || o.status === "confirmed";
+	return o.type === "pay_pickup" && o.status === "confirmed";
 }
 
 /** Conto alla rovescia di una prenotazione: hh:mm:ss, ore anche oltre 24. */

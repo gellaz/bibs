@@ -162,6 +162,22 @@ export const CustomerOrderWithRelationsSchema = t.Object({
 export const CheckoutSchema = t.Object({
 	id: t.String(),
 	createdAt: t.Date(),
+	amountDueOnline: t.String({
+		description: "Importo da pagare online (somma degli ordini Paga e ritira)",
+	}),
+	payment: t.Nullable(
+		t.Object(
+			{
+				clientSecret: t.String({
+					description: "Per il Payment Element di Stripe",
+				}),
+			},
+			{
+				description:
+					"Presente finché c'è un ordine Paga e ritira in attesa di pagamento e il pagamento è ancora possibile",
+			},
+		),
+	),
 	orders: t.Array(CustomerOrderWithRelationsSchema),
 });
 

@@ -70,7 +70,7 @@ describe("tipologie d'acquisto del negozio", () => {
 		});
 		expect(await getStoreOrderTypes(s)).toEqual({
 			orderTypes: ["reserve_pickup", "pay_pickup"],
-			offeredOrderTypes: ["reserve_pickup"], // ONLINE_PAYMENT_LIVE = false
+			offeredOrderTypes: ["reserve_pickup", "pay_pickup"],
 			chargesEnabled: true,
 		});
 	});
@@ -107,16 +107,25 @@ describe("tipologie d'acquisto del negozio", () => {
 		expect(res.orderTypes).toEqual(["reserve_pickup", "pay_pickup"]); // ordine canonico
 	});
 
-	it("deve restare almeno una tipologia offerta: solo pay_pickup prima della PR F → 400", async () => {
+	it("solo pay_pickup con conto abilitato è permesso", async () => {
 		const s = await setup({
 			chargesEnabled: true,
 			orderTypes: ["reserve_pickup", "pay_pickup"],
 		});
+		expect(
+			(await updateStoreOrderTypes({ ...s, orderTypes: ["pay_pickup"] }))
+				.offeredOrderTypes,
+		).toEqual(["pay_pickup"]);
+	});
+
+	it("deve restare almeno una tipologia offerta: solo pay_pickup a conto disabilitato → 400", async () => {
+		const s = await setup({
+			chargesEnabled: false,
+			orderTypes: ["reserve_pickup", "pay_pickup"],
+		});
 		await expect(
 			updateStoreOrderTypes({ ...s, orderTypes: ["pay_pickup"] }),
-		).rejects.toMatchObject({
-			status: 400,
-		});
+		).rejects.toMatchObject({ status: 400 });
 	});
 
 	it("conto disabilitato dopo: tenere pay_pickup acceso non blocca il salvataggio", async () => {

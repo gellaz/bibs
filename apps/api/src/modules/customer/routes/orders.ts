@@ -50,18 +50,10 @@ export const ordersRoutes = new Elysia()
 		},
 		{
 			body: t.Object({
-				type: t.Union(
-					[
-						t.Literal("direct"),
-						t.Literal("reserve_pickup"),
-						t.Literal("pay_pickup"),
-						t.Literal("pay_deliver"),
-					],
-					{
-						description:
-							"Tipo di ordine: direct (acquisto diretto), reserve_pickup (riserva e ritira), pay_pickup (paga e ritira), pay_deliver (paga e consegna)",
-					},
-				),
+				type: t.Union([t.Literal("direct"), t.Literal("reserve_pickup")], {
+					description:
+						"Tipo di ordine: direct (acquisto diretto) o reserve_pickup (prenota e ritira). Gli ordini pagati online nascono solo da POST /customer/checkout, che crea il pagamento.",
+				}),
 				storeId: t.String({ description: "ID del negozio" }),
 				items: t.Array(
 					t.Object({
@@ -94,7 +86,7 @@ export const ordersRoutes = new Elysia()
 			detail: {
 				summary: "Crea ordine",
 				description:
-					"Crea un nuovo ordine. Lo stock viene decrementato atomicamente. I punti fedeltà vengono accreditati/addebitati in base alla configurazione. Supporta idempotenza tramite il campo idempotencyKey.",
+					"Crea un ordine diretto o una prenotazione. Per pagare online usare POST /customer/checkout.",
 				tags: ["Customer - Orders"],
 			},
 		},
@@ -177,7 +169,7 @@ export const ordersRoutes = new Elysia()
 			detail: {
 				summary: "Annulla ordine",
 				description:
-					"Annulla un ordine. Lo stock viene ripristinato e i punti eventualmente spesi vengono restituiti.",
+					"Annulla un ordine. Lo stock torna disponibile e i punti spesi vengono restituiti; un ordine pagato online viene rimborsato. 409 se è in attesa di pagamento.",
 				tags: ["Customer - Orders"],
 			},
 		},

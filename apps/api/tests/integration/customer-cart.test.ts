@@ -336,11 +336,14 @@ describe("getCart", () => {
 		});
 
 		const cart = await getCart(customer.profile.id);
-		// conto abilitato, ma pay_pickup non si offre finché la PR F non accende il pagamento
-		expect(cart.groups[0].store.orderTypes).toEqual(["reserve_pickup"]);
+		// conto abilitato: pay_pickup si offre
+		expect(cart.groups[0].store.orderTypes).toEqual([
+			"reserve_pickup",
+			"pay_pickup",
+		]);
 	});
 
-	it("conto non abilitato: idem, pay_pickup non si offre", async () => {
+	it("conto non abilitato: pay_pickup non si offre", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const customer = await createTestCustomer(db);

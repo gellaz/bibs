@@ -701,6 +701,12 @@ export const OrderSchema = t.Object({
 	reservationExpiresAt: t.Nullable(
 		t.Date({ description: "Scadenza della prenotazione per reserve_pickup" }),
 	),
+	paymentExpiresAt: t.Nullable(
+		t.Date({
+			description:
+				"Solo ordini da pagare online: oltre questa data un ordine ancora in attesa di pagamento si annulla",
+		}),
+	),
 	pointsEarned: t.Number({
 		minimum: 0,
 		description: "Punti fedeltà guadagnati",

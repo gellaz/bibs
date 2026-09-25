@@ -75,6 +75,7 @@ function OrderDetailPage() {
 		order.status === "confirmed" || order.status === "ready_for_pickup"
 			? order.pickupCode
 			: null;
+	const paid = order.type === "pay_pickup";
 
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
@@ -158,6 +159,19 @@ function OrderDetailPage() {
 				</div>
 			</section>
 
+			{order.type === "pay_pickup" &&
+				order.status === "pending" &&
+				order.checkoutId && (
+					<Button asChild size="lg" className="min-h-11">
+						<Link
+							to="/checkout/$checkoutId/pay"
+							params={{ checkoutId: order.checkoutId }}
+						>
+							{m.orders_complete_payment()}
+						</Link>
+					</Button>
+				)}
+
 			{canCustomerCancel(order) && (
 				<AlertDialog>
 					<AlertDialogTrigger asChild>
@@ -166,14 +180,20 @@ function OrderDetailPage() {
 							className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
 							disabled={cancel.isPending}
 						>
-							{m.orders_cancel()}
+							{paid ? m.orders_cancel_paid() : m.orders_cancel()}
 						</Button>
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>
-							<AlertDialogTitle>{m.orders_cancel_title()}</AlertDialogTitle>
+							<AlertDialogTitle>
+								{paid ? m.orders_cancel_paid_title() : m.orders_cancel_title()}
+							</AlertDialogTitle>
 							<AlertDialogDescription>
-								{m.orders_cancel_description()}
+								{paid
+									? m.orders_cancel_paid_description({
+											amount: formatPriceEur(order.total),
+										})
+									: m.orders_cancel_description()}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
@@ -182,11 +202,16 @@ function OrderDetailPage() {
 								variant="destructive"
 								onClick={() =>
 									cancel.mutate(order.id, {
-										onSuccess: () => toast.success(m.orders_cancel_success()),
+										onSuccess: () =>
+											toast.success(
+												paid
+													? m.orders_cancel_paid_success()
+													: m.orders_cancel_success(),
+											),
 									})
 								}
 							>
-								{m.orders_cancel_confirm()}
+								{paid ? m.orders_cancel_paid() : m.orders_cancel_confirm()}
 							</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>

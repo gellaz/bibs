@@ -5,8 +5,13 @@ import { checkout } from "@/db/schemas/checkout";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
+import { fromCents, toCents } from "@/lib/money";
 import { offeredOrderTypes, sellerChargesEnabledSql } from "@/lib/order-types";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
+import {
+	createCheckoutPaymentIntent,
+	payableClientSecret,
+} from "@/modules/billing/services/order-payments";
 import { listCustomerOrders, placeOrder } from "./orders";
 
 export interface CreateCheckoutParams {
@@ -34,7 +39,22 @@ export async function getCheckout(params: {
 		page: 1,
 		limit: 100,
 	});
-	return { id: found.id, createdAt: found.createdAt, orders: data };
+	// Il Payment Element serve finché resta un PR2 da pagare; il secret si
+	// rilegge da Stripe così refresh e ritorno dal 3DS funzionano.
+	const awaitingPayment = data.some(
+		(o) => o.type === "pay_pickup" && o.status === "pending",
+	);
+	const clientSecret =
+		awaitingPayment && found.stripePaymentIntentId
+			? await payableClientSecret(found.stripePaymentIntentId)
+			: null;
+	return {
+		id: found.id,
+		createdAt: found.createdAt,
+		amountDueOnline: found.amountDueOnline,
+		payment: clientSecret ? { clientSecret } : null,
+		orders: data,
+	};
 }
 
 /**
@@ -42,7 +62,8 @@ export async function getCheckout(params: {
  * tutti o nessuno, e nella stessa tx escono dal carrello le righe ordinate.
  * Le righe si leggono dal carrello lato server: il client sceglie solo negozi e
  * tipologia. Righe non disponibili: saltate, restano nel carrello. Stock
- * insufficiente: 409, il cliente torna al carrello.
+ * insufficiente: 409, il cliente torna al carrello. PR2 nasce pending; il
+ * PaymentIntent unico copre la somma dei PR2.
  */
 export async function createCheckout(params: CreateCheckoutParams) {
 	const { customerProfileId, customerPoints, idempotencyKey, stores } = params;
@@ -97,6 +118,7 @@ export async function createCheckout(params: CreateCheckoutParams) {
 				// non le trova più → 409, invece di un ordine doppio.
 				.for("update", { of: cartItem });
 
+			let amountDueCents = 0;
 			for (const choice of stores) {
 				const own = lines.filter((l) => l.storeId === choice.storeId);
 				const buyable = own.filter((l) => l.productStatus === "active");
@@ -120,7 +142,7 @@ export async function createCheckout(params: CreateCheckoutParams) {
 						"Il carrello è cambiato: alcune quantità non sono più disponibili",
 					);
 
-				await placeOrder(
+				const placed = await placeOrder(
 					tx,
 					{
 						customerProfileId,
@@ -134,6 +156,8 @@ export async function createCheckout(params: CreateCheckoutParams) {
 					},
 					{ checkoutId: row.id },
 				);
+				if (placed.type === "pay_pickup")
+					amountDueCents += toCents(placed.total);
 
 				const removed = await tx
 					.delete(cartItem)
@@ -154,6 +178,23 @@ export async function createCheckout(params: CreateCheckoutParams) {
 						409,
 						"Il carrello è cambiato: alcune quantità non sono più disponibili",
 					);
+			}
+
+			// Un solo pagamento per tutti i negozi PR2 del checkout. Dentro la tx:
+			// se Stripe fallisce (502) non nasce nessun ordine e il carrello resta.
+			if (amountDueCents > 0) {
+				const paymentIntentId = await createCheckoutPaymentIntent({
+					checkoutId: row.id,
+					customerProfileId,
+					amountCents: amountDueCents,
+				});
+				await tx
+					.update(checkout)
+					.set({
+						stripePaymentIntentId: paymentIntentId,
+						amountDueOnline: fromCents(amountDueCents),
+					})
+					.where(eq(checkout.id, row.id));
 			}
 
 			return row.id;

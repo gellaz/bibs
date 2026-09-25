@@ -52,9 +52,9 @@ export function canMarkPickedUp(o: { status: OrderStatus; type: OrderType }) {
 	);
 }
 export function canCancel(o: { status: OrderStatus; type: OrderType }) {
-	return (
-		o.type !== "direct" && (o.status === "pending" || o.status === "confirmed")
-	);
+	// Un pay_* pending non si annulla a mano: il pagamento copre tutto il
+	// checkout e l'ordine scade da solo (API: 409).
+	return o.type !== "direct" && o.status === "confirmed";
 }
 
 /** Tempo alla scadenza di una prenotazione, in forma breve ("5 h", "40 min"). */

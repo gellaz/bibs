@@ -5,6 +5,10 @@ export const config = {
 	pointsPerEuroDiscount: 100,
 	/** Hours before a reserve_pickup reservation expires */
 	reservationHours: 48,
+	/** Minuti entro cui pagare un ordine pay_* prima che si annulli da solo */
+	paymentWindowMinutes: 30,
+	/** Commissione bibs sui pagamenti online (PR2), in percentuale del totale */
+	platformFeePercent: 5,
 	/** Maximum number of images per product */
 	maxImagesPerProduct: 10,
 	/** Maximum number of images per store */

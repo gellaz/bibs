@@ -18,8 +18,10 @@ import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { generatePickupCode } from "@/lib/pickup-code";
+import { platformFeeCents } from "@/lib/platform-fee";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
+import { refundOrderPayment } from "@/modules/billing/services/order-payments";
 import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
 
 export type OrderTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -188,6 +190,23 @@ export interface CreateOrderParams extends PlaceOrderParams {
  */
 const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
 const OPEN_STATUSES = ["pending", "confirmed", "ready_for_pickup"] as const;
+
+/** Tipi pagati online: nascono `pending` e si confermano solo a incasso. */
+export const PAY_TYPES: readonly OrderType[] = ["pay_pickup", "pay_deliver"];
+
+/**
+ * Un pay_* in attesa di pagamento non si annulla a mano: il PaymentIntent copre
+ * tutti i negozi del checkout, e l'ordine si annulla da solo allo scadere della
+ * finestra di pagamento. Poi valgono le transizioni della macchina a stati.
+ */
+export function assertCancellable(o: { status: string; type: string }) {
+	if (o.status === "pending" && PAY_TYPES.includes(o.type as OrderType))
+		throw new ServiceError(
+			409,
+			"L'ordine è in attesa di pagamento: se non viene pagato si annulla da solo entro 30 minuti",
+		);
+	assertTransition(o.status as OrderStatus, "cancelled", o.type as OrderType);
+}
 
 /**
  * Codice libero tra gli ordini aperti del negozio. Il pre-controllo copre il
@@ -393,7 +412,19 @@ export async function placeOrder(
 		),
 	);
 
-	const initialStatus = type === "direct" ? "completed" : "confirmed";
+	// pay_*: nessun ordine confermato senza pagamento. Nasce pending con lo
+	// stock già tolto; lo conferma il webhook del PaymentIntent, oppure il cron
+	// lo annulla allo scadere della finestra di pagamento.
+	const isPay = PAY_TYPES.includes(type);
+	const initialStatus =
+		type === "direct" ? "completed" : isPay ? "pending" : "confirmed";
+	const paymentExpiresAt = isPay
+		? new Date(Date.now() + config.paymentWindowMinutes * 60 * 1000)
+		: null;
+	// Commissione solo su PR2 (spec: per gli ordini non PR2 resta 0).
+	const platformFee = fromCents(
+		type === "pay_pickup" ? platformFeeCents(finalTotalCents) : 0,
+	);
 
 	const reservationExpiresAt =
 		type === "reserve_pickup"
@@ -417,6 +448,8 @@ export async function placeOrder(
 			shippingAddressSnapshot,
 			shippingCost,
 			reservationExpiresAt,
+			paymentExpiresAt,
+			platformFee,
 			pointsEarned: 0,
 			pointsSpent: actualPointsSpent,
 			idempotencyKey: link.idempotencyKey ?? null,
@@ -563,11 +596,7 @@ export async function cancelOrder(params: {
 
 		if (!existing) throw new ServiceError(404, "Order not found");
 
-		assertTransition(
-			existing.status as OrderStatus,
-			"cancelled",
-			existing.type as OrderType,
-		);
+		assertCancellable(existing);
 
 		// Compare-and-swap before refunding, so two concurrent cancels can't both
 		// refund the spent points.
@@ -578,6 +607,13 @@ export async function cancelOrder(params: {
 			.returning();
 		if (!updated)
 			throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
+		// `updated` (la riga appena letta dal CAS), non `existing` (letta prima):
+		// un trasferimento può essere partito tra le due letture (settleCheckoutPayment
+		// concorrente), e senza lo storno rimborsiamo il cliente senza recuperare i
+		// soldi dal negozio.
+		if (existing.type === "pay_pickup" && existing.status === "confirmed")
+			await refundOrderPayment(tx, updated);
 
 		await refundStockAndPoints(tx, existing);
 
