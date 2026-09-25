@@ -3,6 +3,7 @@ import { ScanLineIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { m } from "@/paraglide/messages";
 import { isCompletePickupCode, normalizePickupCode } from "../pickup-code";
+import { createScanSession, openCamera } from "../scan-session";
 
 // Al massimo ~6 letture al secondo: basta per un QR fermo davanti alla camera
 // e non scalda il telefono.
@@ -28,10 +29,12 @@ export function PickupScanner({ onCode }: { onCode: (code: string) => void }) {
 	const videoRef = useRef<HTMLVideoElement>(null);
 	const streamRef = useRef<MediaStream | null>(null);
 	const frameRef = useRef<number | null>(null);
+	const sessionRef = useRef(createScanSession());
 	const [state, setState] = useState<ScanState>("idle");
 	const [error, setError] = useState<string | null>(null);
 
 	const stop = () => {
+		sessionRef.current.cancel();
 		if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
 		frameRef.current = null;
 		for (const track of streamRef.current?.getTracks() ?? []) track.stop();
@@ -42,6 +45,7 @@ export function PickupScanner({ onCode }: { onCode: (code: string) => void }) {
 	// Spegne la camera se si lascia la pagina a scansione aperta.
 	useEffect(
 		() => () => {
+			sessionRef.current.cancel();
 			if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
 			for (const track of streamRef.current?.getTracks() ?? []) track.stop();
 		},
@@ -55,6 +59,9 @@ export function PickupScanner({ onCode }: { onCode: (code: string) => void }) {
 			return;
 		}
 		setState("starting");
+		const session = sessionRef.current;
+		const token = session.begin();
+		const wanted = () => session.isCurrent(token);
 		try {
 			const [{ BarcodeDetector, prepareZXingModule }, { default: wasmUrl }] =
 				await Promise.all([
@@ -68,11 +75,19 @@ export function PickupScanner({ onCode }: { onCode: (code: string) => void }) {
 				},
 			});
 			const detector = new BarcodeDetector({ formats: ["qr_code"] });
+			if (!wanted()) return;
 
-			const stream = await navigator.mediaDevices.getUserMedia({
-				video: { facingMode: "environment" },
-				audio: false,
-			});
+			// «Interrompi» può arrivare mentre il browser chiede il permesso: in
+			// quel caso lo stream ottenuto dopo va spento, non acceso.
+			const stream = await openCamera(
+				() =>
+					navigator.mediaDevices.getUserMedia({
+						video: { facingMode: "environment" },
+						audio: false,
+					}),
+				wanted,
+			);
+			if (!stream) return;
 			streamRef.current = stream;
 			const video = videoRef.current;
 			if (!video) {
@@ -81,6 +96,7 @@ export function PickupScanner({ onCode }: { onCode: (code: string) => void }) {
 			}
 			video.srcObject = stream;
 			await video.play();
+			if (!wanted()) return;
 			setState("scanning");
 
 			let last = 0;
@@ -94,6 +110,7 @@ export function PickupScanner({ onCode }: { onCode: (code: string) => void }) {
 				detector
 					.detect(video)
 					.then((codes) => {
+						if (!wanted()) return;
 						for (const c of codes) {
 							const code = normalizePickupCode(c.rawValue);
 							if (isCompletePickupCode(code)) {
@@ -110,6 +127,7 @@ export function PickupScanner({ onCode }: { onCode: (code: string) => void }) {
 			};
 			frameRef.current = requestAnimationFrame(tick);
 		} catch (err) {
+			if (!wanted()) return;
 			stop();
 			setError(cameraErrorMessage(err));
 		}
