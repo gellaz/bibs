@@ -318,6 +318,15 @@ del task 8).
    serve il webhook.
 6. I trasferimenti si vedono in Dashboard → Connect → conto → Trasferimenti (`transfer_group` = id del checkout).
 
+### In produzione
+
+- L'endpoint webhook PIATTAFORMA (`/webhooks/stripe`) deve essere sottoscritto (anche) a
+  `payment_intent.succeeded`, `payment_intent.canceled` e `payment_intent.payment_failed` —
+  senza, la conferma del pagamento arriva solo al prossimo giro del cron
+  `expireUnpaidOrders` (fino a 30 minuti dopo).
+- `VITE_STRIPE_PUBLISHABLE_KEY` deve essere impostata nell'app customer: senza, la pagina
+  di pagamento mostra "il pagamento online non è disponibile".
+
 ## What does NOT exist (yet)
 
 Be explicit about this in reviews and planning:
