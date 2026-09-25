@@ -652,6 +652,9 @@ export const OrderSchema = t.Object({
 	),
 	total: t.String({ description: "Totale in formato decimale" }),
 	shippingAddressId: t.Nullable(t.String()),
+	checkoutId: t.Nullable(
+		t.String({ description: "Checkout che ha creato l'ordine" }),
+	),
 	shippingAddressSnapshot: t.Nullable(
 		t.Object(
 			{

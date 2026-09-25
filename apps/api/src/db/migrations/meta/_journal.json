@@ -71,6 +71,13 @@
       "when": 1790329775175,
       "tag": "0009_wealthy_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790329909716,
+      "tag": "0010_dusty_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

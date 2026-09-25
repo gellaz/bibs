@@ -172,16 +172,22 @@ export interface PlaceOrderParams {
 	items: { storeProductId: string; quantity: number }[];
 	shippingAddressId?: string;
 	pointsToSpend?: number;
+}
+
+export interface CreateOrderParams extends PlaceOrderParams {
 	idempotencyKey?: string;
 }
 
-export type CreateOrderParams = PlaceOrderParams;
-
 /**
- * Crea un ordine dentro una transazione esistente. Non gestisce l'idempotenza:
- * è compito del chiamante (`createOrder` per ordine, il checkout per checkout).
+ * Crea un ordine dentro una transazione esistente. L'idempotenza è del
+ * chiamante: `createOrder` passa la sua key, il checkout nessuna (una key unica
+ * su N ordini violerebbe l'indice) e lega gli ordini col `checkoutId`.
  */
-export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
+export async function placeOrder(
+	tx: OrderTx,
+	params: PlaceOrderParams,
+	link: { idempotencyKey?: string; checkoutId?: string } = {},
+) {
 	const {
 		customerProfileId,
 		customerPoints,
@@ -190,7 +196,6 @@ export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
 		items,
 		shippingAddressId,
 		pointsToSpend = 0,
-		idempotencyKey,
 	} = params;
 
 	// Shipping cost is determined server-side
@@ -377,7 +382,8 @@ export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
 			reservationExpiresAt,
 			pointsEarned: 0,
 			pointsSpent: actualPointsSpent,
-			idempotencyKey: idempotencyKey ?? null,
+			idempotencyKey: link.idempotencyKey ?? null,
+			checkoutId: link.checkoutId ?? null,
 			vatBreakdown,
 		})
 		.returning();
@@ -470,7 +476,7 @@ export async function placeOrder(tx: OrderTx, params: PlaceOrderParams) {
 }
 
 export async function createOrder(params: CreateOrderParams) {
-	const { idempotencyKey } = params;
+	const { idempotencyKey, ...orderParams } = params;
 
 	// Idempotency: return existing order if key was already used
 	if (idempotencyKey) {
@@ -482,7 +488,9 @@ export async function createOrder(params: CreateOrderParams) {
 
 	// Created eagerly so the idempotency .catch below can be attached
 	// synchronously.
-	const pendingOrder = db.transaction((tx) => placeOrder(tx, params));
+	const pendingOrder = db.transaction((tx) =>
+		placeOrder(tx, orderParams, { idempotencyKey }),
+	);
 
 	return pendingOrder.catch(async (err: unknown) => {
 		// Idempotency race: a concurrent caller inserted the same idempotencyKey
