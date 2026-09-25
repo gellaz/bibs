@@ -301,6 +301,21 @@ nuovo, quindi il log dice «account.updated for unknown connected account,
 skipping». Il test vero è l'onboarding dal profilo seller (vedi lo smoke manuale
 del task 8).
 
+## Paga e ritira (PR2) in locale
+
+1. `STRIPE_SECRET_KEY` (API) e `VITE_STRIPE_PUBLISHABLE_KEY` (`apps/customer/.env.local`)
+   della stessa modalità test.
+2. `stripe listen --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect`
+   — i `payment_intent.*` arrivano sulla route piattaforma.
+3. Il negozio deve avere «Paga e ritira» acceso e il conto Connect abilitato (profilo seller →
+   Pagamenti online, onboarding di test).
+4. Carte di test: `4242 4242 4242 4242` (ok), `4000 0025 0000 3155` (3DS), `4000 0000 0000 0002`
+   (rifiutata). Scadenza futura qualsiasi, CVC qualsiasi.
+5. Senza `stripe listen` la conferma arriva solo quando il cron `expireUnpaidOrders` trova la
+   finestra scaduta (fino a 30 minuti) e rilegge il PaymentIntent: per provare il flusso normale
+   serve il webhook.
+6. I trasferimenti si vedono in Dashboard → Connect → conto → Trasferimenti (`transfer_group` = id del checkout).
+
 ## What does NOT exist (yet)
 
 Be explicit about this in reviews and planning:

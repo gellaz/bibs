@@ -37,15 +37,13 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 
 | ID | Item | Evidenza | Note | Effort |
 |---|---|---|---|---|
-| **P1.1** | **Checkout customer** (creazione ordine dal carrello) | `apps/customer/src/routes/_authenticated/cart.tsx:70` (commento: nessun CTA perché non esiste la pagina) | Include: svuotare le righe ordinate dal carrello (debito #163). Spec: [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato). **PP1 fatto in #199**, **QR fatto in #200**, **Connect fatto in #201**; resta PR2 (F) | L |
 | **P1.3** | **Home seller con dati veri** | `apps/seller/src/routes/_authenticated/index.tsx:23` (`TODAY_LABEL = "Venerdì 22 maggio"`), `:25-30` stats "—", `:44-86` azioni finte ("3 ordini da preparare" `:49`) | Solo l'alert orari è reale. La card «ordini da preparare» può leggere `GET /seller/orders/counts` (#198). Include i rimandi di #183: funzione pura estratta dall'IIFE (`:103-137`), ordinamento per urgenza (`:139-141`) | M |
 | **P1.4** | **Geocoding dei negozi creati dal seller** | nessun uso di geocode/location in `apps/seller/src` | Un negozio creato dal seller non ha coordinate → invisibile nelle ricerche per prossimità. L'API di geocoding esiste (#175) | M |
 | **P1.6** | **Account hub customer**: storico ordini e movimenti punti | `customer/routes/points.ts:9`, `customer/routes/orders.ts:24` inutilizzati; FE usa solo `profile.data.points` (`profile-identity.tsx:118`) | La sezione «Ordini» esiste (#199: tab Prenotazioni/Pagati, dettaglio, annullamento); restano movimenti punti e storico completo | M |
 | **P1.7** | **Billing seller**: email di dunning/cancellazione; riattivazione self-service di negozi `canceled` | `packages/emails/emails/` (3 template); `seller/services/stores.ts:352` (reactivate solo `canceling`) | Un negozio `canceled` è morto senza intervento manuale | M |
 
-**P1.1, buco aperto**: `POST /customer/orders` accetta ancora `pay_pickup`/`pay_deliver` e crea ordini
-`confirmed` senza pagamento (buco preesistente, fuori dal checkout): lo chiude la PR F (PR2 nasce
-`pending` o si applica `offeredOrderTypes` anche lì); **blocca qualunque deploy**.
+**P1.1, buco chiuso (#NNN)**: `pay_*` nasce sempre `pending` (`placeOrder`) e `POST /customer/orders`
+accetta solo `direct | reserve_pickup`.
 
 ---
 
@@ -139,6 +137,9 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 - **P6.6 Deploy**: nessuna pipeline né gestione secrets (solo `ci.yml`).
 
 ### Backlog di prodotto
+- `POST /customer/orders` con `type: direct` crea un ordine `completed` con accredito punti senza
+  alcun pagamento (preesistente; `customer/routes/orders.ts`). Decidere se `direct` va tolto
+  dall'endpoint customer.
 - Filtri/facet customer sulle caratteristiche.
 - Bottom tab bar mobile (customer).
 - Mappa: "cerca in quest'area" (bbox), mappa in home, hover card↔pin.
@@ -173,6 +174,7 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | **P6.2 (punti)** | Castelletto costruito sul lordo già scontato dai punti, ripartito tra le aliquote a resti maggiori (`apportionDiscount`): Σ castelletto = totale. Corretta anche la conversione punti→centesimi in virgola mobile (232 punti valevano 2,31 €) | #197 |
 | **P1.2** | Pagina ordini seller: lista del negozio attivo con tab per stato (conteggi da `GET /seller/orders/counts`) e filtro tipologia, dettaglio con righe, riepilogo e castelletto IVA, azioni pronto/ritirato/annulla. Annullamento seller con rimborso di stock e punti (`PATCH /seller/orders/:id/cancel`). Corretto anche il crash delle letture ordini (seller e customer) sui negozi con coordinate: la geometria PostGIS non si legge nelle relazioni annidate | #198 |
 | **Debito #163** | Le righe ordinate escono dal carrello nella stessa transazione del checkout (`createCheckout`); quelle non disponibili restano | #199 |
+| **P1.1** | **Checkout customer** (creazione ordine dal carrello). Spec [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato): PP1 (#199), QR (#200), Connect (#201), PR2 (#NNN) | #199, #200, #201, #NNN |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -191,7 +193,7 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 
 1. **P0** in 3 PR (A authz+stato con test di guard, B ordini+schema, C form) — prima di toccare il checkout.
 2. ~~**P2.1** (pin TanStack + job `vite build`)~~ — fatto in #196.
-3. **P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller** e **P1.3 home**.
+3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#NNN. Resta **P1.3 home**.
 4. **P1.4 geocoding negozi seller**: senza, la ricerca per prossimità non vede i negozi reali.
 5. Una sweep P3 ogni tanto come lavoro a basso rischio; P4/P5 quando si tocca la zona.
 6. **P6** diventa checklist bloccante al primo segnale di go-live.
