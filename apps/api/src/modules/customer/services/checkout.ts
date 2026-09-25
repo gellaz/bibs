@@ -90,7 +90,11 @@ export async function createCheckout(params: CreateCheckoutParams) {
 						inArray(store.id, storeIds),
 						publiclyVisibleStore(),
 					),
-				);
+				)
+				// Due checkout dello stesso cliente (due schede, chiavi diverse) non
+				// devono leggere le stesse righe: il secondo aspetta il primo e poi
+				// non le trova più → 409, invece di un ordine doppio.
+				.for("update", { of: cartItem });
 
 			for (const choice of stores) {
 				const own = lines.filter((l) => l.storeId === choice.storeId);
@@ -126,15 +130,25 @@ export async function createCheckout(params: CreateCheckoutParams) {
 					{ checkoutId: row.id },
 				);
 
-				await tx.delete(cartItem).where(
-					and(
-						eq(cartItem.customerProfileId, customerProfileId),
-						inArray(
-							cartItem.id,
-							buyable.map((l) => l.id),
+				const removed = await tx
+					.delete(cartItem)
+					.where(
+						and(
+							eq(cartItem.customerProfileId, customerProfileId),
+							inArray(
+								cartItem.id,
+								buyable.map((l) => l.id),
+							),
 						),
-					),
-				);
+					)
+					.returning({ id: cartItem.id });
+				// Rete di sicurezza del lock qui sopra: se le righe ordinate non sono
+				// più tutte lì, qualcun altro le ha già consumate.
+				if (removed.length !== buyable.length)
+					throw new ServiceError(
+						409,
+						"Il carrello è cambiato: alcune quantità non sono più disponibili",
+					);
 			}
 
 			return row.id;
