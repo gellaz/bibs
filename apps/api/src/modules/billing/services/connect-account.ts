@@ -3,7 +3,11 @@ import Stripe from "stripe";
 import { db } from "@/db";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
-import { type ConnectStatus, connectStatus } from "@/lib/connect-status";
+import {
+	accountStateFromV2,
+	type ConnectStatus,
+	connectStatus,
+} from "@/lib/connect-status";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
@@ -46,11 +50,11 @@ export function getDefaultPaymentMethod(
  * seller_profiles serializza due click ravvicinati: il secondo rilegge
  * payment_methods dopo il primo e trova il conto creato dal primo.
  *
- * Trade-off accettato: se la transazione fallisce dopo una accounts.create
+ * Trade-off accettato: se la transazione fallisce dopo una v2 accounts.create
  * riuscita, resta un conto Express mai onboardato orfano su Stripe (taggato
  * `metadata.sellerProfileId`, nessuna fee finché non viene attivato). Non
  * usiamo un'idempotency key fissa per evitarlo: replicherebbe per 24h anche
- * una accounts.create fallita per un motivo reale (es. email invalida),
+ * una v2 accounts.create fallita per un motivo reale (es. email invalida),
  * bloccando ogni retry dell'utente con lo stesso errore.
  */
 async function ensureConnectAccount(
@@ -67,29 +71,41 @@ async function ensureConnectAccount(
 		const existing = await getDefaultPaymentMethod(sellerProfileId, tx);
 		if (existing?.stripeAccountId) return existing.stripeAccountId;
 
-		// Controller properties equivalenti a un conto Express (Stripe marca
-		// `type` come legacy). card_payments + transfers: charges_enabled
-		// significa "può incassare", e la PR F trasferisce con separate charges.
-		let account: Stripe.Response<Stripe.Account>;
+		// Accounts v2 (Stripe rifiuta v1 per le nuove piattaforme). Solo la
+		// configurazione `recipient`: con separate charges & transfers (PR F) bibs
+		// è merchant of record e al conto serve soltanto ricevere i trasferimenti
+		// (`stripe_balance.stripe_transfers`, che richiede da sé anche i payouts).
+		// Dashboard Express, fee e perdite a carico della piattaforma: losses
+		// `application` richiede la loss-liability acknowledgement nel Platform
+		// profile di Stripe.
+		let account: Stripe.Response<Stripe.V2.Core.Account>;
 		try {
-			account = await stripe.accounts.create({
-				country: "IT",
-				email,
-				controller: {
-					stripe_dashboard: { type: "express" },
-					fees: { payer: "application" },
-					losses: { payments: "application" },
-					requirement_collection: "stripe",
+			account = await stripe.v2.core.accounts.create({
+				contact_email: email,
+				dashboard: "express",
+				identity: { country: "IT" },
+				defaults: {
+					responsibilities: {
+						fees_collector: "application",
+						losses_collector: "application",
+					},
 				},
-				capabilities: {
-					card_payments: { requested: true },
-					transfers: { requested: true },
+				configuration: {
+					recipient: {
+						capabilities: {
+							stripe_balance: { stripe_transfers: { requested: true } },
+						},
+					},
 				},
 				metadata: { sellerProfileId },
+				include: ["configuration.recipient", "requirements"],
 			});
 		} catch (err) {
 			if (err instanceof Stripe.errors.StripeError) {
-				logger.error({ sellerProfileId, err }, "stripe.accounts.create failed");
+				logger.error(
+					{ sellerProfileId, err },
+					"stripe.v2.core.accounts.create failed",
+				);
 				throw new ServiceError(
 					502,
 					"Non è stato possibile attivare i pagamenti online. Riprova tra qualche minuto.",
@@ -122,18 +138,23 @@ export async function createOnboardingLink(params: {
 		params.email,
 	);
 	try {
-		const link = await stripe.accountLinks.create({
+		const link = await stripe.v2.core.accountLinks.create({
 			account,
-			type: "account_onboarding",
-			return_url: `${env.SELLER_APP_URL}/payments/return`,
-			refresh_url: `${env.SELLER_APP_URL}/payments/refresh`,
+			use_case: {
+				type: "account_onboarding",
+				account_onboarding: {
+					configurations: ["recipient"],
+					refresh_url: `${env.SELLER_APP_URL}/payments/refresh`,
+					return_url: `${env.SELLER_APP_URL}/payments/return`,
+				},
+			},
 		});
 		return { url: link.url };
 	} catch (err) {
 		if (err instanceof Stripe.errors.StripeError) {
 			logger.error(
 				{ sellerProfileId: params.sellerProfileId, err },
-				"stripe.accountLinks.create failed",
+				"stripe.v2.core.accountLinks.create failed",
 			);
 			throw new ServiceError(
 				502,
@@ -147,20 +168,26 @@ export async function createOnboardingLink(params: {
 /**
  * True per gli errori Stripe che non si risolveranno mai da soli su un
  * retry: il conto è stato disconnesso/cancellato (`resource_missing`,
- * `account_invalid`) o la piattaforma ha perso i permessi su di esso
- * (`StripePermissionError`). Distinto da errori transitori (rete, 5xx Stripe)
- * che devono continuare a rifar fallire il webhook per il retry di Stripe.
+ * `account_invalid`, o un 404 generico come lo restituisce l'API v2) o la
+ * piattaforma ha perso i permessi su di esso (`StripePermissionError`).
+ * Distinto da errori transitori (rete, 5xx Stripe) che devono continuare a
+ * rifar fallire il webhook per il retry di Stripe.
  */
 function isPermanentlyInaccessible(err: unknown): boolean {
 	if (!(err instanceof Stripe.errors.StripeError)) return false;
 	if (err instanceof Stripe.errors.StripePermissionError) return true;
-	return err.code === "resource_missing" || err.code === "account_invalid";
+	return (
+		err.code === "resource_missing" ||
+		err.code === "account_invalid" ||
+		err.statusCode === 404
+	);
 }
 
 /**
- * Rilegge il conto da Stripe e ne copia lo stato. Usata dal webhook
- * account.updated e dal sync al ritorno dall'onboarding: rileggere invece di
- * fidarsi dello snapshot dell'evento rende innocui gli eventi fuori ordine.
+ * Rilegge il conto da Stripe (Accounts v2) e ne copia lo stato. Usata dal
+ * webhook account.updated e dal sync al ritorno dall'onboarding: rileggere
+ * invece di fidarsi dello snapshot dell'evento rende innocui gli eventi fuori
+ * ordine.
  *
  * Un conto permanentemente irraggiungibile (cancellato lato Stripe, permessi
  * revocati) non deve far fallire il webhook per giorni: viene invece
@@ -176,9 +203,11 @@ export async function refreshConnectAccount(
 	});
 	if (!known) return null;
 
-	let account: Stripe.Response<Stripe.Account>;
+	let account: Stripe.Response<Stripe.V2.Core.Account>;
 	try {
-		account = await stripe.accounts.retrieve(stripeAccountId);
+		account = await stripe.v2.core.accounts.retrieve(stripeAccountId, {
+			include: ["configuration.recipient", "requirements"],
+		});
 	} catch (err) {
 		if (!isPermanentlyInaccessible(err)) throw err;
 		logger.warn(
@@ -199,11 +228,7 @@ export async function refreshConnectAccount(
 
 	const [row] = await db
 		.update(paymentMethod)
-		.set({
-			chargesEnabled: account.charges_enabled,
-			payoutsEnabled: account.payouts_enabled,
-			detailsSubmitted: account.details_submitted,
-		})
+		.set(accountStateFromV2(account))
 		.where(eq(paymentMethod.id, known.id))
 		.returning();
 	return row;

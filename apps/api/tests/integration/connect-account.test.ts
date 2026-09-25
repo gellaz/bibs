@@ -25,21 +25,63 @@ mock.module("@/db", () => ({
 const accountsCreate = mock(async (_p: unknown, _o: unknown) => ({
 	id: "acct_NEW",
 }));
-let remoteAccount = {
+type CapStatus = "active" | "pending" | "restricted" | "unsupported";
+// Conto Accounts v2 come lo restituisce retrieve con
+// include: ["configuration.recipient", "requirements"].
+const v2Account = (o: {
+	transfers: CapStatus;
+	payouts: CapStatus;
+	awaitingUser: boolean;
+}) => ({
 	id: "acct_NEW",
-	charges_enabled: false,
-	payouts_enabled: false,
-	details_submitted: false,
-};
-const accountsRetrieve = mock(async (_id: string) => remoteAccount);
+	object: "v2.core.account",
+	configuration: {
+		recipient: {
+			applied: true,
+			capabilities: {
+				stripe_balance: {
+					stripe_transfers: { status: o.transfers, status_details: [] },
+					payouts: { status: o.payouts, status_details: [] },
+				},
+			},
+		},
+	},
+	requirements: {
+		entries: o.awaitingUser
+			? [
+					{
+						awaiting_action_from: "user",
+						description: "representative.dob",
+						errors: [],
+						impact: {},
+						minimum_deadline: { status: "currently_due" },
+						requested_reasons: [{ code: "routine_onboarding" }],
+					},
+				]
+			: [],
+	},
+});
+const NOT_ONBOARDED = {
+	transfers: "pending",
+	payouts: "pending",
+	awaitingUser: true,
+} as const;
+let remoteAccount = v2Account(NOT_ONBOARDED);
+const accountsRetrieve = mock(
+	async (_id: string, _p?: unknown) => remoteAccount,
+);
 const accountLinksCreate = mock(async (_p: unknown) => ({
 	url: "https://connect.stripe.test/setup/abc",
 }));
 
 mock.module("@/lib/stripe", () => ({
 	stripe: {
-		accounts: { create: accountsCreate, retrieve: accountsRetrieve },
-		accountLinks: { create: accountLinksCreate },
+		v2: {
+			core: {
+				accounts: { create: accountsCreate, retrieve: accountsRetrieve },
+				accountLinks: { create: accountLinksCreate },
+			},
+		},
 	},
 }));
 
@@ -74,16 +116,11 @@ beforeEach(async () => {
 	accountsCreate.mockClear();
 	accountsRetrieve.mockClear();
 	accountLinksCreate.mockClear();
-	remoteAccount = {
-		id: "acct_NEW",
-		charges_enabled: false,
-		payouts_enabled: false,
-		details_submitted: false,
-	};
+	remoteAccount = v2Account(NOT_ONBOARDED);
 });
 
 describe("createOnboardingLink", () => {
-	it("crea il conto (IT, controller Express, card_payments+transfers) e salva la riga", async () => {
+	it("crea il conto v2 (IT, Express, recipient con stripe_transfers) e salva la riga", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db, { email: "neg@test.it" });
 
@@ -95,29 +132,39 @@ describe("createOnboardingLink", () => {
 		expect(res.url).toBe("https://connect.stripe.test/setup/abc");
 		expect(accountsCreate).toHaveBeenCalledTimes(1);
 		const [params, opts] = accountsCreate.mock.calls[0] as [any, any];
-		expect(params).toMatchObject({
-			country: "IT",
-			email: "neg@test.it",
-			controller: {
-				stripe_dashboard: { type: "express" },
-				fees: { payer: "application" },
-				losses: { payments: "application" },
-				requirement_collection: "stripe",
+		expect(params).toEqual({
+			contact_email: "neg@test.it",
+			dashboard: "express",
+			identity: { country: "IT" },
+			defaults: {
+				responsibilities: {
+					fees_collector: "application",
+					losses_collector: "application",
+				},
 			},
-			capabilities: {
-				card_payments: { requested: true },
-				transfers: { requested: true },
+			configuration: {
+				recipient: {
+					capabilities: {
+						stripe_balance: { stripe_transfers: { requested: true } },
+					},
+				},
 			},
 			metadata: { sellerProfileId: seller.profile.id },
+			include: ["configuration.recipient", "requirements"],
 		});
 		// Nessuna idempotency key fissa: un retry dopo un errore reale non deve
 		// essere bloccato per 24h dallo stesso conto fallito (vedi il test sotto).
 		expect(opts).toBeUndefined();
 		expect(accountLinksCreate.mock.calls[0][0]).toEqual({
 			account: "acct_NEW",
-			type: "account_onboarding",
-			return_url: "http://localhost:3002/payments/return",
-			refresh_url: "http://localhost:3002/payments/refresh",
+			use_case: {
+				type: "account_onboarding",
+				account_onboarding: {
+					configurations: ["recipient"],
+					refresh_url: "http://localhost:3002/payments/refresh",
+					return_url: "http://localhost:3002/payments/return",
+				},
+			},
 		});
 		const rows = await db
 			.select()
@@ -259,23 +306,24 @@ describe("createOnboardingLink", () => {
 });
 
 describe("refreshConnectAccount", () => {
-	it("copia charges/payouts/details da Stripe sulla riga", async () => {
+	it("copia lo stato del conto v2 sulla riga (transfers attivi, payouts in attesa, niente a carico del seller)", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		await db.insert(paymentMethod).values({
 			sellerProfileId: seller.profile.id,
 			stripeAccountId: "acct_NEW",
 		});
-		remoteAccount = {
-			id: "acct_NEW",
-			charges_enabled: true,
-			payouts_enabled: false,
-			details_submitted: true,
-		};
+		remoteAccount = v2Account({
+			transfers: "active",
+			payouts: "pending",
+			awaitingUser: false,
+		});
 
 		const row = await refreshConnectAccount("acct_NEW");
 
-		expect(accountsRetrieve).toHaveBeenCalledWith("acct_NEW");
+		expect(accountsRetrieve).toHaveBeenCalledWith("acct_NEW", {
+			include: ["configuration.recipient", "requirements"],
+		});
 		expect(row).toMatchObject({
 			chargesEnabled: true,
 			payoutsEnabled: false,
@@ -336,6 +384,57 @@ describe("refreshConnectAccount", () => {
 	});
 });
 
+describe("refreshConnectAccount — errori v2", () => {
+	it("retrieve v2 rifiuta con 404 → riga degradata a false, nessun errore", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await db.insert(paymentMethod).values({
+			sellerProfileId: seller.profile.id,
+			stripeAccountId: "acct_NEW",
+			chargesEnabled: true,
+			payoutsEnabled: true,
+			detailsSubmitted: true,
+		});
+		accountsRetrieve.mockImplementationOnce(async () => {
+			throw new Stripe.errors.StripeInvalidRequestError({
+				message: "Account not found",
+				type: "invalid_request_error",
+				code: "not_found",
+				statusCode: 404,
+			} as any);
+		});
+
+		const row = await refreshConnectAccount("acct_NEW");
+
+		expect(row).toMatchObject({
+			chargesEnabled: false,
+			payoutsEnabled: false,
+			detailsSubmitted: false,
+		});
+	});
+
+	it("errore transitorio (500) risale invariato: il webhook deve far ritentare Stripe", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await db.insert(paymentMethod).values({
+			sellerProfileId: seller.profile.id,
+			stripeAccountId: "acct_NEW",
+			chargesEnabled: true,
+		});
+		accountsRetrieve.mockImplementationOnce(async () => {
+			throw new Stripe.errors.StripeAPIError({
+				message: "boom",
+				type: "api_error",
+				statusCode: 500,
+			} as any);
+		});
+
+		await expect(refreshConnectAccount("acct_NEW")).rejects.toBeInstanceOf(
+			Stripe.errors.StripeAPIError,
+		);
+	});
+});
+
 describe("syncOnlinePayments", () => {
 	it("senza conto → 404", async () => {
 		const seller = await createTestSeller(getTestDb());
@@ -351,12 +450,11 @@ describe("syncOnlinePayments", () => {
 			sellerProfileId: seller.profile.id,
 			stripeAccountId: "acct_NEW",
 		});
-		remoteAccount = {
-			id: "acct_NEW",
-			charges_enabled: true,
-			payouts_enabled: true,
-			details_submitted: true,
-		};
+		remoteAccount = v2Account({
+			transfers: "active",
+			payouts: "active",
+			awaitingUser: false,
+		});
 
 		expect(await syncOnlinePayments(seller.profile.id)).toEqual({
 			status: "enabled",

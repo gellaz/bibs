@@ -25,18 +25,31 @@ let currentEvent: any = null;
 const constructEventAsync = mock(
 	async (_p: string, _s: string, _secret: string) => currentEvent,
 );
-let remote = {
+// Il refresh rilegge il conto con Accounts v2: tutto attivo e nessun
+// requisito a carico del seller ⇒ le tre colonne a true.
+const activeV2Account = () => ({
 	id: "acct_1",
-	charges_enabled: true,
-	payouts_enabled: true,
-	details_submitted: true,
-};
-const accountsRetrieve = mock(async (_id: string) => remote);
+	object: "v2.core.account",
+	configuration: {
+		recipient: {
+			applied: true,
+			capabilities: {
+				stripe_balance: {
+					stripe_transfers: { status: "active", status_details: [] },
+					payouts: { status: "active", status_details: [] },
+				},
+			},
+		},
+	},
+	requirements: { entries: [] },
+});
+let remote = activeV2Account();
+const accountsRetrieve = mock(async (_id: string, _p?: unknown) => remote);
 
 mock.module("@/lib/stripe", () => ({
 	stripe: {
 		webhooks: { constructEventAsync },
-		accounts: { retrieve: accountsRetrieve },
+		v2: { core: { accounts: { retrieve: accountsRetrieve } } },
 	},
 }));
 mock.module("@/lib/env", () => ({
@@ -66,12 +79,7 @@ beforeEach(async () => {
 	await truncateAll(getTestDb());
 	constructEventAsync.mockClear();
 	accountsRetrieve.mockClear();
-	remote = {
-		id: "acct_1",
-		charges_enabled: true,
-		payouts_enabled: true,
-		details_submitted: true,
-	};
+	remote = activeV2Account();
 });
 
 function accountEvent(id: string, snapshot: Record<string, unknown> = {}) {

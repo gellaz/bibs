@@ -23,6 +23,10 @@ export const paymentMethod = pgTable(
 		),
 		// Stato del conto Connect, copiato da Stripe (webhook account.updated o
 		// sync al ritorno dall'onboarding). Mai scritto da input dell'utente.
+		// Con Accounts v2 (configurazione recipient) `charges_enabled` significa
+		// "può ricevere i trasferimenti di bibs" (stripe_balance.stripe_transfers
+		// attivo): è ciò che serve alla PR2, non un incasso diretto del seller.
+		// `details_submitted` = nessun requisito in attesa del seller.
 		chargesEnabled: boolean("charges_enabled").default(false).notNull(),
 		payoutsEnabled: boolean("payouts_enabled").default(false).notNull(),
 		detailsSubmitted: boolean("details_submitted").default(false).notNull(),
