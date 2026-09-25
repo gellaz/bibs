@@ -24,6 +24,7 @@ mock.module("@/db", () => ({
 
 import { eq, sql } from "drizzle-orm";
 import { cartItem } from "@/db/schemas/cart";
+import { paymentMethod } from "@/db/schemas/payment-method";
 import {
 	product as productTable,
 	storeProduct as storeProductTable,
@@ -328,9 +329,32 @@ describe("getCart", () => {
 			.update(storeTable)
 			.set({ orderTypes: ["reserve_pickup", "pay_pickup"] })
 			.where(eq(storeTable.id, s.id));
+		await db.insert(paymentMethod).values({
+			sellerProfileId: seller.profile.id,
+			stripeAccountId: "acct_T",
+			chargesEnabled: true,
+		});
 
 		const cart = await getCart(customer.profile.id);
-		// pay_pickup configurato ma non offerto finché non c'è l'incasso
+		// conto abilitato, ma pay_pickup non si offre finché la PR F non accende il pagamento
+		expect(cart.groups[0].store.orderTypes).toEqual(["reserve_pickup"]);
+	});
+
+	it("conto non abilitato: idem, pay_pickup non si offre", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const { store: s, storeProduct: sp } = await sellableProduct(
+			seller.profile.id,
+			{ stock: 5 },
+		);
+		await createTestCartItem(db, customer.profile.id, sp.id, { quantity: 1 });
+		await db
+			.update(storeTable)
+			.set({ orderTypes: ["reserve_pickup", "pay_pickup"] })
+			.where(eq(storeTable.id, s.id));
+
+		const cart = await getCart(customer.profile.id);
 		expect(cart.groups[0].store.orderTypes).toEqual(["reserve_pickup"]);
 	});
 

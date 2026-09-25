@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
@@ -7,6 +8,7 @@ import {
 	MunicipalityCompactSchema,
 	okPageRes,
 	okRes,
+	StoreOrderTypesSchema,
 	StoreWithPhonesSchema,
 	withConflictErrors,
 	withErrors,
@@ -14,6 +16,10 @@ import {
 import { CreateStoreBody } from "@/lib/schemas/forms";
 import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
 import { requireOwner, withSeller } from "../context";
+import {
+	getStoreOrderTypes,
+	updateStoreOrderTypes,
+} from "../services/order-types";
 import {
 	cancelStoreSubscription,
 	createStore,
@@ -168,6 +174,72 @@ export const storesRoutes = new Elysia()
 				summary: "Aggiorna negozio",
 				description:
 					"Aggiorna i dati di un negozio esistente. Solo il proprietario può modificare negozi.",
+				tags: ["Seller - Stores"],
+			},
+		},
+	)
+	.get(
+		"/stores/:storeId/order-types",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { sellerProfile: sp, params } = sellerCtx;
+			if (!sellerCtx.isOwner) {
+				const allowed = await sellerCtx.getAccessibleStoreIds();
+				if (!allowed.includes(params.storeId))
+					throw new ServiceError(404, "Negozio non trovato");
+			}
+			return ok(
+				await getStoreOrderTypes({
+					sellerProfileId: sp.id,
+					storeId: params.storeId,
+				}),
+			);
+		},
+		{
+			params: t.Object({
+				storeId: t.String({ description: "ID del negozio" }),
+			}),
+			response: withErrors({ 200: okRes(StoreOrderTypesSchema) }),
+			detail: {
+				summary: "Tipologie d'acquisto del negozio",
+				description:
+					"Tipologie configurate, quelle offerte davvero ai clienti e se il venditore può incassare online.",
+				tags: ["Seller - Stores"],
+			},
+		},
+	)
+	.patch(
+		"/stores/:storeId/order-types",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner, params, body } = withSeller(ctx);
+			requireOwner(isOwner);
+			return ok(
+				await updateStoreOrderTypes({
+					sellerProfileId: sp.id,
+					storeId: params.storeId,
+					orderTypes: body.orderTypes,
+				}),
+			);
+		},
+		{
+			params: t.Object({
+				storeId: t.String({ description: "ID del negozio" }),
+			}),
+			body: t.Object({
+				orderTypes: t.Array(
+					t.Union([t.Literal("reserve_pickup"), t.Literal("pay_pickup")]),
+					{
+						minItems: 1,
+						uniqueItems: true,
+						description: "Tipologie d'acquisto accettate dal negozio",
+					},
+				),
+			}),
+			response: withErrors({ 200: okRes(StoreOrderTypesSchema) }),
+			detail: {
+				summary: "Aggiorna tipologie d'acquisto",
+				description:
+					"«Paga e ritira» si attiva solo con i pagamenti online abilitati; deve restare almeno una tipologia offerta ai clienti. Solo il titolare.",
 				tags: ["Seller - Stores"],
 			},
 		},

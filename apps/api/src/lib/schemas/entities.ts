@@ -1296,3 +1296,19 @@ export const CartItemMutationSchema = t.Object({
 	id: t.String({ description: "ID della riga di carrello" }),
 	quantity: t.Integer({ minimum: 1, description: "Quantità risultante" }),
 });
+
+const StoreOrderTypeLiteral = t.Union([
+	t.Literal("reserve_pickup"),
+	t.Literal("pay_pickup"),
+]);
+export const StoreOrderTypesSchema = t.Object({
+	orderTypes: t.Array(StoreOrderTypeLiteral, {
+		description: "Tipologie configurate dal negozio",
+	}),
+	offeredOrderTypes: t.Array(StoreOrderTypeLiteral, {
+		description: "Tipologie che i clienti vedono al checkout",
+	}),
+	chargesEnabled: t.Boolean({
+		description: "Il venditore può incassare online (Stripe Connect)",
+	}),
+});

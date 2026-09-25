@@ -65,4 +65,11 @@ describe("seller stores routes are owner-only", () => {
 		const res = await call("POST", "/stores/some-id/reactivate");
 		expect(res.status).toBe(403);
 	});
+
+	it("PATCH /stores/:id/order-types → 403 for a non-owner", async () => {
+		const res = await call("PATCH", "/stores/some-id/order-types", {
+			orderTypes: ["reserve_pickup"],
+		});
+		expect(res.status).toBe(403);
+	});
 });

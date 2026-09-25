@@ -28,6 +28,7 @@ import { cartItem } from "@/db/schemas/cart";
 import { checkout } from "@/db/schemas/checkout";
 import { customerProfile as customerProfileTable } from "@/db/schemas/customer";
 import { order } from "@/db/schemas/order";
+import { paymentMethod } from "@/db/schemas/payment-method";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
 import { checkoutRoutes } from "@/modules/customer/routes/checkout";
@@ -237,6 +238,11 @@ describe("createCheckout", () => {
 			.update(storeTable)
 			.set({ orderTypes: ["reserve_pickup", "pay_pickup"] })
 			.where(eq(storeTable.id, a.store.id));
+		await db.insert(paymentMethod).values({
+			sellerProfileId: seller.profile.id,
+			stripeAccountId: "acct_T",
+			chargesEnabled: true,
+		});
 		await createTestCartItem(db, customer.profile.id, a.sp.id, { quantity: 1 });
 
 		await expect(
