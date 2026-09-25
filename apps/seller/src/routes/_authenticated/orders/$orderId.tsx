@@ -19,6 +19,7 @@ import {
 	reservationTimeLeft,
 	shortOrderId,
 } from "@/features/orders/order-labels";
+import { orderSummaryCents } from "@/features/orders/order-summary";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/orders/$orderId")({
@@ -66,15 +67,7 @@ function OrderDetailPage() {
 			/>
 		);
 
-	const subtotalCents = order.items.reduce(
-		(s, i) => s + toCents(i.unitPrice) * i.quantity,
-		0,
-	);
-	const shippingCents = order.shippingCost ? toCents(order.shippingCost) : 0;
-	const pointsDiscountCents =
-		order.pointsSpent > 0
-			? subtotalCents + shippingCents - toCents(order.total)
-			: 0;
+	const summary = orderSummaryCents(order);
 	const openReservation =
 		order.type === "reserve_pickup" &&
 		order.reservationExpiresAt &&
@@ -186,19 +179,27 @@ function OrderDetailPage() {
 								<dt className="text-muted-foreground">
 									{m.orders_detail_subtotal()}
 								</dt>
-								<dd>{formatPriceEur(subtotalCents / 100)}</dd>
+								<dd>{formatPriceEur(summary.subtotal / 100)}</dd>
 							</div>
-							{pointsDiscountCents > 0 && (
+							{summary.pointsDiscount > 0 && (
 								<div className="flex justify-between">
 									<dt className="text-muted-foreground">
 										{m.orders_detail_points_discount()}
 									</dt>
-									<dd>−{formatPriceEur(pointsDiscountCents / 100)}</dd>
+									<dd>−{formatPriceEur(summary.pointsDiscount / 100)}</dd>
+								</div>
+							)}
+							{summary.shipping > 0 && (
+								<div className="flex justify-between">
+									<dt className="text-muted-foreground">
+										{m.orders_detail_shipping()}
+									</dt>
+									<dd>{formatPriceEur(summary.shipping / 100)}</dd>
 								</div>
 							)}
 							<div className="flex justify-between border-border border-t pt-2 font-semibold text-base">
 								<dt>{m.orders_detail_total()}</dt>
-								<dd>{formatPriceEur(order.total)}</dd>
+								<dd>{formatPriceEur(summary.grandTotal / 100)}</dd>
 							</div>
 						</dl>
 						{order.type === "reserve_pickup" && (
