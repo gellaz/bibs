@@ -7,6 +7,7 @@ import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
+import { offeredOrderTypes, type StoreOrderType } from "@/lib/order-types";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 
@@ -123,6 +124,8 @@ export interface CartStoreGroup {
 		id: string;
 		name: string;
 		municipality: { name: string; provinceAcronym: string };
+		/** Tipi offerti al checkout, già filtrati da offeredOrderTypes. */
+		orderTypes: StoreOrderType[];
 	};
 	items: CartItemView[];
 	subtotal: string;
@@ -155,6 +158,7 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 			price: product.price,
 			storeId: store.id,
 			storeName: store.name,
+			storeOrderTypes: store.orderTypes,
 			municipalityName: municipality.name,
 			provinceAcronym: province.acronym,
 			// publiclyVisibleStore() NON è usabile qui: è scritto per una .where(),
@@ -223,6 +227,7 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 						name: row.municipalityName,
 						provinceAcronym: row.provinceAcronym,
 					},
+					orderTypes: offeredOrderTypes(row.storeOrderTypes),
 				},
 				items: [],
 				subtotal: "0.00",

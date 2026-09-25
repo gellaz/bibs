@@ -22,7 +22,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { cartItem } from "@/db/schemas/cart";
 import {
 	product as productTable,
@@ -85,6 +85,30 @@ async function sellableProduct(
 }
 
 describe("cart_items — vincoli di schema", () => {
+	it("stores.order_types rifiuta un insieme vuoto o un tipo sconosciuto", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
+		// db.execute restituisce un thenable, non una Promise: va avvolto.
+		await expect(
+			(async () =>
+				db.execute(
+					sql`UPDATE stores SET order_types = '{}' WHERE id = ${s.id}`,
+				))(),
+		).rejects.toThrow();
+		await expect(
+			(async () =>
+				db.execute(
+					sql`UPDATE stores SET order_types = '{direct}' WHERE id = ${s.id}`,
+				))(),
+		).rejects.toThrow();
+		const [row] = await db
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, s.id));
+		expect(row.orderTypes).toEqual(["reserve_pickup"]);
+	});
+
 	it("rejects a quantity outside 1..99", async () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
@@ -291,6 +315,25 @@ describe("addCartItem", () => {
 });
 
 describe("getCart", () => {
+	it("ogni gruppo porta i tipi d'ordine offerti dal negozio", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const { store: s, storeProduct: sp } = await sellableProduct(
+			seller.profile.id,
+			{ stock: 5 },
+		);
+		await createTestCartItem(db, customer.profile.id, sp.id, { quantity: 1 });
+		await db
+			.update(storeTable)
+			.set({ orderTypes: ["reserve_pickup", "pay_pickup"] })
+			.where(eq(storeTable.id, s.id));
+
+		const cart = await getCart(customer.profile.id);
+		// pay_pickup configurato ma non offerto finché non c'è l'incasso
+		expect(cart.groups[0].store.orderTypes).toEqual(["reserve_pickup"]);
+	});
+
 	it("returns zeros for an empty cart", async () => {
 		const db = getTestDb();
 		const { profile: cp } = await createTestCustomer(db);

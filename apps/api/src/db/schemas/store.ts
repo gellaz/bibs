@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+	check,
 	geometry,
 	index,
 	integer,
@@ -9,6 +10,7 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { type StoreOrderType, storeOrderTypes } from "@/lib/order-types";
 import { municipality } from "./location";
 import { storeProduct } from "./product";
 import { sellerProfile } from "./seller";
@@ -51,6 +53,13 @@ export const store = pgTable(
 				Array<{ startDate: string; endDate?: string; note?: string }>
 			>(),
 		websiteUrl: text("website_url"),
+		// Tipi d'ordine che il negozio accetta. Cosa si offre davvero al checkout
+		// lo decide offeredOrderTypes() (il pagamento online richiede Connect).
+		orderTypes: text("order_types")
+			.array()
+			.$type<StoreOrderType[]>()
+			.notNull()
+			.default(sql`'{reserve_pickup}'`),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
@@ -70,6 +79,12 @@ export const store = pgTable(
 		index("store_active_idx")
 			.on(t.sellerProfileId)
 			.where(sql`${t.deletedAt} IS NULL`),
+		check(
+			"store_order_types_valid",
+			sql`cardinality(${t.orderTypes}) > 0 AND ${t.orderTypes} <@ ARRAY[${sql.raw(
+				storeOrderTypes.map((v) => `'${v}'`).join(", "),
+			)}]::text[]`,
+		),
 	],
 );
 

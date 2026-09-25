@@ -1254,6 +1254,10 @@ export const CartStoreGroupSchema = t.Object({
 			name: t.String({ description: "Comune del negozio" }),
 			provinceAcronym: t.String({ description: "Sigla della provincia" }),
 		}),
+		orderTypes: t.Array(
+			t.Union([t.Literal("reserve_pickup"), t.Literal("pay_pickup")]),
+			{ description: "Tipi d'ordine offerti al checkout per questo negozio" },
+		),
 	}),
 	items: t.Array(CartItemSchema),
 	subtotal: t.String({

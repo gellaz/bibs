@@ -64,6 +64,13 @@
       "when": 1790284639560,
       "tag": "0008_fancy_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790329775175,
+      "tag": "0009_wealthy_earthquake",
+      "breakpoints": true
     }
   ]
 }
