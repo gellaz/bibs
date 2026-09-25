@@ -9,6 +9,7 @@ import type { DiscountStatus } from "@/db/schemas/discount";
 import { discount, discountProduct } from "@/db/schemas/discount";
 import { municipality, province, region } from "@/db/schemas/location";
 import { organization } from "@/db/schemas/organization";
+import { paymentMethod } from "@/db/schemas/payment-method";
 import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
@@ -544,4 +545,25 @@ export async function createTestCartItem(
 		.returning();
 
 	return row;
+}
+
+/** Negozio che offre PR2: tipologia accesa e conto Connect abilitato. */
+export async function enableOnlinePayments(
+	db: DrizzleTestDb,
+	params: { sellerProfileId: string; storeId: string; accountId?: string },
+) {
+	await db
+		.update(store)
+		.set({ orderTypes: ["reserve_pickup", "pay_pickup"] })
+		.where(eq(store.id, params.storeId));
+	await db
+		.insert(paymentMethod)
+		.values({
+			sellerProfileId: params.sellerProfileId,
+			stripeAccountId: params.accountId ?? "acct_SELLER",
+			chargesEnabled: true,
+			payoutsEnabled: true,
+			detailsSubmitted: true,
+		})
+		.onConflictDoNothing();
 }
