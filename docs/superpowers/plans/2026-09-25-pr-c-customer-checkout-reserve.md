@@ -14,7 +14,7 @@
 
 - Nomi: PP1 = `reserve_pickup` = «Prenota e paga in negozio»; PR2 = `pay_pickup` = «Paga e ritira».
 - Bottone di conferma: **PRENOTA** (solo PP1), **PAGA** (solo PR2), **PRENOTA E PAGA** (misto). In questa PR esiste solo PRENOTA, ma la funzione copre i tre casi.
-- **Niente countdown** (DESIGN.md:551 vieta countdown e urgenza manipolativa): la scadenza è **statica**, «Ritira entro ven 27 set, 09:27 · tra 47 h», senza tick. È una decisione di design da confermare con Marco.
+- **Timer di ritiro** (decisione di Marco, 2026-09-25): sulle prenotazioni aperte un conto alla rovescia vivo `hh:mm:ss` accanto alla scadenza «Ritira entro ven 27 set, 09:27». DESIGN.md vietava i countdown: la regola si aggiorna in questa PR (Task 5) con l'eccezione della scadenza reale di una prenotazione; resta vietata l'urgenza di marketing. Il timer è testo neutro `tabular-nums` (niente rosso lampeggiante, niente saffron), `role="timer"` con `aria-live="off"` e la data completa per gli screen reader.
 - Saffron solo per momenti-segnale (≤5%); bottone primario Ink; tap target ≥44px su mobile; Satoshi (`font-display`) mai su prezzi o bottoni; token semantici per le superfici (dark mode).
 - Badge al singolare, tab al plurale.
 - Eden idrata le date ISO in `Date`.
@@ -941,6 +941,8 @@ git commit -m "feat(orders): route di checkout e dettaglio checkout"
 **Interfaces:**
 - Produces:
   ```ts
+  export function formatCountdown(ms: number): string;               // "47:59:12"
+  export function PickupCountdown(props: { expiresAt: Date | string }): JSX.Element;
   export type CheckoutType = "reserve_pickup" | "pay_pickup";
   export type CheckoutChoice = Record<string, CheckoutType>;          // storeId → tipo
   export function parseChoice(raw: unknown): CheckoutChoice;          // "id1:reserve_pickup,id2:pay_pickup"
@@ -1254,11 +1256,99 @@ export function canCustomerCancel(o: { status: string; type: string }) {
 
 Run: `bun test src/features/checkout src/features/orders` → PASS; `bun run typecheck` → pulito.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Timer (RED → GREEN)**
+
+In `order-display.test.ts` aggiungi:
+
+```ts
+describe("formatCountdown", () => {
+	it("ore:minuti:secondi, ore oltre le 24", () => {
+		expect(formatCountdown(47 * 3_600_000 + 59 * 60_000 + 12_000)).toBe(
+			"47:59:12",
+		);
+		expect(formatCountdown(65_000)).toBe("00:01:05");
+	});
+	it("mai negativo", () => {
+		expect(formatCountdown(-5000)).toBe("00:00:00");
+	});
+});
+```
+
+Run → FAIL; poi in `order-display.ts`:
+
+```ts
+/** Conto alla rovescia di una prenotazione: hh:mm:ss, ore anche oltre 24. */
+export function formatCountdown(ms: number): string {
+	const total = Math.max(0, Math.floor(ms / 1000));
+	const pad = (n: number) => String(n).padStart(2, "0");
+	return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+}
+```
+
+Run → PASS. Poi il componente `features/orders/pickup-countdown.tsx`:
+
+```tsx
+import { useEffect, useState } from "react";
+import { m } from "@/paraglide/messages";
+import { formatCountdown, pickupDeadline } from "./order-display";
+
+/** Tick al secondo solo finché la prenotazione è aperta. */
+function useNow(active: boolean) {
+	const [now, setNow] = useState(() => Date.now());
+	useEffect(() => {
+		if (!active) return;
+		const id = setInterval(() => setNow(Date.now()), 1000);
+		return () => clearInterval(id);
+	}, [active]);
+	return now;
+}
+
+export function PickupCountdown({ expiresAt }: { expiresAt: Date | string }) {
+	const end = new Date(expiresAt).getTime();
+	const now = useNow(Date.now() < end);
+	const { expired, date } = pickupDeadline(expiresAt, now);
+	if (expired)
+		return (
+			<span className="text-muted-foreground text-sm">
+				{m.orders_pickup_expired()}
+			</span>
+		);
+	return (
+		<span className="text-sm">
+			{m.orders_pickup_by({ date })}{" "}
+			<span
+				role="timer"
+				aria-live="off"
+				className="font-medium text-foreground tabular-nums"
+			>
+				{formatCountdown(end - now)}
+			</span>
+		</span>
+	);
+}
+```
+
+Il timer si usa in lista ordini (righe PP1 aperte), dettaglio e pagina di conferma, al posto del testo statico `left`.
+
+- [ ] **Step 5: DESIGN.md**
+
+In `DESIGN.md:551-552` sostituisci il bullet con:
+
+```md
+- **Don't** ship Groupon-style coupon stickers, "offer ends in" countdowns, or
+  manipulative urgency. The reward system is a relationship, not a hook.
+  *Exception:* the pickup timer of a real reservation (PP1) is information,
+  not pressure: when it runs out the reservation expires. It stays neutral
+  (Ink, tabular figures, no red, no saffron, no motion beyond the digits).
+```
+
+e lo stesso concetto in `.impeccable/design.json:409` (stringa del «Don't»). Preserva il resto dei file.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add apps/customer/src/features/checkout apps/customer/src/features/orders apps/customer/messages
-git commit -m "feat(customer): scelta del checkout, etichette e scadenza degli ordini"
+git add apps/customer/src/features/checkout apps/customer/src/features/orders apps/customer/messages DESIGN.md .impeccable/design.json
+git commit -m "feat(customer): scelta del checkout, etichette e timer di ritiro"
 ```
 
 ---
@@ -1355,7 +1445,7 @@ In `cart.tsx`, al posto del commento «Nessun CTA di checkout…», sotto il blo
 `checkout/$checkoutId/index.tsx` (cartella per lasciare spazio a `pay` nella PR F):
 - `useCheckout(checkoutId)`; skeleton; errore → `NoticePage` con `checkout_not_found`.
 - Header con icona di conferma (cerchio `bg-saffron/15`, icona `CheckCircle2` in `text-saffron-deep`: momento-segnale), titolo `checkout_done_title` o `_many`, sottotitolo.
-- Per ordine: nome negozio, indirizzo (`store.addressLine1`, CAP, comune), `orders_order_number` con numero breve, articoli (nome × quantità), totale «Da pagare in negozio», e per PP1 `orders_pickup_by` + `left` da `pickupDeadline`.
+- Per ordine: nome negozio, indirizzo (`store.addressLine1`, CAP, comune), `orders_order_number` con numero breve, articoli (nome × quantità), totale «Da pagare in negozio», e per PP1 `<PickupCountdown expiresAt={o.reservationExpiresAt} />`.
 - Azioni: `checkout_done_orders_cta` → `/orders` (primario) e `checkout_done_continue` → `/stores` (secondario).
 
 - [ ] **Step 6: Rigenera, typecheck, build, lint, commit**
@@ -1392,13 +1482,13 @@ git commit -m "feat(customer): checkout dal carrello con scelta, riepilogo e con
 
 - `validateSearch`: `tab: "reserved" | "paid"` (default `"reserved"`), `page` (default 1). `reserved` → `type: "reserve_pickup"`, `paid` → `type: "pay_pickup"`.
 - Header h1 `orders_title`; tab con `TabNav` di `@bibs/ui` o due link-segmento `min-h-11` (`orders_tab_reserved`, `orders_tab_paid`).
-- Lista `<ul className="space-y-3">` di righe-link (modello: card link di `profile.tsx`): nome negozio, `orders_order_number`, data, numero articoli, totale; a destra il badge. Per PP1 aperti (`confirmed`/`ready_for_pickup`) una seconda riga `orders_pickup_by {date} · {left}` (rossa se `expired`).
+- Lista `<ul className="space-y-3">` di righe-link (modello: card link di `profile.tsx`): nome negozio, `orders_order_number`, data, numero articoli, totale; a destra il badge. Per PP1 aperti (`confirmed`/`ready_for_pickup`) una seconda riga `<PickupCountdown />`.
 - Vuoto: `Notice` inline con `orders_empty_reserved`/`orders_empty_paid` + `orders_empty_description` e link a `/stores`.
 - Paginazione semplice «Precedenti / Successivi» se `total > 20`.
 
 - [ ] **Step 3: Dettaglio `/orders/$orderId`**
 
-- Header: `orders_order_number`, badge, data; per PP1 aperti la scadenza.
+- Header: `orders_order_number`, badge, data; per PP1 aperti `<PickupCountdown />`.
 - «Dove ritirare»: nome negozio (link a `/stores/$storeId`), indirizzo.
 - Articoli: miniatura (`productImageUrl`), nome, quantità × `unitPrice`, totale riga; poi «Totale» e, per PP1, «Da pagare in negozio».
 - Se `canCustomerCancel(order)`: `orders_cancel` (variant destructive-ghost, `min-h-11`) → `AlertDialog` come `address-card.tsx` (focus iniziale su «Mantieni»); conferma → `useCancelOrder`, toast `orders_cancel_success`.
@@ -1426,7 +1516,7 @@ git commit -m "feat(customer): ordini con prenotazioni, scadenza e annullamento"
   - Pagina di conferma con N prenotazioni; il badge del carrello scende; nel carrello restano solo le righe non ordinate.
   - Refresh sul riepilogo: la scelta sopravvive (search params). Refresh sulla conferma: si ricarica dall'API.
   - Stock cambiato fra riepilogo e conferma (abbassalo con un `UPDATE` sul prodotto di prova) → toast e ritorno al carrello, nessun ordine creato.
-  - «Ordini»: tab Prenotazioni con scadenza statica; dettaglio; «Annulla prenotazione» con dialog (Esc, poi conferma); stato Annullato.
+  - «Ordini»: tab Prenotazioni con timer che scende (e si ferma a «Prenotazione scaduta»); dettaglio; «Annulla prenotazione» con dialog (Esc, poi conferma); stato Annullato.
   - Il seller (:3002, negozio del prodotto) vede le prenotazioni nella sua lista.
   - Mouse e tastiera; 390px con screenshot guardato; dark mode (`localStorage.theme='dark'`).
   - Alla fine riporta a zero ciò che hai creato: annulla le prenotazioni di prova ancora aperte.
@@ -1437,4 +1527,4 @@ git commit -m "feat(customer): ordini con prenotazioni, scadenza e annullamento"
 
 - [ ] **Step 4: Backlog**: in P1.1 annota «PP1 fatto in #NN; resta PR2 (PR E + F)»; P1.6 annota che la sezione Ordini esiste (tab Prenotazioni/Pagati), restano movimenti punti e storico completo; debito #163 (svuotamento carrello) chiuso: aggiungilo a «Chiusi» con #NN.
 
-- [ ] **Step 5: PR** su `feat/customer-checkout-reserve`: body con riassunto, rulings (incluso **scadenza statica al posto del countdown** da confermare), minor rimandati, test plan con smoke; **senza auto-merge** (PR con UI: il gate è lo smoke di Marco). `#NN` → numero reale in un commit successivo.
+- [ ] **Step 5: PR** su `feat/customer-checkout-reserve`: body con riassunto, rulings (incluso l'aggiornamento di DESIGN.md per il timer), minor rimandati, test plan con smoke; **senza auto-merge** (PR con UI: il gate è lo smoke di Marco). `#NN` → numero reale in un commit successivo.
