@@ -12,6 +12,7 @@ import {
 import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
+import { normalizePickupCode } from "@/lib/pickup-code";
 
 /**
  * Fetches and validates that an order belongs to one of the seller's stores.
@@ -199,6 +200,41 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 			municipality: toMunicipalityCompact(store.municipality),
 		},
 	};
+}
+
+/** Ordine aperto del negozio con quel codice di ritiro (anteprima al banco). */
+export async function findOpenOrderByPickupCode(params: {
+	storeId: string;
+	code: string;
+}) {
+	// Nessun filtro sulla scadenza: una prenotazione scaduta non ancora spazzata
+	// va trovata, così la conferma la fa scadere con rimborso.
+	const found = await db.query.order.findFirst({
+		where: and(
+			eq(order.storeId, params.storeId),
+			eq(order.pickupCode, normalizePickupCode(params.code)),
+			inArray(order.status, ["confirmed", "ready_for_pickup"]),
+		),
+		columns: { id: true },
+	});
+	if (!found)
+		throw new ServiceError(404, "Codice non trovato per questo negozio");
+	return getSellerOrder({ orderId: found.id, storeIds: [params.storeId] });
+}
+
+/**
+ * Conferma del ritiro al banco: stessa transizione di «Segna come ritirato»
+ * (CAS, punti, scadenza con rimborso), cercata per codice nel negozio attivo.
+ */
+export async function completePickupByCode(params: {
+	storeId: string;
+	code: string;
+	sellerProfileId: string;
+}) {
+	const found = await findOpenOrderByPickupCode(params);
+	return transitionOrder(found.id, params.sellerProfileId, "completed", [
+		params.storeId,
+	]);
 }
 
 /**

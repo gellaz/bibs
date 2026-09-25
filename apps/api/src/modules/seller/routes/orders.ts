@@ -14,7 +14,9 @@ import {
 import { ensureStoreAccess, withSeller } from "../context";
 import {
 	cancelSellerOrder,
+	completePickupByCode,
 	countSellerOrdersByStatus,
+	findOpenOrderByPickupCode,
 	getSellerOrder,
 	listSellerOrders,
 	transitionOrder,
@@ -80,6 +82,72 @@ export const ordersRoutes = new Elysia()
 				summary: "Conteggi ordini per stato",
 				description:
 					"Conta gli ordini del negozio per stato, per le tab della lista ordini.",
+				tags: ["Seller - Orders"],
+			},
+		},
+	)
+	.get(
+		"/orders/pickup/:code",
+		async (ctx) => {
+			const { params, query, accessCtx } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, accessCtx);
+			return ok(
+				await findOpenOrderByPickupCode({
+					storeId: query.storeId,
+					code: params.code,
+				}),
+			);
+		},
+		{
+			params: t.Object({
+				code: t.String({ maxLength: 20, description: "Codice di ritiro" }),
+			}),
+			query: t.Object({ storeId: t.String({ description: "Negozio attivo" }) }),
+			response: withErrors({ 200: okRes(SellerOrderWithRelationsSchema) }),
+			detail: {
+				summary: "Anteprima ritiro per codice",
+				description:
+					"L'ordine aperto del negozio con quel codice di ritiro, da mostrare al banco prima di confermare.",
+				tags: ["Seller - Orders"],
+			},
+		},
+	)
+	.post(
+		"/orders/pickup",
+		async (ctx) => {
+			const {
+				body,
+				accessCtx,
+				sellerProfile: sp,
+				store,
+				user,
+			} = withSeller(ctx);
+			await ensureStoreAccess(body.storeId, accessCtx);
+			const data = await completePickupByCode({
+				storeId: body.storeId,
+				code: body.code,
+				sellerProfileId: sp.id,
+			});
+			getLogger(store).info(
+				{
+					userId: user.id,
+					orderId: data.id,
+					action: "order_picked_up_by_code",
+				},
+				"Ritiro confermato al banco",
+			);
+			return ok(data);
+		},
+		{
+			body: t.Object({
+				storeId: t.String({ description: "Negozio attivo" }),
+				code: t.String({ maxLength: 20, description: "Codice di ritiro" }),
+			}),
+			response: withConflictErrors({ 200: okRes(OrderSchema) }),
+			detail: {
+				summary: "Conferma ritiro per codice",
+				description:
+					"Completa l'ordine aperto con quel codice nel negozio e accredita i punti. Una prenotazione scaduta viene fatta scadere con rimborso (400).",
 				tags: ["Seller - Orders"],
 			},
 		},

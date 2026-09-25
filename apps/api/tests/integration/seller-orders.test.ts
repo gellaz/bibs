@@ -34,7 +34,9 @@ import { storeProduct as storeProductTable } from "@/db/schemas/product";
 import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
 import {
 	cancelSellerOrder,
+	completePickupByCode,
 	countSellerOrdersByStatus,
+	findOpenOrderByPickupCode,
 	transitionOrder,
 } from "@/modules/seller/services/orders";
 import { truncateAll } from "../helpers/cleanup";
@@ -64,6 +66,7 @@ async function seedReservePickupOrder(
 		reservationExpiresAt: Date;
 		customerPoints?: number;
 		pointsSpent?: number;
+		pickupCode?: string;
 	},
 ) {
 	const seller = await createTestSeller(db);
@@ -86,6 +89,7 @@ async function seedReservePickupOrder(
 			total: "20.00",
 			pointsSpent: opts.pointsSpent ?? 50,
 			reservationExpiresAt: opts.reservationExpiresAt,
+			pickupCode: opts.pickupCode ?? null,
 		})
 		.returning();
 
@@ -399,5 +403,117 @@ describe("countSellerOrdersByStatus", () => {
 		});
 		expect(onlyPayPickup.ready_for_pickup).toBe(1);
 		expect(onlyPayPickup.confirmed).toBe(0);
+	});
+});
+
+describe("ritiro con codice", () => {
+	it("anteprima: trova l'ordine aperto del negozio, anche con codice sporco", async () => {
+		const db = getTestDb();
+		const { store, order: ord } = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+			pickupCode: "K7XM4P",
+		});
+		const found = await findOpenOrderByPickupCode({
+			storeId: store.id,
+			code: " k7x-m4p ",
+		});
+		expect(found.id).toBe(ord.id);
+		expect(found.items).toHaveLength(1);
+	});
+
+	it("un codice di un altro negozio o di un ordine chiuso è 404", async () => {
+		const db = getTestDb();
+		const { store, order: ord } = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+			pickupCode: "K7XM4P",
+		});
+		const other = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+		});
+		await expect(
+			findOpenOrderByPickupCode({ storeId: other.store.id, code: "K7XM4P" }),
+		).rejects.toMatchObject({ status: 404 });
+		await db
+			.update(order)
+			.set({ status: "completed" })
+			.where(eq(order.id, ord.id));
+		await expect(
+			findOpenOrderByPickupCode({ storeId: store.id, code: "K7XM4P" }),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("conferma: completa, accredita i punti una volta sola", async () => {
+		const db = getTestDb();
+		const {
+			seller,
+			store,
+			customer,
+			order: ord,
+		} = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() + 3_600_000),
+			customerPoints: 0,
+			pointsSpent: 0,
+			pickupCode: "K7XM4P",
+		});
+		const done = await completePickupByCode({
+			storeId: store.id,
+			code: "k7xm4p",
+			sellerProfileId: seller.profile.id,
+		});
+		expect(done.status).toBe("completed");
+		await expect(
+			completePickupByCode({
+				storeId: store.id,
+				code: "K7XM4P",
+				sellerProfileId: seller.profile.id,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+		const earned = await db
+			.select()
+			.from(pointTransaction)
+			.where(
+				and(
+					eq(pointTransaction.orderId, ord.id),
+					eq(pointTransaction.type, "earned"),
+				),
+			);
+		expect(earned).toHaveLength(1);
+		const [cp] = await db
+			.select()
+			.from(customerProfile)
+			.where(eq(customerProfile.id, customer.profile.id));
+		expect(cp.points).toBe(earned[0].amount);
+	});
+
+	it("una prenotazione scaduta non ancora spazzata: scade, rimborsa e risponde 400", async () => {
+		const db = getTestDb();
+		const {
+			seller,
+			store,
+			sp,
+			order: ord,
+		} = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() - 60_000),
+			pickupCode: "K7XM4P",
+		});
+		await expect(
+			completePickupByCode({
+				storeId: store.id,
+				code: "K7XM4P",
+				sellerProfileId: seller.profile.id,
+			}),
+		).rejects.toMatchObject({
+			status: 400,
+			message: "La prenotazione è scaduta",
+		});
+		const fresh = await db.query.order.findFirst({
+			where: eq(order.id, ord.id),
+		});
+		expect(fresh?.status).toBe("expired");
+		const [spAfter] = await db
+			.select()
+			.from(storeProductTable)
+			.where(eq(storeProductTable.id, sp.id));
+		expect(spAfter.stock).toBe(12);
 	});
 });

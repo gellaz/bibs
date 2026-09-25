@@ -60,11 +60,15 @@ const app = new Elysia()
 	})
 	.use(ordersRoutes);
 
-function call(userId: string, method: string, path: string) {
+function call(userId: string, method: string, path: string, body?: unknown) {
 	return app.handle(
 		new Request(`http://localhost${path}`, {
 			method,
-			headers: { "x-test-user": userId },
+			headers: {
+				"x-test-user": userId,
+				...(body === undefined ? {} : { "content-type": "application/json" }),
+			},
+			body: body === undefined ? undefined : JSON.stringify(body),
 		}),
 	);
 }
@@ -205,5 +209,62 @@ describe("PATCH /orders/:orderId/cancel", () => {
 		expect(res.status).toBe(200);
 		const body = await res.json();
 		expect(body.data.status).toBe("cancelled");
+	});
+});
+
+describe("ritiro con codice via HTTP", () => {
+	async function seedWithCode() {
+		const seeded = await seed();
+		await getTestDb()
+			.update(order)
+			.set({ pickupCode: "K7XM4P" })
+			.where(eq(order.id, seeded.orderOnOther.id));
+		return seeded;
+	}
+
+	it("anteprima: employee su un negozio non assegnato → 403; owner → 200", async () => {
+		const { owner, empUserId, other, orderOnOther } = await seedWithCode();
+
+		const denied = await call(
+			empUserId,
+			"GET",
+			`/orders/pickup/K7XM4P?storeId=${other.id}`,
+		);
+		expect(denied.status).toBe(403);
+
+		const preview = await call(
+			owner.user.id,
+			"GET",
+			`/orders/pickup/k7x%20m4p?storeId=${other.id}`,
+		);
+		expect(preview.status).toBe(200);
+		expect((await preview.json()).data.id).toBe(orderOnOther.id);
+	});
+
+	it("conferma: employee non assegnato → 403 e ordine intatto; owner → 200, poi 404", async () => {
+		const { owner, empUserId, other, orderOnOther } = await seedWithCode();
+
+		const denied = await call(empUserId, "POST", "/orders/pickup", {
+			storeId: other.id,
+			code: "K7XM4P",
+		});
+		expect(denied.status).toBe(403);
+		const untouched = await getTestDb().query.order.findFirst({
+			where: eq(order.id, orderOnOther.id),
+		});
+		expect(untouched?.status).toBe("confirmed");
+
+		const done = await call(owner.user.id, "POST", "/orders/pickup", {
+			storeId: other.id,
+			code: "K7X-M4P",
+		});
+		expect(done.status).toBe(200);
+		expect((await done.json()).data.status).toBe("completed");
+
+		const again = await call(owner.user.id, "POST", "/orders/pickup", {
+			storeId: other.id,
+			code: "K7XM4P",
+		});
+		expect(again.status).toBe(404);
 	});
 });
