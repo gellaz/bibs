@@ -36,6 +36,13 @@ const DATETIME_FMT: Intl.DateTimeFormatOptions = {
 
 const toCents = (v: string) => Math.round(Number(v) * 100);
 
+// Stati in cui un pay_pickup è stato effettivamente incassato online.
+const PAID_ONLINE_STATUSES = [
+	"confirmed",
+	"ready_for_pickup",
+	"completed",
+] as const;
+
 function Card({ title, children }: { title: string; children: ReactNode }) {
 	return (
 		<section className="space-y-3 rounded-xl border border-border p-4">
@@ -207,13 +214,20 @@ function OrderDetailPage() {
 								{m.orders_detail_to_collect()}
 							</p>
 						)}
-						{order.type === "pay_pickup" && (
-							<p className="text-muted-foreground text-xs">
-								{order.status === "pending"
-									? m.orders_detail_awaiting_payment()
-									: m.orders_detail_paid_online()}
-							</p>
-						)}
+						{order.type === "pay_pickup" &&
+							(order.status === "pending" ||
+								order.status === "cancelled" ||
+								(PAID_ONLINE_STATUSES as readonly string[]).includes(
+									order.status,
+								)) && (
+								<p className="text-muted-foreground text-xs">
+									{order.status === "pending"
+										? m.orders_detail_awaiting_payment()
+										: order.status === "cancelled"
+											? m.orders_detail_cancelled_online()
+											: m.orders_detail_paid_online()}
+								</p>
+							)}
 					</Card>
 
 					<Card title={m.orders_detail_vat()}>

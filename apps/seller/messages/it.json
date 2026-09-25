@@ -281,6 +281,7 @@
 	"orders_detail_to_collect": "Da incassare in negozio",
 	"orders_detail_paid_online": "Pagato online",
 	"orders_detail_awaiting_payment": "In attesa del pagamento online: se non arriva entro 30 minuti l'ordine si annulla da solo.",
+	"orders_detail_cancelled_online": "Annullato: se il cliente aveva già pagato, è stato rimborsato.",
 	"orders_detail_vat": "Castelletto IVA",
 	"orders_detail_vat_rate": "Aliquota",
 	"orders_detail_vat_taxable": "Imponibile",
