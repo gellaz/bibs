@@ -652,6 +652,9 @@ export const OrderSchema = t.Object({
 	),
 	total: t.String({ description: "Totale in formato decimale" }),
 	shippingAddressId: t.Nullable(t.String()),
+	checkoutId: t.Nullable(
+		t.String({ description: "Checkout che ha creato l'ordine" }),
+	),
 	shippingAddressSnapshot: t.Nullable(
 		t.Object(
 			{
@@ -1254,6 +1257,10 @@ export const CartStoreGroupSchema = t.Object({
 			name: t.String({ description: "Comune del negozio" }),
 			provinceAcronym: t.String({ description: "Sigla della provincia" }),
 		}),
+		orderTypes: t.Array(
+			t.Union([t.Literal("reserve_pickup"), t.Literal("pay_pickup")]),
+			{ description: "Tipi d'ordine offerti al checkout per questo negozio" },
+		),
 	}),
 	items: t.Array(CartItemSchema),
 	subtotal: t.String({

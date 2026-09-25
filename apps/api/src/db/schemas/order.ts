@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { CastellettoLine } from "@/lib/vat";
 import { customerAddress } from "./address";
+import { checkout } from "./checkout";
 import { customerProfile } from "./customer";
 import { product, storeProduct } from "./product";
 import { store } from "./store";
@@ -81,6 +82,11 @@ export const order = pgTable(
 		pointsEarned: integer("points_earned").default(0).notNull(),
 		pointsSpent: integer("points_spent").default(0).notNull(),
 		idempotencyKey: text("idempotency_key"),
+		// Checkout che ha prodotto l'ordine; NULL per ordini creati da
+		// POST /customer/orders.
+		checkoutId: text("checkout_id").references(() => checkout.id, {
+			onDelete: "set null",
+		}),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -95,6 +101,7 @@ export const order = pgTable(
 			table.createdAt,
 		),
 		index("order_store_id_created_at_idx").on(table.storeId, table.createdAt),
+		index("order_checkout_id_idx").on(table.checkoutId),
 		// order_status_idx (status alone) and order_type_status_idx (type, status)
 		// were dropped: no query uses them as an access path. Status/type filters are
 		// always secondary to customerProfileId/storeId (covered by the composite
@@ -141,6 +148,10 @@ export const orderRelations = relations(order, ({ one, many }) => ({
 		references: [customerAddress.id],
 	}),
 	items: many(orderItem),
+	checkout: one(checkout, {
+		fields: [order.checkoutId],
+		references: [checkout.id],
+	}),
 }));
 
 export const orderItem = pgTable(

@@ -1,0 +1,2 @@
+ALTER TABLE "stores" ADD COLUMN "order_types" text[] DEFAULT '{reserve_pickup}' NOT NULL;--> statement-breakpoint
+ALTER TABLE "stores" ADD CONSTRAINT "store_order_types_valid" CHECK (cardinality("stores"."order_types") > 0 AND "stores"."order_types" <@ ARRAY['reserve_pickup', 'pay_pickup']::text[]);

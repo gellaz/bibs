@@ -9,7 +9,7 @@ import {
 import { ThemeToggle } from "@bibs/ui/components/theme-toggle";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, UserRound } from "lucide-react";
+import { LogOut, ReceiptText, UserRound } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 
@@ -49,6 +49,12 @@ export function UserMenu() {
 					</span>
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
+				<DropdownMenuItem asChild>
+					<Link to="/orders" search={{ tab: "reserved", page: 1 }}>
+						<ReceiptText />
+						{m.nav_orders()}
+					</Link>
+				</DropdownMenuItem>
 				<DropdownMenuItem asChild>
 					<Link to="/profile">
 						<UserRound />

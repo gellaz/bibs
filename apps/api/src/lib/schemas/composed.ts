@@ -158,6 +158,13 @@ export const CustomerOrderWithRelationsSchema = t.Object({
 	shippingAddress: t.Nullable(CustomerAddressSchema),
 });
 
+// Checkout — conferma del cliente con gli ordini che ha prodotto
+export const CheckoutSchema = t.Object({
+	id: t.String(),
+	createdAt: t.Date(),
+	orders: t.Array(CustomerOrderWithRelationsSchema),
+});
+
 // Seller settings (profile + org + payment + pending changes)
 export const SellerSettingsSchema = t.Object({
 	profile: SellerProfileSchema,

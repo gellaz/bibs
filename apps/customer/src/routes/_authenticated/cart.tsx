@@ -67,14 +67,14 @@ function CartPage() {
 				<StoreSection key={group.store.id} group={group} />
 			))}
 
-			{/* Nessun CTA di checkout: non esiste ancora una pagina dove mandarlo, e
-			    un bottone disabilitato sarebbe un controllo morto. */}
 			<div className="flex items-baseline justify-between border-border border-t pt-4">
 				<span className="font-medium text-foreground">{m.cart_total()}</span>
 				<span className="font-display font-semibold text-foreground text-xl tabular-nums">
 					{formatPriceEur(cart.total)}
 				</span>
 			</div>
+
+			<CheckoutCta groups={cart.groups} />
 		</div>
 	);
 }
@@ -197,6 +197,37 @@ function CartRow({ item }: { item: CartLine }) {
 					</span>
 				</div>
 			</div>
+		</div>
+	);
+}
+
+/** «Avanti» verso il checkout. Una riga con stock insufficiente farebbe
+ *  fallire la conferma: il bottone resta visibile ma dice perché non va. */
+function CheckoutCta({ groups }: { groups: CartGroup[] }) {
+	const buyable = groups.some((g) =>
+		g.items.some((i) => i.issue !== "unavailable"),
+	);
+	if (!buyable) return null;
+	const blocked = groups.some((g) =>
+		g.items.some((i) => i.issue === "insufficient_stock"),
+	);
+
+	return (
+		<div className="flex flex-col items-stretch gap-2 sm:items-end">
+			{blocked ? (
+				<>
+					<Button size="lg" className="min-h-11 w-full sm:w-auto" disabled>
+						{m.cart_checkout_cta()}
+					</Button>
+					<p className="text-destructive text-sm">{m.cart_fix_quantities()}</p>
+				</>
+			) : (
+				<Button asChild size="lg" className="min-h-11 w-full sm:w-auto">
+					<Link to="/checkout" search={{ choice: undefined }}>
+						{m.cart_checkout_cta()}
+					</Link>
+				</Button>
+			)}
 		</div>
 	);
 }

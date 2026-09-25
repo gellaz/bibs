@@ -1,5 +1,6 @@
 import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Link } from "@tanstack/react-router";
+import { ReceiptText } from "lucide-react";
 import { CartBadge } from "@/features/cart/cart-badge";
 import { SearchOriginChip } from "@/features/location/search-origin-chip";
 import { m } from "@/paraglide/messages";
@@ -55,6 +56,17 @@ export function SiteHeader() {
 						className="rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground"
 					>
 						{m.nav_stores()}
+					</Link>
+					{/* Sotto `sm` «Ordini» vive nel menu account: in prima riga non ci
+					    sta accanto a identità, navigazione e borsa (la bottom tab bar
+					    di DESIGN.md non c'è ancora). */}
+					<Link
+						to="/orders"
+						search={{ tab: "reserved", page: 1 }}
+						className="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground max-sm:hidden"
+					>
+						<ReceiptText className="size-4" aria-hidden />
+						{m.nav_orders()}
 					</Link>
 					<CartBadge />
 				</nav>

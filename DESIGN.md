@@ -548,8 +548,11 @@ twice on the same surface. The thread reads as one voice across pages.
 - **Don't** ship Amazon-style yellow CTAs, infinite anonymous product
   grids, or density-over-clarity layouts. That is the aesthetic bibs
   displaces.
-- **Don't** ship Groupon-style coupon stickers, countdown timers, or
+- **Don't** ship Groupon-style coupon stickers, "offer ends in" countdowns, or
   manipulative urgency. The reward system is a relationship, not a hook.
+  *Exception:* the pickup timer of a real reservation (PP1) is information,
+  not pressure: when it runs out the reservation expires. It stays neutral
+  (Ink, tabular figures, no red, no saffron, no motion beyond the digits).
 - **Don't** put crypto / web3 / dark-and-neon energy anywhere. Wrong
   register entirely.
 - **Don't** put Satoshi on a price or a button. Satoshi is the *who*;

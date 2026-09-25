@@ -16,6 +16,7 @@
 		"format": "biome format",
 		"lint": "biome lint",
 		"check": "biome check",
+		"pretest": "bun run paraglide:compile",
 		"test": "bun test"
 	},
 	"dependencies": {
