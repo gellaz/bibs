@@ -18,6 +18,7 @@ import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { generatePickupCode } from "@/lib/pickup-code";
+import { platformFeeCents } from "@/lib/platform-fee";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
 import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
@@ -188,6 +189,9 @@ export interface CreateOrderParams extends PlaceOrderParams {
  */
 const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
 const OPEN_STATUSES = ["pending", "confirmed", "ready_for_pickup"] as const;
+
+/** Tipi pagati online: nascono `pending` e si confermano solo a incasso. */
+export const PAY_TYPES: readonly OrderType[] = ["pay_pickup", "pay_deliver"];
 
 /**
  * Codice libero tra gli ordini aperti del negozio. Il pre-controllo copre il
@@ -393,7 +397,19 @@ export async function placeOrder(
 		),
 	);
 
-	const initialStatus = type === "direct" ? "completed" : "confirmed";
+	// pay_*: nessun ordine confermato senza pagamento. Nasce pending con lo
+	// stock già tolto; lo conferma il webhook del PaymentIntent, oppure il cron
+	// lo annulla allo scadere della finestra di pagamento.
+	const isPay = PAY_TYPES.includes(type);
+	const initialStatus =
+		type === "direct" ? "completed" : isPay ? "pending" : "confirmed";
+	const paymentExpiresAt = isPay
+		? new Date(Date.now() + config.paymentWindowMinutes * 60 * 1000)
+		: null;
+	// Commissione solo su PR2 (spec: per gli ordini non PR2 resta 0).
+	const platformFee = fromCents(
+		type === "pay_pickup" ? platformFeeCents(finalTotalCents) : 0,
+	);
 
 	const reservationExpiresAt =
 		type === "reserve_pickup"
@@ -417,6 +433,8 @@ export async function placeOrder(
 			shippingAddressSnapshot,
 			shippingCost,
 			reservationExpiresAt,
+			paymentExpiresAt,
+			platformFee,
 			pointsEarned: 0,
 			pointsSpent: actualPointsSpent,
 			idempotencyKey: link.idempotencyKey ?? null,

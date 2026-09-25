@@ -208,7 +208,7 @@ describe("createOrder — direct", () => {
 });
 
 describe("createOrder — pay_pickup", () => {
-	it("creates order with status 'confirmed'", async () => {
+	it("creates order with status 'pending' (paid online)", async () => {
 		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
 
 		const result = await createOrder({
@@ -219,7 +219,7 @@ describe("createOrder — pay_pickup", () => {
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
 
-		expect(result.status).toBe("confirmed");
+		expect(result.status).toBe("pending");
 		expect(result.type).toBe("pay_pickup");
 	});
 });
@@ -421,7 +421,7 @@ describe("cancelOrder", () => {
 		const newOrder = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "pay_pickup",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 3 }],
 		});
@@ -468,7 +468,7 @@ describe("cancelOrder", () => {
 		const newOrder = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 100,
-			type: "pay_pickup",
+			type: "reserve_pickup",
 			storeId: testStore.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 			pointsToSpend: 100,
