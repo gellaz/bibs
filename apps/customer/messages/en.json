@@ -362,5 +362,21 @@
 	"orders_pickup_qr_hint": "Show it in store: the shopkeeper scans it and hands you your items.",
 	"orders_show_qr": "Show QR",
 	"checkout_edit_choice": "Change option",
-	"checkout_retry": "We couldn't confirm. Try again: if the reservation already went through, it won't be duplicated."
+	"checkout_retry": "We couldn't confirm. Try again: if the reservation already went through, it won't be duplicated.",
+	"checkout_pay_title": "Payment",
+	"checkout_pay_amount": "To pay now",
+	"checkout_pay_submit": "Pay {amount}",
+	"checkout_pay_expires": "Complete the payment by {time}: after that, unpaid orders are cancelled and the products become available again.",
+	"checkout_pay_unavailable": "Online payment is not available right now. Please try again in a few minutes.",
+	"checkout_pay_failed_generic": "Payment failed. Try again or use another card.",
+	"checkout_done_awaiting_title": "Confirming your payment",
+	"checkout_done_awaiting_body": "It takes a few seconds, you can stay on this page.",
+	"checkout_done_back_to_pay": "Back to payment",
+	"checkout_done_payment_failed_title": "Payment not completed",
+	"checkout_done_payment_failed_body": "The orders to pay online have been cancelled and the products are available again. Your reservations are still valid.",
+	"orders_complete_payment": "Complete payment",
+	"orders_cancel_paid": "Cancel order",
+	"orders_cancel_paid_title": "Cancel the order?",
+	"orders_cancel_paid_description": "We'll refund {amount} to the card you paid with: it usually takes 5-10 business days.",
+	"orders_cancel_paid_success": "Order cancelled, refund started"
 }

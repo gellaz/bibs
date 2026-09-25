@@ -2,9 +2,11 @@ import { Button } from "@bibs/ui/components/button";
 import { formatPriceEur } from "@bibs/ui/components/price";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, SearchX } from "lucide-react";
+import { CheckCircle2, Loader2, SearchX, XCircle } from "lucide-react";
 import { NoticePage } from "@/components/notice";
+import { paymentState } from "@/features/checkout/payment-state";
 import { useCheckout } from "@/features/checkout/use-checkout";
+import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { formatPickupCode } from "@/features/orders/pickup-code";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
 import { m } from "@/paraglide/messages";
@@ -17,7 +19,9 @@ const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
 
 function CheckoutDonePage() {
 	const { checkoutId } = Route.useParams();
-	const { data, isPending, isError } = useCheckout(checkoutId);
+	const { data, isPending, isError } = useCheckout(checkoutId, {
+		pollWhileAwaiting: true,
+	});
 
 	if (isPending)
 		return (
@@ -43,21 +47,49 @@ function CheckoutDonePage() {
 			/>
 		);
 
+	const payment = paymentState(data.orders);
+
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6">
 			<header className="flex items-start gap-4">
 				<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-saffron/15">
-					<CheckCircle2 className="size-6 text-saffron-deep" aria-hidden />
+					{payment === "awaiting" ? (
+						<Loader2
+							className="size-6 animate-spin text-saffron-deep"
+							aria-hidden
+						/>
+					) : payment === "failed" ? (
+						<XCircle className="size-6 text-destructive" aria-hidden />
+					) : (
+						<CheckCircle2 className="size-6 text-saffron-deep" aria-hidden />
+					)}
 				</div>
-				<div className="space-y-1">
+				<div className="space-y-1" aria-live="polite">
 					<h1 className="font-display font-semibold text-2xl text-foreground">
-						{data.orders.length > 1
-							? m.checkout_done_title_many()
-							: m.checkout_done_title()}
+						{payment === "awaiting"
+							? m.checkout_done_awaiting_title()
+							: payment === "failed"
+								? m.checkout_done_payment_failed_title()
+								: data.orders.length > 1
+									? m.checkout_done_title_many()
+									: m.checkout_done_title()}
 					</h1>
 					<p className="text-muted-foreground text-sm">
-						{m.checkout_done_subtitle()}
+						{payment === "awaiting"
+							? m.checkout_done_awaiting_body()
+							: payment === "failed"
+								? m.checkout_done_payment_failed_body()
+								: m.checkout_done_subtitle()}
 					</p>
+					{payment === "awaiting" && (
+						<Link
+							to="/checkout/$checkoutId/pay"
+							params={{ checkoutId }}
+							className="inline-flex min-h-11 items-center font-medium text-primary text-sm hover:underline"
+						>
+							{m.checkout_done_back_to_pay()}
+						</Link>
+					)}
 				</div>
 			</header>
 
@@ -71,8 +103,9 @@ function CheckoutDonePage() {
 							<h2 className="font-display font-semibold text-foreground text-lg">
 								{o.store.name}
 							</h2>
-							<span className="text-muted-foreground text-sm tabular-nums">
+							<span className="flex items-center gap-2 text-muted-foreground text-sm tabular-nums">
 								{m.orders_order_number({ number: shortId(o.id) })}
+								<OrderStatusBadge status={o.status} />
 							</span>
 						</div>
 						<p className="text-muted-foreground text-sm">
@@ -80,25 +113,26 @@ function CheckoutDonePage() {
 							{o.store.municipality.name} (
 							{o.store.municipality.provinceAcronym})
 						</p>
-						{o.pickupCode && (
-							<div className="flex flex-wrap items-baseline justify-between gap-x-3">
-								<span className="text-sm">
-									<span className="text-muted-foreground">
-										{m.orders_pickup_code_label()}
-									</span>{" "}
-									<span className="font-mono font-semibold text-foreground tracking-widest">
-										{formatPickupCode(o.pickupCode)}
+						{o.pickupCode &&
+							(o.status === "confirmed" || o.status === "ready_for_pickup") && (
+								<div className="flex flex-wrap items-baseline justify-between gap-x-3">
+									<span className="text-sm">
+										<span className="text-muted-foreground">
+											{m.orders_pickup_code_label()}
+										</span>{" "}
+										<span className="font-mono font-semibold text-foreground tracking-widest">
+											{formatPickupCode(o.pickupCode)}
+										</span>
 									</span>
-								</span>
-								<Link
-									to="/orders/$orderId"
-									params={{ orderId: o.id }}
-									className="inline-flex min-h-11 items-center font-medium text-sm text-primary hover:underline"
-								>
-									{m.orders_show_qr()}
-								</Link>
-							</div>
-						)}
+									<Link
+										to="/orders/$orderId"
+										params={{ orderId: o.id }}
+										className="inline-flex min-h-11 items-center font-medium text-sm text-primary hover:underline"
+									>
+										{m.orders_show_qr()}
+									</Link>
+								</div>
+							)}
 						<ul className="space-y-0.5 text-foreground text-sm">
 							{o.items.map((i) => (
 								<li key={i.id}>
@@ -134,7 +168,10 @@ function CheckoutDonePage() {
 					</Link>
 				</Button>
 				<Button asChild size="lg" className="min-h-11">
-					<Link to="/orders" search={{ tab: "reserved", page: 1 }}>
+					<Link
+						to="/orders"
+						search={{ tab: payment === "none" ? "reserved" : "paid", page: 1 }}
+					>
 						{m.checkout_done_orders_cta()}
 					</Link>
 				</Button>

@@ -28,6 +28,7 @@ import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_au
 import { Route as AuthenticatedStoresIndexRouteImport } from './routes/_authenticated/stores/index'
 import { Route as AuthenticatedStoresStoreIdRouteImport } from './routes/_authenticated/stores/$storeId'
 import { Route as AuthenticatedCheckoutCheckoutIdIndexRouteImport } from './routes/_authenticated/checkout/$checkoutId/index'
+import { Route as AuthenticatedCheckoutCheckoutIdPayRouteImport } from './routes/_authenticated/checkout/$checkoutId/pay'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -132,6 +133,12 @@ const AuthenticatedCheckoutCheckoutIdIndexRoute =
     path: '/checkout/$checkoutId/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCheckoutCheckoutIdPayRoute =
+  AuthenticatedCheckoutCheckoutIdPayRouteImport.update({
+    id: '/checkout/$checkoutId/pay',
+    path: '/checkout/$checkoutId/pay',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/orders/': typeof AuthenticatedOrdersIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/stores/': typeof AuthenticatedStoresIndexRoute
+  '/checkout/$checkoutId/pay': typeof AuthenticatedCheckoutCheckoutIdPayRoute
   '/checkout/$checkoutId/': typeof AuthenticatedCheckoutCheckoutIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -171,6 +179,7 @@ export interface FileRoutesByTo {
   '/orders': typeof AuthenticatedOrdersIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/stores': typeof AuthenticatedStoresIndexRoute
+  '/checkout/$checkoutId/pay': typeof AuthenticatedCheckoutCheckoutIdPayRoute
   '/checkout/$checkoutId': typeof AuthenticatedCheckoutCheckoutIdIndexRoute
 }
 export interface FileRoutesById {
@@ -193,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/orders/': typeof AuthenticatedOrdersIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/stores/': typeof AuthenticatedStoresIndexRoute
+  '/_authenticated/checkout/$checkoutId/pay': typeof AuthenticatedCheckoutCheckoutIdPayRoute
   '/_authenticated/checkout/$checkoutId/': typeof AuthenticatedCheckoutCheckoutIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
     | '/orders/'
     | '/products/'
     | '/stores/'
+    | '/checkout/$checkoutId/pay'
     | '/checkout/$checkoutId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/products'
     | '/stores'
+    | '/checkout/$checkoutId/pay'
     | '/checkout/$checkoutId'
   id:
     | '__root__'
@@ -256,6 +268,7 @@ export interface FileRouteTypes {
     | '/_authenticated/orders/'
     | '/_authenticated/products/'
     | '/_authenticated/stores/'
+    | '/_authenticated/checkout/$checkoutId/pay'
     | '/_authenticated/checkout/$checkoutId/'
   fileRoutesById: FileRoutesById
 }
@@ -403,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCheckoutCheckoutIdIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/checkout/$checkoutId/pay': {
+      id: '/_authenticated/checkout/$checkoutId/pay'
+      path: '/checkout/$checkoutId/pay'
+      fullPath: '/checkout/$checkoutId/pay'
+      preLoaderRoute: typeof AuthenticatedCheckoutCheckoutIdPayRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -419,6 +439,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOrdersIndexRoute: typeof AuthenticatedOrdersIndexRoute
   AuthenticatedProductsIndexRoute: typeof AuthenticatedProductsIndexRoute
   AuthenticatedStoresIndexRoute: typeof AuthenticatedStoresIndexRoute
+  AuthenticatedCheckoutCheckoutIdPayRoute: typeof AuthenticatedCheckoutCheckoutIdPayRoute
   AuthenticatedCheckoutCheckoutIdIndexRoute: typeof AuthenticatedCheckoutCheckoutIdIndexRoute
 }
 
@@ -435,6 +456,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOrdersIndexRoute: AuthenticatedOrdersIndexRoute,
   AuthenticatedProductsIndexRoute: AuthenticatedProductsIndexRoute,
   AuthenticatedStoresIndexRoute: AuthenticatedStoresIndexRoute,
+  AuthenticatedCheckoutCheckoutIdPayRoute:
+    AuthenticatedCheckoutCheckoutIdPayRoute,
   AuthenticatedCheckoutCheckoutIdIndexRoute:
     AuthenticatedCheckoutCheckoutIdIndexRoute,
 }
