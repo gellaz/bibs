@@ -7,7 +7,11 @@ import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
-import { offeredOrderTypes, type StoreOrderType } from "@/lib/order-types";
+import {
+	offeredOrderTypes,
+	type StoreOrderType,
+	sellerChargesEnabledSql,
+} from "@/lib/order-types";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 
@@ -159,6 +163,7 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 			storeId: store.id,
 			storeName: store.name,
 			storeOrderTypes: store.orderTypes,
+			sellerChargesEnabled: sellerChargesEnabledSql,
 			municipalityName: municipality.name,
 			provinceAcronym: province.acronym,
 			// publiclyVisibleStore() NON è usabile qui: è scritto per una .where(),
@@ -227,7 +232,9 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 						name: row.municipalityName,
 						provinceAcronym: row.provinceAcronym,
 					},
-					orderTypes: offeredOrderTypes(row.storeOrderTypes),
+					orderTypes: offeredOrderTypes(row.storeOrderTypes, {
+						chargesEnabled: row.sellerChargesEnabled,
+					}),
 				},
 				items: [],
 				subtotal: "0.00",

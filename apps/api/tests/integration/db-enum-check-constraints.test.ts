@@ -6,11 +6,14 @@ import {
 	expect,
 	it,
 } from "bun:test";
+import { sql } from "drizzle-orm";
 
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
+import { paymentMethod } from "@/db/schemas/payment-method";
 import { pointTransaction } from "@/db/schemas/points";
 import { truncateAll } from "../helpers/cleanup";
+import { createTestSeller } from "../helpers/fixtures";
 import {
 	getTestDb,
 	setupTestContainer,
@@ -28,6 +31,26 @@ afterAll(async () => {
 beforeEach(async () => {
 	await truncateAll(getTestDb());
 });
+
+// Drizzle wraps the underlying pg error in a generic "Failed query: …"
+// DrizzleQueryError whose own `.message` never contains the constraint name;
+// the driver's original error (with `.constraint`) is its `.cause` (mirrors
+// the wrapping documented in tests/plugins/error-handler.test.ts). Awaiting
+// via Promise.resolve() also normalizes Drizzle's thenable query builders
+// (not real Promises) so rejection can be inspected directly.
+async function expectConstraintViolation(
+	thenable: PromiseLike<unknown>,
+	constraint: string,
+) {
+	const err = await Promise.resolve(thenable).then(
+		() => null,
+		(e) => e,
+	);
+	expect(err).not.toBeNull();
+	expect((err as { cause?: { constraint?: string } }).cause?.constraint).toBe(
+		constraint,
+	);
+}
 
 async function seedCustomer(): Promise<string> {
 	const db = getTestDb();
@@ -66,5 +89,36 @@ describe("enum CHECK constraints", () => {
 				.insert(pointTransaction)
 				.values({ customerProfileId, amount: 10, type: bogusType });
 		await expect(insertBogus()).rejects.toThrow();
+	});
+
+	it("seller_profile_changes rifiuta change_type 'payment'", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await expectConstraintViolation(
+			db.execute(
+				sql`INSERT INTO seller_profile_changes (id, seller_profile_id, change_type, change_data)
+				    VALUES (${crypto.randomUUID()}, ${seller.profile.id}, 'payment', '{}'::jsonb)`,
+			),
+			"seller_profile_change_type_valid",
+		);
+	});
+
+	it("payment_methods: stripe_account_id unico e flag a false di default", async () => {
+		const db = getTestDb();
+		const a = await createTestSeller(db);
+		const b = await createTestSeller(db);
+		const [pm] = await db
+			.insert(paymentMethod)
+			.values({ sellerProfileId: a.profile.id, stripeAccountId: "acct_DUP" })
+			.returning();
+		expect(pm.chargesEnabled).toBe(false);
+		expect(pm.payoutsEnabled).toBe(false);
+		expect(pm.detailsSubmitted).toBe(false);
+		await expectConstraintViolation(
+			db
+				.insert(paymentMethod)
+				.values({ sellerProfileId: b.profile.id, stripeAccountId: "acct_DUP" }),
+			"payment_method_stripe_account_id_unique",
+		);
 	});
 });

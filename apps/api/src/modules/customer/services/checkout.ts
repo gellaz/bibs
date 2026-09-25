@@ -5,7 +5,7 @@ import { checkout } from "@/db/schemas/checkout";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
-import { offeredOrderTypes } from "@/lib/order-types";
+import { offeredOrderTypes, sellerChargesEnabledSql } from "@/lib/order-types";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { listCustomerOrders, placeOrder } from "./orders";
 
@@ -79,6 +79,7 @@ export async function createCheckout(params: CreateCheckoutParams) {
 					storeId: store.id,
 					storeName: store.name,
 					orderTypes: store.orderTypes,
+					chargesEnabled: sellerChargesEnabledSql,
 				})
 				.from(cartItem)
 				.innerJoin(storeProduct, eq(storeProduct.id, cartItem.storeProductId))
@@ -104,7 +105,11 @@ export async function createCheckout(params: CreateCheckoutParams) {
 						409,
 						"Il carrello è cambiato: questo negozio non ha più articoli acquistabili",
 					);
-				if (!offeredOrderTypes(own[0].orderTypes).includes(choice.type))
+				if (
+					!offeredOrderTypes(own[0].orderTypes, {
+						chargesEnabled: own[0].chargesEnabled,
+					}).includes(choice.type)
+				)
 					throw new ServiceError(
 						400,
 						`${own[0].storeName} non offre questa modalità d'acquisto`,

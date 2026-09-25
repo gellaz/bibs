@@ -4,16 +4,11 @@ import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { organization, type VatStatus } from "@/db/schemas/organization";
-import { paymentMethod } from "@/db/schemas/payment-method";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
-import {
-	DocumentChangeBody,
-	PaymentChangeBody,
-	VatChangeBody,
-} from "@/lib/schemas/forms";
+import { DocumentChangeBody, VatChangeBody } from "@/lib/schemas/forms";
 
 /** Statuses visible to admins (past onboarding steps). */
 const REVIEWABLE_STATUSES: OnboardingStatus[] = [
@@ -446,7 +441,6 @@ const StoredDocumentChange = Type.Composite([
 const changeDataCheckers = {
 	vat: TypeCompiler.Compile(VatChangeBody),
 	document: TypeCompiler.Compile(StoredDocumentChange),
-	payment: TypeCompiler.Compile(PaymentChangeBody),
 };
 
 export async function approveChange(changeId: string, adminUserId: string) {
@@ -520,31 +514,6 @@ export async function approveChange(changeId: string, adminUserId: string) {
 						: {}),
 				})
 				.where(eq(sellerProfile.id, change.sellerProfileId));
-		}
-
-		if (change.changeType === "payment") {
-			const { stripeAccountId } = changeData as Static<
-				typeof PaymentChangeBody
-			>;
-			// Update existing default payment method or create a new one
-			const existing = await tx.query.paymentMethod.findFirst({
-				where: and(
-					eq(paymentMethod.sellerProfileId, change.sellerProfileId),
-					eq(paymentMethod.isDefault, true),
-				),
-			});
-
-			if (existing) {
-				await tx
-					.update(paymentMethod)
-					.set({ stripeAccountId })
-					.where(eq(paymentMethod.id, existing.id));
-			} else {
-				await tx.insert(paymentMethod).values({
-					sellerProfileId: change.sellerProfileId,
-					stripeAccountId,
-				});
-			}
 		}
 
 		return updated;

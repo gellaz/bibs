@@ -275,14 +275,21 @@ export const StoreImageSchema = t.Object({
 	createdAt: t.Date(),
 });
 
-export const PaymentMethodSchema = t.Object({
-	id: t.String(),
-	sellerProfileId: t.String(),
-	stripeAccountId: t.Nullable(
-		t.String({ description: "ID account Stripe Connect" }),
+export const OnlinePaymentsSchema = t.Object({
+	status: t.Union(
+		[
+			t.Literal("none"),
+			t.Literal("incomplete"),
+			t.Literal("in_review"),
+			t.Literal("enabled"),
+		],
+		{
+			description:
+				"Stato dei pagamenti online: none (da attivare), incomplete (onboarding da completare), in_review (in verifica da Stripe), enabled (attivi)",
+		},
 	),
-	isDefault: t.Boolean(),
-	createdAt: t.Date(),
+	chargesEnabled: t.Boolean(),
+	payoutsEnabled: t.Boolean(),
 });
 
 export const StoreSchema = t.Object({
@@ -871,10 +878,9 @@ export const MunicipalitySchema = t.Object({
 export const SellerProfileChangeSchema = t.Object({
 	id: t.String(),
 	sellerProfileId: t.String(),
-	changeType: t.Union(
-		[t.Literal("vat"), t.Literal("document"), t.Literal("payment")],
-		{ description: "Tipo di modifica richiesta" },
-	),
+	changeType: t.Union([t.Literal("vat"), t.Literal("document")], {
+		description: "Tipo di modifica richiesta",
+	}),
 	changeData: t.Unknown({ description: "Dati della modifica (JSON)" }),
 	status: t.Union(
 		[t.Literal("pending"), t.Literal("approved"), t.Literal("rejected")],
@@ -1289,4 +1295,20 @@ export const CartSchema = t.Object({
 export const CartItemMutationSchema = t.Object({
 	id: t.String({ description: "ID della riga di carrello" }),
 	quantity: t.Integer({ minimum: 1, description: "Quantità risultante" }),
+});
+
+const StoreOrderTypeLiteral = t.Union([
+	t.Literal("reserve_pickup"),
+	t.Literal("pay_pickup"),
+]);
+export const StoreOrderTypesSchema = t.Object({
+	orderTypes: t.Array(StoreOrderTypeLiteral, {
+		description: "Tipologie configurate dal negozio",
+	}),
+	offeredOrderTypes: t.Array(StoreOrderTypeLiteral, {
+		description: "Tipologie che i clienti vedono al checkout",
+	}),
+	chargesEnabled: t.Boolean({
+		description: "Il venditore può incassare online (Stripe Connect)",
+	}),
 });

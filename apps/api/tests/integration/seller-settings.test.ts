@@ -121,4 +121,19 @@ describe("getSellerSettings", () => {
 		});
 		expect(result.assignedStoreIds).toEqual([]);
 	});
+
+	it("owner senza conto → onlinePayments status none", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const res = await getSellerSettings({
+			sellerProfileId: seller.profile.id,
+			userId: seller.user.id,
+			isOwner: true,
+		});
+		expect(res.onlinePayments).toEqual({
+			status: "none",
+			chargesEnabled: false,
+			payoutsEnabled: false,
+		});
+	});
 });

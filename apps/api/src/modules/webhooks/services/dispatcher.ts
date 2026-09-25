@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
+import { handleConnectAccountEvent } from "./handlers/account-updated";
 import { handleCheckoutCompleted } from "./handlers/checkout-completed";
 import { handleInvoiceFailed } from "./handlers/invoice-failed";
 import { handleInvoicePaid } from "./handlers/invoice-paid";
@@ -15,15 +16,25 @@ import { handleSubscriptionUpdated } from "./handlers/subscription-updated";
 interface HandleWebhookParams {
 	payload: string;
 	signature: string;
+	/**
+	 * platform: eventi del nostro conto (billing). connect: eventi dei conti
+	 * collegati, che in produzione arrivano da una event destination separata
+	 * con un segreto suo; `stripe listen --forward-connect-to` usa invece lo
+	 * stesso segreto di --forward-to, da qui il fallback.
+	 */
+	scope?: "platform" | "connect";
 }
 
 export async function handleStripeWebhook(
 	params: HandleWebhookParams,
 ): Promise<void> {
-	const { payload, signature } = params;
-
-	if (!env.STRIPE_WEBHOOK_SECRET) {
-		throw new ServiceError(500, "STRIPE_WEBHOOK_SECRET not configured");
+	const { payload, signature, scope = "platform" } = params;
+	const secret =
+		scope === "connect"
+			? (env.STRIPE_CONNECT_WEBHOOK_SECRET ?? env.STRIPE_WEBHOOK_SECRET)
+			: env.STRIPE_WEBHOOK_SECRET;
+	if (!secret) {
+		throw new ServiceError(500, "Stripe webhook secret not configured");
 	}
 
 	// Use the async variant: Bun's runtime only exposes Web SubtleCrypto, which
@@ -34,7 +45,7 @@ export async function handleStripeWebhook(
 		event = (await stripe.webhooks.constructEventAsync(
 			payload,
 			signature,
-			env.STRIPE_WEBHOOK_SECRET,
+			secret,
 		)) as Stripe.Event;
 	} catch (err) {
 		logger.warn({ err }, "Stripe webhook signature verification failed");
@@ -66,7 +77,7 @@ export async function handleStripeWebhook(
 	}
 
 	try {
-		await dispatch(event);
+		await dispatch(event, scope);
 		await db
 			.update(stripeEvent)
 			.set({ processedAt: new Date() })
@@ -83,7 +94,26 @@ export async function handleStripeWebhook(
 	}
 }
 
-async function dispatch(event: Stripe.Event): Promise<void> {
+/**
+ * connect scope handles account.updated and capability.updated: everything
+ * else a connected account can emit (charges, payment intents, ...) is out of
+ * scope for now and just logged, not routed into the platform-scope switch
+ * below.
+ */
+async function dispatch(
+	event: Stripe.Event,
+	scope: "platform" | "connect",
+): Promise<void> {
+	if (scope === "connect") {
+		if (event.type === "account.updated" || event.type === "capability.updated")
+			return handleConnectAccountEvent(event);
+		logger.info(
+			{ eventId: event.id, type: event.type },
+			"Stripe Connect event received but not handled",
+		);
+		return;
+	}
+
 	switch (event.type) {
 		case "checkout.session.completed":
 			return handleCheckoutCompleted(event);
@@ -96,6 +126,8 @@ async function dispatch(event: Stripe.Event): Promise<void> {
 		case "invoice.payment_failed":
 			return handleInvoiceFailed(event);
 		default:
+			// account.updated on the platform route is unexpected (it belongs to
+			// the connect scope) and falls through here too: log + ignore.
 			logger.info(
 				{ eventId: event.id, type: event.type },
 				"Stripe event received but not handled",

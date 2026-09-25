@@ -54,9 +54,9 @@ beforeEach(async () => {
 
 /**
  * Builds an active seller with PII populated on the profile, an organization,
- * a default payment method, one pending change request, and one active employee
- * assigned to a store. Returns the ids needed to call getSellerSettings as
- * either the owner or the employee.
+ * a default online-payments status, one pending change request, and one active
+ * employee assigned to a store. Returns the ids needed to call getSellerSettings
+ * as either the owner or the employee.
  */
 async function seedSellerWithEmployee() {
 	const db = getTestDb();
@@ -126,7 +126,7 @@ async function seedSellerWithEmployee() {
 }
 
 describe("getSellerSettings — owner vs employee PII exposure", () => {
-	it("owner: receives full personal/identity PII, payment method and pending changes", async () => {
+	it("owner: receives full personal/identity PII, online-payments status and pending changes", async () => {
 		const { ownerUserId, sellerProfileId } = await seedSellerWithEmployee();
 
 		const result = await getSellerSettings({
@@ -140,13 +140,17 @@ describe("getSellerSettings — owner vs employee PII exposure", () => {
 		expect(result.profile.birthDate).toBe("1980-01-01");
 		expect(result.profile.firstName).toBe("Mario");
 		expect(result.profile.residenceAddress).toBe("Via Segreta 42");
-		expect(result.paymentMethod).not.toBeNull();
+		expect(result.onlinePayments).toEqual({
+			status: "incomplete",
+			chargesEnabled: false,
+			payoutsEnabled: false,
+		});
 		expect(result.pendingChanges).toHaveLength(1);
 		expect(result.organization?.businessName).toBe("Acme Srl");
 		expect(result.assignedStoreIds).toBeNull();
 	});
 
-	it("employee: owner identity-document PII, payment method and pending changes are redacted", async () => {
+	it("employee: owner identity-document PII, online-payments status and pending changes are redacted", async () => {
 		const { sellerProfileId, empUserId, storeId } =
 			await seedSellerWithEmployee();
 
@@ -169,7 +173,7 @@ describe("getSellerSettings — owner vs employee PII exposure", () => {
 		expect(result.profile.residenceMunicipality).toBeNull();
 
 		// Owner-only financial / review surfaces.
-		expect(result.paymentMethod).toBeNull();
+		expect(result.onlinePayments).toBeNull();
 		expect(result.pendingChanges).toHaveLength(0);
 
 		// Business info stays visible (employees see it read-only) and the

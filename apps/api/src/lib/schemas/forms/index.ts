@@ -18,7 +18,6 @@ export {
 export {
 	CompanySettingsBody,
 	DocumentChangeBody,
-	PaymentChangeBody,
 	PersonalSettingsBody,
 	VatChangeBody,
 } from "./settings";

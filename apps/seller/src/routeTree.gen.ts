@@ -31,6 +31,8 @@ import { Route as AuthenticatedOnboardingPendingRouteImport } from './routes/_au
 import { Route as AuthenticatedOnboardingPersonalInfoRouteImport } from './routes/_authenticated/onboarding/personal-info'
 import { Route as AuthenticatedOrdersIndexRouteImport } from './routes/_authenticated/orders/index'
 import { Route as AuthenticatedOrdersOrderIdRouteImport } from './routes/_authenticated/orders/$orderId'
+import { Route as AuthenticatedPaymentsRefreshRouteImport } from './routes/_authenticated/payments/refresh'
+import { Route as AuthenticatedPaymentsReturnRouteImport } from './routes/_authenticated/payments/return'
 import { Route as AuthenticatedProductsIndexRouteImport } from './routes/_authenticated/products/index'
 import { Route as AuthenticatedProductsProductIdRouteImport } from './routes/_authenticated/products/$productId'
 import { Route as AuthenticatedProductsNewRouteImport } from './routes/_authenticated/products/new'
@@ -159,6 +161,18 @@ const AuthenticatedOrdersOrderIdRoute =
     path: '/$orderId',
     getParentRoute: () => AuthenticatedOrdersRoute,
   } as any)
+const AuthenticatedPaymentsRefreshRoute =
+  AuthenticatedPaymentsRefreshRouteImport.update({
+    id: '/payments/refresh',
+    path: '/payments/refresh',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedPaymentsReturnRoute =
+  AuthenticatedPaymentsReturnRouteImport.update({
+    id: '/payments/return',
+    path: '/payments/return',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedProductsIndexRoute =
   AuthenticatedProductsIndexRouteImport.update({
     id: '/',
@@ -250,6 +264,8 @@ export interface FileRoutesByFullPath {
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
   '/orders/$orderId': typeof AuthenticatedOrdersOrderIdRoute
+  '/payments/refresh': typeof AuthenticatedPaymentsRefreshRoute
+  '/payments/return': typeof AuthenticatedPaymentsReturnRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -280,6 +296,8 @@ export interface FileRoutesByTo {
   '/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
   '/orders/$orderId': typeof AuthenticatedOrdersOrderIdRoute
+  '/payments/refresh': typeof AuthenticatedPaymentsRefreshRoute
+  '/payments/return': typeof AuthenticatedPaymentsReturnRoute
   '/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/products/new': typeof AuthenticatedProductsNewRoute
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -317,6 +335,8 @@ export interface FileRoutesById {
   '/_authenticated/onboarding/pending': typeof AuthenticatedOnboardingPendingRoute
   '/_authenticated/onboarding/personal-info': typeof AuthenticatedOnboardingPersonalInfoRoute
   '/_authenticated/orders/$orderId': typeof AuthenticatedOrdersOrderIdRoute
+  '/_authenticated/payments/refresh': typeof AuthenticatedPaymentsRefreshRoute
+  '/_authenticated/payments/return': typeof AuthenticatedPaymentsReturnRoute
   '/_authenticated/products/$productId': typeof AuthenticatedProductsProductIdRoute
   '/_authenticated/products/new': typeof AuthenticatedProductsNewRoute
   '/_authenticated/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
@@ -354,6 +374,8 @@ export interface FileRouteTypes {
     | '/onboarding/pending'
     | '/onboarding/personal-info'
     | '/orders/$orderId'
+    | '/payments/refresh'
+    | '/payments/return'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
@@ -384,6 +406,8 @@ export interface FileRouteTypes {
     | '/onboarding/pending'
     | '/onboarding/personal-info'
     | '/orders/$orderId'
+    | '/payments/refresh'
+    | '/payments/return'
     | '/products/$productId'
     | '/products/new'
     | '/promotions/$discountId'
@@ -420,6 +444,8 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding/pending'
     | '/_authenticated/onboarding/personal-info'
     | '/_authenticated/orders/$orderId'
+    | '/_authenticated/payments/refresh'
+    | '/_authenticated/payments/return'
     | '/_authenticated/products/$productId'
     | '/_authenticated/products/new'
     | '/_authenticated/promotions/$discountId'
@@ -600,6 +626,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/orders/$orderId'
       preLoaderRoute: typeof AuthenticatedOrdersOrderIdRouteImport
       parentRoute: typeof AuthenticatedOrdersRoute
+    }
+    '/_authenticated/payments/refresh': {
+      id: '/_authenticated/payments/refresh'
+      path: '/payments/refresh'
+      fullPath: '/payments/refresh'
+      preLoaderRoute: typeof AuthenticatedPaymentsRefreshRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/payments/return': {
+      id: '/_authenticated/payments/return'
+      path: '/payments/return'
+      fullPath: '/payments/return'
+      preLoaderRoute: typeof AuthenticatedPaymentsReturnRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/products/': {
       id: '/_authenticated/products/'
@@ -792,6 +832,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingDocumentRoute: typeof AuthenticatedOnboardingDocumentRoute
   AuthenticatedOnboardingPendingRoute: typeof AuthenticatedOnboardingPendingRoute
   AuthenticatedOnboardingPersonalInfoRoute: typeof AuthenticatedOnboardingPersonalInfoRoute
+  AuthenticatedPaymentsRefreshRoute: typeof AuthenticatedPaymentsRefreshRoute
+  AuthenticatedPaymentsReturnRoute: typeof AuthenticatedPaymentsReturnRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -809,6 +851,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingPendingRoute: AuthenticatedOnboardingPendingRoute,
   AuthenticatedOnboardingPersonalInfoRoute:
     AuthenticatedOnboardingPersonalInfoRoute,
+  AuthenticatedPaymentsRefreshRoute: AuthenticatedPaymentsRefreshRoute,
+  AuthenticatedPaymentsReturnRoute: AuthenticatedPaymentsReturnRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

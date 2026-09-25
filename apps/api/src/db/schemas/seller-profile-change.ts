@@ -12,7 +12,7 @@ import {
 import { user } from "./auth";
 import { sellerProfile } from "./seller";
 
-export const changeTypes = ["vat", "document", "payment"] as const;
+export const changeTypes = ["vat", "document"] as const;
 export type ChangeType = (typeof changeTypes)[number];
 
 export const changeStatuses = ["pending", "approved", "rejected"] as const;
@@ -49,7 +49,7 @@ export const sellerProfileChange = pgTable(
 			.where(sql`${t.status} = 'pending'`),
 		check(
 			"seller_profile_change_type_valid",
-			sql`${t.changeType} IN ('vat','document','payment')`,
+			sql`${t.changeType} IN ('vat','document')`,
 		),
 		check(
 			"seller_profile_change_status_valid",
