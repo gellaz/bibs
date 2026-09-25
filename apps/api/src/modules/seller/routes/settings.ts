@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
 import {
+	OnlinePaymentsSchema,
 	OrganizationSchema,
 	okRes,
 	SellerProfileChangeSchema,
@@ -16,6 +17,10 @@ import {
 	PersonalSettingsBody,
 	VatChangeBody,
 } from "@/lib/schemas/forms";
+import {
+	createOnboardingLink,
+	syncOnlinePayments,
+} from "@/modules/billing/services/connect-account";
 import { requireOwner, withSeller } from "../context";
 import {
 	getSellerSettings,
@@ -186,6 +191,48 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 				summary: "Richiedi aggiornamento documento",
 				description:
 					"Crea una richiesta di aggiornamento del documento di identità. Richiede approvazione admin. L'operatività del negozio non viene interrotta. Solo il titolare può richiedere.",
+				tags: ["Seller - Settings"],
+			},
+		},
+	)
+	.post(
+		"/payments/onboarding",
+		async (ctx) => {
+			const { sellerProfile: sp, store, isOwner, user } = withSeller(ctx);
+			requireOwner(isOwner);
+			const data = await createOnboardingLink({
+				sellerProfileId: sp.id,
+				email: user.email,
+			});
+			getLogger(store).info(
+				{ sellerId: sp.id, action: "connect_onboarding_link" },
+				"Connect onboarding link created",
+			);
+			return ok(data);
+		},
+		{
+			response: withErrors({ 200: okRes(t.Object({ url: t.String() })) }),
+			detail: {
+				summary: "Link di attivazione pagamenti online",
+				description:
+					"Crea il conto Stripe Connect del venditore se manca e restituisce il link all'onboarding ospitato da Stripe. Il link scade in pochi minuti. Solo il titolare.",
+				tags: ["Seller - Settings"],
+			},
+		},
+	)
+	.post(
+		"/payments/sync",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
+			return ok(await syncOnlinePayments(sp.id));
+		},
+		{
+			response: withErrors({ 200: okRes(OnlinePaymentsSchema) }),
+			detail: {
+				summary: "Aggiorna stato pagamenti online",
+				description:
+					"Rilegge il conto Stripe Connect e aggiorna lo stato salvato. Da chiamare al ritorno dall'onboarding. Solo il titolare.",
 				tags: ["Seller - Settings"],
 			},
 		},

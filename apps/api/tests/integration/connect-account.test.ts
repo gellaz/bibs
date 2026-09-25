@@ -55,6 +55,7 @@ import { paymentMethod } from "@/db/schemas/payment-method";
 import {
 	createOnboardingLink,
 	refreshConnectAccount,
+	syncOnlinePayments,
 } from "@/modules/billing/services/connect-account";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestSeller } from "../helpers/fixtures";
@@ -229,5 +230,35 @@ describe("refreshConnectAccount", () => {
 	it("conto sconosciuto → null, nessuna chiamata a Stripe", async () => {
 		expect(await refreshConnectAccount("acct_GHOST")).toBeNull();
 		expect(accountsRetrieve).not.toHaveBeenCalled();
+	});
+});
+
+describe("syncOnlinePayments", () => {
+	it("senza conto → 404", async () => {
+		const seller = await createTestSeller(getTestDb());
+		await expect(syncOnlinePayments(seller.profile.id)).rejects.toMatchObject({
+			status: 404,
+		});
+	});
+
+	it("rilegge e restituisce lo stato", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		await db.insert(paymentMethod).values({
+			sellerProfileId: seller.profile.id,
+			stripeAccountId: "acct_NEW",
+		});
+		remoteAccount = {
+			id: "acct_NEW",
+			charges_enabled: true,
+			payouts_enabled: true,
+			details_submitted: true,
+		};
+
+		expect(await syncOnlinePayments(seller.profile.id)).toEqual({
+			status: "enabled",
+			chargesEnabled: true,
+			payoutsEnabled: true,
+		});
 	});
 });

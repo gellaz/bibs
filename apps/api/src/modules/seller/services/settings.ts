@@ -1,8 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
-import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
@@ -10,6 +9,10 @@ import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
 } from "@/lib/municipality";
+import {
+	getDefaultPaymentMethod,
+	toOnlinePayments,
+} from "@/modules/billing/services/connect-account";
 import { getEmployeeAssignedStoreIds } from "./access";
 import { fetchSellerProfileCompact } from "./profile";
 
@@ -83,12 +86,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 				municipality: municipalityCompactWith,
 			},
 		}),
-		db.query.paymentMethod.findFirst({
-			where: and(
-				eq(paymentMethod.sellerProfileId, sellerProfileId),
-				eq(paymentMethod.isDefault, true),
-			),
-		}),
+		getDefaultPaymentMethod(sellerProfileId),
 	]);
 
 	const pendingChanges = (profile.changes ?? []).filter(
@@ -111,7 +109,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 
 	// Employees reach this endpoint (the profile page shows business info
 	// read-only), but must never receive the owner's personal/identity-document
-	// PII, the owner's payment method, or the owner's pending change requests.
+	// PII, the owner's online-payments status, or the owner's pending change requests.
 	if (!isOwner) {
 		return {
 			profile: {
@@ -134,7 +132,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 				documentImageUrl: null,
 			},
 			organization: org,
-			paymentMethod: null,
+			onlinePayments: null,
 			pendingChanges: [],
 			assignedStoreIds,
 		};
@@ -143,7 +141,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 	return {
 		profile,
 		organization: org,
-		paymentMethod: payment ?? null,
+		onlinePayments: toOnlinePayments(payment),
 		pendingChanges,
 		assignedStoreIds,
 	};

@@ -92,4 +92,14 @@ describe("seller settings writes are owner-only", () => {
 		});
 		expect(res.status).toBe(422);
 	});
+
+	it("POST /settings/payments/onboarding → 403 for a non-owner", async () => {
+		const res = await call("POST", "/settings/payments/onboarding");
+		expect(res.status).toBe(403);
+	});
+
+	it("POST /settings/payments/sync → 403 for a non-owner", async () => {
+		const res = await call("POST", "/settings/payments/sync");
+		expect(res.status).toBe(403);
+	});
 });

@@ -2,11 +2,30 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
+import { type ConnectStatus, connectStatus } from "@/lib/connect-status";
 import { env } from "@/lib/env";
+import { ServiceError } from "@/lib/errors";
 import { stripe } from "@/lib/stripe";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type PaymentMethodRow = typeof paymentMethod.$inferSelect;
+
+export interface OnlinePayments {
+	status: ConnectStatus;
+	chargesEnabled: boolean;
+	payoutsEnabled: boolean;
+}
+
+/** Proietta la riga payment_methods nella forma che vede il seller. */
+export function toOnlinePayments(
+	pm: PaymentMethodRow | null | undefined,
+): OnlinePayments {
+	return {
+		status: connectStatus(pm),
+		chargesEnabled: pm?.chargesEnabled ?? false,
+		payoutsEnabled: pm?.payoutsEnabled ?? false,
+	};
+}
 
 export function getDefaultPaymentMethod(
 	sellerProfileId: string,
@@ -118,4 +137,17 @@ export async function refreshConnectAccount(
 		.where(eq(paymentMethod.id, known.id))
 		.returning();
 	return row;
+}
+
+/**
+ * Chiamata dal FE al ritorno dall'onboarding: rilegge il conto da Stripe
+ * (mai fidarsi del return_url) e restituisce lo stato aggiornato.
+ */
+export async function syncOnlinePayments(
+	sellerProfileId: string,
+): Promise<OnlinePayments> {
+	const pm = await getDefaultPaymentMethod(sellerProfileId);
+	if (!pm?.stripeAccountId)
+		throw new ServiceError(404, "Pagamenti online non ancora attivati");
+	return toOnlinePayments(await refreshConnectAccount(pm.stripeAccountId));
 }

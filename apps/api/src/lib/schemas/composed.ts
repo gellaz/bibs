@@ -4,10 +4,10 @@ import {
 	CustomerAddressSchema,
 	CustomerProfileSchema,
 	EmployeeSchema,
+	OnlinePaymentsSchema,
 	OrderItemSchema,
 	OrderSchema,
 	OrganizationSchema,
-	PaymentMethodSchema,
 	ProductCategoryWithMacroSchema,
 	ProductCharacteristicValueSchema,
 	ProductImageSchema,
@@ -165,11 +165,11 @@ export const CheckoutSchema = t.Object({
 	orders: t.Array(CustomerOrderWithRelationsSchema),
 });
 
-// Seller settings (profile + org + payment + pending changes)
+// Seller settings (profile + org + online payments + pending changes)
 export const SellerSettingsSchema = t.Object({
 	profile: SellerProfileSchema,
 	organization: t.Nullable(OrganizationSchema),
-	paymentMethod: t.Nullable(PaymentMethodSchema),
+	onlinePayments: t.Nullable(OnlinePaymentsSchema),
 	pendingChanges: t.Array(SellerProfileChangeSchema),
 	assignedStoreIds: t.Union([t.Array(t.String()), t.Null()], {
 		description:

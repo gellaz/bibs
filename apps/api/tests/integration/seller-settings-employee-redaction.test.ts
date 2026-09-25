@@ -140,7 +140,11 @@ describe("getSellerSettings — owner vs employee PII exposure", () => {
 		expect(result.profile.birthDate).toBe("1980-01-01");
 		expect(result.profile.firstName).toBe("Mario");
 		expect(result.profile.residenceAddress).toBe("Via Segreta 42");
-		expect(result.paymentMethod).not.toBeNull();
+		expect(result.onlinePayments).toEqual({
+			status: "incomplete",
+			chargesEnabled: false,
+			payoutsEnabled: false,
+		});
 		expect(result.pendingChanges).toHaveLength(1);
 		expect(result.organization?.businessName).toBe("Acme Srl");
 		expect(result.assignedStoreIds).toBeNull();
@@ -169,7 +173,7 @@ describe("getSellerSettings — owner vs employee PII exposure", () => {
 		expect(result.profile.residenceMunicipality).toBeNull();
 
 		// Owner-only financial / review surfaces.
-		expect(result.paymentMethod).toBeNull();
+		expect(result.onlinePayments).toBeNull();
 		expect(result.pendingChanges).toHaveLength(0);
 
 		// Business info stays visible (employees see it read-only) and the

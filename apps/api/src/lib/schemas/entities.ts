@@ -275,18 +275,21 @@ export const StoreImageSchema = t.Object({
 	createdAt: t.Date(),
 });
 
-export const PaymentMethodSchema = t.Object({
-	id: t.String(),
-	sellerProfileId: t.String(),
-	stripeAccountId: t.Nullable(
-		t.String({ description: "ID account Stripe Connect" }),
+export const OnlinePaymentsSchema = t.Object({
+	status: t.Union(
+		[
+			t.Literal("none"),
+			t.Literal("incomplete"),
+			t.Literal("in_review"),
+			t.Literal("enabled"),
+		],
+		{
+			description:
+				"Stato dei pagamenti online: none (da attivare), incomplete (onboarding da completare), in_review (in verifica da Stripe), enabled (attivi)",
+		},
 	),
 	chargesEnabled: t.Boolean(),
 	payoutsEnabled: t.Boolean(),
-	detailsSubmitted: t.Boolean(),
-	isDefault: t.Boolean(),
-	createdAt: t.Date(),
-	updatedAt: t.Date(),
 });
 
 export const StoreSchema = t.Object({
