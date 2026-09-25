@@ -2,9 +2,14 @@ import { Elysia } from "elysia";
 import { logger } from "@/lib/logger";
 import { handleStripeWebhook } from "../services/dispatcher";
 
-export const stripeWebhookRoutes = new Elysia().post(
-	"/webhooks/stripe",
-	async (ctx) => {
+type WebhookContext = {
+	headers: Record<string, string | undefined>;
+	request: Request;
+	set: { status?: number | string };
+};
+
+function receive(scope: "platform" | "connect") {
+	return async (ctx: WebhookContext) => {
 		const signature = ctx.headers["stripe-signature"];
 		if (!signature) {
 			ctx.set.status = 400;
@@ -18,7 +23,7 @@ export const stripeWebhookRoutes = new Elysia().post(
 		const payload = await ctx.request.text();
 
 		try {
-			await handleStripeWebhook({ payload, signature });
+			await handleStripeWebhook({ payload, signature, scope });
 			return { received: true };
 		} catch (err) {
 			logger.error({ err }, "Stripe webhook processing failed");
@@ -35,15 +40,28 @@ export const stripeWebhookRoutes = new Elysia().post(
 			ctx.set.status = 500;
 			return { error: "internal error" };
 		}
-	},
-	{
-		// Disable Elysia body parsing entirely — we read the raw text ourselves.
-		parse: "none",
-		detail: {
-			summary: "Webhook Stripe",
-			description:
-				"Endpoint pubblico per eventi Stripe. Firma obbligatoria nell'header stripe-signature.",
-			tags: ["Webhooks"],
-		},
-	},
-);
+	};
+}
+
+const webhookOptions = (summary: string, description: string) => ({
+	parse: "none" as const,
+	detail: { summary, description, tags: ["Webhooks"] },
+});
+
+export const stripeWebhookRoutes = new Elysia()
+	.post(
+		"/webhooks/stripe",
+		receive("platform"),
+		webhookOptions(
+			"Webhook Stripe",
+			"Endpoint pubblico per eventi Stripe. Firma obbligatoria nell'header stripe-signature.",
+		),
+	)
+	.post(
+		"/webhooks/stripe/connect",
+		receive("connect"),
+		webhookOptions(
+			"Webhook Stripe Connect",
+			"Eventi dei conti collegati (account.updated). Firma verificata con STRIPE_CONNECT_WEBHOOK_SECRET.",
+		),
+	);

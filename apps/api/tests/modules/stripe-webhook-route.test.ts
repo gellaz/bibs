@@ -13,9 +13,10 @@ import { stripeWebhookRoutes } from "@/modules/webhooks/routes/stripe";
 function post(
 	body: string,
 	headers: Record<string, string> = { "stripe-signature": "sig" },
+	path = "/webhooks/stripe",
 ): Promise<Response> {
 	return stripeWebhookRoutes.handle(
-		new Request("http://localhost/webhooks/stripe", {
+		new Request(`http://localhost${path}`, {
 			method: "POST",
 			headers,
 			body,
@@ -52,5 +53,69 @@ describe("POST /webhooks/stripe status codes", () => {
 	it("returns 200 on successful processing", async () => {
 		const res = await post("raw");
 		expect(res.status).toBe(200);
+	});
+});
+
+describe("POST /webhooks/stripe/connect status codes", () => {
+	it("returns 400 when the stripe-signature header is missing", async () => {
+		const res = await post("raw", {}, "/webhooks/stripe/connect");
+		expect(res.status).toBe(400);
+	});
+
+	it("returns 400 on signature verification failure", async () => {
+		handleStripeWebhook.mockImplementationOnce(async () => {
+			throw new Error("Invalid Stripe signature");
+		});
+		const res = await post(
+			"raw",
+			{ "stripe-signature": "sig" },
+			"/webhooks/stripe/connect",
+		);
+		expect(res.status).toBe(400);
+	});
+
+	it("returns 500 on handler failure so Stripe retries (does not swallow as 200)", async () => {
+		handleStripeWebhook.mockImplementationOnce(async () => {
+			throw new Error("db connection lost mid-handler");
+		});
+		const res = await post(
+			"raw",
+			{ "stripe-signature": "sig" },
+			"/webhooks/stripe/connect",
+		);
+		expect(res.status).toBe(500);
+	});
+
+	it("returns 200 on successful processing", async () => {
+		const res = await post(
+			"raw",
+			{ "stripe-signature": "sig" },
+			"/webhooks/stripe/connect",
+		);
+		expect(res.status).toBe(200);
+	});
+});
+
+describe("dispatcher scope", () => {
+	it("la route connect passa scope: 'connect' al dispatcher", async () => {
+		await post(
+			"raw",
+			{ "stripe-signature": "sig" },
+			"/webhooks/stripe/connect",
+		);
+		expect(handleStripeWebhook).toHaveBeenCalledWith({
+			payload: "raw",
+			signature: "sig",
+			scope: "connect",
+		});
+	});
+
+	it("la route piattaforma passa scope: 'platform'", async () => {
+		await post("raw");
+		expect(handleStripeWebhook).toHaveBeenCalledWith({
+			payload: "raw",
+			signature: "sig",
+			scope: "platform",
+		});
 	});
 });

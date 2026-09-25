@@ -6,6 +6,7 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
+import { handleAccountUpdated } from "./handlers/account-updated";
 import { handleCheckoutCompleted } from "./handlers/checkout-completed";
 import { handleInvoiceFailed } from "./handlers/invoice-failed";
 import { handleInvoicePaid } from "./handlers/invoice-paid";
@@ -15,15 +16,25 @@ import { handleSubscriptionUpdated } from "./handlers/subscription-updated";
 interface HandleWebhookParams {
 	payload: string;
 	signature: string;
+	/**
+	 * platform: eventi del nostro conto (billing). connect: eventi dei conti
+	 * collegati, che in produzione arrivano da una event destination separata
+	 * con un segreto suo; `stripe listen --forward-connect-to` usa invece lo
+	 * stesso segreto di --forward-to, da qui il fallback.
+	 */
+	scope?: "platform" | "connect";
 }
 
 export async function handleStripeWebhook(
 	params: HandleWebhookParams,
 ): Promise<void> {
-	const { payload, signature } = params;
-
-	if (!env.STRIPE_WEBHOOK_SECRET) {
-		throw new ServiceError(500, "STRIPE_WEBHOOK_SECRET not configured");
+	const { payload, signature, scope = "platform" } = params;
+	const secret =
+		scope === "connect"
+			? (env.STRIPE_CONNECT_WEBHOOK_SECRET ?? env.STRIPE_WEBHOOK_SECRET)
+			: env.STRIPE_WEBHOOK_SECRET;
+	if (!secret) {
+		throw new ServiceError(500, "Stripe webhook secret not configured");
 	}
 
 	// Use the async variant: Bun's runtime only exposes Web SubtleCrypto, which
@@ -34,7 +45,7 @@ export async function handleStripeWebhook(
 		event = (await stripe.webhooks.constructEventAsync(
 			payload,
 			signature,
-			env.STRIPE_WEBHOOK_SECRET,
+			secret,
 		)) as Stripe.Event;
 	} catch (err) {
 		logger.warn({ err }, "Stripe webhook signature verification failed");
@@ -85,6 +96,8 @@ export async function handleStripeWebhook(
 
 async function dispatch(event: Stripe.Event): Promise<void> {
 	switch (event.type) {
+		case "account.updated":
+			return handleAccountUpdated(event);
 		case "checkout.session.completed":
 			return handleCheckoutCompleted(event);
 		case "customer.subscription.updated":
