@@ -13,7 +13,6 @@ import { SellerSettingsSchema } from "@/lib/schemas/composed";
 import {
 	CompanySettingsBody,
 	DocumentChangeBody,
-	PaymentChangeBody,
 	PersonalSettingsBody,
 	VatChangeBody,
 } from "@/lib/schemas/forms";
@@ -21,7 +20,6 @@ import { requireOwner, withSeller } from "../context";
 import {
 	getSellerSettings,
 	requestDocumentChange,
-	requestPaymentChange,
 	requestVatChange,
 	updateCompanySettings,
 	updatePersonalSettings,
@@ -188,37 +186,6 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 				summary: "Richiedi aggiornamento documento",
 				description:
 					"Crea una richiesta di aggiornamento del documento di identità. Richiede approvazione admin. L'operatività del negozio non viene interrotta. Solo il titolare può richiedere.",
-				tags: ["Seller - Settings"],
-			},
-		},
-	)
-	.patch(
-		"/payment",
-		async (ctx) => {
-			const { sellerProfile: sp, store, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const pino = getLogger(store);
-			const data = await requestPaymentChange({
-				sellerProfileId: sp.id,
-				...ctx.body,
-			});
-
-			pino.info(
-				{ sellerId: sp.id, action: "request_payment_change" },
-				"Seller payment change requested",
-			);
-
-			return ok(data);
-		},
-		{
-			body: PaymentChangeBody,
-			response: withConflictErrors({
-				200: okRes(SellerProfileChangeSchema),
-			}),
-			detail: {
-				summary: "Richiedi cambio metodo di pagamento",
-				description:
-					"Crea una richiesta di modifica del metodo di pagamento (account Stripe). Richiede approvazione admin. Il vecchio account resta attivo fino all'approvazione. Solo il titolare può richiedere.",
 				tags: ["Seller - Settings"],
 			},
 		},

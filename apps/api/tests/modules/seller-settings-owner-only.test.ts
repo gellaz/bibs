@@ -83,13 +83,6 @@ describe("seller settings writes are owner-only", () => {
 		expect(res.status).toBe(403);
 	});
 
-	it("PATCH /settings/payment → 403 for a non-owner", async () => {
-		const res = await call("PATCH", "/settings/payment", {
-			stripeAccountId: "acct_123",
-		});
-		expect(res.status).toBe(403);
-	});
-
 	// Not a guard case: validation runs first, so an impossible date is a 422
 	// before requireOwner can answer 403.
 	it("PATCH /settings/personal with an impossible birthDate → 422", async () => {

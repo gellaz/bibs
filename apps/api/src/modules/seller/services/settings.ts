@@ -346,32 +346,3 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 
 	return change;
 }
-
-interface PaymentChangeParams {
-	sellerProfileId: string;
-	stripeAccountId: string;
-}
-
-export async function requestPaymentChange(params: PaymentChangeParams) {
-	const { sellerProfileId, stripeAccountId } = params;
-
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.id, sellerProfileId),
-		with: { changes: true },
-	});
-
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
-	assertActive(profile.onboardingStatus);
-	assertNoPendingChange(profile.changes ?? [], "payment");
-
-	const [change] = await db
-		.insert(sellerProfileChange)
-		.values({
-			sellerProfileId,
-			changeType: "payment",
-			changeData: { stripeAccountId },
-		})
-		.returning();
-
-	return change;
-}

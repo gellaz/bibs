@@ -18,10 +18,21 @@ export const paymentMethod = pgTable(
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
-		stripeAccountId: text("stripe_account_id"),
+		stripeAccountId: text("stripe_account_id").unique(
+			"payment_method_stripe_account_id_unique",
+		),
+		// Stato del conto Connect, copiato da Stripe (webhook account.updated o
+		// sync al ritorno dall'onboarding). Mai scritto da input dell'utente.
+		chargesEnabled: boolean("charges_enabled").default(false).notNull(),
+		payoutsEnabled: boolean("payouts_enabled").default(false).notNull(),
+		detailsSubmitted: boolean("details_submitted").default(false).notNull(),
 		isDefault: boolean("is_default").default(true).notNull(),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => new Date())
 			.notNull(),
 	},
 	(table) => [

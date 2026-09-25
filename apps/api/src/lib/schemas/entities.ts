@@ -281,8 +281,12 @@ export const PaymentMethodSchema = t.Object({
 	stripeAccountId: t.Nullable(
 		t.String({ description: "ID account Stripe Connect" }),
 	),
+	chargesEnabled: t.Boolean(),
+	payoutsEnabled: t.Boolean(),
+	detailsSubmitted: t.Boolean(),
 	isDefault: t.Boolean(),
 	createdAt: t.Date(),
+	updatedAt: t.Date(),
 });
 
 export const StoreSchema = t.Object({
@@ -871,10 +875,9 @@ export const MunicipalitySchema = t.Object({
 export const SellerProfileChangeSchema = t.Object({
 	id: t.String(),
 	sellerProfileId: t.String(),
-	changeType: t.Union(
-		[t.Literal("vat"), t.Literal("document"), t.Literal("payment")],
-		{ description: "Tipo di modifica richiesta" },
-	),
+	changeType: t.Union([t.Literal("vat"), t.Literal("document")], {
+		description: "Tipo di modifica richiesta",
+	}),
 	changeData: t.Unknown({ description: "Dati della modifica (JSON)" }),
 	status: t.Union(
 		[t.Literal("pending"), t.Literal("approved"), t.Literal("rejected")],

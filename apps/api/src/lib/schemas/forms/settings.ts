@@ -21,11 +21,3 @@ export const VatChangeBody = Type.Object({
 		error: "La partita IVA deve essere di 11 cifre",
 	}),
 });
-
-export const PaymentChangeBody = Type.Object({
-	stripeAccountId: Type.String({
-		pattern: "^acct_[a-zA-Z0-9]+$",
-		description: "Nuovo ID dell'account Stripe Connect",
-		error: "ID account Stripe non valido",
-	}),
-});

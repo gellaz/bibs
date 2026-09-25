@@ -29,7 +29,6 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
-import { paymentMethod } from "@/db/schemas/payment-method";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import {
 	type ChangeStatus,
@@ -338,7 +337,6 @@ describe("approveChange", () => {
 	for (const [changeType, changeData] of [
 		["vat", { vatNumber: 123 }],
 		["document", { documentNumber: "x" }],
-		["payment", {}],
 	] as const) {
 		it(`refuses a ${changeType} change whose data doesn't match its schema`, async () => {
 			const db = getTestDb();
@@ -379,11 +377,6 @@ describe("approveChange", () => {
 				.from(sellerProfile)
 				.where(eq(sellerProfile.id, seller.profile.id));
 			expect(after.documentNumber).toBe(before.documentNumber);
-			const methods = await db
-				.select()
-				.from(paymentMethod)
-				.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
-			expect(methods).toHaveLength(0);
 		});
 	}
 
@@ -448,28 +441,6 @@ describe("approveChange", () => {
 			.from(sellerProfile)
 			.where(eq(sellerProfile.id, seller.profile.id));
 		expect(profile.vatChangeBlocked).toBe(false);
-	});
-
-	it("inserts a default payment method on a payment change", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db, { email: "pay-ok@test.com" });
-		const adminId = await seedAdmin("pay-ok-admin@test.com");
-		const change = await seedChange({
-			sellerProfileId: seller.profile.id,
-			changeType: "payment",
-			changeData: { stripeAccountId: "acct_NEW" },
-		});
-
-		const updated = await approveChange(change.id, adminId);
-		expect(updated.status).toBe("approved");
-
-		const pms = await db
-			.select()
-			.from(paymentMethod)
-			.where(eq(paymentMethod.sellerProfileId, seller.profile.id));
-		expect(pms).toHaveLength(1);
-		expect(pms[0].stripeAccountId).toBe("acct_NEW");
-		expect(pms[0].isDefault).toBe(true);
 	});
 
 	it("throws 400 and does NOT re-apply side effects when already approved", async () => {
