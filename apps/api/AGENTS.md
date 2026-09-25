@@ -45,8 +45,9 @@ Creates the Elysia app with plugins and modules:
    the header is present in both success and error responses.
 5. **openapi** — serves the OpenAPI/Swagger spec at `/openapi`, merging better-auth's generated paths and components.
    Full documentation with request/response schemas and error responses — the spec is the authoritative route inventory.
-6. **stripeWebhookRoutes** — `POST /webhooks/stripe` — Stripe webhook receiver (signature verification, idempotent
-   event handling; see the Modules domain map below).
+6. **stripeWebhookRoutes** — `POST /webhooks/stripe` (platform events) and `POST /webhooks/stripe/connect` (connected-account
+   events, e.g. `account.updated`, verified with `STRIPE_CONNECT_WEBHOOK_SECRET` falling back to `STRIPE_WEBHOOK_SECRET`) —
+   Stripe webhook receiver (signature verification, idempotent event handling; see the Modules domain map below).
 7. **betterAuth** — mounts better-auth's handler at `/auth/api` and defines an `auth` macro that resolves the current
    user/session from request headers. Routes opt in to authentication by setting `{ auth: true }` in their config.
 8. **registration** — `/register/*` — custom authentication endpoints:
@@ -220,9 +221,14 @@ domain map:
     - *Level 1 — Free edit*: `PATCH /settings/personal` (personal info), `PATCH /settings/company` (company data
       excluding VAT). Applied immediately.
     - *Level 2 — Admin review*: `PATCH /settings/vat` (VAT change — blocks new orders during review),
-      `PATCH /settings/document` (ID document update), `PATCH /settings/payment` (Stripe account change). Creates a
-      `seller_profile_changes` record; current data stays active until admin approves.
-    - `GET /settings` returns profile + organization + payment method + pending change requests.
+      `PATCH /settings/document` (ID document update). Creates a `seller_profile_changes` record; current data stays
+      active until admin approves.
+    - *Online payments*: `POST /settings/payments/onboarding` creates the seller's Stripe Connect account (if missing)
+      and returns the Stripe-hosted onboarding link; `POST /settings/payments/sync` re-reads the account from Stripe
+      and refreshes the saved state (called by the FE on return from onboarding). State lives in `payment_methods`,
+      also kept in sync by `POST /webhooks/stripe/connect` (`account.updated`). Owner-only; not exposed to employees.
+    - `GET /settings` returns profile + organization + `onlinePayments` status (owner-only, `null` for employees) +
+      pending change requests.
   - Access resolved from seller (owner) or employee role. Ownership checks in `context.ts`
     (`ensureProductOwnership`, `requireOwner`). Store IDs are lazy-loaded via `getStoreIds()`.
 - `customer/` (`/customer`) — geo search (PostGIS), profile, addresses, orders (4 types: direct,
@@ -235,11 +241,16 @@ domain map:
   - `GET /locations/municipalities` — paginated municipalities (optional `provinceId` filter)
 - `product-categories.ts`, `product-macro-categories.ts`, `store-categories.ts` —
   single-file public taxonomy listings (no auth).
-- `webhooks/` — Stripe webhook receiver at `POST /webhooks/stripe`: signature
-  verification via `constructEventAsync` (async required on Bun), `stripe_events`
-  idempotency table, per-event handlers in `services/handlers/`. Dev setup and event
-  flow: [docs/stripe-billing.md](../../docs/stripe-billing.md).
-- `billing/` — internal services only (Stripe customer management); no routes.
+- `webhooks/` — Stripe webhook receiver at `POST /webhooks/stripe` (platform events)
+  and `POST /webhooks/stripe/connect` (connected-account events, e.g.
+  `account.updated`, secret `STRIPE_CONNECT_WEBHOOK_SECRET` falling back to
+  `STRIPE_WEBHOOK_SECRET`): signature verification via `constructEventAsync` (async
+  required on Bun), same `stripe_events` idempotency table and dispatcher for both
+  routes, per-event handlers in `services/handlers/`. Dev setup and event flow:
+  [docs/stripe-billing.md](../../docs/stripe-billing.md).
+- `billing/` — internal services only (Stripe customer management + Connect account
+  onboarding/refresh in `services/connect-account.ts`); no routes of its own (mounted
+  under `seller/settings`).
 
 **Module context pattern**: Each module has a `context.ts` that defines the resolved context interface (e.g.
 `SellerResolvedContext`) and a `withX(ctx)` helper for type-safe context access in route handlers.
@@ -406,8 +417,10 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   - `points.ts` — point_transactions (earned/redeemed)
   - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
   - `location.ts` — regions, provinces, municipalities (Italian geographic hierarchy with ISTAT codes)
-  - `payment-method.ts` — payment_methods (dormant — reserved for future customer-order payments; no Connect flow today)
-  - `seller-profile-change.ts` — seller_profile_changes (pending change requests for VAT, document, payment;
+  - `payment-method.ts` — payment_methods (Stripe Connect account per seller: `stripe_account_id` unique,
+    `charges_enabled`/`payouts_enabled`/`details_submitted`, kept in sync by `account.updated` and the settings
+    sync endpoint; still no customer-order payment flow — no PaymentIntent yet)
+  - `seller-profile-change.ts` — seller_profile_changes (pending change requests for VAT, document;
     status: pending/approved/rejected; JSONB change data; admin review tracking)
 - `seller_profiles` has a `vatChangeBlocked` boolean flag set to `true` when a VAT change request is pending,
   preventing the seller from receiving new orders until the admin approves or rejects.

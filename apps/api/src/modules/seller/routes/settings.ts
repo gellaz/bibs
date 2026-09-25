@@ -54,7 +54,7 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 			detail: {
 				summary: "Impostazioni venditore",
 				description:
-					"Restituisce il profilo completo del venditore con organizzazione, metodo di pagamento e richieste di modifica in attesa.",
+					"Restituisce il profilo completo del venditore con organizzazione, stato dei pagamenti online e richieste di modifica in attesa.",
 				tags: ["Seller - Settings"],
 			},
 		},

@@ -228,14 +228,70 @@ bun test tests/integration/stripe-webhook-invoice.test.ts
 The mock does not exercise real signature verification — that's what `stripe listen`
 in dev is for.
 
+## Connect (pagamenti online dei negozi)
+
+Ogni seller può attivare un conto **Stripe Connect** (equivalente Express, v1 Accounts
+con controller properties: `country: "IT"`, `stripe_dashboard.type: "express"`,
+capabilities `card_payments` + `transfers`) dal proprio profilo — bottone «Attiva
+pagamenti online». `payment_methods` (`stripe_account_id`, `charges_enabled`,
+`payouts_enabled`, `details_submitted`) è la **fonte** dello stato: `GET
+/seller/settings` lo proietta come `onlinePayments: { status, chargesEnabled,
+payoutsEnabled } | null` (`status` ∈ `none | incomplete | in_review | enabled`), mai
+esposto ai dipendenti (solo il titolare).
+
+`POST /seller/settings/payments/onboarding` crea il conto se manca (lock su
+`seller_profiles`, idempotency key per seller: doppio click → un solo conto) e
+restituisce l'Account Link ospitato da Stripe (`return_url`/`refresh_url` puntano a
+`SELLER_APP_URL/payments/return` e `/payments/refresh`). Il webhook Connect
+(`POST /webhooks/stripe/connect`, evento `account.updated`) e `POST
+/seller/settings/payments/sync` (chiamato dal FE al ritorno dall'onboarding)
+chiamano entrambi `refreshConnectAccount`, che **rilegge il conto da Stripe**
+invece di fidarsi dello snapshot dell'evento — gli `account.updated` possono
+arrivare fuori ordine.
+
+`pay_pickup` («Paga e ritira») nelle «Tipologie d'acquisto» del negozio è
+attivabile solo con `chargesEnabled`; resta comunque **non offerto ai clienti**
+finché `ONLINE_PAYMENT_LIVE` (`apps/api/src/lib/order-types.ts`) è `false` — la PR F
+lo porta a `true` insieme al PaymentIntent.
+
+### Prerequisito una tantum
+
+Connect va abilitato sul conto Stripe di test (Dashboard → Connect → Get started,
+profilo piattaforma compilato) prima di poter creare conti collegati — altrimenti
+`accounts.create` risponde 400 «You can only create new accounts if you've signed up
+for Connect».
+
+### Forwarding locale
+
+```bash
+stripe listen \
+  --forward-to localhost:3000/webhooks/stripe \
+  --forward-connect-to localhost:3000/webhooks/stripe/connect
+```
+
+Un solo `whsec_…` per entrambe le route in locale → basta `STRIPE_WEBHOOK_SECRET`.
+In produzione gli eventi dei conti collegati arrivano da una event destination
+separata («Connected accounts», evento `account.updated`), con il suo segreto in
+`STRIPE_CONNECT_WEBHOOK_SECRET` (fallback a `STRIPE_WEBHOOK_SECRET` se assente).
+
+### Prova
+
+`stripe trigger account.updated` non tocca i nostri conti — crea un conto fixture
+nuovo, quindi il log dice «account.updated for unknown connected account,
+skipping». Il test vero è l'onboarding dal profilo seller (vedi lo smoke manuale
+del task 8).
+
 ## What does NOT exist (yet)
 
 Be explicit about this in reviews and planning:
 
 - **Customer order payment.** `pay_pickup` / `pay_deliver` exist in the order state
-  machine, and a `payment_methods` table exists, but **no Stripe flow runs for customer
-  orders** — no PaymentIntent, no Connect. Documenting or testing "customer checkout
-  via Stripe" is not possible today.
+  machine, and sellers can onboard a Stripe **Connect** account (see
+  [Connect](#connect-pagamenti-online-dei-negozi) above), but **no PaymentIntent runs
+  for customer orders yet** — `ONLINE_PAYMENT_LIVE = false` keeps `pay_pickup` off the
+  customer checkout until the PR that adds the charge (separate charges and
+  transfers). Documenting or testing "customer checkout via Stripe" is not possible
+  today.
 - **SDI e-invoicing** (fattura elettronica) — MVP relies on Stripe-hosted receipts.
 - **Refunds / disputes** — webhook events are ignored; manual via Stripe dashboard.
 - **Multi-currency** — schema carries `currency` but everything is EUR.

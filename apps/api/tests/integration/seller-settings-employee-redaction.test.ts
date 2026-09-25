@@ -150,7 +150,7 @@ describe("getSellerSettings — owner vs employee PII exposure", () => {
 		expect(result.assignedStoreIds).toBeNull();
 	});
 
-	it("employee: owner identity-document PII, payment method and pending changes are redacted", async () => {
+	it("employee: owner identity-document PII, online-payments status and pending changes are redacted", async () => {
 		const { sellerProfileId, empUserId, storeId } =
 			await seedSellerWithEmployee();
 
