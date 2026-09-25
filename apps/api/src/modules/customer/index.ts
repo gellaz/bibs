@@ -6,6 +6,7 @@ import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
 import { addressesRoutes } from "./routes/addresses";
 import { cartRoutes } from "./routes/cart";
+import { checkoutRoutes } from "./routes/checkout";
 import { ordersRoutes } from "./routes/orders";
 import { pointsRoutes } from "./routes/points";
 import { productsRoutes } from "./routes/products";
@@ -41,5 +42,6 @@ export const customerModule = new Elysia({ prefix: "/customer" })
 				.use(addressesRoutes)
 				.use(pointsRoutes)
 				.use(ordersRoutes)
-				.use(cartRoutes),
+				.use(cartRoutes)
+				.use(checkoutRoutes),
 	);

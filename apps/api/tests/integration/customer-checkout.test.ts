@@ -22,15 +22,20 @@ mock.module("@/db", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import { Elysia } from "elysia";
+import { user as userTable } from "@/db/schemas/auth";
 import { cartItem } from "@/db/schemas/cart";
 import { checkout } from "@/db/schemas/checkout";
+import { customerProfile as customerProfileTable } from "@/db/schemas/customer";
 import { order } from "@/db/schemas/order";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
+import { checkoutRoutes } from "@/modules/customer/routes/checkout";
 import {
 	createCheckout,
 	getCheckout,
 } from "@/modules/customer/services/checkout";
+import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCartItem,
@@ -51,6 +56,31 @@ afterAll(async () => {
 beforeEach(async () => {
 	await truncateAll(getTestDb());
 });
+
+const noopPino = {
+	debug: () => {},
+	info: () => {},
+	warn: () => {},
+	error: () => {},
+	fatal: () => {},
+	trace: () => {},
+} as any;
+
+// Stessa forma della resolve del modulo customer, con l'utente da un header.
+const app = new Elysia()
+	.state("pino", noopPino)
+	.use(errorHandler)
+	.resolve(async ({ request }) => {
+		const id = request.headers.get("x-test-user") ?? "";
+		const db = getTestDb();
+		const u = await db.query.user.findFirst({ where: eq(userTable.id, id) });
+		const cp = await db.query.customerProfile.findFirst({
+			where: eq(customerProfileTable.userId, id),
+		});
+		if (!u || !cp) throw new Error("test customer missing");
+		return { user: u, customerProfile: cp };
+	})
+	.use(checkoutRoutes);
 
 async function sellable(sellerProfileId: string, storeName: string, stock = 5) {
 	const db = getTestDb();
@@ -285,5 +315,51 @@ describe("getCheckout", () => {
 				customerProfileId: stranger.profile.id,
 			}),
 		).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe("POST /checkout", () => {
+	it("crea il checkout e la risposta rispetta lo schema", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const a = await sellable(seller.profile.id, "Negozio A");
+		await createTestCartItem(db, customer.profile.id, a.sp.id, { quantity: 1 });
+
+		const res = await app.handle(
+			new Request("http://localhost/checkout", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"x-test-user": customer.user.id,
+				},
+				body: JSON.stringify({
+					idempotencyKey: crypto.randomUUID(),
+					stores: [{ storeId: a.store.id, type: "reserve_pickup" }],
+				}),
+			}),
+		);
+		expect(res.status).toBe(200);
+		const body = await res.json();
+		expect(body.data.orders).toHaveLength(1);
+	});
+
+	it("body senza negozi → 422", async () => {
+		const db = getTestDb();
+		const customer = await createTestCustomer(db);
+		const res = await app.handle(
+			new Request("http://localhost/checkout", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"x-test-user": customer.user.id,
+				},
+				body: JSON.stringify({
+					idempotencyKey: crypto.randomUUID(),
+					stores: [],
+				}),
+			}),
+		);
+		expect(res.status).toBe(422);
 	});
 });
