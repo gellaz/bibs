@@ -42,7 +42,7 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | **P1.6** | **Account hub customer**: storico ordini e movimenti punti | `customer/routes/points.ts:9`, `customer/routes/orders.ts:24` inutilizzati; FE usa solo `profile.data.points` (`profile-identity.tsx:118`) | La sezione «Ordini» esiste (#199: tab Prenotazioni/Pagati, dettaglio, annullamento); restano movimenti punti e storico completo | M |
 | **P1.7** | **Billing seller**: email di dunning/cancellazione; riattivazione self-service di negozi `canceled` | `packages/emails/emails/` (3 template); `seller/services/stores.ts:352` (reactivate solo `canceling`) | Un negozio `canceled` è morto senza intervento manuale | M |
 
-**P1.1, buco chiuso (#NNN)**: `pay_*` nasce sempre `pending` (`placeOrder`) e `POST /customer/orders`
+**P1.1, buco chiuso (#202)**: `pay_*` nasce sempre `pending` (`placeOrder`) e `POST /customer/orders`
 accetta solo `direct | reserve_pickup`.
 
 ---
@@ -131,7 +131,7 @@ accetta solo `direct | reserve_pickup`.
 ### Gate di go-live (rinvii consapevoli: diventano bloccanti al primo deploy)
 - **P6.1 Security**: stati di registrazione distinguibili (enumeration, `registration/services.ts:28-50`); rate limiter in memoria (`plugins/rate-limit.ts:121`); bucket S3 pubblico (`lib/s3.ts:33`); redact pino solo top-level (`lib/logger.ts:26`); non-admin sull'app admin vedono solo un bottone di logout (`admin/_authenticated.tsx:45-58`).
 - **P6.2 Fiscale**: layer di fatturazione — SDI/XML, scontrino telematico, Stripe Tax, codici natura. (La ripartizione dello sconto punti sul castelletto è chiusa, vedi «Chiusi».)
-- **P6.3 Stripe**: nessun cron di riconciliazione né endpoint di replay (`api/jobs/`); `current_period_end` letto da `items[0]` (`subscription-updated.ts:43`); `productId` non validato in `updatePricing` (`admin/services/billing.ts:89`).
+- **P6.3 Stripe**: nessun cron di riconciliazione né endpoint di replay (`api/jobs/`); `current_period_end` letto da `items[0]` (`subscription-updated.ts:43`); `productId` non validato in `updatePricing` (`admin/services/billing.ts:89`). Pagamenti PR2 (#202): nessuno sweep/alert per ordini pagati con `stripe_transfer_id` NULL dopo che Stripe smette di riconsegnare il webhook (~3 giorni; col settle dal cron un trasferimento fallito non si ritenta); storno del trasferimento fallito solo nel log (nessuna colonna); nessuna validazione del minimo Stripe (0,50 €) sull'importo PR2 (oggi un 502 «riprova» senza uscita); chiavi di idempotenza Stripe valide 24 h (trasferimento/rimborso riuscito + scrittura DB fallita + retry oltre 24 h → doppio movimento).
 - **P6.4 Geocoding hardening** (#175): due chiamate Photon in sequenza (worst case ~10 s), fallimento della seconda fa fallire tutto, promozione a un livello, scrittura cache dentro il try, niente cron di retention su `geocoding_lookups`, niente versionamento del jsonb, limiter per IP — `locations/services/geocode.ts:57-81,160-163`, `locations/routes/locations.ts:183-186`.
 - **P6.5 Storage/audit**: GC degli oggetti S3 orfani (avatar, negozi cancellati); UI e purge di `product_audit_log`.
 - **P6.6 Deploy**: nessuna pipeline né gestione secrets (solo `ci.yml`).
@@ -174,7 +174,7 @@ accetta solo `direct | reserve_pickup`.
 | **P6.2 (punti)** | Castelletto costruito sul lordo già scontato dai punti, ripartito tra le aliquote a resti maggiori (`apportionDiscount`): Σ castelletto = totale. Corretta anche la conversione punti→centesimi in virgola mobile (232 punti valevano 2,31 €) | #197 |
 | **P1.2** | Pagina ordini seller: lista del negozio attivo con tab per stato (conteggi da `GET /seller/orders/counts`) e filtro tipologia, dettaglio con righe, riepilogo e castelletto IVA, azioni pronto/ritirato/annulla. Annullamento seller con rimborso di stock e punti (`PATCH /seller/orders/:id/cancel`). Corretto anche il crash delle letture ordini (seller e customer) sui negozi con coordinate: la geometria PostGIS non si legge nelle relazioni annidate | #198 |
 | **Debito #163** | Le righe ordinate escono dal carrello nella stessa transazione del checkout (`createCheckout`); quelle non disponibili restano | #199 |
-| **P1.1** | **Checkout customer** (creazione ordine dal carrello). Spec [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato): PP1 (#199), QR (#200), Connect (#201), PR2 (#NNN) | #199, #200, #201, #NNN |
+| **P1.1** | **Checkout customer** (creazione ordine dal carrello). Spec [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato): PP1 (#199), QR (#200), Connect (#201), PR2 (#202) | #199, #200, #201, #202 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -193,7 +193,7 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 
 1. **P0** in 3 PR (A authz+stato con test di guard, B ordini+schema, C form) — prima di toccare il checkout.
 2. ~~**P2.1** (pin TanStack + job `vite build`)~~ — fatto in #196.
-3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#NNN. Resta **P1.3 home**.
+3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#202. Resta **P1.3 home**.
 4. **P1.4 geocoding negozi seller**: senza, la ricerca per prossimità non vede i negozi reali.
 5. Una sweep P3 ogni tanto come lavoro a basso rischio; P4/P5 quando si tocca la zona.
 6. **P6** diventa checklist bloccante al primo segnale di go-live.
