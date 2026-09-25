@@ -14,6 +14,7 @@ import {
 	type ExistingImage,
 	ProductImageDropzone,
 } from "@/features/products/components/product-image-dropzone";
+import { OrderTypesSection } from "@/features/stores/components/order-types-section";
 import {
 	StoreForm,
 	type StoreFormData,
@@ -234,6 +235,10 @@ function StoreSettingsPage() {
 									maxFiles={MAX_STORE_IMAGES}
 								/>
 							</FormSection>
+							<OrderTypesSection
+								key={activeStore.id}
+								storeId={activeStore.id}
+							/>
 						</div>
 					</div>
 				</div>
