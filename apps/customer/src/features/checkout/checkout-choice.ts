@@ -51,3 +51,16 @@ export function confirmLabel(types: CheckoutType[]): string {
 	if (reserve && pay) return m.checkout_confirm_reserve_and_pay();
 	return pay ? m.checkout_confirm_pay() : m.checkout_confirm_reserve();
 }
+
+/**
+ * Cosa fare quando la conferma fallisce. Un 4xx vuol dire che il carrello o la
+ * scelta non reggono più: si torna al carrello. Rete, timeout o 5xx possono
+ * arrivare DOPO che il server ha creato gli ordini: si resta sulla pagina con
+ * la stessa chiave, e il nuovo tentativo restituisce lo stesso checkout.
+ */
+export function checkoutFailure(
+	status: number | undefined,
+): "back_to_cart" | "retry" {
+	if (status === undefined || status === 408 || status === 429) return "retry";
+	return status >= 400 && status < 500 ? "back_to_cart" : "retry";
+}

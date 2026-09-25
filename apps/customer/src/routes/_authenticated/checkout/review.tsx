@@ -8,18 +8,23 @@ import {
 	Navigate,
 	useNavigate,
 } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useState } from "react";
 import { TileImage } from "@/components/tile";
 import { useCart } from "@/features/cart/use-cart";
 import { buyableGroups } from "@/features/checkout/buyable";
 import {
+	type CheckoutChoice,
+	checkoutFailure,
 	confirmLabel,
 	parseChoice,
 	resolveChoice,
 	serializeChoice,
 } from "@/features/checkout/checkout-choice";
 import { checkoutTypeLabel } from "@/features/checkout/store-choice";
-import { useCreateCheckout } from "@/features/checkout/use-checkout";
+import {
+	CheckoutError,
+	useCreateCheckout,
+} from "@/features/checkout/use-checkout";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/checkout/review")({
@@ -39,7 +44,14 @@ function CheckoutReviewPage() {
 	const createCheckout = useCreateCheckout();
 	// Stabile per tutta la vita della pagina: un doppio click o un retry di rete
 	// riusano la stessa key e l'API restituisce lo stesso checkout.
-	const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
+	const [idempotencyKey] = useState(() => crypto.randomUUID());
+	// Quel che si è confermato, congelato al click: se la risposta si perde e il
+	// carrello (già svuotato dal server) viene riletto, la pagina resta quella
+	// da cui riprovare.
+	const [submitted, setSubmitted] = useState<{
+		groups: ReturnType<typeof buyableGroups>;
+		choice: CheckoutChoice;
+	} | null>(null);
 
 	if (isPending)
 		return (
@@ -49,13 +61,12 @@ function CheckoutReviewPage() {
 			</div>
 		);
 
-	const groups = buyableGroups(cart);
-	const { choice, complete } = resolveChoice(
-		groups,
-		parseChoice(search.choice),
-	);
+	const live = buyableGroups(cart);
+	const resolved = resolveChoice(live, parseChoice(search.choice));
+	const groups = submitted?.groups ?? live;
+	const choice = submitted?.choice ?? resolved.choice;
 	// Dopo la conferma il carrello si svuota: non rimbalzare sulla scelta.
-	if (!complete && !createCheckout.isPending && !createCheckout.isSuccess)
+	if (!submitted && !resolved.complete)
 		return (
 			<Navigate
 				to="/checkout"
@@ -72,7 +83,8 @@ function CheckoutReviewPage() {
 	const payNow = sumFor("pay_pickup");
 	const payInStore = sumFor("reserve_pickup");
 
-	const confirm = () =>
+	const confirm = () => {
+		setSubmitted({ groups, choice });
 		createCheckout.mutate(
 			{
 				idempotencyKey,
@@ -89,11 +101,19 @@ function CheckoutReviewPage() {
 						replace: true,
 					}),
 				onError: (e) => {
-					toast.error(e.message || m.checkout_cart_changed());
-					void navigate({ to: "/cart" });
+					const status = e instanceof CheckoutError ? e.status : undefined;
+					if (checkoutFailure(status) === "back_to_cart") {
+						toast.error(e.message || m.checkout_cart_changed());
+						void navigate({ to: "/cart" });
+					} else {
+						// Resta qui con la stessa chiave: ripremere restituisce lo
+						// stesso checkout se il server l'aveva già creato.
+						toast.error(m.checkout_retry());
+					}
 				},
 			},
 		);
+	};
 
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6">

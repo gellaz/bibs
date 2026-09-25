@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import {
+	checkoutFailure,
 	confirmLabel,
 	parseChoice,
 	resolveChoice,
@@ -59,5 +60,18 @@ describe("confirmLabel", () => {
 		expect(confirmLabel(["reserve_pickup", "pay_pickup"])).toBe(
 			"Prenota e paga",
 		);
+	});
+});
+
+describe("checkoutFailure", () => {
+	it("carrello cambiato o scelta non valida: si torna al carrello", () => {
+		expect(checkoutFailure(409)).toBe("back_to_cart");
+		expect(checkoutFailure(400)).toBe("back_to_cart");
+		expect(checkoutFailure(422)).toBe("back_to_cart");
+	});
+	it("rete o server: si resta e si riprova con la stessa chiave", () => {
+		expect(checkoutFailure(undefined)).toBe("retry");
+		expect(checkoutFailure(500)).toBe("retry");
+		expect(checkoutFailure(503)).toBe("retry");
 	});
 });

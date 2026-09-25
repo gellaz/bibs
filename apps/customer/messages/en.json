@@ -357,5 +357,6 @@
 	"orders_changed": "The order changed in the meantime: here is its current status.",
 	"orders_not_found": "We can't find this order.",
 	"orders_load_failed": "We couldn't load your orders.",
-	"checkout_edit_choice": "Change option"
+	"checkout_edit_choice": "Change option",
+	"checkout_retry": "We couldn't confirm. Try again: if the reservation already went through, it won't be duplicated."
 }
