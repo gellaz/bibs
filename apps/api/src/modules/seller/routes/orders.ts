@@ -1,4 +1,6 @@
 import { Elysia, t } from "elysia";
+import { orderTypes } from "@/db/schemas/order";
+import { getLogger } from "@/lib/logger";
 import { OrderListQuery } from "@/lib/queries";
 import { ok, okPage } from "@/lib/responses";
 import {
@@ -11,6 +13,8 @@ import {
 } from "@/lib/schemas";
 import { ensureStoreAccess, withSeller } from "../context";
 import {
+	cancelSellerOrder,
+	countSellerOrdersByStatus,
 	getSellerOrder,
 	listSellerOrders,
 	transitionOrder,
@@ -40,6 +44,42 @@ export const ordersRoutes = new Elysia()
 				summary: "Lista ordini venditore (negozio attivo)",
 				description:
 					"Restituisce gli ordini del negozio specificato, filtrati e paginati.",
+				tags: ["Seller - Orders"],
+			},
+		},
+	)
+	.get(
+		"/orders/counts",
+		async (ctx) => {
+			const { query, accessCtx } = withSeller(ctx);
+			await ensureStoreAccess(query.storeId, accessCtx);
+			const data = await countSellerOrdersByStatus(query);
+			return ok(data);
+		},
+		{
+			query: t.Object({
+				storeId: t.String({ description: "ID del negozio" }),
+				type: t.Optional(
+					t.Union(
+						orderTypes.map((v) => t.Literal(v)),
+						{
+							description: "Filtra per tipologia",
+						},
+					),
+				),
+			}),
+			response: withErrors({
+				200: okRes(
+					t.Record(t.String(), t.Integer({ minimum: 0 }), {
+						description:
+							"Numero di ordini per stato (tutti gli stati, zeri inclusi)",
+					}),
+				),
+			}),
+			detail: {
+				summary: "Conteggi ordini per stato",
+				description:
+					"Conta gli ordini del negozio per stato, per le tab della lista ordini.",
 				tags: ["Seller - Orders"],
 			},
 		},
@@ -144,6 +184,40 @@ export const ordersRoutes = new Elysia()
 				summary: "Completa ordine",
 				description:
 					"Transizione a 'completed'. Le transizioni valide dipendono dal tipo e dallo stato corrente dell'ordine.",
+				tags: ["Seller - Orders"],
+			},
+		},
+	)
+	.patch(
+		"/orders/:orderId/cancel",
+		async (ctx) => {
+			const sellerCtx = withSeller(ctx);
+			const { params, store, user } = sellerCtx;
+			const pino = getLogger(store);
+			const data = await cancelSellerOrder({
+				orderId: params.orderId,
+				storeIds: await sellerCtx.getAccessibleStoreIds(),
+			});
+			pino.warn(
+				{
+					userId: user.id,
+					orderId: data.id,
+					orderType: data.type,
+					action: "order_cancelled_by_seller",
+				},
+				"Ordine annullato dal negozio",
+			);
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				orderId: t.String({ description: "ID dell'ordine" }),
+			}),
+			response: withConflictErrors({ 200: okRes(OrderSchema) }),
+			detail: {
+				summary: "Annulla ordine",
+				description:
+					"Annulla un ordine in stato pending o confirmed. Lo stock torna disponibile e i punti spesi vengono restituiti al cliente.",
 				tags: ["Seller - Orders"],
 			},
 		},
