@@ -113,6 +113,11 @@ export async function settleCheckoutPayment(
 		.set({ status: "confirmed" })
 		.where(and(ofCheckout, eq(order.status, "pending")));
 
+	// Un ordine già trasferito (payout al negozio già partito su una consegna
+	// precedente dello stesso evento) NON va rimborsato: il rimborso qui è del
+	// cliente sulla piattaforma, il trasferimento è già uscito verso il
+	// negozio — rimborsarlo comunque sarebbe un doppio esborso. Quel caso
+	// appartiene al flusso di cancellazione post-trasferimento, non a questo.
 	const late = await db
 		.select({ id: order.id, total: order.total })
 		.from(order)
@@ -121,25 +126,32 @@ export async function settleCheckoutPayment(
 				ofCheckout,
 				eq(order.status, "cancelled"),
 				isNull(order.stripeRefundId),
+				isNull(order.stripeTransferId),
 			),
 		);
+	const refundFailed: string[] = [];
 	for (const o of late) {
-		const refund = await stripe.refunds.create(
-			{
-				payment_intent: pi.id,
-				amount: toCents(o.total),
-				metadata: { orderId: o.id, reason: "paid_after_expiry" },
-			},
-			{ idempotencyKey: `refund:${o.id}` },
-		);
-		await db
-			.update(order)
-			.set({ stripeRefundId: refund.id })
-			.where(and(eq(order.id, o.id), isNull(order.stripeRefundId)));
-		logger.warn(
-			{ orderId: o.id, refundId: refund.id },
-			"Pagato dopo la scadenza: rimborsato",
-		);
+		try {
+			const refund = await stripe.refunds.create(
+				{
+					payment_intent: pi.id,
+					amount: toCents(o.total),
+					metadata: { orderId: o.id, reason: "paid_after_expiry" },
+				},
+				{ idempotencyKey: `refund:${o.id}` },
+			);
+			await db
+				.update(order)
+				.set({ stripeRefundId: refund.id })
+				.where(and(eq(order.id, o.id), isNull(order.stripeRefundId)));
+			logger.warn(
+				{ orderId: o.id, refundId: refund.id },
+				"Pagato dopo la scadenza: rimborsato",
+			);
+		} catch (err) {
+			logger.error({ err, orderId: o.id }, "stripe.refunds.create failed");
+			refundFailed.push(o.id);
+		}
 	}
 
 	const payable = await db
@@ -166,7 +178,7 @@ export async function settleCheckoutPayment(
 			),
 		);
 
-	const failed: string[] = [];
+	const transferFailed: string[] = [];
 	for (const o of payable) {
 		const amount = toCents(o.total) - toCents(o.platformFee);
 		if (amount <= 0) continue;
@@ -175,7 +187,7 @@ export async function settleCheckoutPayment(
 				{ orderId: o.id },
 				"Trasferimento impossibile: negozio senza conto Connect",
 			);
-			failed.push(o.id);
+			transferFailed.push(o.id);
 			continue;
 		}
 		try {
@@ -196,11 +208,23 @@ export async function settleCheckoutPayment(
 				.where(and(eq(order.id, o.id), isNull(order.stripeTransferId)));
 		} catch (err) {
 			logger.error({ err, orderId: o.id }, "stripe.transfers.create failed");
-			failed.push(o.id);
+			transferFailed.push(o.id);
 		}
 	}
-	if (failed.length > 0)
-		throw new Error(
-			`Trasferimenti non riusciti per gli ordini ${failed.join(", ")}`,
-		);
+
+	// Un solo errore per tutto ciò che è mancato in questa consegna (rimborsi e
+	// trasferimenti): il webhook risponde 5xx una volta sola e la riconsegna di
+	// Stripe ritenta solo ciò che manca ancora (le query sopra sono già CAS).
+	if (refundFailed.length > 0 || transferFailed.length > 0) {
+		const parts: string[] = [];
+		if (refundFailed.length > 0)
+			parts.push(
+				`rimborsi non riusciti per gli ordini ${refundFailed.join(", ")}`,
+			);
+		if (transferFailed.length > 0)
+			parts.push(
+				`trasferimenti non riusciti per gli ordini ${transferFailed.join(", ")}`,
+			);
+		throw new Error(parts.join("; "));
+	}
 }

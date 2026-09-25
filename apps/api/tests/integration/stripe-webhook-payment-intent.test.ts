@@ -231,6 +231,50 @@ describe("payment_intent.succeeded", () => {
 		expect(transfersCreate).toHaveBeenCalledTimes(1); // solo l'altro
 	});
 
+	it("un ordine già trasferito e poi annullato non si rimborsa (niente doppio esborso)", async () => {
+		const { orders } = await seedPaidCheckout();
+		// Simula: evento precedente aveva già trasferito questo ordine, poi
+		// l'ordine è stato annullato (es. scadenza) prima di questa consegna.
+		await getTestDb()
+			.update(order)
+			.set({ status: "cancelled", stripeTransferId: "tr_OLD" })
+			.where(eq(order.id, orders[0].order.id));
+
+		await deliver(piEvent("evt_late_transferred", "payment_intent.succeeded"));
+
+		expect(refundsCreate).not.toHaveBeenCalled();
+		const late = await reload(orders[0].order.id);
+		expect(late.status).toBe("cancelled");
+		expect(late.stripeTransferId).toBe("tr_OLD");
+		expect(late.stripeRefundId).toBeNull();
+		expect(transfersCreate).toHaveBeenCalledTimes(1); // solo l'altro ordine
+	});
+
+	it("rimborso fallito → 5xx, il trasferimento dell'altro ordine procede comunque", async () => {
+		const { orders } = await seedPaidCheckout();
+		await getTestDb()
+			.update(order)
+			.set({ status: "cancelled" })
+			.where(eq(order.id, orders[0].order.id));
+		refundsCreate.mockImplementationOnce(async () => {
+			throw new Error("refund declined");
+		});
+
+		await expect(
+			deliver(piEvent("evt_refund_fail", "payment_intent.succeeded")),
+		).rejects.toThrow();
+
+		expect(refundsCreate).toHaveBeenCalledTimes(1);
+		const late = await reload(orders[0].order.id);
+		expect(late.status).toBe("cancelled");
+		expect(late.stripeRefundId).toBeNull();
+
+		expect(transfersCreate).toHaveBeenCalledTimes(1);
+		const other = await reload(orders[1].order.id);
+		expect(other.status).toBe("confirmed");
+		expect(other.stripeTransferId).toMatch(/^tr_/);
+	});
+
 	it("PI sconosciuto → ignorato senza errori", async () => {
 		await seedPaidCheckout();
 		await deliver({

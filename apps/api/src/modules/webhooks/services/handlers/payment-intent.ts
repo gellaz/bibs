@@ -25,11 +25,11 @@ export async function handlePaymentIntentEvent(
 				columns: { id: true },
 			});
 			if (!co) return;
-			const pending = await db
+			const orders = await db
 				.select({ id: order.id })
 				.from(order)
 				.where(eq(order.checkoutId, co.id));
-			for (const o of pending) await cancelUnpaidOrder(o.id);
+			for (const o of orders) await cancelUnpaidOrder(o.id);
 			return;
 		}
 		default:
