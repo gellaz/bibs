@@ -25,6 +25,7 @@ export type OrderTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 interface ListCustomerOrdersParams {
 	customerProfileId: string;
+	checkoutId?: string;
 	status?: string;
 	type?: string;
 	page?: number;
@@ -32,12 +33,13 @@ interface ListCustomerOrdersParams {
 }
 
 export async function listCustomerOrders(params: ListCustomerOrdersParams) {
-	const { customerProfileId, status, type } = params;
+	const { customerProfileId, status, type, checkoutId } = params;
 	const { page, limit, offset } = parsePagination(params);
 
 	const conditions = [eq(order.customerProfileId, customerProfileId)];
 	if (status) conditions.push(eq(order.status, status as OrderStatus));
 	if (type) conditions.push(eq(order.type, type as OrderType));
+	if (checkoutId) conditions.push(eq(order.checkoutId, checkoutId));
 
 	const where = and(...conditions);
 
