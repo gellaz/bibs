@@ -259,4 +259,26 @@ describe("getCheckout — payment", () => {
 		});
 		expect(read.payment).toBeNull();
 	});
+
+	it("Stripe giù durante il polling → 502, non 'Checkout non trovato'", async () => {
+		const { customer, pay1 } = await mixedCart();
+		const created = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			idempotencyKey: crypto.randomUUID(),
+			stores: [{ storeId: pay1.store.id, type: "pay_pickup" }],
+		});
+		paymentIntentsRetrieve.mockImplementationOnce(async () => {
+			throw new Stripe.errors.StripeAPIError({
+				message: "down",
+				type: "api_error",
+			} as any);
+		});
+		await expect(
+			getCheckout({
+				checkoutId: created.id,
+				customerProfileId: customer.profile.id,
+			}),
+		).rejects.toMatchObject({ status: 502 });
+	});
 });

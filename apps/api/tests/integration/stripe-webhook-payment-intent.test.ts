@@ -275,6 +275,51 @@ describe("payment_intent.succeeded", () => {
 		expect(other.stripeTransferId).toMatch(/^tr_/);
 	});
 
+	it("un ordine annullato a saldo zero (es. coperto da punti) non genera un rimborso Stripe", async () => {
+		const { co, orders } = await seedPaidCheckout();
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		await enableOnlinePayments(db, {
+			sellerProfileId: seller.profile.id,
+			storeId: store.id,
+			accountId: "acct_zero",
+		});
+		const product = await createTestProduct(db, seller.profile.id);
+		const sp = await createTestStoreProduct(db, store.id, product.id, {
+			stock: 4,
+		});
+		const [zeroOrder] = await db
+			.insert(order)
+			.values({
+				customerProfileId: orders[0].order.customerProfileId,
+				storeId: store.id,
+				type: "pay_pickup",
+				status: "cancelled",
+				total: "0.00",
+				platformFee: "0.00",
+				checkoutId: co.id,
+				paymentExpiresAt: new Date(Date.now() + 60_000),
+			})
+			.returning();
+		await db.insert(orderItem).values({
+			orderId: zeroOrder.id,
+			productName: "Z",
+			productId: product.id,
+			storeProductId: sp.id,
+			quantity: 1,
+			unitPrice: "0.00",
+		});
+
+		await deliver(piEvent("evt_zero", "payment_intent.succeeded"));
+
+		expect(refundsCreate).toHaveBeenCalledTimes(0);
+		const reloaded = await reload(zeroOrder.id);
+		expect(reloaded.status).toBe("cancelled");
+		expect(reloaded.stripeRefundId).toBeNull();
+		expect(reloaded.stripeTransferId).toBeNull();
+	});
+
 	it("un ordine già annullato e rimborsato (fuori dal checkout, es. il negozio l'ha annullato) non genera un trasferimento", async () => {
 		const { orders } = await seedPaidCheckout();
 		await getTestDb()

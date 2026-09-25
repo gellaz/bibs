@@ -67,7 +67,22 @@ export async function createCheckoutPaymentIntent(params: {
 export async function payableClientSecret(
 	paymentIntentId: string,
 ): Promise<string | null> {
-	const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+	let pi: Stripe.PaymentIntent;
+	try {
+		pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+	} catch (err) {
+		if (err instanceof Stripe.errors.StripeError) {
+			logger.error(
+				{ err, paymentIntentId },
+				"stripe.paymentIntents.retrieve failed",
+			);
+			throw new ServiceError(
+				502,
+				"Il pagamento online non è raggiungibile in questo momento. Riprova tra qualche istante.",
+			);
+		}
+		throw err;
+	}
 	return PAYABLE.includes(pi.status) ? pi.client_secret : null;
 }
 
@@ -168,7 +183,9 @@ export async function settleCheckoutPayment(
 		columns: { id: true },
 	});
 	if (!co) {
-		logger.warn(
+		// Livello info, non warn: i PaymentIntent delle subscription (billing
+		// negozio) passano di qui regolarmente, non è un'anomalia.
+		logger.info(
 			{ paymentIntentId: pi.id },
 			"PaymentIntent senza checkout, ignorato",
 		);
@@ -209,6 +226,9 @@ export async function settleCheckoutPayment(
 		);
 	const refundFailed: string[] = [];
 	for (const o of late) {
+		// Mirror di refundOrderPayment: Stripe rifiuta un rimborso a importo 0
+		// (es. PR2 interamente coperto da punti), niente da restituire.
+		if (toCents(o.total) === 0) continue;
 		try {
 			const refund = await stripe.refunds.create(
 				{
