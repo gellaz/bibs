@@ -2,9 +2,15 @@ import { Button } from "@bibs/ui/components/button";
 import { formatPriceEur } from "@bibs/ui/components/price";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, SearchX, XCircle } from "lucide-react";
+import {
+	CheckCircle2,
+	CreditCard,
+	Loader2,
+	SearchX,
+	XCircle,
+} from "lucide-react";
 import { NoticePage } from "@/components/notice";
-import { paymentState } from "@/features/checkout/payment-state";
+import { donePageState } from "@/features/checkout/payment-state";
 import { useCheckout } from "@/features/checkout/use-checkout";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { formatPickupCode } from "@/features/orders/pickup-code";
@@ -19,7 +25,7 @@ const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
 
 function CheckoutDonePage() {
 	const { checkoutId } = Route.useParams();
-	const { data, isPending, isError } = useCheckout(checkoutId, {
+	const { data, isPending } = useCheckout(checkoutId, {
 		pollWhileAwaiting: true,
 	});
 
@@ -31,7 +37,7 @@ function CheckoutDonePage() {
 			</div>
 		);
 
-	if (isError || !data)
+	if (!data)
 		return (
 			<NoticePage
 				icon={SearchX}
@@ -47,41 +53,50 @@ function CheckoutDonePage() {
 			/>
 		);
 
-	const payment = paymentState(data.orders);
+	const payment = donePageState(data.orders, data.payment != null);
+	const hasReservation = data.orders.some((o) => o.type === "reserve_pickup");
 
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6">
 			<header className="flex items-start gap-4">
 				<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-saffron/15">
-					{payment === "awaiting" ? (
+					{payment === "awaiting_confirmation" ? (
 						<Loader2
 							className="size-6 animate-spin text-saffron-deep"
 							aria-hidden
 						/>
 					) : payment === "failed" ? (
 						<XCircle className="size-6 text-destructive" aria-hidden />
+					) : payment === "awaiting_payment" ? (
+						<CreditCard className="size-6 text-saffron-deep" aria-hidden />
 					) : (
 						<CheckCircle2 className="size-6 text-saffron-deep" aria-hidden />
 					)}
 				</div>
 				<div className="space-y-1" aria-live="polite">
 					<h1 className="font-display font-semibold text-2xl text-foreground">
-						{payment === "awaiting"
+						{payment === "awaiting_confirmation"
 							? m.checkout_done_awaiting_title()
-							: payment === "failed"
-								? m.checkout_done_payment_failed_title()
-								: data.orders.length > 1
-									? m.checkout_done_title_many()
-									: m.checkout_done_title()}
+							: payment === "awaiting_payment"
+								? m.checkout_done_unpaid_title()
+								: payment === "failed"
+									? m.checkout_done_payment_failed_title()
+									: data.orders.length > 1
+										? m.checkout_done_title_many()
+										: m.checkout_done_title()}
 					</h1>
 					<p className="text-muted-foreground text-sm">
-						{payment === "awaiting"
+						{payment === "awaiting_confirmation"
 							? m.checkout_done_awaiting_body()
-							: payment === "failed"
-								? m.checkout_done_payment_failed_body()
-								: m.checkout_done_subtitle()}
+							: payment === "awaiting_payment"
+								? m.checkout_done_unpaid_body()
+								: payment === "failed"
+									? hasReservation
+										? `${m.checkout_done_payment_failed_body()} ${m.checkout_done_payment_failed_reservations()}`
+										: m.checkout_done_payment_failed_body()
+									: m.checkout_done_subtitle()}
 					</p>
-					{payment === "awaiting" && (
+					{payment === "awaiting_payment" && (
 						<Link
 							to="/checkout/$checkoutId/pay"
 							params={{ checkoutId }}

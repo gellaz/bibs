@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { paymentState } from "./payment-state";
+import { donePageState, paymentState } from "./payment-state";
 
 const o = (type: string, status: string) => ({ type, status });
 
@@ -27,5 +27,29 @@ describe("paymentState", () => {
 				o("reserve_pickup", "confirmed"),
 			]),
 		).toBe("failed");
+	});
+});
+
+describe("donePageState", () => {
+	it("solo prenotazioni → none, a prescindere da hasPayment", () => {
+		expect(donePageState([o("reserve_pickup", "confirmed")], false)).toBe(
+			"none",
+		);
+	});
+	it("PR2 pending con PI ancora pagabile → awaiting_payment (il cliente deve agire)", () => {
+		expect(donePageState([o("pay_pickup", "pending")], true)).toBe(
+			"awaiting_payment",
+		);
+	});
+	it("PR2 pending con PI non più pagabile → awaiting_confirmation (si aspetta il webhook)", () => {
+		expect(donePageState([o("pay_pickup", "pending")], false)).toBe(
+			"awaiting_confirmation",
+		);
+	});
+	it("PR2 confermati → paid", () => {
+		expect(donePageState([o("pay_pickup", "confirmed")], false)).toBe("paid");
+	});
+	it("tutti i PR2 annullati → failed", () => {
+		expect(donePageState([o("pay_pickup", "cancelled")], true)).toBe("failed");
 	});
 });

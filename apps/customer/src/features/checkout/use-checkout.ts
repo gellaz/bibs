@@ -70,11 +70,14 @@ export function useCheckout(
 				m.checkout_not_found(),
 			).data,
 		// Dopo il pagamento la conferma arriva dal webhook: si rilegge finché i
-		// PR2 escono da pending.
-		refetchInterval: (q) =>
-			opts.pollWhileAwaiting &&
-			paymentState(q.state.data?.orders ?? []) === "awaiting"
+		// PR2 escono da pending. Un PI ancora pagabile (payment != null) vuol dire
+		// che il cliente deve agire: niente da confermare, niente da interrogare.
+		refetchInterval: (q) => {
+			const data = q.state.data;
+			if (!opts.pollWhileAwaiting || !data) return false;
+			return paymentState(data.orders) === "awaiting" && data.payment == null
 				? 2000
-				: false,
+				: false;
+		},
 	});
 }

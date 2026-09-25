@@ -31,7 +31,7 @@ function CheckoutPayPage() {
 	const { checkoutId } = Route.useParams();
 	const navigate = useNavigate();
 	const qc = useQueryClient();
-	const { data, isPending, isError, refetch } = useCheckout(checkoutId);
+	const { data, isPending, refetch } = useCheckout(checkoutId);
 	const [mounted, setMounted] = useState(false);
 	useEffect(() => setMounted(true), []);
 
@@ -52,7 +52,7 @@ function CheckoutPayPage() {
 			</div>
 		);
 
-	if (isError || !data)
+	if (!data)
 		return (
 			<NoticePage
 				icon={SearchX}
