@@ -356,5 +356,6 @@
 	"orders_cancel_success": "Prenotazione annullata",
 	"orders_changed": "L'ordine è cambiato nel frattempo: ecco lo stato aggiornato.",
 	"orders_not_found": "Non troviamo questo ordine.",
-	"orders_load_failed": "Non siamo riusciti a caricare gli ordini."
+	"orders_load_failed": "Non siamo riusciti a caricare gli ordini.",
+	"checkout_edit_choice": "Modifica modalità"
 }

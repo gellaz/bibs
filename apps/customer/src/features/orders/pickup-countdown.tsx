@@ -25,7 +25,10 @@ export function PickupCountdown({ expiresAt }: { expiresAt: Date | string }) {
 		);
 	return (
 		<span className="text-sm">
-			{m.orders_pickup_by({ date })}{" "}
+			{m.orders_pickup_by({ date })}
+			<span aria-hidden className="text-muted-foreground">
+				{" · "}
+			</span>
 			<span
 				role="timer"
 				aria-live="off"

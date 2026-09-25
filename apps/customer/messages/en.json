@@ -356,5 +356,6 @@
 	"orders_cancel_success": "Reservation cancelled",
 	"orders_changed": "The order changed in the meantime: here is its current status.",
 	"orders_not_found": "We can't find this order.",
-	"orders_load_failed": "We couldn't load your orders."
+	"orders_load_failed": "We couldn't load your orders.",
+	"checkout_edit_choice": "Change option"
 }

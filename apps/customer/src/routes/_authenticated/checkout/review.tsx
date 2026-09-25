@@ -178,7 +178,7 @@ function CheckoutReviewPage() {
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
 				<Button asChild variant="secondary" className="min-h-11">
 					<Link to="/checkout" search={{ choice: serializeChoice(choice) }}>
-						{m.checkout_choose_title()}
+						{m.checkout_edit_choice()}
 					</Link>
 				</Button>
 				<Button
