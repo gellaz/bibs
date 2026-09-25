@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BusinessInfoCard } from "@/features/profile/components/business-info-card";
+import { OnlinePaymentsCard } from "@/features/profile/components/online-payments-card";
 import { PersonalInfoCard } from "@/features/profile/components/personal-info-card";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
@@ -19,11 +20,12 @@ function ProfilePage() {
 					Profilo
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Dati personali e informazioni dell'azienda.
+					Dati personali, informazioni dell'azienda e pagamenti online.
 				</p>
 			</header>
 			<PersonalInfoCard />
 			<BusinessInfoCard readOnly={!isOwner} />
+			{isOwner && <OnlinePaymentsCard />}
 		</div>
 	);
 }
