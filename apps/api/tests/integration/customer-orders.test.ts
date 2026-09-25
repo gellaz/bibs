@@ -44,6 +44,7 @@ import { store as storeTable } from "@/db/schemas/store";
 import type { StoreSubscriptionStatus } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import {
+	assignPickupCode,
 	cancelOrder,
 	createOrder,
 	pickupOrder,
@@ -509,6 +510,65 @@ describe("cancelOrder", () => {
 				customerProfileId: customer.profile.id,
 			}),
 		).rejects.toBeInstanceOf(ServiceError);
+	});
+});
+
+// ── createOrder: pickup code ──────────────────────────────────────────────────
+
+describe("createOrder — codice di ritiro", () => {
+	it("gli ordini da ritirare hanno un codice, gli altri no", async () => {
+		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
+		const reserve = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: "reserve_pickup",
+			storeId: store.id,
+			items: [{ storeProductId: sp.id, quantity: 1 }],
+		});
+		const direct = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: "direct",
+			storeId: store.id,
+			items: [{ storeProductId: sp.id, quantity: 1 }],
+		});
+		expect(reserve.pickupCode).toMatch(/^[A-HJKMNP-Z2-9]{6}$/);
+		expect(direct.pickupCode).toBeNull();
+	});
+
+	it("rigenera il codice se è già usato da un ordine aperto dello stesso negozio", async () => {
+		const { store, customer } = await seedBasicFixtures();
+		const db = getTestDb();
+		await db.insert(order).values({
+			customerProfileId: customer.profile.id,
+			storeId: store.id,
+			type: "reserve_pickup",
+			status: "confirmed",
+			total: "1.00",
+			pickupCode: "AAAAAA",
+		});
+		const codes = ["AAAAAA", "BBBBBB"];
+		const code = await db.transaction((tx) =>
+			assignPickupCode(tx, store.id, () => codes.shift() as string),
+		);
+		expect(code).toBe("BBBBBB");
+	});
+
+	it("un codice di un ordine chiuso si può riusare", async () => {
+		const { store, customer } = await seedBasicFixtures();
+		const db = getTestDb();
+		await db.insert(order).values({
+			customerProfileId: customer.profile.id,
+			storeId: store.id,
+			type: "reserve_pickup",
+			status: "completed",
+			total: "1.00",
+			pickupCode: "AAAAAA",
+		});
+		const code = await db.transaction((tx) =>
+			assignPickupCode(tx, store.id, () => "AAAAAA"),
+		);
+		expect(code).toBe("AAAAAA");
 	});
 });
 

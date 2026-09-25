@@ -1,4 +1,4 @@
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAddress } from "@/db/schemas/address";
 import { customerProfile } from "@/db/schemas/customer";
@@ -17,6 +17,7 @@ import { fromCents, toCents } from "@/lib/money";
 import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
+import { generatePickupCode } from "@/lib/pickup-code";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
 import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
@@ -185,6 +186,36 @@ export interface CreateOrderParams extends PlaceOrderParams {
  * chiamante: `createOrder` passa la sua key, il checkout nessuna (una key unica
  * su N ordini violerebbe l'indice) e lega gli ordini col `checkoutId`.
  */
+const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
+const OPEN_STATUSES = ["pending", "confirmed", "ready_for_pickup"] as const;
+
+/**
+ * Codice libero tra gli ordini aperti del negozio. Il pre-controllo copre il
+ * caso normale; l'indice unico parziale resta la rete per una race (409).
+ */
+export async function assignPickupCode(
+	tx: OrderTx,
+	storeId: string,
+	generate: () => string = generatePickupCode,
+): Promise<string> {
+	for (let attempt = 0; attempt < 5; attempt++) {
+		const code = generate();
+		const [taken] = await tx
+			.select({ id: order.id })
+			.from(order)
+			.where(
+				and(
+					eq(order.storeId, storeId),
+					eq(order.pickupCode, code),
+					inArray(order.status, [...OPEN_STATUSES]),
+				),
+			)
+			.limit(1);
+		if (!taken) return code;
+	}
+	throw new ServiceError(409, "Riprova: codice di ritiro non disponibile");
+}
+
 export async function placeOrder(
 	tx: OrderTx,
 	params: PlaceOrderParams,
@@ -369,6 +400,10 @@ export async function placeOrder(
 			? new Date(Date.now() + config.reservationHours * 60 * 60 * 1000)
 			: null;
 
+	const pickupCode = PICKUP_TYPES.includes(type)
+		? await assignPickupCode(tx, storeId)
+		: null;
+
 	// Create order
 	const [newOrder] = await tx
 		.insert(order)
@@ -386,6 +421,7 @@ export async function placeOrder(
 			pointsSpent: actualPointsSpent,
 			idempotencyKey: link.idempotencyKey ?? null,
 			checkoutId: link.checkoutId ?? null,
+			pickupCode,
 			vatBreakdown,
 		})
 		.returning();
@@ -510,7 +546,6 @@ export async function createOrder(params: CreateOrderParams) {
 	});
 }
 
-const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
 const RESERVATION_EXPIRED = Symbol("reservation-expired");
 
 export async function pickupOrder(params: {

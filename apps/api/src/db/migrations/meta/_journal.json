@@ -78,6 +78,13 @@
       "when": 1790329909716,
       "tag": "0010_dusty_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790340638964,
+      "tag": "0011_military_glorian",
+      "breakpoints": true
     }
   ]
 }
