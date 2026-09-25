@@ -4,9 +4,11 @@ How money works in bibs today, and how to exercise the whole flow on your machin
 Architecture context: [architecture.md](architecture.md). Design rationale:
 [the billing spec](superpowers/specs/2026-05-26-seller-store-subscription-billing-design.md).
 
-> **Scope.** Stripe is used for one thing: the **per-store monthly subscription paid by
-> sellers**. Customers never touch Stripe — customer order payment does not exist yet
-> (see [What does NOT exist](#what-does-not-exist-yet)).
+> **Scope.** Stripe covers the **per-store monthly subscription paid by sellers**, and
+> now the customer's **online "Paga e ritira" (PR2) payment** at checkout — see
+> [Paga e ritira (PR2) in locale](#paga-e-ritira-pr2-in-locale). Other order types
+> (`direct`, `reserve_pickup`, `pay_deliver`) still never touch Stripe (see
+> [What does NOT exist](#what-does-not-exist-yet)).
 
 ## The model in 2 minutes
 
@@ -320,15 +322,16 @@ del task 8).
 
 Be explicit about this in reviews and planning:
 
-- **Customer order payment.** `pay_pickup` / `pay_deliver` exist in the order state
-  machine, and sellers can onboard a Stripe **Connect** account (see
-  [Connect](#connect-pagamenti-online-dei-negozi) above), but **no PaymentIntent runs
-  for customer orders yet** — `ONLINE_PAYMENT_LIVE = false` keeps `pay_pickup` off the
-  customer checkout until the PR that adds the charge (separate charges and
-  transfers). Documenting or testing "customer checkout via Stripe" is not possible
-  today.
+- **PS3 / `pay_deliver` online payment.** Only `pay_pickup` (PR2) has a PaymentIntent —
+  see [Paga e ritira (PR2) in locale](#paga-e-ritira-pr2-in-locale) above. `pay_deliver`
+  stays in the order type enum and state machine, but no checkout offers it
+  (`storeOrderTypes` = `reserve_pickup | pay_pickup` only) and it has no online
+  payment; PS3 was deferred out of PR A–F.
 - **SDI e-invoicing** (fattura elettronica) — MVP relies on Stripe-hosted receipts.
-- **Refunds / disputes** — webhook events are ignored; manual via Stripe dashboard.
+- **Disputes.** `charge.dispute.created` and other dispute/chargeback events are
+  ignored — manual via Stripe dashboard. (A cancelled PR2 order *does* get refunded
+  and its transfer reversed — via the API at cancel time, not a webhook — see
+  [Paga e ritira (PR2) in locale](#paga-e-ritira-pr2-in-locale); that's not a dispute.)
 - **Multi-currency** — schema carries `currency` but everything is EUR.
 - **Plan tiers / upgrades** — one flat fee; no plan changes.
 - **Reactivation** — a `canceled` store stays archived; create a new store instead.
