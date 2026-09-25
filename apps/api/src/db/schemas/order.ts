@@ -90,6 +90,18 @@ export const order = pgTable(
 		// Codice di ritiro al banco (lib/pickup-code.ts): solo per gli ordini da
 		// ritirare, unico tra gli ordini aperti dello stesso negozio.
 		pickupCode: text("pickup_code"),
+		// Solo pay_*: oltre questa data un ordine ancora `pending` si annulla da
+		// solo (cron expireUnpaidOrders) e lo stock torna disponibile.
+		paymentExpiresAt: timestamp("payment_expires_at", { withTimezone: true }),
+		// Commissione bibs (lib/platform-fee.ts), fissata alla creazione; 0 per
+		// ogni ordine che non è pay_pickup.
+		platformFee: numeric("platform_fee", { precision: 10, scale: 2 })
+			.default("0")
+			.notNull(),
+		// Trasferimento al conto Connect del negozio (settleCheckoutPayment) e
+		// rimborso al cliente (refundOrderPayment): mai due volte.
+		stripeTransferId: text("stripe_transfer_id"),
+		stripeRefundId: text("stripe_refund_id"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -115,6 +127,12 @@ export const order = pgTable(
 			.where(
 				sql`${table.type} = 'reserve_pickup' AND ${table.status} IN ('confirmed', 'ready_for_pickup') AND ${table.reservationExpiresAt} IS NOT NULL`,
 			),
+		// Sweep dei pagamenti scaduti (expireUnpaidOrders), ogni minuto.
+		index("order_unpaid_expiry_idx")
+			.on(table.paymentExpiresAt)
+			.where(
+				sql`${table.status} = 'pending' AND ${table.paymentExpiresAt} IS NOT NULL`,
+			),
 		uniqueIndex("order_idempotency_key_idx")
 			.on(table.idempotencyKey)
 			.where(sql`${table.idempotencyKey} IS NOT NULL`),
@@ -127,6 +145,10 @@ export const order = pgTable(
 		check("order_shipping_cost_non_negative", sql`${table.shippingCost} >= 0`),
 		check("order_points_earned_non_negative", sql`${table.pointsEarned} >= 0`),
 		check("order_points_spent_non_negative", sql`${table.pointsSpent} >= 0`),
+		check(
+			"order_platform_fee_range",
+			sql`${table.platformFee} >= 0 AND ${table.platformFee} <= ${table.total}`,
+		),
 		// DB-level domain guard for the state-machine columns: the varchar({enum})
 		// helper emits a bare varchar, so without these CHECKs an out-of-domain
 		// status/type could be persisted and silently bypass every CAS transition
