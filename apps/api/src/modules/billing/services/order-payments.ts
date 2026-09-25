@@ -71,6 +71,79 @@ export async function payableClientSecret(
 	return PAYABLE.includes(pi.status) ? pi.client_secret : null;
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Rimborso di un PR2 pagato, dentro la tx di annullamento (dopo il CAS di
+ * stato): se il rimborso fallisce la tx si annulla e l'ordine resta com'era.
+ * Lo storno del trasferimento è best-effort: se il negozio ha già incassato e
+ * non ha saldo, Stripe lo rifiuta, ma il cliente è già rimborsato; resta nel
+ * log per il recupero manuale.
+ */
+export async function refundOrderPayment(
+	tx: Tx,
+	o: {
+		id: string;
+		total: string;
+		platformFee: string;
+		checkoutId: string | null;
+		stripeTransferId: string | null;
+	},
+): Promise<void> {
+	const co = o.checkoutId
+		? await tx.query.checkout.findFirst({
+				where: eq(checkout.id, o.checkoutId),
+				columns: { stripePaymentIntentId: true },
+			})
+		: undefined;
+	if (!co?.stripePaymentIntentId)
+		throw new ServiceError(409, "Pagamento dell'ordine non trovato");
+
+	let refundId: string;
+	try {
+		const refund = await stripe.refunds.create(
+			{
+				payment_intent: co.stripePaymentIntentId,
+				amount: toCents(o.total),
+				metadata: { orderId: o.id },
+			},
+			{ idempotencyKey: `refund:${o.id}` },
+		);
+		refundId = refund.id;
+	} catch (err) {
+		if (err instanceof Stripe.errors.StripeError) {
+			logger.error({ err, orderId: o.id }, "stripe.refunds.create failed");
+			throw new ServiceError(
+				502,
+				"Rimborso non riuscito. Riprova tra qualche minuto.",
+			);
+		}
+		throw err;
+	}
+	await tx
+		.update(order)
+		.set({ stripeRefundId: refundId })
+		.where(eq(order.id, o.id));
+
+	if (o.stripeTransferId) {
+		try {
+			await stripe.transfers.createReversal(
+				o.stripeTransferId,
+				{
+					amount: toCents(o.total) - toCents(o.platformFee),
+					metadata: { orderId: o.id },
+				},
+				{ idempotencyKey: `reversal:${o.id}` },
+			);
+		} catch (err) {
+			logger.error(
+				{ err, orderId: o.id, transferId: o.stripeTransferId },
+				"Storno del trasferimento non riuscito: recupero manuale",
+			);
+		}
+	}
+}
+
 const PAID_STATUSES = ["confirmed", "ready_for_pickup", "completed"] as const;
 
 /**

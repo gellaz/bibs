@@ -169,7 +169,7 @@ export const ordersRoutes = new Elysia()
 			detail: {
 				summary: "Annulla ordine",
 				description:
-					"Annulla un ordine. Lo stock viene ripristinato e i punti eventualmente spesi vengono restituiti.",
+					"Annulla un ordine. Lo stock torna disponibile e i punti spesi vengono restituiti; un ordine pagato online viene rimborsato. 409 se è in attesa di pagamento.",
 				tags: ["Customer - Orders"],
 			},
 		},

@@ -13,6 +13,8 @@ import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { normalizePickupCode } from "@/lib/pickup-code";
+import { refundOrderPayment } from "@/modules/billing/services/order-payments";
+import { assertCancellable } from "@/modules/customer/services/orders";
 
 /**
  * Fetches and validates that an order belongs to one of the seller's stores.
@@ -241,7 +243,9 @@ export async function completePickupByCode(params: {
  * Annullamento dal negozio: stesse regole della macchina a stati del cliente
  * (da `pending` o `confirmed`), con rimborso di stock e punti nella stessa tx.
  * CAS sullo stato prima del rimborso, così un annullamento concorrente (cliente
- * o seller) non rimborsa due volte.
+ * o seller) non rimborsa due volte. Da `confirmed`: con un PR2 rimborsa il
+ * pagamento e storna il trasferimento nella stessa tx. Un PR2 `pending` non si
+ * annulla (409).
  */
 export async function cancelSellerOrder(params: {
 	orderId: string;
@@ -257,11 +261,7 @@ export async function cancelSellerOrder(params: {
 		if (!existing || !storeIds.includes(existing.storeId))
 			throw new ServiceError(404, "Order not found");
 
-		assertTransition(
-			existing.status as OrderStatus,
-			"cancelled",
-			existing.type as OrderType,
-		);
+		assertCancellable(existing);
 
 		const [updated] = await tx
 			.update(order)
@@ -270,6 +270,9 @@ export async function cancelSellerOrder(params: {
 			.returning();
 		if (!updated)
 			throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
+		if (existing.type === "pay_pickup" && existing.status === "confirmed")
+			await refundOrderPayment(tx, existing);
 
 		await refundStockAndPoints(tx, existing);
 

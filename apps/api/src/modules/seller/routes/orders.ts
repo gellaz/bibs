@@ -285,7 +285,7 @@ export const ordersRoutes = new Elysia()
 			detail: {
 				summary: "Annulla ordine",
 				description:
-					"Annulla un ordine in stato pending o confirmed. Lo stock torna disponibile e i punti spesi vengono restituiti al cliente.",
+					"Annulla un ordine. Lo stock torna disponibile e i punti spesi vengono restituiti; un ordine pagato online viene rimborsato. 409 se è in attesa di pagamento.",
 				tags: ["Seller - Orders"],
 			},
 		},
