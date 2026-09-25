@@ -230,24 +230,38 @@ in dev is for.
 
 ## Connect (pagamenti online dei negozi)
 
-Ogni seller può attivare un conto **Stripe Connect** (equivalente Express, v1 Accounts
-con controller properties: `country: "IT"`, `stripe_dashboard.type: "express"`,
-capabilities `card_payments` + `transfers`) dal proprio profilo — bottone «Attiva
-pagamenti online». `payment_methods` (`stripe_account_id`, `charges_enabled`,
-`payouts_enabled`, `details_submitted`) è la **fonte** dello stato: `GET
+Ogni seller può attivare un conto **Stripe Connect** dal proprio profilo — bottone
+«Attiva pagamenti online». Il conto nasce con **Accounts v2**
+(`stripe.v2.core.accounts.create`): configurazione `recipient` con la capability
+`stripe_balance.stripe_transfers` (che richiede da sé anche `stripe_balance.payouts`),
+`identity.country: "IT"`, `dashboard: "express"`, e
+`defaults.responsibilities` con `fees_collector` e `losses_collector` a
+`application` — la piattaforma paga le fee Stripe e risponde delle perdite. Nessuna
+configurazione `merchant`: con separate charges & transfers (PR F) bibs è merchant
+of record e al conto serve solo ricevere i trasferimenti. `payment_methods`
+(`stripe_account_id`, `charges_enabled`, `payouts_enabled`, `details_submitted`) è
+la **fonte** dello stato, mappata da `accountStateFromV2`
+(`apps/api/src/lib/connect-status.ts`): `charges_enabled` = `stripe_transfers`
+attivo (può ricevere i trasferimenti di bibs), `payouts_enabled` = `payouts`
+attivo, `details_submitted` = nessun requisito in attesa del seller (quindi
+`in_review` = tocca a Stripe, `incomplete` = tocca al seller). `GET
 /seller/settings` lo proietta come `onlinePayments: { status, chargesEnabled,
 payoutsEnabled } | null` (`status` ∈ `none | incomplete | in_review | enabled`), mai
 esposto ai dipendenti (solo il titolare).
 
 `POST /seller/settings/payments/onboarding` crea il conto se manca (lock su
-`seller_profiles`, idempotency key per seller: doppio click → un solo conto) e
-restituisce l'Account Link ospitato da Stripe (`return_url`/`refresh_url` puntano a
+`seller_profiles` e rilettura: doppio click → un solo conto) e restituisce l'Account
+Link v2 ospitato da Stripe (`use_case.account_onboarding` con `configurations:
+["recipient"]`; `return_url`/`refresh_url` puntano a
 `SELLER_APP_URL/payments/return` e `/payments/refresh`). Il webhook Connect
 (`POST /webhooks/stripe/connect`, evento `account.updated`) e `POST
 /seller/settings/payments/sync` (chiamato dal FE al ritorno dall'onboarding)
 chiamano entrambi `refreshConnectAccount`, che **rilegge il conto da Stripe**
-invece di fidarsi dello snapshot dell'evento — gli `account.updated` possono
-arrivare fuori ordine.
+(`v2.core.accounts.retrieve` con `include: ["configuration.recipient",
+"requirements"]`) invece di fidarsi dello snapshot dell'evento — gli
+`account.updated` possono arrivare fuori ordine. Il webhook resta sull'evento v1
+`account.updated`: Stripe lo emette anche per i conti v2 nella scope «Connected
+accounts»; non gestiamo thin events v2.
 
 `pay_pickup` («Paga e ritira») nelle «Tipologie d'acquisto» del negozio è
 attivabile solo con `chargesEnabled`; resta comunque **non offerto ai clienti**
@@ -256,10 +270,11 @@ lo porta a `true` insieme al PaymentIntent.
 
 ### Prerequisito una tantum
 
-Connect va abilitato sul conto Stripe di test (Dashboard → Connect → Get started,
-profilo piattaforma compilato) prima di poter creare conti collegati — altrimenti
-`accounts.create` risponde 400 «You can only create new accounts if you've signed up
-for Connect».
+Connect va abilitato sul conto Stripe di test (Dashboard → Connect → Get started)
+prima di poter creare conti collegati. Poi, in Dashboard → Connect → **Platform
+profile**, va completata la **loss-liability acknowledgement** (con eventuali
+verifiche richieste): serve per `losses_collector: "application"`, altrimenti
+`v2.core.accounts.create` rifiuta la creazione del conto.
 
 ### Forwarding locale
 

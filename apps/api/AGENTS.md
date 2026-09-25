@@ -223,9 +223,10 @@ domain map:
     - *Level 2 — Admin review*: `PATCH /settings/vat` (VAT change — blocks new orders during review),
       `PATCH /settings/document` (ID document update). Creates a `seller_profile_changes` record; current data stays
       active until admin approves.
-    - *Online payments*: `POST /settings/payments/onboarding` creates the seller's Stripe Connect account (if missing)
-      and returns the Stripe-hosted onboarding link; `POST /settings/payments/sync` re-reads the account from Stripe
-      and refreshes the saved state (called by the FE on return from onboarding). State lives in `payment_methods`,
+    - *Online payments*: `POST /settings/payments/onboarding` creates the seller's Stripe Connect account (if missing;
+      Accounts v2 with the `recipient` configuration — `stripe_balance.stripe_transfers`, Express dashboard,
+      fees/losses on the platform) and returns the Stripe-hosted v2 Account Link; `POST /settings/payments/sync`
+      re-reads the account from Stripe (v2 retrieve) and refreshes the saved state (called by the FE on return from onboarding). State lives in `payment_methods`,
       also kept in sync by `POST /webhooks/stripe/connect` (`account.updated`). Owner-only; not exposed to employees.
     - `GET /settings` returns profile + organization + `onlinePayments` status (owner-only, `null` for employees) +
       pending change requests.
@@ -249,7 +250,7 @@ domain map:
   routes, per-event handlers in `services/handlers/`. Dev setup and event flow:
   [docs/stripe-billing.md](../../docs/stripe-billing.md).
 - `billing/` — internal services only (Stripe customer management + Connect account
-  onboarding/refresh in `services/connect-account.ts`); no routes of its own (mounted
+  onboarding/refresh in `services/connect-account.ts`, Accounts v2 `recipient`); no routes of its own (mounted
   under `seller/settings`).
 
 **Module context pattern**: Each module has a `context.ts` that defines the resolved context interface (e.g.
@@ -418,8 +419,8 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
   - `location.ts` — regions, provinces, municipalities (Italian geographic hierarchy with ISTAT codes)
   - `payment-method.ts` — payment_methods (Stripe Connect account per seller: `stripe_account_id` unique,
-    `charges_enabled`/`payouts_enabled`/`details_submitted`, kept in sync by `account.updated` and the settings
-    sync endpoint; still no customer-order payment flow — no PaymentIntent yet)
+    `charges_enabled` (= v2 `stripe_transfers` active)/`payouts_enabled`/`details_submitted`, kept in sync by
+    `account.updated` and the settings sync endpoint; still no customer-order payment flow — no PaymentIntent yet)
   - `seller-profile-change.ts` — seller_profile_changes (pending change requests for VAT, document;
     status: pending/approved/rejected; JSONB change data; admin review tracking)
 - `seller_profiles` has a `vatChangeBlocked` boolean flag set to `true` when a VAT change request is pending,

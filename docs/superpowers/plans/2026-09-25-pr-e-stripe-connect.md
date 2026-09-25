@@ -40,6 +40,8 @@ Decisioni prese qui; ognuna con il costo se sbagliata.
 9. **Lo stato per il FE lo calcola l'API**: `GET /seller/settings` sostituisce `paymentMethod` con `onlinePayments: { status, chargesEnabled, payoutsEnabled } | null` (`status` ∈ `none | incomplete | in_review | enabled`, funzione pura `connectStatus`). Il FE non conosce più `stripeAccountId`. Nessun consumer FE di `paymentMethod` oggi.
 10. **Fuori scope**: login link all'Express Dashboard, `POST /customer/orders` con `pay_*` (buco preesistente dello spec, lo chiude la F con PR2 che nasce `pending`), `account.application.deauthorized`.
 
+**Aggiornamento (smoke 2026-09-25):** Stripe rifiuta Accounts v1 per le nuove piattaforme → migrato a Accounts v2 con configurazione `recipient` (`stripe_balance.stripe_transfers`), dashboard express, fees/losses all'application; `charges_enabled` = transfers attivi. Il Ruling 3 è superato.
+
 ## Review Focus
 
 1. **Doppio click su «Attiva pagamenti online»** (o due schede) → un solo conto Stripe e una sola riga `payment_methods` → test in Task 2 (due chiamate in parallelo, `accounts.create` chiamato una volta).
