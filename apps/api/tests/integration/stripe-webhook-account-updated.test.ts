@@ -235,6 +235,67 @@ describe("account.updated", () => {
 		expect(ev.processedAt).toBeTruthy();
 	});
 
+	it("capability.updated su scope connect rilegge il conto da event.account", async () => {
+		await seedAccount();
+		currentEvent = {
+			id: "evt_CAP1",
+			type: "capability.updated",
+			account: "acct_1",
+			data: {
+				object: {
+					id: "stripe_balance",
+					object: "capability",
+					account: "acct_1",
+					status: "active",
+				},
+			},
+		};
+		await handleStripeWebhook({
+			payload: "raw",
+			signature: "sig",
+			scope: "connect",
+		});
+		expect(accountsRetrieve.mock.calls[0][0]).toBe("acct_1");
+		expect(await row()).toMatchObject({
+			chargesEnabled: true,
+			payoutsEnabled: true,
+			detailsSubmitted: true,
+		});
+		const [ev] = await getTestDb()
+			.select()
+			.from(stripeEvent)
+			.where(eq(stripeEvent.eventId, "evt_CAP1"));
+		expect(ev.processedAt).toBeTruthy();
+	});
+
+	it("capability.updated su scope piattaforma è ignorato", async () => {
+		await seedAccount();
+		currentEvent = {
+			id: "evt_CAP2",
+			type: "capability.updated",
+			account: "acct_1",
+			data: {
+				object: {
+					id: "stripe_balance",
+					object: "capability",
+					account: "acct_1",
+					status: "active",
+				},
+			},
+		};
+		await handleStripeWebhook({
+			payload: "raw",
+			signature: "sig",
+			scope: "platform",
+		});
+		expect(accountsRetrieve).not.toHaveBeenCalled();
+		const [ev] = await getTestDb()
+			.select()
+			.from(stripeEvent)
+			.where(eq(stripeEvent.eventId, "evt_CAP2"));
+		expect(ev.processedAt).toBeTruthy();
+	});
+
 	it("account.updated sulla route piattaforma è ignorato", async () => {
 		await seedAccount();
 		currentEvent = accountEvent("evt_PLAT");

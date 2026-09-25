@@ -6,7 +6,7 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
-import { handleAccountUpdated } from "./handlers/account-updated";
+import { handleConnectAccountEvent } from "./handlers/account-updated";
 import { handleCheckoutCompleted } from "./handlers/checkout-completed";
 import { handleInvoiceFailed } from "./handlers/invoice-failed";
 import { handleInvoicePaid } from "./handlers/invoice-paid";
@@ -95,16 +95,18 @@ export async function handleStripeWebhook(
 }
 
 /**
- * connect scope handles only account.updated: everything else a connected
- * account can emit (charges, payment intents, ...) is out of scope for now
- * and just logged, not routed into the platform-scope switch below.
+ * connect scope handles account.updated and capability.updated: everything
+ * else a connected account can emit (charges, payment intents, ...) is out of
+ * scope for now and just logged, not routed into the platform-scope switch
+ * below.
  */
 async function dispatch(
 	event: Stripe.Event,
 	scope: "platform" | "connect",
 ): Promise<void> {
 	if (scope === "connect") {
-		if (event.type === "account.updated") return handleAccountUpdated(event);
+		if (event.type === "account.updated" || event.type === "capability.updated")
+			return handleConnectAccountEvent(event);
 		logger.info(
 			{ eventId: event.id, type: event.type },
 			"Stripe Connect event received but not handled",

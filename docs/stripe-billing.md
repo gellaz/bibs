@@ -254,14 +254,16 @@ esposto ai dipendenti (solo il titolare).
 Link v2 ospitato da Stripe (`use_case.account_onboarding` con `configurations:
 ["recipient"]`; `return_url`/`refresh_url` puntano a
 `SELLER_APP_URL/payments/return` e `/payments/refresh`). Il webhook Connect
-(`POST /webhooks/stripe/connect`, evento `account.updated`) e `POST
-/seller/settings/payments/sync` (chiamato dal FE al ritorno dall'onboarding)
-chiamano entrambi `refreshConnectAccount`, che **rilegge il conto da Stripe**
-(`v2.core.accounts.retrieve` con `include: ["configuration.recipient",
-"requirements"]`) invece di fidarsi dello snapshot dell'evento — gli
-`account.updated` possono arrivare fuori ordine. Il webhook resta sull'evento v1
-`account.updated`: Stripe lo emette anche per i conti v2 nella scope «Connected
-accounts»; non gestiamo thin events v2.
+(`POST /webhooks/stripe/connect`, eventi `account.updated` e `capability.updated`)
+e `POST /seller/settings/payments/sync` (chiamato dal FE al ritorno
+dall'onboarding) chiamano tutti `refreshConnectAccount`, che **rilegge il conto
+da Stripe** (`v2.core.accounts.retrieve` con `include:
+["configuration.recipient", "requirements"]`) invece di fidarsi dello snapshot
+dell'evento — gli eventi possono arrivare fuori ordine. Il webhook resta sugli
+eventi v1 `account.updated`/`capability.updated`: Stripe li emette anche per i
+conti v2 nella scope «Connected accounts» (per `capability.updated` l'id conto
+è `event.account`, con fallback a `data.object.account`); non gestiamo thin
+events v2.
 
 `pay_pickup` («Paga e ritira») nelle «Tipologie d'acquisto» del negozio è
 attivabile solo con `chargesEnabled`; resta comunque **non offerto ai clienti**
@@ -286,8 +288,11 @@ stripe listen \
 
 Un solo `whsec_…` per entrambe le route in locale → basta `STRIPE_WEBHOOK_SECRET`.
 In produzione gli eventi dei conti collegati arrivano da una event destination
-separata («Connected accounts», evento `account.updated`), con il suo segreto in
-`STRIPE_CONNECT_WEBHOOK_SECRET` (fallback a `STRIPE_WEBHOOK_SECRET` se assente).
+separata («Connected accounts»), con il suo segreto in
+`STRIPE_CONNECT_WEBHOOK_SECRET` (fallback a `STRIPE_WEBHOOK_SECRET` se assente);
+va sottoscritta sia ad `account.updated` che a `capability.updated` (attivazione
+capability senza un `account.updated` successivo → stato rimarrebbe stale finché
+non arriva un sync manuale).
 
 ### Prova
 
