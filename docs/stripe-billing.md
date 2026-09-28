@@ -318,6 +318,45 @@ del task 8).
    serve il webhook.
 6. I trasferimenti si vedono in Dashboard → Connect → conto → Trasferimenti (`transfer_group` = id del checkout).
 
+### Cosa aspettarsi nello smoke
+
+**Setup.** La `pk_test_…` si prende da Dashboard → Developers → API keys (modalità test), oppure
+con `stripe config --list | grep pub_key` (la CLI la salva dopo `stripe login`); deve essere dello
+stesso account della `sk_test_…` dell'API. Vite legge le `VITE_*` solo all'avvio: dopo averla
+impostata **riavvia il server customer**, altrimenti la pagina di pagamento dice "il pagamento
+online non è disponibile" anche se il checkout è stato creato.
+
+**Seed.** Il negozio «Bottega Dev» di `seller@dev.bibs` ha un catalogo apposta
+(`seed/fixtures/dev-seller-catalog.ts`: IVA mista, stock basso ed esaurito, promozioni) e
+«Paga e ritira» configurato; si offre al cliente solo col conto Connect abilitato. Su un DB
+esistente basta `bun run db:seed`, non serve il reset (che cancellerebbe anche il conto Connect).
+Gli ordini `pay_pickup` del seed non hanno un pagamento vero: annullarne uno confermato dà 409
+«Pagamento dell'ordine non trovato». Per provare il rimborso crea l'ordine dal checkout.
+
+**Cosa fa ogni carta.**
+
+| Carta | Cosa vedi |
+|---|---|
+| `4242 4242 4242 4242` | Nessuna verifica: il form conferma e porta subito alla pagina di ordine effettuato. |
+| `4000 0025 0000 3155` | Si apre la finestra 3DS di Stripe. «Complete» → ordine effettuato; «Fail» → resti sul pagamento con l'errore sotto il form e puoi riprovare. |
+| `4000 0000 0000 0002` | «Carta rifiutata» sotto il form; l'ordine resta «In attesa di pagamento» e si può ritentare con un'altra carta sulla stessa pagina (un rifiuto non annulla l'ordine). |
+
+**Stati della pagina di ordine effettuato** (`/checkout/$checkoutId`). Lo stato si legge
+sempre dall'API, mai dall'URL di ritorno di Stripe:
+
+- **Pagamento da completare**: c'è un PR2 `pending` e il PaymentIntent è ancora pagabile
+  (il cliente non ha pagato). Link «Torna al pagamento», nessun polling.
+- **Stiamo confermando il pagamento**: PR2 `pending` ma il PaymentIntent non è più pagabile
+  (pagato, in attesa del webhook). La pagina rilegge ogni 2 secondi finché l'ordine è confermato.
+- **Confermato**: codice di ritiro e link al QR.
+- **Pagamento non completato**: tutti i PR2 annullati senza pagamento (scaduti).
+
+In locale, con `stripe listen`, il webhook arriva di solito prima che la pagina finisca di
+caricare: «Stiamo confermando» può durare un lampo o non comparire affatto. Per vederlo apposta:
+ferma `stripe listen`, paga con la `4242` (la pagina resta su «Stiamo confermando»), poi riavvia
+`stripe listen` e rimanda l'evento con `stripe events resend <evt_…>` (l'id è nella Dashboard →
+Developers → Events): l'ordine si conferma e la pagina si aggiorna da sola.
+
 ### In produzione
 
 - L'endpoint webhook PIATTAFORMA (`/webhooks/stripe`) deve essere sottoscritto (anche) a
