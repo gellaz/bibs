@@ -52,7 +52,7 @@ local-dev gotcha; setup below fixes it.
 | `past_due` | a renewal failed; Stripe is retrying (dunning) | `invoice.payment_failed` |
 | `canceling` | seller asked to cancel at period end (reversible) | `customer.subscription.updated` |
 | `suspended` | dunning exhausted; store inaccessible to the seller | `customer.subscription.updated` (status `unpaid`) |
-| `canceled` | terminal; store soft-deleted/archived | `customer.subscription.deleted` |
+| `canceled` | store soft-deleted/archived; the owner can reactivate it with a new subscription | `customer.subscription.deleted` (back to `active` via `checkout.session.completed` with `reactivateStoreId`) |
 
 Note: only a `canceled` store (soft-deleted via `deletedAt`) disappears from customer
 search. A `suspended` store is not filtered out by the customer search service — it
@@ -195,6 +195,36 @@ subscriptions the cancel is immediate. At period end Stripe fires
 `customer.subscription.deleted` → status `canceled`, store soft-deleted (archived,
 read-only).
 
+### Billing emails (dunning)
+
+Sent from the webhook handlers, **after** the DB write, to the store owner only (the
+`seller_profiles` user — never employees). A failed send is logged and swallowed:
+it never fails the webhook. Templates live in `packages/emails/emails/`; in dev they
+land in Mailpit (<http://localhost:8025>).
+
+| Email | Trigger (once) | Guard |
+|---|---|---|
+| «Pagamento non riuscito» (amount + link to `/billing`) | `invoice.payment_failed` | CAS `active\|canceling → past_due`; Stripe's retries while `past_due` send nothing |
+| «Negozio sospeso» (link to `/billing`) | `customer.subscription.updated` → `unpaid` | first `suspended` (`suspendedAt` was null) |
+| «Negozio cancellato» (link to `/store/archived`) | `customer.subscription.deleted` | CAS on `store.deletedAt IS NULL`: the delivery that archives the store. Not the previous status — the auto-cancel job pre-flips the row to `canceled` before calling Stripe. Copy differs for `seller_canceled` vs payment failure |
+
+### Reactivating a `canceled` store
+
+The archive page (`/store/archived`) shows «Riattiva» on stores whose subscription is
+`canceled` → `POST /seller/stores/:storeId/reactivation-checkout` (owner-only; 409 if
+not `canceled`) → Stripe Checkout in `subscription` mode on the active
+`pricing_config` price, `metadata.reactivateStoreId`. An open reactivation session
+for the same store is reused. `checkout.session.completed` then updates the existing
+`store_subscriptions` row (`store_id` is UNIQUE, one row per store) with the new
+`stripeSubscriptionId`, `active`, reasons/timestamps cleared, and sets
+`store.deletedAt = null`; products, stock, hours, images and employee assignments
+were never touched, so they come back as they were. If the row is no longer
+`canceled` when the event lands (two checkouts paid), the new subscription is
+canceled and logged for a manual refund. Success/cancel URLs return to `/billing`.
+
+To try it locally: seed or produce a `canceled` store, click «Riattiva», pay with
+`4242…` while `stripe listen --forward-to localhost:3000/webhooks/stripe` runs.
+
 ## Seed-provided states (no Stripe needed)
 
 `bun run db:seed` creates subscriptions in a realistic mix — work on billing UI without
@@ -225,6 +255,8 @@ bun test tests/integration/seller-stores-checkout.test.ts
 bun test tests/integration/stripe-webhook-checkout-completed.test.ts
 bun test tests/integration/stripe-webhook-subscription-lifecycle.test.ts
 bun test tests/integration/stripe-webhook-invoice.test.ts
+bun test tests/integration/stripe-webhook-billing-emails.test.ts   # dunning emails
+bun test tests/integration/seller-stores-reactivation.test.ts      # canceled → active
 ```
 
 The mock does not exercise real signature verification — that's what `stripe listen`
@@ -382,7 +414,9 @@ Be explicit about this in reviews and planning:
   [Paga e ritira (PR2) in locale](#paga-e-ritira-pr2-in-locale); that's not a dispute.)
 - **Multi-currency** — schema carries `currency` but everything is EUR.
 - **Plan tiers / upgrades** — one flat fee; no plan changes.
-- **Reactivation** — a `canceled` store stays archived; create a new store instead.
+- **"Cancellation scheduled" email** — a seller who cancels at period end gets no
+  email for the `canceling` step (product choice: they just did it themselves); the
+  «Negozio cancellato» email arrives when the store is actually archived.
 
 Rationale and full design: [billing spec](superpowers/specs/2026-05-26-seller-store-subscription-billing-design.md).
 
