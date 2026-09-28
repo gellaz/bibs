@@ -14,7 +14,7 @@ import { store as storeTable } from "@/db/schemas/store";
 import { config } from "@/lib/config";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
-import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
+import { refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { generatePickupCode } from "@/lib/pickup-code";
@@ -250,6 +250,18 @@ export async function placeOrder(
 		pointsToSpend = 0,
 	} = params;
 
+	// `direct` = il cliente inquadra il QR del negozio e paga dall'app. Il
+	// flusso con il pagamento non esiste ancora: senza, un direct nasceva
+	// `completed` con i punti già accreditati, cioè punti senza incasso. Quando
+	// arriverà, i punti si accrediteranno solo a pagamento riuscito, come per
+	// pay_pickup. Guardia qui e non solo nella route, così nessun altro
+	// ingresso (checkout, seed, script) può riaprire il buco.
+	if (type === "direct")
+		throw new ServiceError(
+			400,
+			"Gli ordini direct non sono ancora disponibili",
+		);
+
 	// Shipping cost is determined server-side
 	const shippingCost = type === "pay_deliver" ? config.shippingCost : null;
 
@@ -416,8 +428,7 @@ export async function placeOrder(
 	// stock già tolto; lo conferma il webhook del PaymentIntent, oppure il cron
 	// lo annulla allo scadere della finestra di pagamento.
 	const isPay = PAY_TYPES.includes(type);
-	const initialStatus =
-		type === "direct" ? "completed" : isPay ? "pending" : "confirmed";
+	const initialStatus = isPay ? "pending" : "confirmed";
 	const paymentExpiresAt = isPay
 		? new Date(Date.now() + config.paymentWindowMinutes * 60 * 1000)
 		: null;
@@ -523,24 +534,6 @@ export async function placeOrder(
 			type: "redeemed",
 			description: `Redeemed ${actualPointsSpent} points for order`,
 		});
-	}
-
-	// Award points immediately for direct purchase
-	if (type === "direct") {
-		const pointsEarned = await awardPoints(tx, {
-			customerProfileId,
-			orderId: newOrder.id,
-			totalCents: finalTotalCents,
-			description: "Earned points from direct purchase",
-		});
-		if (pointsEarned > 0) {
-			const [updated] = await tx
-				.update(order)
-				.set({ pointsEarned })
-				.where(eq(order.id, newOrder.id))
-				.returning();
-			return updated;
-		}
 	}
 
 	return newOrder;

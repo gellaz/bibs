@@ -26,6 +26,7 @@ import { Elysia } from "elysia";
 import { user as userTable } from "@/db/schemas/auth";
 import { customerProfile as customerProfileTable } from "@/db/schemas/customer";
 import { order } from "@/db/schemas/order";
+import { pointTransaction } from "@/db/schemas/points";
 import { ordersRoutes } from "@/modules/customer/routes/orders";
 import { createOrder } from "@/modules/customer/services/orders";
 import { errorHandler } from "@/plugins/error-handler";
@@ -166,5 +167,59 @@ describe("POST /orders — niente pay_* senza pagamento", () => {
 			}),
 		);
 		expect(res.status).toBe(200);
+	});
+});
+
+// `direct` (pagamento in negozio via QR) non è ancora costruito: finché non c'è
+// il pagamento, un ordine direct nasceva `completed` e accreditava punti
+// senza incasso. Nessun ingresso deve accettarlo.
+describe("direct — niente ordini (né punti) senza pagamento", () => {
+	async function ledger(customerProfileId: string) {
+		const db = getTestDb();
+		const [cp] = await db
+			.select()
+			.from(customerProfileTable)
+			.where(eq(customerProfileTable.id, customerProfileId));
+		const txs = await db
+			.select()
+			.from(pointTransaction)
+			.where(eq(pointTransaction.customerProfileId, customerProfileId));
+		return { points: cp.points, txs };
+	}
+
+	it("POST /orders con direct → 422, nessun ordine, saldo e movimenti intatti", async () => {
+		const { store, sp, customer } = await seed();
+		const res = await app.handle(
+			new Request("http://localhost/orders", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					"x-test-user": customer.user.id,
+				},
+				body: JSON.stringify({
+					type: "direct",
+					storeId: store.id,
+					items: [{ storeProductId: sp.id, quantity: 5 }],
+				}),
+			}),
+		);
+		expect(res.status).toBe(422);
+		expect(await getTestDb().select().from(order)).toHaveLength(0);
+		expect(await ledger(customer.profile.id)).toEqual({ points: 0, txs: [] });
+	});
+
+	it("createOrder rifiuta direct con 400, senza scrivere nulla", async () => {
+		const { store, sp, customer } = await seed();
+		await expect(
+			createOrder({
+				customerProfileId: customer.profile.id,
+				customerPoints: 0,
+				type: "direct",
+				storeId: store.id,
+				items: [{ storeProductId: sp.id, quantity: 5 }],
+			}),
+		).rejects.toMatchObject({ status: 400 });
+		expect(await getTestDb().select().from(order)).toHaveLength(0);
+		expect(await ledger(customer.profile.id)).toEqual({ points: 0, txs: [] });
 	});
 });

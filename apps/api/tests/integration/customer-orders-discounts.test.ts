@@ -35,6 +35,7 @@ import { orderItem } from "@/db/schemas/order";
 import { product as productTable } from "@/db/schemas/product";
 import { config } from "@/lib/config";
 import { createOrder } from "@/modules/customer/services/orders";
+import { transitionOrder } from "@/modules/seller/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,
@@ -107,13 +108,20 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 2 }],
 		});
 
 		expect(result.total).toBe("150.00"); // 2 × 75.00, not 2 × 100.00
-		expect(result.pointsEarned).toBe(150); // points on the charged amount
+		// Points accrue at pickup, on the charged amount
+		const picked = await transitionOrder(
+			result.id,
+			seller.profile.id,
+			"completed",
+			[store.id],
+		);
+		expect(picked.pointsEarned).toBe(150);
 
 		const items = await db
 			.select()
@@ -155,7 +163,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
@@ -191,7 +199,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
@@ -217,7 +225,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
@@ -244,7 +252,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: config.pointsPerEuroDiscount,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 			pointsToSpend: config.pointsPerEuroDiscount, // exactly €1 of points discount
@@ -275,7 +283,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
@@ -309,7 +317,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 3 }],
 		});
@@ -358,7 +366,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [
 				{ storeProductId: sp.id, quantity: 2 }, // 2 × 50.00 = 100.00
