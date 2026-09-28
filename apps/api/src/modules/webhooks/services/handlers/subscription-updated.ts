@@ -6,6 +6,7 @@ import {
 	storeSubscription,
 } from "@/db/schemas/store-subscription";
 import { logger } from "@/lib/logger";
+import { notifyStoreSuspended } from "../billing-notifications";
 
 export function mapStripeStatus(
 	sub: Stripe.Subscription,
@@ -56,7 +57,10 @@ export async function handleSubscriptionUpdated(
 		update.currentPeriodEnd = new Date(currentPeriodEnd * 1000);
 	}
 
-	if (newStatus === "suspended" && !existing.suspendedAt) {
+	// First entry into suspended (suspendedAt is cleared on the way back to
+	// active, so a later relapse counts as a new suspension).
+	const firstSuspension = newStatus === "suspended" && !existing.suspendedAt;
+	if (firstSuspension) {
 		update.suspendedAt = new Date();
 	}
 	if (newStatus === "active") {
@@ -67,4 +71,8 @@ export async function handleSubscriptionUpdated(
 		.update(storeSubscription)
 		.set(update)
 		.where(eq(storeSubscription.id, existing.id));
+
+	if (firstSuspension) {
+		await notifyStoreSuspended(existing.storeId);
+	}
 }
