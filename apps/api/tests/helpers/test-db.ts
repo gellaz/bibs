@@ -14,6 +14,7 @@ export type DrizzleTestDb = ReturnType<typeof drizzle<typeof schema>>;
 const POSTGIS_DIR = path.resolve(import.meta.dir, "../../../../docker/postgis");
 const API_DIR = path.resolve(import.meta.dir, "../../");
 const MIGRATIONS_DIR = path.resolve(API_DIR, "src/db/migrations");
+const TEST_IMAGE = "bibs-postgis-test:latest";
 
 let container: StartedTestContainer | null = null;
 let pool: Pool | null = null;
@@ -39,10 +40,14 @@ export function getTestDb(): DrizzleTestDb {
  * Call this in beforeAll() with a generous timeout (~120s on first build).
  */
 export async function setupTestContainer(): Promise<DrizzleTestDb> {
-	const image = await new GenericContainerBuilder(
-		POSTGIS_DIR,
-		"Dockerfile",
-	).build();
+	// Fixed tag + no session label: every test file (and every run) reuses the
+	// same cached image. The default build() tags `localhost/<uuid>:<uuid>` and
+	// stamps a per-session label, leaving one orphan image per test file.
+	// BuildKit keeps its own layer cache, so rebuilds resolve to the same image
+	// ID instead of re-running the Dockerfile (the legacy builder rebuilt it).
+	const image = await new GenericContainerBuilder(POSTGIS_DIR, "Dockerfile")
+		.withBuildkit()
+		.build(TEST_IMAGE, { deleteOnExit: false });
 
 	container = await image
 		.withEnvironment({
