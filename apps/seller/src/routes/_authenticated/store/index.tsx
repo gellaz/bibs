@@ -162,6 +162,7 @@ function StoreSettingsPage() {
 				addressLine2: store.addressLine2 ?? "",
 				municipalityId: store.municipalityId,
 				zipCode: store.zipCode,
+				location: store.location ?? undefined,
 				// undefined (non ""): "" presente fallirebbe il format uri dello
 				// schema Optional — vedi il default in store-form.tsx.
 				websiteUrl: store.websiteUrl ?? undefined,

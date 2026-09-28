@@ -38,6 +38,7 @@ const VALID_STORE_BODY = {
 	addressLine1: "Via Roma 1",
 	municipalityId: "00000000-0000-0000-0000-000000000001",
 	zipCode: "20100",
+	location: { x: 11.3426, y: 44.4949 },
 };
 
 describe("seller stores routes are owner-only", () => {

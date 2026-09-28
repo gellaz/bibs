@@ -234,6 +234,26 @@ describe("updateStore", () => {
 		expect(updated.addressLine1).toBe("Via Nuova");
 	});
 
+	it("moves the store pin", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const created = await createStore({
+			sellerProfileId: seller.profile.id,
+			name: "Pin",
+			addressLine1: "Via Vecchia",
+			municipalityId,
+			zipCode: "00100",
+		});
+
+		const updated = await updateStore({
+			storeId: created.id,
+			sellerProfileId: seller.profile.id,
+			location: { x: 11.3426, y: 44.4949 },
+		});
+
+		expect(updated.location).toEqual({ x: 11.3426, y: 44.4949 });
+	});
+
 	it("replaces phone numbers when phoneNumbers is provided", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);

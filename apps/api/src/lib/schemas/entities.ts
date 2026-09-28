@@ -17,8 +17,8 @@ const PointXY = t.Object({
 export const LocationField = t.Optional(
 	t.Object(
 		{
-			x: t.Number({ description: "Longitudine" }),
-			y: t.Number({ description: "Latitudine" }),
+			x: t.Number({ minimum: -180, maximum: 180, description: "Longitudine" }),
+			y: t.Number({ minimum: -90, maximum: 90, description: "Latitudine" }),
 		},
 		{ description: "Coordinate geografiche (PostGIS point)" },
 	),

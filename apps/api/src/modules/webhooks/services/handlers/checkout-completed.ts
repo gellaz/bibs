@@ -133,6 +133,10 @@ export async function handleCheckoutCompleted(
 				municipalityId: formData.municipalityId as string,
 				zipCode: formData.zipCode as string,
 				country: (formData.country as string) ?? "IT",
+				// Assente nei pending salvati prima che il pin fosse obbligatorio:
+				// il negozio nasce senza e il seller lo mette da /store.
+				location:
+					(formData.location as { x: number; y: number } | undefined) ?? null,
 				categoryId: (formData.categoryId as string | undefined) ?? null,
 				openingHours:
 					(formData.openingHours as
