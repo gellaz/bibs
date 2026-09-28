@@ -38,7 +38,6 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 | ID | Item | Evidenza | Note | Effort |
 |---|---|---|---|---|
 | **P1.3** | **Home seller con dati veri** | `apps/seller/src/routes/_authenticated/index.tsx:23` (`TODAY_LABEL = "Venerdì 22 maggio"`), `:25-30` stats "—", `:44-86` azioni finte ("3 ordini da preparare" `:49`) | Solo l'alert orari è reale. La card «ordini da preparare» può leggere `GET /seller/orders/counts` (#198). Include i rimandi di #183: funzione pura estratta dall'IIFE (`:103-137`), ordinamento per urgenza (`:139-141`) | M |
-| **P1.6** | **Account hub customer**: storico ordini e movimenti punti | `customer/routes/points.ts:9`, `customer/routes/orders.ts:24` inutilizzati; FE usa solo `profile.data.points` (`profile-identity.tsx:118`) | La sezione «Ordini» esiste (#199: tab Prenotazioni/Pagati, dettaglio, annullamento); restano movimenti punti e storico completo | M |
 | **P1.7** | **Billing seller**: email di dunning/cancellazione; riattivazione self-service di negozi `canceled` | `packages/emails/emails/` (3 template); `seller/services/stores.ts:352` (reactivate solo `canceling`) | Un negozio `canceled` è morto senza intervento manuale | M |
 
 **P1.1, buco chiuso (#202)**: `pay_*` nasce sempre `pending` (`placeOrder`) e `POST /customer/orders`
@@ -175,6 +174,7 @@ accetta solo `direct | reserve_pickup`.
 | **Debito #163** | Le righe ordinate escono dal carrello nella stessa transazione del checkout (`createCheckout`); quelle non disponibili restano | #199 |
 | **P1.1** | **Checkout customer** (creazione ordine dal carrello). Spec [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato): PP1 (#199), QR (#200), Connect (#201), PR2 (#202) | #199, #200, #201, #202 |
 | **P1.4** | Posizione del negozio obbligatoria: `CreateStoreBody` (checkout e `POST /stores`) richiede `location` con limiti lat/lng, il webhook `checkout-completed` la scrive (i pending senza restano tollerati). Nel form seller: ricerca indirizzo su `/locations/geocode` che compila via/CAP/comune + mappa con pin trascinabile; per i negozi senza pin avviso in `/store` con «Posiziona dall'indirizzo» e voce "high" in home | #204 |
+| **P1.6** | **Account hub customer**. Storico ordini già coperto da #199: le tab Prenotazioni/Pagati coprono tutti i tipi offerti (`direct` non è offerto al checkout). Movimenti punti: nuova pagina `/points` su `GET /customer/points` (saldo, movimenti paginati con tipo, importo con segno, data, link all'ordine); la pill punti del profilo porta lì anche a saldo zero; il dettaglio ordine mostra «Punti usati»/«Punti guadagnati» se ≠ 0. Il segno si deriva dal tipo: l'API scrive `redeemed` con importo positivo, al contrario di quanto dice lo schema | #205 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 

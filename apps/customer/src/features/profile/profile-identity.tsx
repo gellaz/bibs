@@ -3,6 +3,7 @@ import { Skeleton } from "@bibs/ui/components/skeleton";
 import { toast } from "@bibs/ui/components/sonner";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { unwrap } from "@bibs/ui/lib/api-client";
+import { Link } from "@tanstack/react-router";
 import { Camera } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
@@ -115,11 +116,19 @@ export function ProfileIdentity() {
 						) : (
 							profile.data && (
 								<>
-									{profile.data.points > 0 ? (
-										<PointsPill points={profile.data.points} />
-									) : (
-										<span>{m.profile_points_empty()}</span>
-									)}
+									<Link
+										to="/points"
+										search={{ page: 1 }}
+										className="relative inline-flex rounded-full outline-none transition-opacity after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] hover:opacity-90 focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+									>
+										{profile.data.points > 0 ? (
+											<PointsPill points={profile.data.points} />
+										) : (
+											<span className="underline decoration-muted-foreground/40 underline-offset-4 hover:text-foreground">
+												{m.profile_points_empty()}
+											</span>
+										)}
+									</Link>
 									{/* Sotto sm la riga si spezza: il punto separatore resterebbe
 									    appeso in fondo alla prima riga, quindi sparisce e il
 									    "membro da" prende una riga sua. */}

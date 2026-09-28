@@ -22,6 +22,7 @@ import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
 import { PickupQr } from "@/features/orders/pickup-qr";
 import { useCancelOrder, useCustomerOrder } from "@/features/orders/use-orders";
+import { formatSignedPoints } from "@/features/points/point-display";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/orders/$orderId")({
@@ -157,6 +158,30 @@ function OrderDetailPage() {
 						{formatPriceEur(order.total)}
 					</span>
 				</div>
+				{(order.pointsSpent !== 0 || order.pointsEarned !== 0) && (
+					<dl className="space-y-1 text-sm">
+						{order.pointsSpent !== 0 && (
+							<div className="flex items-baseline justify-between">
+								<dt className="text-muted-foreground">
+									{m.orders_points_spent()}
+								</dt>
+								<dd className="font-mono text-foreground tabular-nums">
+									{formatSignedPoints(-Math.abs(order.pointsSpent))}
+								</dd>
+							</div>
+						)}
+						{order.pointsEarned !== 0 && (
+							<div className="flex items-baseline justify-between">
+								<dt className="text-muted-foreground">
+									{m.orders_points_earned()}
+								</dt>
+								<dd className="font-mono text-foreground tabular-nums">
+									{formatSignedPoints(Math.abs(order.pointsEarned))}
+								</dd>
+							</div>
+						)}
+					</dl>
+				)}
 			</section>
 
 			{order.type === "pay_pickup" &&

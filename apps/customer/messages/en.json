@@ -381,5 +381,18 @@
 	"orders_cancel_paid": "Cancel order",
 	"orders_cancel_paid_title": "Cancel the order?",
 	"orders_cancel_paid_description": "We'll refund {amount} to the card you paid with: it usually takes 5-10 business days.",
-	"orders_cancel_paid_success": "Order cancelled, refund started"
+	"orders_cancel_paid_success": "Order cancelled, refund started",
+	"orders_points_earned": "Points earned",
+	"orders_points_spent": "Points used",
+	"points_title": "Your points",
+	"points_balance": "Balance",
+	"points_history": "Activity",
+	"points_type_earned": "Earned",
+	"points_type_redeemed": "Used",
+	"points_type_refunded": "Refunded",
+	"points_empty_title": "No activity yet",
+	"points_empty_description": "You earn points when you pick up an order: they show up here, along with the ones you use.",
+	"points_load_failed": "We couldn't load your points.",
+	"points_page_prev": "Previous page",
+	"points_page_next": "Next page"
 }
