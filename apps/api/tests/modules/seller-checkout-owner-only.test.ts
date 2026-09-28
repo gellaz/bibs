@@ -56,6 +56,11 @@ describe("seller checkout routes are owner-only", () => {
 		const res = await call("GET", "/stores/checkout/some-id");
 		expect(res.status).toBe(403);
 	});
+
+	it("POST /stores/:id/reactivation-checkout → 403 for a non-owner", async () => {
+		const res = await call("POST", "/stores/some-id/reactivation-checkout");
+		expect(res.status).toBe(403);
+	});
 });
 
 // La validazione del body gira prima del guard: un negozio senza pin non

@@ -77,5 +77,7 @@ describe("listArchivedStores", () => {
 		expect(result.data[0].id).toBe(archived.id);
 		expect(result.data[0].cancelReason).toBe("seller_canceled");
 		expect(result.data[0].canceledAt).toBeTruthy();
+		// Drives the «Riattiva» button in the seller archive.
+		expect(result.data[0].subscriptionStatus).toBe("canceled");
 	});
 });

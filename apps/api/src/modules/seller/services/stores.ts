@@ -386,6 +386,7 @@ export async function listArchivedStores(params: ListArchivedParams) {
 			deletedAt: storeTable.deletedAt,
 			canceledAt: storeSubscription.canceledAt,
 			cancelReason: storeSubscription.cancelReason,
+			subscriptionStatus: storeSubscription.status,
 		})
 		.from(storeTable)
 		.innerJoin(

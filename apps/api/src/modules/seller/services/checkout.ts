@@ -175,6 +175,59 @@ export async function createCheckoutSession(
 	};
 }
 
+/**
+ * Riattivazione self-service di un negozio `canceled`: nuova Checkout Session
+ * in modalità subscription sullo stesso prezzo della creazione negozio. Nessun
+ * pending: il negozio esiste già (archiviato) e `checkout.session.completed`
+ * lo riporta in vita leggendo `metadata.reactivateStoreId`.
+ */
+export async function createReactivationCheckoutSession(params: {
+	sellerProfileId: string;
+	storeId: string;
+}): Promise<{ checkoutUrl: string }> {
+	const sub = await db.query.storeSubscription.findFirst({
+		where: eq(storeSubscription.storeId, params.storeId),
+		with: { store: { columns: { sellerProfileId: true } } },
+	});
+	if (!sub) throw new ServiceError(404, "Subscription non trovata");
+	if (sub.store.sellerProfileId !== params.sellerProfileId) {
+		throw new ServiceError(403, "Non sei owner di questo negozio");
+	}
+	if (sub.status !== "canceled") {
+		throw new ServiceError(409, "Negozio non cancellato");
+	}
+
+	const customerId = await getOrCreateStripeCustomer(params.sellerProfileId);
+
+	// Double click / second tab: hand back the session that is still open for
+	// this store instead of opening a second one (two paid sessions would mean
+	// two subscriptions; the webhook cancels the extra one, but better not to).
+	const open = await stripe.checkout.sessions.list({
+		customer: customerId,
+		status: "open",
+		limit: 100,
+	});
+	const reusable = open.data.find(
+		(s) => s.metadata?.reactivateStoreId === params.storeId && s.url,
+	);
+	if (reusable?.url) return { checkoutUrl: reusable.url };
+
+	const pricing = await getActivePricing();
+	const metadata = { reactivateStoreId: params.storeId };
+	const session = await stripe.checkout.sessions.create({
+		mode: "subscription",
+		customer: customerId,
+		line_items: [{ price: pricing.stripePriceId, quantity: 1 }],
+		payment_method_collection: "if_required",
+		metadata,
+		subscription_data: { metadata },
+		success_url: `${env.SELLER_APP_URL}/billing?reactivation=success`,
+		cancel_url: `${env.SELLER_APP_URL}/billing?reactivation=canceled`,
+	});
+
+	return { checkoutUrl: session.url ?? "" };
+}
+
 export async function getCheckoutStatus(params: {
 	sellerProfileId: string;
 	stripeCheckoutSessionId: string;

@@ -1,11 +1,12 @@
 import { Elysia, t } from "elysia";
 import { ServiceError } from "@/lib/errors";
 import { ok } from "@/lib/responses";
-import { okRes, withErrors } from "@/lib/schemas";
+import { okRes, withConflictErrors, withErrors } from "@/lib/schemas";
 import { CreateStoreBody } from "@/lib/schemas/forms";
 import { requireOwner, withSeller } from "../context";
 import {
 	createCheckoutSession,
+	createReactivationCheckoutSession,
 	getCheckoutStatus,
 	getPendingForResume,
 } from "../services/checkout";
@@ -94,6 +95,35 @@ export const checkoutRoutes = new Elysia()
 				summary: "Recupera form data per cancel flow",
 				description:
 					"Usato per ripopolare il form quando l'utente torna da checkout cancellato.",
+				tags: ["Seller - Stores"],
+			},
+		},
+	)
+	.post(
+		"/stores/:storeId/reactivation-checkout",
+		async (ctx) => {
+			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
+			if (sp.onboardingStatus !== "active") {
+				throw new ServiceError(403, "Seller must be active to add stores");
+			}
+			const data = await createReactivationCheckoutSession({
+				sellerProfileId: sp.id,
+				storeId: params.storeId,
+			});
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				storeId: t.String({ description: "ID del negozio archiviato" }),
+			}),
+			response: withConflictErrors({
+				200: okRes(t.Object({ checkoutUrl: t.String() })),
+			}),
+			detail: {
+				summary: "Checkout per riattivare un negozio cancellato",
+				description:
+					"Crea una Stripe Checkout in mode subscription (stesso prezzo della creazione negozio) per un negozio con abbonamento 'canceled'. A pagamento avvenuto il webhook toglie il negozio dall'archivio con prodotti, orari e immagini invariati. 409 se il negozio non è cancellato. Solo il titolare.",
 				tags: ["Seller - Stores"],
 			},
 		},

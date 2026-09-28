@@ -38,6 +38,12 @@ const ArchivedStoreSchema = t.Object({
 	deletedAt: t.Nullable(t.Date()),
 	canceledAt: t.Nullable(t.Date()),
 	cancelReason: t.Nullable(t.String()),
+	subscriptionStatus: t.Nullable(
+		t.String({
+			description:
+				"Stato dell'abbonamento; 'canceled' = riattivabile con POST /stores/:storeId/reactivation-checkout",
+		}),
+	),
 });
 
 export const storesRoutes = new Elysia()
