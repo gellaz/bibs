@@ -32,8 +32,17 @@ import { CancelStoreDialog } from "@/features/billing/components/cancel-store-di
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { api, unwrap } from "@/lib/api";
 
+type ReactivationOutcome = "success" | "canceled";
+
 export const Route = createFileRoute("/_authenticated/billing")({
 	component: BillingPage,
+	// Ritorno dalla Checkout di riattivazione (success_url / cancel_url).
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { reactivation?: ReactivationOutcome } =>
+		search.reactivation === "success" || search.reactivation === "canceled"
+			? { reactivation: search.reactivation }
+			: {},
 });
 
 const STATUS_BADGE: Record<
@@ -92,6 +101,23 @@ function BillingPage() {
 	useEffect(() => {
 		if (!isOwner) void navigate({ to: "/" });
 	}, [isOwner, navigate]);
+
+	const { reactivation } = Route.useSearch();
+	useEffect(() => {
+		if (!reactivation) return;
+		if (reactivation === "success") {
+			// The webhook may land a moment after the redirect: refresh what
+			// depends on it instead of trusting the cached lists.
+			void queryClient.invalidateQueries({ queryKey: ["seller", "billing"] });
+			void queryClient.invalidateQueries({ queryKey: ["seller", "stores"] });
+			toast.success(
+				"Pagamento ricevuto: il negozio torna attivo tra pochi istanti.",
+			);
+		} else {
+			toast.info("Riattivazione annullata: nessun addebito.");
+		}
+		void navigate({ to: "/billing", search: {}, replace: true });
+	}, [reactivation, queryClient, navigate]);
 
 	const { data: summary, isLoading: summaryLoading } = useQuery({
 		queryKey: ["seller", "billing", "summary"],

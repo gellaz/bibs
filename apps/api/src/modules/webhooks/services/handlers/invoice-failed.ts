@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { logger } from "@/lib/logger";
+import { notifyPaymentFailed } from "../billing-notifications";
 
 export async function handleInvoiceFailed(event: Stripe.Event): Promise<void> {
 	const invoice = event.data.object as Stripe.Invoice;
@@ -23,11 +24,26 @@ export async function handleInvoiceFailed(event: Stripe.Event): Promise<void> {
 
 	// Only flip to past_due from healthy states; if already past_due/suspended/canceling,
 	// the canonical state comes from customer.subscription.updated.
-	if (existing.status === "active" || existing.status === "canceling") {
-		await db
-			.update(storeSubscription)
-			.set({ status: "past_due" })
-			.where(eq(storeSubscription.id, existing.id));
+	// Guarded (CAS) so only the delivery that actually performs the transition
+	// sends the dunning email: Stripe retries fail again while already past_due,
+	// and those retries must not spam the seller.
+	const [transitioned] = await db
+		.update(storeSubscription)
+		.set({ status: "past_due" })
+		.where(
+			and(
+				eq(storeSubscription.id, existing.id),
+				inArray(storeSubscription.status, ["active", "canceling"]),
+			),
+		)
+		.returning({ storeId: storeSubscription.storeId });
+
+	if (transitioned) {
+		await notifyPaymentFailed({
+			storeId: transitioned.storeId,
+			amountCents: invoice.amount_due,
+			currency: invoice.currency ?? existing.currency,
+		});
 	}
 }
 

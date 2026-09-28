@@ -35,9 +35,7 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 
 ## P1 — Superfici di prodotto mancanti
 
-| ID | Item | Evidenza | Note | Effort |
-|---|---|---|---|---|
-| **P1.7** | **Billing seller**: email di dunning/cancellazione; riattivazione self-service di negozi `canceled` | `packages/emails/emails/` (3 template); `seller/services/stores.ts:352` (reactivate solo `canceling`) | Un negozio `canceled` è morto senza intervento manuale | M |
+Nessun P1 aperto: P1.3 (#207), P1.6 (#205) e P1.7 (#206) chiusi, vedi «Chiusi».
 
 **P1.1, buco chiuso (#202)**: `pay_*` nasce sempre `pending` (`placeOrder`) e `POST /customer/orders`
 accetta solo `direct | reserve_pickup`.
@@ -175,6 +173,7 @@ accetta solo `direct | reserve_pickup`.
 | **P1.4** | Posizione del negozio obbligatoria: `CreateStoreBody` (checkout e `POST /stores`) richiede `location` con limiti lat/lng, il webhook `checkout-completed` la scrive (i pending senza restano tollerati). Nel form seller: ricerca indirizzo su `/locations/geocode` che compila via/CAP/comune + mappa con pin trascinabile; per i negozi senza pin avviso in `/store` con «Posiziona dall'indirizzo» e voce "high" in home | #204 |
 | **P1.6** | **Account hub customer**. Storico ordini già coperto da #199: le tab Prenotazioni/Pagati coprono tutti i tipi offerti (`direct` non è offerto al checkout). Movimenti punti: nuova pagina `/points` su `GET /customer/points` (saldo, movimenti paginati con tipo, importo con segno, data, link all'ordine); la pill punti del profilo porta lì anche a saldo zero; il dettaglio ordine mostra «Punti usati»/«Punti guadagnati» se ≠ 0. Il segno si deriva dal tipo: l'API scrive `redeemed` con importo positivo, al contrario di quanto dice lo schema | #205 |
 | **P1.3** | Home seller con dati veri: `GET /seller/dashboard?storeId=` aggregato (ordini e fatturato lordo di oggi, giorno Europe/Rome calcolato in SQL; prodotti attivi; promo in corso; ordini confermati da preparare, esauriti, scorta bassa sotto `stores.low_stock_threshold` (default 5, modificabile in `/store`), promo che finiscono entro 3 giorni). In home data vera, stats reali, voci solo con count > 0; card recensioni rimossa; logica orari estratta dall'IIFE in una funzione pura testata e voci ordinate per urgenza (rimandi di #183) | #207 |
+| **P1.7** | Billing seller: email «Pagamento non riuscito» (transizione → `past_due`), «Negozio sospeso» (primo `suspended`), «Negozio cancellato» (alla consegna che archivia il negozio, copy diversa per scelta del seller vs mancato pagamento), solo al titolare e dopo la tx, errori email che non rompono il webhook. Riattivazione self-service dei `canceled`: `POST /seller/stores/:storeId/reactivation-checkout` + ramo `reactivateStoreId` in `checkout-completed` (stessa riga di `store_subscriptions`, `deletedAt = null`, catalogo intatto), «Riattiva» in `/store/archived`. Niente email di «cancellazione programmata»: scelta di prodotto | #206 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -195,6 +194,6 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 2. ~~**P2.1** (pin TanStack + job `vite build`)~~ — fatto in #196.
 3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#202.
 4. ~~**P1.4 geocoding negozi seller**~~ — fatto in #204. ~~**P1.3 home seller**~~ — fatto in #207.
-   ~~**P1.6 account hub customer**~~ — fatto in #205. Resta **P1.7** (billing seller).
+   ~~**P1.6 account hub customer**~~ — fatto in #205. ~~**P1.7 billing seller**~~ — fatto in #206.
 5. Una sweep P3 ogni tanto come lavoro a basso rischio; P4/P5 quando si tocca la zona.
 6. **P6** diventa checklist bloccante al primo segnale di go-live.

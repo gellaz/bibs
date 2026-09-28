@@ -7,6 +7,7 @@ import { storeSubscription } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
+import { handleStoreReactivation } from "./store-reactivation";
 
 export async function handleCheckoutCompleted(
 	event: Stripe.Event,
@@ -19,6 +20,13 @@ export async function handleCheckoutCompleted(
 			"Checkout session not paid, skipping",
 		);
 		return;
+	}
+
+	// Riattivazione di un negozio `canceled` (POST /seller/stores/:id/reactivation-checkout):
+	// nessun pending, il negozio esiste già e torna in vita con la nuova subscription.
+	const reactivateStoreId = session.metadata?.reactivateStoreId;
+	if (reactivateStoreId) {
+		return handleStoreReactivation(session, reactivateStoreId);
 	}
 
 	const pendingId = session.metadata?.pendingStoreCreationId;

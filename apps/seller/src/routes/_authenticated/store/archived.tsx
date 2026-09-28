@@ -1,10 +1,12 @@
 import { Badge } from "@bibs/ui/components/badge";
+import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
 	CardContent,
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
+import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
 	Table,
@@ -14,7 +16,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useIsOwner } from "@/hooks/use-is-owner";
@@ -60,6 +62,21 @@ function ArchivedPage() {
 		enabled: isOwner,
 	});
 
+	// Nuovo abbonamento via Stripe Checkout: il negozio torna attivo quando il
+	// webhook conferma il pagamento; success/cancel riportano su /billing.
+	const reactivateMutation = useMutation({
+		mutationFn: async (storeId: string) => {
+			const r = await api()
+				.seller.stores({ storeId })
+				["reactivation-checkout"].post();
+			return unwrap(r, "Errore").data;
+		},
+		onSuccess: (data) => {
+			if (data?.checkoutUrl) window.location.href = data.checkoutUrl;
+		},
+		onError: (e: Error) => toast.error(e.message),
+	});
+
 	return (
 		<div className="space-y-4">
 			<div>
@@ -67,7 +84,8 @@ function ArchivedPage() {
 					Negozi archiviati
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Negozi cancellati. I dati storici sono conservati ma non modificabili.
+					Negozi cancellati. Prodotti, orari e immagini restano salvati: puoi
+					riattivare un negozio con un nuovo abbonamento.
 				</p>
 			</div>
 			<Card>
@@ -90,6 +108,7 @@ function ArchivedPage() {
 									<TableHead>Creato</TableHead>
 									<TableHead>Archiviato</TableHead>
 									<TableHead>Motivo</TableHead>
+									<TableHead className="w-28" />
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -109,6 +128,23 @@ function ArchivedPage() {
 													? (REASON_LABEL[r.cancelReason] ?? r.cancelReason)
 													: "—"}
 											</Badge>
+										</TableCell>
+										<TableCell className="text-right">
+											{r.subscriptionStatus === "canceled" && (
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => reactivateMutation.mutate(r.id)}
+													disabled={reactivateMutation.isPending}
+												>
+													{reactivateMutation.isPending &&
+													reactivateMutation.variables === r.id ? (
+														<Spinner />
+													) : (
+														"Riattiva"
+													)}
+												</Button>
+											)}
 										</TableCell>
 									</TableRow>
 								))}
