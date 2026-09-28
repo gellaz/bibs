@@ -4,9 +4,11 @@ How money works in bibs today, and how to exercise the whole flow on your machin
 Architecture context: [architecture.md](architecture.md). Design rationale:
 [the billing spec](superpowers/specs/2026-05-26-seller-store-subscription-billing-design.md).
 
-> **Scope.** Stripe is used for one thing: the **per-store monthly subscription paid by
-> sellers**. Customers never touch Stripe — customer order payment does not exist yet
-> (see [What does NOT exist](#what-does-not-exist-yet)).
+> **Scope.** Stripe covers the **per-store monthly subscription paid by sellers**, and
+> now the customer's **online "Paga e ritira" (PR2) payment** at checkout — see
+> [Paga e ritira (PR2) in locale](#paga-e-ritira-pr2-in-locale). Other order types
+> (`direct`, `reserve_pickup`, `pay_deliver`) still never touch Stripe (see
+> [What does NOT exist](#what-does-not-exist-yet)).
 
 ## The model in 2 minutes
 
@@ -301,19 +303,83 @@ nuovo, quindi il log dice «account.updated for unknown connected account,
 skipping». Il test vero è l'onboarding dal profilo seller (vedi lo smoke manuale
 del task 8).
 
+## Paga e ritira (PR2) in locale
+
+1. `STRIPE_SECRET_KEY` (API) e `VITE_STRIPE_PUBLISHABLE_KEY` (`apps/customer/.env.local`)
+   della stessa modalità test.
+2. `stripe listen --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect`
+   — i `payment_intent.*` arrivano sulla route piattaforma.
+3. Il negozio deve avere «Paga e ritira» acceso e il conto Connect abilitato (profilo seller →
+   Pagamenti online, onboarding di test).
+4. Carte di test: `4242 4242 4242 4242` (ok), `4000 0025 0000 3155` (3DS), `4000 0000 0000 0002`
+   (rifiutata). Scadenza futura qualsiasi, CVC qualsiasi.
+5. Senza `stripe listen` la conferma arriva solo quando il cron `expireUnpaidOrders` trova la
+   finestra scaduta (fino a 30 minuti) e rilegge il PaymentIntent: per provare il flusso normale
+   serve il webhook.
+6. I trasferimenti si vedono in Dashboard → Connect → conto → Trasferimenti (`transfer_group` = id del checkout).
+
+### Cosa aspettarsi nello smoke
+
+**Setup.** La `pk_test_…` si prende da Dashboard → Developers → API keys (modalità test), oppure
+con `stripe config --list | grep pub_key` (la CLI la salva dopo `stripe login`); deve essere dello
+stesso account della `sk_test_…` dell'API. Vite legge le `VITE_*` solo all'avvio: dopo averla
+impostata **riavvia il server customer**, altrimenti la pagina di pagamento dice "il pagamento
+online non è disponibile" anche se il checkout è stato creato.
+
+**Seed.** Il negozio «Bottega Dev» di `seller@dev.bibs` ha un catalogo apposta
+(`seed/fixtures/dev-seller-catalog.ts`: IVA mista, stock basso ed esaurito, promozioni) e
+«Paga e ritira» configurato; si offre al cliente solo col conto Connect abilitato. Su un DB
+esistente basta `bun run db:seed`, non serve il reset (che cancellerebbe anche il conto Connect).
+Gli ordini `pay_pickup` del seed non hanno un pagamento vero: annullarne uno confermato dà 409
+«Pagamento dell'ordine non trovato». Per provare il rimborso crea l'ordine dal checkout.
+
+**Cosa fa ogni carta.**
+
+| Carta | Cosa vedi |
+|---|---|
+| `4242 4242 4242 4242` | Nessuna verifica: il form conferma e porta subito alla pagina di ordine effettuato. |
+| `4000 0025 0000 3155` | Si apre la finestra 3DS di Stripe. «Complete» → ordine effettuato; «Fail» → resti sul pagamento con l'errore sotto il form e puoi riprovare. |
+| `4000 0000 0000 0002` | «Carta rifiutata» sotto il form; l'ordine resta «In attesa di pagamento» e si può ritentare con un'altra carta sulla stessa pagina (un rifiuto non annulla l'ordine). |
+
+**Stati della pagina di ordine effettuato** (`/checkout/$checkoutId`). Lo stato si legge
+sempre dall'API, mai dall'URL di ritorno di Stripe:
+
+- **Pagamento da completare**: c'è un PR2 `pending` e il PaymentIntent è ancora pagabile
+  (il cliente non ha pagato). Link «Torna al pagamento», nessun polling.
+- **Stiamo confermando il pagamento**: PR2 `pending` ma il PaymentIntent non è più pagabile
+  (pagato, in attesa del webhook). La pagina rilegge ogni 2 secondi finché l'ordine è confermato.
+- **Confermato**: codice di ritiro e link al QR.
+- **Pagamento non completato**: tutti i PR2 annullati senza pagamento (scaduti).
+
+In locale, con `stripe listen`, il webhook arriva di solito prima che la pagina finisca di
+caricare: «Stiamo confermando» può durare un lampo o non comparire affatto. Per vederlo apposta:
+ferma `stripe listen`, paga con la `4242` (la pagina resta su «Stiamo confermando»), poi riavvia
+`stripe listen` e rimanda l'evento con `stripe events resend <evt_…>` (l'id è nella Dashboard →
+Developers → Events): l'ordine si conferma e la pagina si aggiorna da sola.
+
+### In produzione
+
+- L'endpoint webhook PIATTAFORMA (`/webhooks/stripe`) deve essere sottoscritto (anche) a
+  `payment_intent.succeeded`, `payment_intent.canceled` e `payment_intent.payment_failed` —
+  senza, la conferma del pagamento arriva solo al prossimo giro del cron
+  `expireUnpaidOrders` (fino a 30 minuti dopo).
+- `VITE_STRIPE_PUBLISHABLE_KEY` deve essere impostata nell'app customer: senza, la pagina
+  di pagamento mostra "il pagamento online non è disponibile".
+
 ## What does NOT exist (yet)
 
 Be explicit about this in reviews and planning:
 
-- **Customer order payment.** `pay_pickup` / `pay_deliver` exist in the order state
-  machine, and sellers can onboard a Stripe **Connect** account (see
-  [Connect](#connect-pagamenti-online-dei-negozi) above), but **no PaymentIntent runs
-  for customer orders yet** — `ONLINE_PAYMENT_LIVE = false` keeps `pay_pickup` off the
-  customer checkout until the PR that adds the charge (separate charges and
-  transfers). Documenting or testing "customer checkout via Stripe" is not possible
-  today.
+- **PS3 / `pay_deliver` online payment.** Only `pay_pickup` (PR2) has a PaymentIntent —
+  see [Paga e ritira (PR2) in locale](#paga-e-ritira-pr2-in-locale) above. `pay_deliver`
+  stays in the order type enum and state machine, but no checkout offers it
+  (`storeOrderTypes` = `reserve_pickup | pay_pickup` only) and it has no online
+  payment; PS3 was deferred out of PR A–F.
 - **SDI e-invoicing** (fattura elettronica) — MVP relies on Stripe-hosted receipts.
-- **Refunds / disputes** — webhook events are ignored; manual via Stripe dashboard.
+- **Disputes.** `charge.dispute.created` and other dispute/chargeback events are
+  ignored — manual via Stripe dashboard. (A cancelled PR2 order *does* get refunded
+  and its transfer reversed — via the API at cancel time, not a webhook — see
+  [Paga e ritira (PR2) in locale](#paga-e-ritira-pr2-in-locale); that's not a dispute.)
 - **Multi-currency** — schema carries `currency` but everything is EUR.
 - **Plan tiers / upgrades** — one flat fee; no plan changes.
 - **Reactivation** — a `canceled` store stays archived; create a new store instead.

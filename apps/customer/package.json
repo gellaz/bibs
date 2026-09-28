@@ -24,6 +24,8 @@
 		"@bibs/ui": "workspace:*",
 		"@elysiajs/eden": "catalog:",
 		"@hookform/resolvers": "catalog:",
+		"@stripe/react-stripe-js": "^6.12.0",
+		"@stripe/stripe-js": "^9.17.0",
 		"@t3-oss/env-core": "catalog:",
 		"@tailwindcss/vite": "catalog:",
 		"@tanstack/react-devtools": "catalog:",

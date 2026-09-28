@@ -95,7 +95,9 @@ export function OrderActions({ order }: Props) {
 						</AlertDialogTitle>
 						<AlertDialogDescription>
 							{confirm === "cancel"
-								? m.orders_cancel_description()
+								? order.type === "pay_pickup"
+									? m.orders_cancel_description_paid()
+									: m.orders_cancel_description()
 								: order.type === "reserve_pickup"
 									? m.orders_picked_up_description_reserve()
 									: m.orders_picked_up_description()}

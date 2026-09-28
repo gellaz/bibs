@@ -4,23 +4,19 @@ import { sql } from "drizzle-orm";
 export const storeOrderTypes = ["reserve_pickup", "pay_pickup"] as const;
 export type StoreOrderType = (typeof storeOrderTypes)[number];
 
-// Il pagamento del cliente (PaymentIntent, trasferimenti) arriva con la PR F.
-// Fino ad allora un negozio può avere PR2 acceso e il conto abilitato, ma il
-// checkout non lo offre: nessun ordine pay_pickup senza un modo di pagarlo.
-export const ONLINE_PAYMENT_LIVE = false;
-
 /**
  * Unica regola su cosa si offre al checkout: la usano il carrello (per mostrare
  * la scelta), il checkout (per validarla) e il seller (per mostrare cosa vede il
- * cliente), così non possono divergere. `live` esiste per i test.
+ * cliente), così non possono divergere. PR2 richiede il conto Connect abilitato
+ * a ricevere i trasferimenti.
  */
 export function offeredOrderTypes(
 	configured: readonly string[],
-	opts: { chargesEnabled: boolean; live?: boolean },
+	opts: { chargesEnabled: boolean },
 ): StoreOrderType[] {
-	const online = (opts.live ?? ONLINE_PAYMENT_LIVE) && opts.chargesEnabled;
 	return storeOrderTypes.filter(
-		(t) => configured.includes(t) && (t !== "pay_pickup" || online),
+		(t) =>
+			configured.includes(t) && (t !== "pay_pickup" || opts.chargesEnabled),
 	);
 }
 

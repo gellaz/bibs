@@ -242,6 +242,13 @@ Nessuna transizione nuova in `order-state-machine.ts`: bastano quelle esistenti.
   `/checkout/$checkoutId/pay` con il `clientSecret` del checkout; `return_url` porta
   alla pagina di ordine effettuato, che legge lo stato dall'API (non dall'URL).
 
+**Implementazione (PR F):** un rifiuto della carta non annulla gli ordini (il
+cliente riprova sulla stessa pagina); si annullano alla scadenza dei 30 minuti o
+su `payment_intent.canceled`. Un PR2 `pending` non si annulla a mano (409): il
+PaymentIntent copre tutto il checkout. Lo storno del trasferimento è
+best-effort, il rimborso al cliente no. Solo carte (wallet inclusi). Dettagli e
+motivazioni: `docs/superpowers/plans/2026-09-25-pr-f-pay-pickup.md`, «Rulings».
+
 ### Seller — P1.2 (PR B)
 
 - Route `orders` nel seller: lista del negozio attivo (tabella con filtri stato e

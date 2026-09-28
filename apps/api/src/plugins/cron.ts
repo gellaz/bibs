@@ -3,6 +3,7 @@ import { Elysia } from "elysia";
 import { runAutoCancelSuspended } from "@/jobs/auto-cancel-suspended-stores";
 import { runExpirePending } from "@/jobs/expire-pending-store-creations";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
+import { expireUnpaidOrders } from "@/lib/jobs/expire-unpaid-orders";
 import { logger } from "@/lib/logger";
 
 export const cronJobs = new Elysia({ name: "cron-jobs" })
@@ -21,6 +22,24 @@ export const cronJobs = new Elysia({ name: "cron-jobs" })
 					}
 				} catch (error) {
 					logger.error({ err: error }, "Errore durante scadenza prenotazioni");
+				}
+			},
+		}),
+	)
+	.use(
+		cron({
+			name: "expireUnpaidOrders",
+			pattern: Patterns.EVERY_MINUTE,
+			async run() {
+				try {
+					const count = await expireUnpaidOrders();
+					if (count > 0)
+						logger.info(
+							{ count },
+							"Ordini pay_* non pagati annullati via cron",
+						);
+				} catch (error) {
+					logger.error({ err: error }, "Errore durante scadenza pagamenti");
 				}
 			},
 		}),

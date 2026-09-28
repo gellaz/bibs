@@ -53,7 +53,7 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 	// ── Resolve active sellers ────────────────────────────
 	// Filtro sul pattern, non su una lista di lunghezza fissa: così i blocchi
 	// aggiunti a `statusDistribution` entrano da soli. `seller@dev.bibs` resta
-	// fuori — non finisce in `seller%@test.com` — e tiene il suo catalogo vuoto.
+	// fuori — non finisce in `seller%@test.com` — e ha un catalogo scritto a mano (dev-seller-catalog.ts).
 	const sellerRows = await db
 		.select({
 			email: user.email,

@@ -71,7 +71,7 @@ const STORE_BODY = {
 };
 
 const ORDER_BODY = {
-	type: "pay_pickup",
+	type: "reserve_pickup",
 	storeId: "some-store",
 	items: [{ storeProductId: "some-sp", quantity: 1 }],
 };

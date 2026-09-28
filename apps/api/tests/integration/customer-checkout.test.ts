@@ -229,7 +229,7 @@ describe("createCheckout", () => {
 		expect(await db.select().from(order)).toHaveLength(1);
 	});
 
-	it("rifiuta un tipo non offerto (pay_pickup) con 400", async () => {
+	it("rifiuta pay_pickup con conto non abilitato (400)", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
 		const customer = await createTestCustomer(db);
@@ -241,7 +241,7 @@ describe("createCheckout", () => {
 		await db.insert(paymentMethod).values({
 			sellerProfileId: seller.profile.id,
 			stripeAccountId: "acct_T",
-			chargesEnabled: true,
+			chargesEnabled: false,
 		});
 		await createTestCartItem(db, customer.profile.id, a.sp.id, { quantity: 1 });
 

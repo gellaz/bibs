@@ -37,6 +37,24 @@ describe("canCustomerCancel", () => {
 	});
 });
 
+describe("canCustomerCancel", () => {
+	it("un Paga e ritira in attesa di pagamento non si annulla a mano", () => {
+		expect(canCustomerCancel({ type: "pay_pickup", status: "pending" })).toBe(
+			false,
+		);
+	});
+	it("un Paga e ritira confermato sì (con rimborso)", () => {
+		expect(canCustomerCancel({ type: "pay_pickup", status: "confirmed" })).toBe(
+			true,
+		);
+	});
+	it("una prenotazione confermata sì", () => {
+		expect(
+			canCustomerCancel({ type: "reserve_pickup", status: "confirmed" }),
+		).toBe(true);
+	});
+});
+
 describe("formatCountdown", () => {
 	it("ore:minuti:secondi, ore oltre le 24", () => {
 		expect(formatCountdown(47 * 3_600_000 + 59 * 60_000 + 12_000)).toBe(

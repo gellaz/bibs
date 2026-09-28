@@ -10,6 +10,7 @@ import { handleConnectAccountEvent } from "./handlers/account-updated";
 import { handleCheckoutCompleted } from "./handlers/checkout-completed";
 import { handleInvoiceFailed } from "./handlers/invoice-failed";
 import { handleInvoicePaid } from "./handlers/invoice-paid";
+import { handlePaymentIntentEvent } from "./handlers/payment-intent";
 import { handleSubscriptionDeleted } from "./handlers/subscription-deleted";
 import { handleSubscriptionUpdated } from "./handlers/subscription-updated";
 
@@ -125,6 +126,10 @@ async function dispatch(
 			return handleInvoicePaid(event);
 		case "invoice.payment_failed":
 			return handleInvoiceFailed(event);
+		case "payment_intent.succeeded":
+		case "payment_intent.payment_failed":
+		case "payment_intent.canceled":
+			return handlePaymentIntentEvent(event);
 		default:
 			// account.updated on the platform route is unexpected (it belongs to
 			// the connect scope) and falls through here too: log + ignore.

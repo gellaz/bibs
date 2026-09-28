@@ -13,8 +13,8 @@ type OrderType = "reserve_pickup" | "pay_pickup";
 /**
  * «Tipologie d'acquisto» del negozio: switch immediati per reserve_pickup /
  * pay_pickup. pay_pickup richiede chargesEnabled per essere acceso (Task 5);
- * offeredOrderTypes riflette cosa vede davvero il cliente (fino alla PR F
- * resta senza pay_pickup anche ad account abilitato: ONLINE_PAYMENT_LIVE).
+ * offeredOrderTypes riflette cosa vede davvero il cliente: PR2 solo con il
+ * conto abilitato.
  */
 export function OrderTypesSection({ storeId }: { storeId: string }) {
 	const qc = useQueryClient();
@@ -107,9 +107,7 @@ export function OrderTypesSection({ storeId }: { storeId: string }) {
 					)}
 					{payOn && !payOffered && (
 						<p className="text-xs text-muted-foreground">
-							{data.chargesEnabled
-								? m["store.orderTypes.pay.notOffered"]()
-								: m["store.orderTypes.pay.accountDisabled"]()}
+							{m["store.orderTypes.pay.accountDisabled"]()}
 						</p>
 					)}
 				</Row>
