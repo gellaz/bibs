@@ -193,6 +193,30 @@ describe("invoice.payment_failed → «Pagamento non riuscito»", () => {
 		expect(sendEmail).not.toHaveBeenCalled();
 	});
 
+	// Stripe non garantisce l'ordine: di solito subscription.updated (→ past_due)
+	// arriva PRIMA di invoice.payment_failed. Chi esegue la transizione manda
+	// l'email, l'altro la trova già fatta.
+	it("sends once when subscription.updated → past_due arrives first", async () => {
+		const { sub } = await seed("active");
+		await deliver(subUpdated("evt_PD_FIRST", "past_due"));
+		await deliver(invoiceFailed("evt_FAIL_AFTER"));
+
+		expect((await readSub(sub.id)).status).toBe("past_due");
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+		const [{ to, subject, html }] = sendEmail.mock.calls[0];
+		expect(to).toBe(OWNER_EMAIL);
+		expect(subject).toBe("Pagamento non riuscito per Forno Bianchi");
+		const text = html.replaceAll("<!-- -->", "").replaceAll("\u00a0", " ");
+		expect(text).toContain("29,00 €");
+	});
+
+	it("sends once when invoice.payment_failed arrives first", async () => {
+		await seed("active");
+		await deliver(invoiceFailed("evt_FAIL_FIRST"));
+		await deliver(subUpdated("evt_PD_AFTER", "past_due"));
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+	});
+
 	it("an email failure does not fail the webhook", async () => {
 		const { sub } = await seed("active");
 		sendEmail.mockImplementation(async () => {
@@ -231,10 +255,16 @@ describe("customer.subscription.updated → «Negozio sospeso»", () => {
 		expect(sendEmail).toHaveBeenCalledTimes(1);
 	});
 
-	it("does not send for past_due or active updates", async () => {
+	it("does not send for active updates or past_due → past_due", async () => {
 		await seed("active");
-		await deliver(subUpdated("evt_PD", "past_due"));
 		await deliver(subUpdated("evt_OK", "active"));
+		expect(sendEmail).not.toHaveBeenCalled();
+
+		await getTestDb()
+			.update(storeSubscription)
+			.set({ status: "past_due" })
+			.where(eq(storeSubscription.stripeSubscriptionId, "sub_MAIL"));
+		await deliver(subUpdated("evt_PD_AGAIN", "past_due"));
 		expect(sendEmail).not.toHaveBeenCalled();
 	});
 

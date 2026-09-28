@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import {
@@ -6,7 +6,10 @@ import {
 	storeSubscription,
 } from "@/db/schemas/store-subscription";
 import { logger } from "@/lib/logger";
-import { notifyStoreSuspended } from "../billing-notifications";
+import {
+	notifyPaymentFailed,
+	notifyStoreSuspended,
+} from "../billing-notifications";
 
 export function mapStripeStatus(
 	sub: Stripe.Subscription,
@@ -65,6 +68,30 @@ export async function handleSubscriptionUpdated(
 	}
 	if (newStatus === "active") {
 		update.suspendedAt = null;
+	}
+
+	// Stripe spesso consegna questo evento (→ past_due) PRIMA di
+	// invoice.payment_failed: la transizione verso past_due è la stessa CAS di
+	// handleInvoiceFailed, e chi la esegue manda l'email di dunning.
+	if (newStatus === "past_due") {
+		const [transitioned] = await db
+			.update(storeSubscription)
+			.set(update)
+			.where(
+				and(
+					eq(storeSubscription.id, existing.id),
+					inArray(storeSubscription.status, ["active", "canceling"]),
+				),
+			)
+			.returning({ id: storeSubscription.id });
+		if (transitioned) {
+			await notifyPaymentFailed({
+				storeId: existing.storeId,
+				amountCents: existing.feeAmountCents,
+				currency: existing.currency,
+			});
+			return;
+		}
 	}
 
 	await db
