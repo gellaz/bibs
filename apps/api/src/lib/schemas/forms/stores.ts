@@ -22,6 +22,20 @@ const PhoneNumber = Type.Object({
 	),
 });
 
+// Obbligatoria alla creazione: senza coordinate il negozio non compare nelle
+// ricerche per prossimità. La sceglie il seller (suggerimento + pin), non la
+// deduce il server.
+const StoreLocation = Type.Object(
+	{
+		x: Type.Number({ minimum: -180, maximum: 180, description: "Longitudine" }),
+		y: Type.Number({ minimum: -90, maximum: 90, description: "Latitudine" }),
+	},
+	{
+		description: "Posizione del negozio (PostGIS point)",
+		error: "La posizione del negozio sulla mappa è obbligatoria",
+	},
+);
+
 export const CreateStoreBody = Type.Object({
 	name: Type.String({
 		minLength: 1,
@@ -54,6 +68,7 @@ export const CreateStoreBody = Type.Object({
 		description: "CAP italiano (5 cifre)",
 		error: "Il CAP deve essere di 5 cifre",
 	}),
+	location: StoreLocation,
 	country: Type.Optional(
 		Type.String({
 			minLength: 2,

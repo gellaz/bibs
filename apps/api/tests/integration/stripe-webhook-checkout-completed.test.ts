@@ -98,6 +98,7 @@ function buildFormData() {
 		municipalityId,
 		zipCode: "20100",
 		country: "IT",
+		location: { x: 11.3426, y: 44.4949 },
 	};
 }
 
@@ -143,6 +144,7 @@ describe("handleCheckoutCompleted", () => {
 		const stores = await getTestDb().select().from(store);
 		expect(stores).toHaveLength(1);
 		expect(stores[0].name).toBe("Test Store");
+		expect(stores[0].location).toEqual({ x: 11.3426, y: 44.4949 });
 
 		const subs = await getTestDb().select().from(storeSubscription);
 		expect(subs).toHaveLength(1);
@@ -157,6 +159,34 @@ describe("handleCheckoutCompleted", () => {
 			.then((r) => r[0]);
 		expect(updatedPending.status).toBe("consumed");
 		expect(updatedPending.consumedAt).toBeTruthy();
+	});
+
+	it("creates the store without a location from a pending saved before the pin was required", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+		const { location: _, ...legacyFormData } = buildFormData();
+
+		const [pending] = await getTestDb()
+			.insert(pendingStoreCreation)
+			.values({
+				sellerProfileId: profile.id,
+				formData: legacyFormData,
+				stripeCheckoutSessionId: "cs_FAKE",
+				feeAmountCents: 2900,
+				currency: "EUR",
+				status: "open",
+				expiresAt: new Date(Date.now() + 86400000),
+			})
+			.returning();
+
+		patchEventWithPendingId(pending.id);
+
+		await handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" });
+
+		const stores = await getTestDb().select().from(store);
+		expect(stores).toHaveLength(1);
+		expect(stores[0].location).toBeNull();
 	});
 
 	it("is idempotent: replaying the event does not create duplicate stores", async () => {

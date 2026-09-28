@@ -5,13 +5,15 @@ import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import { Separator } from "@bibs/ui/components/separator";
+import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import "@/lib/typebox-formats";
-import { PlusIcon, Trash2Icon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { LocateFixed, MapPinOff, PlusIcon, Trash2Icon } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import {
 	Controller,
 	type SubmitHandler,
@@ -20,12 +22,21 @@ import {
 } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
 import { useMunicipalities } from "@/hooks/use-municipalities";
+import {
+	fetchGeocodeSuggestions,
+	type GeocodeSuggestionItem,
+	geocodeQueryKey,
+} from "../hooks/use-geocode";
 import { validateOpeningHours } from "../lib/validate-opening-hours";
 import {
 	type DaySchedule,
 	DEFAULT_OPENING_HOURS,
 	OpeningHoursEditor,
 } from "./opening-hours-editor";
+import { StoreAddressSearch } from "./store-address-search";
+
+// Leaflet è DOM-only: si carica a parte e si monta solo dopo l'hydration.
+const LazyStoreMapPreview = lazy(() => import("./store-map-preview"));
 
 export type StoreFormData = Static<typeof CreateStoreBody>;
 const compiledSchema = TypeCompiler.Compile(CreateStoreBody);
@@ -91,7 +102,8 @@ export function StoreForm({
 		watch,
 		reset,
 		getValues,
-		formState: { errors, isDirty },
+		setValue,
+		formState: { errors, isDirty, isSubmitted },
 	} = useForm<StoreFormData>({
 		resolver: typeboxResolver(compiledSchema),
 		defaultValues: {
@@ -109,6 +121,53 @@ export function StoreForm({
 			...defaultValues,
 		},
 	});
+
+	const [hydrated, setHydrated] = useState(false);
+	useEffect(() => setHydrated(true), []);
+
+	const location = watch("location");
+	const setLocation = (next: { x: number; y: number }) =>
+		setValue("location", next, {
+			shouldDirty: true,
+			shouldValidate: isSubmitted,
+		});
+
+	const applySuggestion = (suggestion: GeocodeSuggestionItem) => {
+		const opts = { shouldDirty: true, shouldValidate: isSubmitted };
+		setValue("addressLine1", suggestion.addressLine1, opts);
+		if (suggestion.zipCode) setValue("zipCode", suggestion.zipCode, opts);
+		// Comune non risolto (omonimi o fuori elenco): lo sceglie il seller.
+		setValue("municipalityId", suggestion.municipality?.id ?? "", opts);
+		setLocation(suggestion.location);
+	};
+
+	// Per i negozi nati senza pin: prova a posizionarlo dall'indirizzo già
+	// salvato, così il seller deve solo verificarlo sulla mappa.
+	const queryClient = useQueryClient();
+	const [locating, setLocating] = useState(false);
+	const [locateMiss, setLocateMiss] = useState(false);
+	const locateFromAddress = async () => {
+		const { addressLine1, municipalityId } = getValues();
+		const municipality = municipalities?.find((m) => m.id === municipalityId);
+		const q = [addressLine1, municipality?.name].filter(Boolean).join(", ");
+		setLocating(true);
+		setLocateMiss(false);
+		try {
+			const hits = await queryClient.fetchQuery({
+				queryKey: geocodeQueryKey(q),
+				queryFn: () => fetchGeocodeSuggestions(q),
+				staleTime: 5 * 60_000,
+			});
+			const hit =
+				hits.find((h) => h.municipality?.id === municipalityId) ?? hits[0];
+			if (hit) setLocation(hit.location);
+			else setLocateMiss(true);
+		} catch {
+			setLocateMiss(true);
+		} finally {
+			setLocating(false);
+		}
+	};
 
 	const nameValue = watch("name");
 	useEffect(() => {
@@ -215,6 +274,66 @@ export function StoreForm({
 				title="Indirizzo"
 				description="Dove si trova fisicamente, come ti raggiungono."
 			>
+				{!readOnly && (
+					<StoreAddressSearch onSelect={applySuggestion} disabled={isPending} />
+				)}
+
+				{location ? (
+					<div className="space-y-1.5">
+						{hydrated ? (
+							<Suspense fallback={<Skeleton className="h-56 w-full" />}>
+								<LazyStoreMapPreview
+									location={location}
+									onMove={setLocation}
+									readOnly={readOnly}
+								/>
+							</Suspense>
+						) : (
+							<Skeleton className="h-56 w-full" />
+						)}
+						{!readOnly && (
+							<p className="text-muted-foreground text-xs">
+								Trascina il pin se non cade sull'ingresso del negozio.
+							</p>
+						)}
+					</div>
+				) : (
+					<div
+						data-invalid={!!errors.location || undefined}
+						className="flex flex-col gap-3 rounded-md border border-border bg-muted px-3 py-3 text-sm data-invalid:border-destructive/50 data-invalid:bg-destructive/5 sm:flex-row sm:items-center sm:justify-between"
+					>
+						<div className="flex items-start gap-2">
+							<MapPinOff
+								className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+								aria-hidden
+							/>
+							<p
+								className="text-muted-foreground"
+								role={errors.location ? "alert" : undefined}
+							>
+								{errors.location
+									? "La posizione del negozio sulla mappa è obbligatoria: scegli un suggerimento qui sopra."
+									: "Senza posizione il negozio non compare nelle ricerche «vicino a te»."}
+								{locateMiss &&
+									" Non abbiamo trovato l'indirizzo: cercalo qui sopra."}
+							</p>
+						</div>
+						{!readOnly && defaultValues?.addressLine1 && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="shrink-0 self-start sm:self-auto"
+								disabled={locating}
+								onClick={locateFromAddress}
+							>
+								<LocateFixed className="size-4" aria-hidden />
+								{locating ? "Ricerca…" : "Posiziona dall'indirizzo"}
+							</Button>
+						)}
+					</div>
+				)}
+
 				<Field data-invalid={!!errors.addressLine1}>
 					<FieldLabel htmlFor="store-address1" required>
 						Indirizzo

@@ -7,6 +7,7 @@ import {
 	Boxes,
 	ChevronRight,
 	Clock,
+	MapPinOff,
 	Package,
 	Plus,
 	Star,
@@ -94,8 +95,23 @@ const URGENCY_DOT: Record<Urgency, string> = {
 function Dashboard() {
 	const { activeStore, stores, isLoading } = useActiveStore();
 	const { data: storesList } = useStores();
-	const openStatus =
-		storesList?.find((s) => s.id === activeStore?.id)?.openStatus ?? null;
+	const activeStoreRow = storesList?.find((s) => s.id === activeStore?.id);
+	const openStatus = activeStoreRow?.openStatus ?? null;
+
+	// Senza coordinate il negozio esiste ma nessuno lo trova cercando vicino a
+	// sé: è il profilo incompleto con la conseguenza più grave, quindi "high".
+	const locationAction: ActionItem | null =
+		activeStoreRow && !activeStoreRow.location
+			? {
+					id: "location-missing",
+					urgency: "high",
+					title: "Posizione del negozio mancante",
+					subtitle:
+						"Senza pin sulla mappa il negozio non compare nelle ricerche «vicino a te»",
+					href: "/store",
+					icon: MapPinOff,
+				}
+			: null;
 
 	// Tre esiti distinti (nessun avviso / orari mai impostati / chiuso adesso)
 	// non stanno in un ternario leggibile: IIFE con tipo di ritorno esplicito.
@@ -136,9 +152,11 @@ function Dashboard() {
 		};
 	})();
 
-	const actions: ActionItem[] = hoursAction
-		? [...ACTIONS, hoursAction]
-		: ACTIONS;
+	const actions: ActionItem[] = [
+		...(locationAction ? [locationAction] : []),
+		...ACTIONS,
+		...(hoursAction ? [hoursAction] : []),
+	];
 
 	if (!isLoading && stores.length === 0) {
 		return <EmptyStoresState />;
