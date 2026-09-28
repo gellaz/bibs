@@ -7,6 +7,7 @@ import { product, storeProduct } from "@/db/schemas/product";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
+import { cancelUnpaidOrder } from "@/lib/jobs/expire-unpaid-orders";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
@@ -101,6 +102,22 @@ export async function seedOrders() {
 			storeId: target.storeId,
 			items,
 		});
+
+		// pay_pickup nasce in attesa di pagamento. Il seed non ha un PaymentIntent
+		// vero: l'annullato è un PR2 scaduto senza pagamento (nessun rimborso),
+		// gli altri si considerano pagati e passano a confirmed come farebbe il
+		// webhook. Non si possono annullare dal seller (nessun pagamento da
+		// rimborsare): per provare il rimborso si passa dal checkout.
+		if (plan.type === "pay_pickup") {
+			if (plan.end === "cancelled") {
+				await cancelUnpaidOrder(created.id);
+				continue;
+			}
+			await db
+				.update(order)
+				.set({ status: "confirmed" })
+				.where(eq(order.id, created.id));
+		}
 
 		const storeIds = [target.storeId];
 		if (plan.end === "ready_for_pickup" || plan.end === "completed")
