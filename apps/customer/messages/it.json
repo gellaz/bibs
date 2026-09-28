@@ -381,5 +381,18 @@
 	"orders_cancel_paid": "Annulla ordine",
 	"orders_cancel_paid_title": "Annullare l'ordine?",
 	"orders_cancel_paid_description": "Ti rimborsiamo {amount} sulla carta con cui hai pagato: di solito arriva in 5-10 giorni lavorativi.",
-	"orders_cancel_paid_success": "Ordine annullato, rimborso avviato"
+	"orders_cancel_paid_success": "Ordine annullato, rimborso avviato",
+	"orders_points_earned": "Punti guadagnati",
+	"orders_points_spent": "Punti usati",
+	"points_title": "I tuoi punti",
+	"points_balance": "Saldo",
+	"points_history": "Movimenti",
+	"points_type_earned": "Guadagnati",
+	"points_type_redeemed": "Usati",
+	"points_type_refunded": "Rimborsati",
+	"points_empty_title": "Nessun movimento ancora",
+	"points_empty_description": "Quando ritiri un ordine guadagni punti: li ritrovi qui, insieme a quelli che usi.",
+	"points_load_failed": "Non siamo riusciti a caricare i punti.",
+	"points_page_prev": "Pagina precedente",
+	"points_page_next": "Pagina successiva"
 }

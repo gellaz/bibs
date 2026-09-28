@@ -18,6 +18,7 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAddressesRouteImport } from './routes/_authenticated/addresses'
 import { Route as AuthenticatedCartRouteImport } from './routes/_authenticated/cart'
+import { Route as AuthenticatedPointsRouteImport } from './routes/_authenticated/points'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedCheckoutIndexRouteImport } from './routes/_authenticated/checkout/index'
 import { Route as AuthenticatedCheckoutReviewRouteImport } from './routes/_authenticated/checkout/review'
@@ -72,6 +73,11 @@ const AuthenticatedAddressesRoute = AuthenticatedAddressesRouteImport.update({
 const AuthenticatedCartRoute = AuthenticatedCartRouteImport.update({
   id: '/cart',
   path: '/cart',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPointsRoute = AuthenticatedPointsRouteImport.update({
+  id: '/points',
+  path: '/points',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/addresses': typeof AuthenticatedAddressesRoute
   '/cart': typeof AuthenticatedCartRoute
+  '/points': typeof AuthenticatedPointsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/checkout/review': typeof AuthenticatedCheckoutReviewRoute
   '/orders/$orderId': typeof AuthenticatedOrdersOrderIdRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/addresses': typeof AuthenticatedAddressesRoute
   '/cart': typeof AuthenticatedCartRoute
+  '/points': typeof AuthenticatedPointsRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/': typeof AuthenticatedIndexRoute
   '/checkout/review': typeof AuthenticatedCheckoutReviewRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/addresses': typeof AuthenticatedAddressesRoute
   '/_authenticated/cart': typeof AuthenticatedCartRoute
+  '/_authenticated/points': typeof AuthenticatedPointsRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/checkout/review': typeof AuthenticatedCheckoutReviewRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/addresses'
     | '/cart'
+    | '/points'
     | '/profile'
     | '/checkout/review'
     | '/orders/$orderId'
@@ -236,6 +246,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/addresses'
     | '/cart'
+    | '/points'
     | '/profile'
     | '/'
     | '/checkout/review'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/addresses'
     | '/_authenticated/cart'
+    | '/_authenticated/points'
     | '/_authenticated/profile'
     | '/_authenticated/'
     | '/_authenticated/checkout/review'
@@ -346,6 +358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCartRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/points': {
+      id: '/_authenticated/points'
+      path: '/points'
+      fullPath: '/points'
+      preLoaderRoute: typeof AuthenticatedPointsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -429,6 +448,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAddressesRoute: typeof AuthenticatedAddressesRoute
   AuthenticatedCartRoute: typeof AuthenticatedCartRoute
+  AuthenticatedPointsRoute: typeof AuthenticatedPointsRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedCheckoutReviewRoute: typeof AuthenticatedCheckoutReviewRoute
@@ -446,6 +466,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAddressesRoute: AuthenticatedAddressesRoute,
   AuthenticatedCartRoute: AuthenticatedCartRoute,
+  AuthenticatedPointsRoute: AuthenticatedPointsRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedCheckoutReviewRoute: AuthenticatedCheckoutReviewRoute,
