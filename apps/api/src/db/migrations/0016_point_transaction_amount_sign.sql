@@ -1,0 +1,2 @@
+ALTER TABLE "point_transactions" DROP CONSTRAINT IF EXISTS "point_transaction_amount_positive";--> statement-breakpoint
+ALTER TABLE "point_transactions" ADD CONSTRAINT "point_transaction_amount_sign" CHECK (("point_transactions"."type" = 'redeemed' AND "point_transactions"."amount" < 0) OR ("point_transactions"."type" IN ('earned','refunded') AND "point_transactions"."amount" > 0));

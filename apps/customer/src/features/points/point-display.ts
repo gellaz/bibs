@@ -10,10 +10,9 @@ export const POINT_TYPE_LABEL: Record<PointTransactionType, () => string> = {
 };
 
 /**
- * Il segno viene dal tipo, non da `amount`: l'API scrive `redeemed` con
- * importo positivo (`createOrder` inserisce `actualPointsSpent`), nonostante la
- * descrizione dello schema dica «negativa per redeemed». Il valore assoluto
- * regge entrambe le convenzioni.
+ * Il segno viene dal tipo, non da `amount`. L'API scrive `redeemed` negativo
+ * (un CHECK lo impone), ma il valore assoluto non dipende da quella
+ * convenzione: il tipo resta l'unica fonte del segno mostrato.
  */
 export function signedPoints(tx: {
 	type: PointTransactionType;

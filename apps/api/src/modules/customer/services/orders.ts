@@ -530,7 +530,8 @@ export async function placeOrder(
 		await tx.insert(pointTransaction).values({
 			customerProfileId,
 			orderId: newOrder.id,
-			amount: actualPointsSpent,
+			// Registro con segno: redeemed negativo, così Σ amount = saldo.
+			amount: -actualPointsSpent,
 			type: "redeemed",
 			description: `Redeemed ${actualPointsSpent} points for order`,
 		});
