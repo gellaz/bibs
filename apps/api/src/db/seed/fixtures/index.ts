@@ -4,6 +4,7 @@ import { seedBrands } from "./brands";
 import { seedCharacteristicValues } from "./characteristic-values";
 import { seedCustomers } from "./customers";
 import { seedDevSeller } from "./dev-seller";
+import { seedDevSellerCatalog } from "./dev-seller-catalog";
 import { seedDiscounts } from "./discounts";
 import { seedExtraStores } from "./extra-stores";
 import { seedOrders } from "./orders";
@@ -32,6 +33,8 @@ export async function seedFixtures() {
 	await seedTeam();
 	const brandsBySeller = await seedBrands();
 	await seedProducts(brandsBySeller);
+	// Il catalogo del venditore di sviluppo, che seedProducts lascia fuori.
+	await seedDevSellerCatalog();
 	// Dopo i prodotti: serve la loro product_category_id già valorizzata.
 	await seedCharacteristicValues();
 	await seedDiscounts();
