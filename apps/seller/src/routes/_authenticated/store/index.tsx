@@ -14,6 +14,7 @@ import {
 	type ExistingImage,
 	ProductImageDropzone,
 } from "@/features/products/components/product-image-dropzone";
+import { LowStockThresholdSection } from "@/features/stores/components/low-stock-threshold-section";
 import { OrderTypesSection } from "@/features/stores/components/order-types-section";
 import {
 	StoreForm,
@@ -239,6 +240,11 @@ function StoreSettingsPage() {
 							<OrderTypesSection
 								key={activeStore.id}
 								storeId={activeStore.id}
+							/>
+							<LowStockThresholdSection
+								key={`low-stock-${activeStore.id}`}
+								storeId={activeStore.id}
+								value={store.lowStockThreshold}
 							/>
 						</div>
 					</div>

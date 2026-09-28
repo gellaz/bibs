@@ -234,6 +234,27 @@ describe("updateStore", () => {
 		expect(updated.addressLine1).toBe("Via Nuova");
 	});
 
+	it("low stock threshold: default 5, updatable on its own", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const created = await createStore({
+			sellerProfileId: seller.profile.id,
+			name: "Soglia",
+			addressLine1: "Via Roma",
+			municipalityId,
+			zipCode: "00100",
+		});
+		expect(created.lowStockThreshold).toBe(5);
+
+		const updated = await updateStore({
+			storeId: created.id,
+			sellerProfileId: seller.profile.id,
+			lowStockThreshold: 12,
+		});
+		expect(updated.lowStockThreshold).toBe(12);
+		expect(updated.name).toBe("Soglia");
+	});
+
 	it("moves the store pin", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);

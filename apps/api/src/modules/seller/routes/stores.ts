@@ -134,6 +134,14 @@ export const storesRoutes = new Elysia()
 					t.Nullable(t.String({ description: "ID categoria negozio" })),
 				),
 				openingHours: t.Optional(t.Nullable(OpeningHoursSchema)),
+				lowStockThreshold: t.Optional(
+					t.Integer({
+						minimum: 0,
+						maximum: 9999,
+						description:
+							"Soglia di scorta bassa: sotto questo stock (escluso) un prodotto attivo è segnalato nella home. 0 spegne l'avviso",
+					}),
+				),
 				websiteUrl: t.Optional(
 					t.Nullable(
 						t.String({

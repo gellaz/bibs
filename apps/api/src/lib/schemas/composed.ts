@@ -30,6 +30,11 @@ import { OpenStatusSchema } from "./holidays";
 // Store + phone numbers + category + images
 export const StoreWithPhonesSchema = t.Object({
 	...StoreSchema.properties,
+	lowStockThreshold: t.Integer({
+		minimum: 0,
+		description:
+			"Soglia di scorta bassa del negozio (0 = avviso spento). Solo lato venditore",
+	}),
 	phoneNumbers: t.Array(StorePhoneNumberSchema),
 	category: t.Nullable(StoreCategorySchema),
 	images: t.Array(StoreImageSchema),

@@ -1,0 +1,2 @@
+ALTER TABLE "stores" ADD COLUMN "low_stock_threshold" integer DEFAULT 5 NOT NULL;--> statement-breakpoint
+ALTER TABLE "stores" ADD CONSTRAINT "store_low_stock_threshold_non_negative" CHECK ("stores"."low_stock_threshold" >= 0);

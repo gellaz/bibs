@@ -1,4 +1,5 @@
 export * from "./composed";
+export * from "./dashboard";
 export * from "./discount";
 export * from "./entities";
 export * from "./holidays";
