@@ -60,6 +60,9 @@ export const store = pgTable(
 			.$type<StoreOrderType[]>()
 			.notNull()
 			.default(sql`'{reserve_pickup}'`),
+		// Sotto questa soglia (esclusa) un prodotto attivo del negozio conta come
+		// «scorta bassa» nella home seller; 0 spegne l'avviso.
+		lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
@@ -79,6 +82,10 @@ export const store = pgTable(
 		index("store_active_idx")
 			.on(t.sellerProfileId)
 			.where(sql`${t.deletedAt} IS NULL`),
+		check(
+			"store_low_stock_threshold_non_negative",
+			sql`${t.lowStockThreshold} >= 0`,
+		),
 		check(
 			"store_order_types_valid",
 			sql`cardinality(${t.orderTypes}) > 0 AND ${t.orderTypes} <@ ARRAY[${sql.raw(

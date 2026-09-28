@@ -99,6 +99,13 @@
       "when": 1790368818038,
       "tag": "0013_normal_risque",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790626514667,
+      "tag": "0014_sticky_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

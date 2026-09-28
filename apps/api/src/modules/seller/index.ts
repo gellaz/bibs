@@ -6,6 +6,7 @@ import { billingRoutes } from "./routes/billing";
 import { brandsRoutes } from "./routes/brands";
 import { checkoutRoutes } from "./routes/checkout";
 import { closuresRoutes } from "./routes/closures";
+import { dashboardRoutes } from "./routes/dashboard";
 import { discountsRoutes } from "./routes/discounts";
 import { employeesRoutes } from "./routes/employees";
 import { imagesRoutes } from "./routes/images";
@@ -62,6 +63,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 				.use(storeImagesRoutes)
 				.use(stockRoutes)
 				.use(ordersRoutes)
+				.use(dashboardRoutes)
 				.use(employeesRoutes)
 				.use(settingsRoutes)
 				.use(discountsRoutes),

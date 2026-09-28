@@ -155,6 +155,7 @@ interface UpdateStoreParams {
 	location?: { x: number; y: number };
 	categoryId?: string | null;
 	openingHours?: OpeningHours | null;
+	lowStockThreshold?: number;
 	websiteUrl?: string | null;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }

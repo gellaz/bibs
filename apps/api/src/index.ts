@@ -112,6 +112,10 @@ const app = new Elysia()
 						description: "Gestione ordini lato venditore",
 					},
 					{
+						name: "Seller - Dashboard",
+						description: "Riepilogo della home venditore",
+					},
+					{
 						name: "Seller - Employees",
 						description: "Gestione dipendenti del venditore",
 					},
