@@ -106,6 +106,20 @@
       "when": 1790626514667,
       "tag": "0014_sticky_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790630052492,
+      "tag": "0015_redeemed_negative_amount",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790630064924,
+      "tag": "0016_point_transaction_amount_sign",
+      "breakpoints": true
     }
   ]
 }

@@ -43,7 +43,12 @@ export const pointTransaction = pgTable(
 			table.customerProfileId,
 		),
 		index("point_transaction_order_id_idx").on(table.orderId),
-		check("point_transaction_amount_positive", sql`${table.amount} > 0`),
+		// Registro con segno: Σ amount = customer_profiles.points. Lo zero non è
+		// un movimento.
+		check(
+			"point_transaction_amount_sign",
+			sql`(${table.type} = 'redeemed' AND ${table.amount} < 0) OR (${table.type} IN ('earned','refunded') AND ${table.amount} > 0)`,
+		),
 		check(
 			"point_transaction_type_valid",
 			sql`${table.type} IN ('earned','redeemed','refunded')`,

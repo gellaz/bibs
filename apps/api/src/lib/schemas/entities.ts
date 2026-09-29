@@ -827,7 +827,7 @@ export const PointTransactionSchema = t.Object({
 	),
 	amount: t.Number({
 		description:
-			"Quantità di punti (positiva per earned, negativa per redeemed)",
+			"Quantità di punti con segno: positiva per earned e refunded, negativa per redeemed. La somma dei movimenti è il saldo.",
 	}),
 	type: t.Union(
 		[t.Literal("earned"), t.Literal("redeemed"), t.Literal("refunded")],

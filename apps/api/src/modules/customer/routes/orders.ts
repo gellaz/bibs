@@ -50,9 +50,9 @@ export const ordersRoutes = new Elysia()
 		},
 		{
 			body: t.Object({
-				type: t.Union([t.Literal("direct"), t.Literal("reserve_pickup")], {
+				type: t.Literal("reserve_pickup", {
 					description:
-						"Tipo di ordine: direct (acquisto diretto) o reserve_pickup (prenota e ritira). Gli ordini pagati online nascono solo da POST /customer/checkout, che crea il pagamento.",
+						"Tipo di ordine: solo reserve_pickup (prenota e ritira). Gli ordini pagati online nascono solo da POST /customer/checkout, che crea il pagamento. direct arriverà con il pagamento in negozio via QR: fino ad allora non è un ingresso.",
 				}),
 				storeId: t.String({ description: "ID del negozio" }),
 				items: t.Array(

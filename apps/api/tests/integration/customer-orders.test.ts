@@ -43,10 +43,12 @@ import {
 	cancelOrder,
 	createOrder,
 } from "@/modules/customer/services/orders";
+import { transitionOrder } from "@/modules/seller/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestBrand,
 	createTestCustomer,
+	createTestCustomerAddress,
 	createTestProduct,
 	createTestSeller,
 	createTestStore,
@@ -93,21 +95,23 @@ async function seedBasicFixtures() {
 
 // ── createOrder ───────────────────────────────────────────────────────────────
 
-describe("createOrder — direct", () => {
-	it("creates order with status 'completed' and decrements stock", async () => {
+// `direct` non è un ingresso finché manca il pagamento in negozio: il rifiuto
+// è coperto in customer-orders-pay-types.test.ts.
+describe("createOrder — stock, righe e punti", () => {
+	it("creates a confirmed order and decrements stock", async () => {
 		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
 		const db = getTestDb();
 
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 2 }],
 		});
 
-		expect(result.status).toBe("completed");
-		expect(result.type).toBe("direct");
+		expect(result.status).toBe("confirmed");
+		expect(result.type).toBe("reserve_pickup");
 		expect(result.total).toBe("20.00");
 
 		// Stock decremented
@@ -154,7 +158,7 @@ describe("createOrder — direct", () => {
 		const newOrder = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: testStore.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
@@ -173,7 +177,7 @@ describe("createOrder — direct", () => {
 		});
 	});
 
-	it("awards loyalty points for direct orders", async () => {
+	it("awards loyalty points at pickup, not at creation", async () => {
 		// Use inline fixtures so we can control stock precisely
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
@@ -191,13 +195,20 @@ describe("createOrder — direct", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: testStore.id,
 			items: [{ storeProductId: sp.id, quantity: 10 }],
 		});
+		expect(result.pointsEarned).toBe(0);
 
+		const picked = await transitionOrder(
+			result.id,
+			seller.profile.id,
+			"completed",
+			[testStore.id],
+		);
 		// 1 point per euro → 10 items × €10 = €100 = 100 points
-		expect(result.pointsEarned).toBe(100);
+		expect(picked.pointsEarned).toBe(100);
 
 		const [profile] = await db
 			.select()
@@ -263,7 +274,7 @@ describe("createOrder — points discount", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 100,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: testStore.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }], // €10.00
 			pointsToSpend: 100, // 100 pts = €1.00 discount
@@ -277,8 +288,8 @@ describe("createOrder — points discount", () => {
 			.select()
 			.from(customerProfile)
 			.where(eq(customerProfile.id, customer.profile.id));
-		// Points deducted (some earned back from €9.00 direct order: 9 pts)
-		expect(profile.points).toBeLessThan(100);
+		// All 100 points deducted; nothing earned until pickup
+		expect(profile.points).toBe(0);
 	});
 });
 
@@ -304,7 +315,7 @@ describe("createOrder — points CAS guard", () => {
 			createOrder({
 				customerProfileId: customer.profile.id,
 				customerPoints: 100,
-				type: "direct",
+				type: "reserve_pickup",
 				storeId: testStore.id,
 				items: [{ storeProductId: sp.id, quantity: 1 }],
 				pointsToSpend: 100,
@@ -328,7 +339,7 @@ describe("createOrder — validation errors", () => {
 			createOrder({
 				customerProfileId: customer.profile.id,
 				customerPoints: 0,
-				type: "direct",
+				type: "reserve_pickup",
 				storeId: store.id,
 				items: [{ storeProductId: sp.id, quantity: 99 }], // only 10 in stock
 			}),
@@ -342,7 +353,7 @@ describe("createOrder — validation errors", () => {
 			createOrder({
 				customerProfileId: customer.profile.id,
 				customerPoints: 0, // 0 available
-				type: "direct",
+				type: "reserve_pickup",
 				storeId: store.id,
 				items: [{ storeProductId: sp.id, quantity: 1 }],
 				pointsToSpend: 50, // but 0 available
@@ -375,7 +386,7 @@ describe("createOrder — idempotency", () => {
 		const first = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 			idempotencyKey,
@@ -384,7 +395,7 @@ describe("createOrder — idempotency", () => {
 		const second = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 			idempotencyKey,
@@ -487,15 +498,23 @@ describe("cancelOrder", () => {
 	});
 
 	it("throws ServiceError 400 when trying to cancel a completed order", async () => {
-		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
+		const {
+			seller,
+			store,
+			storeProduct: sp,
+			customer,
+		} = await seedBasicFixtures();
 
 		const newOrder = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct", // direct → completed immediately
+			type: "reserve_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
+		await transitionOrder(newOrder.id, seller.profile.id, "completed", [
+			store.id,
+		]);
 
 		await expect(
 			cancelOrder({
@@ -518,15 +537,20 @@ describe("createOrder — codice di ritiro", () => {
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 		});
-		const direct = await createOrder({
+		const address = await createTestCustomerAddress(
+			getTestDb(),
+			customer.profile.id,
+		);
+		const delivery = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 0,
-			type: "direct",
+			type: "pay_deliver",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
+			shippingAddressId: address.id,
 		});
 		expect(reserve.pickupCode).toMatch(/^[A-HJKMNP-Z2-9]{6}$/);
-		expect(direct.pickupCode).toBeNull();
+		expect(delivery.pickupCode).toBeNull();
 	});
 
 	it("rigenera il codice se è già usato da un ordine aperto dello stesso negozio", async () => {

@@ -38,7 +38,7 @@ Nessun P0 aperto: tutti chiusi in #192, #194 e #195 (vedi «Chiusi»).
 Nessun P1 aperto: P1.3 (#207), P1.6 (#205) e P1.7 (#206) chiusi, vedi «Chiusi».
 
 **P1.1, buco chiuso (#202)**: `pay_*` nasce sempre `pending` (`placeOrder`) e `POST /customer/orders`
-accetta solo `direct | reserve_pickup`.
+accetta solo `reserve_pickup` (`direct` disabilitato in #208).
 
 ---
 
@@ -132,9 +132,8 @@ accetta solo `direct | reserve_pickup`.
 - **P6.6 Deploy**: nessuna pipeline né gestione secrets (solo `ci.yml`).
 
 ### Backlog di prodotto
-- `POST /customer/orders` con `type: direct` crea un ordine `completed` con accredito punti senza
-  alcun pagamento (preesistente; `customer/routes/orders.ts`). Decidere se `direct` va tolto
-  dall'endpoint customer.
+- P (`direct`): il customer inquadra il QR del negozio e paga dall'app; punti solo a pagamento
+  riuscito. Serve una spec; fino ad allora `direct` è disabilitato come ingresso (#208).
 - Filtri/facet customer sulle caratteristiche.
 - Bottom tab bar mobile (customer).
 - Mappa: "cerca in quest'area" (bbox), mappa in home, hover card↔pin.
@@ -171,9 +170,11 @@ accetta solo `direct | reserve_pickup`.
 | **Debito #163** | Le righe ordinate escono dal carrello nella stessa transazione del checkout (`createCheckout`); quelle non disponibili restano | #199 |
 | **P1.1** | **Checkout customer** (creazione ordine dal carrello). Spec [`2026-09-24-customer-checkout-design.md`](../superpowers/specs/2026-09-24-customer-checkout-design.md), taglio in PR A–F (PP1 + PR2, PS3 rimandato): PP1 (#199), QR (#200), Connect (#201), PR2 (#202) | #199, #200, #201, #202 |
 | **P1.4** | Posizione del negozio obbligatoria: `CreateStoreBody` (checkout e `POST /stores`) richiede `location` con limiti lat/lng, il webhook `checkout-completed` la scrive (i pending senza restano tollerati). Nel form seller: ricerca indirizzo su `/locations/geocode` che compila via/CAP/comune + mappa con pin trascinabile; per i negozi senza pin avviso in `/store` con «Posiziona dall'indirizzo» e voce "high" in home | #204 |
-| **P1.6** | **Account hub customer**. Storico ordini già coperto da #199: le tab Prenotazioni/Pagati coprono tutti i tipi offerti (`direct` non è offerto al checkout). Movimenti punti: nuova pagina `/points` su `GET /customer/points` (saldo, movimenti paginati con tipo, importo con segno, data, link all'ordine); la pill punti del profilo porta lì anche a saldo zero; il dettaglio ordine mostra «Punti usati»/«Punti guadagnati» se ≠ 0. Il segno si deriva dal tipo: l'API scrive `redeemed` con importo positivo, al contrario di quanto dice lo schema | #205 |
+| **P1.6** | **Account hub customer**. Storico ordini già coperto da #199: le tab Prenotazioni/Pagati coprono tutti i tipi offerti (`direct` non è offerto al checkout). Movimenti punti: nuova pagina `/points` su `GET /customer/points` (saldo, movimenti paginati con tipo, importo con segno, data, link all'ordine); la pill punti del profilo porta lì anche a saldo zero; il dettaglio ordine mostra «Punti usati»/«Punti guadagnati» se ≠ 0. Il segno si deriva dal tipo (dal #208 `redeemed` è anche salvato negativo) | #205 |
 | **P1.3** | Home seller con dati veri: `GET /seller/dashboard?storeId=` aggregato (ordini e fatturato lordo di oggi, giorno Europe/Rome calcolato in SQL; prodotti attivi; promo in corso; ordini confermati da preparare, esauriti, scorta bassa sotto `stores.low_stock_threshold` (default 5, modificabile in `/store`), promo che finiscono entro 3 giorni). In home data vera, stats reali, voci solo con count > 0; card recensioni rimossa; logica orari estratta dall'IIFE in una funzione pura testata e voci ordinate per urgenza (rimandi di #183) | #207 |
 | **P1.7** | Billing seller: email «Pagamento non riuscito» (transizione → `past_due`), «Negozio sospeso» (primo `suspended`), «Negozio cancellato» (alla consegna che archivia il negozio, copy diversa per scelta del seller vs mancato pagamento), solo al titolare e dopo la tx, errori email che non rompono il webhook. Riattivazione self-service dei `canceled`: `POST /seller/stores/:storeId/reactivation-checkout` + ramo `reactivateStoreId` in `checkout-completed` (stessa riga di `store_subscriptions`, `deletedAt = null`, catalogo intatto), «Riattiva» in `/store/archived`. Niente email di «cancellazione programmata»: scelta di prodotto | #206 |
+| **Punti gratis (`direct`)** | `POST /customer/orders` accettava `type: direct`, creato già `completed` con i punti accreditati senza alcun pagamento. Il body accetta solo `reserve_pickup` e `placeOrder` rifiuta `direct` con 400 (nessun altro ingresso lo usava); il flusso QR + pagamento resta nel backlog di prodotto | #208 |
+| **Segno `redeemed`** | `redeemed` si salva con `amount` negativo, come diceva lo schema: Σ movimenti = saldo. CHECK di segno per tipo (`redeemed < 0`, `earned`/`refunded > 0`), righe storiche ribaltate da `0015_redeemed_negative_amount` (idempotente) | #208 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
