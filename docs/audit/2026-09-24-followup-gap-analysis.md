@@ -57,7 +57,7 @@ accetta solo `reserve_pickup` (`direct` disabilitato in #208).
 
 ### P3.1 — API sweep
 
-Chiusi in #PRNUM: ricerca (`radius`, `hasGeoFilter`), ILIKE, cap immagini, telefono e `/ready`
+Chiusi in #209: ricerca (`radius`, `hasGeoFilter`), ILIKE, cap immagini, telefono e `/ready`
 (vedi «Chiusi»). Il doppio controllo di ownership in `transitionOrder` non è un bug: è difesa in
 profondità (proprietà del seller + negozi accessibili) su un'unica lettura, resta com'è.
 
@@ -175,7 +175,7 @@ profondità (proprietà del seller + negozi accessibili) su un'unica lettura, re
 | **P1.7** | Billing seller: email «Pagamento non riuscito» (transizione → `past_due`), «Negozio sospeso» (primo `suspended`), «Negozio cancellato» (alla consegna che archivia il negozio, copy diversa per scelta del seller vs mancato pagamento), solo al titolare e dopo la tx, errori email che non rompono il webhook. Riattivazione self-service dei `canceled`: `POST /seller/stores/:storeId/reactivation-checkout` + ramo `reactivateStoreId` in `checkout-completed` (stessa riga di `store_subscriptions`, `deletedAt = null`, catalogo intatto), «Riattiva» in `/store/archived`. Niente email di «cancellazione programmata»: scelta di prodotto | #206 |
 | **Punti gratis (`direct`)** | `POST /customer/orders` accettava `type: direct`, creato già `completed` con i punti accreditati senza alcun pagamento. Il body accetta solo `reserve_pickup` e `placeOrder` rifiuta `direct` con 400 (nessun altro ingresso lo usava); il flusso QR + pagamento resta nel backlog di prodotto | #208 |
 | **Segno `redeemed`** | `redeemed` si salva con `amount` negativo, come diceva lo schema: Σ movimenti = saldo. CHECK di segno per tipo (`redeemed < 0`, `earned`/`refunded > 0`), righe storiche ribaltate da `0015_redeemed_negative_amount` (idempotente) | #208 |
-| **P3.1 (input e probe)** | `radius` limitato a (0, 100] km; `hasGeoFilter` nei log vero anche con lat o lng = 0; `%`, `_` e `\\` neutralizzati in tutte le ricerche `ILIKE` (`lib/like.ts`); cap immagini di prodotto e negozio ricontrollato nella transazione d'inserimento con lock sulla riga padre (i file già caricati su S3 vengono cancellati); telefono dell'indirizzo cancellabile con stringa vuota (salvato `null`, il form lo manda sempre); `HeadBucket` di `/ready` con timeout di 3 s; `x-request-id` in ingresso riusato se ha forma di id | #PRNUM |
+| **P3.1 (input e probe)** | `radius` limitato a (0, 100] km; `hasGeoFilter` nei log vero anche con lat o lng = 0; `%`, `_` e `\\` neutralizzati in tutte le ricerche `ILIKE` (`lib/like.ts`); cap immagini di prodotto e negozio ricontrollato nella transazione d'inserimento con lock sulla riga padre (i file già caricati su S3 vengono cancellati); telefono dell'indirizzo cancellabile con stringa vuota (salvato `null`, il form lo manda sempre); `HeadBucket` di `/ready` con timeout di 3 s; `x-request-id` in ingresso riusato se ha forma di id | #209 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
