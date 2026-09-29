@@ -9,6 +9,7 @@ import {
 	storeSubscription,
 } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
+import { containsPattern } from "@/lib/like";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
 
@@ -145,9 +146,9 @@ export async function listAllSubscriptions(params: ListAllSubsParams) {
 	if (params.status)
 		conditions.push(eq(storeSubscription.status, params.status));
 	if (params.sellerEmail)
-		conditions.push(ilike(user.email, `%${params.sellerEmail}%`));
+		conditions.push(ilike(user.email, containsPattern(params.sellerEmail)));
 	if (params.storeName)
-		conditions.push(ilike(store.name, `%${params.storeName}%`));
+		conditions.push(ilike(store.name, containsPattern(params.storeName)));
 
 	const where = conditions.length > 0 ? and(...conditions) : undefined;
 

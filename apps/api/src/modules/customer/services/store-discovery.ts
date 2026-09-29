@@ -9,6 +9,7 @@ import type {
 	OpeningHoursDay,
 	OpenStatus,
 } from "@/lib/holidays";
+import { containsPattern, prefixPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
 import { openNowCondition, resolveOpenStatuses } from "@/lib/store-open-status";
 import { storeFilterConditions } from "./store-search-conditions";
@@ -62,8 +63,8 @@ export async function searchStores(params: StoreSearchParams) {
 
 	const relevanceExpr = q
 		? sql`CASE
-				WHEN ${store.name} ILIKE ${`${q}%`} THEN 2
-				WHEN ${store.name} ILIKE ${`%${q}%`} THEN 1
+				WHEN ${store.name} ILIKE ${prefixPattern(q)} THEN 2
+				WHEN ${store.name} ILIKE ${containsPattern(q)} THEN 1
 				ELSE 0
 			END`
 		: sql`0`;

@@ -1,6 +1,7 @@
 import { and, asc, count, desc, ilike, type SQL } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 import { db } from "@/db";
+import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
 
 export interface ListByNameParams {
@@ -31,7 +32,9 @@ export async function listByNamePaged<Row>(
 	const { page, limit, offset } = parsePagination(params);
 
 	const filters = [
-		params.search ? ilike(table.name, `%${params.search}%`) : undefined,
+		params.search
+			? ilike(table.name, containsPattern(params.search))
+			: undefined,
 		...extraFilters,
 	].filter((f): f is SQL => f !== undefined);
 	const where =

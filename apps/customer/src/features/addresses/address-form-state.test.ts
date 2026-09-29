@@ -182,16 +182,16 @@ describe("addressFormToBody", () => {
 		expect(body.isDefault).toBe(false);
 	});
 
-	// `phone` ha un minimo di 5 caratteri lato API: mandarlo vuoto sarebbe un
-	// 422, quindi quando è vuoto non lo si manda affatto.
-	it("omits an empty phone but keeps a cleared label", () => {
+	// Il telefono vuoto va mandato: è così che si cancella (l'API lo salva
+	// come `null`).
+	it("sends a cleared phone and a cleared label as empty strings", () => {
 		const body = addressFormToBody({
 			...suggestionToAddressForm(SUGGESTION, emptyAddressForm()),
 			label: "",
 			phone: "   ",
 		});
 
-		expect(body).not.toHaveProperty("phone");
+		expect(body.phone).toBe("");
 		expect(body.label).toBe("");
 	});
 });

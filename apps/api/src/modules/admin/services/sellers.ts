@@ -7,6 +7,7 @@ import { organization, type VatStatus } from "@/db/schemas/organization";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
+import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
 import { DocumentChangeBody, VatChangeBody } from "@/lib/schemas/forms";
 
@@ -35,7 +36,7 @@ export async function listSellers(params: ListSellersParams) {
 
 	const searchCondition = params.search
 		? (() => {
-				const term = `%${params.search}%`;
+				const term = containsPattern(params.search);
 				return inArray(
 					sellerProfile.id,
 					db

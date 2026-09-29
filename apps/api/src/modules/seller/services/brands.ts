@@ -1,6 +1,7 @@
 import { and, count, eq, ilike } from "drizzle-orm";
 import { db } from "@/db";
 import { brand } from "@/db/schemas/brand";
+import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
 
 interface ListBrandsParams {
@@ -17,7 +18,7 @@ export async function listBrands(params: ListBrandsParams) {
 	const where = q
 		? and(
 				eq(brand.sellerProfileId, sellerProfileId),
-				ilike(brand.name, `%${q}%`),
+				ilike(brand.name, containsPattern(q)),
 			)
 		: eq(brand.sellerProfileId, sellerProfileId);
 

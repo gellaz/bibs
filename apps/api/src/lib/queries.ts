@@ -61,6 +61,16 @@ export const SellerListQuery = t.Object({
 });
 
 /**
+ * Raggio di ricerca in km. Nessun default (senza raggio: tutti, dal più
+ * vicino), ma limitato: i preset del customer arrivano a 10 km e la home a 50.
+ */
+const RadiusKm = t.Number({
+	exclusiveMinimum: 0,
+	maximum: 100,
+	description: "Raggio in km (opzionale, nessun limite di default; max 100)",
+});
+
+/**
  * Paginazione + testo, categoria, geografia, prezzo e disponibilità per la
  * ricerca prodotti. `radius` **non ha default**, come `StoreSearchQuery`: geo
  * senza raggio ordina per vicinanza senza tagliare nulla. Chi vuole un limite
@@ -94,11 +104,7 @@ export const ProductSearchQuery = t.Object({
 			description: "Longitudine del punto di ricerca",
 		}),
 	),
-	radius: t.Optional(
-		t.Number({
-			description: "Raggio in km (opzionale, nessun limite di default)",
-		}),
-	),
+	radius: t.Optional(RadiusKm),
 	openNow: t.Optional(
 		t.Boolean({
 			description:
@@ -152,11 +158,7 @@ export const StoreSearchQuery = t.Object({
 			description: "Longitudine utente",
 		}),
 	),
-	radius: t.Optional(
-		t.Number({
-			description: "Raggio in km (opzionale, nessun limite di default)",
-		}),
-	),
+	radius: t.Optional(RadiusKm),
 	openNow: t.Optional(
 		t.Boolean({
 			description:
