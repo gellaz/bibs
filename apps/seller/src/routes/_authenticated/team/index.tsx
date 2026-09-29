@@ -46,6 +46,7 @@ import {
 	CheckIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
+	RotateCwIcon,
 	SendIcon,
 	ShieldBanIcon,
 	ShieldCheckIcon,
@@ -105,6 +106,31 @@ function useInviteEmployee() {
 			void queryClient.invalidateQueries({
 				queryKey: ["employee-invitations"],
 			});
+		},
+	});
+}
+
+function useResendInvitation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (invitationId: string) => {
+			const response = await api()
+				.seller.employees.invitations({ invitationId })
+				.resend.post();
+			return unwrap(response, "Errore durante il reinvio dell'invito");
+		},
+		onSuccess: ({ data: invitation }) => {
+			toast.success(`Invito reinviato a ${invitation.email}`);
+			void queryClient.invalidateQueries({
+				queryKey: ["employee-invitations"],
+			});
+		},
+		onError: (err) => {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Errore durante il reinvio dell'invito",
+			);
 		},
 	});
 }
@@ -526,6 +552,7 @@ function TeamPage() {
 
 	const { data: invitationsData } = useInvitations(isOwner);
 	const cancelMutation = useCancelInvitation();
+	const resendMutation = useResendInvitation();
 	const pendingInvitations = useMemo(
 		() => invitationsData?.data?.filter((i) => i.status === "pending") ?? [],
 		[invitationsData],
@@ -732,22 +759,34 @@ function TeamPage() {
 					);
 				}
 				return (
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						disabled={cancelMutation.isPending}
-						onClick={() => cancelMutation.mutate(r.invitation.id)}
-						title="Annulla invito"
-					>
-						<XIcon />
-						<span className="sr-only">Annulla invito</span>
-					</Button>
+					<div className="inline-flex gap-1">
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							disabled={resendMutation.isPending}
+							onClick={() => resendMutation.mutate(r.invitation.id)}
+							title="Reinvia invito"
+						>
+							<RotateCwIcon />
+							<span className="sr-only">Reinvia invito</span>
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							disabled={cancelMutation.isPending}
+							onClick={() => cancelMutation.mutate(r.invitation.id)}
+							title="Annulla invito"
+						>
+							<XIcon />
+							<span className="sr-only">Annulla invito</span>
+						</Button>
+					</div>
 				);
 			},
 		});
 
 		return cols;
-	}, [isOwner, cancelMutation]);
+	}, [isOwner, cancelMutation, resendMutation]);
 
 	return (
 		<div className="flex h-full min-w-0 flex-col gap-6">

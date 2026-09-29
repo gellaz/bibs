@@ -22,9 +22,9 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-let sendEmailImpl: () => Promise<void> = async () => {};
+let sendEmailImpl: (msg: { to: string }) => Promise<void> = async () => {};
 mock.module("@/lib/email", () => ({
-	sendEmail: () => sendEmailImpl(),
+	sendEmail: (msg: { to: string }) => sendEmailImpl(msg),
 }));
 
 import { eq } from "drizzle-orm";
@@ -40,6 +40,7 @@ import {
 	inviteEmployee,
 	listEmployeeInvitations,
 	listEmployees,
+	resendInvitation,
 	setEmployeeStores,
 } from "@/modules/seller/services/employees";
 import { truncateAll } from "../helpers/cleanup";
@@ -54,6 +55,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+	sendEmailImpl = async () => {};
 	await truncateAll(getTestDb());
 });
 
@@ -488,5 +490,66 @@ describe("setEmployeeStores", () => {
 			employeeId: emp.id,
 		});
 		expect(rows.map((s) => s.id)).toEqual([live.id]);
+	});
+});
+
+describe("resendInvitation", () => {
+	it("re-sends the email and pushes the expiry forward, even when lapsed", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+		const inv = await inviteEmployee(profile.id, "late@test.com", [store.id]);
+		await db
+			.update(employeeInvitation)
+			.set({ expiresAt: new Date(Date.now() - 86_400_000) })
+			.where(eq(employeeInvitation.id, inv.id));
+
+		const sent: string[] = [];
+		sendEmailImpl = async ({ to }) => {
+			sent.push(to);
+		};
+		const result = await resendInvitation(profile.id, inv.id);
+
+		expect(sent).toEqual(["late@test.com"]);
+		expect(result.status).toBe("pending");
+		expect(result.invitationToken).toBe(inv.invitationToken);
+		expect(result.expiresAt.getTime()).toBeGreaterThan(
+			Date.now() + 6 * 86_400_000,
+		);
+		expect(result.storeIds).toEqual([store.id]);
+	});
+
+	it("404s for another seller's invitation or a non-pending one", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const other = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+		const inv = await inviteEmployee(profile.id, "x@test.com", [store.id]);
+
+		await expect(
+			resendInvitation(other.profile.id, inv.id),
+		).rejects.toMatchObject({ status: 404 });
+
+		await db
+			.update(employeeInvitation)
+			.set({ status: "expired" })
+			.where(eq(employeeInvitation.id, inv.id));
+		await expect(resendInvitation(profile.id, inv.id)).rejects.toMatchObject({
+			status: 404,
+		});
+	});
+
+	it("surfaces a failed email as 502", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+		const inv = await inviteEmployee(profile.id, "y@test.com", [store.id]);
+
+		sendEmailImpl = async () => {
+			throw new Error("smtp down");
+		};
+		await expect(resendInvitation(profile.id, inv.id)).rejects.toMatchObject({
+			status: 502,
+		});
 	});
 });

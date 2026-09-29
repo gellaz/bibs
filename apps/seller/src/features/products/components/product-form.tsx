@@ -32,7 +32,10 @@ import {
 } from "../lib/characteristic-form";
 import { BrandCombobox, type BrandComboboxValue } from "./brand-combobox";
 import { CharacteristicLossDialog } from "./characteristic-loss-dialog";
-import { ProductCategoriesPicker } from "./product-categories-picker";
+import {
+	ProductCategoriesPicker,
+	useProductMacroCategories,
+} from "./product-categories-picker";
 import { ProductCharacteristicsSection } from "./product-characteristics-section";
 import {
 	type ExistingImage,
@@ -189,6 +192,7 @@ export function ProductForm({
 		}
 	};
 
+	const { data: macros = [] } = useProductMacroCategories();
 	const eanLookupEnabled = !isEdit && EAN_REGEX.test(eanValue);
 	const eanLookup = useQuery({
 		queryKey: ["ean-lookup", eanValue],
@@ -226,6 +230,12 @@ export function ProductForm({
 		}
 		if (overwrite || !macroCategoryId) {
 			setMacroCategoryId(lookupResult.macroCategoryId);
+			// Stessa regola della scelta a mano della macro: suggerisce
+			// l'aliquota finché non è una scelta del seller.
+			applySuggestedVatRate(
+				macros.find((m) => m.id === lookupResult.macroCategoryId)
+					?.suggestedVatRate,
+			);
 		}
 		if (overwrite || !cur.productCategoryId) {
 			setValue("productCategoryId", lookupResult.productCategoryId, {
@@ -267,6 +277,20 @@ export function ProductForm({
 	// product — a category change must not overwrite a fiscal value silently.
 	const vatRateChosen = useRef(isEdit);
 
+	function applySuggestedVatRate(
+		suggestedVatRate: "22" | "10" | "5" | "4" | "0" | undefined,
+	) {
+		if (!suggestedVatRate) return;
+		const current = getValues("vatRate");
+		if (!vatRateChosen.current) {
+			setValue("vatRate", suggestedVatRate, { shouldDirty: true });
+		} else if (current !== suggestedVatRate) {
+			toast.info(
+				`Aliquota IVA mantenuta al ${current}% (suggerita per questa categoria: ${suggestedVatRate}%)`,
+			);
+		}
+	}
+
 	const onMacroChange = (
 		next: string | null,
 		suggestedVatRate?: "22" | "10" | "5" | "4" | "0",
@@ -277,16 +301,7 @@ export function ProductForm({
 			shouldValidate: true,
 			shouldDirty: true,
 		});
-		if (suggestedVatRate) {
-			const current = getValues("vatRate");
-			if (!vatRateChosen.current) {
-				setValue("vatRate", suggestedVatRate, { shouldDirty: true });
-			} else if (current !== suggestedVatRate) {
-				toast.info(
-					`Aliquota IVA mantenuta al ${current}% (suggerita per questa categoria: ${suggestedVatRate}%)`,
-				);
-			}
-		}
+		applySuggestedVatRate(suggestedVatRate);
 		if (hadCategory && next !== macroCategoryId) {
 			toast.info("Categoria resettata per via del cambio di macrocategoria");
 		}

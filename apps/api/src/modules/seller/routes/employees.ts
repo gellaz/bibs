@@ -21,6 +21,7 @@ import {
 	listEmployeeInvitations,
 	listEmployees,
 	removeEmployee,
+	resendInvitation,
 	setEmployeeStores,
 	unbanEmployee,
 } from "../services/employees";
@@ -132,6 +133,28 @@ export const employeesRoutes = new Elysia()
 				summary: "Annulla invito",
 				description:
 					"Annulla un invito in stato 'pending'. L'invito viene impostato come 'expired'.",
+				tags: ["Seller - Employees"],
+			},
+		},
+	)
+	.post(
+		"/employees/invitations/:invitationId/resend",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+			requireOwner(isOwner);
+
+			const data = await resendInvitation(sp.id, params.invitationId);
+			return ok(data);
+		},
+		{
+			params: t.Object({
+				invitationId: t.String({ description: "ID dell'invito" }),
+			}),
+			response: withErrors({ 200: okRes(EmployeeInvitationSchema) }),
+			detail: {
+				summary: "Reinvia invito",
+				description:
+					"Reinvia l'email di un invito in stato 'pending' (stesso link) e ne sposta la scadenza a 7 giorni da adesso, anche se era già scaduto. 404 se l'invito non è pending, 502 se l'email non parte.",
 				tags: ["Seller - Employees"],
 			},
 		},

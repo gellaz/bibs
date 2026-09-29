@@ -1,0 +1,1 @@
+ALTER TABLE "pricing_config" ADD COLUMN "stripe_product_id" text;

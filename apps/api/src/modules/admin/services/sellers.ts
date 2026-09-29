@@ -443,6 +443,17 @@ const changeDataCheckers = {
 	document: TypeCompiler.Compile(StoredDocumentChange),
 };
 
+function isValidChangeData(type: "vat" | "document", data: unknown): boolean {
+	if (!changeDataCheckers[type].Check(data)) return false;
+	if (type === "vat") return true;
+	// La chiave S3 e l'URL pubblico del documento viaggiano insieme: con uno
+	// solo l'approvazione scriverebbe un documento a metà.
+	const { documentImageKey, documentImageUrl } = data as Static<
+		typeof StoredDocumentChange
+	>;
+	return (documentImageKey === undefined) === (documentImageUrl === undefined);
+}
+
 export async function approveChange(changeId: string, adminUserId: string) {
 	const change = await db.query.sellerProfileChange.findFirst({
 		where: eq(sellerProfileChange.id, changeId),
@@ -450,7 +461,7 @@ export async function approveChange(changeId: string, adminUserId: string) {
 
 	if (!change) throw new ServiceError(404, "Change request not found");
 
-	if (!changeDataCheckers[change.changeType].Check(change.changeData))
+	if (!isValidChangeData(change.changeType, change.changeData))
 		throw new ServiceError(400, "Dati della richiesta non validi");
 	// Narrowed per branch below; the check above guarantees the shape.
 	const changeData = change.changeData;

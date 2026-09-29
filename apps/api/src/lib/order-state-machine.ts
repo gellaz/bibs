@@ -27,6 +27,19 @@ const transitions: Partial<
 	},
 };
 
+// Arriva così nel toast di seller e customer: in italiano, con lo stato
+// attuale (spesso è cambiato nel frattempo).
+const STATUS_LABELS: Record<OrderStatus, string> = {
+	pending: "in attesa",
+	confirmed: "confermato",
+	ready_for_pickup: "pronto per il ritiro",
+	shipped: "spedito",
+	delivered: "consegnato",
+	completed: "completato",
+	cancelled: "annullato",
+	expired: "scaduto",
+};
+
 /**
  * Checks if a transition from `fromStatus` to `toStatus` is valid for the given order type.
  */
@@ -54,7 +67,7 @@ export function assertTransition(
 	if (!canTransition(fromStatus, toStatus, orderType)) {
 		throw new ServiceError(
 			400,
-			`Invalid transition: ${fromStatus} → ${toStatus} for order type '${orderType}'`,
+			`Un ordine «${STATUS_LABELS[fromStatus]}» non può diventare «${STATUS_LABELS[toStatus]}»`,
 		);
 	}
 	return true;

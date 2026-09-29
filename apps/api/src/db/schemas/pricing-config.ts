@@ -19,6 +19,9 @@ export const pricingConfig = pgTable(
 		storeMonthlyFeeCents: integer("store_monthly_fee_cents").notNull(),
 		currency: varchar("currency", { length: 3 }).notNull().default("EUR"),
 		stripePriceId: text("stripe_price_id").notNull(),
+		// Il Product Stripe del Price: il prossimo aggiornamento lo riusa, quindi
+		// l'admin lo ritrova precompilato. Null sulle righe create prima (seed).
+		stripeProductId: text("stripe_product_id"),
 		suspendedAutoCancelDays: integer("suspended_auto_cancel_days")
 			.notNull()
 			.default(60),

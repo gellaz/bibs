@@ -45,7 +45,6 @@ mock.module("@/lib/stripe", () => ({
 
 import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
-import { ServiceError } from "@/lib/errors";
 import { listInvoices } from "@/modules/seller/services/billing";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestSeller } from "../helpers/fixtures";
@@ -89,16 +88,17 @@ describe("listInvoices", () => {
 		expect(result.hasMore).toBe(false);
 	});
 
-	it("throws when seller has no stripeCustomerId yet", async () => {
+	// Nessun Customer Stripe = nessuna fattura: una lista vuota, non un 404
+	// che il client riproverebbe.
+	it("returns an empty page when seller has no stripeCustomerId yet", async () => {
 		const { profile } = await createTestSeller(getTestDb(), {
 			email: "a@b.it",
 		});
-		await expect(
-			listInvoices({
-				sellerProfileId: profile.id,
-				limit: 10,
-				startingAfter: undefined,
-			}),
-		).rejects.toBeInstanceOf(ServiceError);
+		const result = await listInvoices({
+			sellerProfileId: profile.id,
+			limit: 10,
+			startingAfter: undefined,
+		});
+		expect(result).toEqual({ data: [], hasMore: false });
 	});
 });

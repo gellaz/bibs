@@ -849,12 +849,12 @@ describe("importProductsFromCsv - per-row EAN collision", () => {
 
 		expect(result.created).toBe(2);
 		expect(result.skipped).toBe(1);
-		expect(result.failed).toBe(1);
-		expect(result.errors).toHaveLength(1);
-		expect(result.errors[0]).toMatchObject({
-			row: 3,
-			message: expect.stringContaining("EAN"),
-		});
+		// Skipped, not failed: created + skipped + failed = rows in the file.
+		expect(result.failed).toBe(0);
+		expect(result.errors).toEqual([]);
+		expect(result.warnings).toEqual([
+			{ row: 3, message: expect.stringContaining("EAN") },
+		]);
 
 		// Verify the two non-conflicting rows actually landed in DB
 		const products = await db.query.product.findMany({
@@ -866,5 +866,73 @@ describe("importProductsFromCsv - per-row EAN collision", () => {
 			.filter(Boolean)
 			.sort();
 		expect(eans).toEqual(["1111111111116", "2222222222229", "3333333333332"]);
+	});
+});
+
+describe("importProductsFromCsv - warnings and row numbers", () => {
+	it("keeps the first category and reports the dropped ones", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
+		const macro = await createTestMacroCategory(db, "Macro Warn");
+		const first = await createTestCategory(db, "Prima", macro.id);
+		await createTestCategory(db, "Seconda", macro.id);
+		await createTestCategory(db, "Terza", macro.id);
+
+		const csv = [
+			"name,description,price,categories",
+			"Multi,d,2.00,Prima;Seconda;Terza",
+		].join("\n");
+
+		const result = await importProductsFromCsv({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			csvText: csv,
+		});
+
+		expect(result).toMatchObject({ created: 1, skipped: 0, failed: 0 });
+		expect(result.warnings).toEqual([
+			{ row: 2, message: expect.stringContaining("Seconda, Terza") },
+		]);
+		const [created] = await db.query.product.findMany({
+			where: eq(product.sellerProfileId, seller.profile.id),
+		});
+		expect(created.productCategoryId).toBe(first.id);
+	});
+
+	it("reports the file's row number after an invalid row", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id);
+		const macro = await createTestMacroCategory(db, "Macro Rows");
+		const cat = await createTestCategory(db, "Cat Rows", macro.id);
+		await createProduct({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			name: "Existing",
+			price: "1.00",
+			productCategoryId: cat.id,
+			ean: "1111111111116",
+		});
+
+		const csv = [
+			"name,description,price,categories,ean",
+			"Bad price,d,abc,Cat Rows,",
+			"Conflict,d,3.00,Cat Rows,1111111111116",
+		].join("\n");
+
+		const result = await importProductsFromCsv({
+			sellerProfileId: seller.profile.id,
+			storeId: s.id,
+			csvText: csv,
+		});
+
+		expect(result.errors).toEqual([
+			{ row: 2, message: expect.stringContaining("price") },
+		]);
+		// Row 3 of the file, not the second valid product's index.
+		expect(result.warnings).toEqual([
+			{ row: 3, message: expect.stringContaining("EAN") },
+		]);
 	});
 });

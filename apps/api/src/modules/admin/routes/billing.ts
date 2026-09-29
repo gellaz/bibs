@@ -56,6 +56,7 @@ const PricingSchema = t.Object({
 	storeMonthlyFeeCents: t.Integer(),
 	currency: t.String(),
 	stripePriceId: t.String(),
+	stripeProductId: t.Nullable(t.String()),
 	suspendedAutoCancelDays: t.Integer(),
 	pendingCreationExpiryHours: t.Integer(),
 	isActive: t.Boolean(),

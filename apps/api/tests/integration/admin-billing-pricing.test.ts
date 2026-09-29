@@ -89,6 +89,7 @@ describe("updatePricing", () => {
 		expect(rows).toHaveLength(2);
 		const active = rows.find((r) => r.isActive);
 		expect(active?.stripePriceId).toBe("price_NEW");
+		expect(active?.stripeProductId).toBe("prod_TEST");
 		expect(active?.storeMonthlyFeeCents).toBe(3500);
 	});
 

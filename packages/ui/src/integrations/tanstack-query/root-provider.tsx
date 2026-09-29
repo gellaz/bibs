@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { shouldRetryQuery } from "~/lib/query-retry";
 
 // Browser: un solo QueryClient per la sessione (cache viva tra navigazioni).
 // Server: un QueryClient NUOVO a ogni getContext() — cioè a ogni richiesta
@@ -7,11 +8,17 @@ import type { ReactNode } from "react";
 // (potenzialmente per-utente) non trapela mai tra richieste concorrenti.
 let browserContext: { queryClient: QueryClient } | undefined;
 
+function createQueryClient() {
+	return new QueryClient({
+		defaultOptions: { queries: { retry: shouldRetryQuery } },
+	});
+}
+
 export function getContext(): { queryClient: QueryClient } {
 	if (typeof window === "undefined") {
-		return { queryClient: new QueryClient() };
+		return { queryClient: createQueryClient() };
 	}
-	browserContext ??= { queryClient: new QueryClient() };
+	browserContext ??= { queryClient: createQueryClient() };
 	return browserContext;
 }
 

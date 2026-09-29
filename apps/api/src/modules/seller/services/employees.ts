@@ -119,7 +119,10 @@ export async function inviteEmployee(
 		),
 	});
 	if (existing) {
-		throw new ServiceError(409, "Questo indirizzo email è già stato invitato");
+		throw new ServiceError(
+			409,
+			"Questo indirizzo email è già stato invitato: puoi reinviare l'invito dalla lista",
+		);
 	}
 
 	// Check if email is already registered as a user
@@ -148,22 +151,86 @@ export async function inviteEmployee(
 	});
 
 	// Best-effort: a failed invite email (render or send) must not turn a
-	// committed invitation into a 500 — the seller can resend from the UI.
+	// committed invitation into a 500 — the seller can resend from the list
+	// (`resendInvitation`).
 	try {
-		const businessName = profile.organization?.businessName ?? "bibs";
-		const inviteUrl = `${env.SELLER_APP_URL}/invite/${invitation.invitationToken}`;
-
-		const { subject, html } = await renderEmployeeInviteEmail({
-			businessName,
-			inviteUrl,
-			expiryDays: INVITATION_EXPIRY_DAYS,
+		await sendInviteEmail({
+			email,
+			invitationToken: invitation.invitationToken,
+			businessName: profile.organization?.businessName,
 		});
-		await sendEmail({ to: email, subject, html });
 	} catch (err) {
 		logger.warn({ err, email }, "invite email failed after invitation commit");
 	}
 
 	return { ...invitation, storeIds };
+}
+
+async function sendInviteEmail(params: {
+	email: string;
+	invitationToken: string;
+	businessName: string | null | undefined;
+}) {
+	const { subject, html } = await renderEmployeeInviteEmail({
+		businessName: params.businessName ?? "bibs",
+		inviteUrl: `${env.SELLER_APP_URL}/invite/${params.invitationToken}`,
+		expiryDays: INVITATION_EXPIRY_DAYS,
+	});
+	await sendEmail({ to: params.email, subject, html });
+}
+
+/**
+ * Reinvia l'email di un invito pending e ne sposta la scadenza di
+ * INVITATION_EXPIRY_DAYS da adesso (anche se era già scaduto: resta `pending`
+ * finché nessuno lo annulla o lo accetta). Il link resta lo stesso. Qui
+ * l'email è il punto: se fallisce l'errore arriva al seller.
+ */
+export async function resendInvitation(
+	sellerProfileId: string,
+	invitationId: string,
+) {
+	const invitation = await db.query.employeeInvitation.findFirst({
+		where: and(
+			eq(employeeInvitation.id, invitationId),
+			eq(employeeInvitation.sellerProfileId, sellerProfileId),
+			eq(employeeInvitation.status, "pending"),
+		),
+		with: {
+			storeAssignments: { columns: { storeId: true } },
+			sellerProfile: { with: { organization: true } },
+		},
+	});
+	if (!invitation) throw new ServiceError(404, "Invito non trovato");
+
+	const expiresAt = new Date();
+	expiresAt.setDate(expiresAt.getDate() + INVITATION_EXPIRY_DAYS);
+	const [updated] = await db
+		.update(employeeInvitation)
+		.set({ expiresAt })
+		.where(
+			and(
+				eq(employeeInvitation.id, invitationId),
+				eq(employeeInvitation.status, "pending"),
+			),
+		)
+		.returning();
+	if (!updated) throw new ServiceError(404, "Invito non trovato");
+
+	try {
+		await sendInviteEmail({
+			email: updated.email,
+			invitationToken: updated.invitationToken,
+			businessName: invitation.sellerProfile.organization?.businessName,
+		});
+	} catch (err) {
+		logger.warn({ err, invitationId }, "invite email resend failed");
+		throw new ServiceError(502, "Invio dell'email non riuscito, riprova");
+	}
+
+	return {
+		...updated,
+		storeIds: invitation.storeAssignments.map((a) => a.storeId),
+	};
 }
 
 export async function listEmployeeInvitations(sellerProfileId: string) {

@@ -318,6 +318,35 @@ describe("importCategoryCharacteristicsFromCsv", () => {
 		]);
 	});
 
+	it("counts a repeated row as skipped, and a contradicting one as an error", async () => {
+		const db = getTestDb();
+		const macro = await createTestMacroCategory(db, "Elettronica");
+		await createTestCategory(db, "Smartphone", macro.id);
+		await importCharacteristicsFromCsv(
+			["name,data_type,unit,options", "Peso,number,g,", "5G,boolean,,"].join(
+				"\n",
+			),
+		);
+
+		const result = await importCategoryCharacteristicsFromCsv(
+			[
+				"macro_category,subcategory,characteristic,required",
+				"Elettronica,Smartphone,Peso,true",
+				"Elettronica,Smartphone,Peso,true",
+				"Elettronica,Smartphone,5G,false",
+				"Elettronica,Smartphone,5G,true",
+			].join("\n"),
+		);
+
+		// Ogni riga del file finisce in un contatore.
+		expect(result).toMatchObject({ created: 2, skipped: 1, failed: 1 });
+		expect(result.errors).toEqual([
+			{ row: 5, message: expect.stringContaining("riga 4") },
+		]);
+		const rows = await db.select().from(productCategoryCharacteristic);
+		expect(rows.map((r) => r.required).sort()).toEqual([false, true]);
+	});
+
 	it("reports an unknown characteristic with its row number", async () => {
 		const db = getTestDb();
 		const macro = await createTestMacroCategory(db, "Elettronica");
