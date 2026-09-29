@@ -182,6 +182,33 @@ describe("updateAddress", () => {
 		expect(updated.addressLine1).toBe("Via Nuova");
 	});
 
+	it("clears the phone with an empty string and keeps it when omitted", async () => {
+		const db = getTestDb();
+		const customer = await createTestCustomer(db);
+		const mun = await createTestMunicipality(db);
+		const addr = await createAddress({
+			customerProfileId: customer.profile.id,
+			phone: "3331234567",
+			addressLine1: "Via Vecchia",
+			municipalityId: mun.id,
+			zipCode: "00100",
+		});
+
+		const kept = await updateAddress({
+			addressId: addr.id,
+			customerProfileId: customer.profile.id,
+			label: "Casa",
+		});
+		expect(kept.phone).toBe("3331234567");
+
+		const cleared = await updateAddress({
+			addressId: addr.id,
+			customerProfileId: customer.profile.id,
+			phone: "",
+		});
+		expect(cleared.phone).toBeNull();
+	});
+
 	it("unsets previous default when promoting another to default", async () => {
 		const db = getTestDb();
 		const customer = await createTestCustomer(db);

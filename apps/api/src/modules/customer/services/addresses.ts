@@ -86,7 +86,12 @@ interface CreateAddressParams {
 }
 
 export async function createAddress(params: CreateAddressParams) {
-	const { customerProfileId, isDefault = false, ...addressData } = params;
+	const {
+		customerProfileId,
+		isDefault = false,
+		phone,
+		...addressData
+	} = params;
 
 	const created = await db.transaction(async (tx) => {
 		if (isDefault) {
@@ -101,6 +106,7 @@ export async function createAddress(params: CreateAddressParams) {
 			.values({
 				customerProfileId,
 				...addressData,
+				phone: phone || null,
 				isDefault,
 			})
 			.returning();
@@ -133,7 +139,7 @@ interface UpdateAddressParams {
 }
 
 export async function updateAddress(params: UpdateAddressParams) {
-	const { addressId, customerProfileId, ...data } = params;
+	const { addressId, customerProfileId, phone, ...data } = params;
 
 	const updated = await db.transaction(async (tx) => {
 		if (data.isDefault) {
@@ -145,7 +151,8 @@ export async function updateAddress(params: UpdateAddressParams) {
 
 		const [result] = await tx
 			.update(customerAddress)
-			.set(data)
+			// `""` cancella il telefono; `undefined` lo lascia com'è.
+			.set({ ...data, ...(phone !== undefined && { phone: phone || null }) })
 			.where(
 				and(
 					eq(customerAddress.id, addressId),

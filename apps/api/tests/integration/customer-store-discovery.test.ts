@@ -200,6 +200,17 @@ describe("searchStores — text search (name + comune)", () => {
 		const result = await searchStores({ q: "milano" });
 		expect(result.data.map((s) => s.name)).toEqual(["Negozio Nord"]);
 	});
+
+	it("treats % and _ as literal characters, not wildcards", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		await visibleStore(profile.id, { name: "Outlet 50% off" });
+		await visibleStore(profile.id, { name: "Panificio Rossi" });
+
+		expect((await searchStores({ q: "_" })).data).toEqual([]);
+		const percent = await searchStores({ q: "%" });
+		expect(percent.data.map((s) => s.name)).toEqual(["Outlet 50% off"]);
+	});
 });
 
 describe("searchStores — category filter", () => {

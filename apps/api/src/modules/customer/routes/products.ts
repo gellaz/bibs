@@ -26,7 +26,7 @@ export const productsRoutes = new Elysia()
 					searchQuery: query.q,
 					categoryId: query.categoryId,
 					macroCategoryId: query.macroCategoryId,
-					hasGeoFilter: !!(query.lat && query.lng),
+					hasGeoFilter: query.lat !== undefined && query.lng !== undefined,
 					radius: query.radius,
 					openNow: query.openNow,
 					onSale: query.onSale,
@@ -57,7 +57,7 @@ export const productsRoutes = new Elysia()
 			pino.info(
 				{
 					searchQuery: query.q,
-					hasGeoFilter: !!(query.lat && query.lng),
+					hasGeoFilter: query.lat !== undefined && query.lng !== undefined,
 					radius: query.radius,
 					openNow: query.openNow,
 					onSale: query.onSale,

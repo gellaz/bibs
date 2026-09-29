@@ -88,13 +88,18 @@ async function provisionBucket() {
 	}
 }
 
+/** Beyond this a readiness probe reports S3 as unreachable instead of hanging. */
+const CHECK_BUCKET_TIMEOUT_MS = 3000;
+
 /**
  * Checks S3/MinIO connectivity by sending a HeadBucket request.
- * Returns true if the bucket is reachable, false otherwise.
+ * Returns true if the bucket is reachable, false otherwise (timeout included).
  */
 export async function checkBucket(): Promise<boolean> {
 	try {
-		await awsS3.send(new HeadBucketCommand({ Bucket: bucket }));
+		await awsS3.send(new HeadBucketCommand({ Bucket: bucket }), {
+			abortSignal: AbortSignal.timeout(CHECK_BUCKET_TIMEOUT_MS),
+		});
 		return true;
 	} catch {
 		return false;

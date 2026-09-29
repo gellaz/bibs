@@ -15,6 +15,7 @@ import { db } from "@/db";
 import { discount, discountProduct } from "@/db/schemas/discount";
 import { product } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
+import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
 
 /**
@@ -303,7 +304,9 @@ export async function listDiscounts(params: ListDiscountsParams) {
 	}
 
 	if (params.search) {
-		whereParts.push(sql`${discount.title} ILIKE ${`%${params.search}%`}`);
+		whereParts.push(
+			sql`${discount.title} ILIKE ${containsPattern(params.search)}`,
+		);
 	}
 
 	const where = and(...whereParts);
