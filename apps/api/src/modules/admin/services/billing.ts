@@ -103,6 +103,7 @@ export async function updatePricing(params: UpdatePricingParams) {
 				storeMonthlyFeeCents: params.storeMonthlyFeeCents,
 				currency: params.currency,
 				stripePriceId: newPrice.id,
+				stripeProductId: params.productId,
 				suspendedAutoCancelDays: params.suspendedAutoCancelDays,
 				pendingCreationExpiryHours: params.pendingCreationExpiryHours,
 				isActive: true,

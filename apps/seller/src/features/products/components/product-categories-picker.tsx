@@ -26,14 +26,9 @@ interface ProductCategoriesPickerProps {
 	required?: boolean;
 }
 
-export function ProductCategoriesPicker({
-	macroCategoryId,
-	categoryId,
-	onMacroChange,
-	onCategoryChange,
-	required = false,
-}: ProductCategoriesPickerProps) {
-	const { data: macros = [] } = useQuery({
+/** Le macro-categorie prodotto, con l'aliquota IVA che suggeriscono. */
+export function useProductMacroCategories() {
+	return useQuery({
 		queryKey: ["product-macro-categories"],
 		queryFn: async () => {
 			const response = await api()["product-macro-categories"].get({
@@ -42,6 +37,16 @@ export function ProductCategoriesPicker({
 			return unwrap(response, "Errore nel caricamento macro-categorie").data;
 		},
 	});
+}
+
+export function ProductCategoriesPicker({
+	macroCategoryId,
+	categoryId,
+	onMacroChange,
+	onCategoryChange,
+	required = false,
+}: ProductCategoriesPickerProps) {
+	const { data: macros = [] } = useProductMacroCategories();
 
 	const { data: categories = [] } = useQuery({
 		queryKey: ["product-categories", macroCategoryId],

@@ -57,17 +57,10 @@ accetta solo `reserve_pickup` (`direct` disabilitato in #208).
 
 ### P3.1 — API sweep
 
-Chiusi in #209: ricerca (`radius`, `hasGeoFilter`), ILIKE, cap immagini, telefono e `/ready`
-(vedi «Chiusi»). Il doppio controllo di ownership in `transitionOrder` non è un bug: è difesa in
-profondità (proprietà del seller + negozi accessibili) su un'unica lettura, resta com'è.
-
-- **Import CSV prodotti** tiene `categoryIds[0]` e scarta il resto in silenzio (serve un canale `warnings` sganciato da `failed`) — `seller/services/product-import.ts:218-220`.
-- **Import matrice caratteristiche**: righe con chiave duplicata saltate con `continue`, fuori da ogni contatore — `admin/services/characteristic-import.ts:578`.
-- **Settings seller**: nessun check di collisione P.IVA alla richiesta (emerge all'approvazione); upload S3 prima dell'insert (file orfani); tutte le richieste caricate e filtrate in JS — `seller/services/settings.ts:54,94,266-304,326-345`.
-- **Invito dipendente**: re-invito → 409, nessuna route di resend (un commento sostiene il contrario) — `seller/services/employees.ts:114-123,151`.
-- **Retry su errori definitivi**: `GET /seller/billing/invoices` risponde 404 «Nessun Customer Stripe per questo seller» (tutti i seller del seed) e React Query lo riprova 3 volte; pickup «non pronto» e «scaduto» sono entrambi 400 con messaggi misti IT/EN — trovati nella PR B/C.
-- **Prefill EAN senza aliquota**: `applyLookup` imposta la macro-categoria senza passare da `onMacroChange`, quindi non applica `suggestedVatRate` — `seller/features/products/components/product-form.tsx` (review #195).
-- **Richieste di modifica, residui**: `documentImageKey` senza `documentImageUrl` passa il controllo (serve un «entrambi o nessuno»); `pricing_config` non salva lo `stripeProductId`, quindi il dialog prezzi non può precompilarlo — `admin/services/sellers.ts`, `admin/services/billing.ts` (review #195).
+Nessuna voce aperta: chiusi in #209 (ricerca, ILIKE, cap immagini, telefono, `/ready`) e #210
+(import, settings, inviti, errori definitivi, prefill EAN, richieste di modifica), vedi «Chiusi».
+Il doppio controllo di ownership in `transitionOrder` non è un bug: è difesa in profondità
+(proprietà del seller + negozi accessibili) su un'unica lettura, resta com'è.
 
 ### P3.2 — Seller/Admin FE sweep
 - `?page=abc` → `Number(...)` senza guardia NaN/clamp — seller `products/index.tsx:104-105`, `promotions/index.tsx:41-42`, `team/index.tsx:67-68`; admin `users.tsx:51-52`.
@@ -176,6 +169,7 @@ profondità (proprietà del seller + negozi accessibili) su un'unica lettura, re
 | **Punti gratis (`direct`)** | `POST /customer/orders` accettava `type: direct`, creato già `completed` con i punti accreditati senza alcun pagamento. Il body accetta solo `reserve_pickup` e `placeOrder` rifiuta `direct` con 400 (nessun altro ingresso lo usava); il flusso QR + pagamento resta nel backlog di prodotto | #208 |
 | **Segno `redeemed`** | `redeemed` si salva con `amount` negativo, come diceva lo schema: Σ movimenti = saldo. CHECK di segno per tipo (`redeemed < 0`, `earned`/`refunded > 0`), righe storiche ribaltate da `0015_redeemed_negative_amount` (idempotente) | #208 |
 | **P3.1 (input e probe)** | `radius` limitato a (0, 100] km; `hasGeoFilter` nei log vero anche con lat o lng = 0; `%`, `_` e `\\` neutralizzati in tutte le ricerche `ILIKE` (`lib/like.ts`); cap immagini di prodotto e negozio ricontrollato nella transazione d'inserimento con lock sulla riga padre (i file già caricati su S3 vengono cancellati); telefono dell'indirizzo cancellabile con stringa vuota (salvato `null`, il form lo manda sempre); `HeadBucket` di `/ready` con timeout di 3 s; `x-request-id` in ingresso riusato se ha forma di id | #209 |
+| **P3.1 (import, settings, inviti)** | Import CSV prodotti: canale `warnings` (categorie oltre la prima, EAN già usato) sganciato da `failed`, così created + skipped + failed = righe del file; corretti anche i numeri di riga, sfalsati dopo una riga non valida. Matrice caratteristiche: le righe ripetute contano tra le saltate, quelle con `required` contraddittorio tra gli errori. Settings seller: P.IVA di un altro venditore rifiutata alla richiesta (409), pending cercato con una query mirata, immagine del documento cancellata da S3 se l'insert fallisce. Invito: `POST /seller/employees/invitations/:id/resend` (stesso link, scadenza a 7 giorni anche se già scaduto, 502 se l'email non parte) e «Reinvia» in `/team`. Errori definitivi: `unwrap` lancia un `ApiError` con lo status e il QueryClient dei 3 FE non riprova i 4xx; `GET /seller/billing/invoices` senza Customer Stripe risponde lista vuota; transizioni d'ordine non valide con messaggio in italiano. Prefill EAN applica l'aliquota suggerita dalla macro (stessa regola della scelta a mano). Richieste di modifica: chiave e URL dell'immagine del documento «entrambi o nessuno»; `pricing_config.stripe_product_id` salvato e precompilato nel dialog prezzi | #210 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 

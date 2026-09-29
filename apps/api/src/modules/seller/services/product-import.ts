@@ -10,23 +10,30 @@ const EAN_REGEX = /^(\d{8}|\d{13})$/;
 
 const EXPECTED_HEADERS = ["name", "description", "price", "categories"];
 
-interface ImportError {
+interface RowMessage {
 	row: number;
 	message: string;
 }
 
+/**
+ * `failed` conta solo le righe in `errors`. Una riga saltata (EAN già usato) o
+ * importata con qualcosa scartato (categorie oltre la prima) va in `warnings`:
+ * created + skipped + failed = righe del file.
+ */
 interface ImportResult {
 	created: number;
 	skipped: number;
 	failed: number;
-	errors: ImportError[];
+	errors: RowMessage[];
+	warnings: RowMessage[];
 }
 
 interface ValidProduct {
+	rowNum: number;
 	name: string;
 	description: string | undefined;
 	price: string;
-	categoryIds: string[];
+	categoryId: string;
 	ean: string | null;
 	brandName: string | null;
 }
@@ -90,7 +97,8 @@ export async function importProductsFromCsv(
 		allCategories.map((c) => [c.name.toLowerCase(), c.id]),
 	);
 
-	const errors: ImportError[] = [];
+	const errors: RowMessage[] = [];
+	const warnings: RowMessage[] = [];
 	const validProducts: ValidProduct[] = [];
 
 	for (let i = 0; i < rows.length; i++) {
@@ -158,12 +166,22 @@ export async function importProductsFromCsv(
 		const brandRaw = brandIdx >= 0 ? (row[brandIdx]?.trim() ?? "") : "";
 		const brandName = brandRaw.length > 0 ? brandRaw : null;
 
+		// Il prodotto tiene una sola categoria: le altre non spariscono in
+		// silenzio, finiscono negli avvisi.
+		if (categoryNames.length > 1) {
+			warnings.push({
+				row: rowNum,
+				message: `Il prodotto tiene solo la prima categoria ("${categoryNames[0]}"); ignorate: ${categoryNames.slice(1).join(", ")}`,
+			});
+		}
+
 		const description = row[descIdx] || undefined;
 		validProducts.push({
+			rowNum,
 			name,
 			description,
 			price,
-			categoryIds,
+			categoryId: categoryIds[0],
 			ean,
 			brandName,
 		});
@@ -195,9 +213,8 @@ export async function importProductsFromCsv(
 				brandIdByLower.set(bname.toLowerCase(), id);
 			}
 
-			for (let i = 0; i < validProducts.length; i++) {
-				const p = validProducts[i];
-				const rowNum = i + 2;
+			for (const p of validProducts) {
+				const { rowNum } = p;
 				const brandId = p.brandName
 					? (brandIdByLower.get(p.brandName.toLowerCase()) ?? null)
 					: null;
@@ -215,9 +232,7 @@ export async function importProductsFromCsv(
 								price: p.price,
 								ean: p.ean,
 								brandId,
-								// Il CSV può elencare più categorie: il prodotto ne tiene
-								// una sola, la prima.
-								productCategoryId: p.categoryIds[0] ?? null,
+								productCategoryId: p.categoryId,
 							})
 							.returning({ id: product.id });
 
@@ -239,7 +254,7 @@ export async function importProductsFromCsv(
 						(pg.constraint === "product_seller_ean_unique" ||
 							/ean/.test(pg.constraint ?? ""))
 					) {
-						errors.push({
+						warnings.push({
 							row: rowNum,
 							message: `EAN già usato per un altro prodotto del venditore: "${p.ean}"`,
 						});
@@ -252,5 +267,5 @@ export async function importProductsFromCsv(
 		});
 	}
 
-	return { created, skipped, failed: errors.length, errors };
+	return { created, skipped, failed: errors.length, errors, warnings };
 }

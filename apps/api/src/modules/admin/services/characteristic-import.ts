@@ -562,7 +562,11 @@ export async function importCategoryCharacteristicsFromCsv(
 	// posizione anche una riga già presente nel database — è l'ordine nel
 	// FILE a contare, non l'ordine di inserimento.
 	const sortCounters = new Map<string, number>();
-	const seenPairs = new Set<string>();
+	// Prima occorrenza di ogni coppia nel file: le ripetizioni la lasciano
+	// vincere, ma finiscono in un contatore (saltate) o, se contraddicono il
+	// suo `required`, negli errori.
+	const seenPairs = new Map<string, { rowNum: number; required: boolean }>();
+	let duplicatesInFile = 0;
 	const candidateRows: {
 		categoryId: string;
 		characteristicId: string;
@@ -575,8 +579,19 @@ export async function importCategoryCharacteristicsFromCsv(
 		sortCounters.set(row.categoryId, nextSortOrder + 1);
 
 		const key = pairKey(row.categoryId, row.characteristicId);
-		if (seenPairs.has(key)) continue; // stessa riga ripetuta nel file
-		seenPairs.add(key);
+		const first = seenPairs.get(key);
+		if (first) {
+			if (first.required === row.required) {
+				duplicatesInFile++;
+			} else {
+				errors.push({
+					row: row.rowNum,
+					message: `Riga ripetuta con "required" diverso dalla riga ${first.rowNum}: vale la riga ${first.rowNum}.`,
+				});
+			}
+			continue;
+		}
+		seenPairs.set(key, { rowNum: row.rowNum, required: row.required });
 
 		candidateRows.push({
 			categoryId: row.categoryId,
@@ -615,7 +630,7 @@ export async function importCategoryCharacteristicsFromCsv(
 		existingLinks.map((l) => pairKey(l.categoryId, l.characteristicId)),
 	);
 
-	let skipped = 0;
+	let skipped = duplicatesInFile;
 	const toInsert: typeof candidateRows = [];
 	for (const row of candidateRows) {
 		const key = pairKey(row.categoryId, row.characteristicId);

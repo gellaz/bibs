@@ -141,7 +141,9 @@ describe("assertTransition — invalid transitions", () => {
 		try {
 			assertTransition("pending", "shipped", "pay_deliver");
 		} catch (e) {
-			expect((e as ServiceError).message).toContain("pending");
+			expect((e as ServiceError).message).toBe(
+				"Un ordine «in attesa» non può diventare «spedito»",
+			);
 		}
 	});
 });

@@ -466,6 +466,23 @@ export const CsvImportResultSchema = t.Object({
 	),
 });
 
+// Per l'import prodotti del seller: una riga saltata (EAN già usato) o importata
+// perdendo qualcosa (categorie oltre la prima) non è un errore, ma non deve
+// nemmeno sparire in silenzio. `failed` conta solo `errors`.
+export const ProductCsvImportResultSchema = t.Object({
+	...CsvImportResultSchema.properties,
+	warnings: t.Array(
+		t.Object({
+			row: t.Number({ description: "Numero di riga nel CSV (partendo da 2)" }),
+			message: t.String({ description: "Cosa è stato saltato o scartato" }),
+		}),
+		{
+			description:
+				"Righe saltate o importate con qualcosa scartato: EAN già usato, categorie oltre la prima",
+		},
+	),
+});
+
 // Per l'import della matrice categoria-caratteristiche: solo additivo (non
 // cancella mai), quindi `skipped` resta onesto come in CsvImportResultSchema
 // — una riga già presente è saltata, non aggiornata. Si estende con `missing`

@@ -119,9 +119,9 @@ export async function listInvoices(params: ListInvoicesParams) {
 	const profile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, params.sellerProfileId),
 	});
-	if (!profile?.stripeCustomerId) {
-		throw new ServiceError(404, "Nessun Customer Stripe per questo seller");
-	}
+	// Senza Customer Stripe il seller non ha mai pagato nulla: nessuna fattura,
+	// non un errore (un 404 qui era un "vuoto" che il client riprovava).
+	if (!profile?.stripeCustomerId) return { data: [], hasMore: false };
 
 	const list = await stripe.invoices.list({
 		customer: profile.stripeCustomerId,

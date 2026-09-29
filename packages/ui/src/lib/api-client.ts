@@ -1,6 +1,7 @@
 import { treaty } from "@elysiajs/eden";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import type { Elysia } from "elysia";
+import { ApiError } from "./api-error";
 
 export interface CreateApiClientOptions {
 	/**
@@ -60,14 +61,21 @@ export function edenMessage(error: unknown): string | undefined {
 
 /**
  * Unwraps an already-awaited Eden response: throws `edenMessage(res.error) ??
- * fallback` if it errored, otherwise returns the payload (`res.data`). Callers
- * keep any trailing `.data` drill they already had.
+ * fallback` if it errored (an `ApiError` carrying the HTTP status when Eden
+ * reports one), otherwise returns the payload (`res.data`). Callers keep any
+ * trailing `.data` drill they already had.
  */
 export function unwrap<T>(
 	res: { data: T | null; error: unknown },
 	fallback: string,
 ): T {
-	if (res.error) throw new Error(edenMessage(res.error) ?? fallback);
+	if (res.error) {
+		const message = edenMessage(res.error) ?? fallback;
+		const status = (res.error as { status?: unknown }).status;
+		throw typeof status === "number"
+			? new ApiError(message, status)
+			: new Error(message);
+	}
 	if (res.data == null) throw new Error(fallback);
 	return res.data;
 }

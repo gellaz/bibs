@@ -48,8 +48,9 @@ function PricingPage() {
 		setFields((prev) => ({ ...prev, [name]: value }));
 		setTouched((prev) => new Set(prev).add(name));
 	};
-	// productId is never prefilled (the API doesn't return it), so its error
-	// shows from the start: otherwise Conferma is disabled with no reason given.
+	// productId is prefilled from the active config, but rows created before
+	// it was stored have none: then its error shows from the start, otherwise
+	// Conferma is disabled with no reason given.
 	const shownError = (name: keyof PricingFields) =>
 		(touched.has(name) || name === "productId") && errors[name]
 			? [{ message: errors[name] }]
@@ -105,7 +106,7 @@ function PricingPage() {
 									fee: (current.storeMonthlyFeeCents / 100).toFixed(2),
 									days: String(current.suspendedAutoCancelDays),
 									hours: String(current.pendingCreationExpiryHours),
-									productId: "",
+									productId: current.stripeProductId ?? "",
 								});
 								setTouched(new Set());
 							}}

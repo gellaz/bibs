@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
@@ -27,14 +27,23 @@ function assertActive(onboardingStatus: string) {
 	}
 }
 
-function assertNoPendingChange(
-	changes: { changeType: string; status: string }[],
-	type: string,
+/**
+ * Una sola richiesta pending per tipo. Il check dà il messaggio giusto; la gara
+ * tra due richieste concorrenti la chiude l'indice unico parziale (23505 → 409).
+ */
+async function assertNoPendingChange(
+	sellerProfileId: string,
+	type: "vat" | "document",
 ) {
-	const hasPending = changes.some(
-		(c) => c.changeType === type && c.status === "pending",
-	);
-	if (hasPending) {
+	const pending = await db.query.sellerProfileChange.findFirst({
+		columns: { id: true },
+		where: and(
+			eq(sellerProfileChange.sellerProfileId, sellerProfileId),
+			eq(sellerProfileChange.changeType, type),
+			eq(sellerProfileChange.status, "pending"),
+		),
+	});
+	if (pending) {
 		throw new ServiceError(
 			409,
 			`A pending ${type} change request already exists`,
@@ -266,18 +275,34 @@ export async function requestVatChange(params: VatChangeParams) {
 
 	const profile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerProfileId),
-		with: { organization: true, changes: true },
+		with: { organization: true },
 	});
 
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 	assertActive(profile.onboardingStatus);
-	assertNoPendingChange(profile.changes ?? [], "vat");
+	await assertNoPendingChange(sellerProfileId, "vat");
 
 	// Verify the new VAT is different from the current one
 	if (profile.organization?.vatNumber === vatNumber) {
 		throw new ServiceError(
 			400,
 			"The new VAT number is the same as the current one",
+		);
+	}
+
+	// La P.IVA è unica tra le organizzazioni: meglio dirlo adesso che far
+	// fallire l'approvazione dell'admin più avanti.
+	const takenBy = await db.query.organization.findFirst({
+		columns: { id: true },
+		where: and(
+			eq(organization.vatNumber, vatNumber),
+			ne(organization.sellerProfileId, sellerProfileId),
+		),
+	});
+	if (takenBy) {
+		throw new ServiceError(
+			409,
+			"Questa partita IVA è già registrata da un altro venditore",
 		);
 	}
 
@@ -314,33 +339,36 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 
 	const profile = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerProfileId),
-		with: { changes: true },
 	});
 
 	if (!profile) throw new ServiceError(404, "Seller profile not found");
 	assertActive(profile.onboardingStatus);
-	assertNoPendingChange(profile.changes ?? [], "document");
+	await assertNoPendingChange(sellerProfileId, "document");
 
 	// Upload new document image to S3 if provided
-	let imageData = {};
-	if (documentImage) {
-		const { publicUrl, s3 } = await import("@/lib/s3");
-		const key = `documents/${sellerProfileId}/${crypto.randomUUID()}`;
-		await s3.write(key, documentImage);
-		imageData = {
-			documentImageKey: key,
-			documentImageUrl: publicUrl(key),
-		};
+	const { publicUrl, s3 } = await import("@/lib/s3");
+	const key = documentImage
+		? `documents/${sellerProfileId}/${crypto.randomUUID()}`
+		: null;
+	if (documentImage && key) await s3.write(key, documentImage);
+	const imageData = key
+		? { documentImageKey: key, documentImageUrl: publicUrl(key) }
+		: {};
+
+	try {
+		const [change] = await db
+			.insert(sellerProfileChange)
+			.values({
+				sellerProfileId,
+				changeType: "document",
+				changeData: { ...data, ...imageData },
+			})
+			.returning();
+		return change;
+	} catch (err) {
+		// Nessuna richiesta salvata (es. una concorrente ha preso il posto):
+		// il file caricato resterebbe orfano (best-effort).
+		if (key) await s3.delete(key).catch(() => {});
+		throw err;
 	}
-
-	const [change] = await db
-		.insert(sellerProfileChange)
-		.values({
-			sellerProfileId,
-			changeType: "document",
-			changeData: { ...data, ...imageData },
-		})
-		.returning();
-
-	return change;
 }

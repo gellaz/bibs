@@ -337,8 +337,18 @@ describe("approveChange", () => {
 	for (const [changeType, changeData] of [
 		["vat", { vatNumber: 123 }],
 		["document", { documentNumber: "x" }],
+		// Chiave dell'immagine senza URL (o viceversa): documento a metà.
+		[
+			"document",
+			{
+				documentNumber: "CA12345",
+				documentExpiry: "2030-01-01",
+				documentIssuedMunicipalityId: "m-1",
+				documentImageKey: "documents/x/y",
+			},
+		],
 	] as const) {
-		it(`refuses a ${changeType} change whose data doesn't match its schema`, async () => {
+		it(`refuses a ${changeType} change whose data doesn't match its schema (${Object.keys(changeData).join(",")})`, async () => {
 			const db = getTestDb();
 			const seller = await createTestSeller(db, {
 				email: `bad-${changeType}@test.com`,
