@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { municipality } from "@/db/schemas/location";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
+import { containsPattern } from "@/lib/like";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 
 export interface StoreFilterParams {
@@ -39,7 +40,7 @@ export function storeFilterConditions({
 
 	if (q) {
 		conditions.push(
-			sql`(${store.name} ILIKE ${`%${q}%`} OR ${municipality.name} ILIKE ${`%${q}%`})`,
+			sql`(${store.name} ILIKE ${containsPattern(q)} OR ${municipality.name} ILIKE ${containsPattern(q)})`,
 		);
 	}
 	// `categoryId` wins over `macroCategoryId`: a leaf already sits inside its

@@ -20,6 +20,17 @@ import {
 	updateAddress,
 } from "../services/addresses";
 
+/**
+ * Opzionale, ma se c'è almeno 5 caratteri. La stringa vuota lo cancella (il
+ * service la salva come `null`): una union con `t.Null()` nel body
+ * collasserebbe l'inference di Eden.
+ */
+const AddressPhone = t.String({
+	maxLength: 30,
+	pattern: "^(.{5,})?$",
+	description: "Numero di telefono; stringa vuota per rimuoverlo",
+});
+
 export const addressesRoutes = new Elysia()
 	.get(
 		"/addresses",
@@ -75,13 +86,7 @@ export const addressesRoutes = new Elysia()
 				recipientName: t.Optional(
 					t.String({ maxLength: 100, description: "Nome del destinatario" }),
 				),
-				phone: t.Optional(
-					t.String({
-						minLength: 5,
-						maxLength: 30,
-						description: "Numero di telefono",
-					}),
-				),
+				phone: t.Optional(AddressPhone),
 				...AddressFieldsRequired,
 				isDefault: t.Optional(
 					t.Boolean({ description: "Imposta come indirizzo predefinito" }),
@@ -118,13 +123,7 @@ export const addressesRoutes = new Elysia()
 				recipientName: t.Optional(
 					t.String({ maxLength: 100, description: "Nome del destinatario" }),
 				),
-				phone: t.Optional(
-					t.String({
-						minLength: 5,
-						maxLength: 30,
-						description: "Numero di telefono",
-					}),
-				),
+				phone: t.Optional(AddressPhone),
 				...AddressFieldsOptional,
 				isDefault: t.Optional(
 					t.Boolean({ description: "Imposta come predefinito" }),

@@ -146,16 +146,15 @@ export function isAddressFormValid(errors: AddressFormErrors): boolean {
 }
 
 /**
- * Il body per `POST`/`PATCH /customer/addresses`. `phone` viene omesso quando è
- * vuoto perché l'API impone un minimo di 5 caratteri; etichetta e destinatario
- * vuoti vengono mandati, così cancellarli è possibile.
+ * Il body per `POST`/`PATCH /customer/addresses`. Etichetta, destinatario e
+ * telefono vuoti vengono mandati, così cancellarli è possibile (l'API salva il
+ * telefono vuoto come `null`).
  */
 export function addressFormToBody(values: AddressFormValues) {
-	const phone = values.phone.trim();
 	return {
 		label: values.label.trim(),
 		recipientName: values.recipientName.trim(),
-		...(phone ? { phone } : {}),
+		phone: values.phone.trim(),
 		addressLine1: values.addressLine1.trim(),
 		addressLine2: values.addressLine2.trim(),
 		municipalityId: values.municipalityId as string,
