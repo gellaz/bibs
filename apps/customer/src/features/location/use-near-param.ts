@@ -21,7 +21,7 @@ export function useNearParam(
 	near: string | undefined,
 	setNear: (next: string | undefined) => void,
 ) {
-	const { origin, isAddressesPending, adoptNear } = useSearchOrigin();
+	const { origin, adoptNear } = useSearchOrigin();
 
 	// `setNear` vive in un ref perché il chiamante lo ricrea a ogni render, e
 	// qui serve stabile dentro gli effetti sotto. L'assegnazione sta in un
@@ -35,14 +35,20 @@ export function useNearParam(
 
 	const adoptedNear = useRef<string | null>(null);
 	useEffect(() => {
-		// Un id di indirizzo non si può giudicare finché la rubrica non ha risposto.
-		if (isAddressesPending) return;
 		const key = near ?? null;
 		if (adoptedNear.current === key) return;
+		if (key === null) {
+			adoptedNear.current = null;
+			return;
+		}
+		// Un id di indirizzo non si giudica finché la rubrica non ha risposto, né
+		// `gps` finché la sonda dei permessi è in corso: il valore resta da
+		// consumare, e `adoptNear` cambia identità quando la risposta arriva.
+		const verdict = adoptNear(key);
+		if (verdict === "wait") return;
 		adoptedNear.current = key;
-		if (key === null) return;
-		if (!adoptNear(key)) setNearRef.current(undefined);
-	}, [near, isAddressesPending, adoptNear]);
+		if (verdict === "reject") setNearRef.current(undefined);
+	}, [near, adoptNear]);
 
 	const lastOriginKey = useRef<string | null | undefined>(undefined);
 	useEffect(() => {

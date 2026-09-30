@@ -61,7 +61,8 @@ export function ProductOffer({ product }: { product: ProductDetailView }) {
 						</span>
 					</div>
 				</div>
-				<div className="max-w-xs">
+				{/* Il cap vale da `sm`: a 390px teneva «Aggiungi» a 320px, più corto della colonna. */}
+				<div className="sm:max-w-xs">
 					<AddToCart
 						storeProductId={offer.storeProductId}
 						stock={offer.stock}

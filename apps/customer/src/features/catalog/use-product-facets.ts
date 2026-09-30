@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/location/coords";
 import { api } from "@/lib/api";
 
@@ -49,6 +49,9 @@ export function useProductFacets({
 			maxPrice ?? null,
 		],
 		staleTime: 60_000,
+		// A ogni cambio di testo o filtro i conteggi vecchi restano finché
+		// arrivano i nuovi, invece di ricadere nello skeleton.
+		placeholderData: keepPreviousData,
 		queryFn: async () => {
 			const { data, error } = await api().customer.products.facets.get({
 				query: {
@@ -72,5 +75,9 @@ export function useProductFacets({
 		openNowTotal: query.data?.openNowTotal ?? 0,
 		onSaleTotal: query.data?.onSaleTotal ?? 0,
 		isPending: query.isPending,
+		// Senza dati i totali varrebbero 0: il rail direbbe "nessun negozio
+		// aperto" e spegnerebbe i filtri per un errore di rete.
+		isError: query.isError && !query.data,
+		refetch: query.refetch,
 	};
 }

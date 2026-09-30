@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
+import {
+	clampPage,
+	parsePaginationSearch,
+} from "@bibs/ui/lib/pagination-search";
 
 describe("parsePaginationSearch", () => {
 	test("default senza parametri", () => {
@@ -24,5 +27,24 @@ describe("parsePaginationSearch", () => {
 
 	test("limit oltre il cap dell'API viene limitato a 100", () => {
 		expect(parsePaginationSearch({ limit: "1000000" }).limit).toBe(100);
+	});
+});
+
+describe("clampPage", () => {
+	test("dentro l'intervallo resta invariata", () => {
+		expect(clampPage(3, 5)).toBe(3);
+	});
+
+	test("oltre l'ultima pagina torna all'ultima (righe cancellate, filtro più stretto)", () => {
+		expect(clampPage(7, 5)).toBe(5);
+	});
+
+	test("sotto 1 torna a 1", () => {
+		expect(clampPage(0, 5)).toBe(1);
+		expect(clampPage(-3, 5)).toBe(1);
+	});
+
+	test("senza pagine (lista vuota o totale non ancora noto) resta 1", () => {
+		expect(clampPage(4, 0)).toBe(1);
 	});
 });

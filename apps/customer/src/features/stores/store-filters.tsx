@@ -1,6 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { ChevronRight, Clock, LocateFixed, MapPin } from "lucide-react";
+import { FacetsError } from "@/features/search/facets-error";
 import { m } from "@/paraglide/messages";
 import type { MacroFacet } from "./use-store-facets";
 
@@ -28,6 +29,9 @@ interface StoreFiltersProps {
 	/** Quanti negozi sono aperti adesso, a parità di testo e raggio. */
 	openNowTotal: number;
 	isPending: boolean;
+	/** I conteggi non sono arrivati: niente zeri inventati, un errore col riprova. */
+	isError: boolean;
+	onRetry: () => void;
 	value: StoreFilterValue;
 	/** C'è una posizione da cui misurare: GPS o un indirizzo salvato. */
 	hasOrigin: boolean;
@@ -178,6 +182,8 @@ export function StoreFilters({
 	total,
 	openNowTotal,
 	isPending,
+	isError,
+	onRetry,
 	value,
 	hasOrigin,
 	originLabel,
@@ -194,98 +200,106 @@ export function StoreFilters({
 
 	return (
 		<div className="space-y-7">
-			<FilterSection title={m.store_filter_availability()}>
-				{isPending ? (
-					<Skeleton className="h-6 w-2/5" />
-				) : (
-					<div className="-mx-2">
-						<ToggleRow
-							label={m.store_open_now()}
-							count={openNowTotal}
-							active={openNow === true}
-							// A zero il filtro garantisce la lista vuota; resta cliccabile
-							// solo se è già acceso, altrimenti non si potrebbe spegnere.
-							disabled={openNowTotal === 0 && openNow !== true}
-							onClick={() => onChange({ ...value, openNow: !openNow })}
-						/>
-						{openNowTotal === 0 && (
-							// Vero esattamente quanto il conteggio: misurato su testo e
-							// raggio, non sulla categoria scelta.
-							<p className="px-2 pt-1 text-muted-foreground text-xs leading-relaxed">
-								{m.store_open_now_none()}
-							</p>
+			{isError ? (
+				<FacetsError onRetry={onRetry} />
+			) : (
+				<>
+					<FilterSection title={m.store_filter_availability()}>
+						{isPending ? (
+							<Skeleton className="h-6 w-2/5" />
+						) : (
+							<div className="-mx-2">
+								<ToggleRow
+									label={m.store_open_now()}
+									count={openNowTotal}
+									active={openNow === true}
+									// A zero il filtro garantisce la lista vuota; resta cliccabile
+									// solo se è già acceso, altrimenti non si potrebbe spegnere.
+									disabled={openNowTotal === 0 && openNow !== true}
+									onClick={() => onChange({ ...value, openNow: !openNow })}
+								/>
+								{openNowTotal === 0 && total > 0 && (
+									// Vero esattamente quanto il conteggio: misurato su testo e
+									// raggio, non sulla categoria scelta. Se non resta nessun
+									// negozio del tutto, l'orario non c'entra e il messaggio
+									// indicherebbe la causa sbagliata.
+									<p className="px-2 pt-1 text-muted-foreground text-xs leading-relaxed">
+										{m.store_open_now_none()}
+									</p>
+								)}
+							</div>
 						)}
-					</div>
-				)}
-			</FilterSection>
+					</FilterSection>
 
-			<FilterSection title={m.store_filter_category()}>
-				{isPending ? (
-					<CategorySkeleton />
-				) : (
-					<div className="-mx-2">
-						<CategoryRow
-							label={m.store_category_all()}
-							count={total}
-							active={!macroCategoryId && !categoryId}
-							depth={0}
-							onClick={() =>
-								onChange({
-									...value,
-									macroCategoryId: undefined,
-									categoryId: undefined,
-								})
-							}
-						/>
-						{macros.map((macro) => {
-							const isExpanded = expandedMacroId === macro.id;
-							const isActive = macroCategoryId === macro.id && !categoryId;
-							return (
-								<div key={macro.id}>
-									<CategoryRow
-										label={macro.name}
-										count={macro.storeCount}
-										active={isActive}
-										depth={0}
-										expandable
-										expanded={isExpanded}
-										onClick={() =>
-											onChange({
-												...value,
-												// Ri-cliccare la macro già selezionata la chiude e
-												// torna a "Tutte": un solo gesto per aprire e per
-												// annullare.
-												macroCategoryId: isActive ? undefined : macro.id,
-												categoryId: undefined,
-											})
-										}
-									/>
-									{isExpanded &&
-										macro.categories.map((category) => (
+					<FilterSection title={m.store_filter_category()}>
+						{isPending ? (
+							<CategorySkeleton />
+						) : (
+							<div className="-mx-2">
+								<CategoryRow
+									label={m.store_category_all()}
+									count={total}
+									active={!macroCategoryId && !categoryId}
+									depth={0}
+									onClick={() =>
+										onChange({
+											...value,
+											macroCategoryId: undefined,
+											categoryId: undefined,
+										})
+									}
+								/>
+								{macros.map((macro) => {
+									const isExpanded = expandedMacroId === macro.id;
+									const isActive = macroCategoryId === macro.id && !categoryId;
+									return (
+										<div key={macro.id}>
 											<CategoryRow
-												key={category.id}
-												label={category.name}
-												count={category.storeCount}
-												active={categoryId === category.id}
-												depth={1}
+												label={macro.name}
+												count={macro.storeCount}
+												active={isActive}
+												depth={0}
+												expandable
+												expanded={isExpanded}
 												onClick={() =>
 													onChange({
 														...value,
-														macroCategoryId: macro.id,
-														categoryId:
-															categoryId === category.id
-																? undefined
-																: category.id,
+														// Ri-cliccare la macro già selezionata la chiude e
+														// torna a "Tutte": un solo gesto per aprire e per
+														// annullare.
+														macroCategoryId: isActive ? undefined : macro.id,
+														categoryId: undefined,
 													})
 												}
 											/>
-										))}
-								</div>
-							);
-						})}
-					</div>
-				)}
-			</FilterSection>
+											{isExpanded &&
+												macro.categories.map((category) => (
+													<CategoryRow
+														key={category.id}
+														label={category.name}
+														count={category.storeCount}
+														active={categoryId === category.id}
+														depth={1}
+														onClick={() =>
+															onChange({
+																...value,
+																macroCategoryId: macro.id,
+																categoryId:
+																	categoryId === category.id
+																		? undefined
+																		: category.id,
+															})
+														}
+													/>
+												))}
+										</div>
+									);
+								})}
+							</div>
+						)}
+					</FilterSection>
+				</>
+			)}
 
 			<FilterSection title={m.store_filter_distance()}>
 				{hasOrigin ? (

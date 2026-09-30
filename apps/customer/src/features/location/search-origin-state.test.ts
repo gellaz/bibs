@@ -6,6 +6,7 @@ import {
 	defaultOriginAddress,
 	findOriginAddress,
 	nearFromOrigin,
+	nearVerdict,
 	originFromChoice,
 	parseStoredChoice,
 	serializeChoice,
@@ -234,5 +235,60 @@ describe("nearFromOrigin / choiceFromNear", () => {
 			kind: "address",
 			addressId: "a-casa",
 		});
+	});
+});
+
+describe("nearVerdict", () => {
+	const ready = { addresses: [CASA], isAddressesPending: false };
+
+	it("gps: aspetta finché la sonda dei permessi non ha risposto", () => {
+		expect(nearVerdict("gps", { ...ready, geoStatus: "probing" })).toBe("wait");
+	});
+
+	it("gps: adotta col consenso, anche mentre la posizione arriva", () => {
+		expect(nearVerdict("gps", { ...ready, geoStatus: "granted" })).toBe(
+			"adopt",
+		);
+		expect(nearVerdict("gps", { ...ready, geoStatus: "pending" })).toBe(
+			"adopt",
+		);
+	});
+
+	it("gps: rifiuta senza consenso, senza chiedere niente", () => {
+		for (const geoStatus of ["idle", "denied", "unsupported"] as const) {
+			expect(nearVerdict("gps", { ...ready, geoStatus })).toBe("reject");
+		}
+	});
+
+	it("gps: la rubrica in caricamento non lo ferma", () => {
+		expect(
+			nearVerdict("gps", {
+				addresses: [],
+				isAddressesPending: true,
+				geoStatus: "granted",
+			}),
+		).toBe("adopt");
+	});
+
+	it("indirizzo: aspetta la rubrica, poi adotta solo i propri con posizione", () => {
+		const geoStatus = "probing" as const;
+		expect(
+			nearVerdict(CASA.id, {
+				addresses: [],
+				isAddressesPending: true,
+				geoStatus,
+			}),
+		).toBe("wait");
+		expect(nearVerdict(CASA.id, { ...ready, geoStatus })).toBe("adopt");
+		expect(nearVerdict("a-di-un-altro", { ...ready, geoStatus })).toBe(
+			"reject",
+		);
+		expect(
+			nearVerdict(SENZA_POSIZIONE.id, {
+				addresses: [SENZA_POSIZIONE],
+				isAddressesPending: false,
+				geoStatus,
+			}),
+		).toBe("reject");
 	});
 });

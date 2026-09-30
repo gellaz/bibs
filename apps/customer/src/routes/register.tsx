@@ -96,7 +96,10 @@ function RegisterPage() {
 				return;
 			}
 
-			void navigate({ to: "/verify-email", search: { email: data.email } });
+			void navigate({
+				to: "/verify-email",
+				search: { email: data.email, sentAt: Date.now() },
+			});
 		} catch {
 			setError("Errore durante la registrazione. Riprova.");
 		}

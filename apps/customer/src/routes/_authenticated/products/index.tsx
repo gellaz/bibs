@@ -190,6 +190,8 @@ function ProductsPage() {
 			openNowTotal={facets.openNowTotal}
 			onSaleTotal={facets.onSaleTotal}
 			isPending={facets.isPending}
+			isError={facets.isError}
+			onRetry={() => void facets.refetch()}
 			value={filterValue}
 			hasOrigin={coords !== null}
 			originLabel={originLabel(origin, geoStatus)}
@@ -336,7 +338,13 @@ function ProductsPage() {
 									<div className="px-4 pb-8">{filters}</div>
 								</SheetContent>
 							</Sheet>
-							<p className="min-w-0 text-muted-foreground text-sm">
+							<p
+								className="min-w-0 text-muted-foreground text-sm"
+								// Il conteggio cambia a ogni filtro senza spostare il focus:
+								// chi usa uno screen reader lo sente senza doverlo cercare.
+								aria-live="polite"
+								aria-atomic="true"
+							>
 								{isPending ? (
 									<span className="sr-only">{m.product_loading()}</span>
 								) : (

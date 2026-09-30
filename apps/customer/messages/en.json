@@ -90,6 +90,8 @@
 	"store_filter_availability": "Availability",
 	"store_open_now": "Open now",
 	"store_open_now_none": "No shop is open right now.",
+	"filters_error": "Filters unavailable: we couldn't count the results.",
+	"filters_retry": "Retry",
 	"store_filter_category": "Category",
 	"store_filter_distance": "Distance",
 	"store_filters": "Filters",

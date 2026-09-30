@@ -1,4 +1,5 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useEffect } from "react";
 import { Button } from "~/components/button";
 import {
 	Pagination,
@@ -6,6 +7,7 @@ import {
 	PaginationEllipsis,
 	PaginationItem,
 } from "~/components/pagination";
+import { clampPage } from "~/lib/pagination-search";
 import { cn } from "~/lib/utils";
 
 interface DataPaginationProps {
@@ -13,8 +15,12 @@ interface DataPaginationProps {
 	page: number;
 	/** Total number of pages */
 	totalPages: number;
-	/** Callback when page changes */
-	onPageChange: (page: number) => void;
+	/**
+	 * Callback when page changes. `replace` is set when the component itself
+	 * pulls an out-of-range page back in: a URL-backed consumer should replace
+	 * the history entry, or Back lands on the bad page and bounces forward again.
+	 */
+	onPageChange: (page: number, options?: { replace?: boolean }) => void;
 	/** Number of sibling pages to show on each side of current page. Default: 1 */
 	siblingCount?: number;
 	/** Additional class name */
@@ -74,9 +80,19 @@ function DataPagination({
 	siblingCount = 1,
 	className,
 }: DataPaginationProps) {
+	const current = clampPage(page, totalPages);
+
+	// Una pagina fuori intervallo viene riportata dentro. Solo con almeno una
+	// pagina: a 0 il totale può non essere ancora arrivato, e correggere lì
+	// butterebbe via la pagina di un link mentre la lista carica.
+	useEffect(() => {
+		if (totalPages >= 1 && page !== current)
+			onPageChange(current, { replace: true });
+	}, [page, current, totalPages, onPageChange]);
+
 	if (totalPages <= 1) return null;
 
-	const pages = generatePageRange(page, totalPages, siblingCount);
+	const pages = generatePageRange(current, totalPages, siblingCount);
 
 	return (
 		<Pagination className={cn("justify-start", className)}>
@@ -85,8 +101,8 @@ function DataPagination({
 					<Button
 						variant="ghost"
 						size="icon"
-						disabled={page <= 1}
-						onClick={() => onPageChange(page - 1)}
+						disabled={current <= 1}
+						onClick={() => onPageChange(current - 1)}
 						aria-label="Pagina precedente"
 					>
 						<ChevronLeftIcon className="size-4" />
@@ -102,7 +118,7 @@ function DataPagination({
 						);
 					}
 
-					const isActive = item === page;
+					const isActive = item === current;
 					return (
 						<PaginationItem key={item}>
 							<Button
@@ -127,8 +143,8 @@ function DataPagination({
 					<Button
 						variant="ghost"
 						size="icon"
-						disabled={page >= totalPages}
-						onClick={() => onPageChange(page + 1)}
+						disabled={current >= totalPages}
+						onClick={() => onPageChange(current + 1)}
 						aria-label="Pagina successiva"
 					>
 						<ChevronRightIcon className="size-4" />

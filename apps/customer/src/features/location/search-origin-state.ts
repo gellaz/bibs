@@ -1,4 +1,5 @@
 import type { Coords } from "./coords";
+import type { GeoStatus } from "./use-geolocation";
 
 /** La chiave in `localStorage`. Solo la scelta: le coordinate scadono, un id no. */
 export const STORAGE_KEY = "bibs-customer-search-origin";
@@ -149,4 +150,37 @@ export function choiceFromNear(near: string): StoredChoice {
 	return near === "gps"
 		? { kind: "gps" }
 		: { kind: "address", addressId: near };
+}
+
+interface NearContext {
+	addresses: OriginAddress[];
+	isAddressesPending: boolean;
+	geoStatus: GeoStatus;
+}
+
+/**
+ * Cosa fare del `near` di un link appena aperto. `wait` finché la risposta
+ * che serve non c'è ancora: rifiutare `gps` durante la sonda dei permessi
+ * butterebbe via il deep link di chi il consenso l'ha già dato.
+ *
+ * `gps` si adotta con lo stesso criterio del boot (`granted` o `pending`, che
+ * dopo una sonda positiva è la lettura in corso) e mai facendo scattare il
+ * prompt: chi apre un link non ha chiesto niente.
+ */
+export type NearVerdict = "adopt" | "reject" | "wait";
+
+export function nearVerdict(
+	near: string,
+	{ addresses, isAddressesPending, geoStatus }: NearContext,
+): NearVerdict {
+	const choice = choiceFromNear(near);
+	if (choice.kind === "gps") {
+		if (geoStatus === "probing") return "wait";
+		return geoStatus === "granted" || geoStatus === "pending"
+			? "adopt"
+			: "reject";
+	}
+	if (choice.kind !== "address") return "reject";
+	if (isAddressesPending) return "wait";
+	return findOriginAddress(addresses, choice.addressId) ? "adopt" : "reject";
 }
