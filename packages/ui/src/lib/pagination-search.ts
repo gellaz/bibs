@@ -20,3 +20,13 @@ export function parsePaginationSearch(search: Record<string, unknown>): {
 		limit: Math.min(positiveInt(search.limit) ?? DEFAULT_LIMIT, MAX_LIMIT),
 	};
 }
+
+/**
+ * La pagina riportata dentro `[1, totalPages]`. `?page=7` resta valido per
+ * `parsePaginationSearch` anche quando le pagine sono scese a 5 (righe
+ * cancellate, filtro più stretto): senza clamp la tabella resta vuota e la
+ * paginazione non offre nessuna pagina a cui tornare.
+ */
+export function clampPage(page: number, totalPages: number): number {
+	return Math.min(Math.max(1, page), Math.max(1, totalPages));
+}

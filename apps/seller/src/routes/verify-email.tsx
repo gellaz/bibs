@@ -7,7 +7,7 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { toast } from "@bibs/ui/components/sonner";
-import { useCooldown } from "@bibs/ui/hooks/use-cooldown";
+import { sentAtFromSearch, useCooldown } from "@bibs/ui/hooks/use-cooldown";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import { useState } from "react";
@@ -17,6 +17,11 @@ import { m } from "@/paraglide/messages";
 
 const searchSchema = z.object({
 	email: z.string().optional(),
+	/**
+	 * Epoch ms dell'invio appena fatto: lo passa solo la registrazione. Dal
+	 * login (email non verificata) non è partito niente, quindi niente attesa.
+	 */
+	sentAt: z.coerce.number().int().positive().optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/verify-email")({
@@ -25,8 +30,10 @@ export const Route = createFileRoute("/verify-email")({
 });
 
 function VerifyEmailPage() {
-	const { email } = Route.useSearch();
-	const [lastSentAt, setLastSentAt] = useState<number>(() => Date.now());
+	const { email, sentAt } = Route.useSearch();
+	const [lastSentAt, setLastSentAt] = useState<number | null>(() =>
+		sentAtFromSearch(sentAt, Date.now()),
+	);
 	const { secondsRemaining, ready } = useCooldown(lastSentAt, 60_000);
 	const [resending, setResending] = useState(false);
 
@@ -34,10 +41,15 @@ function VerifyEmailPage() {
 		if (!email || !ready || resending) return;
 		setResending(true);
 		try {
-			await authClient.sendVerificationEmail({
+			// better-auth non lancia: un 429 o un 500 arrivano in `error`.
+			const { error } = await authClient.sendVerificationEmail({
 				email,
 				callbackURL: `${window.location.origin}/login`,
 			});
+			if (error) {
+				toast.error(m.auth_verify_email_resend_error());
+				return;
+			}
 			setLastSentAt(Date.now());
 			toast.success(m.auth_verify_email_resent_toast());
 		} catch {

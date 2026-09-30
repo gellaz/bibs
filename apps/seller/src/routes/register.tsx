@@ -64,7 +64,10 @@ function RegisterPage() {
 			}
 
 			// Redirect to verify-email page (email verification required before login)
-			void navigate({ to: "/verify-email", search: { email: data.email } });
+			void navigate({
+				to: "/verify-email",
+				search: { email: data.email, sentAt: Date.now() },
+			});
 		} catch {
 			setError("Errore durante la registrazione. Riprova.");
 		}

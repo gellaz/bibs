@@ -209,6 +209,8 @@ function StoresPage() {
 			total={facets.total}
 			openNowTotal={facets.openNowTotal}
 			isPending={facets.isPending}
+			isError={facets.isError}
+			onRetry={() => void facets.refetch()}
 			value={filterValue}
 			hasOrigin={coords !== null}
 			originLabel={originLabel(origin, geoStatus)}
@@ -433,7 +435,13 @@ function StoresPage() {
 									<div className="px-4 pb-8">{filters}</div>
 								</SheetContent>
 							</Sheet>
-							<p className="min-w-0 text-muted-foreground text-sm">
+							<p
+								className="min-w-0 text-muted-foreground text-sm"
+								// Il conteggio cambia a ogni filtro senza spostare il focus:
+								// chi usa uno screen reader lo sente senza doverlo cercare.
+								aria-live="polite"
+								aria-atomic="true"
+							>
 								{resultsPending ? (
 									<span className="sr-only">{m.store_loading()}</span>
 								) : (

@@ -309,9 +309,10 @@ function UsersPage() {
 						<DataPagination
 							page={page}
 							totalPages={totalPages}
-							onPageChange={(next) =>
+							onPageChange={(next, options) =>
 								void navigate({
 									search: (prev) => ({ ...prev, page: next }),
+									replace: options?.replace,
 								})
 							}
 						/>

@@ -847,12 +847,18 @@ function TeamPage() {
 				}
 			/>
 
-			{totalPages > 1 && (
+			{/* Anche con `page` oltre l'ultima: DataPagination la riporta dentro. */}
+			{(totalPages > 1 || page > 1) && (
 				<div className="flex shrink-0 items-center justify-between">
 					<DataPagination
 						page={page}
 						totalPages={totalPages}
-						onPageChange={(p) => void navigate({ search: { page: p, limit } })}
+						onPageChange={(p, options) =>
+							void navigate({
+								search: { page: p, limit },
+								replace: options?.replace,
+							})
+						}
 					/>
 					<div className="text-muted-foreground text-sm">
 						Totale: {data?.pagination.total} dipendent

@@ -68,15 +68,13 @@ Nessuna voce aperta: chiusa in #211, vedi «Chiusi». `use-onboarding` era già 
 (`enabled` in `_authenticated.tsx`).
 
 ### P3.3 — Customer FE sweep
-- Facet senza ramo d'errore: se falliscono, totali a 0 → il rail dice "Nessun negozio aperto" e disabilita il toggle — `use-product-facets.ts:69-75`, `use-store-facets.ts`.
-- `adoptNear` rifiuta `near=gps` quando `geoStatus !== "granted"` (anche durante `probing`) → deep link perso — `apps/customer/src/features/location/search-origin.tsx:138`.
-- "Nessun negozio aperto in questo momento" mostrato anche quando la lista è vuota per il testo; niente `aria-live` sul conteggio; facet senza `keepPreviousData` (skeleton a ogni cambio) — `store-filters.tsx:211-216`, `product-filters.tsx:274`, `routes/_authenticated/{products,stores}/index.tsx`.
-- Scheda prodotto a 390px: "Aggiungi" cappato a 320px — `features/products/product-offer.tsx:64` (`max-w-xs`).
+
+Nessuna voce aperta: chiusa in #212, vedi «Chiusi».
 
 ### P3.4 — UI condivisa
 - `toggle-group.tsx`: `data-vertical:`/`group-data-horizontal/...` non combaciano mai con `data-orientation` → angoli/bordi uniti mancanti (cambia l'aspetto di Lista/Mappa su `/stores`: PR dedicata) — `packages/ui/src/components/toggle-group.tsx:40,43,74`.
-- `DataPagination` senza clamp di pagina fuori range — `packages/ui/src/components/data-pagination.tsx:36-37,79`.
-- verify-email: cooldown armato al mount anche senza invio reale (resend bloccato 60 s) — `apps/{customer,seller}/src/routes/verify-email.tsx:29`; tick di `use-cooldown.ts` non allineati al secondo.
+
+`DataPagination` e verify-email/`use-cooldown` chiusi in #212, vedi «Chiusi».
 
 ---
 
@@ -167,6 +165,8 @@ Nessuna voce aperta: chiusa in #211, vedi «Chiusi». `use-onboarding` era già 
 | **P3.1 (input e probe)** | `radius` limitato a (0, 100] km; `hasGeoFilter` nei log vero anche con lat o lng = 0; `%`, `_` e `\\` neutralizzati in tutte le ricerche `ILIKE` (`lib/like.ts`); cap immagini di prodotto e negozio ricontrollato nella transazione d'inserimento con lock sulla riga padre (i file già caricati su S3 vengono cancellati); telefono dell'indirizzo cancellabile con stringa vuota (salvato `null`, il form lo manda sempre); `HeadBucket` di `/ready` con timeout di 3 s; `x-request-id` in ingresso riusato se ha forma di id | #209 |
 | **P3.1 (import, settings, inviti)** | Import CSV prodotti: canale `warnings` (categorie oltre la prima, EAN già usato) sganciato da `failed`, così created + skipped + failed = righe del file; corretti anche i numeri di riga, sfalsati dopo una riga non valida. Matrice caratteristiche: le righe ripetute contano tra le saltate, quelle con `required` contraddittorio tra gli errori. Settings seller: P.IVA di un altro venditore rifiutata alla richiesta (409), pending cercato con una query mirata, immagine del documento cancellata da S3 se l'insert fallisce. Invito: `POST /seller/employees/invitations/:id/resend` (stesso link, scadenza a 7 giorni anche se già scaduto, 502 se l'email non parte) e «Reinvia» in `/team`. Errori definitivi: `unwrap` lancia un `ApiError` con lo status e il QueryClient dei 3 FE non riprova i 4xx; `GET /seller/billing/invoices` senza Customer Stripe risponde lista vuota; transizioni d'ordine non valide con messaggio in italiano. Prefill EAN applica l'aliquota suggerita dalla macro (stessa regola della scelta a mano). Richieste di modifica: chiave e URL dell'immagine del documento «entrambi o nessuno»; `pricing_config.stripe_product_id` salvato e precompilato nel dialog prezzi | #210 |
 | **P3.2** | `?page`/`?limit` validati da `parsePaginationSearch` (`@bibs/ui/lib`: interi ≥ 1, limit ≤ 100) su prodotti, promozioni, team e utenti admin. Cella stock: il delta inviato resta nel valore ottimistico finché la risposta non arriva, e un valore assoluto digitato attende l'adjust in volo invece di corrergli contro. Scorta iniziale del dialog negozi solo cifre. Errori via `unwrap` condiviso (`ApiError` con status) in cella stock, festività, import CSV, macro-categorie e crud panel admin. Invalidazione di `seller-categories-in-use` su cambio stato/crea/modifica/assegnazione; rimosso `activeStoreId` morto; `DiscountForm` con `key`. `/store/closures`: redirect dei dipendenti, errore mostrato invece dello spinner infinito, e la home li manda a `/store`. Abbonamenti admin paginati | #211 |
+| **P3.3** | Facet con ramo d'errore: `FacetsError` col riprova al posto di disponibilità e categorie invece dei totali a 0; `keepPreviousData` sui facet (niente skeleton a ogni cambio). «Nessun negozio aperto»/«Nessun prodotto in offerta» solo se qualcosa resta (`total > 0`). `aria-live="polite"` sul conteggio risultati di `/stores` e `/products`. `near=gps` aspetta la sonda dei permessi (`nearVerdict`: `wait` durante `probing`, adotta con `granted`/`pending` come il boot). «Aggiungi» a tutta colonna sotto `sm` | #212 |
+| **P3.4 (paginazione, verify-email)** | `DataPagination` riporta dentro una pagina fuori intervallo (`clampPage`) e lo segnala con `replace: true`, così Indietro non rimbalza; team mostra la paginazione anche con `page` oltre l'ultima. verify-email arma il cooldown solo con `sentAt` (passato dalla registrazione, mai dal login); gli errori di `sendVerificationEmail` (che better-auth non lancia) arrivano in un toast italiano anche nei banner. `use-cooldown` si sveglia sul cambio di secondo invece che con un intervallo fisso | #212 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -188,5 +188,5 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#202.
 4. ~~**P1.4 geocoding negozi seller**~~ — fatto in #204. ~~**P1.3 home seller**~~ — fatto in #207.
    ~~**P1.6 account hub customer**~~ — fatto in #205. ~~**P1.7 billing seller**~~ — fatto in #206.
-5. Una sweep P3 ogni tanto come lavoro a basso rischio (P3.1 in #209/#210, P3.2 in #211); P4/P5 quando si tocca la zona.
+5. Una sweep P3 ogni tanto come lavoro a basso rischio (P3.1 in #209/#210, P3.2 in #211, P3.3 in #212); P4/P5 quando si tocca la zona.
 6. **P6** diventa checklist bloccante al primo segnale di go-live.

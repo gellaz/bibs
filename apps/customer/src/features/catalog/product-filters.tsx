@@ -2,6 +2,7 @@ import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { ChevronRight, Clock, LocateFixed, MapPin, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
+import { FacetsError } from "@/features/search/facets-error";
 import { m } from "@/paraglide/messages";
 import type { ProductMacroFacetView } from "./use-product-facets";
 
@@ -28,6 +29,9 @@ interface ProductFiltersProps {
 	openNowTotal: number;
 	onSaleTotal: number;
 	isPending: boolean;
+	/** I conteggi non sono arrivati: niente zeri inventati, un errore col riprova. */
+	isError: boolean;
+	onRetry: () => void;
 	value: ProductFilterValue;
 	hasOrigin: boolean;
 	originLabel: string;
@@ -227,6 +231,8 @@ export function ProductFilters({
 	openNowTotal,
 	onSaleTotal,
 	isPending,
+	isError,
+	onRetry,
 	value,
 	hasOrigin,
 	originLabel,
@@ -251,112 +257,119 @@ export function ProductFilters({
 
 	return (
 		<div className="space-y-7">
-			<FilterSection title={m.product_filter_availability()}>
-				{isPending ? (
-					<div className="-mx-2 space-y-1.5" aria-hidden>
-						<Skeleton className="h-11 lg:h-9" />
-						<Skeleton className="h-11 lg:h-9" />
-					</div>
-				) : (
-					<div className="-mx-2">
-						<ToggleRow
-							icon={Clock}
-							label={m.product_open_now()}
-							count={openNowTotal}
-							active={openNow === true}
-							// A zero il filtro garantisce la lista vuota; resta cliccabile
-							// solo se è già acceso, altrimenti non si potrebbe spegnere.
-							disabled={openNowTotal === 0 && openNow !== true}
-							onClick={() => onChange({ ...value, openNow: !openNow })}
-						/>
-						{openNowTotal === 0 && (
-							<p className="px-2 pt-1 text-muted-foreground text-xs leading-relaxed">
-								{m.product_open_now_none()}
-							</p>
+			{isError ? (
+				<FacetsError onRetry={onRetry} />
+			) : (
+				<>
+					<FilterSection title={m.product_filter_availability()}>
+						{isPending ? (
+							<div className="-mx-2 space-y-1.5" aria-hidden>
+								<Skeleton className="h-11 lg:h-9" />
+								<Skeleton className="h-11 lg:h-9" />
+							</div>
+						) : (
+							<div className="-mx-2">
+								<ToggleRow
+									icon={Clock}
+									label={m.product_open_now()}
+									count={openNowTotal}
+									active={openNow === true}
+									// A zero il filtro garantisce la lista vuota; resta cliccabile
+									// solo se è già acceso, altrimenti non si potrebbe spegnere.
+									disabled={openNowTotal === 0 && openNow !== true}
+									onClick={() => onChange({ ...value, openNow: !openNow })}
+								/>
+								{/* Con zero risultati in tutto la causa non è l'orario. */}
+								{openNowTotal === 0 && total > 0 && (
+									<p className="px-2 pt-1 text-muted-foreground text-xs leading-relaxed">
+										{m.product_open_now_none()}
+									</p>
+								)}
+								<ToggleRow
+									icon={Tag}
+									label={m.product_on_sale()}
+									count={onSaleTotal}
+									active={onSale === true}
+									disabled={onSaleTotal === 0 && onSale !== true}
+									onClick={() => onChange({ ...value, onSale: !onSale })}
+								/>
+								{onSaleTotal === 0 && total > 0 && (
+									<p className="px-2 pt-1 text-muted-foreground text-xs leading-relaxed">
+										{m.product_on_sale_none()}
+									</p>
+								)}
+							</div>
 						)}
-						<ToggleRow
-							icon={Tag}
-							label={m.product_on_sale()}
-							count={onSaleTotal}
-							active={onSale === true}
-							disabled={onSaleTotal === 0 && onSale !== true}
-							onClick={() => onChange({ ...value, onSale: !onSale })}
-						/>
-						{onSaleTotal === 0 && (
-							<p className="px-2 pt-1 text-muted-foreground text-xs leading-relaxed">
-								{m.product_on_sale_none()}
-							</p>
-						)}
-					</div>
-				)}
-			</FilterSection>
+					</FilterSection>
 
-			<FilterSection title={m.product_filter_category()}>
-				{isPending ? (
-					<CategorySkeleton />
-				) : (
-					<div className="-mx-2">
-						<CategoryRow
-							label={m.product_category_all()}
-							count={total}
-							active={!macroCategoryId && !categoryId}
-							depth={0}
-							onClick={() =>
-								onChange({
-									...value,
-									macroCategoryId: undefined,
-									categoryId: undefined,
-								})
-							}
-						/>
-						{macros.map((macro) => {
-							const isExpanded = expandedMacroId === macro.id;
-							const isActive = macroCategoryId === macro.id && !categoryId;
-							return (
-								<div key={macro.id}>
-									<CategoryRow
-										label={macro.name}
-										count={macro.productCount}
-										active={isActive}
-										depth={0}
-										expandable
-										expanded={isExpanded}
-										onClick={() =>
-											onChange({
-												...value,
-												// Ri-cliccare la macro già selezionata la chiude e torna
-												// a "Tutte": un solo gesto per aprire e per annullare.
-												macroCategoryId: isActive ? undefined : macro.id,
-												categoryId: undefined,
-											})
-										}
-									/>
-									{isExpanded &&
-										macro.categories.map((category) => (
+					<FilterSection title={m.product_filter_category()}>
+						{isPending ? (
+							<CategorySkeleton />
+						) : (
+							<div className="-mx-2">
+								<CategoryRow
+									label={m.product_category_all()}
+									count={total}
+									active={!macroCategoryId && !categoryId}
+									depth={0}
+									onClick={() =>
+										onChange({
+											...value,
+											macroCategoryId: undefined,
+											categoryId: undefined,
+										})
+									}
+								/>
+								{macros.map((macro) => {
+									const isExpanded = expandedMacroId === macro.id;
+									const isActive = macroCategoryId === macro.id && !categoryId;
+									return (
+										<div key={macro.id}>
 											<CategoryRow
-												key={category.id}
-												label={category.name}
-												count={category.productCount}
-												active={categoryId === category.id}
-												depth={1}
+												label={macro.name}
+												count={macro.productCount}
+												active={isActive}
+												depth={0}
+												expandable
+												expanded={isExpanded}
 												onClick={() =>
 													onChange({
 														...value,
-														macroCategoryId: macro.id,
-														categoryId:
-															categoryId === category.id
-																? undefined
-																: category.id,
+														// Ri-cliccare la macro già selezionata la chiude e torna
+														// a "Tutte": un solo gesto per aprire e per annullare.
+														macroCategoryId: isActive ? undefined : macro.id,
+														categoryId: undefined,
 													})
 												}
 											/>
-										))}
-								</div>
-							);
-						})}
-					</div>
-				)}
-			</FilterSection>
+											{isExpanded &&
+												macro.categories.map((category) => (
+													<CategoryRow
+														key={category.id}
+														label={category.name}
+														count={category.productCount}
+														active={categoryId === category.id}
+														depth={1}
+														onClick={() =>
+															onChange({
+																...value,
+																macroCategoryId: macro.id,
+																categoryId:
+																	categoryId === category.id
+																		? undefined
+																		: category.id,
+															})
+														}
+													/>
+												))}
+										</div>
+									);
+								})}
+							</div>
+						)}
+					</FilterSection>
+				</>
+			)}
 
 			<FilterSection title={m.product_filter_price()}>
 				<div className="flex items-center gap-2">

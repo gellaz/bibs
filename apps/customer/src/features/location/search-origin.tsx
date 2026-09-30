@@ -10,11 +10,15 @@ import {
 import type { AddressItem } from "@/features/addresses/use-addresses";
 import { useAddresses } from "@/features/addresses/use-addresses";
 import type { Coords } from "./coords";
-import type { SearchOrigin, StoredChoice } from "./search-origin-state";
+import type {
+	NearVerdict,
+	SearchOrigin,
+	StoredChoice,
+} from "./search-origin-state";
 import {
 	bootChoice,
 	choiceFromNear,
-	findOriginAddress,
+	nearVerdict,
 	originFromChoice,
 	parseStoredChoice,
 	STORAGE_KEY,
@@ -42,10 +46,11 @@ interface SearchOriginValue {
 	requestGps: () => void;
 	/**
 	 * Fa vincere il `near` di un link, senza mai chiedere permessi.
-	 * Restituisce `false` se quel `near` non risolve nulla — l'id di un altro
-	 * cliente, o `gps` senza consenso — così la route può ripulire l'URL.
+	 * `reject` se quel `near` non risolve nulla — l'id di un altro cliente, o
+	 * `gps` senza consenso — così la route può ripulire l'URL; `wait` se
+	 * permessi o rubrica non hanno ancora risposto.
 	 */
-	adoptNear: (near: string) => boolean;
+	adoptNear: (near: string) => NearVerdict;
 	pickerOpen: boolean;
 	setPickerOpen: (open: boolean) => void;
 }
@@ -127,25 +132,19 @@ export function SearchOriginProvider({
 	const chooseNowhere = useCallback(() => commit({ kind: "none" }), [commit]);
 
 	const adoptNear = useCallback(
-		(near: string): boolean => {
-			const next = choiceFromNear(near);
+		(near: string): NearVerdict => {
 			// Un `near` che non risolve **non tocca la scelta di chi lo riceve**:
 			// il link di un altro non deve cancellargli l'origine salvata. Si dice
 			// solo alla route che non ha attecchito, e l'URL si ripulisce.
-			//
-			// `near=gps` senza consenso non fa scattare il prompt: chi apre un
-			// link non ha chiesto niente.
-			if (next.kind === "gps" && geoStatus !== "granted") return false;
-			if (
-				next.kind === "address" &&
-				!findOriginAddress(addresses, next.addressId)
-			) {
-				return false;
-			}
-			commit(next);
-			return true;
+			const verdict = nearVerdict(near, {
+				addresses,
+				isAddressesPending,
+				geoStatus,
+			});
+			if (verdict === "adopt") commit(choiceFromNear(near));
+			return verdict;
 		},
-		[addresses, commit, geoStatus],
+		[addresses, isAddressesPending, commit, geoStatus],
 	);
 
 	const origin = useMemo(

@@ -32,10 +32,15 @@ export function PendingVerificationBannerConnected({
 		if (!ready || resending) return;
 		setResending(true);
 		try {
-			await authClient.sendVerificationEmail({
+			// better-auth non lancia: un 429 o un 500 arrivano in `error`.
+			const { error } = await authClient.sendVerificationEmail({
 				email,
 				callbackURL: `${window.location.origin}/login`,
 			});
+			if (error) {
+				toast.error(m.auth_generic_error());
+				return;
+			}
 			setCooldownStartedAt(Date.now());
 			toast.success(m.auth_register_pending_resent_toast());
 		} catch {
