@@ -43,6 +43,12 @@ const app = new Elysia()
 		});
 		throw err;
 	})
+	.get("/unique-violation-holiday", () => {
+		throw Object.assign(new Error("duplicate key value"), {
+			code: "23505",
+			constraint: "holiday_definition_unique_idx",
+		});
+	})
 	.get("/fk-missing", () => {
 		// INSERT/UPDATE referencing a row that does not exist → client sent a bad id.
 		throw Object.assign(
@@ -166,6 +172,16 @@ describe("errorHandler — unhandled errors", () => {
 		const body = await json(res);
 		expect(body.success).toBe(false);
 		expect(body.error).toBe("CONFLICT");
+		expect(body.message).toBe("Esiste già un elemento con questi dati");
+	});
+
+	it("uses a targeted message for a known unique constraint", async () => {
+		const res = await app.handle(
+			new Request("http://localhost/unique-violation-holiday"),
+		);
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.message).toBe("Esiste già una festività con questa data");
 	});
 });
 

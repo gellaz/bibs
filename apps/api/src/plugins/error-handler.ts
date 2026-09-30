@@ -16,6 +16,13 @@ interface PgError {
  * Drizzle wraps query errors in DrizzleQueryError with the original pg error
  * in `.cause`, so we need to dig one level deeper.
  */
+// Messaggi mirati per i vincoli unique che un utente può toccare dalla UI;
+// gli altri ricevono quello generico.
+const UNIQUE_MESSAGES: Record<string, string> = {
+	product_seller_ean_unique: "Hai già un prodotto con questo EAN",
+	holiday_definition_unique_idx: "Esiste già una festività con questa data",
+};
+
 function unwrapPgError(error: unknown): PgError {
 	if (error instanceof Error && error.cause != null) {
 		return error.cause as PgError;
@@ -78,9 +85,8 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 			);
 
 			const message =
-				pg.constraint === "product_seller_ean_unique"
-					? "Hai già un prodotto con questo EAN"
-					: "A record with the same value already exists";
+				(pg.constraint && UNIQUE_MESSAGES[pg.constraint]) ??
+				"Esiste già un elemento con questi dati";
 
 			return status(409, errorBody("CONFLICT", message));
 		}
