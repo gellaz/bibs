@@ -95,7 +95,6 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 
 ## P5 — Debito e refactor (opportunistici)
 
-- **Debito con innesco**: rail filtri duplicato (`FilterSection`, `Count`, `CategoryRow`, `ToggleRow`, `RadiusPill`…) tra `features/catalog/product-filters.tsx` e `features/stores/store-filters.tsx` — **la prossima modifica a uno dei due estrae prima i componenti comuni**.
 - `@bibs/app-kit`: `env.ts` e `router.tsx` identici nelle 3 app, `auth-client.ts`/`api.ts` quasi.
 - API: modulo `catalog/` (i read pubblici importano da `admin/services`), 14 chiamate manuali a `toMunicipalityCompact`, `reshapeWithMunicipality` mai estratto.
 - Rinomina `activeStoresCount` → semantica "billable" (`seller/services/billing.ts:60,74`, `admin/services/billing.ts:27`, admin `billing/index.tsx:47`).
@@ -168,6 +167,7 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 | **P3.3** | Facet con ramo d'errore: `FacetsError` col riprova al posto di disponibilità e categorie invece dei totali a 0; `keepPreviousData` sui facet (niente skeleton a ogni cambio). «Nessun negozio aperto»/«Nessun prodotto in offerta» solo se qualcosa resta (`total > 0`). `aria-live="polite"` sul conteggio risultati di `/stores` e `/products`. `near=gps` aspetta la sonda dei permessi (`nearVerdict`: `wait` durante `probing`, adotta con `granted`/`pending` come il boot). «Aggiungi» a tutta colonna sotto `sm` | #212 |
 | **P3.4 (paginazione, verify-email)** | `DataPagination` riporta dentro una pagina fuori intervallo (`clampPage`) e lo segnala con `replace: true`, così Indietro non rimbalza; team mostra la paginazione anche con `page` oltre l'ultima. verify-email arma il cooldown solo con `sentAt` (passato dalla registrazione, mai dal login); gli errori di `sendVerificationEmail` (che better-auth non lancia) arrivano in un toast italiano anche nei banner. `use-cooldown` si sveglia sul cambio di secondo invece che con un intervallo fisso | #212 |
 | **P3.4 (toggle-group)** | `toggle-group.tsx`: i varianti `data-vertical:`/`group-data-horizontal/…` diventano `data-[orientation=…]`, che combacia con il `data-orientation` del Root. Nei gruppi senza spacing gli angoli esterni si arrotondano e tra le voci resta un solo bordo (prima: tutto squadrato e bordo doppio da 2px). Cambia l'aspetto di Lista/Mappa su `/stores`, del `ThemeToggle` e del toggle delle caratteristiche prodotto nel seller | #213 |
+| **P5 (rail filtri)** | Rail filtri di `/stores` e `/products` estratti in `customer/features/search/filter-rail/`: primitive (`FilterSection`, `CategoryRow`, `ToggleRow` con icona da prop, `RadiusPill`…), `CategoryTree` con conteggio via accessor, `DistanceSection` con un solo `RADIUS_PRESETS`, logica di selezione pura e testata, `FacetsError` spostato lì. Restano per pagina disponibilità, prezzo, tipi dei filtri e chiavi Paraglide. Refactor puro: DOM dei rail identico prima/dopo su 25 stati | #214 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
