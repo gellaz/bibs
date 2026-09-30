@@ -60,6 +60,9 @@ function NewProductPage() {
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["products"] });
+			void queryClient.invalidateQueries({
+				queryKey: ["seller-categories-in-use"],
+			});
 			void queryClient.invalidateQueries({ queryKey: ["seller-brands"] });
 			toast.success(
 				activeStore

@@ -118,6 +118,9 @@ function PromotionDetailPage() {
 					/>
 
 					<DiscountForm
+						// Remount per sconto: i default del form valgono solo al mount,
+						// senza key passando da uno sconto all'altro restano i vecchi.
+						key={discountId}
 						defaultValues={{
 							title: d.title,
 							percent: d.percent,

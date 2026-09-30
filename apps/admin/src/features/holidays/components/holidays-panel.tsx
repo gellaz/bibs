@@ -26,6 +26,7 @@ import {
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrap } from "@bibs/ui/lib/api-client";
 import { toYMD } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -97,12 +98,7 @@ export function HolidaysPanel({
 		queryKey: ["holiday-definitions"],
 		queryFn: async () => {
 			const response = await api().admin["holiday-definitions"].get();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nel caricamento festività",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore nel caricamento festività");
 		},
 	});
 
@@ -125,12 +121,7 @@ export function HolidaysPanel({
 				| { type: "one_off"; name: string; oneOffDate: string },
 		) => {
 			const response = await api().admin["holiday-definitions"].post(input);
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore durante la creazione",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante la creazione");
 		},
 		onSuccess: () => {
 			invalidate();
@@ -151,12 +142,7 @@ export function HolidaysPanel({
 			const response = await api()
 				.admin["holiday-definitions"]({ holidayId: id })
 				.patch(patch);
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore durante l'aggiornamento",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante l'aggiornamento");
 		},
 		onSuccess: () => {
 			invalidate();
@@ -173,12 +159,7 @@ export function HolidaysPanel({
 			const response = await api()
 				.admin["holiday-definitions"]({ holidayId: id })
 				.delete();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore durante l'eliminazione",
-				);
-			}
-			return response.data;
+			return unwrap(response, "Errore durante l'eliminazione");
 		},
 		onSuccess: () => {
 			invalidate();

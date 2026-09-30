@@ -2,6 +2,7 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
+import { unwrap } from "@bibs/ui/lib/api-client";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { TagsIcon } from "lucide-react";
@@ -38,11 +39,7 @@ function useMacros() {
 			const res = await api()["product-macro-categories"].get({
 				query: { limit: 100, sortBy: "name", sortOrder: "asc" },
 			});
-			if (res.error)
-				throw new Error(
-					res.error.value?.message || "Failed to fetch macro categories",
-				);
-			return res.data;
+			return unwrap(res, "Errore caricamento macro categorie");
 		},
 		// Both the toolbar filter and the form mount their own observer of this
 		// query; a stale time keeps the second mount (opening a dialog) from
@@ -147,11 +144,7 @@ export const productCategoriesConfig: CategoryCrudConfig<
 	csvImport: {
 		onImport: async (file): Promise<CsvImportResult> => {
 			const res = await api().admin["product-categories"].import.post({ file });
-			if (res.error)
-				throw new Error(res.error.value?.message || "Errore durante l'import");
-			const data = res.data?.data;
-			if (!data) throw new Error("Risposta non valida dal server");
-			return data;
+			return unwrap(res, "Errore durante l'import").data;
 		},
 		title: "Importa Categorie Prodotto",
 		description:

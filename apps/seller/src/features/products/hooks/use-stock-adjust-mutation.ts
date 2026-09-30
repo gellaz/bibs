@@ -1,6 +1,6 @@
 // apps/seller/src/features/products/hooks/use-stock-adjust-mutation.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 
 interface AdjustParams {
 	productId: string;
@@ -69,12 +69,7 @@ export function useStockAdjustMutation() {
 				.seller.products({ productId })
 				.stores({ storeId })
 				["stock-adjust"].post({ delta });
-			if (response.error) {
-				const err = new Error(response.error.value?.message || "Errore stock");
-				(err as any).status = response.status;
-				throw err;
-			}
-			return response.data.data as StoreProduct;
+			return unwrap(response, "Errore stock").data as StoreProduct;
 		},
 		onSuccess: (data) => patchCache(data),
 	});
@@ -85,12 +80,7 @@ export function useStockAdjustMutation() {
 				.seller.products({ productId })
 				.stores({ storeId })
 				.patch({ stock });
-			if (response.error) {
-				const err = new Error(response.error.value?.message || "Errore stock");
-				(err as any).status = response.status;
-				throw err;
-			}
-			return response.data.data as StoreProduct;
+			return unwrap(response, "Errore stock").data as StoreProduct;
 		},
 		onSuccess: (data) => patchCache(data),
 	});

@@ -68,8 +68,12 @@ export function sortByUrgency<T extends { urgency: Urgency }>(items: T[]): T[] {
  */
 export function hoursAction(
 	openStatus: OpenStatusLike | null | undefined,
+	isOwner = true,
 ): ActionItem | null {
 	if (!openStatus) return null;
+	// Le chiusure sono solo del titolare (l'API risponde 403 al dipendente):
+	// il dipendente va alla scheda negozio, in sola lettura.
+	const closuresHref = isOwner ? "/store/closures" : "/store";
 
 	if (openStatus.status === "unknown") {
 		return {
@@ -91,7 +95,7 @@ export function hoursAction(
 			urgency: "medium",
 			title: m.dashboard_hours_holiday_title(),
 			subtitle: m.dashboard_hours_holiday_subtitle(),
-			href: "/store/closures",
+			href: closuresHref,
 		};
 	}
 
@@ -106,7 +110,7 @@ export function hoursAction(
 					time: openStatus.opensAt.time,
 				})
 			: m.dashboard_hours_no_reopening(),
-		href: "/store/closures",
+		href: closuresHref,
 	};
 }
 
@@ -226,6 +230,8 @@ export interface BuildActionsInput {
 	/** true solo se il negozio è caricato e non ha coordinate. */
 	locationMissing: boolean;
 	openStatus: OpenStatusLike | null | undefined;
+	/** Il dipendente non gestisce le chiusure. Default: titolare. */
+	isOwner?: boolean;
 	now: Date;
 }
 
@@ -252,7 +258,7 @@ export function buildDashboardActions(input: BuildActionsInput): ActionItem[] {
 		d ? outOfStockAction(d.outOfStock) : null,
 		d ? lowStockAction(d.lowStock) : null,
 		d ? promoAction(d.expiringPromotions, now) : null,
-		hoursAction(input.openStatus),
+		hoursAction(input.openStatus, input.isOwner),
 	];
 	return sortByUrgency(items.filter((a): a is ActionItem => a !== null));
 }

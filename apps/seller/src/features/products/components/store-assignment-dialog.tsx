@@ -55,6 +55,9 @@ export function StoreAssignmentDialog({
 		onSuccess: (data) => {
 			void queryClient.invalidateQueries({ queryKey: ["product", productId] });
 			void queryClient.invalidateQueries({ queryKey: ["products"] });
+			void queryClient.invalidateQueries({
+				queryKey: ["seller-categories-in-use"],
+			});
 			toast.success(
 				m.products_store_assignment_dialog_success({ count: data.length }),
 			);
@@ -119,11 +122,16 @@ export function StoreAssignmentDialog({
 							</Label>
 							<Input
 								id="initial-stock"
-								type="number"
+								type="text"
 								inputMode="numeric"
-								min={0}
+								pattern="[0-9]*"
 								value={initialStock}
-								onChange={(e) => setInitialStock(e.target.value)}
+								// Solo cifre: negativi e decimali l'API li rifiuta.
+								onChange={(e) =>
+									setInitialStock(
+										e.target.value.replace(/[^0-9]/g, "").slice(0, 6),
+									)
+								}
 								className="w-32"
 							/>
 						</div>

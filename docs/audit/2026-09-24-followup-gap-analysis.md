@@ -63,13 +63,9 @@ Il doppio controllo di ownership in `transitionOrder` non è un bug: è difesa i
 (proprietà del seller + negozi accessibili) su un'unica lettura, resta com'è.
 
 ### P3.2 — Seller/Admin FE sweep
-- `?page=abc` → `Number(...)` senza guardia NaN/clamp — seller `products/index.tsx:104-105`, `promotions/index.tsx:41-42`, `team/index.tsx:67-68`; admin `users.tsx:51-52`.
-- Race nella cella stock: `commitSet` non attende un `adjust` in volo — `apps/seller/src/features/products/components/stock-editor-cell.tsx:98-130`.
-- Stock negativo/frazionario non clampato lato client (l'API rifiuta → toast grezzo) — `store-assignment-dialog.tsx:46-51,122-128`.
-- Toast di errore ad hoc invece di `edenMessage`/`unwrap` (`packages/ui/src/lib/api-client.ts:47`) — `use-stock-adjust-mutation.ts:73,89`, `stock-editor-cell.tsx:57,124`, admin `holidays-panel.tsx:102,130`, `product-categories.config.tsx:43,151`, `product-characteristics.config.tsx:173`, `billing/subscriptions.tsx:44`.
-- `use-product-mutations.ts:33-35` non invalida `seller-categories-in-use`; `void activeStoreId` residuo `:30,:113`; `hooks/use-onboarding.ts:7-18` gira anche per gli employee; `promotions/$discountId.tsx:120` `DiscountForm` senza `key` (default stantii tra sconti).
-- `/store/closures` senza owner gate lato client → l'employee vede un 403 invece di un redirect (la dashboard lo linka, `index.tsx:135`) — `store/closures.tsx:13-20`.
-- Admin abbonamenti: `page:1, limit:50` fissi, niente paginazione — `apps/admin/src/routes/_authenticated/billing/subscriptions.tsx:38-39`.
+
+Nessuna voce aperta: chiusa in #211, vedi «Chiusi». `use-onboarding` era già limitato ai seller
+(`enabled` in `_authenticated.tsx`).
 
 ### P3.3 — Customer FE sweep
 - Facet senza ramo d'errore: se falliscono, totali a 0 → il rail dice "Nessun negozio aperto" e disabilita il toggle — `use-product-facets.ts:69-75`, `use-store-facets.ts`.
@@ -170,6 +166,7 @@ Il doppio controllo di ownership in `transitionOrder` non è un bug: è difesa i
 | **Segno `redeemed`** | `redeemed` si salva con `amount` negativo, come diceva lo schema: Σ movimenti = saldo. CHECK di segno per tipo (`redeemed < 0`, `earned`/`refunded > 0`), righe storiche ribaltate da `0015_redeemed_negative_amount` (idempotente) | #208 |
 | **P3.1 (input e probe)** | `radius` limitato a (0, 100] km; `hasGeoFilter` nei log vero anche con lat o lng = 0; `%`, `_` e `\\` neutralizzati in tutte le ricerche `ILIKE` (`lib/like.ts`); cap immagini di prodotto e negozio ricontrollato nella transazione d'inserimento con lock sulla riga padre (i file già caricati su S3 vengono cancellati); telefono dell'indirizzo cancellabile con stringa vuota (salvato `null`, il form lo manda sempre); `HeadBucket` di `/ready` con timeout di 3 s; `x-request-id` in ingresso riusato se ha forma di id | #209 |
 | **P3.1 (import, settings, inviti)** | Import CSV prodotti: canale `warnings` (categorie oltre la prima, EAN già usato) sganciato da `failed`, così created + skipped + failed = righe del file; corretti anche i numeri di riga, sfalsati dopo una riga non valida. Matrice caratteristiche: le righe ripetute contano tra le saltate, quelle con `required` contraddittorio tra gli errori. Settings seller: P.IVA di un altro venditore rifiutata alla richiesta (409), pending cercato con una query mirata, immagine del documento cancellata da S3 se l'insert fallisce. Invito: `POST /seller/employees/invitations/:id/resend` (stesso link, scadenza a 7 giorni anche se già scaduto, 502 se l'email non parte) e «Reinvia» in `/team`. Errori definitivi: `unwrap` lancia un `ApiError` con lo status e il QueryClient dei 3 FE non riprova i 4xx; `GET /seller/billing/invoices` senza Customer Stripe risponde lista vuota; transizioni d'ordine non valide con messaggio in italiano. Prefill EAN applica l'aliquota suggerita dalla macro (stessa regola della scelta a mano). Richieste di modifica: chiave e URL dell'immagine del documento «entrambi o nessuno»; `pricing_config.stripe_product_id` salvato e precompilato nel dialog prezzi | #210 |
+| **P3.2** | `?page`/`?limit` validati da `parsePaginationSearch` (`@bibs/ui/lib`: interi ≥ 1, limit ≤ 100) su prodotti, promozioni, team e utenti admin. Cella stock: il delta inviato resta nel valore ottimistico finché la risposta non arriva, e un valore assoluto digitato attende l'adjust in volo invece di corrergli contro. Scorta iniziale del dialog negozi solo cifre. Errori via `unwrap` condiviso (`ApiError` con status) in cella stock, festività, import CSV, macro-categorie e crud panel admin. Invalidazione di `seller-categories-in-use` su cambio stato/crea/modifica/assegnazione; rimosso `activeStoreId` morto; `DiscountForm` con `key`. `/store/closures`: redirect dei dipendenti, errore mostrato invece dello spinner infinito, e la home li manda a `/store`. Abbonamenti admin paginati | #211 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -191,5 +188,5 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#202.
 4. ~~**P1.4 geocoding negozi seller**~~ — fatto in #204. ~~**P1.3 home seller**~~ — fatto in #207.
    ~~**P1.6 account hub customer**~~ — fatto in #205. ~~**P1.7 billing seller**~~ — fatto in #206.
-5. Una sweep P3 ogni tanto come lavoro a basso rischio; P4/P5 quando si tocca la zona.
+5. Una sweep P3 ogni tanto come lavoro a basso rischio (P3.1 in #209/#210, P3.2 in #211); P4/P5 quando si tocca la zona.
 6. **P6** diventa checklist bloccante al primo segnale di go-live.

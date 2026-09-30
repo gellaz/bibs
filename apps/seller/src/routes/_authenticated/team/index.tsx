@@ -38,6 +38,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/components/user-avatar";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -65,8 +66,7 @@ import { authClient } from "@/lib/auth-client";
 export const Route = createFileRoute("/_authenticated/team/")({
 	component: TeamPage,
 	validateSearch: (search: Record<string, unknown>) => ({
-		page: Number(search.page ?? 1),
-		limit: Number(search.limit ?? 20),
+		...parsePaginationSearch(search),
 	}),
 });
 

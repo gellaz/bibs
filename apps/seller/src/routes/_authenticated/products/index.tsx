@@ -16,6 +16,7 @@ import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -101,8 +102,7 @@ export const Route = createFileRoute("/_authenticated/products/")({
 				? search.maxPrice
 				: undefined;
 		return {
-			page: Number(search.page ?? 1),
-			limit: Number(search.limit ?? 20),
+			...parsePaginationSearch(search),
 			statusFilter,
 			...(rawQ.length > 0 ? { q: rawQ } : {}),
 			...(sort && order ? { sort, order } : {}),
@@ -556,7 +556,6 @@ function ProductsListPage() {
 						<ProductRowActions
 							productId={row.original.id}
 							status={row.original.status}
-							activeStoreId={activeStore?.id ?? ""}
 							assignedStoreIds={row.original.storeProducts.map(
 								(sp) => sp.storeId,
 							)}

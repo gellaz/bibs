@@ -1,5 +1,7 @@
 import { Badge } from "@bibs/ui/components/badge";
+import { DataPagination } from "@bibs/ui/components/data-pagination";
 import { Input } from "@bibs/ui/components/input";
+import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
 	Table,
@@ -9,7 +11,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
-import { useQuery } from "@tanstack/react-query";
+import { unwrap } from "@bibs/ui/lib/api-client";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { api } from "@/lib/api";
@@ -29,22 +32,28 @@ function formatDate(d: Date | string): string {
 function SubscriptionsPage() {
 	const [sellerEmail, setSellerEmail] = useState("");
 	const [storeName, setStoreName] = useState("");
+	const [page, setPage] = useState(1);
+	const [limit, setLimit] = useState(20);
 
 	const { data, isLoading } = useQuery({
-		queryKey: ["admin", "billing", "subs", sellerEmail, storeName],
+		queryKey: ["admin", "billing", "subs", sellerEmail, storeName, page, limit],
 		queryFn: async () => {
 			const r = await api().admin.billing.subscriptions.get({
 				query: {
-					page: 1,
-					limit: 50,
+					page,
+					limit,
 					...(sellerEmail ? { sellerEmail } : {}),
 					...(storeName ? { storeName } : {}),
 				},
 			});
-			if (r.error) throw new Error(r.error.value?.message);
-			return r.data?.data;
+			return unwrap(r, "Errore caricamento abbonamenti").data;
 		},
+		placeholderData: keepPreviousData,
 	});
+
+	const total = data?.pagination.total ?? 0;
+	const totalPages = Math.max(1, Math.ceil(total / limit));
+	const offset = (page - 1) * limit;
 
 	return (
 		<div className="space-y-4">
@@ -52,12 +61,18 @@ function SubscriptionsPage() {
 				<Input
 					placeholder="Email seller"
 					value={sellerEmail}
-					onChange={(e) => setSellerEmail(e.target.value)}
+					onChange={(e) => {
+						setSellerEmail(e.target.value);
+						setPage(1);
+					}}
 				/>
 				<Input
 					placeholder="Nome negozio"
 					value={storeName}
-					onChange={(e) => setStoreName(e.target.value)}
+					onChange={(e) => {
+						setStoreName(e.target.value);
+						setPage(1);
+					}}
 				/>
 			</div>
 			{isLoading ? (
@@ -90,10 +105,27 @@ function SubscriptionsPage() {
 							))}
 						</TableBody>
 					</Table>
-					{data && (
-						<p className="text-muted-foreground text-xs">
-							{data.data.length} di {data.pagination.total} risultati
-						</p>
+					{total > 0 && (
+						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+							<p className="text-muted-foreground text-sm tabular-nums">
+								{offset + 1}–{Math.min(page * limit, total)} di {total}{" "}
+								{total === 1 ? "abbonamento" : "abbonamenti"}
+							</p>
+							<div className="flex items-center gap-4">
+								<PageSizeSelector
+									pageSize={limit}
+									onPageSizeChange={(size) => {
+										setLimit(size);
+										setPage(1);
+									}}
+								/>
+								<DataPagination
+									page={page}
+									totalPages={totalPages}
+									onPageChange={setPage}
+								/>
+							</div>
+						</div>
 					)}
 				</>
 			)}

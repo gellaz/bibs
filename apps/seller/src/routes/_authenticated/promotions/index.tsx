@@ -13,6 +13,7 @@ import { EmptyState } from "@bibs/ui/components/empty-state";
 import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { MoreVerticalIcon } from "lucide-react";
@@ -38,8 +39,7 @@ export const Route = createFileRoute("/_authenticated/promotions/")({
 			? (s as PromotionState)
 			: "assignable";
 		return {
-			page: Number(search.page ?? 1),
-			limit: Number(search.limit ?? 20),
+			...parsePaginationSearch(search),
 			state,
 		};
 	},

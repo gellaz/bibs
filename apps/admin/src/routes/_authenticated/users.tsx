@@ -12,6 +12,7 @@ import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
+import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -48,8 +49,7 @@ export const Route = createFileRoute("/_authenticated/users")({
 				? (search.order as SortDir)
 				: undefined;
 		return {
-			page: Number(search.page ?? 1),
-			limit: Number(search.limit ?? 20),
+			...parsePaginationSearch(search),
 			...(rawQ.length > 0 ? { q: rawQ } : {}),
 			...(sort && order ? { sort, order } : {}),
 		};

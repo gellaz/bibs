@@ -67,6 +67,14 @@ describe("hoursAction", () => {
 		expect(a?.title).toBe("Oggi il negozio è chiuso");
 	});
 
+	it("dipendente → scheda negozio, le chiusure sono del titolare", () => {
+		for (const status of ["closed_holiday", "closed"] as const) {
+			expect(hoursAction({ isOpen: false, status }, false)?.href).toBe(
+				"/store",
+			);
+		}
+	});
+
 	it("chiuso adesso → low, con la riapertura (anche se Eden ha idratato una Date)", () => {
 		const a = hoursAction({
 			isOpen: false,
