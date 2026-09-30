@@ -72,9 +72,9 @@ Nessuna voce aperta: chiusa in #211, vedi «Chiusi». `use-onboarding` era già 
 Nessuna voce aperta: chiusa in #212, vedi «Chiusi».
 
 ### P3.4 — UI condivisa
-- `toggle-group.tsx`: `data-vertical:`/`group-data-horizontal/...` non combaciano mai con `data-orientation` → angoli/bordi uniti mancanti (cambia l'aspetto di Lista/Mappa su `/stores`: PR dedicata) — `packages/ui/src/components/toggle-group.tsx:40,43,74`.
 
-`DataPagination` e verify-email/`use-cooldown` chiusi in #212, vedi «Chiusi».
+Nessuna voce aperta: `DataPagination` e verify-email/`use-cooldown` chiusi in #212, il toggle-group
+in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 
 ---
 
@@ -167,6 +167,7 @@ Nessuna voce aperta: chiusa in #212, vedi «Chiusi».
 | **P3.2** | `?page`/`?limit` validati da `parsePaginationSearch` (`@bibs/ui/lib`: interi ≥ 1, limit ≤ 100) su prodotti, promozioni, team e utenti admin. Cella stock: il delta inviato resta nel valore ottimistico finché la risposta non arriva, e un valore assoluto digitato attende l'adjust in volo invece di corrergli contro. Scorta iniziale del dialog negozi solo cifre. Errori via `unwrap` condiviso (`ApiError` con status) in cella stock, festività, import CSV, macro-categorie e crud panel admin. Invalidazione di `seller-categories-in-use` su cambio stato/crea/modifica/assegnazione; rimosso `activeStoreId` morto; `DiscountForm` con `key`. `/store/closures`: redirect dei dipendenti, errore mostrato invece dello spinner infinito, e la home li manda a `/store`. Abbonamenti admin paginati | #211 |
 | **P3.3** | Facet con ramo d'errore: `FacetsError` col riprova al posto di disponibilità e categorie invece dei totali a 0; `keepPreviousData` sui facet (niente skeleton a ogni cambio). «Nessun negozio aperto»/«Nessun prodotto in offerta» solo se qualcosa resta (`total > 0`). `aria-live="polite"` sul conteggio risultati di `/stores` e `/products`. `near=gps` aspetta la sonda dei permessi (`nearVerdict`: `wait` durante `probing`, adotta con `granted`/`pending` come il boot). «Aggiungi» a tutta colonna sotto `sm` | #212 |
 | **P3.4 (paginazione, verify-email)** | `DataPagination` riporta dentro una pagina fuori intervallo (`clampPage`) e lo segnala con `replace: true`, così Indietro non rimbalza; team mostra la paginazione anche con `page` oltre l'ultima. verify-email arma il cooldown solo con `sentAt` (passato dalla registrazione, mai dal login); gli errori di `sendVerificationEmail` (che better-auth non lancia) arrivano in un toast italiano anche nei banner. `use-cooldown` si sveglia sul cambio di secondo invece che con un intervallo fisso | #212 |
+| **P3.4 (toggle-group)** | `toggle-group.tsx`: i varianti `data-vertical:`/`group-data-horizontal/…` diventano `data-[orientation=…]`, che combacia con il `data-orientation` del Root. Nei gruppi senza spacing gli angoli esterni si arrotondano e tra le voci resta un solo bordo (prima: tutto squadrato e bordo doppio da 2px). Cambia l'aspetto di Lista/Mappa su `/stores`, del `ThemeToggle` e del toggle delle caratteristiche prodotto nel seller | #213 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -188,5 +189,5 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#202.
 4. ~~**P1.4 geocoding negozi seller**~~ — fatto in #204. ~~**P1.3 home seller**~~ — fatto in #207.
    ~~**P1.6 account hub customer**~~ — fatto in #205. ~~**P1.7 billing seller**~~ — fatto in #206.
-5. Una sweep P3 ogni tanto come lavoro a basso rischio (P3.1 in #209/#210, P3.2 in #211, P3.3 in #212); P4/P5 quando si tocca la zona.
+5. Una sweep P3 ogni tanto come lavoro a basso rischio (P3.1 in #209/#210, P3.2 in #211, P3.3 in #212, P3.4 in #212/#213); P4/P5 quando si tocca la zona.
 6. **P6** diventa checklist bloccante al primo segnale di go-live.
