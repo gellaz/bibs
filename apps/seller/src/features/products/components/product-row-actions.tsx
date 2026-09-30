@@ -32,17 +32,15 @@ type ProductStatus = "active" | "disabled" | "trashed";
 interface Props {
 	productId: string;
 	status: ProductStatus;
-	activeStoreId: string;
 	assignedStoreIds: string[];
 }
 
 export function ProductRowActions({
 	productId,
 	status,
-	activeStoreId,
 	assignedStoreIds,
 }: Props) {
-	const { setStatus } = useProductMutations(activeStoreId);
+	const { setStatus } = useProductMutations();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [addStoreOpen, setAddStoreOpen] = useState(false);
 	const [applyPromoOpen, setApplyPromoOpen] = useState(false);
@@ -183,7 +181,6 @@ export function ProductRowActions({
 				open={confirmOpen}
 				onOpenChange={setConfirmOpen}
 				productIds={[productId]}
-				activeStoreId={activeStoreId}
 			/>
 
 			<StoreAssignmentDialog

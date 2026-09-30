@@ -25,6 +25,7 @@ import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
 import { SortableHeadButton } from "@bibs/ui/components/sortable-table-head";
 import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
+import { unwrap as unwrapResponse } from "@bibs/ui/lib/api-client";
 import { formatDateIt } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,26 +42,13 @@ const EMPTY: never[] = [];
 
 // Eden responses are { data, error }. The error shape is per-route, so keep it
 // `unknown` here — that way any config closure's eden promise is assignable —
-// and narrow it at runtime in `edenMessage`.
+// and narrow it at runtime in `edenMessage` (@bibs/ui).
 type EdenRes<T> = { data: T | null; error: unknown };
 
-function edenMessage(error: unknown): string | undefined {
-	if (error && typeof error === "object" && "value" in error) {
-		const v = (error as { value?: unknown }).value;
-		if (typeof v === "string") return v;
-		if (v && typeof v === "object" && "message" in v) {
-			const m = (v as { message?: unknown }).message;
-			if (typeof m === "string") return m;
-		}
-	}
-	return undefined;
-}
-
+// Condiviso con il resto dei FE: lancia un `ApiError` con lo status, così la
+// policy di retry del QueryClient non riprova i 4xx.
 async function unwrap<T>(p: Promise<EdenRes<T>>, fallback: string): Promise<T> {
-	const res = await p;
-	if (res.error) throw new Error(edenMessage(res.error) ?? fallback);
-	if (res.data == null) throw new Error(fallback);
-	return res.data;
+	return unwrapResponse(await p, fallback);
 }
 
 export interface CategoryEntity {

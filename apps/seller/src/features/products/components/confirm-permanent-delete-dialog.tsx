@@ -16,7 +16,6 @@ interface Props {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	productIds: string[];
-	activeStoreId: string;
 	onSuccess?: () => void;
 }
 
@@ -24,10 +23,9 @@ export function ConfirmPermanentDeleteDialog({
 	open,
 	onOpenChange,
 	productIds,
-	activeStoreId,
 	onSuccess,
 }: Props) {
-	const { bulkDeletePermanent } = useProductMutations(activeStoreId);
+	const { bulkDeletePermanent } = useProductMutations();
 
 	const handleConfirm = () => {
 		bulkDeletePermanent.mutate(

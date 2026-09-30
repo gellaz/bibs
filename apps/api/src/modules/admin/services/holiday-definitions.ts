@@ -51,7 +51,7 @@ export async function updateHolidayDefinition(params: {
 		const existing = await db.query.holidayDefinition.findFirst({
 			where: eq(holidayDefinition.id, id),
 		});
-		if (!existing) throw new ServiceError(404, "Holiday definition not found");
+		if (!existing) throw new ServiceError(404, "Festività non trovata");
 		return existing;
 	}
 
@@ -60,7 +60,7 @@ export async function updateHolidayDefinition(params: {
 		.set(data)
 		.where(eq(holidayDefinition.id, id))
 		.returning();
-	if (!updated) throw new ServiceError(404, "Holiday definition not found");
+	if (!updated) throw new ServiceError(404, "Festività non trovata");
 	return updated;
 }
 
@@ -69,7 +69,7 @@ export async function deleteHolidayDefinition(id: string) {
 		.delete(holidayDefinition)
 		.where(eq(holidayDefinition.id, id))
 		.returning();
-	if (!deleted) throw new ServiceError(404, "Holiday definition not found");
+	if (!deleted) throw new ServiceError(404, "Festività non trovata");
 	return deleted;
 }
 

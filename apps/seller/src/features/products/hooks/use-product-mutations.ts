@@ -27,12 +27,16 @@ interface BulkDeletePermanentVars {
 	productIds: string[];
 }
 
-export function useProductMutations(activeStoreId: string | undefined) {
+export function useProductMutations() {
 	const queryClient = useQueryClient();
 
 	function invalidateAll() {
 		void queryClient.invalidateQueries({ queryKey: ["products"] });
 		void queryClient.invalidateQueries({ queryKey: ["product-status-counts"] });
+		// Il filtro categorie è scopato per status: un cambio di stato lo sposta.
+		void queryClient.invalidateQueries({
+			queryKey: ["seller-categories-in-use"],
+		});
 	}
 
 	const setStatus = useMutation({
@@ -109,8 +113,6 @@ export function useProductMutations(activeStoreId: string | undefined) {
 			toast.error(err.message);
 		},
 	});
-
-	void activeStoreId;
 
 	return { setStatus, bulkSetStatus, bulkDeletePermanent };
 }

@@ -1,6 +1,7 @@
 "use no memo";
 
 import { toast } from "@bibs/ui/components/sonner";
+import { ApiError } from "@bibs/ui/lib/api-error";
 import { MinusIcon, PlusIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useStockAdjustMutation } from "@/features/products/hooks/use-stock-adjust-mutation";
@@ -15,6 +16,10 @@ interface Props {
 
 const DEBOUNCE_MS = 500;
 
+function errorMessage(err: unknown) {
+	return err instanceof Error && err.message ? err.message : "Errore";
+}
+
 export function StockEditorCell({
 	productId,
 	storeId,
@@ -23,6 +28,11 @@ export function StockEditorCell({
 }: Props) {
 	const { adjust, set } = useStockAdjustMutation();
 	const [pendingDelta, setPendingDelta] = useState(0);
+	// Delta already sent but not yet confirmed: keeps the optimistic value
+	// steady while the request is in flight (the `stock` prop is still old).
+	const [inFlightDelta, setInFlightDelta] = useState(0);
+	// The in-flight adjust, so an absolute set waits for it instead of racing it.
+	const inFlightRef = useRef<Promise<unknown> | null>(null);
 	const [focused, setFocused] = useState(false);
 	const [editValue, setEditValue] = useState(String(stock));
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,7 +41,7 @@ export function StockEditorCell({
 	// Prevents commitSet from firing twice when Enter triggers both onKeyDown and onBlur.
 	const committingRef = useRef(false);
 
-	const optimistic = stock + pendingDelta;
+	const optimistic = stock + inFlightDelta + pendingDelta;
 
 	// Sync the input with the optimistic value whenever the field isn't being edited.
 	useEffect(() => {
@@ -42,21 +52,27 @@ export function StockEditorCell({
 		if (deltaSnapshot === 0) return;
 		setPendingDelta(0);
 		pendingDeltaRef.current = 0;
-		adjust.mutate(
-			{ productId, storeId, delta: deltaSnapshot },
-			{
-				onError: (err: unknown) => {
-					const status = (err as { status?: number }).status;
-					if (status === 409) {
-						toast.error(m.products_stock_error_negative());
-					} else if (status === 403) {
-						toast.error(m.products_stock_error_no_access());
-					} else {
-						toast.error((err as Error)?.message || "Errore");
-					}
-				},
-			},
-		);
+		setInFlightDelta((d) => d + deltaSnapshot);
+		const request = adjust
+			.mutateAsync({ productId, storeId, delta: deltaSnapshot })
+			.catch((err: unknown) => {
+				const status = err instanceof ApiError ? err.status : undefined;
+				if (status === 409) {
+					toast.error(m.products_stock_error_negative());
+				} else if (status === 403) {
+					toast.error(m.products_stock_error_no_access());
+				} else {
+					toast.error(errorMessage(err));
+				}
+			})
+			.finally(() => {
+				if (inFlightRef.current === request) inFlightRef.current = null;
+				// Drop the delta only after TanStack Query's cache notification
+				// (batched on a 0 ms timeout) has delivered the new `stock`,
+				// otherwise the old value flashes for a frame.
+				setTimeout(() => setInFlightDelta((d) => d - deltaSnapshot), 0);
+			});
+		inFlightRef.current = request;
 	};
 
 	const scheduleFlush = (nextDelta: number) => {
@@ -116,13 +132,14 @@ export function StockEditorCell({
 				clearTimeout(timerRef.current);
 				timerRef.current = null;
 			}
-			set.mutate(
-				{ productId, storeId, stock: parsed },
-				{
-					onError: (err: unknown) => {
-						toast.error((err as Error)?.message || "Errore");
-					},
-				},
+			// An absolute value sent while an adjust is in flight could land
+			// before it and get the delta applied on top: wait for it first.
+			const pending = inFlightRef.current ?? Promise.resolve();
+			void pending.then(() =>
+				set.mutate(
+					{ productId, storeId, stock: parsed },
+					{ onError: (err: unknown) => toast.error(errorMessage(err)) },
+				),
 			);
 		} finally {
 			committingRef.current = false;

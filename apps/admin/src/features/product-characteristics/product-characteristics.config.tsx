@@ -2,6 +2,7 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
+import { unwrap } from "@bibs/ui/lib/api-client";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { ListChecksIcon } from "lucide-react";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
@@ -169,11 +170,7 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 			const res = await api().admin["product-characteristics"].import.post({
 				file,
 			});
-			if (res.error)
-				throw new Error(res.error.value?.message || "Errore durante l'import");
-			const data = res.data?.data;
-			if (!data) throw new Error("Risposta non valida dal server");
-			return data;
+			return unwrap(res, "Errore durante l'import").data;
 		},
 		title: "Importa Caratteristiche Prodotto",
 		description:

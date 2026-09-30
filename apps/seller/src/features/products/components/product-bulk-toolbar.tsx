@@ -30,7 +30,7 @@ export function ProductBulkToolbar({
 	statusFilter,
 	onClear,
 }: Props) {
-	const { bulkSetStatus } = useProductMutations(activeStoreId);
+	const { bulkSetStatus } = useProductMutations();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [adjustOpen, setAdjustOpen] = useState(false);
 	const [applyPromoOpen, setApplyPromoOpen] = useState(false);
@@ -135,7 +135,6 @@ export function ProductBulkToolbar({
 				open={confirmOpen}
 				onOpenChange={setConfirmOpen}
 				productIds={selectedIds}
-				activeStoreId={activeStoreId}
 				onSuccess={onClear}
 			/>
 			<BulkStockAdjustDialog

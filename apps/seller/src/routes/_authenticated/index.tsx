@@ -22,6 +22,7 @@ import {
 	type Urgency,
 } from "@/features/dashboard/dashboard-actions";
 import { useActiveStore } from "@/hooks/use-active-store";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import { useStores } from "@/hooks/use-stores";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
@@ -64,6 +65,7 @@ function useSellerDashboard(storeId: string | undefined) {
 
 function Dashboard() {
 	const { activeStore, stores, isLoading } = useActiveStore();
+	const isOwner = useIsOwner();
 	const { data: storesList } = useStores();
 	const activeStoreRow = storesList?.find((s) => s.id === activeStore?.id);
 	const dashboard = useSellerDashboard(activeStore?.id);
@@ -76,6 +78,7 @@ function Dashboard() {
 		dashboard: dashboard.data?.actions ?? null,
 		locationMissing: !!activeStoreRow && !activeStoreRow.location,
 		openStatus: activeStoreRow?.openStatus ?? null,
+		isOwner,
 		now,
 	});
 
