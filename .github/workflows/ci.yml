@@ -79,3 +79,53 @@ jobs:
       # committing it shows up here instead of as a confusing typecheck error.
       - name: Generated files are committed
         run: git diff --exit-code
+
+  docker-build:
+    name: Docker image (api)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      # Nothing else builds this Dockerfile, and it had silently broken: a
+      # workspace missing from the build stage, a runtime node_modules of
+      # dangling symlinks. `load` keeps the image local for the smoke test
+      # below; the gha cache keeps the install layer warm.
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          tags: bibs-api:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # A build alone misses what only shows at boot (EACCES on ./logs, a
+      # native module that doesn't load): migrate, start the API against the
+      # compose Postgres/MinIO, and require a healthy /ready. Throwaway
+      # credentials, never real secrets.
+      - name: Start Postgres and MinIO
+        run: |
+          docker compose -p smoke up -d --wait bibs-postgis bibs-minio
+          cat > smoke.env <<'ENV'
+          DATABASE_URL=postgres://pgadmin:P4ssword!@bibs-postgis:5432/bibs-db
+          BETTER_AUTH_SECRET=ci-smoke-secret-0123456789abcdef0123
+          BETTER_AUTH_URL=http://localhost:3000
+          S3_ENDPOINT=http://bibs-minio:9000
+          S3_ACCESS_KEY=minioadmin
+          S3_SECRET_KEY=P4ssword!
+          S3_BUCKET=bibs-ci
+          STRIPE_SECRET_KEY=sk_test_ci_smoke
+          ENV
+      - name: Migrate
+        run: docker run --rm --network smoke_default --env-file smoke.env bibs-api:ci bun run db:migrate
+      - name: Boot and /ready
+        run: |
+          docker run -d --name api --network smoke_default -p 3000:3000 --env-file smoke.env bibs-api:ci
+          for _ in $(seq 1 30); do
+            if curl -fsS localhost:3000/ready; then exit 0; fi
+            sleep 1
+          done
+          echo "API did not become ready" >&2
+          exit 1
+      - name: API logs
+        if: failure()
+        run: docker logs api || true
