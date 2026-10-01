@@ -1,8 +1,8 @@
-import { describe, expect, test } from "bun:test";
 import {
 	clampPage,
 	parsePaginationSearch,
 } from "@bibs/ui/lib/pagination-search";
+import { describe, expect, test } from "vitest";
 
 describe("parsePaginationSearch", () => {
 	test("default senza parametri", () => {

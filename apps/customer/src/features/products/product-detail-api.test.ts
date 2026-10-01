@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "vitest";
 import { api } from "@/lib/api";
 import { fetchProductDetail } from "./product-detail-api";
 

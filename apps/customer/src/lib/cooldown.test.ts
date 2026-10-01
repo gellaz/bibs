@@ -1,9 +1,9 @@
-import { describe, expect, test } from "bun:test";
 import {
 	cooldownState,
 	msUntilNextSecond,
 	sentAtFromSearch,
 } from "@bibs/ui/hooks/use-cooldown";
+import { describe, expect, test } from "vitest";
 
 describe("cooldownState", () => {
 	test("senza partenza è pronto", () => {

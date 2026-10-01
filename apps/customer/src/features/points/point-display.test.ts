@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { formatSignedPoints, signedPoints, toPointRow } from "./point-display";
 
 const base = {

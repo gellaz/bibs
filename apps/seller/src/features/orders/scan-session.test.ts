@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { createScanSession, openCamera } from "./scan-session";
 
 function fakeStream() {
