@@ -11,7 +11,6 @@ import {
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
-import { DataTable } from "@bibs/ui/components/data-table";
 import {
 	Dialog,
 	DialogContent,
@@ -26,6 +25,7 @@ import {
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
 import { toast } from "@bibs/ui/components/sonner";
+import { DataTable } from "@bibs/ui/custom/data-table";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { toYMD } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";

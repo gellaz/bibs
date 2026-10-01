@@ -57,7 +57,11 @@
 			}
 		},
 		{
-			"includes": ["packages/ui/**"],
+			"includes": [
+				"packages/ui/src/components/**",
+				"packages/ui/src/hooks/use-mobile.ts",
+				"packages/ui/src/lib/utils.ts"
+			],
 			"linter": {
 				"enabled": false
 			}

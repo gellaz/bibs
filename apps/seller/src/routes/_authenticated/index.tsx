@@ -1,5 +1,5 @@
 import { Button } from "@bibs/ui/components/button";
-import { formatPriceEur } from "@bibs/ui/components/price";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { cn } from "@bibs/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";

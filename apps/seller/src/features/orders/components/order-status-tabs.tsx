@@ -1,4 +1,4 @@
-import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
+import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { m } from "@/paraglide/messages";
 import type { OrderStatus } from "../order-labels";
 

@@ -6,8 +6,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
-import { PasswordInput } from "@bibs/ui/components/password-input";
 import { toast } from "@bibs/ui/components/sonner";
+import { PasswordInput } from "@bibs/ui/custom/password-input";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { useState } from "react";

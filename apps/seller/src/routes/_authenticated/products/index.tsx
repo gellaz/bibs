@@ -1,19 +1,19 @@
 import { Badge } from "@bibs/ui/components/badge";
 import { Checkbox } from "@bibs/ui/components/checkbox";
-import { CopyButton } from "@bibs/ui/components/copy-button";
-import { CreateButton } from "@bibs/ui/components/create-button";
-import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
-import { EmptyState } from "@bibs/ui/components/empty-state";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupInput,
 } from "@bibs/ui/components/input-group";
-import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
-import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { CopyButton } from "@bibs/ui/custom/copy-button";
+import { CreateButton } from "@bibs/ui/custom/create-button";
+import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
+import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";

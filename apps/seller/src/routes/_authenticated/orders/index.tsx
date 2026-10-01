@@ -1,15 +1,10 @@
 import { Button } from "@bibs/ui/components/button";
-import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable } from "@bibs/ui/components/data-table";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
-import { EmptyState } from "@bibs/ui/components/empty-state";
-import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import { Price } from "@bibs/ui/components/price";
 import {
 	Select,
 	SelectContent,
@@ -18,7 +13,12 @@ import {
 	SelectValue,
 } from "@bibs/ui/components/select";
 import { toast } from "@bibs/ui/components/sonner";
-import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { DataTable } from "@bibs/ui/custom/data-table";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { Price } from "@bibs/ui/custom/price";
+import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";

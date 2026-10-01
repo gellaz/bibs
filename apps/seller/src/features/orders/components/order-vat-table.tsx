@@ -1,4 +1,4 @@
-import { formatPriceEur } from "@bibs/ui/components/price";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { m } from "@/paraglide/messages";
 
 type Line = { rate: number; taxableAmount: string; taxAmount: string };

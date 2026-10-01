@@ -8,8 +8,8 @@ import {
 } from "@bibs/ui/components/card";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import { toast } from "@bibs/ui/components/sonner";
+import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";

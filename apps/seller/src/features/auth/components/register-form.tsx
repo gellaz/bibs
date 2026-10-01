@@ -6,7 +6,7 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { PasswordInput } from "@bibs/ui/components/password-input";
+import { PasswordInput } from "@bibs/ui/custom/password-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {

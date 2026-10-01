@@ -8,10 +8,10 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
-import { DataTable } from "@bibs/ui/components/data-table";
 import { Input } from "@bibs/ui/components/input";
 import { Switch } from "@bibs/ui/components/switch";
-import { TabNav } from "@bibs/ui/components/tab-nav";
+import { DataTable } from "@bibs/ui/custom/data-table";
+import { TabNav } from "@bibs/ui/custom/tab-nav";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { SearchIcon } from "lucide-react";
 import { useState } from "react";

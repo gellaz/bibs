@@ -7,11 +7,11 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
+import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";

@@ -13,8 +13,8 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
-import { ThemeToggle } from "@bibs/ui/components/theme-toggle";
-import { UserAvatar } from "@bibs/ui/components/user-avatar";
+import { ThemeToggle } from "@bibs/ui/custom/theme-toggle";
+import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
 import LocaleSwitcher from "@/components/locale-switcher";

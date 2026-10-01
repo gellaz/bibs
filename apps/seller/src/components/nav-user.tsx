@@ -12,13 +12,13 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
+import { ToggleGroup, ToggleGroupItem } from "@bibs/ui/components/toggle-group";
 import {
 	segmentedTrayClassName,
 	segmentedTrayItemClassName,
 	ThemeToggle,
-} from "@bibs/ui/components/theme-toggle";
-import { ToggleGroup, ToggleGroupItem } from "@bibs/ui/components/toggle-group";
-import { UserAvatar } from "@bibs/ui/components/user-avatar";
+} from "@bibs/ui/custom/theme-toggle";
+import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
 	LogOutIcon,

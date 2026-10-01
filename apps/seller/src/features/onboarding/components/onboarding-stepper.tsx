@@ -3,7 +3,7 @@ import {
 	StepperIndicator,
 	StepperItem,
 	StepperTitle,
-} from "@bibs/ui/components/stepper";
+} from "@bibs/ui/custom/stepper";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 
 const STEPS = [

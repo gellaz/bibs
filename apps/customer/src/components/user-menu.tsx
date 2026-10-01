@@ -6,8 +6,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
-import { ThemeToggle } from "@bibs/ui/components/theme-toggle";
-import { UserAvatar } from "@bibs/ui/components/user-avatar";
+import { ThemeToggle } from "@bibs/ui/custom/theme-toggle";
+import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, ReceiptText, UserRound } from "lucide-react";
 import { authClient } from "@/lib/auth-client";

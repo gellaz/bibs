@@ -1,6 +1,6 @@
-import { cn } from "../lib/utils";
-import { Badge } from "./badge";
-import { formatPriceEur } from "./price";
+import { Badge } from "~/components/badge";
+import { formatPriceEur } from "~/custom/price";
+import { cn } from "~/lib/utils";
 
 export interface DiscountedPriceProps {
 	originalPrice: string | number;

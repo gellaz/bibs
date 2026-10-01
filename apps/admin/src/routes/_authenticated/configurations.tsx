@@ -1,5 +1,5 @@
-import { CreateButton } from "@bibs/ui/components/create-button";
-import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
+import { CreateButton } from "@bibs/ui/custom/create-button";
+import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";

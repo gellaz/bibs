@@ -9,9 +9,9 @@ import {
 } from "@bibs/ui/components/dialog";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Switch } from "@bibs/ui/components/switch";
+import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
 import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { m } from "@/paraglide/messages";
 import type {

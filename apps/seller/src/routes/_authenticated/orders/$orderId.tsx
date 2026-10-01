@@ -1,7 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
-import { EmptyState } from "@bibs/ui/components/empty-state";
-import { formatPriceEur } from "@bibs/ui/components/price";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PackageIcon, ReceiptIcon } from "lucide-react";

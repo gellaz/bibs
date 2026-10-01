@@ -12,8 +12,6 @@ import {
 } from "@bibs/ui/components/alert-dialog";
 import { AvatarBadge } from "@bibs/ui/components/avatar";
 import { Button } from "@bibs/ui/components/button";
-import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable } from "@bibs/ui/components/data-table";
 import {
 	Dialog,
 	DialogClose,
@@ -31,12 +29,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
-import { EmptyState } from "@bibs/ui/components/empty-state";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
-import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
-import { UserAvatar } from "@bibs/ui/components/user-avatar";
+import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { DataTable } from "@bibs/ui/custom/data-table";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { formatDateIt } from "@bibs/ui/lib/date";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";

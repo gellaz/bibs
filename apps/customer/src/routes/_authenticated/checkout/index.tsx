@@ -1,6 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
-import { formatPriceEur } from "@bibs/ui/components/price";
 import { Skeleton } from "@bibs/ui/components/skeleton";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ShoppingBag } from "lucide-react";
 import { NoticePage } from "@/components/notice";

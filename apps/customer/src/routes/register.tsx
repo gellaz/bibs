@@ -1,4 +1,3 @@
-import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -14,7 +13,8 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { PasswordInput } from "@bibs/ui/components/password-input";
+import { BrandMark } from "@bibs/ui/custom/brand-mark";
+import { PasswordInput } from "@bibs/ui/custom/password-input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
