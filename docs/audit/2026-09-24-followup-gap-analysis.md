@@ -48,7 +48,6 @@ accetta solo `reserve_pickup` (`direct` disabilitato in #208).
 |---|---|---|---|
 | **P2.2** | Seller senza test né script `test`; admin con vitest/jsdom/testing-library installati ma **zero test** (infra morta) | `apps/admin/package.json:15,55,57`; nessun `*.test.*` in `apps/seller` | M (decidere: rimuovere infra admin o gate FE vero) |
 | **P2.4** | ~~Test HTTP dei guard owner-only su employees/settings/billing~~ (fatto in #192, più stores e checkout); restano l'e2e del rollback di `acceptInvite` e il test d'integrazione del resend pending-email | `apps/api/tests/integration/registration-accept-invite.test.ts` | S |
-| **P2.5** | Biome spento su tutto `packages/ui/**`, componenti bibs-authored inclusi | `biome.json:59-63` | S–M |
 
 ---
 
@@ -82,7 +81,7 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 - **Focus ring saffron** (DESIGN.md) solo su search/filtri; Input/Textarea/Combobox condivisi usano `--ring: ink-soft` — `packages/ui/src/components/input.tsx:11`, `globals.css:78` vs `apps/customer/src/features/search/search-field.tsx:38`. Tocca login/register/profilo/indirizzi.
 - **Tap target Leaflet** < 44px (zoom 30px, cluster 36px) — `store-search-map.tsx:31`, `store-map.tsx`; nessun override `.leaflet-control` in `styles.css`.
 - **Label senza `htmlFor`**: Brand (`product-form.tsx:417`), picker categorie (`product-categories-picker.tsx:64,89`).
-- **TabNav**: `role=tablist/tab` senza roving tabindex/frecce/`aria-controls`; indicatore non rimisurato al caricamento font — `packages/ui/src/components/tab-nav.tsx`.
+- **TabNav**: `role=tablist/tab` senza roving tabindex/frecce/`aria-controls`; indicatore non rimisurato al caricamento font — `packages/ui/src/custom/tab-nav.tsx`.
 - `autoFocus` su firstName in `personal-info-card.tsx:173` (ruba il focus al load del profilo admin).
 - **Rubrica indirizzi**: la mappa si ricentra al rilascio del pin (`address-map-preview.tsx:17-22,45-52`); permesso negato senza stato dedicato (`address-search.tsx:103-118`).
 - **Seller polish**: niente sticky save bar su `/store`; `blue-*` residui (`discount-percent-input.tsx:45,72`, variante blue di `tab-nav.tsx:26`); `/team` senza PageSizeSelector/range (`team/index.tsx:811-822`); `ProductCategoriesPicker` ancora plurale e senza "Nessuna categoria disponibile per questa macro" (`product-categories-picker.tsx:18,29`).
@@ -169,6 +168,7 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 | **P3.4 (toggle-group)** | `toggle-group.tsx`: i varianti `data-vertical:`/`group-data-horizontal/…` diventano `data-[orientation=…]`, che combacia con il `data-orientation` del Root. Nei gruppi senza spacing gli angoli esterni si arrotondano e tra le voci resta un solo bordo (prima: tutto squadrato e bordo doppio da 2px). Cambia l'aspetto di Lista/Mappa su `/stores`, del `ThemeToggle` e del toggle delle caratteristiche prodotto nel seller | #213 |
 | **P5 (rail filtri)** | Rail filtri di `/stores` e `/products` estratti in `customer/features/search/filter-rail/`: primitive (`FilterSection`, `CategoryRow`, `ToggleRow` con icona da prop, `RadiusPill`…), `CategoryTree` con conteggio via accessor, `DistanceSection` con un solo `RADIUS_PRESETS`, logica di selezione pura e testata, `FacetsError` spostato lì. Restano per pagina disponibilità, prezzo, tipi dei filtri e chiavi Paraglide. Refactor puro: DOM dei rail identico prima/dopo su 25 stati | #214 |
 | **P2.3** | Job CI `docker-build`: build di `apps/api/Dockerfile` (buildx, cache gha), `db:migrate` e avvio dell'immagine contro Postgres e MinIO della compose, `/ready` 200. Il Dockerfile non buildava (`packages/emails` assente) e l'immagine non partiva: `node_modules` di symlink rotti nel runtime, `sharp` incluso nel bundle, `./logs` non scrivibile | #215 |
+| **P2.5** | Era spento solo il linter (formatter e organizeImports già attivi). I 20 componenti scritti per bibs passano da `packages/ui/src/components/` a `src/custom/` (`@bibs/ui/custom/*`); `src/components/` resta ai generati dai registry. Linter spento solo su `src/components/**`, `hooks/use-mobile.ts` e `lib/utils.ts`; nei nostri file l'unica diagnostica (`TabNav`, dipendenze dell'effetto di rimisura) è un'eccezione motivata | #216 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
