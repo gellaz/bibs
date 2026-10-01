@@ -3,7 +3,7 @@
 	"version": "1.0.50",
 	"scripts": {
 		"dev": "bun run --watch src/index.ts",
-		"build": "bun build src/index.ts --outdir dist --target bun",
+		"build": "bun build src/index.ts --outdir dist --target bun --external sharp",
 		"test": "bun run test:unit && bun run test:integration",
 		"test:unit": "bun test tests/unit tests/lib tests/modules tests/plugins",
 		"test:integration": "bun test tests/integration --parallel=4 --isolate --timeout 180000",

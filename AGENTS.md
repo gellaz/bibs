@@ -68,13 +68,15 @@ per the [Hard Rules](#hard-rules) — requires explicit user confirmation first.
 
 ## Continuous Integration
 
-GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and every push to `main`. Three jobs run in parallel:
+GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and every push to `main`. The jobs run in parallel:
 
 - **Lint (Biome)** — `bun run lint`
 - **Typecheck** — `bun run typecheck` across all workspaces (the `pretypecheck` hook in each frontend compiles Paraglide messages first, so a fresh clone typechecks without running `vite dev`)
 - **API tests (unit + integration)** — `bun run test`; integration tests spin up Postgres/PostGIS via testcontainers, no GitHub Actions `services:` needed
+- **Build (admin/customer/seller)** — `vite build` per frontend, then fails on an uncommitted `routeTree.gen.ts`
+- **Docker image (api)** — builds `apps/api/Dockerfile`, runs `db:migrate` from the image and boots it against the compose Postgres/MinIO until `/ready` is 200
 
-Concurrent runs on the same PR cancel each other; runs on `main` all complete. After the first green run, enable GitHub branch protection on `main` and mark the three checks as required to gate merges.
+Concurrent runs on the same PR cancel each other; runs on `main` all complete. After the first green run, enable GitHub branch protection on `main` and mark the checks as required to gate merges.
 
 ## Workspace Structure
 
@@ -221,7 +223,7 @@ Rules that bite:
 - **One major per PR.** Majors fall outside the caret ranges and stay put on their own; port them deliberately, never folded into a sweep.
 - **`@types/node` stays on `^22`.** Transitives (testcontainers, `@types/pg`, bun-types) resolve their own nested copies higher; only the catalog entry is ours.
 
-The `ci.yml` jobs (`lint`, `typecheck`, `api-test`, and `web-build` — a `vite build` per frontend that also fails on an uncommitted `routeTree.gen.ts`) gate the merge, but run the full set locally before opening the PR:
+The `ci.yml` jobs (`lint`, `typecheck`, `api-test`, `web-build` — a `vite build` per frontend that also fails on an uncommitted `routeTree.gen.ts` — and `docker-build`) gate the merge, but run the full set locally before opening the PR:
 
 ```bash
 bun run lint
