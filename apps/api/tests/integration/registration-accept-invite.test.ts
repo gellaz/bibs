@@ -1,5 +1,6 @@
 import {
 	afterAll,
+	afterEach,
 	beforeAll,
 	beforeEach,
 	describe,
@@ -26,7 +27,7 @@ mock.module("@/lib/email", () => ({
 	sendEmail: async () => {},
 }));
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { user as userTable } from "@/db/schemas/auth";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { employeeInvitation } from "@/db/schemas/employee-invitation";
@@ -201,5 +202,80 @@ describe("acceptInvite storeEmployeeStores propagation", () => {
 			profile.id,
 		);
 		expect(accessible).toEqual([sA.id]);
+	});
+});
+
+describe("acceptInvite rollback", () => {
+	// signUpEmail commits the user + account rows before the employee
+	// transaction runs. If that transaction fails, provisionOrRollback must
+	// delete the user: otherwise the 409 «già registrato» guard would block the
+	// invited email from ever using the invite again. The failure is a real
+	// database error, raised by a test-only trigger on the LAST insert of the
+	// transaction, so the role update and the store_employee row are rolled
+	// back too.
+	const failAssignments = sql.raw(`
+		CREATE FUNCTION test_fail_assignment() RETURNS trigger AS $$
+		BEGIN RAISE EXCEPTION 'test: assignment insert failed'; END
+		$$ LANGUAGE plpgsql;
+		CREATE TRIGGER test_fail_assignment BEFORE INSERT ON store_employee_stores
+			FOR EACH ROW EXECUTE FUNCTION test_fail_assignment();
+	`);
+	const restoreAssignments = sql.raw(`
+		DROP TRIGGER IF EXISTS test_fail_assignment ON store_employee_stores;
+		DROP FUNCTION IF EXISTS test_fail_assignment();
+	`);
+
+	afterEach(async () => {
+		await getTestDb().execute(restoreAssignments);
+	});
+
+	it("deletes the signed-up user and leaves the invite usable", async () => {
+		const { acceptInvite } = await import("@/modules/registration/services");
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+		const inv = await inviteEmployee(profile.id, "employee@test.com", [
+			store.id,
+		]);
+
+		await db.execute(failAssignments);
+		await expect(
+			acceptInvite({ token: inv.invitationToken, password: "password123" }),
+		).rejects.toThrow();
+
+		const users = await db
+			.select({ id: userTable.id })
+			.from(userTable)
+			.where(eq(userTable.email, "employee@test.com"));
+		expect(users).toEqual([]);
+		expect(
+			await db
+				.select({ id: storeEmployee.id })
+				.from(storeEmployee)
+				.where(eq(storeEmployee.sellerProfileId, profile.id)),
+		).toEqual([]);
+		const [pending] = await db
+			.select({ status: employeeInvitation.status })
+			.from(employeeInvitation)
+			.where(eq(employeeInvitation.id, inv.id));
+		expect(pending.status).toBe("pending");
+
+		// The same invite now goes through: nothing left blocks the email.
+		await db.execute(restoreAssignments);
+		await acceptInvite({
+			token: inv.invitationToken,
+			password: "password123",
+		});
+
+		const [employeeUser] = await db
+			.select()
+			.from(userTable)
+			.where(eq(userTable.email, "employee@test.com"));
+		expect(employeeUser.role).toBe("employee");
+		const [accepted] = await db
+			.select({ status: employeeInvitation.status })
+			.from(employeeInvitation)
+			.where(eq(employeeInvitation.id, inv.id));
+		expect(accepted.status).toBe("accepted");
 	});
 });
