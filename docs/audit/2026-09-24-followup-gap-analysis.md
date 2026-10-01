@@ -44,9 +44,7 @@ accetta solo `reserve_pickup` (`direct` disabilitato in #208).
 
 ## P2 — Rete di sicurezza CI/test
 
-| ID | Item | Evidenza | Effort |
-|---|---|---|---|
-| **P2.4** | ~~Test HTTP dei guard owner-only su employees/settings/billing~~ (fatto in #192, più stores e checkout); restano l'e2e del rollback di `acceptInvite` e il test d'integrazione del resend pending-email | `apps/api/tests/integration/registration-accept-invite.test.ts` | S |
+Nessun P2 aperto: P2.1 (#196), P2.3 (#215), P2.5 (#216), P2.2 (#217) e P2.4 (#218) chiusi, vedi «Chiusi».
 
 ---
 
@@ -169,6 +167,7 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 | **P2.3** | Job CI `docker-build`: build di `apps/api/Dockerfile` (buildx, cache gha), `db:migrate` e avvio dell'immagine contro Postgres e MinIO della compose, `/ready` 200. Il Dockerfile non buildava (`packages/emails` assente) e l'immagine non partiva: `node_modules` di symlink rotti nel runtime, `sharp` incluso nel bundle, `./logs` non scrivibile | #215 |
 | **P2.5** | Era spento solo il linter (formatter e organizeImports già attivi). I 20 componenti scritti per bibs passano da `packages/ui/src/components/` a `src/custom/` (`@bibs/ui/custom/*`); `src/components/` resta ai generati dai registry. Linter spento solo su `src/components/**`, `hooks/use-mobile.ts` e `lib/utils.ts`; nei nostri file l'unica diagnostica (`TabNav`, dipendenze dell'effetto di rimisura) è un'eccezione motivata | #216 |
 | **P2.2** | Seller già coperto dal #198. I tre frontend passano a Vitest (`vitest.base.ts`: alias e React Compiler, `node` di default, jsdom per file); api ed emails restano su `bun test`. Admin nel `test` di root con i primi test: impatto e schemi delle caratteristiche, schema festività, `OnboardingStatusBadge` con jsdom e Testing Library | #217 |
+| **P2.4** | Guard owner-only già coperti dal #192. Rollback di `acceptInvite` su DB vero (trigger di test sull'ultimo insert): utente cancellato, invito ancora `pending` e riutilizzabile. Resend pending-email con better-auth vero: entro 7 giorni nuovo link e 409 senza secondo utente, oltre i 7 giorni utente sostituito, verificato = 409 senza invii | #218 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
@@ -186,7 +185,7 @@ obsoleto (componente rimosso) · doc drift su conteggi endpoint e `/health`.
 ## Sequenza consigliata
 
 1. **P0** in 3 PR (A authz+stato con test di guard, B ordini+schema, C form) — prima di toccare il checkout.
-2. ~~**P2.1** (pin TanStack + job `vite build`)~~ — fatto in #196.
+2. ~~**P2** (rete CI/test)~~ — P2.1 in #196, P2.3 in #215, P2.5 in #216, P2.2 in #217, P2.4 in #218.
 3. ~~**P1.1 checkout** (+ P1.5 snapshot indirizzo, P6.2 apportionment punti), poi **P1.2 ordini seller**~~ — fatto in #199/#200/#201/#202.
 4. ~~**P1.4 geocoding negozi seller**~~ — fatto in #204. ~~**P1.3 home seller**~~ — fatto in #207.
    ~~**P1.6 account hub customer**~~ — fatto in #205. ~~**P1.7 billing seller**~~ — fatto in #206.
