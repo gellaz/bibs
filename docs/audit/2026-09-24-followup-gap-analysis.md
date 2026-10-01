@@ -47,7 +47,6 @@ accetta solo `reserve_pickup` (`direct` disabilitato in #208).
 | ID | Item | Evidenza | Effort |
 |---|---|---|---|
 | **P2.2** | Seller senza test né script `test`; admin con vitest/jsdom/testing-library installati ma **zero test** (infra morta) | `apps/admin/package.json:15,55,57`; nessun `*.test.*` in `apps/seller` | M (decidere: rimuovere infra admin o gate FE vero) |
-| **P2.3** | Nessun job CI `docker build` di `apps/api/Dockerfile` | `ci.yml` | S |
 | **P2.4** | ~~Test HTTP dei guard owner-only su employees/settings/billing~~ (fatto in #192, più stores e checkout); restano l'e2e del rollback di `acceptInvite` e il test d'integrazione del resend pending-email | `apps/api/tests/integration/registration-accept-invite.test.ts` | S |
 | **P2.5** | Biome spento su tutto `packages/ui/**`, componenti bibs-authored inclusi | `biome.json:59-63` | S–M |
 
@@ -116,6 +115,7 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 - **P6.4 Geocoding hardening** (#175): due chiamate Photon in sequenza (worst case ~10 s), fallimento della seconda fa fallire tutto, promozione a un livello, scrittura cache dentro il try, niente cron di retention su `geocoding_lookups`, niente versionamento del jsonb, limiter per IP — `locations/services/geocode.ts:57-81,160-163`, `locations/routes/locations.ts:183-186`.
 - **P6.5 Storage/audit**: GC degli oggetti S3 orfani (avatar, negozi cancellati); UI e purge di `product_audit_log`.
 - **P6.6 Deploy**: nessuna pipeline né gestione secrets (solo `ci.yml`).
+- **P6.7 Immagine API** (#215): ~1,45 GB. Il runtime copia lo store bun del grafo `@bibs/api` + `@bibs/emails`, e `react-email` porta `next` con i binari swc (~380 MB), utili solo al server di preview; a runtime servono solo `sharp` (esterno al bundle) e `drizzle-kit`. Piste: migrazioni via migrator di `drizzle-orm` in uno script bundlato (via `drizzle-kit` dal runtime), store ridotto alle dipendenze di `sharp`. Il logger scrive anche su `./logs/app.log` dentro il container, oltre a stdout — `api/lib/logger.ts:9-12`, `apps/api/Dockerfile`.
 
 ### Backlog di prodotto
 - P (`direct`): il customer inquadra il QR del negozio e paga dall'app; punti solo a pagamento
@@ -168,6 +168,7 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 | **P3.4 (paginazione, verify-email)** | `DataPagination` riporta dentro una pagina fuori intervallo (`clampPage`) e lo segnala con `replace: true`, così Indietro non rimbalza; team mostra la paginazione anche con `page` oltre l'ultima. verify-email arma il cooldown solo con `sentAt` (passato dalla registrazione, mai dal login); gli errori di `sendVerificationEmail` (che better-auth non lancia) arrivano in un toast italiano anche nei banner. `use-cooldown` si sveglia sul cambio di secondo invece che con un intervallo fisso | #212 |
 | **P3.4 (toggle-group)** | `toggle-group.tsx`: i varianti `data-vertical:`/`group-data-horizontal/…` diventano `data-[orientation=…]`, che combacia con il `data-orientation` del Root. Nei gruppi senza spacing gli angoli esterni si arrotondano e tra le voci resta un solo bordo (prima: tutto squadrato e bordo doppio da 2px). Cambia l'aspetto di Lista/Mappa su `/stores`, del `ThemeToggle` e del toggle delle caratteristiche prodotto nel seller | #213 |
 | **P5 (rail filtri)** | Rail filtri di `/stores` e `/products` estratti in `customer/features/search/filter-rail/`: primitive (`FilterSection`, `CategoryRow`, `ToggleRow` con icona da prop, `RadiusPill`…), `CategoryTree` con conteggio via accessor, `DistanceSection` con un solo `RADIUS_PRESETS`, logica di selezione pura e testata, `FacetsError` spostato lì. Restano per pagina disponibilità, prezzo, tipi dei filtri e chiavi Paraglide. Refactor puro: DOM dei rail identico prima/dopo su 25 stati | #214 |
+| **P2.3** | Job CI `docker-build`: build di `apps/api/Dockerfile` (buildx, cache gha), `db:migrate` e avvio dell'immagine contro Postgres e MinIO della compose, `/ready` 200. Il Dockerfile non buildava (`packages/emails` assente) e l'immagine non partiva: `node_modules` di symlink rotti nel runtime, `sharp` incluso nel bundle, `./logs` non scrivibile | #215 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 
