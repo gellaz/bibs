@@ -49,6 +49,7 @@ export function TabNav({
 	const tabsRef = useRef<HTMLDivElement>(null);
 	const [indicator, setIndicator] = useState({ left: 0, width: 0 });
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: activeTab and tabs are re-measure triggers — they move the selected tab and resize the badges in the DOM read by measure().
 	useEffect(() => {
 		const measure = () => {
 			const container = tabsRef.current;
