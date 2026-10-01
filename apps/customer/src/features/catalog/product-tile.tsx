@@ -1,4 +1,4 @@
-import { DiscountedPrice } from "@bibs/ui/components/discounted-price";
+import { DiscountedPrice } from "@bibs/ui/custom/discounted-price";
 import { Link } from "@tanstack/react-router";
 import { MapPin, Store as StoreIcon } from "lucide-react";
 import type { ReactNode } from "react";

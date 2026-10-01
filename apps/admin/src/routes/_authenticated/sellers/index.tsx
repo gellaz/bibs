@@ -1,16 +1,16 @@
 import { Button } from "@bibs/ui/components/button";
-import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable, SortableHeader } from "@bibs/ui/components/data-table";
-import { EmptyState } from "@bibs/ui/components/empty-state";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupInput,
 } from "@bibs/ui/components/input-group";
-import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
-import { TabNav, type TabNavItem } from "@bibs/ui/components/tab-nav";
-import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
+import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDateIt } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";

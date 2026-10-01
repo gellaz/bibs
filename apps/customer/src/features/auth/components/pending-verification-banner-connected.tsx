@@ -1,5 +1,5 @@
-import { PendingVerificationBanner } from "@bibs/ui/components/pending-verification-banner";
 import { toast } from "@bibs/ui/components/sonner";
+import { PendingVerificationBanner } from "@bibs/ui/custom/pending-verification-banner";
 import { useCooldown } from "@bibs/ui/hooks/use-cooldown";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";

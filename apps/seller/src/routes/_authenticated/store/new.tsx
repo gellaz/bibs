@@ -1,7 +1,7 @@
-import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";

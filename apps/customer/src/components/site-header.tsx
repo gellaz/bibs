@@ -1,4 +1,4 @@
-import { BrandMark } from "@bibs/ui/components/brand-mark";
+import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { Link } from "@tanstack/react-router";
 import { ReceiptText } from "lucide-react";
 import { CartBadge } from "@/features/cart/cart-badge";

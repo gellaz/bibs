@@ -1,14 +1,10 @@
 import { Badge } from "@bibs/ui/components/badge";
 import {
-	formatPriceEur,
-	Price,
-	scorporoDisplay,
-} from "@bibs/ui/components/price";
-import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@bibs/ui/components/tooltip";
+import { formatPriceEur, Price, scorporoDisplay } from "@bibs/ui/custom/price";
 
 interface AppliedDiscount {
 	percent: number;

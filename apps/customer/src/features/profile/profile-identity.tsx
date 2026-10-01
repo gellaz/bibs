@@ -1,7 +1,7 @@
-import { AvatarUploadDialog } from "@bibs/ui/components/avatar-upload-dialog";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { toast } from "@bibs/ui/components/sonner";
-import { UserAvatar } from "@bibs/ui/components/user-avatar";
+import { AvatarUploadDialog } from "@bibs/ui/custom/avatar-upload-dialog";
+import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { Link } from "@tanstack/react-router";
 import { Camera } from "lucide-react";

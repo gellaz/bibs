@@ -1,7 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
-import { DiscountedPrice } from "@bibs/ui/components/discounted-price";
-import { formatPriceEur } from "@bibs/ui/components/price";
 import { Skeleton } from "@bibs/ui/components/skeleton";
+import { DiscountedPrice } from "@bibs/ui/custom/discounted-price";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShoppingBag, TriangleAlert } from "lucide-react";
 import { NoticePage } from "@/components/notice";

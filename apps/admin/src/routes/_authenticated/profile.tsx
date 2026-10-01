@@ -1,8 +1,8 @@
+import { toast } from "@bibs/ui/components/sonner";
 import {
 	type PersonalInfoCardLabels,
 	PersonalInfoCard as SharedPersonalInfoCard,
-} from "@bibs/ui/components/personal-info-card";
-import { toast } from "@bibs/ui/components/sonner";
+} from "@bibs/ui/custom/personal-info-card";
 import { createFileRoute } from "@tanstack/react-router";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";

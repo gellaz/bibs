@@ -1,4 +1,3 @@
-import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -9,6 +8,7 @@ import {
 } from "@bibs/ui/components/card";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
+import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircleIcon } from "lucide-react";
 import { useState } from "react";

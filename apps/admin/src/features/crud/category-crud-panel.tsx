@@ -9,8 +9,6 @@ import {
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
 import { Button } from "@bibs/ui/components/button";
-import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { DataTable } from "@bibs/ui/components/data-table";
 import {
 	Dialog,
 	DialogContent,
@@ -19,11 +17,13 @@ import {
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
 import { Input } from "@bibs/ui/components/input";
-import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { toast } from "@bibs/ui/components/sonner";
-import type { SortOrder } from "@bibs/ui/components/sortable-table-head";
-import { SortableHeadButton } from "@bibs/ui/components/sortable-table-head";
-import { TableColumnsToggle } from "@bibs/ui/components/table-columns-toggle";
+import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { DataTable } from "@bibs/ui/custom/data-table";
+import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import type { SortOrder } from "@bibs/ui/custom/sortable-table-head";
+import { SortableHeadButton } from "@bibs/ui/custom/sortable-table-head";
+import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { unwrap as unwrapResponse } from "@bibs/ui/lib/api-client";
 import { formatDateIt } from "@bibs/ui/lib/date";

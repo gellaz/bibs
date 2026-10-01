@@ -13,7 +13,7 @@ import {
 } from "~/components/dialog";
 import { Slider } from "~/components/slider";
 import { toast } from "~/components/sonner";
-import { UserAvatar } from "~/components/user-avatar";
+import { UserAvatar } from "~/custom/user-avatar";
 import { cropImageToBlob } from "~/lib/crop-image";
 
 const MAX_BYTES = 5 * 1024 * 1024;

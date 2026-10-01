@@ -1,4 +1,3 @@
-import { BrandMark } from "@bibs/ui/components/brand-mark";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -9,7 +8,8 @@ import {
 } from "@bibs/ui/components/card";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import { PasswordInput } from "@bibs/ui/components/password-input";
+import { BrandMark } from "@bibs/ui/custom/brand-mark";
+import { PasswordInput } from "@bibs/ui/custom/password-input";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";

@@ -1,7 +1,5 @@
 import { Badge } from "@bibs/ui/components/badge";
-import { DataPagination } from "@bibs/ui/components/data-pagination";
 import { Input } from "@bibs/ui/components/input";
-import { PageSizeSelector } from "@bibs/ui/components/page-size-selector";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
 	Table,
@@ -11,6 +9,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";

@@ -1,10 +1,6 @@
 "use client";
 
 import * as React from "react";
-import {
-	AvatarUploadDialog,
-	type AvatarUploadDialogLabels,
-} from "~/components/avatar-upload-dialog";
 import { Button } from "~/components/button";
 import {
 	Card,
@@ -15,7 +11,11 @@ import {
 } from "~/components/card";
 import { Field, FieldError, FieldLabel } from "~/components/field";
 import { Input } from "~/components/input";
-import { UserAvatar } from "~/components/user-avatar";
+import {
+	AvatarUploadDialog,
+	type AvatarUploadDialogLabels,
+} from "~/custom/avatar-upload-dialog";
+import { UserAvatar } from "~/custom/user-avatar";
 import { cn } from "~/lib/utils";
 
 export interface PersonalInfoCardLabels {

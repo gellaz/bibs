@@ -1,4 +1,3 @@
-import { BrandMark } from "@bibs/ui/components/brand-mark";
 import {
 	Card,
 	CardContent,
@@ -6,6 +5,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
+import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";

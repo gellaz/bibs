@@ -2,7 +2,6 @@ import { CreateProductBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { formatPriceEur, scorporoDisplay } from "@bibs/ui/components/price";
 import {
 	Select,
 	SelectContent,
@@ -12,6 +11,7 @@ import {
 } from "@bibs/ui/components/select";
 import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
+import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import { type Static, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";

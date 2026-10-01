@@ -1,6 +1,4 @@
 import { Button } from "@bibs/ui/components/button";
-import { DataPagination } from "@bibs/ui/components/data-pagination";
-import { formatPriceEur } from "@bibs/ui/components/price";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -11,6 +9,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { Link } from "@tanstack/react-router";
 import { XIcon } from "lucide-react";
 import { useEffect, useState } from "react";

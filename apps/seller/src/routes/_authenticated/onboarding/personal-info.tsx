@@ -2,7 +2,6 @@ import { PersonalInfoBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { MunicipalityCombobox } from "@bibs/ui/components/municipality-combobox";
 import {
 	Select,
 	SelectContent,
@@ -10,6 +9,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@bibs/ui/components/select";
+import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";

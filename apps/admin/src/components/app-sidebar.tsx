@@ -1,4 +1,3 @@
-import { BrandMark } from "@bibs/ui/components/brand-mark";
 import {
 	Sidebar,
 	SidebarContent,
@@ -12,6 +11,7 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
+import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
 	CreditCardIcon,
