@@ -16,6 +16,7 @@
         "lefthook": "^2.1.14",
         "typescript": "^6.0.3",
         "vite": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "apps/admin": {
@@ -131,6 +132,7 @@
         "@vitejs/plugin-react": "catalog:",
         "babel-plugin-react-compiler": "catalog:",
         "vite": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "apps/seller": {
@@ -179,6 +181,7 @@
         "@vitejs/plugin-react": "catalog:",
         "babel-plugin-react-compiler": "catalog:",
         "vite": "catalog:",
+        "vitest": "catalog:",
       },
     },
     "packages/emails": {

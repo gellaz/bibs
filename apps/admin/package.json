@@ -12,6 +12,7 @@
 		"paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url baseLocale",
 		"pretypecheck": "bun run paraglide:compile",
 		"typecheck": "tsc --noEmit",
+		"pretest": "bun run paraglide:compile",
 		"test": "vitest run",
 		"format": "biome format",
 		"lint": "biome lint",

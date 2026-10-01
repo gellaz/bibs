@@ -17,7 +17,7 @@
 		"lint": "biome lint",
 		"check": "biome check",
 		"pretest": "bun run paraglide:compile",
-		"test": "bun test"
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"@bibs/api": "workspace:*",
@@ -61,6 +61,7 @@
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "catalog:",
 		"babel-plugin-react-compiler": "catalog:",
-		"vite": "catalog:"
+		"vite": "catalog:",
+		"vitest": "catalog:"
 	}
 }

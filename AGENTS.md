@@ -37,7 +37,7 @@ To refresh strategic or visual context: `$impeccable teach` (PRODUCT) or `$impec
 - `bun run dev:customer` — start customer app
 - `bun run dev:seller` — start seller app
 - `bun run dev:admin` — start admin app
-- `bun run test` — run API tests (unit + integration)
+- `bun run test` — run every test suite: `apps/api` and `packages/emails` on `bun test` (Bun runtime, `mock.module`, testcontainers), the three frontends on Vitest (shared [`vitest.base.ts`](vitest.base.ts): Vite aliases + React Compiler, `node` by default, `// @vitest-environment jsdom` per file for component tests with Testing Library)
 - `bun run typecheck` — typecheck all workspaces
 - `bun run lint` — lint all workspaces (Biome)
 - `bun run lint:fix` — lint and auto-fix (Biome)
@@ -72,7 +72,7 @@ GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on ev
 
 - **Lint (Biome)** — `bun run lint`
 - **Typecheck** — `bun run typecheck` across all workspaces (the `pretypecheck` hook in each frontend compiles Paraglide messages first, so a fresh clone typechecks without running `vite dev`)
-- **API tests (unit + integration)** — `bun run test`; integration tests spin up Postgres/PostGIS via testcontainers, no GitHub Actions `services:` needed
+- **API tests (unit + integration)** — `bun run test` (also runs the emails and frontend suites); integration tests spin up Postgres/PostGIS via testcontainers, no GitHub Actions `services:` needed
 - **Build (admin/customer/seller)** — `vite build` per frontend, then fails on an uncommitted `routeTree.gen.ts`
 - **Docker image (api)** — builds `apps/api/Dockerfile`, runs `db:migrate` from the image and boots it against the compose Postgres/MinIO until `/ready` is 200
 
@@ -339,7 +339,7 @@ Before claiming a task is done, run (in the affected scope):
 ```bash
 bun run typecheck   # always — catalog propagates types across 3 frontends via Eden Treaty
 bun run lint        # Biome
-bun run test        # when touching apps/api or packages/emails
+bun run test        # when touching apps/api, packages/emails or a frontend
 ```
 
 UI changes: start the relevant dev server and exercise the feature in a browser —

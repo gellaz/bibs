@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { openStatusLabel } from "./open-status";
 
 describe("openStatusLabel", () => {
@@ -18,7 +18,7 @@ describe("openStatusLabel", () => {
 			status: "closed",
 			opensAt: { date: "2999-01-01", time: "08:30" },
 		});
-		expect(label).toStartWith("Chiuso · apre ");
+		expect(label).toMatch(/^Chiuso · apre /);
 		expect(label).toContain("08:30");
 	});
 

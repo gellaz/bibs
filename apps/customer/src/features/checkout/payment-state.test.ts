@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { donePageState, paymentState } from "./payment-state";
 
 const o = (type: string, status: string) => ({ type, status });
