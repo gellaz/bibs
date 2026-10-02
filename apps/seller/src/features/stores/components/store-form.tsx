@@ -7,6 +7,7 @@ import { Separator } from "@bibs/ui/components/separator";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
+import { cn } from "@bibs/ui/lib/utils";
 import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
@@ -180,6 +181,7 @@ export function StoreForm({
 	const openingHoursDirty =
 		serializeOpeningHours(openingHours) !==
 		serializeOpeningHours(initialOpeningHours);
+	const hasChanges = isDirty || openingHoursDirty;
 	const hasDeclaredHours = openingHours.some((d) => d.slots.length > 0);
 
 	const hoursErrors = useMemo(
@@ -506,7 +508,24 @@ export function StoreForm({
 			{!readOnly && (
 				<>
 					<Separator />
-					<div className="flex justify-end gap-3">
+					{/* Il form è lungo (orari, telefoni, indirizzo): con modifiche in
+					    sospeso il salvataggio resta in vista in fondo allo schermo.
+					    Senza modifiche torna al suo posto, a fine form. */}
+					<div
+						className={cn(
+							"flex items-center justify-end gap-3",
+							hasChanges &&
+								"sticky bottom-0 z-10 -mx-4 border-border border-t bg-background px-4 py-3",
+						)}
+					>
+						{hasChanges && (
+							<p
+								className="mr-auto text-muted-foreground text-sm"
+								role="status"
+							>
+								Modifiche non salvate
+							</p>
+						)}
 						{onCancel && (
 							<Button type="button" variant="outline" onClick={onCancel}>
 								Annulla
@@ -514,9 +533,7 @@ export function StoreForm({
 						)}
 						<Button
 							type="submit"
-							disabled={
-								isPending || (!isDirty && !openingHoursDirty) || hoursInvalid
-							}
+							disabled={isPending || !hasChanges || hoursInvalid}
 						>
 							{isPending ? pendingLabel : submitLabel}
 						</Button>

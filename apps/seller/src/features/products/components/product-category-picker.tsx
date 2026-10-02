@@ -7,6 +7,7 @@ import {
 	SelectValue,
 } from "@bibs/ui/components/select";
 import { useQuery } from "@tanstack/react-query";
+import { useId } from "react";
 import { api, unwrap } from "@/lib/api";
 
 // Radix rifiuta value="" su un SelectItem, quindi la voce «nessuna categoria»
@@ -15,7 +16,7 @@ import { api, unwrap } from "@/lib/api";
 // dal cambio di macro (che sovrascriverebbe anche l'aliquota IVA).
 const NO_CATEGORY = "__none__";
 
-interface ProductCategoriesPickerProps {
+interface ProductCategoryPickerProps {
 	macroCategoryId: string | null;
 	categoryId: string | null | undefined;
 	onMacroChange: (
@@ -39,16 +40,18 @@ export function useProductMacroCategories() {
 	});
 }
 
-export function ProductCategoriesPicker({
+export function ProductCategoryPicker({
 	macroCategoryId,
 	categoryId,
 	onMacroChange,
 	onCategoryChange,
 	required = false,
-}: ProductCategoriesPickerProps) {
+}: ProductCategoryPickerProps) {
+	const macroSelectId = useId();
+	const categorySelectId = useId();
 	const { data: macros = [] } = useProductMacroCategories();
 
-	const { data: categories = [] } = useQuery({
+	const { data: categories = [], isSuccess: categoriesLoaded } = useQuery({
 		queryKey: ["product-categories", macroCategoryId],
 		queryFn: async () => {
 			const response = await api()["product-categories"].get({
@@ -66,7 +69,7 @@ export function ProductCategoriesPicker({
 	return (
 		<div className="@container grid gap-4 @md:grid-cols-2">
 			<div className="space-y-2">
-				<Label>Macrocategoria{required && " *"}</Label>
+				<Label htmlFor={macroSelectId}>Macrocategoria{required && " *"}</Label>
 				<Select
 					value={macroCategoryId ?? ""}
 					onValueChange={(v) =>
@@ -76,7 +79,7 @@ export function ProductCategoriesPicker({
 						)
 					}
 				>
-					<SelectTrigger className="w-full">
+					<SelectTrigger id={macroSelectId} className="w-full">
 						<SelectValue placeholder="Seleziona una macrocategoria" />
 					</SelectTrigger>
 					<SelectContent>
@@ -91,7 +94,7 @@ export function ProductCategoriesPicker({
 
 			{macroCategoryId && (
 				<div className="space-y-2">
-					<Label>Categoria{required && " *"}</Label>
+					<Label htmlFor={categorySelectId}>Categoria{required && " *"}</Label>
 					<Select
 						value={
 							categoryId === undefined
@@ -104,7 +107,7 @@ export function ProductCategoriesPicker({
 							onCategoryChange(!v || v === NO_CATEGORY ? null : v)
 						}
 					>
-						<SelectTrigger className="w-full">
+						<SelectTrigger id={categorySelectId} className="w-full">
 							<SelectValue placeholder="Seleziona una categoria" />
 						</SelectTrigger>
 						<SelectContent>
@@ -116,6 +119,11 @@ export function ProductCategoriesPicker({
 							))}
 						</SelectContent>
 					</Select>
+					{categoriesLoaded && categories.length === 0 && (
+						<p className="text-muted-foreground text-sm">
+							Nessuna categoria disponibile per questa macrocategoria.
+						</p>
+					)}
 				</div>
 			)}
 		</div>

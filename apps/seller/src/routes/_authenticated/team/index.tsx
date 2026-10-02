@@ -35,6 +35,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { DataPagination } from "@bibs/ui/custom/data-pagination";
 import { DataTable } from "@bibs/ui/custom/data-table";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { formatDateIt } from "@bibs/ui/lib/date";
@@ -848,26 +849,52 @@ function TeamPage() {
 				}
 			/>
 
-			{/* Anche con `page` oltre l'ultima: DataPagination la riporta dentro. */}
-			{(totalPages > 1 || page > 1) && (
-				<div className="flex shrink-0 items-center justify-between">
-					<DataPagination
-						page={page}
-						totalPages={totalPages}
-						onPageChange={(p, options) =>
-							void navigate({
-								search: { page: p, limit },
-								replace: options?.replace,
-							})
-						}
-					/>
-					<div className="text-muted-foreground text-sm">
-						{data?.pagination.total === 1
-							? m.team_pagination_total_one({ total: 1 })
-							: m.team_pagination_total({ total: data?.pagination.total ?? 0 })}
-					</div>
-				</div>
-			)}
+			{/* Stesso piede di /products. Range e totale contano solo i
+			    dipendenti: titolare e inviti stanno fuori dalla paginazione.
+			    Anche con `page` oltre l'ultima: DataPagination la riporta dentro. */}
+			{data?.pagination &&
+				(data.pagination.total > 0 || page > 1) &&
+				(() => {
+					const total = data.pagination.total;
+					const rangeStart = Math.min((page - 1) * limit + 1, total);
+					const rangeEnd = Math.min(page * limit, total);
+					return (
+						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
+							<p className="text-muted-foreground text-sm tabular-nums">
+								{total === 1
+									? m.team_pagination_range_one({
+											start: rangeStart,
+											end: rangeEnd,
+											total,
+										})
+									: m.team_pagination_range({
+											start: rangeStart,
+											end: rangeEnd,
+											total,
+										})}
+							</p>
+							<div className="flex items-center gap-4">
+								<PageSizeSelector
+									label={m.common_rows_per_page()}
+									pageSize={limit}
+									onPageSizeChange={(size) =>
+										void navigate({ search: { page: 1, limit: size } })
+									}
+								/>
+								<DataPagination
+									page={page}
+									totalPages={totalPages}
+									onPageChange={(p, options) =>
+										void navigate({
+											search: { page: p, limit },
+											replace: options?.replace,
+										})
+									}
+								/>
+							</div>
+						</div>
+					);
+				})()}
 		</div>
 	);
 }

@@ -23,7 +23,8 @@ const BADGE_COLORS: Record<string, string> = {
 	emerald:
 		"bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-300/50 dark:bg-emerald-500/15 dark:text-emerald-400 dark:ring-emerald-500/30",
 	red: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-300/50 dark:bg-red-500/15 dark:text-red-400 dark:ring-red-500/30",
-	blue: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-300/50 dark:bg-blue-500/15 dark:text-blue-400 dark:ring-blue-500/30",
+	cobalt:
+		"bg-cobalt-soft text-cobalt-deep ring-1 ring-inset ring-cobalt/30 dark:text-cobalt dark:ring-cobalt/40",
 };
 
 export interface TabNavItem {
@@ -37,13 +38,35 @@ interface TabNavProps {
 	tabs: TabNavItem[];
 	activeTab: string;
 	onTabChange: (value: string) => void;
+	/** Nome accessibile del tablist (es. «Stato dei prodotti»). */
+	label?: string;
+	/** Id dell'elemento che le schede filtrano, per `aria-controls`. */
+	panelId?: string;
 	children?: React.ReactNode;
+}
+
+/** Indice della scheda raggiunta da un tasto, o null se il tasto non naviga. */
+function targetIndex(key: string, current: number, count: number) {
+	switch (key) {
+		case "ArrowRight":
+			return (current + 1) % count;
+		case "ArrowLeft":
+			return (current - 1 + count) % count;
+		case "Home":
+			return 0;
+		case "End":
+			return count - 1;
+		default:
+			return null;
+	}
 }
 
 export function TabNav({
 	tabs,
 	activeTab,
 	onTabChange,
+	label,
+	panelId,
 	children,
 }: TabNavProps) {
 	const tabsRef = useRef<HTMLDivElement>(null);
@@ -51,9 +74,9 @@ export function TabNav({
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: activeTab and tabs are re-measure triggers — they move the selected tab and resize the badges in the DOM read by measure().
 	useEffect(() => {
+		const container = tabsRef.current;
+		if (!container) return;
 		const measure = () => {
-			const container = tabsRef.current;
-			if (!container) return;
 			const activeEl = container.querySelector<HTMLButtonElement>(
 				'[aria-selected="true"]',
 			);
@@ -64,14 +87,41 @@ export function TabNav({
 			});
 		};
 		measure();
-		window.addEventListener("resize", measure);
-		return () => window.removeEventListener("resize", measure);
+		// Il contenitore cambia misura col viewport, ma anche quando arriva il
+		// font: le etichette si allargano senza nessun resize della finestra.
+		const observer = new ResizeObserver(measure);
+		observer.observe(container);
+		let alive = true;
+		void document.fonts?.ready.then(() => {
+			if (alive) measure();
+		});
+		return () => {
+			alive = false;
+			observer.disconnect();
+		};
 	}, [activeTab, tabs]);
+
+	// Tablist APG con attivazione automatica: un solo Tab entra nel gruppo, le
+	// frecce (e Home/End) spostano focus e selezione insieme.
+	const onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+		const current = tabs.findIndex((t) => t.value === activeTab);
+		const next = targetIndex(event.key, Math.max(current, 0), tabs.length);
+		if (next === null) return;
+		event.preventDefault();
+		const buttons =
+			tabsRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+		buttons?.[next]?.focus();
+		onTabChange(tabs[next].value);
+	};
 
 	return (
 		<div className="relative border-b border-border" ref={tabsRef}>
 			<div className="flex items-center justify-between">
-				<div role="tablist" className="-mb-px flex items-center gap-0.5">
+				<div
+					role="tablist"
+					aria-label={label}
+					className="-mb-px flex items-center gap-0.5"
+				>
 					{tabs.map((tab) => {
 						const isActive = activeTab === tab.value;
 						const colorKey = tab.badgeColor ?? "default";
@@ -81,6 +131,9 @@ export function TabNav({
 								type="button"
 								role="tab"
 								aria-selected={isActive}
+								aria-controls={panelId}
+								tabIndex={isActive ? 0 : -1}
+								onKeyDown={onKeyDown}
 								onClick={() => onTabChange(tab.value)}
 								className={cn(
 									"group relative inline-flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm whitespace-nowrap transition-all duration-150 focus-visible:focus-ring",

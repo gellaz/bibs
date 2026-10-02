@@ -42,7 +42,7 @@ export function DiscountPercentInput({
 							className={cn(
 								"rounded-full px-3 py-1 font-mono text-sm tabular-nums transition-colors",
 								selected
-									? "bg-blue-500 text-blue-50 hover:bg-blue-500/90 dark:bg-blue-500 dark:text-blue-50"
+									? "bg-cobalt text-cream hover:bg-cobalt/90 dark:bg-cobalt-deep dark:hover:bg-cobalt-deep/90"
 									: "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground",
 								disabled && "cursor-not-allowed opacity-50",
 							)}
@@ -69,7 +69,7 @@ export function DiscountPercentInput({
 							}}
 							className={cn(
 								"w-20 pr-6 font-mono tabular-nums",
-								!isPreset && safeValue > 0 && "ring-2 ring-blue-500/50",
+								!isPreset && safeValue > 0 && "ring-2 ring-cobalt/50",
 							)}
 							placeholder="—"
 							aria-label={m.promotions_form_percent_preset_other()}

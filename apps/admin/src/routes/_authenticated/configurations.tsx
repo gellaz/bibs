@@ -79,7 +79,12 @@ function ConfigurationsPage() {
 				description="Gestisci le configurazioni della piattaforma"
 			/>
 
-			<TabNav tabs={tabs} activeTab={tab} onTabChange={handleTabChange}>
+			<TabNav
+				tabs={tabs}
+				activeTab={tab}
+				onTabChange={handleTabChange}
+				label="Configurazioni"
+			>
 				<CreateButton onClick={() => setCreateOpen(true)}>
 					{tab === "holidays"
 						? "Nuova Festività"

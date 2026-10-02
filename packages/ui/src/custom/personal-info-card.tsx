@@ -170,7 +170,6 @@ export function PersonalInfoCard({
 								<Input
 									id="firstName"
 									placeholder={labels.firstNamePlaceholder}
-									autoFocus
 									value={firstName}
 									onChange={(e) => setFirstName(e.target.value)}
 									onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}

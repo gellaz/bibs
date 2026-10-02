@@ -23,12 +23,15 @@ export interface BrandComboboxValue {
 }
 
 interface BrandComboboxProps {
+	/** Id del trigger, per collegarlo a una `<label htmlFor>`. */
+	id?: string;
 	value: BrandComboboxValue | null;
 	onChange: (next: BrandComboboxValue | null) => void;
 	placeholder?: string;
 }
 
 export function BrandCombobox({
+	id,
 	value,
 	onChange,
 	placeholder = "Cerca o crea un brand",
@@ -62,6 +65,7 @@ export function BrandCombobox({
 			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild>
 					<Button
+						id={id}
 						type="button"
 						variant="outline"
 						role="combobox"
