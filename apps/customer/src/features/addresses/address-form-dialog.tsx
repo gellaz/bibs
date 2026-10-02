@@ -30,7 +30,10 @@ import { AddressSearch } from "./address-search";
 import { useAddressMutations } from "./use-address-mutations";
 import type { AddressItem } from "./use-addresses";
 import { useAddresses } from "./use-addresses";
-import { useMunicipalities } from "./use-municipalities";
+import {
+	municipalityComboboxLabels,
+	useMunicipalities,
+} from "./use-municipalities";
 
 // Leaflet è DOM-only: si carica a parte e si monta solo dopo l'hydration.
 const LazyAddressMapPreview = lazy(() => import("./address-map-preview"));
@@ -242,6 +245,7 @@ export function AddressFormDialog({
 								municipalities={municipalities.data}
 								loading={municipalities.isPending}
 								error={municipalities.isError}
+								labels={municipalityComboboxLabels()}
 								aria-invalid={showErrors && !!errors.municipalityId}
 								aria-describedby={
 									showErrors && errors.municipalityId

@@ -52,13 +52,13 @@ function LoginPage() {
 					setEmailNotVerified(email);
 					return;
 				}
-				setError(signInError.message ?? "Credenziali non valide");
+				setError(signInError.message ?? m.auth_login_invalid_credentials());
 				return;
 			}
 
 			void navigate({ to: "/" });
 		} catch {
-			setError("Errore durante il login. Riprova.");
+			setError(m.auth_login_error());
 		} finally {
 			setLoading(false);
 		}
@@ -74,18 +74,18 @@ function LoginPage() {
 				<CardHeader className="text-center">
 					<BrandMark className="mx-auto mb-2 size-12" />
 					<CardTitle className="font-display text-xl">bibs</CardTitle>
-					<CardDescription>Accedi con le tue credenziali</CardDescription>
+					<CardDescription>{m.auth_login_description()}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{emailNotVerified && (
 						<div className="mb-4 rounded-md bg-saffron/15 dark:bg-saffron/10 px-3 py-2 text-sm text-saffron-deep dark:text-saffron">
-							<p>Devi verificare la tua email prima di accedere.</p>
+							<p>{m.auth_login_email_not_verified()}</p>
 							<Link
 								to="/verify-email"
 								search={{ email: emailNotVerified }}
 								className="font-medium underline"
 							>
-								Reinvia email di verifica
+								{m.auth_login_resend_verification()}
 							</Link>
 						</div>
 					)}
@@ -97,11 +97,11 @@ function LoginPage() {
 						)}
 
 						<div className="flex flex-col gap-2">
-							<Label htmlFor="email">Email</Label>
+							<Label htmlFor="email">{m.auth_email_label()}</Label>
 							<Input
 								id="email"
 								type="email"
-								placeholder="email@esempio.it"
+								placeholder={m.auth_email_placeholder()}
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
 								required
@@ -111,7 +111,7 @@ function LoginPage() {
 						</div>
 
 						<div className="flex flex-col gap-2">
-							<Label htmlFor="password">Password</Label>
+							<Label htmlFor="password">{m.auth_password_label()}</Label>
 							<PasswordInput
 								id="password"
 								value={password}
@@ -122,7 +122,7 @@ function LoginPage() {
 						</div>
 
 						<Button type="submit" disabled={loading} className="w-full">
-							{loading ? "Accesso in corso..." : "Accedi"}
+							{loading ? m.auth_login_submitting() : m.auth_login_submit()}
 						</Button>
 						<Link
 							to="/forgot-password"
@@ -133,9 +133,9 @@ function LoginPage() {
 					</form>
 
 					<p className="mt-4 text-center text-sm text-muted-foreground">
-						Non hai un account?{" "}
+						{m.auth_login_no_account()}{" "}
 						<Link to="/register" className="text-primary underline">
-							Registrati
+							{m.auth_login_register_link()}
 						</Link>
 					</p>
 				</CardContent>

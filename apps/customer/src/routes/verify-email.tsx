@@ -68,21 +68,24 @@ function VerifyEmailPage() {
 					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 						<Mail className="size-6" />
 					</div>
-					<CardTitle className="text-xl">Controlla la tua email</CardTitle>
+					<CardTitle className="text-xl">
+						{m.auth_verify_email_title()}
+					</CardTitle>
 					<CardDescription>
 						{email ? (
 							<>
-								Abbiamo inviato un link di verifica a{" "}
+								{/* Solo il prefisso: l'email resta in coda in grassetto. */}
+								{m.auth_verify_email_sent_to()}{" "}
 								<span className="font-medium text-foreground">{email}</span>
 							</>
 						) : (
-							"Ti abbiamo inviato un link di verifica via email."
+							m.auth_verify_email_sent_generic()
 						)}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="flex flex-col gap-4">
 					<p className="text-center text-sm text-muted-foreground">
-						Clicca sul link nell'email per verificare il tuo account.
+						{m.auth_verify_email_instructions()}
 					</p>
 
 					{email && (
@@ -93,19 +96,19 @@ function VerifyEmailPage() {
 							disabled={cooldownActive || resending}
 						>
 							{resending
-								? "Invio in corso..."
+								? m.auth_verify_email_sending()
 								: cooldownActive
 									? m.auth_verify_email_resend_cooldown({
 											seconds: String(secondsRemaining),
 										})
-									: "Reinvia email di verifica"}
+									: m.auth_verify_email_resend_cta()}
 						</Button>
 					)}
 
 					<div className="border-t pt-4">
 						<Link to="/login" className="block">
 							<Button variant="ghost" className="w-full">
-								Torna al login
+								{m.auth_back_to_login()}
 							</Button>
 						</Link>
 					</div>
