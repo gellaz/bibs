@@ -312,11 +312,17 @@ function PromotionsListPage() {
 					return (
 						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
 							<p className="text-muted-foreground text-sm tabular-nums">
-								{m.common_pagination_range({
-									start: rangeStart,
-									end: rangeEnd,
-									total,
-								})}
+								{total === 1
+									? m.promotions_pagination_range_one({
+											start: rangeStart,
+											end: rangeEnd,
+											total,
+										})
+									: m.promotions_pagination_range({
+											start: rangeStart,
+											end: rangeEnd,
+											total,
+										})}
 							</p>
 							<div className="flex items-center gap-4">
 								<PageSizeSelector
