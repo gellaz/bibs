@@ -112,7 +112,7 @@ export const storeMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria negozio eliminata",
 			);
 
-			return okMessage("Store macro category deleted");
+			return okMessage("Macro categoria negozio eliminata");
 		},
 		{
 			params: t.Object({

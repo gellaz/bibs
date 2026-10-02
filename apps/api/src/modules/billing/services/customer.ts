@@ -13,7 +13,7 @@ export async function getOrCreateStripeCustomer(
 	});
 
 	if (!profile) {
-		throw new ServiceError(404, "Seller profile not found");
+		throw new ServiceError(404, "Profilo venditore non trovato");
 	}
 
 	if (profile.stripeCustomerId) {

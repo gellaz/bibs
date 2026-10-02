@@ -35,7 +35,7 @@ export const customerModule = new Elysia({ prefix: "/customer" })
 					});
 
 					if (!profile)
-						throw new ServiceError(403, "Customer profile not found");
+						throw new ServiceError(403, "Profilo cliente non trovato");
 					return { customerProfile: profile };
 				})
 				.use(profileRoutes)

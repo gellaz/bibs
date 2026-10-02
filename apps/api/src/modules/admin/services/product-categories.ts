@@ -63,7 +63,7 @@ export async function updateProductCategory(
 		const existing = await db.query.productCategory.findFirst({
 			where: eq(productCategory.id, productCategoryId),
 		});
-		if (!existing) throw new ServiceError(404, "Product category not found");
+		if (!existing) throw new ServiceError(404, "Sotto-categoria non trovata");
 		return existing;
 	}
 
@@ -73,7 +73,7 @@ export async function updateProductCategory(
 		.where(eq(productCategory.id, productCategoryId))
 		.returning();
 
-	if (!updated) throw new ServiceError(404, "Product category not found");
+	if (!updated) throw new ServiceError(404, "Sotto-categoria non trovata");
 	return updated;
 }
 
@@ -95,6 +95,6 @@ export async function deleteProductCategory(productCategoryId: string) {
 		.where(eq(productCategory.id, productCategoryId))
 		.returning();
 
-	if (!deleted) throw new ServiceError(404, "Product category not found");
+	if (!deleted) throw new ServiceError(404, "Sotto-categoria non trovata");
 	return deleted;
 }

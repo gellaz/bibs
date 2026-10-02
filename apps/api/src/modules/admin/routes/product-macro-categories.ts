@@ -119,7 +119,7 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria prodotto eliminata",
 			);
 
-			return okMessage("Product macro category deleted");
+			return okMessage("Macro categoria prodotto eliminata");
 		},
 		{
 			params: t.Object({

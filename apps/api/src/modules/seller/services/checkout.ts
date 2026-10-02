@@ -189,9 +189,9 @@ export async function createReactivationCheckoutSession(params: {
 		where: eq(storeSubscription.storeId, params.storeId),
 		with: { store: { columns: { sellerProfileId: true } } },
 	});
-	if (!sub) throw new ServiceError(404, "Subscription non trovata");
+	if (!sub) throw new ServiceError(404, "Abbonamento non trovato");
 	if (sub.store.sellerProfileId !== params.sellerProfileId) {
-		throw new ServiceError(403, "Non sei owner di questo negozio");
+		throw new ServiceError(403, "Non sei il titolare di questo negozio");
 	}
 	if (sub.status !== "canceled") {
 		throw new ServiceError(409, "Negozio non cancellato");
@@ -245,7 +245,10 @@ export async function getCheckoutStatus(params: {
 		),
 	});
 	if (!pending) {
-		throw new ServiceError(404, "Checkout session not found for this seller");
+		throw new ServiceError(
+			404,
+			"Sessione di checkout non trovata per questo venditore",
+		);
 	}
 	if (pending.status === "consumed") {
 		const sub = pending.stripeSubscriptionId
@@ -276,7 +279,7 @@ export async function getPendingForResume(params: {
 	if (pending?.status !== "open") {
 		throw new ServiceError(
 			404,
-			"Pending checkout not found or already consumed",
+			"Checkout in sospeso non trovato o già utilizzato",
 		);
 	}
 	return { formData: pending.formData };

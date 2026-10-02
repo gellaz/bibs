@@ -24,7 +24,7 @@ function assertHeaders(actual: string[], expected: string[]) {
 		if (!actual.includes(h)) {
 			throw new ServiceError(
 				400,
-				`Missing CSV header: "${h}". Expected headers: ${expected.join(", ")}`,
+				`Colonna CSV mancante: "${h}". Colonne attese: ${expected.join(", ")}.`,
 			);
 		}
 	}
@@ -306,7 +306,7 @@ export async function importCharacteristicsFromCsv(
 					if (!characteristicId) {
 						throw new ServiceError(
 							500,
-							`Characteristic "${r.name}" lookup failed after insert`,
+							`Caratteristica "${r.name}" non trovata dopo l'inserimento`,
 						);
 					}
 					r.options.forEach((value, sortOrder) => {

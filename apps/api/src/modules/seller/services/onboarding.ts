@@ -14,7 +14,7 @@ function assertStatus(current: OnboardingStatus, expected: OnboardingStatus) {
 	if (current !== expected) {
 		throw new ServiceError(
 			400,
-			`Cannot perform this step: onboarding is at '${current}', expected '${expected}'`,
+			`Passaggio non consentito: l'onboarding è allo stato '${current}', atteso '${expected}'`,
 		);
 	}
 }
@@ -36,7 +36,7 @@ export async function getOnboardingStatus(userId: string) {
 	);
 
 	if (!profile) {
-		throw new ServiceError(404, "Seller profile not found");
+		throw new ServiceError(404, "Profilo venditore non trovato");
 	}
 
 	return profile;
@@ -64,7 +64,7 @@ export async function updatePersonalInfo(params: PersonalInfoParams) {
 		where: eq(sellerProfile.userId, userId),
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertStatus(profile.onboardingStatus, "pending_personal");
 
 	await db.transaction(async (tx) => {
@@ -89,7 +89,7 @@ export async function updatePersonalInfo(params: PersonalInfoParams) {
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
 	);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
 	return updated;
 }
 
@@ -110,7 +110,7 @@ export async function updateDocument(params: DocumentParams) {
 		where: eq(sellerProfile.userId, userId),
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertStatus(profile.onboardingStatus, "pending_document");
 
 	// Upload document image to S3
@@ -131,7 +131,7 @@ export async function updateDocument(params: DocumentParams) {
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
 	);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
 	return updated;
 }
 
@@ -155,7 +155,7 @@ export async function updateCompany(params: CompanyParams) {
 		where: eq(sellerProfile.userId, userId),
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertStatus(profile.onboardingStatus, "pending_company");
 
 	await db.transaction(async (tx) => {
@@ -179,7 +179,7 @@ export async function updateCompany(params: CompanyParams) {
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
 	);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
 	return updated;
 }
 
@@ -190,13 +190,13 @@ export async function goBack(userId: string) {
 		where: eq(sellerProfile.userId, userId),
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 
 	const previousStatus = PREVIOUS_STATUS[profile.onboardingStatus];
 	if (!previousStatus) {
 		throw new ServiceError(
 			400,
-			`Cannot go back from '${profile.onboardingStatus}'`,
+			`Impossibile tornare indietro dallo stato '${profile.onboardingStatus}'`,
 		);
 	}
 
@@ -217,6 +217,6 @@ export async function goBack(userId: string) {
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
 	);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
 	return updated;
 }

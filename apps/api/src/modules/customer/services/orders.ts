@@ -141,7 +141,7 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 		},
 	});
 
-	if (!found) throw new ServiceError(404, "Order not found");
+	if (!found) throw new ServiceError(404, "Ordine non trovato");
 	const { store, shippingAddress, ...foundRest } = found;
 	return {
 		...foundRest,
@@ -268,7 +268,7 @@ export async function placeOrder(
 	if (type === "pay_deliver" && !shippingAddressId) {
 		throw new ServiceError(
 			400,
-			"Shipping address is required for delivery orders",
+			"Per la consegna serve un indirizzo di spedizione",
 		);
 	}
 
@@ -289,7 +289,8 @@ export async function placeOrder(
 				},
 			},
 		});
-		if (!addr) throw new ServiceError(404, "Shipping address not found");
+		if (!addr)
+			throw new ServiceError(404, "Indirizzo di spedizione non trovato");
 		shippingAddressSnapshot = {
 			recipientName: addr.recipientName,
 			phone: addr.phone,
@@ -351,14 +352,14 @@ export async function placeOrder(
 		if (!sp)
 			throw new ServiceError(
 				404,
-				`Store product ${item.storeProductId} not found`,
+				`Prodotto ${item.storeProductId} non trovato nel negozio`,
 			);
 		// Un prodotto non attivo collassa nello stesso 404 del carrello: non si
 		// conferma l'esistenza di righe che non si possono comprare.
 		if (sp.product.status !== "active")
 			throw new ServiceError(404, "Prodotto non disponibile");
 		if (sp.stock < item.quantity)
-			throw new ServiceError(400, `Insufficient stock for ${sp.product.name}`);
+			throw new ServiceError(400, `Stock insufficiente per ${sp.product.name}`);
 
 		// Sconto venditore: prezzo unitario scontato PRIMA dello sconto punti,
 		// con lo stesso rounding del prezzo mostrato al cliente
@@ -396,7 +397,7 @@ export async function placeOrder(
 	let discountCents = 0;
 	if (pointsToSpend > 0) {
 		if (pointsToSpend > customerPoints)
-			throw new ServiceError(400, "Insufficient points");
+			throw new ServiceError(400, "Punti insufficienti");
 		// Aritmetica intera: (punti / 100) * 100 in virgola mobile perde un
 		// centesimo su migliaia di valori (232 punti → 231 centesimi).
 		discountCents = Math.floor(
@@ -503,7 +504,10 @@ export async function placeOrder(
 			.returning();
 
 		if (!updated)
-			throw new ServiceError(409, "Stock changed during order, please retry");
+			throw new ServiceError(
+				409,
+				"Lo stock è cambiato durante l'ordine, riprova",
+			);
 	}
 
 	// Deduct points spent
@@ -588,7 +592,7 @@ export async function cancelOrder(params: {
 			with: { items: true },
 		});
 
-		if (!existing) throw new ServiceError(404, "Order not found");
+		if (!existing) throw new ServiceError(404, "Ordine non trovato");
 
 		assertCancellable(existing);
 

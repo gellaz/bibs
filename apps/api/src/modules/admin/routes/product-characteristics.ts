@@ -186,7 +186,7 @@ export const productCharacteristicsRoutes = new Elysia()
 				"Caratteristica prodotto eliminata",
 			);
 
-			return okMessage("Product characteristic deleted");
+			return okMessage("Caratteristica eliminata");
 		},
 		{
 			params: t.Object({

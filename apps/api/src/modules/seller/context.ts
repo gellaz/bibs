@@ -65,7 +65,7 @@ export async function ensureProductOwnership(
 			eq(product.sellerProfileId, sellerProfileId),
 		),
 	});
-	if (!p) throw new ServiceError(404, "Product not found");
+	if (!p) throw new ServiceError(404, "Prodotto non trovato");
 	return p;
 }
 
@@ -84,7 +84,7 @@ export async function ensureStoreOwnership(
 			isNull(storeTable.deletedAt),
 		),
 	});
-	if (!s) throw new ServiceError(404, "Store not found");
+	if (!s) throw new ServiceError(404, "Negozio non trovato");
 	return s;
 }
 
@@ -159,7 +159,10 @@ export async function ensureProductAccess(
  */
 export function requireOwner(isOwner: boolean) {
 	if (!isOwner)
-		throw new ServiceError(403, "Only store owners can perform this action");
+		throw new ServiceError(
+			403,
+			"Solo il titolare può eseguire questa operazione",
+		);
 }
 
 /**
@@ -196,9 +199,9 @@ export async function resolveSellerAccess(u: {
 			where: eq(sellerProfile.userId, u.id),
 		});
 
-		if (!profile) throw new ServiceError(403, "Seller profile not found");
+		if (!profile) throw new ServiceError(403, "Profilo venditore non trovato");
 		if (profile.onboardingStatus !== "active")
-			throw new ServiceError(403, "Seller onboarding not completed");
+			throw new ServiceError(403, "Onboarding del venditore non completato");
 
 		const accessCtx: AccessCtx = {
 			userId: u.id,
@@ -232,11 +235,15 @@ export async function resolveSellerAccess(u: {
 			with: { sellerProfile: true },
 		});
 
-		if (!emp) throw new ServiceError(403, "Employee access denied");
+		if (!emp)
+			throw new ServiceError(
+				403,
+				"Accesso negato: nessun incarico attivo come dipendente",
+			);
 		// Same gate as the owner path: a rejected or not-yet-verified seller's
 		// staff must not operate on its behalf.
 		if (emp.sellerProfile.onboardingStatus !== "active")
-			throw new ServiceError(403, "Seller onboarding not completed");
+			throw new ServiceError(403, "Onboarding del venditore non completato");
 		const accessCtx: AccessCtx = {
 			userId: u.id,
 			sellerProfileId: emp.sellerProfile.id,
@@ -260,5 +267,5 @@ export async function resolveSellerAccess(u: {
 		};
 	}
 
-	throw new ServiceError(403, "Not a seller or employee");
+	throw new ServiceError(403, "Accesso riservato a venditori e dipendenti");
 }

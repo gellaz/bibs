@@ -353,7 +353,7 @@ export async function signIn(params: SignInParams) {
 	});
 
 	if (!userRecord) {
-		throw new ServiceError(404, "User not found");
+		throw new ServiceError(404, "Utente non trovato");
 	}
 
 	const [customerProf, sellerProf] = await Promise.all([

@@ -124,7 +124,7 @@ export const categoryCharacteristicsRoutes = new Elysia()
 				"Caratteristica rimossa dalla sotto-categoria",
 			);
 
-			return okMessage("Characteristic removed from product category");
+			return okMessage("Caratteristica rimossa dalla sotto-categoria");
 		},
 		{
 			params: LinkParams,

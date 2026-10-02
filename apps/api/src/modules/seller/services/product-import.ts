@@ -67,19 +67,19 @@ export async function importProductsFromCsv(
 		if (!headers.includes(expected)) {
 			throw new ServiceError(
 				400,
-				`Missing CSV header: "${expected}". Expected headers: ${EXPECTED_HEADERS.join(", ")}`,
+				`Colonna CSV mancante: "${expected}". Colonne attese: ${EXPECTED_HEADERS.join(", ")}.`,
 			);
 		}
 	}
 
 	if (rows.length === 0) {
-		throw new ServiceError(400, "CSV file contains no data rows");
+		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
 	}
 
 	if (rows.length > config.maxProductsPerImport) {
 		throw new ServiceError(
 			400,
-			`Too many products: ${rows.length}. Maximum allowed: ${config.maxProductsPerImport}`,
+			`Troppi prodotti: ${rows.length}. Massimo consentito: ${config.maxProductsPerImport}`,
 		);
 	}
 
@@ -107,7 +107,7 @@ export async function importProductsFromCsv(
 
 		const name = row[nameIdx];
 		if (!name) {
-			errors.push({ row: rowNum, message: "Missing product name" });
+			errors.push({ row: rowNum, message: "Nome prodotto mancante" });
 			continue;
 		}
 
@@ -115,7 +115,7 @@ export async function importProductsFromCsv(
 		if (!price || !PRICE_REGEX.test(price)) {
 			errors.push({
 				row: rowNum,
-				message: `Invalid price: "${price ?? ""}". Expected format: "9.99"`,
+				message: `Prezzo non valido: "${price ?? ""}". Formato atteso: "9.99"`,
 			});
 			continue;
 		}
@@ -129,7 +129,7 @@ export async function importProductsFromCsv(
 		if (categoryNames.length === 0) {
 			errors.push({
 				row: rowNum,
-				message: "At least one category is required",
+				message: "Serve almeno una categoria",
 			});
 			continue;
 		}
@@ -148,7 +148,7 @@ export async function importProductsFromCsv(
 		if (unknownCategories.length > 0) {
 			errors.push({
 				row: rowNum,
-				message: `Categories not found: ${unknownCategories.join(", ")}`,
+				message: `Categorie non trovate: ${unknownCategories.join(", ")}`,
 			});
 			continue;
 		}
@@ -158,7 +158,7 @@ export async function importProductsFromCsv(
 		if (ean !== null && !EAN_REGEX.test(ean)) {
 			errors.push({
 				row: rowNum,
-				message: `Invalid EAN: "${ean}". Expected 8 or 13 digits`,
+				message: `EAN non valido: "${ean}". Servono 8 o 13 cifre`,
 			});
 			continue;
 		}

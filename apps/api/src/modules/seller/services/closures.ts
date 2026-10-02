@@ -15,7 +15,7 @@ async function loadOwnedStore(storeId: string, sellerProfileId: string) {
 			isNull(storeTable.deletedAt),
 		),
 	});
-	if (!s) throw new ServiceError(404, "Store not found");
+	if (!s) throw new ServiceError(404, "Negozio non trovato");
 	return s;
 }
 

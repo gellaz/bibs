@@ -34,7 +34,7 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 			app
 				.resolve(({ user: u }) => {
 					if (u.role !== "seller") {
-						throw new ServiceError(403, "Only sellers can access profile");
+						throw new ServiceError(403, "Accesso riservato ai venditori");
 					}
 				})
 				.use(profileRoutes)

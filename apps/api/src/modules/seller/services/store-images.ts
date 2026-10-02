@@ -20,7 +20,7 @@ async function countImages(storeId: string, executor: typeof db | Tx = db) {
 function tooMany(current: number, uploading: number) {
 	return new ServiceError(
 		400,
-		`Maximum ${config.maxImagesPerStore} images per store (current: ${current}, uploading: ${uploading})`,
+		`Massimo ${config.maxImagesPerStore} immagini per negozio (attuali: ${current}, in caricamento: ${uploading})`,
 	);
 }
 
@@ -107,7 +107,7 @@ export async function deleteStoreImage(params: DeleteStoreImageParams) {
 	const img = await db.query.storeImage.findFirst({
 		where: and(eq(storeImage.id, imageId), eq(storeImage.storeId, storeId)),
 	});
-	if (!img) throw new ServiceError(404, "Image not found");
+	if (!img) throw new ServiceError(404, "Immagine non trovata");
 
 	await s3.delete(img.key);
 	await db.delete(storeImage).where(eq(storeImage.id, imageId));
