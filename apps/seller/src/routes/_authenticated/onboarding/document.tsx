@@ -23,9 +23,11 @@ import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import {
 	municipalitiesQueryOptions,
+	municipalityComboboxLabels,
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateDocument } from "@/hooks/use-onboarding";
+import { m } from "@/paraglide/messages";
 
 type DocumentFormData = Static<typeof DocumentBody>;
 const compiledSchema = TypeCompiler.Compile(DocumentBody);
@@ -126,6 +128,7 @@ function DocumentPage() {
 								municipalities={municipalities}
 								loading={municipalitiesLoading}
 								error={municipalitiesError}
+								labels={municipalityComboboxLabels()}
 								aria-invalid={!!errors.documentIssuedMunicipalityId}
 							/>
 						)}
@@ -144,16 +147,20 @@ function DocumentPage() {
 							setDocumentImage(files[0] ?? null);
 							setFileError("");
 						}}
-						onError={(err) => setFileError(err.message)}
+						// Il messaggio di react-dropzone è in inglese e con i byte grezzi
+						// («File is larger than 10485760 bytes»): mostriamo il nostro.
+						onError={() => setFileError(m.onboarding_document_photo_rejected())}
 					>
 						<DropzoneContent>
 							<div className="flex flex-col items-center justify-center">
 								<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
 									<UploadIcon className="size-4" />
 								</div>
-								<p className="my-2 text-sm font-medium">Foto caricata</p>
+								<p className="my-2 text-sm font-medium">
+									{m.onboarding_document_photo_uploaded()}
+								</p>
 								<p className="text-muted-foreground text-xs">
-									Clicca o trascina per sostituire
+									{m.onboarding_document_photo_replace_hint()}
 								</p>
 							</div>
 						</DropzoneContent>
@@ -163,7 +170,7 @@ function DocumentPage() {
 									<UploadIcon className="size-4" />
 								</div>
 								<p className="my-2 text-sm font-medium">
-									Trascina la foto o clicca per caricare
+									{m.onboarding_document_photo_empty()}
 								</p>
 							</div>
 						</DropzoneEmptyState>

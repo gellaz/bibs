@@ -17,13 +17,39 @@ export type MunicipalityOption = {
 	provinceAcronym: string;
 };
 
+/**
+ * Testi del combobox. Default in italiano: le app li passano da Paraglide per
+ * seguire la lingua corrente.
+ */
+export type MunicipalityComboboxLabels = {
+	/** Placeholder a elenco caricato. */
+	placeholder: string;
+	/** Placeholder mentre l'elenco carica. */
+	loading: string;
+	/** Placeholder quando l'elenco non si carica. */
+	error: string;
+	/** Nessun comune corrisponde alla ricerca. */
+	empty: string;
+	/** Nota sotto l'elenco quando i risultati superano quelli mostrati. */
+	moreResults: (count: number) => string;
+};
+
+const DEFAULT_LABELS: MunicipalityComboboxLabels = {
+	placeholder: "Cerca comune…",
+	loading: "Caricamento comuni…",
+	error: "Impossibile caricare i comuni",
+	empty: "Nessun comune trovato",
+	moreResults: (count) => `… altri ${count} risultati, raffina la ricerca`,
+};
+
 export type MunicipalityComboboxProps = {
 	value: string | null;
 	onChange: (id: string | null) => void;
 	municipalities: MunicipalityOption[] | undefined;
 	loading?: boolean;
 	error?: boolean;
-	placeholder?: string;
+	/** Sovrascrive i testi di default, anche solo in parte. */
+	labels?: Partial<MunicipalityComboboxLabels>;
 	disabled?: boolean;
 	id?: string;
 	"aria-invalid"?: boolean;
@@ -73,12 +99,13 @@ function MunicipalityCombobox({
 	municipalities,
 	loading = false,
 	error = false,
-	placeholder = "Cerca comune…",
+	labels: labelsProp,
 	disabled,
 	id,
 	...ariaProps
 }: MunicipalityComboboxProps) {
 	const [query, setQuery] = React.useState("");
+	const labels = { ...DEFAULT_LABELS, ...labelsProp };
 
 	const indexed = React.useMemo(
 		() => (municipalities ? indexMunicipalities(municipalities) : []),
@@ -99,10 +126,10 @@ function MunicipalityCombobox({
 			: null;
 
 	const computedPlaceholder = error
-		? "Impossibile caricare i comuni"
+		? labels.error
 		: isLoading
-			? "Caricamento comuni…"
-			: placeholder;
+			? labels.loading
+			: labels.placeholder;
 
 	React.useEffect(() => {
 		if (
@@ -161,10 +188,10 @@ function MunicipalityCombobox({
 						</ComboboxItem>
 					))}
 				</ComboboxList>
-				<ComboboxEmpty>Nessun comune trovato</ComboboxEmpty>
+				<ComboboxEmpty>{labels.empty}</ComboboxEmpty>
 				{total > VISIBLE_CAP && (
 					<div className="text-muted-foreground border-t px-3 py-2 text-center text-xs">
-						… altri {total - VISIBLE_CAP} risultati, raffina la ricerca
+						{labels.moreResults(total - VISIBLE_CAP)}
 					</div>
 				)}
 			</ComboboxContent>

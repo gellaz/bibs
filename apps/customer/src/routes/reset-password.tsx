@@ -13,6 +13,7 @@ import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
+import { authErrorMessage } from "@/lib/auth-error";
 import { m } from "@/paraglide/messages";
 
 const searchSchema = z.object({
@@ -58,14 +59,7 @@ function ResetPasswordPage() {
 				token,
 			});
 			if (res.error) {
-				// Solo gli errori di token mostrano la copy "link non valido";
-				// gli altri (es. PASSWORD_TOO_LONG lato server) mostrano il
-				// messaggio reale o il fallback generico.
-				setFormError(
-					res.error.code === "INVALID_TOKEN"
-						? m.auth_reset_password_invalid_token()
-						: (res.error.message ?? m.auth_generic_error()),
-				);
+				setFormError(authErrorMessage(res.error, m.auth_generic_error()));
 				return;
 			}
 			toast.success(m.auth_reset_password_success_toast());
@@ -130,7 +124,7 @@ function ResetPasswordPage() {
 					<div className="border-t pt-4">
 						<Link to="/login" className="block">
 							<Button variant="ghost" className="w-full">
-								Torna al login
+								{m.auth_back_to_login()}
 							</Button>
 						</Link>
 					</div>

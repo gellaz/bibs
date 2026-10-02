@@ -1,5 +1,18 @@
+import type { MunicipalityComboboxLabels } from "@bibs/ui/custom/municipality-combobox";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
+
+/** Testi di `MunicipalityCombobox` nella lingua corrente. */
+export function municipalityComboboxLabels(): MunicipalityComboboxLabels {
+	return {
+		placeholder: m.municipality_combobox_placeholder(),
+		loading: m.municipality_combobox_loading(),
+		error: m.municipality_combobox_error(),
+		empty: m.municipality_combobox_empty(),
+		moreResults: (count) => m.municipality_combobox_more_results({ count }),
+	};
+}
 
 /**
  * Elenco completo dei comuni italiani, servito dall'API con cache HTTP di 24h e

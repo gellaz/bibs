@@ -21,7 +21,10 @@ import {
 	useForm,
 } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
-import { useMunicipalities } from "@/hooks/use-municipalities";
+import {
+	municipalityComboboxLabels,
+	useMunicipalities,
+} from "@/hooks/use-municipalities";
 import {
 	fetchGeocodeSuggestions,
 	type GeocodeSuggestionItem,
@@ -373,6 +376,7 @@ export function StoreForm({
 									municipalities={municipalities}
 									loading={municipalitiesLoading}
 									error={municipalitiesError}
+									labels={municipalityComboboxLabels()}
 									aria-invalid={!!errors.municipalityId}
 								/>
 							)}

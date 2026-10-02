@@ -23,22 +23,29 @@ import { z } from "zod";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
-const registerSchema = z
-	.object({
-		email: z
-			.string()
-			.min(1, "L'email è obbligatoria")
-			.email("Email non valida"),
-		password: z.string().min(8, "La password deve avere almeno 8 caratteri"),
-		confirmPassword: z.string().min(1, "Conferma la password"),
-	})
-	.refine((data) => data.password === data.confirmPassword, {
-		message: "Le password non corrispondono",
-		path: ["confirmPassword"],
-	});
+/**
+ * Costruito a ogni render, non a livello di modulo: i messaggi di Zod vanno
+ * risolti nella lingua corrente, non in quella attiva al primo import.
+ */
+function buildRegisterSchema() {
+	return z
+		.object({
+			email: z
+				.string()
+				.min(1, m.auth_register_email_required())
+				.email(m.auth_register_email_invalid()),
+			password: z.string().min(8, m.auth_register_password_too_short()),
+			confirmPassword: z.string().min(1, m.auth_register_confirm_required()),
+		})
+		.refine((data) => data.password === data.confirmPassword, {
+			message: m.auth_register_password_mismatch(),
+			path: ["confirmPassword"],
+		});
+}
 
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormData = z.infer<ReturnType<typeof buildRegisterSchema>>;
 
 export const Route = createFileRoute("/register")({
 	component: RegisterPage,
@@ -59,7 +66,7 @@ function RegisterPage() {
 		handleSubmit,
 		formState: { errors, isSubmitting },
 	} = useForm<RegisterFormData>({
-		resolver: zodResolver(registerSchema),
+		resolver: zodResolver(buildRegisterSchema()),
 	});
 
 	useEffect(() => {
@@ -92,7 +99,7 @@ function RegisterPage() {
 					return;
 				}
 
-				setError(errVal.message ?? "Errore durante la registrazione");
+				setError(errVal.message ?? m.auth_register_error());
 				return;
 			}
 
@@ -101,7 +108,7 @@ function RegisterPage() {
 				search: { email: data.email, sentAt: Date.now() },
 			});
 		} catch {
-			setError("Errore durante la registrazione. Riprova.");
+			setError(m.auth_register_error_retry());
 		}
 	};
 
@@ -114,10 +121,8 @@ function RegisterPage() {
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
 					<BrandMark className="mx-auto mb-2 size-12" />
-					<CardTitle className="text-xl">Crea un account</CardTitle>
-					<CardDescription>
-						Registrati per iniziare a fare acquisti su bibs
-					</CardDescription>
+					<CardTitle className="text-xl">{m.auth_register_title()}</CardTitle>
+					<CardDescription>{m.auth_register_description()}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form
@@ -131,11 +136,11 @@ function RegisterPage() {
 						)}
 
 						<Field data-invalid={!!errors.email}>
-							<FieldLabel htmlFor="email">Email</FieldLabel>
+							<FieldLabel htmlFor="email">{m.auth_email_label()}</FieldLabel>
 							<Input
 								id="email"
 								type="email"
-								placeholder="email@esempio.it"
+								placeholder={m.auth_email_placeholder()}
 								autoComplete="email"
 								autoFocus
 								{...register("email")}
@@ -144,19 +149,23 @@ function RegisterPage() {
 						</Field>
 
 						<Field data-invalid={!!errors.password}>
-							<FieldLabel htmlFor="password">Password</FieldLabel>
+							<FieldLabel htmlFor="password">
+								{m.auth_password_label()}
+							</FieldLabel>
 							<PasswordInput
 								id="password"
 								autoComplete="new-password"
 								{...register("password")}
 							/>
-							<FieldDescription>Minimo 8 caratteri</FieldDescription>
+							<FieldDescription>
+								{m.auth_register_password_hint()}
+							</FieldDescription>
 							<FieldError errors={[errors.password]} />
 						</Field>
 
 						<Field data-invalid={!!errors.confirmPassword}>
 							<FieldLabel htmlFor="confirmPassword">
-								Conferma password
+								{m.auth_register_confirm_label()}
 							</FieldLabel>
 							<PasswordInput
 								id="confirmPassword"
@@ -167,7 +176,9 @@ function RegisterPage() {
 						</Field>
 
 						<Button type="submit" disabled={isSubmitting} className="w-full">
-							{isSubmitting ? "Registrazione in corso..." : "Registrati"}
+							{isSubmitting
+								? m.auth_register_submitting()
+								: m.auth_register_submit()}
 						</Button>
 					</form>
 
@@ -180,9 +191,9 @@ function RegisterPage() {
 					)}
 
 					<p className="mt-4 text-center text-sm text-muted-foreground">
-						Hai già un account?{" "}
+						{m.auth_register_have_account()}{" "}
 						<Link to="/login" className="text-primary underline">
-							Accedi
+							{m.auth_register_login_link()}
 						</Link>
 					</p>
 				</CardContent>

@@ -62,6 +62,7 @@ import { StoreChips } from "@/features/team/components/store-chips";
 import { useStores } from "@/hooks/use-stores";
 import { api, unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/team/")({
 	component: TeamPage,
@@ -861,8 +862,9 @@ function TeamPage() {
 						}
 					/>
 					<div className="text-muted-foreground text-sm">
-						Totale: {data?.pagination.total} dipendent
-						{data?.pagination.total === 1 ? "e" : "i"}
+						{data?.pagination.total === 1
+							? m.team_pagination_total_one({ total: 1 })
+							: m.team_pagination_total({ total: data?.pagination.total ?? 0 })}
 					</div>
 				</div>
 			)}

@@ -15,7 +15,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
-import { useMunicipalities } from "@/hooks/use-municipalities";
+import {
+	municipalityComboboxLabels,
+	useMunicipalities,
+} from "@/hooks/use-municipalities";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
 import { api, unwrap } from "@/lib/api";
 import { VatChangeDialog } from "./vat-change-dialog";
@@ -166,6 +169,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 										municipalities={municipalities}
 										loading={municipalitiesLoading}
 										error={municipalitiesError}
+										labels={municipalityComboboxLabels()}
 										disabled={readOnly}
 										aria-invalid={!!formState.errors.municipalityId}
 									/>

@@ -77,7 +77,7 @@ function ForgotPasswordPage() {
 							type="email"
 							required
 							autoComplete="email"
-							placeholder="email@esempio.it"
+							placeholder={m.auth_email_placeholder()}
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
 						/>
@@ -105,7 +105,7 @@ function ForgotPasswordPage() {
 					<div className="border-t pt-4">
 						<Link to="/login" className="block">
 							<Button variant="ghost" className="w-full">
-								Torna al login
+								{m.auth_back_to_login()}
 							</Button>
 						</Link>
 					</div>
