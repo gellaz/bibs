@@ -435,5 +435,6 @@
 	"municipality_combobox_loading": "Loading municipalities…",
 	"municipality_combobox_error": "Couldn't load municipalities",
 	"municipality_combobox_empty": "No municipality found",
-	"municipality_combobox_more_results": "… {count} more results, refine your search"
+	"municipality_combobox_more_results": "… {count} more results, refine your search",
+	"auth_error_too_many_requests": "Too many attempts. Try again in a few minutes."
 }

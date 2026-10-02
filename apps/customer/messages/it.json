@@ -435,5 +435,6 @@
 	"municipality_combobox_loading": "Caricamento comuni…",
 	"municipality_combobox_error": "Impossibile caricare i comuni",
 	"municipality_combobox_empty": "Nessun comune trovato",
-	"municipality_combobox_more_results": "… altri {count} risultati, raffina la ricerca"
+	"municipality_combobox_more_results": "… altri {count} risultati, raffina la ricerca",
+	"auth_error_too_many_requests": "Troppi tentativi. Riprova tra qualche minuto."
 }
