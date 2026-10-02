@@ -133,7 +133,8 @@ export async function createStore(params: CreateStoreParams) {
 			},
 		});
 
-		if (!raw) throw new ServiceError(500, "Failed to retrieve created store");
+		if (!raw)
+			throw new ServiceError(500, "Impossibile recuperare il negozio creato");
 		const { municipality, ...rest } = raw;
 		return {
 			...rest,
@@ -197,7 +198,7 @@ export async function updateStore(params: UpdateStoreParams) {
 						),
 					);
 
-		if (!updated) throw new ServiceError(404, "Store not found");
+		if (!updated) throw new ServiceError(404, "Negozio non trovato");
 
 		if (phoneNumbers !== undefined) {
 			await tx
@@ -227,7 +228,10 @@ export async function updateStore(params: UpdateStoreParams) {
 		});
 
 		if (!rawUpdated)
-			throw new ServiceError(500, "Failed to retrieve updated store");
+			throw new ServiceError(
+				500,
+				"Impossibile recuperare il negozio aggiornato",
+			);
 		const { municipality, ...updatedRest } = rawUpdated;
 		return {
 			...updatedRest,
@@ -256,7 +260,7 @@ export async function deleteStore(params: DeleteStoreParams) {
 		)
 		.returning();
 
-	if (!deleted) throw new ServiceError(404, "Store not found");
+	if (!deleted) throw new ServiceError(404, "Negozio non trovato");
 	return deleted;
 }
 
@@ -282,10 +286,10 @@ async function loadOwnedSubscription(params: SubParams) {
 		with: { store: { columns: { sellerProfileId: true } } },
 	});
 	if (!sub) {
-		throw new ServiceError(404, "Subscription non trovata");
+		throw new ServiceError(404, "Abbonamento non trovato");
 	}
 	if (sub.store.sellerProfileId !== params.sellerProfileId) {
-		throw new ServiceError(403, "Non sei owner di questo negozio");
+		throw new ServiceError(403, "Non sei il titolare di questo negozio");
 	}
 	return sub;
 }

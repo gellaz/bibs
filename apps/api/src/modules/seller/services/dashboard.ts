@@ -56,7 +56,7 @@ export async function getSellerDashboard(params: DashboardParams) {
 		where: eq(storeTable.id, params.storeId),
 		columns: { sellerProfileId: true, lowStockThreshold: true },
 	});
-	if (!s) throw new ServiceError(404, "Store not found");
+	if (!s) throw new ServiceError(404, "Negozio non trovato");
 	const threshold = s.lowStockThreshold;
 
 	const activeInStore = and(

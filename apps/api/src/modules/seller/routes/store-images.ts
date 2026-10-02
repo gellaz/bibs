@@ -79,7 +79,7 @@ export const storeImagesRoutes = new Elysia()
 				isOwner,
 				imageId: params.imageId,
 			});
-			return okMessage("Image deleted");
+			return okMessage("Immagine eliminata");
 		},
 		{
 			params: t.Object({

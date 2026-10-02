@@ -26,7 +26,7 @@ function assertHeaders(actual: string[], expected: string[]) {
 		if (!actual.includes(h)) {
 			throw new ServiceError(
 				400,
-				`Missing CSV header: "${h}". Expected headers: ${expected.join(", ")}`,
+				`Colonna CSV mancante: "${h}". Colonne attese: ${expected.join(", ")}.`,
 			);
 		}
 	}
@@ -43,7 +43,7 @@ export async function importProductCategoriesFromCsv(
 	assertHeaders(headers, PRODUCT_HEADERS);
 
 	if (rows.length === 0) {
-		throw new ServiceError(400, "CSV file contains no data rows");
+		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
 	}
 
 	const macroIdx = headers.indexOf("macro_category");
@@ -85,11 +85,11 @@ export async function importProductCategoriesFromCsv(
 		const subName = (row[subIdx] ?? "").trim();
 
 		if (!macroName) {
-			errors.push({ row: rowNum, message: "Missing macro_category" });
+			errors.push({ row: rowNum, message: "Macro categoria mancante" });
 			continue;
 		}
 		if (!subName) {
-			errors.push({ row: rowNum, message: "Missing subcategory" });
+			errors.push({ row: rowNum, message: "Sotto-categoria mancante" });
 			continue;
 		}
 
@@ -158,7 +158,7 @@ export async function importProductCategoriesFromCsv(
 					if (!macro) {
 						throw new ServiceError(
 							500,
-							`Macro category "${p.macroNameOriginal}" lookup failed after insert`,
+							`Macro categoria "${p.macroNameOriginal}" non trovata dopo l'inserimento`,
 						);
 					}
 					return { macroCategoryId: macro.id, name: p.subName };
@@ -188,7 +188,7 @@ export async function importStoreCategoriesFromCsv(
 	assertHeaders(headers, STORE_HEADERS);
 
 	if (rows.length === 0) {
-		throw new ServiceError(400, "CSV file contains no data rows");
+		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
 	}
 
 	const macroIdx = headers.indexOf("macro_category");
@@ -222,11 +222,11 @@ export async function importStoreCategoriesFromCsv(
 		const name = (row[nameIdx] ?? "").trim();
 
 		if (!macroName) {
-			errors.push({ row: rowNum, message: "Missing macro_category" });
+			errors.push({ row: rowNum, message: "Macro categoria mancante" });
 			continue;
 		}
 		if (!name) {
-			errors.push({ row: rowNum, message: "Missing name" });
+			errors.push({ row: rowNum, message: "Nome mancante" });
 			continue;
 		}
 
@@ -269,7 +269,7 @@ export async function importStoreCategoriesFromCsv(
 					if (!macro) {
 						throw new ServiceError(
 							500,
-							`Store macro category "${p.macroNameLower}" lookup failed after insert`,
+							`Macro categoria negozio "${p.macroNameLower}" non trovata dopo l'inserimento`,
 						);
 					}
 					return { macroCategoryId: macro.id, name: p.name };

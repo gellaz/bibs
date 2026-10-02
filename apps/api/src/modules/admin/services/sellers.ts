@@ -206,7 +206,7 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 				where: eq(sellerProfile.id, sellerId),
 				columns: { id: true },
 			});
-			if (!exists) throw new ServiceError(404, "Seller profile not found");
+			if (!exists) throw new ServiceError(404, "Profilo venditore non trovato");
 			throw new ServiceError(409, "La candidatura è già stata decisa");
 		}
 
@@ -217,7 +217,7 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 	});
 
 	const updated = await fetchProfileWithMunicipalities(sellerId);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
 	return updated;
 }
 
@@ -292,7 +292,7 @@ export async function getSellerDetail(sellerId: string) {
 		},
 	});
 
-	if (!raw) throw new ServiceError(404, "Seller profile not found");
+	if (!raw) throw new ServiceError(404, "Profilo venditore non trovato");
 
 	const {
 		organization: org,
@@ -460,7 +460,7 @@ export async function approveChange(changeId: string, adminUserId: string) {
 		where: eq(sellerProfileChange.id, changeId),
 	});
 
-	if (!change) throw new ServiceError(404, "Change request not found");
+	if (!change) throw new ServiceError(404, "Richiesta di modifica non trovata");
 
 	if (!isValidChangeData(change.changeType, change.changeData))
 		throw new ServiceError(400, "Dati della richiesta non validi");
@@ -490,7 +490,10 @@ export async function approveChange(changeId: string, adminUserId: string) {
 			.returning();
 
 		if (!updated) {
-			throw new ServiceError(400, "Change request is not pending");
+			throw new ServiceError(
+				400,
+				"La richiesta di modifica non è più in attesa",
+			);
 		}
 
 		// Apply the change based on type
@@ -545,7 +548,7 @@ export async function rejectChange(params: RejectChangeParams) {
 		where: eq(sellerProfileChange.id, changeId),
 	});
 
-	if (!change) throw new ServiceError(404, "Change request not found");
+	if (!change) throw new ServiceError(404, "Richiesta di modifica non trovata");
 
 	return db.transaction(async (tx) => {
 		// Atomic compare-and-swap gate (see approveChange): flip pending ->
@@ -568,7 +571,10 @@ export async function rejectChange(params: RejectChangeParams) {
 			.returning();
 
 		if (!updated) {
-			throw new ServiceError(400, "Change request is not pending");
+			throw new ServiceError(
+				400,
+				"La richiesta di modifica non è più in attesa",
+			);
 		}
 
 		// If it was a VAT change, unblock new orders

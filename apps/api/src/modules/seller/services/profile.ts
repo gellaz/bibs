@@ -50,7 +50,7 @@ export async function getSellerProfile(userId: string) {
 	);
 
 	if (!profile) {
-		throw new ServiceError(404, "Seller profile not found");
+		throw new ServiceError(404, "Profilo venditore non trovato");
 	}
 
 	return profile;
@@ -66,7 +66,7 @@ export async function getSellerProfileWithOrg(userId: string) {
 	});
 
 	if (!profile) {
-		throw new ServiceError(404, "Seller profile not found");
+		throw new ServiceError(404, "Profilo venditore non trovato");
 	}
 
 	return profile;
@@ -89,13 +89,13 @@ export async function updateSellerVat(params: UpdateVatParams) {
 	});
 
 	if (!profile) {
-		throw new ServiceError(404, "Seller profile not found");
+		throw new ServiceError(404, "Profilo venditore non trovato");
 	}
 
 	if (profile.onboardingStatus !== "rejected") {
 		throw new ServiceError(
 			400,
-			"VAT number can only be updated when onboarding is rejected",
+			"La partita IVA si può modificare solo se la candidatura è stata rifiutata",
 		);
 	}
 
@@ -115,6 +115,6 @@ export async function updateSellerVat(params: UpdateVatParams) {
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
 	);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
 	return updated;
 }

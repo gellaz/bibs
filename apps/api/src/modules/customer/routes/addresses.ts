@@ -146,7 +146,7 @@ export const addressesRoutes = new Elysia()
 				addressId: params.addressId,
 				customerProfileId: cp.id,
 			});
-			return okMessage("Address deleted");
+			return okMessage("Indirizzo eliminato");
 		},
 		{
 			params: t.Object({

@@ -136,7 +136,7 @@ export const holidayDefinitionsRoutes = new Elysia()
 				},
 				"Festività eliminata",
 			);
-			return okMessage("Holiday definition deleted");
+			return okMessage("Festività eliminata");
 		},
 		{
 			params: t.Object({

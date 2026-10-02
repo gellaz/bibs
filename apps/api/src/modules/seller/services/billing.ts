@@ -151,7 +151,7 @@ export async function createPortalSession(params: {
 	if (!params.stripeCustomerId) {
 		throw new ServiceError(
 			404,
-			"Nessun Customer Stripe associato a questo seller",
+			"Nessun cliente Stripe associato a questo venditore",
 		);
 	}
 	const session = await stripe.billingPortal.sessions.create({

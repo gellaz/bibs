@@ -481,8 +481,8 @@ export async function listMyEntities(params: { page?: number; limit?: number }) 
 For errors, always throw `ServiceError` with the appropriate HTTP status code:
 
 ```ts
-if (!found) throw new ServiceError(404, "Entity not found");
-if (!allowed) throw new ServiceError(403, "Forbidden");
+if (!found) throw new ServiceError(404, "Elemento non trovato");
+if (!allowed) throw new ServiceError(403, "Accesso negato");
 ```
 
 ### 3. Define the route
@@ -600,13 +600,15 @@ import {db} from "../../db";
 
 ### Error handling
 
-Always throw `ServiceError` in service functions. Never throw raw `Error` or return error objects:
+Always throw `ServiceError` in service functions. Never throw raw `Error` or return error objects.
+Messages reach the frontends unchanged (toasts), so write them in Italian; operator-only messages
+(missing config, invariants) may stay in English:
 
 ```ts
 // correct
-throw new ServiceError(404, "Product not found");
-throw new ServiceError(400, "Insufficient stock");
-throw new ServiceError(403, "Only store owners can perform this action");
+throw new ServiceError(404, "Prodotto non trovato");
+throw new ServiceError(400, "Stock insufficiente");
+throw new ServiceError(403, "Solo il titolare può eseguire questa operazione");
 
 // incorrect
 throw new Error("not found");

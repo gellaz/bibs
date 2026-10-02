@@ -125,7 +125,7 @@ export const storeCategoriesWriteRoutes = new Elysia()
 				"Categoria negozio eliminata",
 			);
 
-			return okMessage("Store category deleted");
+			return okMessage("Categoria negozio eliminata");
 		},
 		{
 			params: t.Object({

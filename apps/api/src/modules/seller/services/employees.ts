@@ -87,7 +87,7 @@ export async function inviteEmployee(
 		with: { organization: true },
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 
 	// Validate storeIds belong to seller AND non-empty
 	if (storeIds.length === 0) {
@@ -304,7 +304,7 @@ export async function banEmployee(params: EmployeeActionParams) {
 		)
 		.returning();
 
-	if (!updated) throw new ServiceError(404, "Employee not found");
+	if (!updated) throw new ServiceError(404, "Dipendente non trovato");
 	return updated;
 }
 
@@ -322,7 +322,7 @@ export async function unbanEmployee(params: EmployeeActionParams) {
 		)
 		.returning();
 
-	if (!updated) throw new ServiceError(404, "Employee not found");
+	if (!updated) throw new ServiceError(404, "Dipendente non trovato");
 	return updated;
 }
 
@@ -340,7 +340,7 @@ export async function removeEmployee(params: EmployeeActionParams) {
 		)
 		.returning();
 
-	if (!updated) throw new ServiceError(404, "Employee not found");
+	if (!updated) throw new ServiceError(404, "Dipendente non trovato");
 	return updated;
 }
 
@@ -357,7 +357,7 @@ export async function getEmployeeStores(params: EmployeeStoresParams) {
 			eq(storeEmployee.sellerProfileId, params.sellerProfileId),
 		),
 	});
-	if (!emp) throw new ServiceError(404, "Employee not found");
+	if (!emp) throw new ServiceError(404, "Dipendente non trovato");
 
 	const rows = await db
 		.select({
@@ -406,7 +406,7 @@ export async function setEmployeeStores(params: SetEmployeeStoresParams) {
 			eq(storeEmployee.sellerProfileId, params.sellerProfileId),
 		),
 	});
-	if (!emp) throw new ServiceError(404, "Employee not found");
+	if (!emp) throw new ServiceError(404, "Dipendente non trovato");
 
 	// Validate every storeId belongs to this seller (use Set to dedupe defensively)
 	const uniqueStoreIds = Array.from(new Set(params.storeIds));

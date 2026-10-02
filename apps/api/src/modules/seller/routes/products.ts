@@ -355,7 +355,7 @@ export const productsRoutes = new Elysia()
 				...body,
 			});
 
-			if (!data) throw new ServiceError(404, "Product not found");
+			if (!data) throw new ServiceError(404, "Prodotto non trovato");
 			return ok(data);
 		},
 		{
@@ -630,7 +630,7 @@ export const productsRoutes = new Elysia()
 				"Prodotto eliminato",
 			);
 
-			return okMessage("Product deleted");
+			return okMessage("Prodotto eliminato");
 		},
 		{
 			params: t.Object({

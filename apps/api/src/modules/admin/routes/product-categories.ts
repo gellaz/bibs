@@ -130,7 +130,7 @@ export const productCategoriesWriteRoutes = new Elysia()
 				"Categoria prodotto eliminata",
 			);
 
-			return okMessage("Product category deleted");
+			return okMessage("Sotto-categoria eliminata");
 		},
 		{
 			params: t.Object({

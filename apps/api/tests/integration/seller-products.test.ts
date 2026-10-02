@@ -928,7 +928,7 @@ describe("importProductsFromCsv - warnings and row numbers", () => {
 		});
 
 		expect(result.errors).toEqual([
-			{ row: 2, message: expect.stringContaining("price") },
+			{ row: 2, message: expect.stringContaining("Prezzo") },
 		]);
 		// Row 3 of the file, not the second valid product's index.
 		expect(result.warnings).toEqual([

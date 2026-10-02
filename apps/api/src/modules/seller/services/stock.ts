@@ -25,7 +25,7 @@ export async function assignProductToStores(
 		),
 	});
 	if (sellerStores.length !== storeIds.length)
-		throw new ServiceError(400, "One or more stores not found");
+		throw new ServiceError(400, "Uno o più negozi non sono stati trovati");
 
 	const rows = await db
 		.insert(storeProduct)
@@ -76,7 +76,8 @@ export async function updateStock(params: UpdateStockParams) {
 		)
 		.returning();
 
-	if (!updated) throw new ServiceError(404, "Store-product link not found");
+	if (!updated)
+		throw new ServiceError(404, "Prodotto non presente nel negozio");
 	return updated;
 }
 
@@ -102,7 +103,8 @@ export async function removeProductFromStore(
 		)
 		.returning();
 
-	if (!deleted) throw new ServiceError(404, "Store-product link not found");
+	if (!deleted)
+		throw new ServiceError(404, "Prodotto non presente nel negozio");
 	return deleted;
 }
 
@@ -141,8 +143,9 @@ export async function adjustStock(params: AdjustStockParams) {
 			eq(storeProduct.storeId, storeId),
 		),
 	});
-	if (!existing) throw new ServiceError(404, "Store-product link not found");
-	throw new ServiceError(409, "Stock would go negative");
+	if (!existing)
+		throw new ServiceError(404, "Prodotto non presente nel negozio");
+	throw new ServiceError(409, "Lo stock non può scendere sotto zero");
 }
 
 // ── bulkAdjustStock ───────────────────────────────────────────────────────────

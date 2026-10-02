@@ -37,7 +37,10 @@ export const checkoutRoutes = new Elysia()
 			const { sellerProfile: sp, body, isOwner } = withSeller(ctx);
 			requireOwner(isOwner);
 			if (sp.onboardingStatus !== "active") {
-				throw new ServiceError(403, "Seller must be active to add stores");
+				throw new ServiceError(
+					403,
+					"Per aggiungere negozi l'account venditore deve essere attivo",
+				);
 			}
 			const data = await createCheckoutSession({
 				sellerProfileId: sp.id,
@@ -105,7 +108,10 @@ export const checkoutRoutes = new Elysia()
 			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
 			requireOwner(isOwner);
 			if (sp.onboardingStatus !== "active") {
-				throw new ServiceError(403, "Seller must be active to add stores");
+				throw new ServiceError(
+					403,
+					"Per aggiungere negozi l'account venditore deve essere attivo",
+				);
 			}
 			const data = await createReactivationCheckoutSession({
 				sellerProfileId: sp.id,

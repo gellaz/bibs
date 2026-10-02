@@ -22,7 +22,7 @@ function assertActive(onboardingStatus: string) {
 	if (onboardingStatus !== "active") {
 		throw new ServiceError(
 			400,
-			"Settings can only be modified when onboarding is active",
+			"Le impostazioni si possono modificare solo a onboarding completato",
 		);
 	}
 }
@@ -46,7 +46,7 @@ async function assertNoPendingChange(
 	if (pending) {
 		throw new ServiceError(
 			409,
-			`A pending ${type} change request already exists`,
+			`Hai già una richiesta di cambio ${type === "vat" ? "partita IVA" : "documento"} in attesa`,
 		);
 	}
 }
@@ -71,7 +71,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 		},
 	});
 
-	if (!rawProfile) throw new ServiceError(404, "Seller profile not found");
+	if (!rawProfile) throw new ServiceError(404, "Profilo venditore non trovato");
 
 	const {
 		residenceMunicipality: rawResidenceMunicipality,
@@ -179,7 +179,7 @@ export async function updatePersonalSettings(params: PersonalSettingsParams) {
 		where: eq(sellerProfile.id, sellerProfileId),
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertActive(profile.onboardingStatus);
 
 	await db.transaction(async (tx) => {
@@ -202,7 +202,7 @@ export async function updatePersonalSettings(params: PersonalSettingsParams) {
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.id, sellerProfileId),
 	);
-	if (!updated) throw new ServiceError(404, "Seller profile not found");
+	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
 	return updated;
 }
 
@@ -223,14 +223,14 @@ export async function updateCompanySettings(params: CompanySettingsParams) {
 		where: eq(sellerProfile.id, sellerProfileId),
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertActive(profile.onboardingStatus);
 
 	const org = await db.query.organization.findFirst({
 		where: eq(organization.sellerProfileId, sellerProfileId),
 	});
 
-	if (!org) throw new ServiceError(404, "Organization not found");
+	if (!org) throw new ServiceError(404, "Azienda non trovata");
 
 	const [updated] = await db
 		.update(organization)
@@ -254,7 +254,7 @@ export async function updateCompanySettings(params: CompanySettingsParams) {
 	});
 
 	if (!result)
-		throw new ServiceError(404, "Organization not found after update");
+		throw new ServiceError(404, "Azienda non trovata dopo l'aggiornamento");
 
 	const { municipality, ...rest } = result;
 	return {
@@ -278,7 +278,7 @@ export async function requestVatChange(params: VatChangeParams) {
 		with: { organization: true },
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertActive(profile.onboardingStatus);
 	await assertNoPendingChange(sellerProfileId, "vat");
 
@@ -286,7 +286,7 @@ export async function requestVatChange(params: VatChangeParams) {
 	if (profile.organization?.vatNumber === vatNumber) {
 		throw new ServiceError(
 			400,
-			"The new VAT number is the same as the current one",
+			"La nuova partita IVA è uguale a quella attuale",
 		);
 	}
 
@@ -341,7 +341,7 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 		where: eq(sellerProfile.id, sellerProfileId),
 	});
 
-	if (!profile) throw new ServiceError(404, "Seller profile not found");
+	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertActive(profile.onboardingStatus);
 	await assertNoPendingChange(sellerProfileId, "document");
 
