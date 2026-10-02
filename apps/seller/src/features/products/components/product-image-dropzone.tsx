@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { GripIcon, StarIcon, UploadIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { m } from "@/paraglide/messages";
 
 export interface ExistingImage {
 	id: string;
@@ -178,9 +179,11 @@ export function ProductImageDropzone({
 						<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
 							<UploadIcon className="size-4" />
 						</div>
-						<p className="my-2 text-sm font-medium">Aggiungi altre immagini</p>
+						<p className="my-2 text-sm font-medium">
+							{m.products_image_dropzone_add_more()}
+						</p>
 						<p className="text-muted-foreground text-xs">
-							Trascina o clicca per aggiungere
+							{m.products_image_dropzone_add_more_hint()}
 						</p>
 					</div>
 				</DropzoneContent>
@@ -190,10 +193,12 @@ export function ProductImageDropzone({
 							<UploadIcon className="size-4" />
 						</div>
 						<p className="my-2 text-sm font-medium">
-							Trascina le immagini o clicca per caricare
+							{m.products_image_dropzone_empty()}
 						</p>
 						<p className="text-muted-foreground text-xs">
-							JPG, PNG o WEBP — max {Math.round(maxSize / (1024 * 1024))} MB
+							{m.products_image_dropzone_formats({
+								size: Math.round(maxSize / (1024 * 1024)),
+							})}
 						</p>
 					</div>
 				</DropzoneEmptyState>
@@ -230,7 +235,10 @@ export function ProductImageDropzone({
 			)}
 			{totalCount > 0 && (
 				<p className="text-muted-foreground text-xs">
-					{totalCount} di {maxFiles} · la prima è la copertina
+					{m.products_image_dropzone_count({
+						count: totalCount,
+						max: maxFiles,
+					})}
 				</p>
 			)}
 		</div>

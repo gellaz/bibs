@@ -1,5 +1,7 @@
+import type { MunicipalityComboboxLabels } from "@bibs/ui/custom/municipality-combobox";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const municipalitiesQueryOptions = () =>
 	queryOptions({
@@ -15,4 +17,15 @@ export const municipalitiesQueryOptions = () =>
 
 export function useMunicipalities() {
 	return useQuery(municipalitiesQueryOptions());
+}
+
+/** Testi di `MunicipalityCombobox` nella lingua corrente. */
+export function municipalityComboboxLabels(): MunicipalityComboboxLabels {
+	return {
+		placeholder: m.municipality_combobox_placeholder(),
+		loading: m.municipality_combobox_loading(),
+		error: m.municipality_combobox_error(),
+		empty: m.municipality_combobox_empty(),
+		moreResults: (count) => m.municipality_combobox_more_results({ count }),
+	};
 }

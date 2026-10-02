@@ -20,6 +20,7 @@ import { OnboardingLayout } from "@/features/onboarding/components/onboarding-la
 import { useCountries } from "@/hooks/use-countries";
 import {
 	municipalitiesQueryOptions,
+	municipalityComboboxLabels,
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useUpdatePersonalInfo } from "@/hooks/use-onboarding";
@@ -207,6 +208,7 @@ function PersonalInfoPage() {
 								municipalities={municipalities}
 								loading={municipalitiesLoading}
 								error={municipalitiesError}
+								labels={municipalityComboboxLabels()}
 								aria-invalid={!!errors.residenceMunicipalityId}
 							/>
 						)}

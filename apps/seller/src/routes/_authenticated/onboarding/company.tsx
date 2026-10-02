@@ -21,6 +21,7 @@ import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import {
 	municipalitiesQueryOptions,
+	municipalityComboboxLabels,
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateCompany } from "@/hooks/use-onboarding";
@@ -155,6 +156,7 @@ function CompanyPage() {
 								municipalities={municipalities}
 								loading={municipalitiesLoading}
 								error={municipalitiesError}
+								labels={municipalityComboboxLabels()}
 								aria-invalid={!!errors.municipalityId}
 							/>
 						)}
