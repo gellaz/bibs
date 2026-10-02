@@ -55,7 +55,7 @@ export const avatarRoutes = new Elysia()
 				{ userId: user.id, action: "user_avatar_deleted" },
 				"Immagine profilo rimossa",
 			);
-			return okMessage("Avatar removed");
+			return okMessage("Avatar rimosso");
 		},
 		{
 			auth: true,

@@ -161,7 +161,7 @@ describe("errorHandler — unhandled errors", () => {
 		const body = await json(res);
 		expect(body.success).toBe(false);
 		expect(body.error).toBe("INTERNAL_ERROR");
-		expect(body.message).toBe("Internal server error");
+		expect(body.message).toBe("Errore interno del server");
 	});
 
 	it("returns 409 for a PostgreSQL unique violation (code 23505)", async () => {

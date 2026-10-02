@@ -31,7 +31,8 @@ export const betterAuth = new Elysia({ name: "better-auth" })
 				const session = await auth.api.getSession({
 					headers,
 				});
-				if (!session) throw new ServiceError(401, "Authentication required");
+				if (!session)
+					throw new ServiceError(401, "Devi accedere per continuare");
 				return {
 					user: session.user,
 					session: session.session,

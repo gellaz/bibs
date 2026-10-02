@@ -28,7 +28,10 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			app
 				.resolve(async ({ user }) => {
 					if (user.role !== "admin")
-						throw new ServiceError(403, "Admin access required");
+						throw new ServiceError(
+							403,
+							"Accesso riservato agli amministratori",
+						);
 					return {};
 				})
 				.use(productMacroCategoriesWriteRoutes)

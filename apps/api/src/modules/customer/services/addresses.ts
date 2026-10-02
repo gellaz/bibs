@@ -119,7 +119,8 @@ export async function createAddress(params: CreateAddressParams) {
 		with: municipalityWith,
 	});
 
-	if (!addr) throw new ServiceError(500, "Address not found after insert");
+	if (!addr)
+		throw new ServiceError(500, "Indirizzo non trovato dopo il salvataggio");
 	return reshapeAddress(addr);
 }
 
@@ -164,14 +165,15 @@ export async function updateAddress(params: UpdateAddressParams) {
 		return result;
 	});
 
-	if (!updated) throw new ServiceError(404, "Address not found");
+	if (!updated) throw new ServiceError(404, "Indirizzo non trovato");
 
 	const addr = await db.query.customerAddress.findFirst({
 		where: eq(customerAddress.id, updated.id),
 		with: municipalityWith,
 	});
 
-	if (!addr) throw new ServiceError(500, "Address not found after update");
+	if (!addr)
+		throw new ServiceError(500, "Indirizzo non trovato dopo l'aggiornamento");
 	return reshapeAddress(addr);
 }
 
@@ -193,6 +195,6 @@ export async function deleteAddress(params: DeleteAddressParams) {
 		)
 		.returning();
 
-	if (!deleted) throw new ServiceError(404, "Address not found");
+	if (!deleted) throw new ServiceError(404, "Indirizzo non trovato");
 	return deleted;
 }

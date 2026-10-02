@@ -291,7 +291,10 @@ export async function listProducts(params: ListProductsParams) {
 					return [dir(product.updatedAt), desc(product.createdAt)];
 				case "stock":
 					if (!storeId) {
-						throw new ServiceError(400, "sort=stock requires storeId");
+						throw new ServiceError(
+							400,
+							"Per ordinare per stock seleziona un negozio",
+						);
 					}
 					return [dir(storeProduct.stock), desc(product.createdAt)];
 				default:
@@ -500,7 +503,7 @@ async function loadAccessibleProduct(
 		with: { storeProducts: { columns: { storeId: true } } },
 	});
 	if (!found || !isProductAccessible(found.storeProducts, accessibleStoreIds)) {
-		throw new ServiceError(404, "Product not found");
+		throw new ServiceError(404, "Prodotto non trovato");
 	}
 	return found;
 }
@@ -536,9 +539,9 @@ export async function getProduct(params: GetProductParams) {
 		},
 	});
 
-	if (!found) throw new ServiceError(404, "Product not found");
+	if (!found) throw new ServiceError(404, "Prodotto non trovato");
 	if (!isProductAccessible(found.storeProducts, accessibleStoreIds)) {
-		throw new ServiceError(404, "Product not found");
+		throw new ServiceError(404, "Prodotto non trovato");
 	}
 
 	return {
@@ -594,7 +597,7 @@ export async function createProduct(params: CreateProductParams) {
 					eq(brand.sellerProfileId, sellerProfileId),
 				),
 			});
-			if (!owned) throw new ServiceError(404, "Brand not found");
+			if (!owned) throw new ServiceError(404, "Brand non trovato");
 			resolvedBrandId = owned.id;
 		} else if (brandName) {
 			resolvedBrandId = await findOrCreateBrandInTx(
@@ -717,7 +720,7 @@ export async function updateProduct(params: UpdateProductParams) {
 						eq(brand.sellerProfileId, sellerProfileId),
 					),
 				});
-				if (!owned) throw new ServiceError(404, "Brand not found");
+				if (!owned) throw new ServiceError(404, "Brand non trovato");
 				productUpdates.brandId = owned.id;
 			}
 		} else if (brandName) {
@@ -834,7 +837,7 @@ export async function deleteProduct(params: DeleteProductParams) {
 		)
 		.returning();
 
-	if (!deleted) throw new ServiceError(404, "Product not found");
+	if (!deleted) throw new ServiceError(404, "Prodotto non trovato");
 
 	// Clean up S3 files (best-effort, product already deleted from DB)
 	await Promise.allSettled(images.map((img) => s3.delete(img.key)));

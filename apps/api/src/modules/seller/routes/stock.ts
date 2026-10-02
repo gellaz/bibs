@@ -199,7 +199,7 @@ export const stockRoutes = new Elysia()
 				storeId: params.storeId,
 				sellerProfileId: sp.id,
 			});
-			return okMessage("Store-product link deleted");
+			return okMessage("Prodotto rimosso dal negozio");
 		},
 		{
 			params: t.Object({

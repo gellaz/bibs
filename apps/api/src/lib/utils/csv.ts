@@ -70,12 +70,15 @@ export function parseCsv(text: string): {
 		}
 	}
 	if (inQuotes) {
-		throw new ServiceError(400, "Unterminated quoted field in CSV");
+		throw new ServiceError(
+			400,
+			"Il file CSV non è valido: un campo tra virgolette non è stato chiuso.",
+		);
 	}
 	endRecord();
 
 	if (records.length === 0) {
-		throw new ServiceError(400, "CSV file is empty");
+		throw new ServiceError(400, "Il file CSV è vuoto.");
 	}
 
 	const headers = records[0].map((h) => h.toLowerCase());

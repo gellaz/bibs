@@ -36,7 +36,8 @@ export async function updateStoreMacroCategory(
 		.where(eq(storeMacroCategory.id, macroCategoryId))
 		.returning();
 
-	if (!updated) throw new ServiceError(404, "Store macro category not found");
+	if (!updated)
+		throw new ServiceError(404, "Macro categoria negozio non trovata");
 	return updated;
 }
 
@@ -49,7 +50,7 @@ export async function deleteStoreMacroCategory(macroCategoryId: string) {
 	if (subCount > 0) {
 		throw new ServiceError(
 			409,
-			`Cannot delete macro category: ${subCount} sub-categor${subCount === 1 ? "y" : "ies"} still attached`,
+			`Macro categoria non eliminabile: ha ancora ${subCount} sotto-categori${subCount === 1 ? "a collegata" : "e collegate"}`,
 		);
 	}
 
@@ -58,6 +59,7 @@ export async function deleteStoreMacroCategory(macroCategoryId: string) {
 		.where(eq(storeMacroCategory.id, macroCategoryId))
 		.returning();
 
-	if (!deleted) throw new ServiceError(404, "Store macro category not found");
+	if (!deleted)
+		throw new ServiceError(404, "Macro categoria negozio non trovata");
 	return deleted;
 }

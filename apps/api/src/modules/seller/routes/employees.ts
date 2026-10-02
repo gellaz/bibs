@@ -215,7 +215,7 @@ export const employeesRoutes = new Elysia()
 				employeeId: params.employeeId,
 				sellerProfileId: sp.id,
 			});
-			return okMessage("Employee removed");
+			return okMessage("Dipendente rimosso");
 		},
 		{
 			params: t.Object({

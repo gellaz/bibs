@@ -158,7 +158,7 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 				"Route not found",
 			);
 
-			return status(404, errorBody("NOT_FOUND", "Route not found"));
+			return status(404, errorBody("NOT_FOUND", "Risorsa non trovata"));
 		}
 
 		pino.error(
@@ -172,6 +172,9 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 			"Unhandled error",
 		);
 
-		return status(500, errorBody("INTERNAL_ERROR", "Internal server error"));
+		return status(
+			500,
+			errorBody("INTERNAL_ERROR", "Errore interno del server"),
+		);
 	},
 );

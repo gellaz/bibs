@@ -29,7 +29,7 @@ export async function findSellerOrder(
 	});
 
 	if (!existing || existing.store.sellerProfileId !== sellerProfileId)
-		throw new ServiceError(404, "Order not found");
+		throw new ServiceError(404, "Ordine non trovato");
 
 	return existing;
 }
@@ -48,7 +48,7 @@ export async function transitionOrder(
 
 	// Verify store-level accessibility
 	if (!accessibleStoreIds.includes(existing.storeId)) {
-		throw new ServiceError(404, "Order not found");
+		throw new ServiceError(404, "Ordine non trovato");
 	}
 
 	assertTransition(
@@ -192,7 +192,7 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 	});
 
 	if (!found || !storeIds.includes(found.storeId))
-		throw new ServiceError(404, "Order not found");
+		throw new ServiceError(404, "Ordine non trovato");
 
 	const { store, ...foundRest } = found;
 	return {
@@ -259,7 +259,7 @@ export async function cancelSellerOrder(params: {
 			with: { items: true },
 		});
 		if (!existing || !storeIds.includes(existing.storeId))
-			throw new ServiceError(404, "Order not found");
+			throw new ServiceError(404, "Ordine non trovato");
 
 		assertCancellable(existing);
 

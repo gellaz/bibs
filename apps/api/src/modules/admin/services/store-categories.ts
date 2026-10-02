@@ -56,7 +56,7 @@ export async function updateStoreCategory(params: UpdateStoreCategoryParams) {
 		const existing = await db.query.storeCategory.findFirst({
 			where: eq(storeCategory.id, categoryId),
 		});
-		if (!existing) throw new ServiceError(404, "Store category not found");
+		if (!existing) throw new ServiceError(404, "Categoria negozio non trovata");
 		return existing;
 	}
 
@@ -66,7 +66,7 @@ export async function updateStoreCategory(params: UpdateStoreCategoryParams) {
 		.where(eq(storeCategory.id, categoryId))
 		.returning();
 
-	if (!updated) throw new ServiceError(404, "Store category not found");
+	if (!updated) throw new ServiceError(404, "Categoria negozio non trovata");
 	return updated;
 }
 
@@ -76,6 +76,6 @@ export async function deleteStoreCategory(categoryId: string) {
 		.where(eq(storeCategory.id, categoryId))
 		.returning();
 
-	if (!deleted) throw new ServiceError(404, "Store category not found");
+	if (!deleted) throw new ServiceError(404, "Categoria negozio non trovata");
 	return deleted;
 }
