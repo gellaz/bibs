@@ -463,7 +463,7 @@ function StoresPage() {
 								<button
 									type="button"
 									onClick={clearFilters}
-									className="rounded-md text-primary text-sm underline-offset-4 outline-none hover:underline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron"
+									className="rounded-md text-primary text-sm underline-offset-4 outline-none hover:underline focus-visible:focus-ring"
 								>
 									{m.store_clear_filters()}
 								</button>

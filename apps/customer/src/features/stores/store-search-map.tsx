@@ -77,7 +77,7 @@ function PinCard({
 		<Link
 			to="/stores/$storeId"
 			params={{ storeId: pin.id }}
-			className="group flex w-56 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-saffron"
+			className="group flex w-56 items-center gap-3 rounded-lg outline-none focus-visible:focus-ring"
 		>
 			<div className="size-14 shrink-0 overflow-hidden rounded-md border border-border">
 				<TileImage url={pin.imageUrl} name={pin.name} />

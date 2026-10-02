@@ -83,7 +83,7 @@ export function TabNav({
 								aria-selected={isActive}
 								onClick={() => onTabChange(tab.value)}
 								className={cn(
-									"group relative inline-flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm whitespace-nowrap transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+									"group relative inline-flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm whitespace-nowrap transition-all duration-150 focus-visible:focus-ring",
 									isActive
 										? "font-semibold text-primary"
 										: "font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground",

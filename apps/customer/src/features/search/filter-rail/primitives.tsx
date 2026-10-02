@@ -7,8 +7,7 @@ import { ChevronRight } from "lucide-react";
  * saffron da solo non arriva al 3:1 richiesto a un indicatore di focus, è
  * l'Ink a portare il contrasto (The Focus Contrast Rule in DESIGN.md).
  */
-export const FOCUS_RING =
-	"outline-none focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron";
+export const FOCUS_RING = "outline-none focus-visible:focus-ring";
 
 const ROW = `flex min-h-11 w-full items-center gap-2 rounded-md py-2 pr-2 text-left transition-colors lg:min-h-9 ${FOCUS_RING}`;
 

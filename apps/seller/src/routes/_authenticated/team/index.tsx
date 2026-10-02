@@ -297,7 +297,7 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 										}
 										aria-pressed={isSelected}
 										className={cn(
-											"focus-visible:ring-ring/50 flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left outline-none transition-colors focus-visible:ring-2",
+											"focus-visible:focus-ring flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left outline-none transition-colors",
 											isSelected
 												? "border-primary bg-primary/10 dark:bg-primary/15"
 												: "hover:bg-accent/50 border-transparent",

@@ -376,7 +376,7 @@ export function SortableHeader<TData extends RowData, TValue>({
 			type="button"
 			onClick={column.getToggleSortingHandler()}
 			className={cn(
-				"focus-visible:ring-ring/40 -mx-1 inline-flex h-full w-fit items-center gap-1 rounded px-1 text-[0.72rem] font-medium tracking-[0.08em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none",
+				"-mx-1 inline-flex h-full w-fit items-center gap-1 rounded px-1 text-[0.72rem] font-medium tracking-[0.08em] uppercase transition-colors focus-visible:focus-ring",
 				sorted
 					? "text-foreground"
 					: "text-muted-foreground hover:text-foreground",

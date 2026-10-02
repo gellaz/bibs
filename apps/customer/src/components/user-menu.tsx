@@ -34,7 +34,7 @@ export function UserMenu() {
 				<button
 					type="button"
 					aria-label={m.nav_account_menu_aria()}
-					className="flex size-11 items-center justify-center rounded-full outline-none transition-[background-color] hover:bg-muted focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					className="flex size-11 items-center justify-center rounded-full outline-none transition-[background-color] hover:bg-muted focus-visible:focus-ring"
 				>
 					<UserAvatar name={user.name} image={user.image} />
 				</button>

@@ -39,7 +39,7 @@ export function StoreChips({ storeIds }: { storeIds: string[] }) {
 					<PopoverTrigger asChild>
 						<button
 							type="button"
-							className="cursor-pointer rounded-4xl outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+							className="cursor-pointer rounded-4xl outline-none focus-visible:focus-ring"
 						>
 							<Badge
 								variant="outline"

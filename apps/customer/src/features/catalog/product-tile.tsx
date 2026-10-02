@@ -106,7 +106,7 @@ export function ProductTile({
 								aria-label={m.product_store_link_aria({
 									store: product.store.name,
 								})}
-								className="rounded-sm font-medium text-foreground underline-offset-2 outline-none hover:underline focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron"
+								className="rounded-sm font-medium text-foreground underline-offset-2 outline-none hover:underline focus-visible:focus-ring"
 							>
 								{product.store.name}
 							</Link>

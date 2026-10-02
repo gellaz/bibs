@@ -171,8 +171,7 @@ default.
 - Two accent roles, one per register. **Saffron** is the brand-register
   signal (customer surfaces): reward earned, civic partner, "aperto adesso",
   presence dots. **Cobalt** is the product-register accent (seller, admin):
-  selection state, focus on operational controls, accent fills on chips and
-  badges. Neither is decorative; neither is used across registers.
+  selection state, accent fills on chips and badges. Neither is decorative; neither is used across registers.
 - Flat by default. Elevation is reserved for state response.
 - Motion respects `prefers-reduced-motion` without exception. Ease-out
   exponential curves, no bounce.
@@ -200,6 +199,10 @@ visibility one register at a time.
   pressed states, the strongest emphasis. Used sparingly.
 - **Ink Soft** (`oklch(0.46 0.10 258)`): secondary navigation, deemphasized
   links, ink at half-voice.
+- **Ink Night** (`oklch(0.70 0.10 258)`): the Ink hue lifted for dark
+  surfaces. Carries focus in dark mode (The One Ring), so the ring stays
+  navy in both themes instead of turning into the Cream of the dark
+  primary.
 
 ### Neutral: Warm Paper
 
@@ -232,13 +235,13 @@ chrome.
 ### Accent (product register): Cobalt
 
 Reserved for seller and admin surfaces. Operational accent: selection,
-focus on controls, accent fills on chips and badges, primary action
+accent fills on chips and badges, primary action
 emphasis where ink alone is too quiet. Aligned to Tailwind's `blue-*`
 family so existing seller usage (`bg-blue-50 text-blue-700`, etc.)
 migrates token-by-token without a visual jump.
 
 - **Cobalt** (`oklch(0.55 0.19 256)`): mid-tier accent, ≈ blue-500. Filled
-  chips, accent dots, ring at focus on operational controls.
+  chips, accent dots.
 - **Cobalt Soft** (`oklch(0.95 0.05 256)`): tinted background, ≈ blue-50.
   Chip and badge fills behind cobalt-deep text.
 - **Cobalt Deep** (`oklch(0.42 0.19 256)`): pressed and emphasis, ≈
@@ -269,9 +272,8 @@ chrome, never on a gradient. Every additional saffron pixel weakens the
 one that earned its place.
 
 **The Cobalt Discipline.** On seller and admin surfaces, cobalt earns
-its place by carrying selection and focus on operational controls. It
-can paint more than 5% of a chip-dense view (a selected row, a focused
-input ring, an accent badge), but never replaces ink as the primary
+its place by carrying selection on operational controls. It can paint
+more than 5% of a chip-dense view (a selected row, an accent badge), but never replaces ink as the primary
 action. Ink stays the voice; cobalt is the state.
 
 **The Cross-Register Ban.** Saffron must not appear on seller/admin
@@ -279,15 +281,30 @@ chrome. Cobalt must not appear on customer brand surfaces. Each register
 keeps its accent; mixing them collapses the distinction the system is
 built on.
 
-**The Focus Contrast Rule.** Saffron never carries a focus indicator on
-its own. Measured against the surfaces it lands on, saffron is 1.96:1 on
-cream and 1.85:1 on warm paper, and even saffron-deep reaches only
-3.06:1 on cream and 2.89:1 on a card — under the 3:1 that WCAG 2.2
-SC 1.4.11 asks of a focus indicator. Where the customer ring is saffron,
-an Ink border or outline (11.44:1 on cream, Cream on dusk in dark) must
-carry the contrast underneath it. Cobalt has no such constraint
-(4.76:1 on cream): on seller and admin the accent can be the whole
-indicator.
+**The One Ring.** Focus is Ink on every focusable element in all three
+apps: Ink in light mode, Ink Night in dark (token `--ring`). Not the dark
+`--primary`: that is Cream, and a white ring is every dark site's default
+and competes with the Cream primary button. Focus is interaction state, not an accent, so it
+belongs to neither register: Saffron and Cobalt never carry it, and a
+keyboard user crossing from the shop to the back-office meets one ring.
+One color, two shapes, chosen by what the control has to recolor.
+**Fields** (input, textarea, select, combobox, input groups, steppers)
+turn their border to the ring color and gain a soft 3px halo at 50%
+hugging the border, no gap (`focus-visible:border-ring ring-3
+ring-ring/50`): the solid border is the indicator, the halo is the
+softness. **Everything else** (buttons, links, chips, tabs, tiles) gets a
+2px solid outline at a 2px offset (`focus-visible:focus-ring`), because a
+filled control has no border to recolor and an Ink ring on an Ink button
+would vanish (in dark, Ink Night on a Cream button is 2.56:1): the offset
+lands the ring on the surface. Contrast is never
+in question: Ink is 11.36:1 on cream, 10.72:1 on warm paper and 9.08:1
+against the resting Warm Edge border; Ink Night in dark is 6.77:1 on the dusk
+background, 5.81:1 on a card, 5.10:1 on a popover and 4.06:1 on a field
+fill. The only exception is a control
+floating on a photograph (the back chip on a store cover): there the ring
+is Cream with an Ink/40 offset, because no single hue holds contrast on
+an arbitrary image. The outline is not a box-shadow, so on controls it
+never collides with the Brick `aria-invalid` ring.
 
 **The Ink Rule.** Pure black (`#000`) and pure white (`#fff`) are
 prohibited. Foreground is Dusk. Background is Cream. Surfaces with no
@@ -400,11 +417,9 @@ statement of offer ("vai al negozio", "prenota").
   inline-auto on desktop.
 - **Hover:** background shifts to Ink Deep over 180ms ease-out-quart.
   No translate, no glow.
-- **Focus:** 2px ring offset 2px from the surface. Ring color follows the
-  register: **Saffron** on customer surfaces, **Cobalt** on seller/admin.
-  Ink Soft is the fallback for ghost and secondary variants in both
-  registers. A saffron ring never stands alone — see The Focus Contrast
-  Rule.
+- **Focus:** The One Ring, control shape: 2px Ink outline (Ink Night
+  in dark) offset 2px from the control, the same on every variant and in
+  every register.
 - **Secondary:** Warm Paper background, Ink text, same padding.
 - **Ghost:** transparent background, Ink text, smaller padding
   (0.5rem × 0.875rem). For tertiary actions inside cards.
@@ -418,11 +433,10 @@ Inputs are openings, not gates.
 - **Shape:** rounded `md` (0.425rem).
 - **Style:** Cream background, Warm Edge 1px border, Dusk text, body
   typography, padding 0.625rem × 0.875rem.
-- **Focus:** border shifts to Ink, ring 2px outside the border at offset
-  2px. Ring is Saffron on customer surfaces, Cobalt on seller/admin.
-  Smooth 150ms ease-out-quart. The Ink border is not decoration: it is
-  what carries the contrast under a saffron ring (The Focus Contrast
-  Rule).
+- **Focus:** The One Ring, field shape: border shifts to Ink (Ink Night
+  in dark) with a soft 3px halo at 50% hugging it, no gap. Composite fields
+  (input groups, combobox chips, steppers) ring the whole group, never
+  the inner input.
 - **Error:** border shifts to Brick, helper text in Brick below the
   input. No icons or red glow; the change in border carries the signal.
 - **Disabled:** 60% opacity, Warm Paper background. Cursor: not-allowed.

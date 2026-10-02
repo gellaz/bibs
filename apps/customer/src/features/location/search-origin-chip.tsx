@@ -29,8 +29,7 @@ import { useSearchOrigin } from "./search-origin";
 import { addressOriginLabel } from "./search-origin-state";
 
 /** Alone saffron + anello Ink: la regola del focus di DESIGN.md. */
-const FOCUS_RING =
-	"outline-none focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron";
+const FOCUS_RING = "outline-none focus-visible:focus-ring";
 
 /**
  * Il selettore dell'origine. Sta nell'header perché "da dove cerco" è la prima

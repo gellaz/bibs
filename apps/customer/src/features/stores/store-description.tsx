@@ -47,7 +47,7 @@ export function StoreDescription({
 					type="button"
 					aria-expanded={expanded}
 					onClick={() => setExpanded((v) => !v)}
-					className="-my-1.5 rounded-sm py-1.5 font-medium text-primary text-sm underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					className="-my-1.5 rounded-sm py-1.5 font-medium text-primary text-sm underline-offset-2 outline-none hover:underline focus-visible:focus-ring"
 				>
 					{expanded ? m.store_read_less() : m.store_read_more()}
 				</button>

@@ -18,7 +18,7 @@ export function CartBadge() {
 		<Link
 			to="/cart"
 			aria-label={m.cart_badge_aria({ count })}
-			className="relative rounded-md p-2 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[status=active]:text-foreground"
+			className="relative rounded-md p-2 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:focus-ring data-[status=active]:text-foreground"
 		>
 			<ShoppingBag className="size-5" aria-hidden />
 			{count > 0 && (

@@ -31,6 +31,9 @@
 	--ink: oklch(0.34 0.1 258);
 	--ink-deep: oklch(0.24 0.08 258);
 	--ink-soft: oklch(0.46 0.1 258);
+	/* Ink Night — the Ink hue lifted for dark surfaces. Carries focus in dark
+	   (The One Ring): navy in both themes, never the white of --primary. */
+	--ink-night: oklch(0.7 0.1 258);
 	--cream: oklch(0.985 0.008 80);
 	--warm-paper: oklch(0.965 0.012 80);
 	--warm-edge: oklch(0.91 0.012 80);
@@ -75,7 +78,9 @@
 	--success: var(--olive);
 	--border: var(--warm-edge);
 	--input: var(--warm-edge);
-	--ring: var(--ink-soft);
+	/* Focus — Ink across all three registers (The One Ring, DESIGN.md);
+	   Ink Night in dark. */
+	--ring: var(--ink);
 
 	/* Charts: brand-aligned roles. ink/ink-soft for sequences,
 	   olive=positive, saffron=accent, brick=alert. */
@@ -93,7 +98,7 @@
 	--sidebar-accent: var(--warm-edge);
 	--sidebar-accent-foreground: var(--ink);
 	--sidebar-border: var(--warm-edge);
-	--sidebar-ring: var(--ink-soft);
+	--sidebar-ring: var(--ink);
 
 	/* Typography. */
 	--font-sans: Geist, ui-sans-serif, sans-serif, system-ui;
@@ -160,7 +165,7 @@
 	--success: oklch(0.74 0.12 135);
 	--border: oklch(0.32 0.013 258);
 	--input: oklch(0.36 0.013 258);
-	--ring: oklch(0.62 0.1 258);
+	--ring: var(--ink-night);
 
 	--chart-1: oklch(0.62 0.1 258);
 	--chart-2: oklch(0.78 0.06 258);
@@ -175,7 +180,7 @@
 	--sidebar-accent: oklch(0.34 0.014 258);
 	--sidebar-accent-foreground: var(--cream);
 	--sidebar-border: oklch(0.32 0.013 258);
-	--sidebar-ring: oklch(0.62 0.1 258);
+	--sidebar-ring: var(--ink-night);
 }
 
 @theme inline {
@@ -183,6 +188,7 @@
 	--color-ink: var(--ink);
 	--color-ink-deep: var(--ink-deep);
 	--color-ink-soft: var(--ink-soft);
+	--color-ink-night: var(--ink-night);
 	--color-cream: var(--cream);
 	--color-warm-paper: var(--warm-paper);
 	--color-warm-edge: var(--warm-edge);
@@ -251,9 +257,27 @@
 	--shadow-2xl: var(--shadow-2xl);
 }
 
+/* The One Ring (DESIGN.md), control shape. Fields keep the shadcn shape
+   (border-ring + ring-3 ring-ring/50) in the same color. Outline, not
+   box-shadow, so it never collides with the aria-invalid rings and the offset
+   gap shows the real surface underneath. Use as `focus-visible:focus-ring`. */
+@utility focus-ring {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
 @layer base {
 	* {
-		@apply border-border outline-ring/50;
+		@apply border-border outline-ring;
+		/* Ring geometry at rest, so `transition-all` on a control fades the ring
+		   in instead of animating it from the default 3px `medium`. */
+		outline-width: 2px;
+		outline-offset: 2px;
+	}
+	/* Browser default focus rings follow the system too: anything focusable that
+	   no component styles still gets The One Ring. */
+	:focus-visible {
+		@apply focus-ring;
 	}
 	body {
 		@apply bg-background text-foreground;
