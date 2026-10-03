@@ -35,14 +35,14 @@ export function SearchField({
 				onChange={(e) => onChange(e.target.value)}
 				placeholder={placeholder}
 				aria-label={ariaLabel}
-				className="h-12 w-full rounded-lg border border-border bg-background pr-11 pl-11 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-saffron [&::-webkit-search-cancel-button]:hidden"
+				className="h-12 w-full rounded-lg border border-border bg-background pr-11 pl-11 text-base text-foreground outline-none transition-[color,box-shadow,border-color] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-search-cancel-button]:hidden"
 			/>
 			{value && (
 				<button
 					type="button"
 					onClick={() => onChange("")}
 					aria-label={clearLabel}
-					className="-translate-y-1/2 absolute top-1/2 right-2 rounded-md p-2 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron"
+					className="-translate-y-1/2 absolute top-1/2 right-2 rounded-md p-2 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:focus-ring"
 				>
 					<X className="size-4" aria-hidden />
 				</button>

@@ -28,7 +28,8 @@ const ITALY_ZOOM = 5;
  */
 function clusterIcon(cluster: L.MarkerCluster) {
 	const count = cluster.getChildCount();
-	const size = count < 10 ? 36 : count < 100 ? 44 : 52;
+	// 44px minimo: tap target del customer (PRODUCT.md).
+	const size = count < 10 ? 44 : count < 100 ? 48 : 56;
 	return L.divIcon({
 		className: "",
 		html: `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:9999px;background:var(--saffron);border:2px solid var(--ink);color:var(--ink);font-family:var(--font-mono);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;box-shadow:0 1px 4px rgb(0 0 0 / 0.25)">${count}</div>`,
@@ -77,7 +78,7 @@ function PinCard({
 		<Link
 			to="/stores/$storeId"
 			params={{ storeId: pin.id }}
-			className="group flex w-56 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-saffron"
+			className="group flex w-56 items-center gap-3 rounded-lg outline-none focus-visible:focus-ring"
 		>
 			<div className="size-14 shrink-0 overflow-hidden rounded-md border border-border">
 				<TileImage url={pin.imageUrl} name={pin.name} />

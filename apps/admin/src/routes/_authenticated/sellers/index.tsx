@@ -337,6 +337,7 @@ function SellersPage() {
 				tabs={sellerTabs}
 				activeTab={activeTab}
 				onTabChange={handleTabChange}
+				label="Stato dei venditori"
 			/>
 
 			<InputGroup className="max-w-md">

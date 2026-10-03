@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/login-form";
 import type { LoginFormData } from "@/features/auth/schemas/login";
 import { authClient } from "@/lib/auth-client";
+import { authErrorMessage } from "@/lib/auth-error";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/login")({
@@ -46,13 +47,15 @@ function LoginPage() {
 					setEmailNotVerified(data.email);
 					return;
 				}
-				setError(signInError.message ?? "Credenziali non valide");
+				setError(
+					authErrorMessage(signInError, m.auth_login_invalid_credentials()),
+				);
 				return;
 			}
 
 			void navigate({ to: "/" });
 		} catch {
-			setError("Errore durante il login. Riprova.");
+			setError(m.auth_login_error());
 		}
 	}
 
@@ -86,7 +89,7 @@ function LoginPage() {
 					<LoginForm onSubmit={handleSubmit} apiError={error} />
 					<Link
 						to="/forgot-password"
-						className="mt-2 block text-center text-sm text-muted-foreground hover:underline"
+						className="mx-auto mt-2 block w-fit rounded-sm text-center text-sm text-muted-foreground hover:underline"
 					>
 						{m.auth_login_forgot_password()}
 					</Link>

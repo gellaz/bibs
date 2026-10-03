@@ -129,7 +129,7 @@ function LoginPage() {
 						</Button>
 						<Link
 							to="/forgot-password"
-							className="text-center text-sm text-muted-foreground hover:underline"
+							className="self-center rounded-sm text-center text-sm text-muted-foreground hover:underline"
 						>
 							{m.auth_login_forgot_password()}
 						</Link>

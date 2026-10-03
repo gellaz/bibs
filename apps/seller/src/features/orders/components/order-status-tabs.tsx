@@ -53,6 +53,7 @@ export function OrderStatusTabs({
 			tabs={tabs}
 			activeTab={value}
 			onTabChange={(v) => onChange(v as OrderTab)}
+			label={m.orders_tabs_label()}
 		/>
 	);
 }

@@ -173,7 +173,9 @@ function AuthenticatedLayout() {
 								<div aria-hidden className="h-4 w-px bg-border" />
 								<AppBreadcrumb />
 							</header>
-							<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+							{/* clip, non hidden: hidden ne fa un contenitore di scroll che
+							    non scorre mai (scorre la finestra) e blocca ogni `sticky`. */}
+							<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip p-4">
 								<div className="mb-4 empty:hidden">
 									<StoreBillingBanner />
 								</div>
@@ -272,7 +274,7 @@ function EmployeeStoreGate({
 						<div aria-hidden className="h-4 w-px bg-border" />
 						<AppBreadcrumb />
 					</header>
-					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden p-4">
+					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip p-4">
 						<div className="mb-4 empty:hidden">
 							<StoreBillingBanner />
 						</div>

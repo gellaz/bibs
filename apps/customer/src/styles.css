@@ -48,3 +48,29 @@
 .leaflet-container .leaflet-popup a.leaflet-popup-close-button:focus {
 	opacity: 1;
 }
+
+/*
+ * Controlli di zoom a 44px: tap target del customer (PRODUCT.md). Il vendor ne
+ * dà 26–30 (`.leaflet-bar a`, `.leaflet-touch .leaflet-bar a`), unlayered: vinciamo con un
+ * selettore più specifico, come per il popup sopra. Colori dai token, così
+ * seguono anche il dark.
+ */
+.leaflet-container .leaflet-control-zoom.leaflet-bar a {
+	width: 44px;
+	height: 44px;
+	line-height: 44px;
+	font-size: 20px;
+	background-color: var(--popover);
+	color: var(--popover-foreground);
+	border-bottom-color: var(--border);
+}
+.leaflet-container .leaflet-control-zoom.leaflet-bar a:hover {
+	background-color: var(--accent);
+}
+.leaflet-container .leaflet-control-zoom.leaflet-bar a.leaflet-disabled {
+	background-color: var(--muted);
+	color: var(--muted-foreground);
+}
+.leaflet-container .leaflet-control-zoom.leaflet-bar {
+	border-color: var(--border);
+}

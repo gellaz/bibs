@@ -33,9 +33,9 @@ import {
 import { BrandCombobox, type BrandComboboxValue } from "./brand-combobox";
 import { CharacteristicLossDialog } from "./characteristic-loss-dialog";
 import {
-	ProductCategoriesPicker,
+	ProductCategoryPicker,
 	useProductMacroCategories,
-} from "./product-categories-picker";
+} from "./product-category-picker";
 import { ProductCharacteristicsSection } from "./product-characteristics-section";
 import {
 	type ExistingImage,
@@ -441,8 +441,12 @@ export function ProductForm({
 						</Field>
 
 						<Field>
-							<FieldLabel>Brand</FieldLabel>
-							<BrandCombobox value={brandValue} onChange={onBrandChange} />
+							<FieldLabel htmlFor="product-brand">Brand</FieldLabel>
+							<BrandCombobox
+								id="product-brand"
+								value={brandValue}
+								onChange={onBrandChange}
+							/>
 						</Field>
 
 						<Field className="col-span-full">
@@ -525,7 +529,7 @@ export function ProductForm({
 					>
 						<div className="space-y-4">
 							<Field data-invalid={!!errors.productCategoryId}>
-								<ProductCategoriesPicker
+								<ProductCategoryPicker
 									macroCategoryId={macroCategoryId}
 									categoryId={productCategoryId}
 									onCategoryChange={(id) =>

@@ -41,7 +41,7 @@ export function StoreTile({ store, showDistance }: StoreTileProps) {
 		<Link
 			to="/stores/$storeId"
 			params={{ storeId: store.id }}
-			className="group flex flex-col gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-saffron"
+			className="group flex flex-col gap-3 rounded-lg outline-none focus-visible:focus-ring"
 		>
 			<div className="relative aspect-square overflow-hidden rounded-lg border border-border">
 				<TileImage url={store.imageUrl} name={store.name} />

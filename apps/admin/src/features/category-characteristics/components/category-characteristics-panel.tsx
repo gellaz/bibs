@@ -127,6 +127,7 @@ export function CategoryCharacteristicsPanel({
 				]}
 				activeTab={tab}
 				onTabChange={(v) => setTab(v as Tab)}
+				label="Caratteristiche della categoria"
 			/>
 
 			<div className="relative">

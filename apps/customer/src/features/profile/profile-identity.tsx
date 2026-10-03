@@ -85,7 +85,7 @@ export function ProfileIdentity() {
 					type="button"
 					onClick={() => setDialogOpen(true)}
 					aria-label={m.profile_avatar_edit()}
-					className="group relative shrink-0 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					className="group relative shrink-0 rounded-full outline-none focus-visible:focus-ring"
 				>
 					<UserAvatar
 						name={displayName(user)}
@@ -119,7 +119,7 @@ export function ProfileIdentity() {
 									<Link
 										to="/points"
 										search={{ page: 1 }}
-										className="relative inline-flex rounded-full outline-none transition-opacity after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] hover:opacity-90 focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transition-none"
+										className="relative inline-flex rounded-full outline-none transition-opacity after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] hover:opacity-90 focus-visible:focus-ring motion-reduce:transition-none"
 									>
 										{profile.data.points > 0 ? (
 											<PointsPill points={profile.data.points} />

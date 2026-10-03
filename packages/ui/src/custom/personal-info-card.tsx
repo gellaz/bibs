@@ -137,7 +137,7 @@ export function PersonalInfoCard({
 							<button
 								type="button"
 								onClick={() => setDialogOpen(true)}
-								className="group relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+								className="group relative rounded-full focus-visible:focus-ring"
 								aria-label={labels.avatarEdit}
 							>
 								<UserAvatar
@@ -170,7 +170,6 @@ export function PersonalInfoCard({
 								<Input
 									id="firstName"
 									placeholder={labels.firstNamePlaceholder}
-									autoFocus
 									value={firstName}
 									onChange={(e) => setFirstName(e.target.value)}
 									onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}

@@ -51,6 +51,7 @@ export function ProductStatusTabs({ storeId, value, onChange }: Props) {
 			tabs={tabs}
 			activeTab={value}
 			onTabChange={(v) => onChange(v as ProductStatusFilter)}
+			label={m.products_tabs_label()}
 		/>
 	);
 }

@@ -4,13 +4,15 @@ import { useMap } from "react-leaflet";
 
 /**
  * Pin di un negozio. L'HTML di un `divIcon` vive nel documento, quindi le
- * variabili CSS del brand risolvono e restano theme-aware.
+ * variabili CSS del brand risolvono e restano theme-aware. Il disegno è 32×40,
+ * l'area cliccabile 44×48 (tap target del customer): il margine è trasparente
+ * e la punta resta sull'ancora.
  */
 export const pinIcon = L.divIcon({
 	className: "",
-	html: `<svg width="32" height="40" viewBox="0 0 24 30" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C6.48 0 2 4.48 2 10c0 6.5 10 20 10 20s10-13.5 10-20C22 4.48 17.52 0 12 0z" fill="var(--saffron)" stroke="var(--ink)" stroke-width="1.5"/><circle cx="12" cy="10" r="3.2" fill="var(--ink)"/></svg>`,
-	iconSize: [32, 40],
-	iconAnchor: [16, 40],
+	html: `<div style="display:flex;align-items:flex-end;justify-content:center;width:44px;height:48px"><svg width="32" height="40" viewBox="0 0 24 30" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C6.48 0 2 4.48 2 10c0 6.5 10 20 10 20s10-13.5 10-20C22 4.48 17.52 0 12 0z" fill="var(--saffron)" stroke="var(--ink)" stroke-width="1.5"/><circle cx="12" cy="10" r="3.2" fill="var(--ink)"/></svg></div>`,
+	iconSize: [44, 48],
+	iconAnchor: [22, 48],
 });
 
 /**

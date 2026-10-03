@@ -10,7 +10,7 @@ interface SearchTabsProps {
 }
 
 const TAB =
-	"inline-flex min-h-11 items-center justify-center rounded-md px-4 font-medium text-muted-foreground text-sm transition-colors outline-none hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 focus-visible:ring-2 focus-visible:ring-saffron data-[status=active]:bg-primary data-[status=active]:text-primary-foreground sm:min-h-9";
+	"inline-flex min-h-11 items-center justify-center rounded-md px-4 font-medium text-muted-foreground text-sm transition-colors outline-none hover:text-foreground focus-visible:focus-ring data-[status=active]:bg-primary data-[status=active]:text-primary-foreground sm:min-h-9";
 
 /** Stessa apparenza di `data-[status=active]`, applicata a mano sulla scheda corrente. */
 const TAB_CURRENT = "bg-primary text-primary-foreground";

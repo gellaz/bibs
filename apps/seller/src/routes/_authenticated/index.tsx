@@ -248,7 +248,7 @@ function ActionsList({
 									to={a.href}
 									className={cn(
 										"group flex items-center gap-4 px-5 py-4 transition-colors",
-										"hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
+										"hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:focus-ring",
 									)}
 								>
 									<span

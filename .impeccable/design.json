@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 2,
-	"generatedAt": "2026-09-11T14:11:05Z",
+	"generatedAt": "2026-10-02T15:09:09Z",
 	"title": "Design System: bibs",
 	"extensions": {
 		"colorMeta": {
@@ -28,6 +28,11 @@
 				"role": "primary",
 				"displayName": "Ink Soft",
 				"canonical": "oklch(0.46 0.10 258)"
+			},
+			"ink-night": {
+				"role": "primary",
+				"displayName": "Ink Night",
+				"canonical": "oklch(0.70 0.10 258)"
 			},
 			"cream": {
 				"role": "neutral",
@@ -328,7 +333,7 @@
 			"Navy ink on warm cream, never pure white, never black. The page reads like a printed map, not a dashboard.",
 			"Generous spacing as a moral position. The merchant gets room.",
 			"Typography pairs Geist (UI workhorse) with Satoshi (warm display, loaded from Fontshare). Two voices, one register.",
-			"Two accent roles, one per register. Saffron is the brand-register signal (customer surfaces): reward earned, civic partner, \"aperto adesso\", presence dots. Cobalt is the product-register accent (seller, admin): selection state, focus on operational controls, accent fills on chips and badges. Neither is decorative; neither is used across registers.",
+			"Two accent roles, one per register. Saffron is the brand-register signal (customer surfaces): reward earned, civic partner, \"aperto adesso\", presence dots. Cobalt is the product-register accent (seller, admin): selection state, accent fills on chips and badges. Neither is decorative; neither is used across registers.",
 			"Flat by default. Elevation is reserved for state response.",
 			"Motion respects prefers-reduced-motion without exception. Ease-out exponential curves, no bounce."
 		],
@@ -340,7 +345,7 @@
 			},
 			{
 				"name": "The Cobalt Discipline",
-				"body": "On seller and admin surfaces, cobalt earns its place by carrying selection and focus on operational controls. It can paint more than 5% of a chip-dense view (a selected row, a focused input ring, an accent badge), but never replaces ink as the primary action. Ink stays the voice; cobalt is the state.",
+				"body": "On seller and admin surfaces, cobalt earns its place by carrying selection on operational controls. It can paint more than 5% of a chip-dense view (a selected row, an accent badge), but never replaces ink as the primary action. Ink stays the voice; cobalt is the state.",
 				"section": "colors"
 			},
 			{
@@ -349,8 +354,8 @@
 				"section": "colors"
 			},
 			{
-				"name": "The Focus Contrast Rule",
-				"body": "Saffron never carries a focus indicator on its own. Measured against the surfaces it lands on, saffron is 1.96:1 on cream and 1.85:1 on warm paper, and even saffron-deep reaches only 3.06:1 on cream and 2.89:1 on a card — under the 3:1 that WCAG 2.2 SC 1.4.11 asks of a focus indicator. Where the customer ring is saffron, an Ink border or outline (11.44:1 on cream, Cream on dusk in dark) must carry the contrast underneath it. Cobalt has no such constraint (4.76:1 on cream): on seller and admin the accent can be the whole indicator.",
+				"name": "The One Ring",
+				"body": "Focus is Ink on every focusable element in all three apps: Ink in light mode, Ink Night in dark (token --ring). Not the dark --primary: that is Cream, and a white ring is every dark site's default and competes with the Cream primary button. Focus is interaction state, not an accent, so it belongs to neither register: Saffron and Cobalt never carry it, and a keyboard user crossing from the shop to the back-office meets one ring. One color, two shapes, chosen by what the control has to recolor. Fields (input, textarea, select, combobox, input groups, steppers) turn their border to the ring color and gain a soft 3px halo at 50% hugging the border, no gap (focus-visible:border-ring ring-3 ring-ring/50): the solid border is the indicator, the halo is the softness. Everything else (buttons, links, chips, tabs, tiles) gets a 2px solid outline at a 2px offset (focus-visible:focus-ring), because a filled control has no border to recolor and an Ink ring on an Ink button would vanish (in dark, Ink Night on a Cream button is 2.56:1): the offset lands the ring on the surface. Contrast is never in question: Ink is 11.36:1 on cream, 10.72:1 on warm paper and 9.08:1 against the resting Warm Edge border; Ink Night in dark is 6.77:1 on the dusk background, 5.81:1 on a card, 5.10:1 on a popover and 4.06:1 on a field fill. The only exception is a control floating on a photograph (the back chip on a store cover): there the ring is Cream with an Ink/40 offset, because no single hue holds contrast on an arbitrary image. The outline is not a box-shadow, so on controls it never collides with the Brick aria-invalid ring.",
 				"section": "colors"
 			},
 			{

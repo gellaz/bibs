@@ -178,7 +178,6 @@ function StoreSettingsPage() {
 				})),
 			}}
 			onSubmit={(data) => updateMutation.mutate(data)}
-			onCancel={() => {}}
 			isPending={updateMutation.isPending}
 			submitLabel="Salva Modifiche"
 			pendingLabel="Salvataggio..."

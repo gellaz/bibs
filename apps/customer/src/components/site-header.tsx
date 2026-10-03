@@ -26,7 +26,7 @@ export function SiteHeader() {
 				<Link
 					to="/"
 					aria-label={m.nav_home_aria()}
-					className="-mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1 outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					className="-mx-1.5 flex items-center gap-2.5 rounded-md px-1.5 py-1 outline-none focus-visible:focus-ring"
 				>
 					<BrandMark className="size-9" />
 					<span className="font-bold font-display text-primary text-xl tracking-[-0.015em]">

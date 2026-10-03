@@ -38,7 +38,7 @@ export function ProductGallery({
 								aria-label={m.product_detail_photo_aria({ index: i + 1 })}
 								aria-pressed={i === index}
 								onClick={() => setIndex(i)}
-								className="block size-16 overflow-hidden rounded-md border border-border outline-none focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-foreground"
+								className="block size-16 overflow-hidden rounded-md border border-border outline-none focus-visible:focus-ring aria-pressed:border-foreground"
 							>
 								<img
 									src={img.url}

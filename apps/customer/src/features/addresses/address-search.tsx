@@ -100,9 +100,7 @@ export function AddressSearch({ onSelect, disabled }: AddressSearchProps) {
 
 			{/* Chiedere la posizione qui non cambia l'origine della ricerca:
 			    compilare un indirizzo non è dire "cerca da qui". */}
-			{(geoStatus === "idle" ||
-				geoStatus === "denied" ||
-				geoStatus === "pending") && (
+			{(geoStatus === "idle" || geoStatus === "pending") && (
 				<Button
 					type="button"
 					variant="secondary"
@@ -116,6 +114,13 @@ export function AddressSearch({ onSelect, disabled }: AddressSearchProps) {
 						? m.address_search_locating()
 						: m.address_search_use_location()}
 				</Button>
+			)}
+			{/* Con il permesso negato il browser non chiede più: il bottone non
+			    farebbe niente, quindi diciamo dove sbloccarlo. */}
+			{geoStatus === "denied" && (
+				<p className="mt-1 text-muted-foreground text-xs" role="status">
+					{m.origin_gps_denied()}
+				</p>
 			)}
 			{geoStatus === "granted" && (
 				<p className="mt-1 text-muted-foreground text-xs">

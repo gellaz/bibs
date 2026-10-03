@@ -24,6 +24,7 @@ export function PromotionStateTabs({ value, onChange }: Props) {
 			tabs={tabs}
 			activeTab={value}
 			onTabChange={(v) => onChange(v as PromotionState)}
+			label={m.promotions_tabs_label()}
 		/>
 	);
 }
