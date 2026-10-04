@@ -74,8 +74,16 @@ export function useThemeMode() {
 interface ThemeToggleProps {
 	/** Etichetta della riga (default "Aspetto"). */
 	label?: string;
+	/** Nomi accessibili delle tre modalità (default in italiano). */
+	labels?: { light: string; dark: string; system: string };
 	className?: string;
 }
+
+const DEFAULT_THEME_LABELS = {
+	light: "Chiaro",
+	dark: "Scuro",
+	system: "Sistema",
+};
 
 /**
  * Riga "Aspetto" con vassoio Chiaro / Scuro / Sistema. Pensata per vivere
@@ -84,6 +92,7 @@ interface ThemeToggleProps {
  */
 export function ThemeToggle({
 	label = "Aspetto",
+	labels = DEFAULT_THEME_LABELS,
 	className,
 }: ThemeToggleProps) {
 	const [themeMode, setThemeMode] = useThemeMode();
@@ -110,21 +119,21 @@ export function ThemeToggle({
 			>
 				<ToggleGroupItem
 					value="light"
-					aria-label="Chiaro"
+					aria-label={labels.light}
 					className={segmentedTrayItemClassName}
 				>
 					<SunIcon />
 				</ToggleGroupItem>
 				<ToggleGroupItem
 					value="dark"
-					aria-label="Scuro"
+					aria-label={labels.dark}
 					className={segmentedTrayItemClassName}
 				>
 					<MoonIcon />
 				</ToggleGroupItem>
 				<ToggleGroupItem
 					value="auto"
-					aria-label="Sistema"
+					aria-label={labels.system}
 					className={segmentedTrayItemClassName}
 				>
 					<MonitorIcon />

@@ -98,6 +98,7 @@ function ResetPasswordPage() {
 					) : (
 						<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								required
 								autoComplete="new-password"
 								placeholder={m.auth_reset_password_new_label()}
@@ -105,6 +106,7 @@ function ResetPasswordPage() {
 								onChange={(e) => setPassword(e.target.value)}
 							/>
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								required
 								autoComplete="new-password"
 								placeholder={m.auth_reset_password_confirm_label()}

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import { PAGE_CONTAINER } from "@/components/page";
+import { m } from "@/paraglide/messages";
 import {
 	type OpenStatusView,
 	openStatusIcon,
@@ -64,7 +65,7 @@ export function StoreCover({
 					className="inline-flex items-center gap-1 rounded-full bg-ink/40 px-3 py-1.5 font-medium text-cream text-sm backdrop-blur-sm transition-colors hover:bg-ink/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cream focus-visible:ring-offset-2 focus-visible:ring-offset-ink/40"
 				>
 					<ChevronLeft className="size-4" aria-hidden />
-					Negozi
+					{m.nav_stores()}
 				</Link>
 			</div>
 

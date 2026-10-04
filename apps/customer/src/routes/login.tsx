@@ -117,6 +117,7 @@ function LoginPage() {
 						<div className="flex flex-col gap-2">
 							<Label htmlFor="password">{m.auth_password_label()}</Label>
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								id="password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}

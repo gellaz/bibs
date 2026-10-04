@@ -63,7 +63,14 @@ export function UserMenu() {
 					</Link>
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
-				<ThemeToggle />
+				<ThemeToggle
+					label={m.theme_label()}
+					labels={{
+						light: m.theme_light(),
+						dark: m.theme_dark(),
+						system: m.theme_system(),
+					}}
+				/>
 				<LocaleSelect />
 				<DropdownMenuSeparator />
 				<DropdownMenuItem

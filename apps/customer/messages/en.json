@@ -436,5 +436,21 @@
 	"municipality_combobox_error": "Couldn't load municipalities",
 	"municipality_combobox_empty": "No municipality found",
 	"municipality_combobox_more_results": "… {count} more results, refine your search",
-	"auth_error_too_many_requests": "Too many attempts. Try again in a few minutes."
+	"auth_error_too_many_requests": "Too many attempts. Try again in a few minutes.",
+	"theme_label": "Appearance",
+	"theme_light": "Light",
+	"theme_dark": "Dark",
+	"theme_system": "System",
+	"password_show": "Show password",
+	"password_hide": "Hide password",
+	"not_found_title": "Page not found",
+	"not_found_home": "Back to home",
+	"open_status_unknown": "Hours not listed",
+	"open_status_open": "Open",
+	"open_status_open_closes": "Open · closes at {time}",
+	"open_status_closed": "Closed",
+	"open_status_closed_opens": "Closed · {opens}",
+	"opens_today": "opens at {time}",
+	"opens_tomorrow": "opens tomorrow at {time}",
+	"opens_on": "opens {day} at {time}"
 }

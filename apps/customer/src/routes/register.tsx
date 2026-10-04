@@ -154,6 +154,7 @@ function RegisterPage() {
 								{m.auth_password_label()}
 							</FieldLabel>
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								id="password"
 								autoComplete="new-password"
 								{...register("password")}
@@ -169,6 +170,7 @@ function RegisterPage() {
 								{m.auth_register_confirm_label()}
 							</FieldLabel>
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								id="confirmPassword"
 								autoComplete="new-password"
 								{...register("confirmPassword")}
