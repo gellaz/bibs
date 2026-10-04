@@ -1,6 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, ReceiptText, TriangleAlert } from "lucide-react";
@@ -130,7 +131,7 @@ function OrdersPage() {
 										<span className="block text-muted-foreground text-sm tabular-nums">
 											{m.orders_order_number({ number: shortId(o.id) })} ·{" "}
 											{new Date(o.createdAt).toLocaleDateString(
-												"it-IT",
+												intlLocale(),
 												DATE_FMT,
 											)}{" "}
 											·{" "}

@@ -1,3 +1,4 @@
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { m } from "@/paraglide/messages";
 
 export type OrderStatus =
@@ -40,7 +41,7 @@ export function pickupDeadline(
 ): { expired: boolean; date: string; left: string } {
 	const at = new Date(expiresAt);
 	const ms = at.getTime() - now;
-	const date = at.toLocaleString("it-IT", DATE_FMT);
+	const date = at.toLocaleString(intlLocale(), DATE_FMT);
 	if (ms <= 0) return { expired: true, date, left: m.orders_pickup_expired() };
 	const minutes = Math.ceil(ms / 60_000);
 	const time =

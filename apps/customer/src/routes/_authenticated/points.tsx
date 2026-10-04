@@ -1,5 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, Sparkles, TriangleAlert } from "lucide-react";
@@ -146,7 +147,7 @@ function PointRowItem({ row }: { row: PointRow }) {
 			<span className="min-w-0 flex-1 space-y-0.5">
 				<span className="block font-medium text-foreground">{row.label}</span>
 				<span className="block text-muted-foreground text-sm tabular-nums">
-					{row.createdAt.toLocaleDateString("it-IT", DATE_FMT)}
+					{row.createdAt.toLocaleDateString(intlLocale(), DATE_FMT)}
 					{row.orderId &&
 						` · ${m.orders_order_number({ number: shortId(row.orderId) })}`}
 				</span>

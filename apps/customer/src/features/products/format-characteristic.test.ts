@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { setIntlLocaleResolver } from "@bibs/ui/lib/intl-locale";
+import { afterEach, describe, expect, it } from "vitest";
 import {
 	characteristicRows,
 	formatCharacteristicValue,
@@ -151,5 +152,17 @@ describe("characteristicRows", () => {
 
 	it("returns nothing for an empty list", () => {
 		expect(characteristicRows([], labels)).toEqual([]);
+	});
+});
+
+describe("formatCharacteristicValue in English", () => {
+	afterEach(() => setIntlLocaleResolver(() => "it-IT"));
+
+	it("uses the user's separators, and switches back", () => {
+		const row = c({ dataType: "number", value: 12345.5, unit: "g" });
+		setIntlLocaleResolver(() => "en-GB");
+		expect(formatCharacteristicValue(row, labels)).toBe(`12,345.5${NBSP}g`);
+		setIntlLocaleResolver(() => "it-IT");
+		expect(formatCharacteristicValue(row, labels)).toBe(`12.345,5${NBSP}g`);
 	});
 });
