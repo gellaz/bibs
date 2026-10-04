@@ -6,15 +6,28 @@ import {
 } from "../src/index";
 
 describe("renderVerificationEmail", () => {
-	it("renders subject and html containing name and verify link", async () => {
+	it("renders subject, greeting with first name and verify link", async () => {
 		const { subject, html } = await renderVerificationEmail({
-			name: "Mario Rossi",
+			firstName: "Mario",
 			verifyUrl: "https://example.test/verify?token=abc123",
 		});
 
 		expect(subject).toBe("Verifica la tua email su bibs");
-		expect(html).toContain("Mario Rossi");
+		const normalized = html.replaceAll("<!-- -->", "");
+		expect(normalized).toContain("Ciao Mario,");
 		expect(html).toContain("https://example.test/verify?token=abc123");
+	});
+
+	it("greets neutrally without a first name", async () => {
+		for (const firstName of [undefined, null, "", "   "]) {
+			const { html } = await renderVerificationEmail({
+				firstName,
+				verifyUrl: "https://example.test/verify?token=abc123",
+			});
+			const normalized = html.replaceAll("<!-- -->", "");
+			expect(normalized).toContain("Ciao,");
+			expect(normalized).not.toMatch(/Ciao \S/);
+		}
 	});
 });
 
@@ -41,20 +54,30 @@ describe("renderEmployeeInviteEmail", () => {
 describe("renderResetPasswordEmail", () => {
 	it("renders subject, greeting and reset url", async () => {
 		const { subject, html } = await renderResetPasswordEmail({
-			name: "Mario Rossi",
+			firstName: "Mario",
 			resetUrl:
 				"http://localhost:3000/auth/api/reset-password/tok123?callbackURL=http%3A%2F%2Flocalhost%3A3001%2Freset-password",
 		});
 		expect(subject).toBe("Reimposta la tua password su bibs");
 		// react-email 6 inserts <!-- --> comment nodes around interpolations
 		const normalized = html.replaceAll("<!-- -->", "");
-		expect(normalized).toContain("Ciao Mario Rossi");
+		expect(normalized).toContain("Ciao Mario,");
 		expect(normalized).toContain("/auth/api/reset-password/tok123");
+	});
+
+	it("greets neutrally without a first name", async () => {
+		const { html } = await renderResetPasswordEmail({
+			firstName: null,
+			resetUrl: "http://localhost:3000/auth/api/reset-password/tok",
+		});
+		const normalized = html.replaceAll("<!-- -->", "");
+		expect(normalized).toContain("Ciao,");
+		expect(normalized).not.toMatch(/Ciao \S/);
 	});
 
 	it("escapes HTML in the name", async () => {
 		const { html } = await renderResetPasswordEmail({
-			name: "Mario <b>&</b> Rossi",
+			firstName: "Mario <b>&</b> Rossi",
 			resetUrl: "http://localhost:3000/auth/api/reset-password/tok",
 		});
 		expect(html).toContain("&amp;");
@@ -65,7 +88,7 @@ describe("renderResetPasswordEmail", () => {
 describe("renderVerificationEmail — HTML escaping", () => {
 	it("escapes special chars in URL and name", async () => {
 		const { html } = await renderVerificationEmail({
-			name: "Mario <b>Rossi</b>",
+			firstName: "Mario <b>Rossi</b>",
 			verifyUrl: "https://example.test/verify?a=1&b=2",
 		});
 

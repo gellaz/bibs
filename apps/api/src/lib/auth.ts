@@ -18,6 +18,15 @@ import {
 	sellerRole,
 } from "@/lib/permissions";
 
+/**
+ * Nome per il saluto delle email: solo `firstName` del profilo, mai `name`
+ * (alla registrazione è la parte locale dell'email). better-auth passa la riga
+ * completa ai callback, ma il loro tipo non vede gli `additionalFields`.
+ */
+function emailFirstName(user: { email: string; firstName?: string | null }) {
+	return user.firstName;
+}
+
 export const auth = betterAuth({
 	basePath: "/api",
 	database: drizzleAdapter(db, {
@@ -74,7 +83,7 @@ export const auth = betterAuth({
 			const resetUrl = fixed.toString();
 
 			const { subject, html } = await renderResetPasswordEmail({
-				name: user.name,
+				firstName: emailFirstName(user),
 				resetUrl,
 			});
 			// Eventuali errori qui vengono inghiottiti dal wrapper background-task
@@ -112,7 +121,7 @@ export const auth = betterAuth({
 			const verifyUrl = fixed.toString();
 
 			const { subject, html } = await renderVerificationEmail({
-				name: user.name,
+				firstName: emailFirstName(user),
 				verifyUrl,
 			});
 			await sendEmail({ to: user.email, subject, html });

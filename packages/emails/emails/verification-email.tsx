@@ -1,18 +1,20 @@
 import { Body, Html, Link, Text } from "react-email";
+import { greeting } from "../src/greeting";
 
 export interface VerificationEmailProps {
-	name: string;
+	/** Nome dal profilo; senza, il saluto è neutro. */
+	firstName?: string | null;
 	verifyUrl: string;
 }
 
 export default function VerificationEmail({
-	name,
+	firstName,
 	verifyUrl,
 }: VerificationEmailProps) {
 	return (
 		<Html lang="it">
 			<Body lang="it">
-				<Text>Ciao {name},</Text>
+				<Text>{greeting(firstName)}</Text>
 				<Text>Clicca sul link per verificare il tuo indirizzo email:</Text>
 				<Text>
 					<Link href={verifyUrl}>{verifyUrl}</Link>
@@ -24,6 +26,6 @@ export default function VerificationEmail({
 
 // Props mostrate dal preview server (`bun run dev:emails`)
 VerificationEmail.PreviewProps = {
-	name: "Mario Rossi",
+	firstName: "Mario",
 	verifyUrl: "http://localhost:3000/auth/api/verify-email?token=esempio",
 } satisfies VerificationEmailProps;
