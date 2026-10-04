@@ -13,8 +13,8 @@ export interface ListByNameParams {
 }
 
 /**
- * Shared "list rows by name with pagination/search/sort" used by the admin
- * category services. The caller supplies the `findMany` (so it can add its own
+ * Shared "list rows by name with pagination/search/sort" used by the public
+ * taxonomy listings (`modules/catalog`) and the admin characteristic services. The caller supplies the `findMany` (so it can add its own
  * relations, e.g. `with: { macroCategory }`) and any `extraFilters` beyond the
  * name search; the table provides the `name`/`createdAt` columns + count.
  */

@@ -84,7 +84,7 @@ Each module under `src/modules/` is an Elysia plugin (`context.ts` guard + `rout
 | `customer/` | `/customer` | geo search (PostGIS), profile, addresses, orders, loyalty points |
 | `me/` | `/me` | cross-role endpoints for any authenticated user (avatar today) — anything role-independent goes here, never duplicated per role |
 | `locations/` | `/locations` | Italian regions / provinces / municipalities (public) |
-| `product-categories.ts`, `product-macro-categories.ts`, `store-categories.ts` | — | public taxonomy listings (single-file modules, routes at `/product-categories`, `/product-macro-categories`, `/store-categories`) |
+| `catalog/` | — | public taxonomy listings (`/product-macro-categories`, `/product-categories`, `/store-macro-categories`, `/store-categories`); writes in `admin/` |
 | `webhooks/` | — | Stripe webhook receiver at `/webhooks/stripe` (signature-verified, idempotent — see [stripe-billing.md](stripe-billing.md)) |
 | `billing/` | — | internal services only (Stripe customer management shared by seller checkout); no routes |
 

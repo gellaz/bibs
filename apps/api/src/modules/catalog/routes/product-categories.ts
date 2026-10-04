@@ -6,9 +6,9 @@ import {
 	ProductCategoryWithMacroSchema,
 	withErrors,
 } from "@/lib/schemas";
-import { listProductCategories } from "./admin/services/product-categories";
+import { listProductCategories } from "../services/product-categories";
 
-export const productCategoriesModule = new Elysia().get(
+export const productCategoriesRoutes = new Elysia().get(
 	"/product-categories",
 	async ({ query }) => {
 		const result = await listProductCategories(query);

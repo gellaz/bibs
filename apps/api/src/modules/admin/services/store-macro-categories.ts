@@ -3,13 +3,6 @@ import { db } from "@/db";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeMacroCategory } from "@/db/schemas/store-macro-category";
 import { ServiceError } from "@/lib/errors";
-import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
-
-export async function listStoreMacroCategories(params: ListByNameParams) {
-	return listByNamePaged(storeMacroCategory, params, (opts) =>
-		db.query.storeMacroCategory.findMany(opts),
-	);
-}
 
 export async function createStoreMacroCategory(name: string) {
 	const [created] = await db

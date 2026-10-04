@@ -19,7 +19,10 @@ import {
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { assertImpactConfirmed } from "@/lib/characteristic-impact";
 import { ServiceError } from "@/lib/errors";
-import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
+import {
+	type ListByNameParams,
+	listByNamePaged,
+} from "@/lib/list-by-name-paged";
 
 interface ListAdminProductCategoriesParams extends ListByNameParams {
 	macroCategoryId?: string;

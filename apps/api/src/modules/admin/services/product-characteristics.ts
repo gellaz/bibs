@@ -12,7 +12,10 @@ import {
 	countValuesByOption,
 } from "@/lib/characteristic-impact";
 import { ServiceError } from "@/lib/errors";
-import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
+import {
+	type ListByNameParams,
+	listByNamePaged,
+} from "@/lib/list-by-name-paged";
 
 export interface CharacteristicOptionInput {
 	// Presente per un'opzione esistente: tenere l'id è ciò che permette di
