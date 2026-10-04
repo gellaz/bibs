@@ -13,6 +13,7 @@ import { DataTable } from "@bibs/ui/custom/data-table";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -28,6 +29,10 @@ import {
 	useDiscountsList,
 	usePauseDiscount,
 } from "@/features/promotions/hooks/use-discounts";
+import {
+	dataPaginationLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/promotions/")({
@@ -164,13 +169,13 @@ function PromotionsListPage() {
 					return (
 						<>
 							{new Date(r.startsAt).toLocaleDateString(
-								"it-IT",
+								intlLocale(),
 								PERIOD_FMT_OPTS,
 							)}{" "}
 							→{" "}
 							{r.endsAt
 								? new Date(r.endsAt).toLocaleDateString(
-										"it-IT",
+										intlLocale(),
 										PERIOD_FMT_OPTS,
 									)
 								: "∞"}
@@ -208,7 +213,13 @@ function PromotionsListPage() {
 					headerClassName: "w-12 pr-2 text-right",
 					cellClassName: "text-right",
 				},
-				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				header: ({ table }) => (
+					<TableColumnsToggle
+						table={table}
+						labels={tableColumnsToggleLabels()}
+						align="end"
+					/>
+				),
 				cell: ({ row }) => {
 					const r = row.original;
 					return (
@@ -335,6 +346,7 @@ function PromotionsListPage() {
 									}
 								/>
 								<DataPagination
+									labels={dataPaginationLabels()}
 									page={page}
 									totalPages={totalPages}
 									onPageChange={(next, options) =>

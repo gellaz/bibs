@@ -64,6 +64,10 @@ import { StoreChips } from "@/features/team/components/store-chips";
 import { useStores } from "@/hooks/use-stores";
 import { api, unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import {
+	dataPaginationLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/team/")({
@@ -748,7 +752,13 @@ function TeamPage() {
 				headerClassName: "w-[12%] pr-6 text-right",
 				cellClassName: "pr-6 text-right",
 			},
-			header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+			header: ({ table }) => (
+				<TableColumnsToggle
+					table={table}
+					labels={tableColumnsToggleLabels()}
+					align="end"
+				/>
+			),
 			cell: ({ row }) => {
 				if (!isOwner) return null;
 				const r = row.original;
@@ -884,6 +894,7 @@ function TeamPage() {
 									}
 								/>
 								<DataPagination
+									labels={dataPaginationLabels()}
 									page={page}
 									totalPages={totalPages}
 									onPageChange={(p, options) =>

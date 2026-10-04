@@ -16,6 +16,7 @@ import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDate } from "@bibs/ui/lib/date";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
@@ -35,6 +36,10 @@ import { StockEditorCell } from "@/features/products/components/stock-editor-cel
 import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { api, unwrap } from "@/lib/api";
+import {
+	dataPaginationLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
 type ProductSortField =
@@ -132,7 +137,7 @@ function DateCell({ value }: { value: string | Date }) {
 	return (
 		<time
 			dateTime={d.toISOString()}
-			title={d.toLocaleString("it-IT", DATETIME_FMT_OPTS)}
+			title={d.toLocaleString(intlLocale(), DATETIME_FMT_OPTS)}
 		>
 			{formatDate(d)}
 		</time>
@@ -501,7 +506,13 @@ function ProductsListPage() {
 					return (
 						<div className="flex items-center gap-1">
 							<span>{ean}</span>
-							<CopyButton value={ean} label={`Copia EAN ${ean}`} />
+							<CopyButton
+								value={ean}
+								labels={{
+									copy: m.products_copy_ean({ ean }),
+									copied: m.common_copied(),
+								}}
+							/>
 						</div>
 					);
 				},
@@ -548,7 +559,11 @@ function ProductsListPage() {
 				},
 				header: ({ table }) => (
 					<div className="flex justify-center">
-						<TableColumnsToggle table={table} align="end" />
+						<TableColumnsToggle
+							table={table}
+							labels={tableColumnsToggleLabels()}
+							align="end"
+						/>
 					</div>
 				),
 				cell: ({ row }) => (
@@ -720,6 +735,7 @@ function ProductsListPage() {
 									}
 								/>
 								<DataPagination
+									labels={dataPaginationLabels()}
 									page={page}
 									totalPages={totalPages}
 									onPageChange={(next, options) =>

@@ -10,6 +10,19 @@ import {
 import { clampPage } from "~/lib/pagination-search";
 import { cn } from "~/lib/utils";
 
+interface DataPaginationLabels {
+	previous: string;
+	next: string;
+	/** Etichetta accessibile del bottone di una pagina. */
+	page: (page: number) => string;
+}
+
+const DEFAULT_LABELS: DataPaginationLabels = {
+	previous: "Pagina precedente",
+	next: "Pagina successiva",
+	page: (page) => `Pagina ${page}`,
+};
+
 interface DataPaginationProps {
 	/** Current page (1-indexed) */
 	page: number;
@@ -23,6 +36,8 @@ interface DataPaginationProps {
 	onPageChange: (page: number, options?: { replace?: boolean }) => void;
 	/** Number of sibling pages to show on each side of current page. Default: 1 */
 	siblingCount?: number;
+	/** Italian by default; the apps pass their translations. */
+	labels?: DataPaginationLabels;
 	/** Additional class name */
 	className?: string;
 }
@@ -78,6 +93,7 @@ function DataPagination({
 	totalPages,
 	onPageChange,
 	siblingCount = 1,
+	labels = DEFAULT_LABELS,
 	className,
 }: DataPaginationProps) {
 	const current = clampPage(page, totalPages);
@@ -103,7 +119,7 @@ function DataPagination({
 						size="icon"
 						disabled={current <= 1}
 						onClick={() => onPageChange(current - 1)}
-						aria-label="Pagina precedente"
+						aria-label={labels.previous}
 					>
 						<ChevronLeftIcon className="size-4" />
 					</Button>
@@ -125,7 +141,7 @@ function DataPagination({
 								variant="ghost"
 								size="icon"
 								onClick={() => onPageChange(item)}
-								aria-label={`Pagina ${item}`}
+								aria-label={labels.page(item)}
 								aria-current={isActive ? "page" : undefined}
 								className={cn(
 									"tabular-nums",
@@ -145,7 +161,7 @@ function DataPagination({
 						size="icon"
 						disabled={current >= totalPages}
 						onClick={() => onPageChange(current + 1)}
-						aria-label="Pagina successiva"
+						aria-label={labels.next}
 					>
 						<ChevronRightIcon className="size-4" />
 					</Button>
@@ -155,5 +171,5 @@ function DataPagination({
 	);
 }
 
-export type { DataPaginationProps };
+export type { DataPaginationLabels, DataPaginationProps };
 export { DataPagination };

@@ -18,26 +18,28 @@ import type {
 	DataTableCoreInstance,
 } from "~/lib/table-features";
 
+export interface TableColumnsToggleLabels {
+	trigger: string;
+	menuTitle: string;
+	reset: string;
+	locked: string;
+}
+
 interface TableColumnsToggleProps<TData extends RowData> {
 	table: DataTableCoreInstance<TData>;
 	/** Side to align the menu against the trigger. Default `"end"`. */
 	align?: "start" | "center" | "end";
 	/** Italian by default; override for English contexts. */
-	labels?: {
-		trigger?: string;
-		menuTitle?: string;
-		reset?: string;
-		locked?: string;
-	};
+	labels?: Partial<TableColumnsToggleLabels>;
 	className?: string;
 }
 
-const DEFAULT_LABELS = {
+const DEFAULT_LABELS: TableColumnsToggleLabels = {
 	trigger: "Colonne visibili",
 	menuTitle: "Colonne",
 	reset: "Ripristina predefinite",
 	locked: "Sempre visibile",
-} as const;
+};
 
 function getMenuLabel<TData extends RowData>(
 	col: DataTableColumn<TData>,

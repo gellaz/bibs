@@ -20,6 +20,7 @@ import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { Price } from "@bibs/ui/custom/price";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { displayName } from "@bibs/ui/lib/display-name";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -44,6 +45,10 @@ import {
 	shortOrderId,
 } from "@/features/orders/order-labels";
 import { useActiveStore } from "@/hooks/use-active-store";
+import {
+	dataPaginationLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
 const ORDER_TYPES: readonly OrderType[] = [
@@ -130,7 +135,10 @@ function OrdersListPage() {
 					cellClassName: "text-sm tabular-nums whitespace-nowrap",
 				},
 				cell: ({ row }) =>
-					new Date(row.original.createdAt).toLocaleString("it-IT", DATE_FMT),
+					new Date(row.original.createdAt).toLocaleString(
+						intlLocale(),
+						DATE_FMT,
+					),
 			},
 			{
 				id: "customer",
@@ -196,7 +204,13 @@ function OrdersListPage() {
 					headerClassName: "w-12 pr-2 text-right",
 					cellClassName: "text-right",
 				},
-				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				header: ({ table }) => (
+					<TableColumnsToggle
+						table={table}
+						labels={tableColumnsToggleLabels()}
+						align="end"
+					/>
+				),
 				cell: ({ row }) => {
 					const r = row.original;
 					return (
@@ -341,6 +355,7 @@ function OrdersListPage() {
 									}
 								/>
 								<DataPagination
+									labels={dataPaginationLabels()}
 									page={page}
 									totalPages={totalPages}
 									onPageChange={(next, options) =>

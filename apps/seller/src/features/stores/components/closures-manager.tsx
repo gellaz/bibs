@@ -3,6 +3,7 @@ import { Button } from "@bibs/ui/components/button";
 import { Input } from "@bibs/ui/components/input";
 import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, Trash2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -39,7 +40,7 @@ function serialize(optOutIds: string[], custom: CustomClosure[]): string {
 
 function formatDate(ymd: string): string {
 	const [y, m, d] = ymd.split("-").map(Number);
-	return new Date(y, m - 1, d).toLocaleDateString("it-IT", {
+	return new Date(y, m - 1, d).toLocaleDateString(intlLocale(), {
 		day: "numeric",
 		month: "short",
 		year: "numeric",

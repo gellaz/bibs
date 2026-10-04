@@ -378,5 +378,16 @@
 	"municipality_combobox_loading": "Caricamento comuni…",
 	"municipality_combobox_error": "Impossibile caricare i comuni",
 	"municipality_combobox_empty": "Nessun comune trovato",
-	"municipality_combobox_more_results": "… altri {count} risultati, raffina la ricerca"
+	"municipality_combobox_more_results": "… altri {count} risultati, raffina la ricerca",
+	"common_pagination_previous": "Pagina precedente",
+	"common_pagination_next": "Pagina successiva",
+	"common_pagination_page": "Pagina {page}",
+	"common_columns_trigger": "Colonne visibili",
+	"common_columns_title": "Colonne",
+	"common_columns_reset": "Ripristina predefinite",
+	"common_columns_locked": "Sempre visibile",
+	"common_copied": "Copiato",
+	"products_copy_ean": "Copia EAN {ean}",
+	"date_range_placeholder": "Seleziona periodo",
+	"date_range_open_ended": "senza fine"
 }

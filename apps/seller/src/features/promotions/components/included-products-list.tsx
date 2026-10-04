@@ -18,6 +18,7 @@ import {
 	useDiscountProducts,
 	useRemoveDiscountProducts,
 } from "@/features/promotions/hooks/use-discounts";
+import { dataPaginationLabels } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
 const PAGE_SIZE = 20;
@@ -121,6 +122,7 @@ export function IncludedProductsList({ discountId }: Props) {
 
 			{totalPages > 1 && (
 				<DataPagination
+					labels={dataPaginationLabels()}
 					page={page}
 					totalPages={totalPages}
 					onPageChange={setPage}

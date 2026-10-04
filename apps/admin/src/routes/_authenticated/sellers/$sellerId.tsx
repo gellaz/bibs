@@ -1,6 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { displayName } from "@bibs/ui/lib/display-name";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -333,7 +334,7 @@ function Field({
 
 function formatDate(value: string | null | undefined): string | null {
 	if (!value) return null;
-	return new Date(value).toLocaleDateString("it-IT", {
+	return new Date(value).toLocaleDateString(intlLocale(), {
 		year: "numeric",
 		month: "long",
 		day: "numeric",

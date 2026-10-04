@@ -23,6 +23,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, MoreVerticalIcon } from "lucide-react";
@@ -62,32 +63,34 @@ function formatEuro(cents: number): string {
 	return `€${(cents / 100).toFixed(2)}`;
 }
 
-const dateFormatter = new Intl.DateTimeFormat("it-IT", {
+const DATE_FMT: Intl.DateTimeFormatOptions = {
 	day: "numeric",
 	month: "long",
 	year: "numeric",
-});
+};
 
-const dateFormatterShort = new Intl.DateTimeFormat("it-IT", {
+const DATE_SHORT_FMT: Intl.DateTimeFormatOptions = {
 	day: "numeric",
 	month: "short",
 	year: "numeric",
-});
+};
 
 function formatDate(d: Date | string, short = false): string {
 	return short
-		? dateFormatterShort.format(new Date(d))
-		: dateFormatter.format(new Date(d));
+		? new Intl.DateTimeFormat(intlLocale(), DATE_SHORT_FMT).format(new Date(d))
+		: new Intl.DateTimeFormat(intlLocale(), DATE_FMT).format(new Date(d));
 }
 
-const invoiceDateFormatter = new Intl.DateTimeFormat("it-IT", {
+const INVOICE_DATE_FMT: Intl.DateTimeFormatOptions = {
 	day: "numeric",
 	month: "short",
 	year: "numeric",
-});
+};
 
 function formatInvoiceDate(d: Date | string): string {
-	return invoiceDateFormatter.format(new Date(d));
+	return new Intl.DateTimeFormat(intlLocale(), INVOICE_DATE_FMT).format(
+		new Date(d),
+	);
 }
 
 function BillingPage() {

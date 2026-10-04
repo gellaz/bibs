@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@bibs/ui/components/radio-group";
 import { ScrollArea } from "@bibs/ui/components/scroll-area";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -31,9 +32,9 @@ function fmtPeriod(
 	startsAt: string | Date,
 	endsAt: string | Date | null,
 ): string {
-	const s = new Date(startsAt).toLocaleDateString("it-IT", PERIOD_FMT);
+	const s = new Date(startsAt).toLocaleDateString(intlLocale(), PERIOD_FMT);
 	const e = endsAt
-		? new Date(endsAt).toLocaleDateString("it-IT", PERIOD_FMT)
+		? new Date(endsAt).toLocaleDateString(intlLocale(), PERIOD_FMT)
 		: "∞";
 	return `${s} → ${e}`;
 }

@@ -3,6 +3,7 @@ import { Spinner } from "@bibs/ui/components/spinner";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { displayName } from "@bibs/ui/lib/display-name";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PackageIcon, ReceiptIcon } from "lucide-react";
@@ -96,7 +97,7 @@ function OrderDetailPage() {
 				subtitle={`${ORDER_TYPE_LABEL[order.type]()} · ${m.orders_detail_created(
 					{
 						date: new Date(order.createdAt).toLocaleString(
-							"it-IT",
+							intlLocale(),
 							DATETIME_FMT,
 						),
 					},
@@ -116,7 +117,7 @@ function OrderDetailPage() {
 							{m.orders_detail_deadline({
 								date: new Date(
 									order.reservationExpiresAt as Date,
-								).toLocaleString("it-IT", DATETIME_FMT),
+								).toLocaleString(intlLocale(), DATETIME_FMT),
 							})}{" "}
 							<span className="text-muted-foreground">({left.label})</span>
 						</p>

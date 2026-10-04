@@ -1,4 +1,6 @@
-"use no memo";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
+
+("use no memo");
 
 import {
 	AlertDialog,
@@ -66,7 +68,7 @@ function describeHoliday(h: HolidayDefinition): string {
 	}
 	if (h.type === "one_off" && h.oneOffDate) {
 		const [y, mo, d] = toYMD(h.oneOffDate).split("-").map(Number);
-		return new Date(y, mo - 1, d).toLocaleDateString("it-IT", {
+		return new Date(y, mo - 1, d).toLocaleDateString(intlLocale(), {
 			day: "numeric",
 			month: "short",
 			year: "numeric",
