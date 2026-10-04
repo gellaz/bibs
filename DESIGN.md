@@ -166,8 +166,8 @@ default.
 - Navy ink on warm cream, never pure white, never black. The page reads like
   a printed map, not a dashboard.
 - Generous spacing as a moral position. The merchant gets room.
-- Typography pairs Geist (UI workhorse) with Satoshi (warm display, loaded
-  from Fontshare). Two voices, one register.
+- Typography pairs Geist (UI workhorse) with Satoshi (warm display). Two
+  voices, one register, the same in all three apps.
 - Two accent roles, one per register. **Saffron** is the brand-register
   signal (customer surfaces): reward earned, civic partner, "aperto adesso",
   presence dots. **Cobalt** is the product-register accent (seller, admin):
@@ -312,12 +312,18 @@ chroma feel like a tax form. The whole system tints, slightly.
 
 ## 3. Typography
 
-**Display Font:** Satoshi (variable, weights 300–900), loaded from
-Fontshare. Fallback chain: Cabinet Grotesk → Geist → `ui-sans-serif`.
-Seller already preloads it from `__root.tsx`; customer and admin should
-follow when they need display chrome of their own.
-**Body Font:** Geist (variable), with `ui-sans-serif`. Already in the repo.
-**Mono Font:** Geist Mono. For prices, codes, distances, point balances.
+**Display Font:** Satoshi (variable, weights 300–900), served by Fontshare's
+CDN through an `@font-face` of our own (its licence forbids redistributing the
+file from a public repository). Fallback chain: Cabinet Grotesk → Geist →
+`ui-sans-serif`.
+**Body Font:** Geist (variable), self-hosted from `@fontsource-variable/geist`,
+with `ui-sans-serif`.
+**Mono Font:** Geist Mono (variable, `@fontsource-variable/geist-mono`). For
+prices, codes, distances, point balances.
+
+All three apps load the same faces: `@font-face` rules in
+`packages/ui/src/styles/fonts.css`, preloads of Geist latin and Satoshi from
+`fontLinks` (`packages/ui/src/lib/fonts.ts`) in each `__root.tsx`.
 
 **Character.** Satoshi is a contemporary geometric grotesque with tight
 counters and a confident dark weight: it gives the wordmark a structural
