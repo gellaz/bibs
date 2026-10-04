@@ -57,7 +57,8 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 				.seller.products({ productId })
 				.stores({ storeId })
 				.delete();
-			if (response.error) throw new Error("Errore nella rimozione dal negozio");
+			if (response.error)
+				throw new Error(m.products_stock_manager_remove_error());
 		},
 		onSuccess: () => {
 			toast.success(m.products_stock_manager_removed_success());
@@ -68,11 +69,11 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 
 	const assignActiveMutation = useMutation({
 		mutationFn: async () => {
-			if (!activeStore) throw new Error("Nessun negozio attivo");
+			if (!activeStore) throw new Error(m.products_stock_manager_no_store());
 			const response = await api()
 				.seller.products({ productId })
 				.stores.post({ storeIds: [activeStore.id], stock: 0 });
-			if (response.error) throw new Error("Errore assegnazione");
+			if (response.error) throw new Error(m.products_store_assignment_error());
 		},
 		onSuccess: () => {
 			toast.success(m.products_stock_manager_assigned_success());

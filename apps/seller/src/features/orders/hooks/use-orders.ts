@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 import type { OrderStatus, OrderType } from "../order-labels";
 
 const ORDERS_KEY = ["orders"] as const;
@@ -19,7 +20,7 @@ export function useOrdersList(params: {
 			const res = await api().seller.orders.get({
 				query: { storeId, ...rest },
 			});
-			return unwrap(res, "Errore caricamento ordini");
+			return unwrap(res, m.orders_load_error());
 		},
 		enabled: !!storeId,
 	});
@@ -34,7 +35,7 @@ export function useOrderCounts(params: { storeId?: string; type?: OrderType }) {
 			const res = await api().seller.orders.counts.get({
 				query: { storeId, type },
 			});
-			return unwrap(res, "Errore caricamento conteggi").data;
+			return unwrap(res, m.orders_counts_load_error()).data;
 		},
 		enabled: !!storeId,
 	});
@@ -45,7 +46,7 @@ export function useOrder(orderId: string) {
 		queryKey: [...ORDERS_KEY, "detail", orderId],
 		queryFn: async () => {
 			const res = await api().seller.orders({ orderId }).get();
-			return unwrap(res, "Errore caricamento ordine").data;
+			return unwrap(res, m.orders_detail_load_error()).data;
 		},
 	});
 }
@@ -64,16 +65,25 @@ function useOrderTransition(call: (orderId: string) => Promise<unknown>) {
 
 export function useMarkReady() {
 	return useOrderTransition(async (orderId) =>
-		unwrap(await api().seller.orders({ orderId }).ready.patch(), "Errore"),
+		unwrap(
+			await api().seller.orders({ orderId }).ready.patch(),
+			m.common_error(),
+		),
 	);
 }
 export function useMarkPickedUp() {
 	return useOrderTransition(async (orderId) =>
-		unwrap(await api().seller.orders({ orderId }).complete.patch(), "Errore"),
+		unwrap(
+			await api().seller.orders({ orderId }).complete.patch(),
+			m.common_error(),
+		),
 	);
 }
 export function useCancelOrder() {
 	return useOrderTransition(async (orderId) =>
-		unwrap(await api().seller.orders({ orderId }).cancel.patch(), "Errore"),
+		unwrap(
+			await api().seller.orders({ orderId }).cancel.patch(),
+			m.common_error(),
+		),
 	);
 }

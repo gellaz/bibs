@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 import { useCategoryCharacteristics } from "../hooks/use-category-characteristics";
 import {
 	buildCharacteristicPayload,
@@ -200,7 +201,7 @@ export function ProductForm({
 			const response = await api().seller.products.lookup.get({
 				query: { ean: eanValue },
 			});
-			return unwrap(response, "Errore lookup EAN").data;
+			return unwrap(response, m.products_form_ean_lookup_error()).data;
 		},
 		enabled: eanLookupEnabled,
 		staleTime: Number.POSITIVE_INFINITY,
@@ -233,7 +234,7 @@ export function ProductForm({
 			// Stessa regola della scelta a mano della macro: suggerisce
 			// l'aliquota finché non è una scelta del seller.
 			applySuggestedVatRate(
-				macros.find((m) => m.id === lookupResult.macroCategoryId)
+				macros.find((macro) => macro.id === lookupResult.macroCategoryId)
 					?.suggestedVatRate,
 			);
 		}
@@ -286,7 +287,10 @@ export function ProductForm({
 			setValue("vatRate", suggestedVatRate, { shouldDirty: true });
 		} else if (current !== suggestedVatRate) {
 			toast.info(
-				`Aliquota IVA mantenuta al ${current}% (suggerita per questa categoria: ${suggestedVatRate}%)`,
+				m.products_form_vat_kept({
+					current: current ?? "",
+					suggested: suggestedVatRate,
+				}),
 			);
 		}
 	}
@@ -303,7 +307,7 @@ export function ProductForm({
 		});
 		applySuggestedVatRate(suggestedVatRate);
 		if (hadCategory && next !== macroCategoryId) {
-			toast.info("Categoria resettata per via del cambio di macrocategoria");
+			toast.info(m.products_form_category_reset());
 		}
 	};
 
@@ -323,9 +327,7 @@ export function ProductForm({
 			// Il caricamento fallito lascia il pulsante attivo (isLoading è false):
 			// un avviso più il retry, non un click che non fa nulla.
 			if (characteristics.isError) {
-				toast.error(
-					"Impossibile caricare le caratteristiche della sotto-categoria. Riprova.",
-				);
+				toast.error(m.products_form_characteristics_load_error());
 				void characteristics.refetch();
 			}
 			// Mentre la matrice carica il pulsante è già disabilitato: è una rete.
@@ -344,8 +346,8 @@ export function ProductForm({
 			const names = missing.map((d) => d.name).join(", ");
 			toast.error(
 				entering
-					? `Compila le caratteristiche obbligatorie: ${names}`
-					: `Non puoi svuotare una caratteristica obbligatoria: ${names}`,
+					? m.products_form_characteristics_required({ names })
+					: m.products_form_characteristics_cannot_clear({ names }),
 			);
 			return;
 		}
@@ -387,17 +389,19 @@ export function ProductForm({
 				{/* Main column: the editable data */}
 				<div className="space-y-8">
 					<FormSection
-						title="Dettagli"
-						description="Le informazioni che identificano il prodotto."
+						title={m.products_form_section_details()}
+						description={m.products_form_section_details_description()}
 						grid
 					>
 						<Field className="col-span-full" data-invalid={!!errors.name}>
 							<FieldLabel htmlFor="product-name" required>
-								Nome
+								{m.common_name()}
 							</FieldLabel>
 							<Input
 								id="product-name"
-								placeholder={isEdit ? undefined : "Es. Pizza Margherita"}
+								placeholder={
+									isEdit ? undefined : m.products_form_name_placeholder()
+								}
 								autoFocus={!isEdit}
 								{...register("name")}
 							/>
@@ -408,7 +412,7 @@ export function ProductForm({
 							<FieldLabel htmlFor="product-ean">EAN</FieldLabel>
 							<Input
 								id="product-ean"
-								placeholder="8 o 13 cifre"
+								placeholder={m.products_form_ean_placeholder()}
 								inputMode="numeric"
 								{...register("ean")}
 							/>
@@ -416,7 +420,7 @@ export function ProductForm({
 							{showLookupBanner && (
 								<div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-cobalt/20 bg-cobalt-soft p-2 text-sm">
 									<span className="flex-1 text-cobalt-deep">
-										Trovato un prodotto esistente per questo EAN.
+										{m.products_form_ean_found()}
 									</span>
 									<Button
 										type="button"
@@ -425,8 +429,8 @@ export function ProductForm({
 										onClick={() => applyLookup(hasAnyDirty)}
 									>
 										{hasAnyDirty
-											? "Compila campi (sovrascrive)"
-											: "Compila campi"}
+											? m.products_form_ean_fill_overwrite()
+											: m.products_form_ean_fill()}
 									</Button>
 									<Button
 										type="button"
@@ -434,14 +438,16 @@ export function ProductForm({
 										variant="ghost"
 										onClick={() => setLookupDismissed(true)}
 									>
-										Ignora
+										{m.products_form_ean_ignore()}
 									</Button>
 								</div>
 							)}
 						</Field>
 
 						<Field>
-							<FieldLabel htmlFor="product-brand">Brand</FieldLabel>
+							<FieldLabel htmlFor="product-brand">
+								{m.products_form_brand_label()}
+							</FieldLabel>
 							<BrandCombobox
 								id="product-brand"
 								value={brandValue}
@@ -450,11 +456,13 @@ export function ProductForm({
 						</Field>
 
 						<Field className="col-span-full">
-							<FieldLabel htmlFor="product-description">Descrizione</FieldLabel>
+							<FieldLabel htmlFor="product-description">
+								{m.products_form_description_label()}
+							</FieldLabel>
 							<Textarea
 								id="product-description"
 								placeholder={
-									isEdit ? undefined : "Descrizione del prodotto (opzionale)"
+									isEdit ? undefined : m.products_form_description_placeholder()
 								}
 								rows={2}
 								{...register("description")}
@@ -463,13 +471,13 @@ export function ProductForm({
 					</FormSection>
 
 					<FormSection
-						title="Prezzo e IVA"
-						description="Prezzo finale per il cliente, IVA inclusa."
+						title={m.products_form_section_price()}
+						description={m.products_form_section_price_description()}
 						grid
 					>
 						<Field data-invalid={!!errors.price}>
 							<FieldLabel htmlFor="product-price" required>
-								Prezzo (€)
+								{m.products_form_price_label()}
 							</FieldLabel>
 							<Input
 								id="product-price"
@@ -483,7 +491,9 @@ export function ProductForm({
 						</Field>
 
 						<Field>
-							<FieldLabel htmlFor="product-vat-rate">Aliquota IVA</FieldLabel>
+							<FieldLabel htmlFor="product-vat-rate">
+								{m.products_form_vat_label()}
+							</FieldLabel>
 							<Controller
 								control={control}
 								name="vatRate"
@@ -516,16 +526,19 @@ export function ProductForm({
 							if (!Number.isFinite(net)) return null;
 							return (
 								<p className="col-span-full text-muted-foreground text-xs">
-									Imponibile {formatPriceEur(net)} · IVA {formatPriceEur(vat)} (
-									{rate}%) — il prezzo è IVA inclusa.
+									{m.products_form_vat_breakdown({
+										net: formatPriceEur(net),
+										vat: formatPriceEur(vat),
+										rate,
+									})}
 								</p>
 							);
 						})()}
 					</FormSection>
 
 					<FormSection
-						title="Catalogo"
-						description="Dove i clienti trovano il prodotto nel negozio."
+						title={m.products_form_section_catalog()}
+						description={m.products_form_section_catalog_description()}
 					>
 						<div className="space-y-4">
 							<Field data-invalid={!!errors.productCategoryId}>
@@ -561,8 +574,8 @@ export function ProductForm({
 				{/* Aside column: media */}
 				<div className="space-y-8">
 					<FormSection
-						title="Immagini"
-						description="Le foto che il cliente vede per prime."
+						title={m.products_form_section_images()}
+						description={m.products_form_section_images_description()}
 					>
 						<ProductImageDropzone
 							files={files}
@@ -579,7 +592,7 @@ export function ProductForm({
 
 			<div className="mt-8 flex justify-end gap-3 border-t pt-5">
 				<Button type="button" variant="outline" onClick={onCancel}>
-					Annulla
+					{m.common_cancel()}
 				</Button>
 				<Button
 					type="submit"

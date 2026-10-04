@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronsUpDownIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export interface BrandComboboxValue {
 	brandId?: string;
@@ -34,7 +35,7 @@ export function BrandCombobox({
 	id,
 	value,
 	onChange,
-	placeholder = "Cerca o crea un brand",
+	placeholder,
 }: BrandComboboxProps) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
@@ -46,7 +47,7 @@ export function BrandCombobox({
 			const response = await api().seller.brands.get({
 				query: { q: deferredQuery || undefined, limit: 20 },
 			});
-			return unwrap(response, "Errore nel caricamento brand").data;
+			return unwrap(response, m.products_brand_load_error()).data;
 		},
 		enabled: open,
 		staleTime: 30_000,
@@ -58,7 +59,8 @@ export function BrandCombobox({
 	);
 	const showCreateOption = trimmed.length > 0 && !exactMatch;
 
-	const displayLabel = value?.brandName ?? placeholder;
+	const displayLabel =
+		value?.brandName ?? placeholder ?? m.products_brand_placeholder();
 
 	return (
 		<div className="flex items-center gap-2">
@@ -84,14 +86,14 @@ export function BrandCombobox({
 				>
 					<Command shouldFilter={false}>
 						<CommandInput
-							placeholder="Cerca brand..."
+							placeholder={m.products_brand_search()}
 							value={query}
 							onValueChange={setQuery}
 						/>
 						<CommandList>
-							<CommandEmpty>Nessun brand trovato</CommandEmpty>
+							<CommandEmpty>{m.products_brand_empty()}</CommandEmpty>
 							{brands.length > 0 && (
-								<CommandGroup heading="Brand esistenti">
+								<CommandGroup heading={m.products_brand_existing()}>
 									{brands.map((b) => (
 										<CommandItem
 											key={b.id}
@@ -108,7 +110,7 @@ export function BrandCombobox({
 								</CommandGroup>
 							)}
 							{showCreateOption && (
-								<CommandGroup heading="Nuovo">
+								<CommandGroup heading={m.products_brand_new()}>
 									<CommandItem
 										value={`__create__${trimmed}`}
 										onSelect={() => {
@@ -117,7 +119,7 @@ export function BrandCombobox({
 											setQuery("");
 										}}
 									>
-										+ Crea brand «{trimmed}»
+										{m.products_brand_create({ name: trimmed })}
 									</CommandItem>
 								</CommandGroup>
 							)}
@@ -131,7 +133,7 @@ export function BrandCombobox({
 					variant="ghost"
 					size="icon"
 					onClick={() => onChange(null)}
-					aria-label="Rimuovi brand"
+					aria-label={m.products_brand_remove()}
 				>
 					<XIcon className="h-4 w-4" />
 				</Button>

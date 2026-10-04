@@ -44,7 +44,7 @@ export function useProductMutations() {
 			const res = await api()
 				.seller.products({ productId: vars.productId })
 				.status.patch({ status: vars.status });
-			return unwrap(res, "Errore aggiornamento stato");
+			return unwrap(res, m.products_status_update_error());
 		},
 		onSuccess: (_data, vars) => {
 			invalidateAll();
@@ -77,7 +77,7 @@ export function useProductMutations() {
 				productIds: vars.productIds,
 				status: vars.status,
 			});
-			return unwrap(res, "Errore bulk update").data;
+			return unwrap(res, m.products_bulk_update_error()).data;
 		},
 		onSuccess: (data) => {
 			invalidateAll();
@@ -98,7 +98,7 @@ export function useProductMutations() {
 			const res = await api().seller.products.bulk["delete-permanent"].post({
 				productIds: vars.productIds,
 			});
-			return unwrap(res, "Errore eliminazione").data;
+			return unwrap(res, m.products_delete_error()).data;
 		},
 		onSuccess: (data) => {
 			invalidateAll();

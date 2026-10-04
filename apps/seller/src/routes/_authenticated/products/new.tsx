@@ -9,6 +9,7 @@ import {
 } from "@/features/products/components/product-form";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products/new")({
 	component: NewProductPage,
@@ -30,7 +31,7 @@ function NewProductPage() {
 	const createMutation = useMutation({
 		mutationFn: async (formData: ProductFormValues) => {
 			const storeId = activeStore?.id;
-			if (!storeId) throw new Error("Nessun negozio selezionato");
+			if (!storeId) throw new Error(m.products_new_no_store());
 			const response = await api().seller.products.post({
 				name: formData.name,
 				description: formData.description,
@@ -44,7 +45,7 @@ function NewProductPage() {
 				storeId,
 			});
 
-			const product = unwrap(response, "Errore nella creazione");
+			const product = unwrap(response, m.products_new_create_error());
 
 			if (formData.files.length > 0 && product.data?.id) {
 				const imgResponse = await api()
@@ -52,7 +53,7 @@ function NewProductPage() {
 					.images.post({ files: formData.files });
 
 				if (imgResponse.error) {
-					toast.warning("Prodotto creato ma errore nel caricamento immagini");
+					toast.warning(m.products_new_images_upload_error());
 				}
 			}
 
@@ -66,13 +67,13 @@ function NewProductPage() {
 			void queryClient.invalidateQueries({ queryKey: ["seller-brands"] });
 			toast.success(
 				activeStore
-					? `Prodotto creato in ${activeStore.name}`
-					: "Prodotto creato con successo",
+					? m.products_new_success_in_store({ storeName: activeStore.name })
+					: m.products_new_success(),
 			);
 			goBack();
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante la creazione");
+			toast.error(error.message || m.products_new_error());
 		},
 	});
 
@@ -81,16 +82,16 @@ function NewProductPage() {
 			<EntityFormHeader
 				mode="create"
 				title={name}
-				placeholder="Nuovo Prodotto"
-				subtitle="Aggiungi un nuovo prodotto al catalogo"
+				placeholder={m.products_new_cta()}
+				subtitle={m.products_new_subtitle()}
 			/>
 
 			<ProductForm
 				onSubmit={(values) => createMutation.mutate(values)}
 				onCancel={goBack}
 				isPending={createMutation.isPending || !activeStore}
-				submitLabel="Crea Prodotto"
-				pendingLabel="Creazione..."
+				submitLabel={m.products_new_submit()}
+				pendingLabel={m.products_new_submitting()}
 				onNameChange={handleNameChange}
 			/>
 		</div>

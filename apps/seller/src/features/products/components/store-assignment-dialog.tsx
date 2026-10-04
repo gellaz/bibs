@@ -50,7 +50,7 @@ export function StoreAssignmentDialog({
 					storeIds: Array.from(selected),
 					stock: Number.isNaN(stock) ? 0 : stock,
 				});
-			return unwrap(response, "Errore assegnazione").data;
+			return unwrap(response, m.products_store_assignment_error()).data;
 		},
 		onSuccess: (data) => {
 			void queryClient.invalidateQueries({ queryKey: ["product", productId] });

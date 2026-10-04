@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PromotionState } from "@/features/promotions/components/promotion-state-tabs";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 const DISCOUNTS_KEY = ["discounts"] as const;
 
@@ -19,7 +20,7 @@ export function useDiscountsList(
 		queryKey: [...DISCOUNTS_KEY, "list", params],
 		queryFn: async () => {
 			const res = await api().seller.discounts.get({ query: params });
-			return unwrap(res, "Errore caricamento");
+			return unwrap(res, m.common_load_error());
 		},
 		enabled: options?.enabled,
 	});
@@ -31,7 +32,7 @@ export function useDiscount(discountId: string | undefined) {
 		queryFn: async () => {
 			if (!discountId) throw new Error("missing id");
 			const res = await api().seller.discounts({ discountId }).get();
-			return unwrap(res, "Errore caricamento");
+			return unwrap(res, m.common_load_error());
 		},
 		enabled: !!discountId,
 	});
@@ -42,7 +43,7 @@ export function usePauseDiscount() {
 	return useMutation({
 		mutationFn: async (discountId: string) => {
 			const res = await api().seller.discounts({ discountId }).pause.post();
-			return unwrap(res, "Errore");
+			return unwrap(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -55,7 +56,7 @@ export function useArchiveDiscount() {
 	return useMutation({
 		mutationFn: async (discountId: string) => {
 			const res = await api().seller.discounts({ discountId }).archive.post();
-			return unwrap(res, "Errore");
+			return unwrap(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -73,7 +74,7 @@ export function useUpdateDiscount(discountId: string) {
 			endsAt?: Date | null;
 		}) => {
 			const res = await api().seller.discounts({ discountId }).patch(patch);
-			return unwrap(res, "Errore");
+			return unwrap(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -88,7 +89,7 @@ export function useRemoveDiscountProducts(discountId: string) {
 			const res = await api()
 				.seller.discounts({ discountId })
 				.products.delete({ productIds });
-			return unwrap(res, "Errore");
+			return unwrap(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({
@@ -108,7 +109,7 @@ export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
 			const res = await api()
 				.seller.discounts({ discountId })
 				.products.get({ query: { page, limit } });
-			return unwrap(res, "Errore caricamento");
+			return unwrap(res, m.common_load_error());
 		},
 		enabled: !!discountId,
 	});
@@ -125,7 +126,7 @@ export function useApplyPromotionToProducts() {
 			const res = await api()
 				.seller.discounts({ discountId: vars.discountId })
 				.products.post({ productIds: vars.productIds });
-			return unwrap(res, "Errore");
+			return unwrap(res, m.common_error());
 		},
 		onSuccess: (_data, vars) => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });

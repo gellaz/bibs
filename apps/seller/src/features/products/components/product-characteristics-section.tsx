@@ -20,12 +20,13 @@ import {
 } from "@bibs/ui/components/select";
 import { ToggleGroup, ToggleGroupItem } from "@bibs/ui/components/toggle-group";
 import { ChevronDownIcon } from "lucide-react";
+import { m } from "@/paraglide/messages";
 import type { CategoryCharacteristic } from "../hooks/use-category-characteristics";
 import {
 	type CharacteristicFormValue,
 	type CharacteristicFormValues,
-	filledPhrase,
 	isFilled,
+	lossWarning,
 	type SavedCharacteristicValue,
 } from "../lib/characteristic-form";
 
@@ -67,10 +68,7 @@ export function ProductCharacteristicsSection({
 					role="status"
 					className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
 				>
-					Al salvataggio{" "}
-					{pendingLoss.length === 1 ? "verrà eliminato" : "verranno eliminati"}{" "}
-					{filledPhrase(pendingLoss.length)} della categoria precedente:{" "}
-					{pendingLoss.map((v) => v.name).join(", ")}.
+					{lossWarning(pendingLoss)}
 				</p>
 			)}
 
@@ -82,17 +80,22 @@ export function ProductCharacteristicsSection({
 				>
 					<CollapsibleTrigger className="group flex w-full items-center justify-between gap-3 px-4 py-3 text-left">
 						<span className="text-sm font-medium text-foreground">
-							Caratteristiche
+							{m.products_characteristics_title()}
 						</span>
 						<span className="flex items-center gap-2 text-xs text-muted-foreground">
 							<span>
-								{filled} di {definitions.length} compilate
+								{m.products_characteristics_filled({
+									filled,
+									total: definitions.length,
+								})}
 							</span>
 							{requiredEmpty > 0 && (
 								<span className="text-destructive">
-									· {requiredEmpty}{" "}
-									{requiredEmpty === 1 ? "obbligatoria" : "obbligatorie"} da
-									compilare
+									{requiredEmpty === 1
+										? m.products_characteristics_required_empty_one()
+										: m.products_characteristics_required_empty({
+												count: requiredEmpty,
+											})}
 								</span>
 							)}
 							<ChevronDownIcon className="size-4 transition-transform group-data-[state=open]:rotate-180" />
@@ -142,7 +145,11 @@ function CharacteristicField({
 				value={value}
 				onChange={onChange}
 			/>
-			{invalid && <FieldError errors={[{ message: "Obbligatoria" }]} />}
+			{invalid && (
+				<FieldError
+					errors={[{ message: m.products_characteristics_required() }]}
+				/>
+			)}
 		</Field>
 	);
 }
@@ -174,8 +181,8 @@ function CharacteristicControl({
 					}
 					className="justify-start"
 				>
-					<ToggleGroupItem value="yes">Sì</ToggleGroupItem>
-					<ToggleGroupItem value="no">No</ToggleGroupItem>
+					<ToggleGroupItem value="yes">{m.common_yes()}</ToggleGroupItem>
+					<ToggleGroupItem value="no">{m.common_no()}</ToggleGroupItem>
 				</ToggleGroup>
 			);
 		case "number":
@@ -203,10 +210,12 @@ function CharacteristicControl({
 					onValueChange={(v) => onChange(v === NOT_SET ? null : v)}
 				>
 					<SelectTrigger id={id} className="w-full">
-						<SelectValue placeholder="Non indicato" />
+						<SelectValue placeholder={m.products_characteristics_not_set()} />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value={NOT_SET}>Non indicato</SelectItem>
+						<SelectItem value={NOT_SET}>
+							{m.products_characteristics_not_set()}
+						</SelectItem>
 						{def.options.map((o) => (
 							<SelectItem key={o.id} value={o.id}>
 								{o.value}
