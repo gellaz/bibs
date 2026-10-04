@@ -28,6 +28,7 @@ mock.module("@/lib/email", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import { user as userTable } from "@/db/schemas/auth";
 import { storeEmployeeStores } from "@/db/schemas/employee";
 import {
 	employeeInvitation,
@@ -125,6 +126,24 @@ describe("listEmployees", () => {
 		const result = await listEmployees({ sellerProfileId: profile.id });
 		expect(result.data).toHaveLength(1);
 		expect(result.data[0].storeIds.sort()).toEqual([sA.id, sB.id].sort());
+	});
+
+	it("exposes only id/name/email/image of the employee's user", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const { userId } = await createTestEmployee(db, profile.id);
+		await db
+			.update(userTable)
+			.set({ role: "seller", banned: true, banReason: "frode" })
+			.where(eq(userTable.id, userId));
+
+		const result = await listEmployees({ sellerProfileId: profile.id });
+		expect(Object.keys(result.data[0].user).sort()).toEqual([
+			"email",
+			"id",
+			"image",
+			"name",
+		]);
 	});
 
 	it("omits soft-deleted stores from storeIds", async () => {

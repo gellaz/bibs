@@ -18,6 +18,7 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { parsePagination } from "@/lib/pagination";
+import { userSummaryWith } from "@/lib/user-summary";
 import { getSellerStoreIds } from "../context";
 
 /** Invitation token validity: 7 days */
@@ -37,7 +38,7 @@ export async function listEmployees(params: ListEmployeesParams) {
 		db.query.storeEmployee.findMany({
 			where: eq(storeEmployee.sellerProfileId, sellerProfileId),
 			with: {
-				user: true,
+				user: userSummaryWith,
 				storeAssignments: { columns: { storeId: true } },
 			},
 			limit,
