@@ -57,7 +57,7 @@ export async function getBillingSummary(params: SellerScope) {
 		.orderBy(asc(storeSubscription.currentPeriodEnd));
 
 	const totalMonthlyCents = rows.reduce((sum, r) => sum + r.feeAmountCents, 0);
-	const activeStoresCount = rows.length;
+	const billableStoresCount = rows.length;
 	// Solo 'active' rinnova davvero: 'canceling' termina a currentPeriodEnd,
 	// 'past_due' ha già fallito il rinnovo. rows è già in ASC per periodEnd.
 	const renewing = rows.filter((r) => r.status === "active");
@@ -71,7 +71,7 @@ export async function getBillingSummary(params: SellerScope) {
 				}
 			: null;
 
-	return { totalMonthlyCents, activeStoresCount, nextRenewal };
+	return { totalMonthlyCents, billableStoresCount, nextRenewal };
 }
 
 export async function listBillingSubscriptions(

@@ -188,7 +188,7 @@ function BillingPage() {
 				<CardContent>
 					{summaryLoading || !summary ? (
 						<Spinner />
-					) : summary.activeStoresCount === 0 ? (
+					) : summary.billableStoresCount === 0 ? (
 						<p className="text-muted-foreground text-sm">
 							Non hai ancora negozi attivi.
 						</p>
@@ -197,8 +197,8 @@ function BillingPage() {
 							<p className="text-base">
 								Stai pagando{" "}
 								<strong>{formatEuro(summary.totalMonthlyCents)}/mese</strong>{" "}
-								per <strong>{summary.activeStoresCount}</strong>{" "}
-								{summary.activeStoresCount === 1
+								per <strong>{summary.billableStoresCount}</strong>{" "}
+								{summary.billableStoresCount === 1
 									? "negozio attivo"
 									: "negozi attivi"}
 								.

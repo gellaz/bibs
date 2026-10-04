@@ -82,7 +82,7 @@ describe("getBillingSummary", () => {
 
 		const summary = await getBillingSummary({ sellerProfileId: profile.id });
 
-		expect(summary.activeStoresCount).toBe(3);
+		expect(summary.billableStoresCount).toBe(3);
 		expect(summary.totalMonthlyCents).toBe(2900 * 3);
 		// nextRenewal = il primo rinnovo che AVVERRÀ davvero: solo 'active' rinnova.
 		// canceling termina a fine periodo, past_due ha già fallito il rinnovo.
@@ -103,7 +103,7 @@ describe("getBillingSummary", () => {
 
 		const summary = await getBillingSummary({ sellerProfileId: profile.id });
 
-		expect(summary.activeStoresCount).toBe(2); // billable set unchanged
+		expect(summary.billableStoresCount).toBe(2); // billable set unchanged
 		expect(summary.totalMonthlyCents).toBe(2900 * 2);
 		expect(summary.nextRenewal).toBeNull();
 	});
@@ -113,7 +113,7 @@ describe("getBillingSummary", () => {
 			email: "a@b.it",
 		});
 		const summary = await getBillingSummary({ sellerProfileId: profile.id });
-		expect(summary.activeStoresCount).toBe(0);
+		expect(summary.billableStoresCount).toBe(0);
 		expect(summary.totalMonthlyCents).toBe(0);
 		expect(summary.nextRenewal).toBeNull();
 	});
