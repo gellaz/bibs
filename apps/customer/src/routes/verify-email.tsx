@@ -12,6 +12,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { AuthLocaleFooter } from "@/components/auth-locale-footer";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 
@@ -62,7 +63,7 @@ function VerifyEmailPage() {
 	const cooldownActive = !ready && secondsRemaining > 0;
 
 	return (
-		<div className="flex min-h-screen items-center justify-center px-4">
+		<div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -114,6 +115,7 @@ function VerifyEmailPage() {
 					</div>
 				</CardContent>
 			</Card>
+			<AuthLocaleFooter />
 		</div>
 	);
 }

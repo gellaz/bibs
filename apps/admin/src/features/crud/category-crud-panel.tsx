@@ -26,7 +26,7 @@ import { SortableHeadButton } from "@bibs/ui/custom/sortable-table-head";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { unwrap as unwrapResponse } from "@bibs/ui/lib/api-client";
-import { formatDateIt } from "@bibs/ui/lib/date";
+import { formatDate } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PencilIcon, SearchIcon, Trash2Icon, UploadIcon } from "lucide-react";
@@ -292,7 +292,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					Data Creazione
 				</SortableHeadButton>
 			),
-			cell: ({ row }) => formatDateIt(row.original.createdAt, { long: true }),
+			cell: ({ row }) => formatDate(row.original.createdAt, { long: true }),
 		};
 		const actionsCol: DataTableColumnDef<TEntity> = {
 			id: "actions",

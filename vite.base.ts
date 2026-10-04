@@ -36,7 +36,7 @@ export function makeViteConfig(devtoolsPort: number) {
 			paraglideVitePlugin({
 				project: "./project.inlang",
 				outdir: "./src/paraglide",
-				strategy: ["url", "baseLocale"],
+				strategy: ["cookie", "baseLocale"],
 			}),
 			tailwindcss(),
 			tanstackStart(),

@@ -1,6 +1,7 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	createFileRoute,
@@ -104,7 +105,10 @@ function CheckoutPayPage() {
 			{expiresAt && (
 				<p className="rounded-lg bg-muted p-3 text-foreground text-sm">
 					{m.checkout_pay_expires({
-						time: new Date(expiresAt).toLocaleTimeString("it-IT", TIME_FMT),
+						time: new Date(expiresAt).toLocaleTimeString(
+							intlLocale(),
+							TIME_FMT,
+						),
 					})}
 				</p>
 			)}

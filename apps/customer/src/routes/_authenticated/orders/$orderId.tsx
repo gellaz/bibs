@@ -13,6 +13,7 @@ import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { toast } from "@bibs/ui/components/sonner";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { NoticePage } from "@/components/notice";
@@ -88,7 +89,7 @@ function OrderDetailPage() {
 					<OrderStatusBadge status={order.status} />
 				</div>
 				<p className="text-muted-foreground text-sm">
-					{new Date(order.createdAt).toLocaleString("it-IT", DATETIME_FMT)}
+					{new Date(order.createdAt).toLocaleString(intlLocale(), DATETIME_FMT)}
 				</p>
 				{open && order.reservationExpiresAt && (
 					<PickupCountdown expiresAt={order.reservationExpiresAt} />

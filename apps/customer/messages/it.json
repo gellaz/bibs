@@ -436,5 +436,21 @@
 	"municipality_combobox_error": "Impossibile caricare i comuni",
 	"municipality_combobox_empty": "Nessun comune trovato",
 	"municipality_combobox_more_results": "… altri {count} risultati, raffina la ricerca",
-	"auth_error_too_many_requests": "Troppi tentativi. Riprova tra qualche minuto."
+	"auth_error_too_many_requests": "Troppi tentativi. Riprova tra qualche minuto.",
+	"theme_label": "Aspetto",
+	"theme_light": "Chiaro",
+	"theme_dark": "Scuro",
+	"theme_system": "Sistema",
+	"password_show": "Mostra password",
+	"password_hide": "Nascondi password",
+	"not_found_title": "Pagina non trovata",
+	"not_found_home": "Torna alla home",
+	"open_status_unknown": "Orari non indicati",
+	"open_status_open": "Aperto",
+	"open_status_open_closes": "Aperto · chiude alle {time}",
+	"open_status_closed": "Chiuso",
+	"open_status_closed_opens": "Chiuso · {opens}",
+	"opens_today": "apre alle {time}",
+	"opens_tomorrow": "apre domani alle {time}",
+	"opens_on": "apre {day} alle {time}"
 }

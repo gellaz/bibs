@@ -17,7 +17,7 @@ import { ThemeToggle } from "@bibs/ui/custom/theme-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
-import LocaleSwitcher from "@/components/locale-switcher";
+import { LocaleSelect } from "@/components/locale-select";
 import { authClient } from "@/lib/auth-client";
 
 export function NavUser() {
@@ -66,9 +66,7 @@ export function NavUser() {
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
 							<ThemeToggle />
-							<div className="flex items-center gap-2 px-2 py-1.5">
-								<LocaleSwitcher />
-							</div>
+							<LocaleSelect />
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem

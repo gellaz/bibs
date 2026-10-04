@@ -12,6 +12,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
+import { AuthLocaleFooter } from "@/components/auth-locale-footer";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-error";
 import { m } from "@/paraglide/messages";
@@ -72,7 +73,7 @@ function ResetPasswordPage() {
 	}
 
 	return (
-		<div className="flex min-h-screen items-center justify-center px-4">
+		<div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
 					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -97,6 +98,7 @@ function ResetPasswordPage() {
 					) : (
 						<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								required
 								autoComplete="new-password"
 								placeholder={m.auth_reset_password_new_label()}
@@ -104,6 +106,7 @@ function ResetPasswordPage() {
 								onChange={(e) => setPassword(e.target.value)}
 							/>
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								required
 								autoComplete="new-password"
 								placeholder={m.auth_reset_password_confirm_label()}
@@ -130,6 +133,7 @@ function ResetPasswordPage() {
 					</div>
 				</CardContent>
 			</Card>
+			<AuthLocaleFooter />
 		</div>
 	);
 }

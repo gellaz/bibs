@@ -3,21 +3,19 @@ import { toast } from "@bibs/ui/components/sonner";
 import { AvatarUploadDialog } from "@bibs/ui/custom/avatar-upload-dialog";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { unwrap } from "@bibs/ui/lib/api-client";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { Link } from "@tanstack/react-router";
 import { Camera } from "lucide-react";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
-import { getLocale } from "@/paraglide/runtime";
 import { useCustomerProfile } from "./use-customer-profile";
-
-const LOCALE_TAGS: Record<string, string> = { it: "it-IT", en: "en-GB" };
 
 /** "giugno 2026" — il mese per esteso, l'unità con cui si racconta un'iscrizione. */
 function formatMonthYear(value: Date | string) {
 	const date = value instanceof Date ? value : new Date(value);
-	return new Intl.DateTimeFormat(LOCALE_TAGS[getLocale()] ?? "it-IT", {
+	return new Intl.DateTimeFormat(intlLocale(), {
 		month: "long",
 		year: "numeric",
 	}).format(date);

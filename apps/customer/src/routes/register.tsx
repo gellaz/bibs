@@ -20,6 +20,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
+import { AuthLocaleFooter } from "@/components/auth-locale-footer";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
@@ -117,7 +118,7 @@ function RegisterPage() {
 	}
 
 	return (
-		<div className="flex min-h-screen items-center justify-center px-4">
+		<div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
 					<BrandMark className="mx-auto mb-2 size-12" />
@@ -153,6 +154,7 @@ function RegisterPage() {
 								{m.auth_password_label()}
 							</FieldLabel>
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								id="password"
 								autoComplete="new-password"
 								{...register("password")}
@@ -168,6 +170,7 @@ function RegisterPage() {
 								{m.auth_register_confirm_label()}
 							</FieldLabel>
 							<PasswordInput
+								labels={{ show: m.password_show(), hide: m.password_hide() }}
 								id="confirmPassword"
 								autoComplete="new-password"
 								{...register("confirmPassword")}
@@ -198,6 +201,7 @@ function RegisterPage() {
 					</p>
 				</CardContent>
 			</Card>
+			<AuthLocaleFooter />
 		</div>
 	);
 }

@@ -1,3 +1,5 @@
+import { intlLocale } from "~/lib/intl-locale";
+
 /**
  * Coerce an API date field to a "YYYY-MM-DD" string.
  *
@@ -22,14 +24,15 @@ export function toYMD(value: string | Date): string {
 }
 
 /**
- * Formatta una data in italiano ("3 mar 2026" / "3 marzo 2026"). `long` usa il
- * mese per esteso (default: mese abbreviato). Accetta una string o una Date.
+ * Formatta una data nella lingua dell'utente ("3 mar 2026" / "3 Mar 2026").
+ * `long` usa il mese per esteso (default: mese abbreviato). Accetta una string
+ * o una Date.
  */
-export function formatDateIt(
+export function formatDate(
 	value: string | Date,
 	{ long = false }: { long?: boolean } = {},
 ): string {
-	return new Date(value).toLocaleDateString("it-IT", {
+	return new Date(value).toLocaleDateString(intlLocale(), {
 		year: "numeric",
 		month: long ? "long" : "short",
 		day: "numeric",
