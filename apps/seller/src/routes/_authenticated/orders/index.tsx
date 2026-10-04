@@ -19,6 +19,7 @@ import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { Price } from "@bibs/ui/custom/price";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { displayName } from "@bibs/ui/lib/display-name";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -135,7 +136,7 @@ function OrdersListPage() {
 				id: "customer",
 				header: () => m.orders_col_customer(),
 				meta: { menuLabel: m.orders_col_customer() },
-				cell: ({ row }) => row.original.customerProfile.user.name,
+				cell: ({ row }) => displayName(row.original.customerProfile.user),
 			},
 			{
 				id: "type",

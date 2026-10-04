@@ -2,6 +2,7 @@ import { Button } from "@bibs/ui/components/button";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PackageIcon, ReceiptIcon } from "lucide-react";
@@ -235,9 +236,12 @@ function OrderDetailPage() {
 					</Card>
 
 					<Card title={m.orders_detail_customer()}>
-						<p className="text-foreground text-sm">
-							{order.customerProfile.user.name}
-						</p>
+						{displayName(order.customerProfile.user) !==
+							order.customerProfile.user.email && (
+							<p className="text-foreground text-sm">
+								{displayName(order.customerProfile.user)}
+							</p>
+						)}
 						<a
 							href={`mailto:${order.customerProfile.user.email}`}
 							className="text-muted-foreground text-sm hover:underline"

@@ -16,7 +16,7 @@ import { api } from "@/lib/api";
 export interface ModerationTarget {
 	type: "verify" | "reject";
 	sellerId: string;
-	/** Pre-resolved display name: organization?.businessName ?? user.name */
+	/** Pre-resolved display name: organization?.businessName ?? displayName(user) */
 	sellerName: string;
 }
 

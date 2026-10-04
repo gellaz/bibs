@@ -39,6 +39,7 @@ import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { formatDate } from "@bibs/ui/lib/date";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { cn } from "@bibs/ui/lib/utils";
@@ -615,7 +616,7 @@ function TeamPage() {
 					if (r.kind === "owner") {
 						return (
 							<div className="flex items-center gap-3">
-								<UserAvatar name={r.owner.name}>
+								<UserAvatar name={displayName(r.owner)}>
 									{r.isSelf && (
 										<AvatarBadge
 											className="bg-saffron-deep ring-card"
@@ -625,10 +626,14 @@ function TeamPage() {
 									)}
 								</UserAvatar>
 								<div className="flex min-w-0 flex-col leading-tight">
-									<span className="truncate font-semibold">{r.owner.name}</span>
-									<span className="text-muted-foreground truncate text-xs">
-										{r.owner.email}
+									<span className="truncate font-semibold">
+										{displayName(r.owner)}
 									</span>
+									{displayName(r.owner) !== r.owner.email && (
+										<span className="text-muted-foreground truncate text-xs">
+											{r.owner.email}
+										</span>
+									)}
 								</div>
 							</div>
 						);
@@ -637,7 +642,7 @@ function TeamPage() {
 						return (
 							<div className="flex items-center gap-3">
 								<UserAvatar
-									name={r.employee.user.name}
+									name={displayName(r.employee.user)}
 									image={r.employee.user.image}
 								>
 									{r.isSelf && (
@@ -650,26 +655,23 @@ function TeamPage() {
 								</UserAvatar>
 								<div className="flex min-w-0 flex-col leading-tight">
 									<span className="truncate font-semibold">
-										{r.employee.user.name}
+										{displayName(r.employee.user)}
 									</span>
-									<span className="text-muted-foreground truncate text-xs">
-										{r.employee.user.email}
-									</span>
+									{displayName(r.employee.user) !== r.employee.user.email && (
+										<span className="text-muted-foreground truncate text-xs">
+											{r.employee.user.email}
+										</span>
+									)}
 								</div>
 							</div>
 						);
 					}
 					return (
 						<div className="flex items-center gap-3 italic">
-							<UserAvatar name={r.invitation.email.split("@")[0]} />
-							<div className="flex min-w-0 flex-col leading-tight">
-								<span className="truncate">
-									{r.invitation.email.split("@")[0]}
-								</span>
-								<span className="text-muted-foreground truncate text-xs not-italic">
-									{r.invitation.email}
-								</span>
-							</div>
+							<UserAvatar name={r.invitation.email} />
+							<span className="min-w-0 truncate leading-tight">
+								{r.invitation.email}
+							</span>
 						</div>
 					);
 				},
@@ -755,7 +757,7 @@ function TeamPage() {
 					return (
 						<EmployeeActions
 							employeeId={r.employee.id}
-							employeeName={r.employee.user.name}
+							employeeName={displayName(r.employee.user)}
 							status={r.employee.status}
 						/>
 					);
