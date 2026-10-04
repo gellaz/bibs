@@ -332,8 +332,8 @@ export async function seedSellers() {
 				.set({ role: "seller", emailVerified: true, ...personal })
 				.where(eq(user.id, u.id));
 			created.push({ userId: u.id, data: s });
-		} catch {
-			console.error(`     ✗ Failed: ${s.email}`);
+		} catch (error) {
+			console.error(`     ✗ Failed: ${s.email}`, error);
 		}
 		if ((i + 1) % 25 === 0) {
 			console.log(`     ... ${i + 1}/${sellersData.length} users`);

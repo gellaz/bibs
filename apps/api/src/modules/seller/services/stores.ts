@@ -240,30 +240,6 @@ export async function updateStore(params: UpdateStoreParams) {
 	});
 }
 
-interface DeleteStoreParams {
-	storeId: string;
-	sellerProfileId: string;
-}
-
-export async function deleteStore(params: DeleteStoreParams) {
-	const { storeId, sellerProfileId } = params;
-
-	const [deleted] = await db
-		.update(storeTable)
-		.set({ deletedAt: new Date() })
-		.where(
-			and(
-				eq(storeTable.id, storeId),
-				eq(storeTable.sellerProfileId, sellerProfileId),
-				isNull(storeTable.deletedAt),
-			),
-		)
-		.returning();
-
-	if (!deleted) throw new ServiceError(404, "Negozio non trovato");
-	return deleted;
-}
-
 // ── Subscription cancel / reactivate ─────────────────────────────────────────
 
 interface SubParams {

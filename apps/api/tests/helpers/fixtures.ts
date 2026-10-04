@@ -7,6 +7,11 @@ import { productCategory } from "@/db/schemas/category";
 import { customerProfile } from "@/db/schemas/customer";
 import type { DiscountStatus } from "@/db/schemas/discount";
 import { discount, discountProduct } from "@/db/schemas/discount";
+import {
+	type EmployeeStatus,
+	storeEmployee,
+	storeEmployeeStores,
+} from "@/db/schemas/employee";
 import { municipality, province, region } from "@/db/schemas/location";
 import { organization } from "@/db/schemas/organization";
 import { paymentMethod } from "@/db/schemas/payment-method";
@@ -76,6 +81,46 @@ export async function createTestSeller(
 		.returning();
 
 	return { user: newUser, profile };
+}
+
+/**
+ * Employee of `sellerProfileId`: an `employee` user, the `store_employees` row
+ * and one assignment per entry of `storeIds`.
+ */
+export async function createTestEmployee(
+	db: DrizzleTestDb,
+	sellerProfileId: string,
+	params: { storeIds?: string[]; status?: EmployeeStatus; name?: string } = {},
+) {
+	const userId = crypto.randomUUID();
+	const [newUser] = await db
+		.insert(user)
+		.values({
+			id: userId,
+			name: params.name ?? "Test Employee",
+			email: `emp-${userId.slice(0, 8)}@test.com`,
+			emailVerified: true,
+			role: "employee",
+			createdAt: new Date(),
+			updatedAt: new Date(),
+		})
+		.returning();
+
+	const [employee] = await db
+		.insert(storeEmployee)
+		.values({ sellerProfileId, userId, status: params.status ?? "active" })
+		.returning();
+
+	const storeIds = params.storeIds ?? [];
+	if (storeIds.length > 0) {
+		await db
+			.insert(storeEmployeeStores)
+			.values(
+				storeIds.map((storeId) => ({ storeEmployeeId: employee.id, storeId })),
+			);
+	}
+
+	return { userId, user: newUser, employee };
 }
 
 // ── Location ──────────────────────────────────────────────────────────────────

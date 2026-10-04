@@ -12,7 +12,10 @@ import {
 
 const SummarySchema = t.Object({
 	totalMonthlyCents: t.Integer(),
-	activeStoresCount: t.Integer(),
+	billableStoresCount: t.Integer({
+		description:
+			"Negozi con abbonamento fatturabile (active, past_due, canceling): quelli sommati in totalMonthlyCents",
+	}),
 	nextRenewal: t.Nullable(
 		t.Object({
 			storeId: t.String(),

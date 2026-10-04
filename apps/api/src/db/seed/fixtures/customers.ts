@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
+import { pointTransaction } from "@/db/schemas/points";
 import { auth } from "@/lib/auth";
 import { firstNames, lastNames, pick } from "./utils";
 
@@ -9,6 +10,13 @@ import { firstNames, lastNames, pick } from "./utils";
 
 const CUSTOMER_COUNT = 300;
 const LOG_INTERVAL = 50;
+
+/**
+ * Saldo punti dei primi clienti (customer1…5@test.com), così la pill saffron e
+ * /points hanno qualcosa da mostrare col login di sviluppo. Un movimento
+ * `earned` senza ordine per cliente: Σ movimenti = saldo.
+ */
+const WELCOME_POINTS = [250, 120, 45, 10, 1];
 
 // ── Generator ───────────────────────────────────────────
 
@@ -48,7 +56,7 @@ export async function seedCustomers() {
 	console.log(`  👥 Seeding ${customersData.length} customers...`);
 
 	// Phase 1: Create users via auth (sequential — password hashing)
-	const created: string[] = [];
+	const created: { userId: string; email: string }[] = [];
 	for (let i = 0; i < customersData.length; i++) {
 		const c = customersData[i];
 		try {
@@ -59,9 +67,9 @@ export async function seedCustomers() {
 				.update(user)
 				.set({ role: "customer", emailVerified: true })
 				.where(eq(user.id, u.id));
-			created.push(u.id);
-		} catch {
-			console.error(`     ✗ Failed: ${c.email}`);
+			created.push({ userId: u.id, email: c.email });
+		} catch (error) {
+			console.error(`     ✗ Failed: ${c.email}`, error);
 		}
 		if ((i + 1) % LOG_INTERVAL === 0) {
 			console.log(`     ... ${i + 1}/${customersData.length} users`);
@@ -70,10 +78,36 @@ export async function seedCustomers() {
 
 	if (created.length === 0) return;
 
-	// Phase 2: Batch insert customer profiles
-	await db
+	// Phase 2: Batch insert customer profiles, with the welcome balance
+	const pointsByEmail = new Map(
+		WELCOME_POINTS.map((points, i) => [`customer${i + 1}@test.com`, points]),
+	);
+	const profiles = await db
 		.insert(customerProfile)
-		.values(created.map((userId) => ({ userId })));
+		.values(
+			created.map(({ userId, email }) => ({
+				userId,
+				points: pointsByEmail.get(email) ?? 0,
+			})),
+		)
+		.returning({
+			id: customerProfile.id,
+			points: customerProfile.points,
+		});
 
-	console.log(`  ✓ ${created.length} customers seeded`);
+	const withPoints = profiles.filter((p) => p.points > 0);
+	if (withPoints.length > 0) {
+		await db.insert(pointTransaction).values(
+			withPoints.map((p) => ({
+				customerProfileId: p.id,
+				amount: p.points,
+				type: "earned" as const,
+				description: "Bonus di benvenuto",
+			})),
+		);
+	}
+
+	console.log(
+		`  ✓ ${created.length} customers seeded (${withPoints.length} with points)`,
+	);
 }

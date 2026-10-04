@@ -4,13 +4,6 @@ import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { ServiceError } from "@/lib/errors";
 import type { VatRate } from "@/lib/vat";
-import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
-
-export async function listProductMacroCategories(params: ListByNameParams) {
-	return listByNamePaged(productMacroCategory, params, (opts) =>
-		db.query.productMacroCategory.findMany(opts),
-	);
-}
 
 export async function createProductMacroCategory(params: {
 	name: string;

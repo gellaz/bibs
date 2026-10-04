@@ -3,30 +3,6 @@ import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import { product } from "@/db/schemas/product";
 import { ServiceError } from "@/lib/errors";
-import { type ListByNameParams, listByNamePaged } from "./list-by-name-paged";
-
-interface ListProductCategoriesParams extends ListByNameParams {
-	macroCategoryId?: string;
-}
-
-export async function listProductCategories(
-	params: ListProductCategoriesParams,
-) {
-	return listByNamePaged(
-		productCategory,
-		params,
-		(opts) =>
-			db.query.productCategory.findMany({
-				...opts,
-				with: { macroCategory: true },
-			}),
-		[
-			params.macroCategoryId
-				? eq(productCategory.macroCategoryId, params.macroCategoryId)
-				: undefined,
-		],
-	);
-}
 
 interface CreateProductCategoryParams {
 	name: string;

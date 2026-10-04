@@ -9,15 +9,12 @@ import { env } from "@/lib/env";
 import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
+import { catalogModule } from "@/modules/catalog";
 import { customerModule } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
 import { meModule } from "@/modules/me";
-import { productCategoriesModule } from "@/modules/product-categories";
-import { productMacroCategoriesModule } from "@/modules/product-macro-categories";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
-import { storeCategoriesModule } from "@/modules/store-categories";
-import { storeMacroCategoriesModule } from "@/modules/store-macro-categories";
 import { stripeWebhookRoutes } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
@@ -161,10 +158,7 @@ const app = new Elysia()
 	.use(betterAuth)
 	.use(registration)
 	.use(adminModule)
-	.use(productMacroCategoriesModule)
-	.use(productCategoriesModule)
-	.use(storeMacroCategoriesModule)
-	.use(storeCategoriesModule)
+	.use(catalogModule)
 	.use(locationsModule)
 	.use(sellerModule)
 	.use(customerModule)

@@ -166,8 +166,8 @@ export async function seedTeam() {
 					},
 				});
 				createdUserIds.push(u.id);
-			} catch {
-				console.error(`     ✗ Failed: ${email}`);
+			} catch (error) {
+				console.error(`     ✗ Failed: ${email}`, error);
 			}
 			if ((i + 1) % 15 === 0) {
 				console.log(`     ... ${i + 1}/${totalEmployees} users`);

@@ -27,14 +27,13 @@ mock.module("@/db", () => ({
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
 import { eq } from "drizzle-orm";
-import { user as userTable } from "@/db/schemas/auth";
-import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { getSellerSettings } from "@/modules/seller/services/settings";
 import { truncateAll } from "../helpers/cleanup";
 import {
+	createTestEmployee,
 	createTestOrganization,
 	createTestSeller,
 	createTestStore,
@@ -94,27 +93,8 @@ async function seedSellerWithEmployee() {
 
 	const store = await createTestStore(db, profile.id);
 
-	const empUserId = crypto.randomUUID();
-	await db.insert(userTable).values({
-		id: empUserId,
-		name: "Employee",
-		email: `emp-${empUserId.slice(0, 8)}@test.com`,
-		emailVerified: true,
-		role: "employee",
-		createdAt: new Date(),
-		updatedAt: new Date(),
-	});
-	const [emp] = await db
-		.insert(storeEmployee)
-		.values({
-			sellerProfileId: profile.id,
-			userId: empUserId,
-			status: "active",
-		})
-		.returning();
-	await db.insert(storeEmployeeStores).values({
-		storeEmployeeId: emp.id,
-		storeId: store.id,
+	const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+		storeIds: [store.id],
 	});
 
 	return {

@@ -240,8 +240,9 @@ domain map:
   - `GET /locations/regions` — all Italian regions
   - `GET /locations/provinces` — provinces (optional `regionId` filter)
   - `GET /locations/municipalities` — paginated municipalities (optional `provinceId` filter)
-- `product-categories.ts`, `product-macro-categories.ts`, `store-categories.ts` —
-  single-file public taxonomy listings (no auth).
+- `catalog/` — public taxonomy listings (no auth): `GET /product-macro-categories`,
+  `/product-categories`, `/store-macro-categories`, `/store-categories`. The writes
+  live in `admin/`; the shared paged-by-name query is `src/lib/list-by-name-paged.ts`.
 - `webhooks/` — Stripe webhook receiver at `POST /webhooks/stripe` (platform events)
   and `POST /webhooks/stripe/connect` (connected-account events, e.g.
   `account.updated`, secret `STRIPE_CONNECT_WEBHOOK_SECRET` falling back to

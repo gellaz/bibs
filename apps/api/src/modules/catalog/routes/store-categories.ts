@@ -6,7 +6,7 @@ import {
 	StoreCategoryWithMacroSchema,
 	withErrors,
 } from "@/lib/schemas";
-import { listStoreCategories } from "./admin/services/store-categories";
+import { listStoreCategories } from "../services/store-categories";
 
 const StoreCategoryListQuery = t.Composite([
 	CategoryListQuery,
@@ -17,7 +17,7 @@ const StoreCategoryListQuery = t.Composite([
 	}),
 ]);
 
-export const storeCategoriesModule = new Elysia().get(
+export const storeCategoriesRoutes = new Elysia().get(
 	"/store-categories",
 	async ({ query }) => {
 		const result = await listStoreCategories(query);

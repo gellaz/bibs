@@ -1,3 +1,5 @@
+import { Clock, HelpCircle, type LucideIcon } from "lucide-react";
+
 export interface OpenStatusView {
 	isOpen: boolean;
 	status: "open" | "closed" | "closed_holiday" | "unknown";
@@ -41,4 +43,12 @@ export function openStatusLabel(status: OpenStatusView): string {
 	}
 	if (status.opensAt) return `Chiuso · ${describeOpensAt(status.opensAt)}`;
 	return "Chiuso";
+}
+
+/**
+ * L'icona porta la distinzione: l'orologio è di chi un orario ce l'ha, il punto
+ * interrogativo di chi non l'ha mai dichiarato.
+ */
+export function openStatusIcon(status: OpenStatusView): LucideIcon {
+	return status.status === "unknown" ? HelpCircle : Clock;
 }

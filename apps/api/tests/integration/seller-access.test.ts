@@ -27,8 +27,6 @@ mock.module("@/db", () => ({
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
 import { eq } from "drizzle-orm";
-import { user as userTable } from "@/db/schemas/auth";
-import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { store as storeTable } from "@/db/schemas/store";
 import {
 	ensureProductAccess,
@@ -38,6 +36,7 @@ import {
 import { getEmployeeAssignedStoreIds } from "@/modules/seller/services/access";
 import { truncateAll } from "../helpers/cleanup";
 import {
+	createTestEmployee,
 	createTestProduct,
 	createTestSeller,
 	createTestStore,
@@ -67,28 +66,9 @@ describe("getEmployeeAssignedStoreIds", () => {
 		const storeA = await createTestStore(db, profile.id, { name: "A" });
 		const storeB = await createTestStore(db, profile.id, { name: "B" });
 
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `emp-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [storeA.id, storeB.id],
 		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "active",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values([
-			{ storeEmployeeId: emp.id, storeId: storeA.id },
-			{ storeEmployeeId: emp.id, storeId: storeB.id },
-		]);
 
 		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
 		expect(ids.sort()).toEqual([storeA.id, storeB.id].sort());
@@ -98,21 +78,7 @@ describe("getEmployeeAssignedStoreIds", () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `emp-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		await db.insert(storeEmployee).values({
-			sellerProfileId: profile.id,
-			userId: empUserId,
-			status: "active",
-		});
+		const { userId: empUserId } = await createTestEmployee(db, profile.id);
 
 		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
 		expect(ids).toEqual([]);
@@ -123,27 +89,9 @@ describe("getEmployeeAssignedStoreIds", () => {
 		const { profile } = await createTestSeller(db);
 		const storeA = await createTestStore(db, profile.id);
 
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "banned",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values({
-			storeEmployeeId: emp.id,
-			storeId: storeA.id,
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [storeA.id],
+			status: "banned",
 		});
 
 		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
@@ -156,28 +104,9 @@ describe("getEmployeeAssignedStoreIds", () => {
 		const live = await createTestStore(db, profile.id, { name: "Live" });
 		const dead = await createTestStore(db, profile.id, { name: "Dead" });
 
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [live.id, dead.id],
 		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "active",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values([
-			{ storeEmployeeId: emp.id, storeId: live.id },
-			{ storeEmployeeId: emp.id, storeId: dead.id },
-		]);
 		await db
 			.update(storeTable)
 			.set({ deletedAt: new Date() })
@@ -211,27 +140,8 @@ describe("getAccessibleStoreIdsFor", () => {
 		const sA = await createTestStore(db, profile.id, { name: "A" });
 		await createTestStore(db, profile.id, { name: "B-not-assigned" });
 
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "active",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values({
-			storeEmployeeId: emp.id,
-			storeId: sA.id,
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [sA.id],
 		});
 
 		const ids = await getAccessibleStoreIdsFor({
@@ -248,28 +158,9 @@ describe("getAccessibleStoreIdsFor", () => {
 		const live = await createTestStore(db, profile.id, { name: "Live" });
 		const dead = await createTestStore(db, profile.id, { name: "Dead" });
 
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [live.id, dead.id],
 		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "active",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values([
-			{ storeEmployeeId: emp.id, storeId: live.id },
-			{ storeEmployeeId: emp.id, storeId: dead.id },
-		]);
 		await db
 			.update(storeTable)
 			.set({ deletedAt: new Date() })
@@ -318,21 +209,7 @@ describe("ensureStoreAccess", () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const sNotAssigned = await createTestStore(db, profile.id);
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		await db.insert(storeEmployee).values({
-			sellerProfileId: profile.id,
-			userId: empUserId,
-			status: "active",
-		});
+		const { userId: empUserId } = await createTestEmployee(db, profile.id);
 		await expect(
 			ensureStoreAccess(sNotAssigned.id, {
 				userId: empUserId,
@@ -346,27 +223,8 @@ describe("ensureStoreAccess", () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const dead = await createTestStore(db, profile.id);
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "active",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values({
-			storeEmployeeId: emp.id,
-			storeId: dead.id,
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [dead.id],
 		});
 		await db
 			.update(storeTable)
@@ -391,27 +249,8 @@ describe("ensureStoreAccess", () => {
 		const prod = await createTestProduct(db, profile.id);
 		await createTestStoreProduct(db, dead.id, prod.id);
 
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "active",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values({
-			storeEmployeeId: emp.id,
-			storeId: dead.id,
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [dead.id],
 		});
 		await db
 			.update(storeTable)

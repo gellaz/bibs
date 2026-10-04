@@ -2,9 +2,9 @@ import { Elysia } from "elysia";
 import { CategoryListQuery } from "@/lib/queries";
 import { okPage } from "@/lib/responses";
 import { okPageRes, StoreMacroCategorySchema, withErrors } from "@/lib/schemas";
-import { listStoreMacroCategories } from "./admin/services/store-macro-categories";
+import { listStoreMacroCategories } from "../services/store-macro-categories";
 
-export const storeMacroCategoriesModule = new Elysia().get(
+export const storeMacroCategoriesRoutes = new Elysia().get(
 	"/store-macro-categories",
 	async ({ query }) => {
 		const result = await listStoreMacroCategories(query);
