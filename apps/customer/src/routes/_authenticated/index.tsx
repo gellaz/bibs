@@ -10,8 +10,9 @@ export const Route = createFileRoute("/_authenticated/")({
 
 function Home() {
 	const { data: session } = authClient.useSession();
-	const firstName =
-		session?.user?.firstName ?? session?.user?.name?.split(" ")[0] ?? null;
+	// Solo il nome del profilo: `name` alla registrazione è la parte locale
+	// dell'email, e «Ciao, mario.rossi» suona peggio di «Bentornato».
+	const firstName = session?.user?.firstName?.trim() || null;
 
 	return (
 		<div className={`${PAGE_CONTAINER} py-8 sm:py-10`}>
