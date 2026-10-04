@@ -27,13 +27,11 @@ mock.module("@/db", () => ({
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
 import { eq } from "drizzle-orm";
-import { user as userTable } from "@/db/schemas/auth";
-import { storeEmployee } from "@/db/schemas/employee";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { resolveSellerAccess } from "@/modules/seller/context";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestSeller } from "../helpers/fixtures";
+import { createTestEmployee, createTestSeller } from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -64,21 +62,7 @@ async function sellerWithEmployee(status: OnboardingStatus) {
 	const { profile } = await createTestSeller(db);
 	await setOnboarding(profile.id, status);
 
-	const empUserId = crypto.randomUUID();
-	await db.insert(userTable).values({
-		id: empUserId,
-		name: "Emp",
-		email: `emp-${empUserId.slice(0, 8)}@test.com`,
-		emailVerified: true,
-		role: "employee",
-		createdAt: new Date(),
-		updatedAt: new Date(),
-	});
-	await db.insert(storeEmployee).values({
-		sellerProfileId: profile.id,
-		userId: empUserId,
-		status: "active",
-	});
+	const { userId: empUserId } = await createTestEmployee(db, profile.id);
 	return { profile, empUserId };
 }
 

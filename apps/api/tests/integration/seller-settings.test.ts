@@ -26,11 +26,13 @@ mock.module("@/db", () => ({
 
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
-import { user as userTable } from "@/db/schemas/auth";
-import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { getSellerSettings } from "@/modules/seller/services/settings";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestSeller, createTestStore } from "../helpers/fixtures";
+import {
+	createTestEmployee,
+	createTestSeller,
+	createTestStore,
+} from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -64,27 +66,8 @@ describe("getSellerSettings", () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const sA = await createTestStore(db, profile.id);
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		const [emp] = await db
-			.insert(storeEmployee)
-			.values({
-				sellerProfileId: profile.id,
-				userId: empUserId,
-				status: "active",
-			})
-			.returning();
-		await db.insert(storeEmployeeStores).values({
-			storeEmployeeId: emp.id,
-			storeId: sA.id,
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [sA.id],
 		});
 
 		const result = await getSellerSettings({
@@ -98,21 +81,7 @@ describe("getSellerSettings", () => {
 	it("employee with no assignments: returns empty array", async () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
-		const empUserId = crypto.randomUUID();
-		await db.insert(userTable).values({
-			id: empUserId,
-			name: "Emp",
-			email: `e-${empUserId.slice(0, 8)}@test.com`,
-			emailVerified: true,
-			role: "employee",
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-		await db.insert(storeEmployee).values({
-			sellerProfileId: profile.id,
-			userId: empUserId,
-			status: "active",
-		});
+		const { userId: empUserId } = await createTestEmployee(db, profile.id);
 
 		const result = await getSellerSettings({
 			sellerProfileId: profile.id,

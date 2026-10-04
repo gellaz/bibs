@@ -26,8 +26,6 @@ mock.module("@/db", () => ({
 
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
-import { user as userTable } from "@/db/schemas/auth";
-import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { ensureProductAccess } from "@/modules/seller/context";
 import {
 	deleteProductImage,
@@ -39,6 +37,7 @@ import {
 } from "@/modules/seller/services/store-images";
 import { truncateAll } from "../helpers/cleanup";
 import {
+	createTestEmployee,
 	createTestProduct,
 	createTestSeller,
 	createTestStore,
@@ -62,28 +61,9 @@ async function makeEmployee(
 	assignedStoreIds: string[],
 ) {
 	const db = getTestDb();
-	const empUserId = crypto.randomUUID();
-	await db.insert(userTable).values({
-		id: empUserId,
-		name: "Emp",
-		email: `emp-${empUserId.slice(0, 8)}@test.com`,
-		emailVerified: true,
-		role: "employee",
-		createdAt: new Date(),
-		updatedAt: new Date(),
+	const { userId: empUserId } = await createTestEmployee(db, sellerProfileId, {
+		storeIds: assignedStoreIds,
 	});
-	const [emp] = await db
-		.insert(storeEmployee)
-		.values({ sellerProfileId, userId: empUserId, status: "active" })
-		.returning();
-	if (assignedStoreIds.length) {
-		await db.insert(storeEmployeeStores).values(
-			assignedStoreIds.map((storeId) => ({
-				storeEmployeeId: emp.id,
-				storeId,
-			})),
-		);
-	}
 	return empUserId;
 }
 

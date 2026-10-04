@@ -24,7 +24,6 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
 import { user as userTable } from "@/db/schemas/auth";
-import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { order } from "@/db/schemas/order";
 import { resolveSellerAccess } from "@/modules/seller/context";
 import { ordersRoutes } from "@/modules/seller/routes/orders";
@@ -32,6 +31,7 @@ import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,
+	createTestEmployee,
 	createTestSeller,
 	createTestStore,
 } from "../helpers/fixtures";
@@ -92,27 +92,9 @@ async function seed() {
 	const customer = await createTestCustomer(db);
 
 	// Employee assegnato solo al primo negozio.
-	const empUserId = crypto.randomUUID();
-	await db.insert(userTable).values({
-		id: empUserId,
-		name: "Employee",
-		email: `emp-${empUserId.slice(0, 8)}@test.com`,
-		emailVerified: true,
-		role: "employee",
-		createdAt: new Date(),
-		updatedAt: new Date(),
+	const { userId: empUserId } = await createTestEmployee(db, owner.profile.id, {
+		storeIds: [assigned.id],
 	});
-	const [emp] = await db
-		.insert(storeEmployee)
-		.values({
-			sellerProfileId: owner.profile.id,
-			userId: empUserId,
-			status: "active",
-		})
-		.returning();
-	await db
-		.insert(storeEmployeeStores)
-		.values({ storeEmployeeId: emp.id, storeId: assigned.id });
 
 	const [orderOnOther] = await db
 		.insert(order)
