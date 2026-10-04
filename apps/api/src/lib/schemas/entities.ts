@@ -94,6 +94,16 @@ export const UserSchema = t.Object({
 	banExpires: t.Nullable(t.Date()),
 });
 
+// Utente visto da un altro ruolo non admin (cliente al seller, dipendente al
+// titolare): solo ciò che si mostra. Mai moderazione (role/ban*) né date
+// dell'account.
+export const UserSummarySchema = t.Pick(UserSchema, [
+	"id",
+	"name",
+	"email",
+	"image",
+]);
+
 export const ProductMacroCategorySchema = t.Object({
 	id: t.String(),
 	name: t.String({ description: "Nome della macro categoria prodotto" }),

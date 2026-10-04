@@ -13,6 +13,7 @@ import { awardPoints, refundStockAndPoints } from "@/lib/order-helpers";
 import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { normalizePickupCode } from "@/lib/pickup-code";
+import { userSummaryWith } from "@/lib/user-summary";
 import { refundOrderPayment } from "@/modules/billing/services/order-payments";
 import { assertCancellable } from "@/modules/customer/services/orders";
 
@@ -122,6 +123,12 @@ interface ListSellerOrdersParams {
 	limit?: number;
 }
 
+// Cliente sull'ordine: solo l'id del profilo e l'utente ridotto (niente punti).
+const sellerOrderCustomerWith = {
+	columns: { id: true },
+	with: { user: userSummaryWith },
+} as const;
+
 export async function listSellerOrders(params: ListSellerOrdersParams) {
 	const { storeIds, status, type } = params;
 	const { page, limit, offset } = parsePagination(params);
@@ -140,7 +147,7 @@ export async function listSellerOrders(params: ListSellerOrdersParams) {
 			where,
 			with: {
 				items: { with: { storeProduct: { with: { product: true } } } },
-				customerProfile: { with: { user: true } },
+				customerProfile: sellerOrderCustomerWith,
 				store: {
 					// PostGIS: drizzle non legge la geometria in una relazione annidata.
 					columns: { location: false },
@@ -179,7 +186,7 @@ export async function getSellerOrder(params: GetSellerOrderParams) {
 		where: eq(order.id, orderId),
 		with: {
 			items: { with: { storeProduct: { with: { product: true } } } },
-			customerProfile: { with: { user: true } },
+			customerProfile: sellerOrderCustomerWith,
 			store: {
 				// PostGIS: drizzle non legge la geometria in una relazione annidata.
 				columns: { location: false },

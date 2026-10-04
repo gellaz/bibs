@@ -20,6 +20,7 @@ import {
 	StoreProductSchema,
 	StoreSchema,
 	UserSchema,
+	UserSummarySchema,
 } from "./entities";
 import { OpenStatusSchema } from "./holidays";
 
@@ -85,7 +86,7 @@ export const SignInResult = t.Object({
 // Employee + user
 export const EmployeeWithUserSchema = t.Object({
 	...EmployeeSchema.properties,
-	user: UserSchema,
+	user: UserSummarySchema,
 	storeIds: t.Array(t.String(), {
 		description: "ID dei negozi a cui il dipendente è assegnato",
 	}),
@@ -139,17 +140,17 @@ const OrderItemWithProduct = t.Object({
 	storeProduct: t.Nullable(StoreProductWithProduct),
 });
 
-// CustomerProfile + user (seller order view)
-const CustomerProfileWithUser = t.Object({
-	...CustomerProfileSchema.properties,
-	user: UserSchema,
+// Cliente visto dal seller sull'ordine: niente saldo punti né dati di account
+const SellerOrderCustomer = t.Object({
+	id: t.String(),
+	user: UserSummarySchema,
 });
 
 // Order with relations — seller view
 export const SellerOrderWithRelationsSchema = t.Object({
 	...OrderSchema.properties,
 	items: t.Array(OrderItemWithProduct),
-	customerProfile: CustomerProfileWithUser,
+	customerProfile: SellerOrderCustomer,
 	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
 	store: t.Omit(StoreSchema, ["location"]),
 });

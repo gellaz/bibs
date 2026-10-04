@@ -250,3 +250,64 @@ describe("ritiro con codice via HTTP", () => {
 		expect(again.status).toBe(404);
 	});
 });
+
+describe("dati del cliente al seller", () => {
+	// Il seller vede del cliente solo ciò che mostra: niente moderazione
+	// (role/ban*), niente saldo punti, niente date dell'account.
+	const USER_KEYS = ["email", "id", "image", "name"];
+	const PROFILE_KEYS = ["id", "user"];
+
+	function expectRedacted(o: { customerProfile: Record<string, unknown> }) {
+		expect(Object.keys(o.customerProfile).sort()).toEqual(PROFILE_KEYS);
+		expect(
+			Object.keys(o.customerProfile.user as Record<string, unknown>).sort(),
+		).toEqual(USER_KEYS);
+	}
+
+	it("lista, dettaglio e anteprima ritiro non espongono role/ban*/points", async () => {
+		const { owner, other, orderOnOther } = await seed();
+		const db = getTestDb();
+		const found = await db.query.order.findFirst({
+			where: eq(order.id, orderOnOther.id),
+			with: { customerProfile: true },
+		});
+		await db
+			.update(userTable)
+			.set({
+				banned: true,
+				banReason: "frode",
+				banExpires: new Date(Date.now() + 86_400_000),
+			})
+			.where(eq(userTable.id, found!.customerProfile.userId));
+		await db
+			.update(order)
+			.set({ pickupCode: "K7XM4P" })
+			.where(eq(order.id, orderOnOther.id));
+
+		const list = await call(
+			owner.user.id,
+			"GET",
+			`/orders?storeId=${other.id}`,
+		);
+		expect(list.status).toBe(200);
+		const listBody = await list.json();
+		expect(listBody.data).toHaveLength(1);
+		expectRedacted(listBody.data[0]);
+
+		const detail = await call(
+			owner.user.id,
+			"GET",
+			`/orders/${orderOnOther.id}`,
+		);
+		expect(detail.status).toBe(200);
+		expectRedacted((await detail.json()).data);
+
+		const pickup = await call(
+			owner.user.id,
+			"GET",
+			`/orders/pickup/K7XM4P?storeId=${other.id}`,
+		);
+		expect(pickup.status).toBe(200);
+		expectRedacted((await pickup.json()).data);
+	});
+});
