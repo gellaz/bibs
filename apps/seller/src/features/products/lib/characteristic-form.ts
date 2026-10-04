@@ -1,3 +1,4 @@
+import { m } from "@/paraglide/messages";
 import type { CategoryCharacteristic } from "../hooks/use-category-characteristics";
 
 /**
@@ -87,10 +88,21 @@ export function lostOnSave(
 	return saved.filter((v) => !keep.has(v.characteristicId));
 }
 
-export function valuesPhrase(n: number) {
-	return `${n} valor${n === 1 ? "e" : "i"}`;
+/** Avviso sotto il picker: i valori che il salvataggio cancellerà. */
+export function lossWarning(lost: SavedCharacteristicValue[]) {
+	const names = lost.map((v) => v.name).join(", ");
+	return lost.length === 1
+		? m.products_characteristics_loss_warning_one({ names })
+		: m.products_characteristics_loss_warning({ count: lost.length, names });
 }
 
-export function filledPhrase(n: number) {
-	return `${valuesPhrase(n)} già compilat${n === 1 ? "o" : "i"}`;
+/** Testo del dialog di conferma del salvataggio che li cancella. */
+export function lossConfirmation(lost: SavedCharacteristicValue[]) {
+	const names = lost.map((v) => v.name).join(", ");
+	return lost.length === 1
+		? m.products_characteristics_loss_dialog_description_one({ names })
+		: m.products_characteristics_loss_dialog_description({
+				count: lost.length,
+				names,
+			});
 }

@@ -43,7 +43,7 @@ function PromotionDetailPage() {
 	const [title, setTitle] = useState<string | undefined>(undefined);
 
 	if (detail.isLoading) return <Spinner />;
-	if (!detail.data) return <div>Promozione non trovata</div>;
+	if (!detail.data) return <div>{m.promotions_not_found()}</div>;
 
 	const d = detail.data.data;
 	const isStarted = new Date(d.startsAt).getTime() <= Date.now();
@@ -56,8 +56,8 @@ function PromotionDetailPage() {
 					<EntityFormHeader
 						mode="edit"
 						title={title ?? d.title}
-						placeholder="Modifica Promozione"
-						subtitle="Aggiorna i dettagli della promozione"
+						placeholder={m.promotions_edit_title()}
+						subtitle={m.promotions_edit_subtitle()}
 						badge={
 							<PromotionStateBadge
 								status={d.status}
@@ -73,7 +73,7 @@ function PromotionDetailPage() {
 											variant="ghost"
 											size="icon"
 											className="size-10"
-											aria-label="Altre azioni"
+											aria-label={m.common_more_actions()}
 										>
 											<MoreHorizontalIcon className="size-5" />
 										</Button>

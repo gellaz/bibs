@@ -9,6 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useId } from "react";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 // Radix rifiuta value="" su un SelectItem, quindi la voce «nessuna categoria»
 // viaggia con un sentinella che il gestore ritraduce in null. È l'unico modo
@@ -35,7 +36,7 @@ export function useProductMacroCategories() {
 			const response = await api()["product-macro-categories"].get({
 				query: { page: 1, limit: 100 },
 			});
-			return unwrap(response, "Errore nel caricamento macro-categorie").data;
+			return unwrap(response, m.products_category_macro_load_error()).data;
 		},
 	});
 }
@@ -61,7 +62,7 @@ export function ProductCategoryPicker({
 					macroCategoryId: macroCategoryId ?? undefined,
 				},
 			});
-			return unwrap(response, "Errore nel caricamento categorie").data;
+			return unwrap(response, m.products_category_load_error()).data;
 		},
 		enabled: !!macroCategoryId,
 	});
@@ -69,23 +70,28 @@ export function ProductCategoryPicker({
 	return (
 		<div className="@container grid gap-4 @md:grid-cols-2">
 			<div className="space-y-2">
-				<Label htmlFor={macroSelectId}>Macrocategoria{required && " *"}</Label>
+				<Label htmlFor={macroSelectId}>
+					{m.products_category_macro_label()}
+					{required && " *"}
+				</Label>
 				<Select
 					value={macroCategoryId ?? ""}
 					onValueChange={(v) =>
 						onMacroChange(
 							v || null,
-							macros.find((m) => m.id === v)?.suggestedVatRate,
+							macros.find((macro) => macro.id === v)?.suggestedVatRate,
 						)
 					}
 				>
 					<SelectTrigger id={macroSelectId} className="w-full">
-						<SelectValue placeholder="Seleziona una macrocategoria" />
+						<SelectValue
+							placeholder={m.products_category_macro_placeholder()}
+						/>
 					</SelectTrigger>
 					<SelectContent>
-						{macros.map((m) => (
-							<SelectItem key={m.id} value={m.id}>
-								{m.name}
+						{macros.map((macro) => (
+							<SelectItem key={macro.id} value={macro.id}>
+								{macro.name}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -94,7 +100,10 @@ export function ProductCategoryPicker({
 
 			{macroCategoryId && (
 				<div className="space-y-2">
-					<Label htmlFor={categorySelectId}>Categoria{required && " *"}</Label>
+					<Label htmlFor={categorySelectId}>
+						{m.products_category_label()}
+						{required && " *"}
+					</Label>
 					<Select
 						value={
 							categoryId === undefined
@@ -108,10 +117,12 @@ export function ProductCategoryPicker({
 						}
 					>
 						<SelectTrigger id={categorySelectId} className="w-full">
-							<SelectValue placeholder="Seleziona una categoria" />
+							<SelectValue placeholder={m.products_category_placeholder()} />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value={NO_CATEGORY}>Nessuna categoria</SelectItem>
+							<SelectItem value={NO_CATEGORY}>
+								{m.products_category_none()}
+							</SelectItem>
 							{categories.map((c) => (
 								<SelectItem key={c.id} value={c.id}>
 									{c.name}
@@ -121,7 +132,7 @@ export function ProductCategoryPicker({
 					</Select>
 					{categoriesLoaded && categories.length === 0 && (
 						<p className="text-muted-foreground text-sm">
-							Nessuna categoria disponibile per questa macrocategoria.
+							{m.products_category_empty()}
 						</p>
 					)}
 				</div>

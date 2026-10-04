@@ -18,7 +18,7 @@ export function ProductStatusTabs({ storeId, value, onChange }: Props) {
 			const res = await api().seller.products["status-counts"].get({
 				query: { storeId },
 			});
-			return unwrap(res, "Errore caricamento conteggi").data;
+			return unwrap(res, m.products_counts_load_error()).data;
 		},
 		enabled: !!storeId,
 	});

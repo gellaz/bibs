@@ -24,7 +24,9 @@ export const discountFormSchema = z
 				v.endsAt.length > 0 &&
 				new Date(v.endsAt) > new Date(v.startsAt)),
 		{
-			message: "La data di fine deve essere successiva all'inizio",
+			// Funzione e non stringa: lo schema è a livello di modulo, il testo va
+			// letto alla validazione, nella lingua corrente.
+			error: () => m.promotions_form_end_before_start(),
 			path: ["endsAt"],
 		},
 	);
@@ -153,7 +155,7 @@ export function DiscountForm({
 			<div className="flex justify-end gap-3 pt-2">
 				{onCancel && (
 					<Button type="button" variant="outline" onClick={onCancel}>
-						Annulla
+						{m.common_cancel()}
 					</Button>
 				)}
 				<Button type="submit" disabled={submitting || !form.formState.isDirty}>

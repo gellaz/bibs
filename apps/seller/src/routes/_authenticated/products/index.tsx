@@ -215,7 +215,7 @@ function ProductsListPage() {
 					...(maxPrice ? { maxPrice } : {}),
 				},
 			});
-			return unwrap(response, "Errore caricamento");
+			return unwrap(response, m.common_load_error());
 		},
 		enabled: !!activeStore?.id,
 	});
@@ -303,7 +303,7 @@ function ProductsListPage() {
 										: false
 							}
 							onCheckedChange={() => selection.toggleAllOnPage()}
-							aria-label="Seleziona tutti"
+							aria-label={m.products_select_all()}
 						/>
 					</div>
 				),
@@ -312,7 +312,7 @@ function ProductsListPage() {
 						<Checkbox
 							checked={selection.isSelected(row.original.id)}
 							onCheckedChange={() => selection.toggleOne(row.original.id)}
-							aria-label={`Seleziona ${row.original.name}`}
+							aria-label={m.products_select_row({ name: row.original.name })}
 						/>
 					</div>
 				),
@@ -321,14 +321,14 @@ function ProductsListPage() {
 				id: "name",
 				accessorKey: "name",
 				header: ({ column }) => (
-					<SortableHeader column={column}>Nome</SortableHeader>
+					<SortableHeader column={column}>{m.common_name()}</SortableHeader>
 				),
 				enableHiding: false,
 				enableSorting: true,
 				meta: {
 					headerClassName: "w-[30%]",
 					cellClassName: "font-semibold",
-					menuLabel: "Nome",
+					menuLabel: m.common_name(),
 				},
 				cell: ({ row }) => {
 					const product = row.original;
@@ -379,13 +379,13 @@ function ProductsListPage() {
 				id: "price",
 				accessorKey: "price",
 				header: ({ column }) => (
-					<SortableHeader column={column}>Prezzo</SortableHeader>
+					<SortableHeader column={column}>{m.common_price()}</SortableHeader>
 				),
 				enableSorting: true,
 				meta: {
 					headerClassName: "w-[15%]",
 					cellClassName: "text-sm",
-					menuLabel: "Prezzo",
+					menuLabel: m.common_price(),
 				},
 				cell: ({ row }) => (
 					<ProductPriceCell
@@ -397,11 +397,11 @@ function ProductsListPage() {
 			},
 			{
 				id: "vat",
-				header: "IVA",
+				header: m.products_col_vat(),
 				meta: {
 					headerClassName: "w-[12%]",
 					cellClassName: "text-sm",
-					menuLabel: "IVA",
+					menuLabel: m.products_col_vat(),
 				},
 				cell: ({ row }) => {
 					const rate = Number(row.original.vatRate);
@@ -454,7 +454,7 @@ function ProductsListPage() {
 			},
 			{
 				id: "category",
-				header: "Categoria",
+				header: m.products_col_category(),
 				meta: {
 					headerClassName: "w-[20%]",
 					cellClassName: "text-sm",
@@ -476,7 +476,7 @@ function ProductsListPage() {
 			},
 			{
 				id: "brand",
-				header: "Marca",
+				header: m.products_col_brand(),
 				meta: {
 					headerClassName: "w-[12%]",
 					cellClassName: "text-muted-foreground text-sm",
@@ -521,13 +521,15 @@ function ProductsListPage() {
 				id: "createdAt",
 				accessorKey: "createdAt",
 				header: ({ column }) => (
-					<SortableHeader column={column}>Creato</SortableHeader>
+					<SortableHeader column={column}>
+						{m.products_col_created()}
+					</SortableHeader>
 				),
 				enableSorting: true,
 				meta: {
 					headerClassName: "w-[12%]",
 					cellClassName: "text-muted-foreground text-sm",
-					menuLabel: "Creato",
+					menuLabel: m.products_col_created(),
 				},
 				cell: ({ row }) => <DateCell value={row.original.createdAt} />,
 			},
@@ -535,13 +537,15 @@ function ProductsListPage() {
 				id: "updatedAt",
 				accessorKey: "updatedAt",
 				header: ({ column }) => (
-					<SortableHeader column={column}>Aggiornato</SortableHeader>
+					<SortableHeader column={column}>
+						{m.products_col_updated()}
+					</SortableHeader>
 				),
 				enableSorting: true,
 				meta: {
 					headerClassName: "w-[12%]",
 					cellClassName: "text-muted-foreground text-sm",
-					menuLabel: "Aggiornato",
+					menuLabel: m.products_col_updated(),
 				},
 				cell: ({ row }) => <DateCell value={row.original.updatedAt} />,
 			},
@@ -587,12 +591,12 @@ function ProductsListPage() {
 			<div className="flex shrink-0 items-center justify-between">
 				<div>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
-						Prodotti
+						{m.products_page_title()}
 					</h1>
 					<p className="text-muted-foreground text-sm">
 						{activeStore
-							? "Catalogo, magazzino e prezzi."
-							: "Seleziona un negozio per visualizzare il catalogo."}
+							? m.products_page_subtitle()
+							: m.products_page_subtitle_no_store()}
 					</p>
 				</div>
 				<CreateButton asChild>
@@ -666,7 +670,9 @@ function ProductsListPage() {
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 shrink-0 rounded-lg border p-4">
 					<p className="text-sm">
-						Errore nel caricamento: {(error as Error).message}
+						{m.common_load_error_with_message({
+							message: (error as Error).message,
+						})}
 					</p>
 				</div>
 			)}

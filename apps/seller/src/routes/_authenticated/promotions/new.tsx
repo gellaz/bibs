@@ -28,7 +28,7 @@ function NewPromotionPage() {
 				endsAt:
 					values.noEndDate || !values.endsAt ? null : new Date(values.endsAt),
 			});
-			return unwrap(res, "Errore").data;
+			return unwrap(res, m.common_error()).data;
 		},
 		onSuccess: (d) => {
 			toast.success(m.promotions_toast_created());
@@ -46,8 +46,8 @@ function NewPromotionPage() {
 			<EntityFormHeader
 				mode="create"
 				title={title}
-				placeholder="Nuova Promozione"
-				subtitle="Configura una nuova promozione"
+				placeholder={m.promotions_new_title()}
+				subtitle={m.promotions_new_subtitle()}
 			/>
 
 			<DiscountForm

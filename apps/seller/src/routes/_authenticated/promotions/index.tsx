@@ -227,7 +227,7 @@ function PromotionsListPage() {
 							<DropdownMenuTrigger asChild>
 								<Button variant="ghost" size="icon-sm">
 									<MoreVerticalIcon />
-									<span className="sr-only">Azioni</span>
+									<span className="sr-only">{m.common_actions()}</span>
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">
@@ -283,7 +283,9 @@ function PromotionsListPage() {
 			{error && (
 				<div className="bg-destructive/10 border-destructive/20 text-destructive shrink-0 rounded-lg border p-4">
 					<p className="text-sm">
-						Errore nel caricamento: {(error as Error).message}
+						{m.common_load_error_with_message({
+							message: (error as Error).message,
+						})}
 					</p>
 				</div>
 			)}

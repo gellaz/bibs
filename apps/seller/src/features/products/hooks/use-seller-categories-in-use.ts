@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 type StatusFilter = "active" | "disabled" | "trashed";
 
@@ -20,7 +21,7 @@ export function useSellerCategoriesInUse(
 					...(statusFilter ? { statusFilter } : {}),
 				},
 			});
-			return unwrap(response, "Errore caricamento categorie in uso").data;
+			return unwrap(response, m.products_categories_in_use_load_error()).data;
 		},
 	});
 }

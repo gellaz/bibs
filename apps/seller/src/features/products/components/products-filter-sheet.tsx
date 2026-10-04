@@ -36,6 +36,7 @@ import {
 	XIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { m } from "@/paraglide/messages";
 import { useSellerCategoriesInUse } from "../hooks/use-seller-categories-in-use";
 
 function normalizePrice(raw: string): string | undefined {
@@ -46,6 +47,22 @@ function normalizePrice(raw: string): string | undefined {
 }
 
 type StatusFilter = "active" | "disabled" | "trashed";
+
+/** Sommario della sezione Categoria: niente testo senza selezione. */
+export function selectedCategoriesLabel(count: number): string | undefined {
+	if (count === 0) return undefined;
+	return count === 1
+		? m.products_filter_category_selected_one()
+		: m.products_filter_category_selected({ count });
+}
+
+/** Piede del pannello: quanti filtri sono attivi. */
+export function activeFiltersLabel(count: number): string {
+	if (count === 0) return m.products_filter_active_none();
+	return count === 1
+		? m.products_filter_active_one()
+		: m.products_filter_active({ count });
+}
 
 export interface FilterValue {
 	categoryIds?: string[];
@@ -65,21 +82,21 @@ function ResultSummary({ count }: { count: number | undefined }) {
 	if (count === undefined) {
 		return (
 			<SheetDescription className="text-muted-foreground/70">
-				Caricamento…
+				{m.products_filter_loading()}
 			</SheetDescription>
 		);
 	}
 	if (count === 0) {
 		return (
-			<SheetDescription>
-				Nessun prodotto corrisponde ai filtri attuali.
-			</SheetDescription>
+			<SheetDescription>{m.products_filter_summary_empty()}</SheetDescription>
 		);
 	}
 	return (
 		<SheetDescription>
 			<span className="tabular-nums font-medium text-foreground">{count}</span>{" "}
-			{count === 1 ? "prodotto corrispondente" : "prodotti corrispondenti"}
+			{count === 1
+				? m.products_filter_summary_one()
+				: m.products_filter_summary()}
 		</SheetDescription>
 	);
 }
@@ -125,7 +142,7 @@ function SectionHeader({
 					onClick={onClear}
 					className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2"
 				>
-					Cancella
+					{m.products_filter_clear_section()}
 				</button>
 			)}
 		</div>
@@ -232,7 +249,7 @@ export function ProductsFilterSheet({
 		const maxN = normalizePrice(localMax);
 		if (!minN || !maxN) return null;
 		if (Number.parseFloat(minN) > Number.parseFloat(maxN))
-			return "Min superiore a max";
+			return m.products_filter_price_min_over_max();
 		return null;
 	})();
 
@@ -254,11 +271,13 @@ export function ProductsFilterSheet({
 			<SheetTrigger asChild>
 				<Button variant="outline" className="relative gap-2">
 					<FilterIcon className="size-4" />
-					Filtri
+					{m.products_filter_title()}
 					{activeCount > 0 && (
 						<span
 							role="status"
-							aria-label={`${activeCount} filtri attivi`}
+							aria-label={m.products_filter_active_badge({
+								count: activeCount,
+							})}
 							className="bg-cobalt-soft text-cobalt-deep ring-background absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold tabular-nums ring-2"
 						>
 							{activeCount}
@@ -276,7 +295,9 @@ export function ProductsFilterSheet({
 							<SlidersHorizontalIcon className="size-5" />
 						</span>
 						<div className="flex flex-col justify-center gap-0.5">
-							<SheetTitle className="text-base leading-none">Filtri</SheetTitle>
+							<SheetTitle className="text-base leading-none">
+								{m.products_filter_title()}
+							</SheetTitle>
 							<ResultSummary count={totalResults} />
 						</div>
 					</div>
@@ -286,15 +307,9 @@ export function ProductsFilterSheet({
 					<section className="space-y-3 px-6 py-5">
 						<SectionHeader
 							icon={TagIcon}
-							label="Categoria"
+							label={m.products_filter_category()}
 							active={selectedIds.length > 0}
-							summary={
-								selectedIds.length > 0
-									? `${selectedIds.length} selezionat${
-											selectedIds.length === 1 ? "a" : "e"
-										}`
-									: undefined
-							}
+							summary={selectedCategoriesLabel(selectedIds.length)}
 							onClear={clearCategories}
 						/>
 						<Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
@@ -308,14 +323,14 @@ export function ProductsFilterSheet({
 									<div className="flex flex-wrap items-center gap-1.5">
 										{catsLoading && selectedCategories.length === 0 && (
 											<span className="text-muted-foreground">
-												Caricamento…
+												{m.products_filter_loading()}
 											</span>
 										)}
 										{!catsLoading && selectedCategories.length === 0 && (
 											<span className="text-muted-foreground">
 												{noCategoriesAvailable
-													? "Nessuna categoria nel catalogo"
-													: "Seleziona categorie…"}
+													? m.products_filter_category_none_in_catalog()
+													: m.products_filter_category_placeholder()}
 											</span>
 										)}
 										{visibleChips.map((cat) => (
@@ -328,7 +343,9 @@ export function ProductsFilterSheet({
 												<span
 													role="button"
 													tabIndex={0}
-													aria-label={`Rimuovi ${cat.name}`}
+													aria-label={m.products_filter_category_remove({
+														name: cat.name,
+													})}
 													className="hover:bg-primary-foreground/20 -mr-0.5 flex size-3.5 items-center justify-center rounded-full"
 													onClick={(e) => {
 														e.stopPropagation();
@@ -361,9 +378,13 @@ export function ProductsFilterSheet({
 								sideOffset={4}
 							>
 								<Command>
-									<CommandInput placeholder="Cerca categoria…" />
+									<CommandInput
+										placeholder={m.products_filter_category_search()}
+									/>
 									<CommandList className="max-h-72">
-										<CommandEmpty>Nessuna categoria.</CommandEmpty>
+										<CommandEmpty>
+											{m.products_filter_category_empty()}
+										</CommandEmpty>
 										{selectedIds.length > 0 && (
 											<CommandGroup>
 												<CommandItem
@@ -372,7 +393,9 @@ export function ProductsFilterSheet({
 													className="text-muted-foreground"
 												>
 													<div className="flex w-4 items-center" />
-													Cancella selezione ({selectedIds.length})
+													{m.products_filter_category_clear_selection({
+														count: selectedIds.length,
+													})}
 												</CommandItem>
 											</CommandGroup>
 										)}
@@ -408,13 +431,15 @@ export function ProductsFilterSheet({
 					<section className="space-y-3 px-6 py-5">
 						<SectionHeader
 							icon={EuroIcon}
-							label="Prezzo"
+							label={m.products_filter_price()}
 							active={Boolean(value.minPrice || value.maxPrice)}
 							summary={(() => {
 								if (value.minPrice && value.maxPrice)
 									return `${value.minPrice}–${value.maxPrice} €`;
-								if (value.minPrice) return `da ${value.minPrice} €`;
-								if (value.maxPrice) return `fino a ${value.maxPrice} €`;
+								if (value.minPrice)
+									return m.products_filter_price_from({ min: value.minPrice });
+								if (value.maxPrice)
+									return m.products_filter_price_to({ max: value.maxPrice });
 								return undefined;
 							})()}
 							onClear={
@@ -434,13 +459,13 @@ export function ProductsFilterSheet({
 						<div className="grid grid-cols-2 gap-3">
 							<div className="space-y-1">
 								<Label htmlFor="filter-min-price" className="text-xs">
-									Min
+									{m.products_filter_price_min()}
 								</Label>
 								<div className="relative">
 									<Input
 										id="filter-min-price"
 										inputMode="decimal"
-										placeholder="0,00"
+										placeholder={m.products_filter_price_placeholder()}
 										value={localMin}
 										onChange={(e) => setLocalMin(e.target.value)}
 										className="pr-7"
@@ -452,13 +477,13 @@ export function ProductsFilterSheet({
 							</div>
 							<div className="space-y-1">
 								<Label htmlFor="filter-max-price" className="text-xs">
-									Max
+									{m.products_filter_price_max()}
 								</Label>
 								<div className="relative">
 									<Input
 										id="filter-max-price"
 										inputMode="decimal"
-										placeholder="0,00"
+										placeholder={m.products_filter_price_placeholder()}
 										value={localMax}
 										onChange={(e) => setLocalMax(e.target.value)}
 										className="pr-7"
@@ -477,9 +502,7 @@ export function ProductsFilterSheet({
 
 				<SheetFooter className="flex-row items-center justify-between border-t px-6 py-3">
 					<p className="text-muted-foreground text-xs">
-						{activeCount === 0
-							? "Nessun filtro attivo"
-							: `${activeCount} filtr${activeCount === 1 ? "o" : "i"} attiv${activeCount === 1 ? "o" : "i"}`}
+						{activeFiltersLabel(activeCount)}
 					</p>
 					<Button
 						variant="outline"
@@ -489,7 +512,7 @@ export function ProductsFilterSheet({
 						className="gap-1.5"
 					>
 						<XIcon className="size-3.5" />
-						Cancella tutti
+						{m.products_filter_clear_all()}
 					</Button>
 				</SheetFooter>
 			</SheetContent>

@@ -46,7 +46,7 @@ function EditProductPage() {
 			// client di default di Eden lo revivificherebbe in un `Date` sbagliato.
 			const response = await apiNoDates().seller.products({ productId }).get();
 
-			return unwrap(response, "Errore nel caricamento prodotto").data;
+			return unwrap(response, m.products_edit_load_error()).data;
 		},
 	});
 
@@ -65,12 +65,12 @@ function EditProductPage() {
 				.delete();
 
 			if (response.error) {
-				throw new Error("Errore nell'eliminazione immagine");
+				throw new Error(m.products_edit_image_delete_error());
 			}
 		},
 		onSuccess: (_data, imageId) => {
 			setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
-			toast.success("Immagine eliminata");
+			toast.success(m.products_edit_image_deleted());
 		},
 		onError: (error: Error) => {
 			toast.error(error.message);
@@ -95,7 +95,7 @@ function EditProductPage() {
 					confirmAffected: formData.confirmAffected,
 				});
 
-			const data = unwrap(response, "Errore nell'aggiornamento");
+			const data = unwrap(response, m.products_edit_update_error());
 
 			if (formData.files.length > 0) {
 				const imgResponse = await api()
@@ -103,9 +103,7 @@ function EditProductPage() {
 					.images.post({ files: formData.files });
 
 				if (imgResponse.error) {
-					toast.warning(
-						"Prodotto aggiornato ma errore nel caricamento immagini",
-					);
+					toast.warning(m.products_edit_images_upload_error());
 				}
 			}
 
@@ -118,14 +116,14 @@ function EditProductPage() {
 			});
 			void queryClient.invalidateQueries({ queryKey: ["product", productId] });
 			void queryClient.invalidateQueries({ queryKey: ["seller-brands"] });
-			toast.success("Prodotto aggiornato con successo");
+			toast.success(m.products_edit_success());
 			goBack();
 		},
 		onError: (error: Error) => {
 			// Dopo un 409 per conferma vecchia, savedCharacteristicValues arriva
 			// aggiornato e il prossimo dialog mostra il numero nuovo.
 			void queryClient.invalidateQueries({ queryKey: ["product", productId] });
-			toast.error(error.message || "Errore durante l'aggiornamento");
+			toast.error(error.message || m.products_edit_error());
 		},
 	});
 
@@ -141,7 +139,7 @@ function EditProductPage() {
 		return (
 			<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 				<p className="text-sm">
-					{(error as Error)?.message || "Prodotto non trovato"}
+					{(error as Error)?.message || m.products_edit_not_found()}
 				</p>
 			</div>
 		);
@@ -154,8 +152,8 @@ function EditProductPage() {
 			<EntityFormHeader
 				mode="edit"
 				title={name || product.name}
-				placeholder="Modifica Prodotto"
-				subtitle="Aggiorna le informazioni del prodotto"
+				placeholder={m.products_edit_title()}
+				subtitle={m.products_edit_subtitle()}
 			/>
 
 			<ProductForm
@@ -176,8 +174,8 @@ function EditProductPage() {
 				onSubmit={(values) => updateMutation.mutate(values)}
 				onCancel={goBack}
 				isPending={updateMutation.isPending}
-				submitLabel="Salva Modifiche"
-				pendingLabel="Salvataggio..."
+				submitLabel={m.products_edit_submit()}
+				pendingLabel={m.products_edit_submitting()}
 				onNameChange={handleNameChange}
 			/>
 

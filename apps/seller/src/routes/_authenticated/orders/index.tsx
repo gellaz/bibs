@@ -218,7 +218,7 @@ function OrdersListPage() {
 							<DropdownMenuTrigger asChild>
 								<Button variant="ghost" size="icon-sm">
 									<MoreVerticalIcon />
-									<span className="sr-only">Azioni</span>
+									<span className="sr-only">{m.common_actions()}</span>
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">

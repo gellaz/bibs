@@ -5,6 +5,7 @@ import {
 	TooltipTrigger,
 } from "@bibs/ui/components/tooltip";
 import { formatPriceEur, Price, scorporoDisplay } from "@bibs/ui/custom/price";
+import { m } from "@/paraglide/messages";
 
 interface AppliedDiscount {
 	percent: number;
@@ -51,7 +52,7 @@ export function ProductPriceCell({ price, vatRate, appliedDiscount }: Props) {
 				<Price value={price} />
 			)}
 			<span className="text-muted-foreground text-xs tabular-nums">
-				netto {formatPriceEur(net)}
+				{m.products_price_net({ net: formatPriceEur(net) })}
 			</span>
 		</div>
 	);

@@ -84,8 +84,8 @@ export function IncludedProductsList({ discountId }: Props) {
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead>Nome</TableHead>
-							<TableHead className="text-right">Prezzo</TableHead>
+							<TableHead>{m.common_name()}</TableHead>
+							<TableHead className="text-right">{m.common_price()}</TableHead>
 							<TableHead className="w-12 pr-4" />
 						</TableRow>
 					</TableHeader>

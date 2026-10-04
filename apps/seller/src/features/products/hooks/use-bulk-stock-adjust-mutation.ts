@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 type Mode = "delta" | "set";
 
@@ -32,7 +33,7 @@ export function useBulkStockAdjustMutation() {
 		mutationFn: async (params: MutateParams): Promise<BulkResult> => {
 			const response =
 				await api().seller.products.bulk["stock-adjust"].post(params);
-			return unwrap(response, "Errore").data as BulkResult;
+			return unwrap(response, m.common_error()).data as BulkResult;
 		},
 		onSuccess: (result) => {
 			// Patcha la lista per ogni riga succeeded

@@ -17,7 +17,7 @@ interface Props {
 const DEBOUNCE_MS = 500;
 
 function errorMessage(err: unknown) {
-	return err instanceof Error && err.message ? err.message : "Errore";
+	return err instanceof Error && err.message ? err.message : m.common_error();
 }
 
 export function StockEditorCell({

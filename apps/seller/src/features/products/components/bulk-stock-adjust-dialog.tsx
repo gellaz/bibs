@@ -123,8 +123,14 @@ export function BulkStockAdjustDialog({
 							(f) => f.reason === "not_found",
 						).length;
 						const parts: string[] = [];
-						if (neg > 0) parts.push(`${neg} stock insufficiente`);
-						if (nf > 0) parts.push(`${nf} non disponibili`);
+						if (neg > 0)
+							parts.push(
+								m.products_bulk_adjust_failed_negative({ count: neg }),
+							);
+						if (nf > 0)
+							parts.push(
+								m.products_bulk_adjust_failed_not_found({ count: nf }),
+							);
 						toast.warning(
 							m.products_bulk_adjust_partial_warning({
 								ok: result.succeeded.length,

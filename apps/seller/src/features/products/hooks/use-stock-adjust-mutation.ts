@@ -1,6 +1,7 @@
 // apps/seller/src/features/products/hooks/use-stock-adjust-mutation.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 interface AdjustParams {
 	productId: string;
@@ -69,7 +70,7 @@ export function useStockAdjustMutation() {
 				.seller.products({ productId })
 				.stores({ storeId })
 				["stock-adjust"].post({ delta });
-			return unwrap(response, "Errore stock").data as StoreProduct;
+			return unwrap(response, m.products_stock_error()).data as StoreProduct;
 		},
 		onSuccess: (data) => patchCache(data),
 	});
@@ -80,7 +81,7 @@ export function useStockAdjustMutation() {
 				.seller.products({ productId })
 				.stores({ storeId })
 				.patch({ stock });
-			return unwrap(response, "Errore stock").data as StoreProduct;
+			return unwrap(response, m.products_stock_error()).data as StoreProduct;
 		},
 		onSuccess: (data) => patchCache(data),
 	});

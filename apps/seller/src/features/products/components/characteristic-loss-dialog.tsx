@@ -9,8 +9,9 @@ import {
 	AlertDialogMedia,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
+import { m } from "@/paraglide/messages";
 import {
-	filledPhrase,
+	lossConfirmation,
 	type SavedCharacteristicValue,
 } from "../lib/characteristic-form";
 
@@ -32,19 +33,17 @@ export function CharacteristicLossDialog({
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogMedia variant="destructive" />
-					<AlertDialogTitle>Cambiare sotto-categoria?</AlertDialogTitle>
+					<AlertDialogTitle>
+						{m.products_characteristics_loss_dialog_title()}
+					</AlertDialogTitle>
 					<AlertDialogDescription>
-						Cambiando categoria perderai {filledPhrase(lost.length)}:{" "}
-						{lost.map((v) => v.name).join(", ")}.{" "}
-						{lost.length === 1
-							? "Non si potrà recuperare."
-							: "Non si potranno recuperare."}
+						{lossConfirmation(lost)}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Annulla</AlertDialogCancel>
+					<AlertDialogCancel>{m.common_cancel()}</AlertDialogCancel>
 					<AlertDialogAction variant="destructive" onClick={onConfirm}>
-						Salva ed elimina
+						{m.products_characteristics_loss_dialog_confirm()}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
