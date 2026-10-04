@@ -10,6 +10,7 @@ import { ThemeToggle } from "@bibs/ui/custom/theme-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, ReceiptText, UserRound } from "lucide-react";
+import { LocaleSelect } from "@/components/locale-select";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 
@@ -63,6 +64,7 @@ export function UserMenu() {
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<ThemeToggle />
+				<LocaleSelect />
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					onSelect={() => {

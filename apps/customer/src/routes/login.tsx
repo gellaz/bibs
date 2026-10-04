@@ -12,6 +12,7 @@ import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { PasswordInput } from "@bibs/ui/custom/password-input";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { AuthLocaleFooter } from "@/components/auth-locale-footer";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-error";
 import { m } from "@/paraglide/messages";
@@ -72,7 +73,7 @@ function LoginPage() {
 	}
 
 	return (
-		<div className="flex min-h-screen items-center justify-center px-4">
+		<div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
 					<BrandMark className="mx-auto mb-2 size-12" />
@@ -143,6 +144,7 @@ function LoginPage() {
 					</p>
 				</CardContent>
 			</Card>
+			<AuthLocaleFooter />
 		</div>
 	);
 }

@@ -12,12 +12,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@bibs/ui/components/sidebar";
-import { ToggleGroup, ToggleGroupItem } from "@bibs/ui/components/toggle-group";
-import {
-	segmentedTrayClassName,
-	segmentedTrayItemClassName,
-	ThemeToggle,
-} from "@bibs/ui/custom/theme-toggle";
+import { ThemeToggle } from "@bibs/ui/custom/theme-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -26,27 +21,16 @@ import {
 	UserIcon,
 	UsersIcon,
 } from "lucide-react";
+import { LocaleSelect } from "@/components/locale-select";
 import { SellerRoleBadge } from "@/components/seller-role-badge";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { authClient } from "@/lib/auth-client";
-import { getLocale, locales, setLocale } from "@/paraglide/runtime";
-
-const LOCALE_FLAGS: Record<string, string> = {
-	it: "🇮🇹",
-	en: "🇬🇧",
-};
-
-const LOCALE_NAMES: Record<string, string> = {
-	it: "Italiano",
-	en: "English",
-};
 
 export function NavUser() {
 	const { isMobile } = useSidebar();
 	const { data: session } = authClient.useSession();
 	const navigate = useNavigate();
 	const isOwner = useIsOwner();
-	const currentLocale = getLocale();
 
 	if (!session?.user) return null;
 
@@ -118,40 +102,7 @@ export function NavUser() {
 
 						<div className="flex flex-col gap-1 py-1">
 							<ThemeToggle />
-							<div className="flex items-center justify-between gap-3 px-2 py-1">
-								<span className="text-xs font-medium text-muted-foreground">
-									Lingua
-								</span>
-								<ToggleGroup
-									type="single"
-									value={currentLocale}
-									onValueChange={(value) => {
-										if (!value) return;
-										setLocale(value as typeof currentLocale);
-									}}
-									size="sm"
-									spacing={1}
-									aria-label="Lingua"
-									className={segmentedTrayClassName}
-								>
-									{locales.map((locale) => {
-										const name = LOCALE_NAMES[locale] ?? locale.toUpperCase();
-										return (
-											<ToggleGroupItem
-												key={locale}
-												value={locale}
-												aria-label={name}
-												title={name}
-												className={`px-2 text-base leading-none ${segmentedTrayItemClassName}`}
-											>
-												<span aria-hidden="true">
-													{LOCALE_FLAGS[locale] ?? locale.toUpperCase()}
-												</span>
-											</ToggleGroupItem>
-										);
-									})}
-								</ToggleGroup>
-							</div>
+							<LocaleSelect />
 						</div>
 
 						<DropdownMenuSeparator />
