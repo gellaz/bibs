@@ -4,6 +4,10 @@ import { apiErrorToServiceError } from "@/lib/auth-errors";
 import { PendingVerificationError, ServiceError } from "@/lib/errors";
 import { getLogger } from "@/lib/logger";
 import { errorBody } from "@/lib/responses";
+import {
+	invalidFileTypeMessage,
+	validationMessage,
+} from "@/lib/validation-message";
 
 interface PgError {
 	code?: string;
@@ -135,17 +139,60 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
 		}
 
 		if (code === "VALIDATION") {
+			// Una response fuori schema è un bug nostro, non un input sbagliato.
+			if (error.type === "response") {
+				pino.error(
+					{
+						errorCode: "INTERNAL_ERROR",
+						on: error.type,
+						field: error.valueError?.path,
+						path: pathname,
+						method,
+					},
+					"Response validation error",
+				);
+				return status(
+					500,
+					errorBody("INTERNAL_ERROR", "Errore interno del server"),
+				);
+			}
+
+			// Mai `error.message`: è il JSON di Elysia con il body inviato (password
+			// comprese) nel campo `found`.
 			pino.warn(
 				{
 					errorCode: "VALIDATION_ERROR",
-					errorMessage: error.message,
+					on: error.type,
+					field: error.valueError?.path,
+					valueErrorType: error.valueError?.type,
 					path: pathname,
 					method,
 				},
 				"Validation error",
 			);
 
-			return status(422, errorBody("VALIDATION_ERROR", error.message));
+			return status(
+				422,
+				errorBody("VALIDATION_ERROR", validationMessage(error)),
+			);
+		}
+
+		// File col MIME dichiarato giusto ma contenuto diverso (controllo sui byte).
+		if (code === "INVALID_FILE_TYPE") {
+			pino.warn(
+				{
+					errorCode: "VALIDATION_ERROR",
+					on: "body",
+					field: error.property,
+					path: pathname,
+					method,
+				},
+				"Invalid file type",
+			);
+			return status(
+				422,
+				errorBody("VALIDATION_ERROR", invalidFileTypeMessage(error.property)),
+			);
 		}
 
 		if (code === "NOT_FOUND") {

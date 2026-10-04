@@ -619,6 +619,12 @@ return {error: "not found"};
 The global error handler (`src/plugins/error-handler.ts`) catches `ServiceError` and converts it to the standard
 response envelope.
 
+Validation errors (422) are translated centrally by `src/lib/validation-message.ts` from the TypeBox error type:
+`«Etichetta: regola»` on the first error (e.g. «Quantità (riga 2): deve essere un numero intero»). Don't add `error:`
+to schemas just to translate them; use it only for a message more specific than the generic rule. A new input field
+gets its Italian label in `FIELD_LABELS` (fields not listed fall back to the technical path); a `title` on the schema wins, for names whose meaning changes between routes (e.g. geocode `limit`). The log carries
+`on`/`field`/`valueErrorType`, never the submitted values; a response that fails its schema is a 500.
+
 ### Response helpers
 
 Always use the response helpers from `src/lib/responses.ts`:
