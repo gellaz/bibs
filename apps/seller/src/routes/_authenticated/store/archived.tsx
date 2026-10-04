@@ -16,6 +16,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
@@ -33,7 +34,7 @@ const REASON_LABEL: Record<string, string> = {
 };
 
 function formatDate(d: Date | string): string {
-	return new Intl.DateTimeFormat("it-IT", {
+	return new Intl.DateTimeFormat(intlLocale(), {
 		day: "numeric",
 		month: "short",
 		year: "numeric",

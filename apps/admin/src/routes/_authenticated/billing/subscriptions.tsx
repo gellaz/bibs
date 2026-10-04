@@ -12,17 +12,20 @@ import {
 import { DataPagination } from "@bibs/ui/custom/data-pagination";
 import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { unwrap } from "@bibs/ui/lib/api-client";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { dataPaginationLabels } from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing/subscriptions")({
 	component: SubscriptionsPage,
 });
 
 function formatDate(d: Date | string): string {
-	return new Intl.DateTimeFormat("it-IT", {
+	return new Intl.DateTimeFormat(intlLocale(), {
 		day: "numeric",
 		month: "short",
 		year: "numeric",
@@ -113,6 +116,7 @@ function SubscriptionsPage() {
 							</p>
 							<div className="flex items-center gap-4">
 								<PageSizeSelector
+									label={m.common_rows_per_page()}
 									pageSize={limit}
 									onPageSizeChange={(size) => {
 										setLimit(size);
@@ -120,6 +124,7 @@ function SubscriptionsPage() {
 									}}
 								/>
 								<DataPagination
+									labels={dataPaginationLabels()}
 									page={page}
 									totalPages={totalPages}
 									onPageChange={setPage}

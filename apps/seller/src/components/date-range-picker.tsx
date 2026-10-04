@@ -5,9 +5,12 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@bibs/ui/components/popover";
+import { dayPickerLocale } from "@bibs/ui/lib/day-picker-locale";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
+import { m } from "@/paraglide/messages";
 
 type DateRange = { from: Date | undefined; to?: Date | undefined };
 
@@ -38,7 +41,7 @@ export interface DateRangePickerProps {
 
 function formatShort(d: Date | undefined): string {
 	if (!d) return "";
-	return d.toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+	return d.toLocaleDateString(intlLocale(), { day: "numeric", month: "short" });
 }
 
 export function DateRangePicker({
@@ -49,9 +52,9 @@ export function DateRangePicker({
 	presets,
 	disabled,
 	disableBefore,
-	placeholder = "Seleziona periodo",
+	placeholder = m.date_range_placeholder(),
 	openEnded = false,
-	openEndedShortLabel = "senza fine",
+	openEndedShortLabel = m.date_range_open_ended(),
 	numberOfMonths = 2,
 	className,
 }: DateRangePickerProps) {
@@ -65,6 +68,7 @@ export function DateRangePicker({
 		return `${fromLabel} → ${formatShort(to)}`;
 	})();
 
+	const locale = dayPickerLocale();
 	const disabledMatcher = disableBefore ? { before: disableBefore } : undefined;
 
 	return (
@@ -87,6 +91,7 @@ export function DateRangePicker({
 			<PopoverContent className="w-auto p-0" align="start">
 				{editMode === "from-only" ? (
 					<Calendar
+						locale={locale}
 						mode="single"
 						defaultMonth={from ?? new Date()}
 						selected={from}
@@ -96,6 +101,7 @@ export function DateRangePicker({
 					/>
 				) : editMode === "to-only" ? (
 					<Calendar
+						locale={locale}
 						mode="single"
 						defaultMonth={to ?? from ?? new Date()}
 						selected={to}
@@ -105,6 +111,7 @@ export function DateRangePicker({
 					/>
 				) : (
 					<Calendar
+						locale={locale}
 						mode="range"
 						defaultMonth={from ?? new Date()}
 						selected={from ? ({ from, to } as DateRange) : undefined}

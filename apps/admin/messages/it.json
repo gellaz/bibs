@@ -1,9 +1,12 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"home_page": "Pagina principale",
-	"about_page": "Chi siamo",
-	"example_message": "Benvenuto nella tua app i18n.",
 	"language_label": "Lingua",
-	"current_locale": "Lingua corrente: {locale}",
-	"learn_router": "Impara Paraglide JS"
+	"common_pagination_previous": "Pagina precedente",
+	"common_pagination_next": "Pagina successiva",
+	"common_pagination_page": "Pagina {page}",
+	"common_columns_trigger": "Colonne visibili",
+	"common_columns_title": "Colonne",
+	"common_columns_reset": "Ripristina predefinite",
+	"common_columns_locked": "Sempre visibile",
+	"common_rows_per_page": "Righe per pagina"
 }

@@ -6,14 +6,21 @@ import { useEffect, useState } from "react";
 import { Button } from "~/components/button";
 import { cn } from "~/lib/utils";
 
+export interface CopyButtonLabels {
+	copy: string;
+	copied: string;
+}
+
+const DEFAULT_LABELS: CopyButtonLabels = { copy: "Copia", copied: "Copiato" };
+
 interface CopyButtonProps {
 	/** Stringa da copiare negli appunti. */
 	value: string;
 	/**
-	 * Etichetta accessibile (screen reader). Default: "Copia". Quando il click
-	 * va a buon fine diventa "Copiato" per 1.5s.
+	 * Etichette accessibili (screen reader): `copy` a riposo, `copied` per 1.5s
+	 * dopo un click andato a buon fine. In italiano di default.
 	 */
-	label?: string;
+	labels?: Partial<CopyButtonLabels>;
 	/** Override del size del Button. Default: `icon-xs` (24×24, icona 12px). */
 	size?: "icon-xs" | "icon-sm" | "icon";
 	className?: string;
@@ -26,10 +33,11 @@ interface CopyButtonProps {
  */
 export function CopyButton({
 	value,
-	label = "Copia",
+	labels: labelOverrides,
 	size = "icon-xs",
 	className,
 }: CopyButtonProps) {
+	const labels = { ...DEFAULT_LABELS, ...labelOverrides };
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
@@ -53,7 +61,7 @@ export function CopyButton({
 			variant="ghost"
 			size={size}
 			onClick={handleCopy}
-			aria-label={copied ? "Copiato" : label}
+			aria-label={copied ? labels.copied : labels.copy}
 			className={cn("text-muted-foreground hover:text-foreground", className)}
 		>
 			{copied ? <CheckIcon /> : <CopyIcon />}

@@ -24,6 +24,11 @@ import { PageHeader } from "@/components/page-header";
 import { UserRoleBadge } from "@/components/user-role-badge";
 import { UserRowActions } from "@/components/user-row-actions";
 import { authClient } from "@/lib/auth-client";
+import {
+	dataPaginationLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 type UserSortField = "name" | "email" | "createdAt";
 type SortDir = "asc" | "desc";
@@ -215,7 +220,13 @@ function UsersPage() {
 					headerClassName: "w-12 pr-6 text-right",
 					cellClassName: "pr-6 text-right",
 				},
-				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				header: ({ table }) => (
+					<TableColumnsToggle
+						table={table}
+						labels={tableColumnsToggleLabels()}
+						align="end"
+					/>
+				),
 				cell: ({ row }) => (
 					<UserRowActions
 						userId={row.original.id}
@@ -300,6 +311,7 @@ function UsersPage() {
 					</p>
 					<div className="flex items-center gap-4">
 						<PageSizeSelector
+							label={m.common_rows_per_page()}
 							pageSize={limit}
 							onPageSizeChange={(size) =>
 								void navigate({
@@ -308,6 +320,7 @@ function UsersPage() {
 							}
 						/>
 						<DataPagination
+							labels={dataPaginationLabels()}
 							page={page}
 							totalPages={totalPages}
 							onPageChange={(next, options) =>

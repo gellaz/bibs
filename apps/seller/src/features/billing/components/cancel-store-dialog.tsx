@@ -11,6 +11,7 @@ import {
 	AlertDialogTrigger,
 } from "@bibs/ui/components/alert-dialog";
 import { toast } from "@bibs/ui/components/sonner";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { api, unwrap } from "@/lib/api";
@@ -50,7 +51,7 @@ export function CancelStoreDialog({
 	});
 
 	const isSuspended = status === "suspended";
-	const periodEndDate = new Intl.DateTimeFormat("it-IT", {
+	const periodEndDate = new Intl.DateTimeFormat(intlLocale(), {
 		day: "numeric",
 		month: "long",
 		year: "numeric",

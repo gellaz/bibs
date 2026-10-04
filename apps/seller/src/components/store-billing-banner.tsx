@@ -1,6 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@bibs/ui/components/alert";
 import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangleIcon, CalendarIcon, LockIcon } from "lucide-react";
 import { type Subscription, useActiveStore } from "@/hooks/use-active-store";
@@ -55,7 +56,7 @@ export function StoreBillingBanner() {
 
 	if (!activeStore || !activeSubscription) return null;
 
-	const formattedDate = new Intl.DateTimeFormat("it-IT", {
+	const formattedDate = new Intl.DateTimeFormat(intlLocale(), {
 		day: "numeric",
 		month: "long",
 		year: "numeric",

@@ -27,6 +27,11 @@ import {
 	useSellerModeration,
 } from "@/components/seller-moderation-dialog";
 import { api } from "@/lib/api";
+import {
+	dataPaginationLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 type SellerStatus = "pending_review" | "active" | "rejected";
 type SortByField = "name" | "createdAt";
@@ -275,7 +280,13 @@ function SellersPage() {
 					headerClassName: "pr-6 text-right",
 					cellClassName: "pr-6 text-right",
 				},
-				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				header: ({ table }) => (
+					<TableColumnsToggle
+						table={table}
+						labels={tableColumnsToggleLabels()}
+						align="end"
+					/>
+				),
 				cell: ({ row }) => {
 					const s = row.original;
 					if (s.onboardingStatus !== "pending_review") return null;
@@ -321,7 +332,13 @@ function SellersPage() {
 				id: "toggle",
 				enableHiding: false,
 				meta: { headerClassName: "w-12 pr-6 text-right" },
-				header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+				header: ({ table }) => (
+					<TableColumnsToggle
+						table={table}
+						labels={tableColumnsToggleLabels()}
+						align="end"
+					/>
+				),
 				cell: () => null,
 			});
 		}
@@ -422,6 +439,7 @@ function SellersPage() {
 							</p>
 							<div className="flex items-center gap-4">
 								<PageSizeSelector
+									label={m.common_rows_per_page()}
 									pageSize={limit}
 									onPageSizeChange={(size) => {
 										setLimit(size);
@@ -429,6 +447,7 @@ function SellersPage() {
 									}}
 								/>
 								<DataPagination
+									labels={dataPaginationLabels()}
 									page={page}
 									totalPages={totalPages}
 									onPageChange={setPage}

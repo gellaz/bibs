@@ -378,5 +378,16 @@
 	"municipality_combobox_loading": "Loading municipalities…",
 	"municipality_combobox_error": "Couldn't load municipalities",
 	"municipality_combobox_empty": "No municipality found",
-	"municipality_combobox_more_results": "… {count} more results, refine your search"
+	"municipality_combobox_more_results": "… {count} more results, refine your search",
+	"common_pagination_previous": "Previous page",
+	"common_pagination_next": "Next page",
+	"common_pagination_page": "Page {page}",
+	"common_columns_trigger": "Visible columns",
+	"common_columns_title": "Columns",
+	"common_columns_reset": "Reset to default",
+	"common_columns_locked": "Always visible",
+	"common_copied": "Copied",
+	"products_copy_ean": "Copy EAN {ean}",
+	"date_range_placeholder": "Select period",
+	"date_range_open_ended": "no end"
 }

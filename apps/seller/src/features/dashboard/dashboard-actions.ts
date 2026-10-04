@@ -1,4 +1,5 @@
 import { toYMD } from "@bibs/ui/lib/date";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { m } from "@/paraglide/messages";
 
 export type Urgency = "high" | "medium" | "low";
@@ -118,10 +119,8 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-const RELATIVE = new Intl.RelativeTimeFormat("it-IT", { numeric: "always" });
-
 /**
- * Distanza relativa in italiano ("38 minuti fa", "tra 2 giorni"): minuti
+ * Distanza relativa nella lingua corrente ("38 minuti fa", "tra 2 giorni"): minuti
  * sotto l'ora, ore sotto il giorno, poi giorni. Mai sotto il minuto, così un
  * ordine appena arrivato non diventa "0 minuti fa".
  */
@@ -129,14 +128,17 @@ export function formatRelative(target: Date, now: Date): string {
 	const diff = target.getTime() - now.getTime();
 	const abs = Math.abs(diff);
 	const sign = diff < 0 ? -1 : 1;
+	const relative = new Intl.RelativeTimeFormat(intlLocale(), {
+		numeric: "always",
+	});
 	if (abs < HOUR) {
-		return RELATIVE.format(
+		return relative.format(
 			sign * Math.max(1, Math.round(abs / MINUTE)),
 			"minute",
 		);
 	}
-	if (abs < DAY) return RELATIVE.format(sign * Math.round(abs / HOUR), "hour");
-	return RELATIVE.format(sign * Math.round(abs / DAY), "day");
+	if (abs < DAY) return relative.format(sign * Math.round(abs / HOUR), "hour");
+	return relative.format(sign * Math.round(abs / DAY), "day");
 }
 
 function ordersAction(
@@ -263,15 +265,15 @@ export function buildDashboardActions(input: BuildActionsInput): ActionItem[] {
 	return sortByUrgency(items.filter((a): a is ActionItem => a !== null));
 }
 
-const TODAY_FORMAT = new Intl.DateTimeFormat("it-IT", {
+const TODAY_FORMAT: Intl.DateTimeFormatOptions = {
 	weekday: "long",
 	day: "numeric",
 	month: "long",
 	timeZone: "Europe/Rome",
-});
+};
 
 /** "Lunedì 28 settembre": la data di oggi a Roma, con l'iniziale maiuscola. */
 export function formatTodayLabel(now: Date): string {
-	const label = TODAY_FORMAT.format(now);
+	const label = new Intl.DateTimeFormat(intlLocale(), TODAY_FORMAT).format(now);
 	return label.charAt(0).toUpperCase() + label.slice(1);
 }

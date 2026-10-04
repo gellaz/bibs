@@ -35,6 +35,11 @@ import {
 	CsvImportDialog,
 	type CsvImportResult,
 } from "@/features/csv-import/components/csv-import-dialog";
+import {
+	dataPaginationLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 type SortByField = "name" | "createdAt";
 
@@ -301,7 +306,13 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				headerClassName: "pr-6 text-right",
 				cellClassName: "pr-6 text-right",
 			},
-			header: ({ table }) => <TableColumnsToggle table={table} align="end" />,
+			header: ({ table }) => (
+				<TableColumnsToggle
+					table={table}
+					labels={tableColumnsToggleLabels()}
+					align="end"
+				/>
+			),
 			cell: ({ row }) => (
 				<div className="flex items-center justify-end gap-1">
 					<Button
@@ -394,6 +405,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					</div>
 					<div className="flex items-center gap-4">
 						<PageSizeSelector
+							label={m.common_rows_per_page()}
 							pageSize={limit}
 							onPageSizeChange={(size) => {
 								setLimit(size);
@@ -401,6 +413,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 							}}
 						/>
 						<DataPagination
+							labels={dataPaginationLabels()}
 							page={page}
 							totalPages={Math.ceil(data.pagination.total / limit)}
 							onPageChange={setPage}
