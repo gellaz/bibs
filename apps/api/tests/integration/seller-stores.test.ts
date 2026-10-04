@@ -26,12 +26,10 @@ mock.module("@/db", () => ({
 
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
-import { eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { store as storeTable } from "@/db/schemas/store";
-import { ServiceError } from "@/lib/errors";
 import {
 	createStore,
-	deleteStore,
 	listStores,
 	updateStore,
 } from "@/modules/seller/services/stores";
@@ -153,16 +151,15 @@ describe("listStores", () => {
 			zipCode: "00101",
 		});
 
-		// Soft-delete via service
 		const result0 = await listStores({ sellerProfileId: seller.profile.id });
 		expect(result0.data).toHaveLength(2);
 
 		const toDelete = result0.data.find((s) => s.name === "Delete");
 		expect(toDelete).toBeDefined();
-		await deleteStore({
-			storeId: toDelete!.id,
-			sellerProfileId: seller.profile.id,
-		});
+		await getTestDb()
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, toDelete!.id));
 
 		const result = await listStores({ sellerProfileId: seller.profile.id });
 		expect(result.data).toHaveLength(1);
@@ -447,51 +444,5 @@ describe("updateStore", () => {
 			.from(storeTable)
 			.where(eq(storeTable.id, testStore.id));
 		expect(row.openingHours).toEqual(validWeek);
-	});
-});
-
-// ── deleteStore ───────────────────────────────────────────────────────────────
-
-describe("deleteStore", () => {
-	it("soft-deletes the store (sets deletedAt)", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-		const created = await createStore({
-			sellerProfileId: seller.profile.id,
-			name: "S",
-			addressLine1: "Via",
-			municipalityId,
-			zipCode: "00100",
-		});
-
-		await deleteStore({
-			storeId: created.id,
-			sellerProfileId: seller.profile.id,
-		});
-
-		const [row] = await db
-			.select()
-			.from(storeTable)
-			.where(eq(storeTable.id, created.id));
-		expect(row.deletedAt).not.toBeNull();
-
-		// Still queryable via direct DB, but excluded from listStores
-		const notDeleted = await db
-			.select()
-			.from(storeTable)
-			.where(isNull(storeTable.deletedAt));
-		expect(notDeleted).toHaveLength(0);
-	});
-
-	it("throws ServiceError 404 for unknown store", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-
-		await expect(
-			deleteStore({
-				storeId: crypto.randomUUID(),
-				sellerProfileId: seller.profile.id,
-			}),
-		).rejects.toBeInstanceOf(ServiceError);
 	});
 });
