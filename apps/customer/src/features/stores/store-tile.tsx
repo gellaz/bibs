@@ -1,17 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { Clock, HelpCircle, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { formatDistance, TileImage } from "@/components/tile";
-import { openStatusLabel } from "./open-status";
+import { openStatusIcon, openStatusLabel } from "./open-status";
 import type { StoreCardView } from "./use-store-search";
 
 /**
- * Riga di stato apertura. L'icona porta la distinzione: l'orologio è di chi un
- * orario ce l'ha, il punto interrogativo di chi non l'ha mai dichiarato. Il
- * tono resta lo stesso per entrambi — smorzarlo scenderebbe sotto il contrasto
- * AA (3,05 in light, 3,49 in dark, misurati).
+ * Riga di stato apertura. L'icona distingue chi non ha orari dichiarati
+ * (`openStatusIcon`); il tono resta lo stesso per entrambi — smorzarlo
+ * scenderebbe sotto il contrasto AA (3,05 in light, 3,49 in dark, misurati).
  */
 function OpenStatusLine({ status }: { status: StoreCardView["openStatus"] }) {
-	const Icon = status.status === "unknown" ? HelpCircle : Clock;
+	const Icon = openStatusIcon(status);
 	return (
 		<span
 			className={`inline-flex items-center gap-1 text-xs ${

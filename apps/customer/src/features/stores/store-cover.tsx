@@ -1,8 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, Clock, HelpCircle } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import { PAGE_CONTAINER } from "@/components/page";
-import { type OpenStatusView, openStatusLabel } from "./open-status";
+import {
+	type OpenStatusView,
+	openStatusIcon,
+	openStatusLabel,
+} from "./open-status";
 
 interface StoreCoverProps {
 	name: string;
@@ -24,7 +28,7 @@ export function StoreCover({
 	const [failed, setFailed] = useState(false);
 	const showImage = imageUrl && !failed;
 	const initial = name.trim().charAt(0).toUpperCase() || "?";
-	const StatusIcon = openStatus.status === "unknown" ? HelpCircle : Clock;
+	const StatusIcon = openStatusIcon(openStatus);
 
 	return (
 		<div className="relative h-64 w-full overflow-hidden sm:h-80 xl:h-96">
