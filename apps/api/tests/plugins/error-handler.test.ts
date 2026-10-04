@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { APIError } from "better-auth";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import logixlysia from "logixlysia";
 import { ServiceError } from "@/lib/errors";
 import { pinoOptions } from "@/lib/logger";
@@ -250,6 +250,105 @@ describe("errorHandler — better-auth APIError", () => {
 		const body = await json(res);
 		expect(body.error).toBe("INTERNAL_ERROR");
 		expect(body.message).not.toBe("leaky internal detail");
+	});
+});
+
+describe("errorHandler — validation errors", () => {
+	const warnings: unknown[][] = [];
+	const errors: unknown[][] = [];
+	const capturingPino = {
+		...noopPino,
+		warn: (...args: unknown[]) => warnings.push(args),
+		error: (...args: unknown[]) => errors.push(args),
+	};
+	const validating = new Elysia()
+		.state("pino", capturingPino)
+		.use(errorHandler)
+		.post("/cart", () => ({ success: true }), {
+			body: t.Object({
+				password: t.String(),
+				quantity: t.Integer({ minimum: 1 }),
+			}),
+		})
+		.get("/bad-response", () => ({ count: "nope" }) as never, {
+			response: { 200: t.Object({ count: t.Integer() }) },
+		})
+		.post("/upload", () => ({ success: true }), {
+			body: t.Object({ file: t.File({ type: "image/*" }) }),
+		});
+
+	const postCart = (body: unknown) =>
+		validating.handle(
+			new Request("http://localhost/cart", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			}),
+		);
+
+	it("returns 422 with an Italian field + rule message", async () => {
+		const res = await postCart({ password: "segreta123", quantity: 0 });
+
+		expect(res.status).toBe(422);
+		expect(await json(res)).toEqual({
+			success: false,
+			error: "VALIDATION_ERROR",
+			message: "Quantità: deve essere almeno 1",
+		});
+	});
+
+	it("logs where the error is, never the submitted values", async () => {
+		warnings.length = 0;
+		await postCart({ password: "segreta123", quantity: 0 });
+
+		expect(warnings).toHaveLength(1);
+		expect(JSON.stringify(warnings[0])).not.toContain("segreta123");
+		expect(warnings[0][0]).toMatchObject({
+			errorCode: "VALIDATION_ERROR",
+			on: "body",
+			field: "/quantity",
+		});
+	});
+
+	it("treats an invalid response as a 500 bug, not a 422", async () => {
+		errors.length = 0;
+		const res = await validating.handle(
+			new Request("http://localhost/bad-response"),
+		);
+
+		expect(res.status).toBe(500);
+		expect(await json(res)).toMatchObject({ error: "INTERNAL_ERROR" });
+		expect(errors).toHaveLength(1);
+	});
+
+	it("returns 422 for a file of the wrong type", async () => {
+		const form = new FormData();
+		form.append("file", new File(["hello"], "a.txt", { type: "text/plain" }));
+		const res = await validating.handle(
+			new Request("http://localhost/upload", { method: "POST", body: form }),
+		);
+
+		expect(res.status).toBe(422);
+		expect(await json(res)).toEqual({
+			success: false,
+			error: "VALIDATION_ERROR",
+			message: "File: tipo di file non ammesso",
+		});
+	});
+
+	it("returns 422 for a file whose content does not match its type", async () => {
+		const form = new FormData();
+		form.append("file", new File(["hello"], "a.png", { type: "image/png" }));
+		const res = await validating.handle(
+			new Request("http://localhost/upload", { method: "POST", body: form }),
+		);
+
+		expect(res.status).toBe(422);
+		expect(await json(res)).toEqual({
+			success: false,
+			error: "VALIDATION_ERROR",
+			message: "File: tipo di file non ammesso",
+		});
 	});
 });
 

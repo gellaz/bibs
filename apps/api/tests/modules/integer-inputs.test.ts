@@ -154,3 +154,49 @@ describe("integer inputs still accept whole numbers", () => {
 		});
 	}
 });
+
+// Il 422 arriva al toast dei FE: in italiano, col campo e la regola.
+describe("integer inputs: Italian 422 message on real routes", () => {
+	const cases: Array<[string, () => Promise<Response>, string]> = [
+		[
+			"POST /orders quantity in the second row",
+			() =>
+				json("POST", "/orders", {
+					...ORDER_BODY,
+					items: [
+						{ storeProductId: "a", quantity: 1 },
+						{ storeProductId: "b", quantity: 1.5 },
+					],
+				}),
+			"Quantità (riga 2): deve essere un numero intero",
+		],
+		[
+			"POST /orders pointsToSpend",
+			() => json("POST", "/orders", { ...ORDER_BODY, pointsToSpend: 0.5 }),
+			"Punti da usare: deve essere un numero intero",
+		],
+		[
+			"PATCH stock",
+			() => json("PATCH", "/products/p/stores/s", { stock: 1.5 }),
+			"Scorta: deve essere un numero intero",
+		],
+		[
+			"GET /stores limit",
+			() => get("/stores?limit=2.5"),
+			"Elementi per pagina: deve essere un numero intero",
+		],
+		[
+			"POST product image position (multipart)",
+			() => multipart("/products/p/images", "1.5"),
+			"Posizione: deve essere un numero intero",
+		],
+	];
+
+	for (const [label, send, message] of cases) {
+		it(`${label} → «${message}»`, async () => {
+			const res = await send();
+			expect(res.status).toBe(422);
+			expect(((await res.json()) as { message: string }).message).toBe(message);
+		});
+	}
+});
