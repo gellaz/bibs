@@ -205,6 +205,17 @@ describe("validationMessage — campi e tipi", () => {
 		).toBe("location.zz: deve essere al massimo 90");
 	});
 
+	it("il title dello schema vince sul dizionario", async () => {
+		expect(
+			await queryMessage(
+				t.Object({
+					limit: t.Integer({ maximum: 10, title: "Numero di suggerimenti" }),
+				}),
+				"?limit=2.5",
+			),
+		).toBe("Numero di suggerimenti: deve essere un numero intero");
+	});
+
 	it("query con coercizione senza path: solo la regola", async () => {
 		expect(
 			await queryMessage(

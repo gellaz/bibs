@@ -161,6 +161,7 @@ export const locationsRoutes = new Elysia()
 						minimum: 1,
 						maximum: 10,
 						default: 5,
+						title: "Numero di suggerimenti",
 						description: "Numero massimo di suggerimenti (default 5)",
 					}),
 				),

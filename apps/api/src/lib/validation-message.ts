@@ -5,7 +5,8 @@ import type { ValidationError } from "elysia";
 
 // Etichette italiane per i campi di input che arrivano dai form, sull'ultimo
 // segmento del path. I campi assenti restano col path tecnico: utile al debug
-// e raro per l'utente, perché i form validano già prima di inviare.
+// e raro per l'utente, perché i form validano già prima di inviare. Un `title`
+// sullo schema vince sul dizionario, per i nomi che cambiano senso tra route.
 const FIELD_LABELS: Record<string, string> = {
 	name: "Nome",
 	firstName: "Nome",
@@ -217,7 +218,8 @@ export function validationMessage(
 		}
 		return "Richiesta non valida";
 	}
-	return `${fieldLabel(valueError.path)}: ${rule}`;
+	const label = valueError.schema.title ?? fieldLabel(valueError.path);
+	return `${label}: ${rule}`;
 }
 
 /** 422 di Elysia per un file il cui contenuto non corrisponde al tipo ammesso. */

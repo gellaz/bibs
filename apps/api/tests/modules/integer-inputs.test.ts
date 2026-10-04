@@ -186,6 +186,11 @@ describe("integer inputs: Italian 422 message on real routes", () => {
 			"Elementi per pagina: deve essere un numero intero",
 		],
 		[
+			"GET /geocode limit (title on the schema)",
+			() => get("/geocode?q=Via%20Roma&limit=2.5"),
+			"Numero di suggerimenti: deve essere un numero intero",
+		],
+		[
 			"POST product image position (multipart)",
 			() => multipart("/products/p/images", "1.5"),
 			"Posizione: deve essere un numero intero",
