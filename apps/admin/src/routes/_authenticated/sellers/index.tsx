@@ -12,7 +12,7 @@ import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
-import { formatDateIt } from "@bibs/ui/lib/date";
+import { formatDate } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -263,7 +263,7 @@ function SellersPage() {
 			header: ({ column }) => (
 				<SortableHeader column={column}>Registrato il</SortableHeader>
 			),
-			cell: ({ row }) => formatDateIt(row.original.createdAt, { long: true }),
+			cell: ({ row }) => formatDate(row.original.createdAt, { long: true }),
 		});
 
 		if (showActions) {

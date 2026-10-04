@@ -15,7 +15,7 @@ import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
-import { formatDateIt } from "@bibs/ui/lib/date";
+import { formatDate } from "@bibs/ui/lib/date";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
@@ -134,7 +134,7 @@ function DateCell({ value }: { value: string | Date }) {
 			dateTime={d.toISOString()}
 			title={d.toLocaleString("it-IT", DATETIME_FMT_OPTS)}
 		>
-			{formatDateIt(d)}
+			{formatDate(d)}
 		</time>
 	);
 }

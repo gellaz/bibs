@@ -1,20 +1,31 @@
 import type { ComponentProps } from "react";
 
+import { intlLocale } from "~/lib/intl-locale";
 import { cn } from "~/lib/utils";
 
-const EUR_FORMATTER = new Intl.NumberFormat("it-IT", {
-	style: "currency",
-	currency: "EUR",
-});
+const EUR_FORMATTERS = new Map<string, Intl.NumberFormat>();
+
+function eurFormatter(locale: string): Intl.NumberFormat {
+	let formatter = EUR_FORMATTERS.get(locale);
+	if (!formatter) {
+		formatter = new Intl.NumberFormat(locale, {
+			style: "currency",
+			currency: "EUR",
+		});
+		EUR_FORMATTERS.set(locale, formatter);
+	}
+	return formatter;
+}
 
 /**
- * Formatta un prezzo EUR secondo convenzione italiana: "9,99 €", "1.234,50 €".
- * Accetta string (es. "9.99" dall'API) o number. Valori non finiti → "—".
+ * Formatta un prezzo EUR nella lingua dell'utente: "9,99 €" in italiano,
+ * "€9.99" in inglese. Accetta string (es. "9.99" dall'API) o number. Valori
+ * non finiti → "—".
  */
 export function formatPriceEur(value: string | number): string {
 	const n = typeof value === "string" ? Number.parseFloat(value) : value;
 	if (!Number.isFinite(n)) return "—";
-	return EUR_FORMATTER.format(n);
+	return eurFormatter(intlLocale()).format(n);
 }
 
 /**

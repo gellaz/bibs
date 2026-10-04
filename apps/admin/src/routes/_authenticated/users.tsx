@@ -11,7 +11,7 @@ import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
-import { formatDateIt } from "@bibs/ui/lib/date";
+import { formatDate } from "@bibs/ui/lib/date";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
@@ -205,7 +205,7 @@ function UsersPage() {
 				header: ({ column }) => (
 					<SortableHeader column={column}>Registrato il</SortableHeader>
 				),
-				cell: ({ row }) => formatDateIt(row.original.createdAt, { long: true }),
+				cell: ({ row }) => formatDate(row.original.createdAt, { long: true }),
 			},
 			{
 				id: "actions",
