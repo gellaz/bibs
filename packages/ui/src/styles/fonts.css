@@ -1,0 +1,23 @@
+/*
+ * Brand faces, the same in all three apps (DESIGN.md, Typography).
+ *
+ * Geist and Geist Mono (OFL) are self-hosted from @fontsource-variable: one
+ * variable file per unicode range, served by Vite with the app's assets.
+ *
+ * Satoshi stays on Fontshare's CDN: its licence (ITF FFL) allows self-hosting
+ * but not distribution through a public repository, and this repo is public.
+ * We declare the @font-face ourselves on the variable woff2 instead of
+ * linking Fontshare's stylesheet, so there is no render-blocking third-party
+ * CSS. The URL must match SATOSHI_URL in `lib/fonts.ts`, which preloads it.
+ */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@font-face {
+	font-family: "Satoshi";
+	src: url("https://cdn.fontshare.com/wf/NWBQYJIM7GCZ5XWD7D26ARB3VDY55ZRT/K63EV2KZIGKLE7RANQ2U42S6SVHU5RJ7/X6XYTKIVDUW7GZTZPZNN4EUM5KH54KHF.woff2")
+		format("woff2");
+	font-weight: 300 900;
+	font-style: normal;
+	font-display: swap;
+}
