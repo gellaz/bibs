@@ -1,7 +1,7 @@
 # Locale `en` raggiungibile nei tre frontend — design
 
 **Date:** 2026-10-04
-**Status:** draft
+**Status:** approved
 **Riferimenti:** i riferimenti `file:riga` puntano a `main` @ `cc22633`
 **Backlog:** chiude la voce P4 «Locale `en` irraggiungibile» di
 [`docs/audit/2026-09-24-followup-gap-analysis.md`](../../audit/2026-09-24-followup-gap-analysis.md)
@@ -78,6 +78,10 @@ interface LocaleToggleProps<L extends string> {
 	labels: { group: string; names: Record<L, string> };
 }
 ```
+
+In implementazione i nomi delle lingue sono nativi («Italiano», «English») e non si
+traducono: stanno in una costante del componente, che riceve solo `label` invece di
+`labels.names`.
 
 Non renderizza nulla con una sola locale. Usi:
 
