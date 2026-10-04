@@ -1,5 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -87,7 +88,7 @@ function SellerDetailPage() {
 					<h1 className="text-lg font-semibold">
 						{seller.firstName && seller.lastName
 							? `${seller.firstName} ${seller.lastName}`
-							: seller.user.name}
+							: displayName(seller.user)}
 					</h1>
 					{/* Desktop: badge + bottoni inline */}
 					<div className="ml-auto hidden items-center gap-1.5 sm:flex">
@@ -102,7 +103,8 @@ function SellerDetailPage() {
 											type: "reject",
 											sellerId,
 											sellerName:
-												seller.organization?.businessName ?? seller.user.name,
+												seller.organization?.businessName ??
+												displayName(seller.user),
 										})
 									}
 								>
@@ -117,7 +119,8 @@ function SellerDetailPage() {
 											type: "verify",
 											sellerId,
 											sellerName:
-												seller.organization?.businessName ?? seller.user.name,
+												seller.organization?.businessName ??
+												displayName(seller.user),
 										})
 									}
 								>
@@ -246,7 +249,7 @@ function SellerDetailPage() {
 								type: "reject",
 								sellerId,
 								sellerName:
-									seller.organization?.businessName ?? seller.user.name,
+									seller.organization?.businessName ?? displayName(seller.user),
 							})
 						}
 					>
@@ -261,7 +264,7 @@ function SellerDetailPage() {
 								type: "verify",
 								sellerId,
 								sellerName:
-									seller.organization?.businessName ?? seller.user.name,
+									seller.organization?.businessName ?? displayName(seller.user),
 							})
 						}
 					>

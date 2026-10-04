@@ -13,6 +13,7 @@ import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDate } from "@bibs/ui/lib/date";
+import { displayName } from "@bibs/ui/lib/display-name";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -186,7 +187,7 @@ function SellersPage() {
 				accessorFn: (row) =>
 					row.firstName && row.lastName
 						? `${row.firstName} ${row.lastName}`
-						: row.user.name,
+						: displayName(row.user),
 				enableHiding: false,
 				enableSorting: true,
 				meta: {
@@ -207,7 +208,7 @@ function SellersPage() {
 						>
 							{s.firstName && s.lastName
 								? `${s.firstName} ${s.lastName}`
-								: s.user.name}
+								: displayName(s.user)}
 						</Link>
 					);
 				},
@@ -287,7 +288,8 @@ function SellersPage() {
 									moderation.setTarget({
 										type: "verify",
 										sellerId: s.id,
-										sellerName: s.organization?.businessName ?? s.user.name,
+										sellerName:
+											s.organization?.businessName ?? displayName(s.user),
 									})
 								}
 							>
@@ -301,7 +303,8 @@ function SellersPage() {
 									moderation.setTarget({
 										type: "reject",
 										sellerId: s.id,
-										sellerName: s.organization?.businessName ?? s.user.name,
+										sellerName:
+											s.organization?.businessName ?? displayName(s.user),
 									})
 								}
 							>

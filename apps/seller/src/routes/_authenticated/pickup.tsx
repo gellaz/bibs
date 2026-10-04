@@ -4,6 +4,7 @@ import { Label } from "@bibs/ui/components/label";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle2Icon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
@@ -77,7 +78,7 @@ function PickupPage() {
 				onSuccess: () => {
 					setDone({
 						number: shortOrderId(order.id),
-						customer: order.customerProfile.user.name,
+						customer: displayName(order.customerProfile.user),
 					});
 					setCode("");
 				},
@@ -167,7 +168,7 @@ function PickupPage() {
 									{m.pickup_customer()}
 								</span>{" "}
 								<span className="font-medium text-foreground">
-									{order.customerProfile.user.name}
+									{displayName(order.customerProfile.user)}
 								</span>
 							</p>
 

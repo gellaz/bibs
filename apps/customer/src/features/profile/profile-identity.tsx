@@ -3,6 +3,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { AvatarUploadDialog } from "@bibs/ui/custom/avatar-upload-dialog";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { unwrap } from "@bibs/ui/lib/api-client";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { Link } from "@tanstack/react-router";
 import { Camera } from "lucide-react";
@@ -19,17 +20,6 @@ function formatMonthYear(value: Date | string) {
 		month: "long",
 		year: "numeric",
 	}).format(date);
-}
-
-/** Nome completo, poi il nome dell'account, poi la parte locale dell'email. */
-function displayName(user: {
-	firstName?: string | null;
-	lastName?: string | null;
-	name?: string | null;
-	email: string;
-}) {
-	const full = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-	return full || user.name?.trim() || user.email.split("@")[0];
 }
 
 /**

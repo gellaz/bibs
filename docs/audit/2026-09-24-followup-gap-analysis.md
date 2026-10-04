@@ -52,7 +52,9 @@ Nessun P2 aperto: P2.1 (#196), P2.3 (#215), P2.5 (#216), P2.2 (#217) e P2.4 (#21
 
 ### P3.1 — API sweep
 
-Nessuna voce aperta: chiusi in #209 (ricerca, ILIKE, cap immagini, telefono, `/ready`) e #210
+- **Dati del cliente al seller**: gli ordini seller (`seller/services/orders.ts:143,182`, `user: true`) rispondono con `UserSchema` intero (`SellerOrderWithRelationsSchema` in `lib/schemas/composed.ts`), quindi il seller riceve `role`, `banned`, `banReason` e `banExpires` del cliente. Serve uno schema ridotto (`id`, `name`, `email`, `image`) e `columns` espliciti nella query.
+
+Le altre voci sono chiuse in #209 (ricerca, ILIKE, cap immagini, telefono, `/ready`) e #210
 (import, settings, inviti, errori definitivi, prefill EAN, richieste di modifica), vedi «Chiusi».
 Il doppio controllo di ownership in `transitionOrder` non è un bug: è difesa in profondità
 (proprietà del seller + negozi accessibili) su un'unica lettura, resta com'è.
@@ -75,7 +77,6 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 
 ## P4 — Accessibilità, polish, i18n
 
-- **Nome visibile = local-part**: `user.name` resta la parte locale dell'email (`registration/services.ts:106,279`) e si vede dove manca un nome di profilo: colonna cliente di ordini e ritiro seller (`customerProfile.user.name`), team seller per i dipendenti invitati, menu utente customer. Il seller al banco riconosce l'ordine dal QR; usare `firstName lastName` con fallback quando si tocca la zona.
 - **i18n, residui** (#219/#220, #224): seller e admin da tradurre (~450 stringhe in ~75 file il seller, ~350 in ~45 l'admin; `it-IT` hardcoded, `Calendar` senza `locale`, `TableColumnsToggle`/`DataPagination`/`PageSizeSelector`/`CopyButton` di `packages/ui`): il selettore lì è solo in dev. Lingua solo nel cookie, per browser e per app: `user.locale` nel DB la farebbe seguire l'utente e permetterebbe email ed errori API nella sua lingua (oggi in italiano anche con UI inglese).
 
 ---
@@ -163,6 +164,7 @@ in #213 (PR a parte perché cambia l'aspetto), vedi «Chiusi».
 | **P4 (locale en)** | Lingua nel cookie (strategia Paraglide `cookie` + `baseLocale`, niente prefisso URL: le tre app sono dietro login) e `paraglideMiddleware` in `src/server.ts`, quindi `<html lang>` e testi giusti in SSR. `LocaleToggle` condiviso (IT/EN, nomi nativi) nel menu utente e, nel customer, sulle pagine auth; in seller e admin solo in dev. Prezzi e date di `@bibs/ui` seguono la lingua tramite un resolver registrato da ogni app (`formatDateIt` → `formatDate`). Customer interamente in inglese: ultime stringhe, `ThemeToggle`/`PasswordInput` con `labels`, `it-IT` → `intlLocale()` | #224 |
 | **P4 (i18n 422)** | I 422 di validazione non dicevano «Expected string»: il body era il JSON di Elysia (`type/on/property/expected/found/errors`; in produzione `{type, on, found}`), e i FE lo mostravano nel toast. Traduzione centralizzata in `lib/validation-message.ts` dal `ValueErrorType` del primo errore: «Etichetta: regola» con etichette italiane per i campi di input (`FIELD_LABELS`, path tecnico per gli altri, «(riga N)» negli array), rami degli Union di `t.Integer`/`t.Nullable`/`t.Date` rivalidati per dare la regola vera, `error:` già scritte sugli schemi rispettate, errori senza path (Decode in query) con la sola regola. Il log porta `on`/`field`/`valueErrorType` invece del messaggio, che conteneva il body inviato con le password; una response fuori schema è un 500; un file col contenuto diverso dal tipo (`INVALID_FILE_TYPE`, prima 500) è un 422. Nessuna modifica nei FE | #225 |
 | **P4 (copy)** | Sottotitolo di `/stores` che ripeteva il placeholder → «Guarda chi è aperto, cosa vende e quanto è lontano.» (EN «See who's open, what they sell and how far away they are.»). Email di verifica e reset: saluto con `firstName` del profilo se c'è, altrimenti «Ciao,» (`greeting()` in `@bibs/emails`), mai più il local-part; scelta di prodotto: nessun nome chiesto in registrazione. La home customer non ricava più il nome da `user.name` (cade su «Bentornato su bibs») | #226 |
+| **P4 (nome visibile)** | `displayName()` in `@bibs/ui/lib`: `user.name` se è un nome vero, altrimenti l'email intera (alla registrazione `name` è il local-part, e ogni form che salva nome e cognome riscrive `name`). Usato in colonna cliente di ordini, dettaglio e ritiro seller, team seller (titolare e dipendenti), menu utente nelle tre app, profilo customer, liste e dettaglio seller e utenti admin. Dove sotto il nome c'era l'email, la seconda riga sparisce se coincide. Inviti pending del team: solo l'email, senza il finto nome | #227 |
 
 ## Chiusi dopo la gap analysis di giugno (nessuna azione)
 

@@ -8,6 +8,7 @@ import {
 } from "@bibs/ui/components/dropdown-menu";
 import { ThemeToggle } from "@bibs/ui/custom/theme-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, ReceiptText, UserRound } from "lucide-react";
 import { LocaleSelect } from "@/components/locale-select";
@@ -28,6 +29,7 @@ export function UserMenu() {
 	if (!user) {
 		return null;
 	}
+	const label = displayName(user);
 
 	return (
 		<DropdownMenu>
@@ -37,17 +39,19 @@ export function UserMenu() {
 					aria-label={m.nav_account_menu_aria()}
 					className="flex size-11 items-center justify-center rounded-full outline-none transition-[background-color] hover:bg-muted focus-visible:focus-ring"
 				>
-					<UserAvatar name={user.name} image={user.image} />
+					<UserAvatar name={label} image={user.image} />
 				</button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" sideOffset={8} className="w-64">
 				<DropdownMenuLabel className="flex flex-col gap-0.5">
 					<span className="truncate font-medium text-foreground text-sm">
-						{user.name}
+						{label}
 					</span>
-					<span className="truncate font-normal text-muted-foreground text-xs">
-						{user.email}
-					</span>
+					{label !== user.email && (
+						<span className="truncate font-normal text-muted-foreground text-xs">
+							{user.email}
+						</span>
+					)}
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem asChild>

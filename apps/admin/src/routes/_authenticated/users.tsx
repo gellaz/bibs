@@ -12,6 +12,7 @@ import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDate } from "@bibs/ui/lib/date";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
@@ -169,7 +170,7 @@ function UsersPage() {
 				),
 				cell: ({ row }) => (
 					<span className="flex items-center gap-2">
-						{row.original.name}
+						{displayName(row.original)}
 						{row.original.banned ? (
 							<Badge variant="destructive">Bannato</Badge>
 						) : null}
@@ -218,7 +219,7 @@ function UsersPage() {
 				cell: ({ row }) => (
 					<UserRowActions
 						userId={row.original.id}
-						userName={row.original.name}
+						userName={displayName(row.original)}
 						banned={Boolean(row.original.banned)}
 						canBan={row.original.id !== currentUserId}
 					/>
