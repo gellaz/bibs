@@ -27,7 +27,9 @@ script `paraglide:compile` di ogni `package.json`), ma nessuno è cablato:
    app sono dietro login (il customer intero sta sotto `_authenticated/`): niente SEO da
    servire, e un link condiviso non deve imporre la lingua di chi lo manda. Il cookie evita
    `rewrite`, `localizeHref` sui callback di better-auth e link email con prefisso.
-   Limite accettato: la scelta vale per browser e per app (origini diverse, cookie diversi).
+   Limite accettato: la scelta vale per browser e per host. Su host diversi ogni app ha il
+   suo cookie; in dev (`localhost:3001/3002/3003`) i cookie non distinguono la porta, quindi
+   la lingua scelta in un'app vale anche per le altre due.
 2. **Niente `preferredLanguage`.** Molti italiani hanno il dispositivo in inglese: si parte
    sempre dall'italiano, l'inglese solo per scelta esplicita.
 3. **`en` compilato in tutte e 3 le app**, selettore **visibile solo nel customer**. In seller e
