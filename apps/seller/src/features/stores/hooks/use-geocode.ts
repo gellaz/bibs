@@ -1,10 +1,11 @@
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export async function fetchGeocodeSuggestions(q: string) {
 	const res = await api().locations.geocode.get({ query: { q } });
-	return unwrap(res, "Ricerca indirizzo non disponibile").data;
+	return unwrap(res, m.store_address_search_error()).data;
 }
 
 export type GeocodeSuggestionItem = Awaited<

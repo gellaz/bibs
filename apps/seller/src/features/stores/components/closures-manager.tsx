@@ -105,17 +105,16 @@ export function ClosuresManager({
 			const response = await api()
 				.seller.stores({ storeId })
 				.closures.put({ optOutIds, customClosures: cleaned });
-			return unwrap(response, m["store.closures.error"]());
+			return unwrap(response, m.store_closures_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
 				queryKey: ["store-closures", storeId],
 			});
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });
-			toast.success(m["store.closures.saved"]());
+			toast.success(m.store_closures_saved());
 		},
-		onError: (e: Error) =>
-			toast.error(e.message || m["store.closures.error"]()),
+		onError: (e: Error) => toast.error(e.message || m.store_closures_error()),
 	});
 
 	return (
@@ -123,10 +122,10 @@ export function ClosuresManager({
 			<section className="space-y-4">
 				<header className="space-y-1.5">
 					<h2 className="font-display text-base font-semibold tracking-tight">
-						{m["store.closures.holidays_title"]()}
+						{m.store_closures_holidays_title()}
 					</h2>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						{m["store.closures.holidays_hint"]()}
+						{m.store_closures_holidays_hint()}
 					</p>
 				</header>
 				<div className="overflow-hidden rounded-lg border border-border">
@@ -140,7 +139,7 @@ export function ClosuresManager({
 										<td className="px-4 py-3 text-muted-foreground">
 											{h.nextDate
 												? formatDate(h.nextDate)
-												: m["store.closures.no_next"]()}
+												: m.store_closures_no_next()}
 										</td>
 										<td className="px-4 py-3 text-right">
 											<Button
@@ -150,8 +149,8 @@ export function ClosuresManager({
 												onClick={() => toggleObserved(h.definitionId)}
 											>
 												{observed
-													? m["store.closures.closed"]()
-													: m["store.closures.open"]()}
+													? m.store_closures_closed()
+													: m.store_closures_open()}
 											</Button>
 										</td>
 									</tr>
@@ -167,16 +166,16 @@ export function ClosuresManager({
 			<section className="space-y-4">
 				<header className="space-y-1.5">
 					<h2 className="font-display text-base font-semibold tracking-tight">
-						{m["store.closures.custom_title"]()}
+						{m.store_closures_custom_title()}
 					</h2>
 					<p className="text-sm leading-relaxed text-muted-foreground">
-						{m["store.closures.custom_hint"]()}
+						{m.store_closures_custom_hint()}
 					</p>
 				</header>
 
 				{customClosures.length === 0 ? (
 					<p className="text-sm text-muted-foreground">
-						{m["store.closures.empty_custom"]()}
+						{m.store_closures_empty_custom()}
 					</p>
 				) : (
 					<div className="space-y-3">
@@ -190,7 +189,7 @@ export function ClosuresManager({
 									className="flex flex-col gap-1"
 								>
 									<span className="text-xs text-muted-foreground">
-										{m["store.closures.start"]()}
+										{m.store_closures_start()}
 									</span>
 									<Input
 										id={`closure-start-${i}`}
@@ -206,7 +205,7 @@ export function ClosuresManager({
 									className="flex flex-col gap-1"
 								>
 									<span className="text-xs text-muted-foreground">
-										{m["store.closures.end"]()}
+										{m.store_closures_end()}
 									</span>
 									<Input
 										id={`closure-end-${i}`}
@@ -220,7 +219,7 @@ export function ClosuresManager({
 								</label>
 								<Input
 									className="min-w-[12rem] flex-1"
-									placeholder={m["store.closures.note_ph"]()}
+									placeholder={m.store_closures_note_ph()}
 									value={c.note ?? ""}
 									onChange={(e) => updateClosure(i, { note: e.target.value })}
 								/>
@@ -228,7 +227,7 @@ export function ClosuresManager({
 									type="button"
 									variant="ghost"
 									size="icon-sm"
-									aria-label={m["store.closures.remove"]()}
+									aria-label={m.store_closures_remove()}
 									onClick={() => removeClosure(i)}
 								>
 									<Trash2Icon className="size-4" />
@@ -240,7 +239,7 @@ export function ClosuresManager({
 
 				<Button type="button" variant="outline" onClick={addClosure}>
 					<PlusIcon />
-					<span>{m["store.closures.add"]()}</span>
+					<span>{m.store_closures_add()}</span>
 				</Button>
 			</section>
 
@@ -252,8 +251,8 @@ export function ClosuresManager({
 					onClick={() => mutation.mutate()}
 				>
 					{mutation.isPending
-						? m["store.closures.saving"]()
-						: m["store.closures.save"]()}
+						? m.store_closures_saving()
+						: m.store_closures_save()}
 				</Button>
 			</div>
 		</div>

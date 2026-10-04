@@ -19,19 +19,22 @@ import { api, unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 
-/** Step del flusso di creazione mostrati nell'aside "Come funziona". */
-const CHECKOUT_STEPS = [
+/**
+ * Step del flusso di creazione mostrati nell'aside "Come funziona". Funzione
+ * e non costante: i testi vanno letti a ogni render, dopo un cambio di lingua.
+ */
+const checkoutSteps = () => [
 	{
-		title: "Compili i dati del negozio",
-		detail: "Indirizzo, orari e contatti restano modificabili anche dopo.",
+		title: m.store_new_step_form_title(),
+		detail: m.store_new_step_form_detail(),
 	},
 	{
-		title: "Attivi l'abbonamento",
-		detail: "Canone mensile per punto vendita, pagamento gestito da Stripe.",
+		title: m.store_new_step_subscription_title(),
+		detail: m.store_new_step_subscription_detail(),
 	},
 	{
-		title: "Il negozio è subito attivo",
-		detail: "Puoi caricare da subito le foto vetrina e aggiungere i prodotti.",
+		title: m.store_new_step_live_title(),
+		detail: m.store_new_step_live_detail(),
 	},
 ];
 
@@ -78,17 +81,17 @@ function NewStorePage() {
 					setPrefillData(formData as Partial<StoreFormData>);
 				} else {
 					// pendingId scaduto/sconosciuto: il form parte vuoto, ma va detto.
-					toast.warning(m["store.new.prefill_error"]());
+					toast.warning(m.store_new_prefill_error());
 				}
 			})
-			.catch(() => toast.warning(m["store.new.prefill_error"]()))
+			.catch(() => toast.warning(m.store_new_prefill_error()))
 			.finally(() => setPrefillLoading(false));
 	}, [pendingId]);
 
 	const createMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
 			const response = await api().seller.stores.checkout.post(formData);
-			return unwrap(response, m["store.new.checkout_error"]());
+			return unwrap(response, m.store_new_checkout_error());
 		},
 		onSuccess: (data) => {
 			if (data?.data?.checkoutUrl) {
@@ -96,7 +99,7 @@ function NewStorePage() {
 			}
 		},
 		onError: (error: Error) =>
-			toast.error(error.message || m["store.new.generic_error"]()),
+			toast.error(error.message || m.store_new_generic_error()),
 	});
 
 	if (!isOwner) {
@@ -121,8 +124,8 @@ function NewStorePage() {
 			isPending={createMutation.isPending}
 			onNameChange={handleNameChange}
 			defaultValues={prefillData ?? undefined}
-			submitLabel={m["store.new.continue_to_payment"]()}
-			pendingLabel={m["store.new.continue_to_payment"]()}
+			submitLabel={m.store_new_continue_to_payment()}
+			pendingLabel={m.store_new_continue_to_payment()}
 		/>
 	);
 
@@ -143,7 +146,7 @@ function NewStorePage() {
 							void authClient.signOut().then(() => navigate({ to: "/login" }))
 						}
 					>
-						Esci
+						{m.store_new_sign_out()}
 					</Button>
 				</div>
 
@@ -151,11 +154,10 @@ function NewStorePage() {
 
 				<div className="mb-10 space-y-2">
 					<h1 className="font-display text-3xl font-bold tracking-tight text-balance">
-						Apri il tuo primo negozio
+						{m.store_new_first_title()}
 					</h1>
 					<p className="text-muted-foreground">
-						Per iniziare a vendere su bibs ti serve un punto vendita attivo.
-						L'abbonamento mensile parte solo dopo che confermi il pagamento.
+						{m.store_new_first_description()}
 					</p>
 				</div>
 
@@ -172,8 +174,8 @@ function NewStorePage() {
 			<EntityFormHeader
 				mode="create"
 				title={name}
-				placeholder="Nuovo Negozio"
-				subtitle="Aggiungi un nuovo punto vendita"
+				placeholder={m.store_new_title()}
+				subtitle={m.store_new_subtitle()}
 			/>
 
 			<div className="@container">
@@ -181,11 +183,11 @@ function NewStorePage() {
 					<div className="min-w-0">{storeForm}</div>
 					<div className="space-y-8">
 						<FormSection
-							title="Come funziona"
-							description="Dalla compilazione all'apertura su bibs."
+							title={m.store_new_how_title()}
+							description={m.store_new_how_description()}
 						>
 							<ol className="space-y-4 text-sm">
-								{CHECKOUT_STEPS.map((step, index) => (
+								{checkoutSteps().map((step, index) => (
 									<li key={step.title} className="flex gap-3">
 										<span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-cobalt-soft text-[11px] font-semibold text-cobalt-deep">
 											{index + 1}

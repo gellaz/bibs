@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 /**
  * Hook to fetch the seller's stores.
@@ -13,7 +14,7 @@ export function useStores({ enabled = true }: { enabled?: boolean } = {}) {
 				query: { page: 1, limit: 100 },
 			});
 
-			return unwrap(response, "Errore nel caricamento negozi").data;
+			return unwrap(response, m.store_list_load_error()).data;
 		},
 		enabled,
 	});

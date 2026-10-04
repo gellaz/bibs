@@ -9,6 +9,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from "@bibs/ui/components/field";
 import { MapPin } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { m } from "@/paraglide/messages";
 import {
 	GEOCODE_MIN_QUERY,
 	type GeocodeSuggestionItem,
@@ -44,7 +45,9 @@ export function StoreAddressSearch({
 
 	return (
 		<Field>
-			<FieldLabel htmlFor={fieldId}>Cerca l'indirizzo</FieldLabel>
+			<FieldLabel htmlFor={fieldId}>
+				{m.store_address_search_label()}
+			</FieldLabel>
 			<Combobox
 				items={suggestions}
 				filter={null}
@@ -62,7 +65,7 @@ export function StoreAddressSearch({
 			>
 				<ComboboxInput
 					id={fieldId}
-					placeholder="Es. Via Indipendenza 10, Bologna"
+					placeholder={m.store_address_search_placeholder()}
 					disabled={disabled}
 					showTrigger={false}
 				/>
@@ -80,18 +83,17 @@ export function StoreAddressSearch({
 					</ComboboxList>
 					<ComboboxEmpty>
 						{isError
-							? "Ricerca non disponibile: compila i campi a mano"
+							? m.store_address_search_unavailable()
 							: debounced.trim().length < GEOCODE_MIN_QUERY
-								? "Scrivi via e numero civico"
+								? m.store_address_search_too_short()
 								: isFetching
-									? "Ricerca in corso…"
-									: "Nessun indirizzo trovato"}
+									? m.store_address_search_loading()
+									: m.store_address_search_empty()}
 					</ComboboxEmpty>
 				</ComboboxContent>
 			</Combobox>
 			<FieldDescription>
-				Scegli un suggerimento: compila i campi qui sotto e posiziona il negozio
-				sulla mappa.
+				{m.store_address_search_description()}
 			</FieldDescription>
 		</Field>
 	);

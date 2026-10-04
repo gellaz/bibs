@@ -32,9 +32,9 @@ function ClosuresPage() {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["store-closures", storeId],
 		queryFn: async (): Promise<ClosuresState> => {
-			if (!storeId) throw new Error("No active store");
+			if (!storeId) throw new Error(m.store_no_active());
 			const response = await api().seller.stores({ storeId }).closures.get();
-			const data = unwrap(response, m["store.closures.error"]());
+			const data = unwrap(response, m.store_closures_error());
 			// Eden rehydrates date-string fields into Date objects; normalise them
 			// back to "YYYY-MM-DD" so the manager (render, dirty-tracking, PUT body)
 			// works with strings as typed.
@@ -58,17 +58,13 @@ function ClosuresPage() {
 		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8">
 			<header className="space-y-1.5">
 				<h1 className="font-display text-2xl font-semibold tracking-tight">
-					{m["store.closures.title"]()}
+					{m.store_closures_title()}
 				</h1>
-				<p className="text-muted-foreground">
-					{m["store.closures.subtitle"]()}
-				</p>
+				<p className="text-muted-foreground">{m.store_closures_subtitle()}</p>
 			</header>
 
 			{!activeStore ? (
-				<p className="text-muted-foreground">
-					{m["store.closures.no_store"]()}
-				</p>
+				<p className="text-muted-foreground">{m.store_no_active()}</p>
 			) : error ? (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">{(error as Error).message}</p>
