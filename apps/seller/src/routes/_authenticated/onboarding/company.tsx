@@ -12,7 +12,6 @@ import {
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -26,6 +25,7 @@ import {
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateCompany } from "@/hooks/use-onboarding";
+import { typeboxResolver } from "@/lib/typebox-resolver";
 import { m } from "@/paraglide/messages";
 
 type CompanyFormData = Static<typeof CompanyBody>;
