@@ -16,6 +16,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, StoreIcon } from "lucide-react";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
+import { m } from "@/paraglide/messages";
 
 export function StoreSwitcher() {
 	const { isMobile } = useSidebar();
@@ -68,7 +69,7 @@ export function StoreSwitcher() {
 							</div>
 							<div className="grid flex-1 text-left text-sm leading-tight">
 								<span className="truncate font-medium">
-									{activeStore?.name ?? "Seleziona negozio"}
+									{activeStore?.name ?? m.shell_store_select()}
 								</span>
 								<span className="truncate text-xs text-muted-foreground">
 									{activeStore?.municipality?.name}
@@ -103,7 +104,7 @@ export function StoreSwitcher() {
 						{otherStores.length > 0 && (
 							<div className="py-1">
 								<div className="px-3 py-1.5 text-xs text-muted-foreground">
-									Cambia negozio
+									{m.shell_store_switch()}
 								</div>
 								{otherStores.map((store) => (
 									<DropdownMenuItem
@@ -140,7 +141,7 @@ export function StoreSwitcher() {
 									>
 										<Link to="/store/new">
 											<CreateIcon className="size-4" />
-											<span>Aggiungi negozio</span>
+											<span>{m.shell_store_add()}</span>
 										</Link>
 									</DropdownMenuItem>
 								</div>

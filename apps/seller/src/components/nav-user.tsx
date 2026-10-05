@@ -26,6 +26,8 @@ import { LocaleSelect } from "@/components/locale-select";
 import { SellerRoleBadge } from "@/components/seller-role-badge";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { authClient } from "@/lib/auth-client";
+import { themeToggleLabels } from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 export function NavUser() {
 	const { isMobile } = useSidebar();
@@ -56,7 +58,7 @@ export function NavUser() {
 								)}
 							</div>
 							<MoreHorizontalIcon
-								aria-label="Apri menu utente"
+								aria-label={m.shell_user_menu_open()}
 								className="ml-auto size-4 text-muted-foreground"
 							/>
 						</SidebarMenuButton>
@@ -89,14 +91,14 @@ export function NavUser() {
 							<DropdownMenuItem asChild>
 								<Link to="/profile">
 									<UserIcon />
-									<span>Il mio profilo</span>
+									<span>{m.shell_user_profile()}</span>
 								</Link>
 							</DropdownMenuItem>
 							{isOwner && (
 								<DropdownMenuItem asChild>
 									<Link to="/team" search={{ page: 1, limit: 20 }}>
 										<UsersIcon />
-										<span>Team</span>
+										<span>{m.shell_user_team()}</span>
 									</Link>
 								</DropdownMenuItem>
 							)}
@@ -105,7 +107,10 @@ export function NavUser() {
 						<DropdownMenuSeparator />
 
 						<div className="flex flex-col gap-1 py-1">
-							<ThemeToggle />
+							<ThemeToggle
+								label={m.shell_theme_label()}
+								labels={themeToggleLabels()}
+							/>
 							<LocaleSelect />
 						</div>
 
@@ -119,7 +124,7 @@ export function NavUser() {
 							}}
 						>
 							<LogOutIcon />
-							<span>Esci</span>
+							<span>{m.common_sign_out()}</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

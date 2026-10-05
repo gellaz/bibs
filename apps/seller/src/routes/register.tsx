@@ -13,6 +13,8 @@ import { RegisterForm } from "@/features/auth/components/register-form";
 import type { RegisterFormData } from "@/features/auth/schemas/register";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { richMessage } from "@/lib/rich-message";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/register")({
 	component: RegisterPage,
@@ -59,7 +61,7 @@ function RegisterPage() {
 					return;
 				}
 
-				setError(errVal.message ?? "Errore durante la registrazione");
+				setError(errVal.message ?? m.auth_register_error());
 				return;
 			}
 
@@ -69,7 +71,7 @@ function RegisterPage() {
 				search: { email: data.email, sentAt: Date.now() },
 			});
 		} catch {
-			setError("Errore durante la registrazione. Riprova.");
+			setError(m.auth_register_error_retry());
 		}
 	}
 
@@ -82,10 +84,8 @@ function RegisterPage() {
 			<Card className="w-full max-w-sm">
 				<CardHeader className="text-center">
 					<BrandMark className="mx-auto mb-2 size-12" />
-					<CardTitle className="text-xl">Registrati come Venditore</CardTitle>
-					<CardDescription>
-						Crea il tuo account per iniziare a vendere su bibs
-					</CardDescription>
+					<CardTitle className="text-xl">{m.auth_register_title()}</CardTitle>
+					<CardDescription>{m.auth_register_description()}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<RegisterForm onSubmit={handleSubmit} apiError={error} />
@@ -97,10 +97,13 @@ function RegisterPage() {
 						/>
 					)}
 					<p className="mt-4 text-center text-sm text-muted-foreground">
-						Hai già un account?{" "}
-						<Link to="/login" className="text-primary underline">
-							Accedi
-						</Link>
+						{richMessage(m.auth_have_account({ link: "{link}" }), {
+							link: (
+								<Link to="/login" className="text-primary underline">
+									{m.auth_login_submit()}
+								</Link>
+							),
+						})}
 					</p>
 				</CardContent>
 			</Card>

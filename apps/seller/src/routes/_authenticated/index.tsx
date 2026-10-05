@@ -92,7 +92,7 @@ function Dashboard() {
 		<div className="mx-auto max-w-5xl space-y-10">
 			<Hero
 				todayLabel={formatTodayLabel(now)}
-				name={activeStore?.name ?? "Il tuo negozio"}
+				name={activeStore?.name ?? m.dashboard_hero_fallback_name()}
 				address={activeStore?.addressLine1 ?? ""}
 				municipality={activeStore?.municipality?.name ?? ""}
 			/>
@@ -138,18 +138,14 @@ function EmptyStoresState() {
 			</div>
 			<div className="space-y-2">
 				<h1 className="font-display text-3xl font-bold tracking-tight">
-					Apri il tuo primo negozio
+					{m.dashboard_empty_title()}
 				</h1>
-				<p className="text-muted-foreground">
-					Per iniziare a vendere su bibs devi attivare il tuo primo punto
-					vendita. L'abbonamento mensile parte solo dopo che confermi il
-					pagamento.
-				</p>
+				<p className="text-muted-foreground">{m.dashboard_empty_body()}</p>
 			</div>
 			<Button asChild size="lg">
 				<Link to="/store/new">
 					<Plus className="size-4" />
-					Aggiungi il primo negozio
+					{m.dashboard_empty_cta()}
 				</Link>
 			</Button>
 		</div>

@@ -1,16 +1,19 @@
 import { z } from "zod";
+import { m } from "@/paraglide/messages";
 
 export const registerFormSchema = z
 	.object({
 		email: z
 			.string()
-			.min(1, "L'email è obbligatoria")
-			.email("Email non valida"),
-		password: z.string().min(8, "La password deve avere almeno 8 caratteri"),
-		confirmPassword: z.string().min(1, "Conferma la password"),
+			.min(1, { error: () => m.auth_email_required() })
+			.email({ error: () => m.auth_email_invalid() }),
+		password: z.string().min(8, { error: () => m.auth_password_min() }),
+		confirmPassword: z
+			.string()
+			.min(1, { error: () => m.auth_confirm_password_required() }),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
-		message: "Le password non corrispondono",
+		error: () => m.auth_password_mismatch(),
 		path: ["confirmPassword"],
 	});
 

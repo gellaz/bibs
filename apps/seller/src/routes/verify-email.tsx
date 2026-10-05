@@ -13,6 +13,7 @@ import { Mail } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { authClient } from "@/lib/auth-client";
+import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
 const searchSchema = z.object({
@@ -68,22 +69,22 @@ function VerifyEmailPage() {
 					<div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 						<Mail className="size-6" />
 					</div>
-					<CardTitle className="text-xl">Controlla la tua email</CardTitle>
+					<CardTitle className="text-xl">
+						{m.auth_verify_email_title()}
+					</CardTitle>
 					<CardDescription>
-						{email ? (
-							<>
-								Abbiamo inviato un link di verifica a{" "}
-								<span className="font-medium text-foreground">{email}</span>
-							</>
-						) : (
-							"Ti abbiamo inviato un link di verifica via email."
-						)}
+						{email
+							? richMessage(m.auth_verify_email_sent_to({ email: "{email}" }), {
+									email: (
+										<span className="font-medium text-foreground">{email}</span>
+									),
+								})
+							: m.auth_verify_email_sent()}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="flex flex-col gap-4">
 					<p className="text-center text-sm text-muted-foreground">
-						Clicca sul link nell'email per verificare il tuo account e
-						completare la registrazione.
+						{m.auth_verify_email_body()}
 					</p>
 
 					{email && (
@@ -94,19 +95,19 @@ function VerifyEmailPage() {
 							disabled={cooldownActive || resending}
 						>
 							{resending
-								? "Invio in corso..."
+								? m.auth_verify_email_sending()
 								: cooldownActive
 									? m.auth_verify_email_resend_cooldown({
 											seconds: String(secondsRemaining),
 										})
-									: "Reinvia email di verifica"}
+									: m.auth_resend_verification()}
 						</Button>
 					)}
 
 					<div className="border-t pt-4">
 						<Link to="/login" className="block">
 							<Button variant="ghost" className="w-full">
-								Torna al login
+								{m.auth_back_to_login()}
 							</Button>
 						</Link>
 					</div>

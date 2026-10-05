@@ -21,6 +21,7 @@ import { useFirstStoreOnboarding } from "@/hooks/use-first-store-onboarding";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
 import { useStores } from "@/hooks/use-stores";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 /** Map onboarding status → route the user should be on */
 const ONBOARDING_ROUTES: Partial<Record<OnboardingStatus, string>> = {
@@ -107,11 +108,9 @@ function AuthenticatedLayout() {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4">
 				<h1 className="font-display text-2xl font-semibold tracking-tight">
-					Errore
+					{m.common_error()}
 				</h1>
-				<p className="text-muted-foreground">
-					Impossibile caricare il profilo venditore.
-				</p>
+				<p className="text-muted-foreground">{m.shell_profile_load_error()}</p>
 				<button
 					type="button"
 					onClick={() =>
@@ -119,7 +118,7 @@ function AuthenticatedLayout() {
 					}
 					className="text-sm underline"
 				>
-					Esci e accedi nuovamente
+					{m.shell_sign_out_again()}
 				</button>
 			</div>
 		);
@@ -130,11 +129,9 @@ function AuthenticatedLayout() {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4">
 				<h1 className="font-display text-2xl font-semibold tracking-tight">
-					Accesso negato
+					{m.shell_access_denied_title()}
 				</h1>
-				<p className="text-muted-foreground">
-					Solo i venditori possono accedere a questa area.
-				</p>
+				<p className="text-muted-foreground">{m.shell_access_denied_body()}</p>
 				<button
 					type="button"
 					onClick={() =>
@@ -142,7 +139,7 @@ function AuthenticatedLayout() {
 					}
 					className="text-sm underline"
 				>
-					Esci e accedi con un altro account
+					{m.shell_sign_out_other_account()}
 				</button>
 			</div>
 		);
@@ -246,11 +243,10 @@ function EmployeeStoreGate({
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4 px-4 text-center">
 				<h1 className="font-display text-2xl font-semibold tracking-tight">
-					Nessun negozio assegnato
+					{m.shell_no_store_title()}
 				</h1>
 				<p className="text-muted-foreground max-w-md">
-					Non sei ancora assegnato a nessun negozio. Contatta il titolare per
-					ottenere l'accesso.
+					{m.shell_no_store_body()}
 				</p>
 				<Button
 					variant="outline"
@@ -258,7 +254,7 @@ function EmployeeStoreGate({
 						void authClient.signOut().then(() => navigate({ to: "/login" }))
 					}
 				>
-					Esci
+					{m.common_sign_out()}
 				</Button>
 			</div>
 		);
