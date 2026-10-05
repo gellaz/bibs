@@ -15,7 +15,6 @@ import {
 import { Input } from "@bibs/ui/components/input";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { PasswordInput } from "@bibs/ui/custom/password-input";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
@@ -24,6 +23,7 @@ import { AuthLocaleFooter } from "@/components/auth-locale-footer";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
 import { api } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 /**

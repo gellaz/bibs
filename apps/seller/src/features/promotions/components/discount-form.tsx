@@ -1,12 +1,12 @@
 import { Button } from "@bibs/ui/components/button";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { DiscountPercentInput } from "@/features/promotions/components/discount-percent-input";
 import { DiscountPeriodPicker } from "@/features/promotions/components/discount-period-picker";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 export const discountFormSchema = z
