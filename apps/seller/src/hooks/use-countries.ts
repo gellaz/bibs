@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 /**
  * Hook to fetch the list of countries from the API.
@@ -11,7 +12,7 @@ export function useCountries() {
 		queryFn: async () => {
 			const response = await api().locations.countries.get();
 
-			return unwrap(response, "Errore nel caricamento dei paesi").data;
+			return unwrap(response, m.common_countries_load_error()).data;
 		},
 		staleTime: 1000 * 60 * 60, // 1 hour
 	});

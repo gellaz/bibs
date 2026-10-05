@@ -15,6 +15,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 	const [open, setOpen] = useState(false);
@@ -25,11 +26,11 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 	const mut = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.settings.vat.patch({ vatNumber: vat });
-			return unwrap(r, "Errore nella richiesta");
+			return unwrap(r, m.profile_vat_request_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });
-			toast.success("Richiesta inviata. Verrà rivista da un amministratore.");
+			toast.success(m.profile_vat_request_sent());
 			setOpen(false);
 			setVat("");
 			setError("");
@@ -49,28 +50,25 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 			}}
 		>
 			<DialogTrigger asChild>
-				<Button variant="outline">Richiedi cambio</Button>
+				<Button variant="outline">{m.profile_vat_request_change()}</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Richiedi cambio Partita IVA</DialogTitle>
-					<DialogDescription>
-						La modifica richiede l'approvazione di un amministratore. Durante la
-						review non potrai ricevere nuovi ordini.
-					</DialogDescription>
+					<DialogTitle>{m.profile_vat_title()}</DialogTitle>
+					<DialogDescription>{m.profile_vat_description()}</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-3">
 					<div className="grid gap-1.5">
-						<Label>P.IVA attuale</Label>
+						<Label>{m.profile_vat_current()}</Label>
 						<Input disabled value={currentVat} />
 					</div>
 					<div className="grid gap-1.5">
-						<Label htmlFor="newVat">Nuova P.IVA</Label>
+						<Label htmlFor="newVat">{m.profile_vat_new()}</Label>
 						<Input
 							id="newVat"
 							value={vat}
 							onChange={(e) => setVat(e.target.value)}
-							placeholder="11 cifre"
+							placeholder={m.profile_vat_placeholder()}
 							pattern="\d{11}"
 						/>
 					</div>
@@ -78,7 +76,7 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 				</div>
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="ghost">Annulla</Button>
+						<Button variant="ghost">{m.common_cancel()}</Button>
 					</DialogClose>
 					<Button
 						onClick={() => {
@@ -87,7 +85,7 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 						}}
 						disabled={!/^\d{11}$/.test(vat) || mut.isPending}
 					>
-						{mut.isPending ? "Invio…" : "Richiedi"}
+						{mut.isPending ? m.profile_vat_sending() : m.profile_vat_submit()}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

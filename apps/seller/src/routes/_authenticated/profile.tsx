@@ -4,6 +4,7 @@ import { OnlinePaymentsCard } from "@/features/profile/components/online-payment
 import { PersonalInfoCard } from "@/features/profile/components/personal-info-card";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/profile")({
 	loader: ({ context }) =>
@@ -17,10 +18,10 @@ function ProfilePage() {
 		<div className="mx-auto flex max-w-4xl flex-col gap-8">
 			<header className="space-y-1">
 				<h1 className="font-display text-2xl font-semibold tracking-tight">
-					Profilo
+					{m.profile_title()}
 				</h1>
 				<p className="text-sm text-muted-foreground">
-					Dati personali, informazioni dell'azienda e pagamenti online.
+					{m.profile_description()}
 				</p>
 			</header>
 			<PersonalInfoCard />

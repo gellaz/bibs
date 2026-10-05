@@ -30,7 +30,7 @@ function PaymentsRefreshPage() {
 	return (
 		<div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
 			<Spinner className="size-8" />
-			{m["payments.redirecting"]()}
+			{m.payments_redirecting()}
 		</div>
 	);
 }

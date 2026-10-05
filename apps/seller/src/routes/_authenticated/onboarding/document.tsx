@@ -63,7 +63,7 @@ function DocumentPage() {
 	const onSubmit: SubmitHandler<DocumentFormData> = async (data) => {
 		setApiError("");
 		if (!documentImage) {
-			setFileError("La foto del documento è obbligatoria");
+			setFileError(m.onboarding_document_photo_required());
 			return;
 		}
 		try {
@@ -74,7 +74,9 @@ function DocumentPage() {
 			void navigate({ to: "/onboarding/company" });
 		} catch (err) {
 			setApiError(
-				err instanceof Error ? err.message : "Errore durante il caricamento",
+				err instanceof Error
+					? err.message
+					: m.onboarding_document_upload_error(),
 			);
 		}
 	};
@@ -82,8 +84,8 @@ function DocumentPage() {
 	return (
 		<OnboardingLayout
 			currentStatus="pending_document"
-			title="Documento d'identità"
-			description="Carica la tua carta d'identità"
+			title={m.onboarding_document_title()}
+			description={m.onboarding_document_description()}
 		>
 			<form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 				{apiError && (
@@ -93,7 +95,9 @@ function DocumentPage() {
 				)}
 
 				<Field data-invalid={!!errors.documentNumber}>
-					<FieldLabel htmlFor="documentNumber">Numero documento</FieldLabel>
+					<FieldLabel htmlFor="documentNumber">
+						{m.onboarding_document_number()}
+					</FieldLabel>
 					<Input
 						id="documentNumber"
 						placeholder="CA12345AB"
@@ -104,7 +108,9 @@ function DocumentPage() {
 				</Field>
 
 				<Field data-invalid={!!errors.documentExpiry}>
-					<FieldLabel htmlFor="documentExpiry">Data di scadenza</FieldLabel>
+					<FieldLabel htmlFor="documentExpiry">
+						{m.onboarding_document_expiry()}
+					</FieldLabel>
 					<Input
 						id="documentExpiry"
 						type="date"
@@ -115,7 +121,7 @@ function DocumentPage() {
 
 				<Field data-invalid={!!errors.documentIssuedMunicipalityId}>
 					<FieldLabel htmlFor="documentIssuedMunicipalityId">
-						Comune di emissione documento
+						{m.onboarding_document_issued_municipality()}
 					</FieldLabel>
 					<Controller
 						control={control}
@@ -137,7 +143,7 @@ function DocumentPage() {
 				</Field>
 
 				<Field data-invalid={!!fileError}>
-					<FieldLabel>Foto del documento</FieldLabel>
+					<FieldLabel>{m.onboarding_document_photo()}</FieldLabel>
 					<Dropzone
 						accept={{ "image/*": [".jpg", ".jpeg", ".png", ".webp"] }}
 						maxSize={10 * 1024 * 1024}
@@ -175,7 +181,9 @@ function DocumentPage() {
 							</div>
 						</DropzoneEmptyState>
 					</Dropzone>
-					<FieldDescription>JPG, PNG o WebP — max 10 MB</FieldDescription>
+					<FieldDescription>
+						{m.onboarding_document_photo_hint()}
+					</FieldDescription>
 					{fileError && <p className="text-sm text-destructive">{fileError}</p>}
 				</Field>
 
@@ -185,7 +193,7 @@ function DocumentPage() {
 						disabled={isSubmitting || goBackMutation.isPending}
 						className="flex-1"
 					>
-						{isSubmitting ? "Caricamento..." : "Continua"}
+						{isSubmitting ? m.onboarding_uploading() : m.onboarding_continue()}
 					</Button>
 					<Button
 						type="button"
@@ -197,11 +205,15 @@ function DocumentPage() {
 								await goBackMutation.mutateAsync(undefined);
 								void navigate({ to: "/onboarding/personal-info" });
 							} catch (err) {
-								setApiError(err instanceof Error ? err.message : "Errore");
+								setApiError(
+									err instanceof Error ? err.message : m.common_error(),
+								);
 							}
 						}}
 					>
-						{goBackMutation.isPending ? "Attendere..." : "Indietro"}
+						{goBackMutation.isPending
+							? m.onboarding_waiting()
+							: m.common_back()}
 					</Button>
 				</div>
 			</form>

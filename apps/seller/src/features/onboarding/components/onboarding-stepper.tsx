@@ -5,13 +5,14 @@ import {
 	StepperTitle,
 } from "@bibs/ui/custom/stepper";
 import type { OnboardingStatus } from "@/db/schemas/seller";
+import { m } from "@/paraglide/messages";
 
 const STEPS = [
-	{ key: "pending_personal", label: "Anagrafica" },
-	{ key: "pending_document", label: "Documento" },
-	{ key: "pending_company", label: "Azienda" },
-	{ key: "pending_review", label: "In revisione" },
-	{ key: "first_store", label: "Negozio" },
+	{ key: "pending_personal", label: m.onboarding_step_personal },
+	{ key: "pending_document", label: m.onboarding_step_document },
+	{ key: "pending_company", label: m.onboarding_step_company },
+	{ key: "pending_review", label: m.onboarding_step_review },
+	{ key: "first_store", label: m.onboarding_step_store },
 ] as const;
 
 /**
@@ -33,11 +34,15 @@ interface OnboardingStepperProps {
 
 export function OnboardingStepper({ currentStatus }: OnboardingStepperProps) {
 	return (
-		<Stepper activeStep={getStepIndex(currentStatus)} className="mb-8">
+		<Stepper
+			activeStep={getStepIndex(currentStatus)}
+			aria-label={m.onboarding_stepper_label()}
+			className="mb-8"
+		>
 			{STEPS.map((step) => (
 				<StepperItem key={step.key}>
 					<StepperIndicator />
-					<StepperTitle>{step.label}</StepperTitle>
+					<StepperTitle>{step.label()}</StepperTitle>
 				</StepperItem>
 			))}
 		</Stepper>

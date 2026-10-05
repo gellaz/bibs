@@ -21,14 +21,25 @@ import {
 } from "@/hooks/use-municipalities";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 import { VatChangeDialog } from "./vat-change-dialog";
 
 const schema = z.object({
-	businessName: z.string().min(1, "Ragione sociale obbligatoria"),
-	legalForm: z.string().min(1, "Forma giuridica obbligatoria"),
-	addressLine1: z.string().min(1, "Indirizzo obbligatorio"),
-	zipCode: z.string().regex(/^\d{5}$/, "CAP deve essere 5 cifre"),
-	municipalityId: z.string().min(1, "Comune obbligatorio"),
+	businessName: z
+		.string()
+		.min(1, { error: () => m.profile_business_name_required() }),
+	legalForm: z
+		.string()
+		.min(1, { error: () => m.profile_business_legal_form_required() }),
+	addressLine1: z
+		.string()
+		.min(1, { error: () => m.profile_business_address_required() }),
+	zipCode: z
+		.string()
+		.regex(/^\d{5}$/, { error: () => m.profile_business_zip_invalid() }),
+	municipalityId: z
+		.string()
+		.min(1, { error: () => m.profile_business_municipality_required() }),
 	country: z.string().min(2).max(2),
 });
 type Form = z.infer<typeof schema>;
@@ -68,11 +79,11 @@ export function BusinessInfoCard({ readOnly }: Props) {
 	const mut = useMutation({
 		mutationFn: async (form: Form) => {
 			const r = await api().seller.settings.company.patch(form);
-			return unwrap(r, "Errore nel salvataggio");
+			return unwrap(r, m.profile_business_save_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });
-			toast.success("Informazioni aziendali aggiornate");
+			toast.success(m.profile_business_updated());
 		},
 		onError: (e: Error) => toast.error(e.message),
 	});
@@ -85,16 +96,18 @@ export function BusinessInfoCard({ readOnly }: Props) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Informazioni aziendali</CardTitle>
+				<CardTitle>{m.profile_business_title()}</CardTitle>
 				<CardDescription>
-					Dati dell'azienda registrata{readOnly ? " (sola lettura)" : ""}
+					{readOnly
+						? m.profile_business_description_read_only()
+						: m.profile_business_description()}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 					<Field data-invalid={!!formState.errors.businessName}>
 						<FieldLabel htmlFor="businessName" required={!readOnly}>
-							Ragione sociale
+							{m.common_business_name()}
 						</FieldLabel>
 						<Input
 							id="businessName"
@@ -106,7 +119,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 
 					<Field data-invalid={!!formState.errors.legalForm}>
 						<FieldLabel htmlFor="legalForm" required={!readOnly}>
-							Forma giuridica
+							{m.common_legal_form()}
 						</FieldLabel>
 						<Input
 							id="legalForm"
@@ -117,7 +130,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 					</Field>
 
 					<Field>
-						<FieldLabel htmlFor="vatNumber">Partita IVA</FieldLabel>
+						<FieldLabel htmlFor="vatNumber">{m.common_vat_number()}</FieldLabel>
 						<div className="flex gap-2">
 							<Input
 								id="vatNumber"
@@ -131,7 +144,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 
 					<Field data-invalid={!!formState.errors.addressLine1}>
 						<FieldLabel htmlFor="addressLine1" required={!readOnly}>
-							Indirizzo sede
+							{m.profile_business_address()}
 						</FieldLabel>
 						<Input
 							id="addressLine1"
@@ -144,7 +157,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 					<div className="grid grid-cols-2 gap-4">
 						<Field data-invalid={!!formState.errors.zipCode}>
 							<FieldLabel htmlFor="zipCode" required={!readOnly}>
-								CAP
+								{m.common_zip()}
 							</FieldLabel>
 							<Input
 								id="zipCode"
@@ -156,7 +169,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 
 						<Field data-invalid={!!formState.errors.municipalityId}>
 							<FieldLabel htmlFor="municipalityId" required={!readOnly}>
-								Comune
+								{m.common_municipality()}
 							</FieldLabel>
 							<Controller
 								control={control}
@@ -180,7 +193,9 @@ export function BusinessInfoCard({ readOnly }: Props) {
 					</div>
 
 					<Field>
-						<FieldLabel htmlFor="country">Paese</FieldLabel>
+						<FieldLabel htmlFor="country">
+							{m.profile_business_country()}
+						</FieldLabel>
 						<Input id="country" disabled={readOnly} {...register("country")} />
 					</Field>
 
@@ -190,7 +205,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 							disabled={!formState.isDirty || mut.isPending}
 							className="mt-2"
 						>
-							{mut.isPending ? "Salvataggio..." : "Salva modifiche"}
+							{mut.isPending ? m.profile_saving() : m.common_save_changes()}
 						</Button>
 					)}
 				</form>

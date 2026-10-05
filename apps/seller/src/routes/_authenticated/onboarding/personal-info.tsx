@@ -24,6 +24,7 @@ import {
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useUpdatePersonalInfo } from "@/hooks/use-onboarding";
+import { m } from "@/paraglide/messages";
 
 type PersonalInfoFormData = Static<typeof PersonalInfoBody>;
 const compiledSchema = TypeCompiler.Compile(PersonalInfoBody);
@@ -63,7 +64,7 @@ function PersonalInfoPage() {
 			void navigate({ to: "/onboarding/document" });
 		} catch (err) {
 			setApiError(
-				err instanceof Error ? err.message : "Errore durante il salvataggio",
+				err instanceof Error ? err.message : m.onboarding_save_error(),
 			);
 		}
 	};
@@ -71,8 +72,8 @@ function PersonalInfoPage() {
 	return (
 		<OnboardingLayout
 			currentStatus="pending_personal"
-			title="Dati anagrafici"
-			description="Inserisci le tue informazioni personali"
+			title={m.onboarding_personal_title()}
+			description={m.onboarding_personal_description()}
 		>
 			<form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 				{apiError && (
@@ -83,7 +84,7 @@ function PersonalInfoPage() {
 
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Field data-invalid={!!errors.firstName}>
-						<FieldLabel htmlFor="firstName">Nome</FieldLabel>
+						<FieldLabel htmlFor="firstName">{m.common_first_name()}</FieldLabel>
 						<Input
 							id="firstName"
 							placeholder="Mario"
@@ -94,7 +95,7 @@ function PersonalInfoPage() {
 					</Field>
 
 					<Field data-invalid={!!errors.lastName}>
-						<FieldLabel htmlFor="lastName">Cognome</FieldLabel>
+						<FieldLabel htmlFor="lastName">{m.common_last_name()}</FieldLabel>
 						<Input
 							id="lastName"
 							placeholder="Rossi"
@@ -106,14 +107,16 @@ function PersonalInfoPage() {
 
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<Field data-invalid={!!errors.citizenship}>
-						<FieldLabel>Cittadinanza</FieldLabel>
+						<FieldLabel>{m.onboarding_personal_citizenship()}</FieldLabel>
 						<Controller
 							control={control}
 							name="citizenship"
 							render={({ field }) => (
 								<Select value={field.value} onValueChange={field.onChange}>
 									<SelectTrigger className="w-full">
-										<SelectValue placeholder="Seleziona" />
+										<SelectValue
+											placeholder={m.onboarding_select_placeholder()}
+										/>
 									</SelectTrigger>
 									<SelectContent>
 										{countries.map((c) => (
@@ -129,14 +132,16 @@ function PersonalInfoPage() {
 					</Field>
 
 					<Field data-invalid={!!errors.birthCountry}>
-						<FieldLabel>Paese di nascita</FieldLabel>
+						<FieldLabel>{m.onboarding_personal_birth_country()}</FieldLabel>
 						<Controller
 							control={control}
 							name="birthCountry"
 							render={({ field }) => (
 								<Select value={field.value} onValueChange={field.onChange}>
 									<SelectTrigger className="w-full">
-										<SelectValue placeholder="Seleziona" />
+										<SelectValue
+											placeholder={m.onboarding_select_placeholder()}
+										/>
 									</SelectTrigger>
 									<SelectContent>
 										{countries.map((c) => (
@@ -153,20 +158,22 @@ function PersonalInfoPage() {
 				</div>
 
 				<Field data-invalid={!!errors.birthDate}>
-					<FieldLabel htmlFor="birthDate">Data di nascita</FieldLabel>
+					<FieldLabel htmlFor="birthDate">{m.common_birth_date()}</FieldLabel>
 					<Input id="birthDate" type="date" {...register("birthDate")} />
 					<FieldError errors={[errors.birthDate]} />
 				</Field>
 
 				<Field data-invalid={!!errors.residenceCountry}>
-					<FieldLabel>Paese di residenza</FieldLabel>
+					<FieldLabel>{m.onboarding_personal_residence_country()}</FieldLabel>
 					<Controller
 						control={control}
 						name="residenceCountry"
 						render={({ field }) => (
 							<Select value={field.value} onValueChange={field.onChange}>
 								<SelectTrigger className="w-full">
-									<SelectValue placeholder="Seleziona" />
+									<SelectValue
+										placeholder={m.onboarding_select_placeholder()}
+									/>
 								</SelectTrigger>
 								<SelectContent>
 									{countries.map((c) => (
@@ -183,7 +190,7 @@ function PersonalInfoPage() {
 
 				<Field data-invalid={!!errors.residenceAddress}>
 					<FieldLabel htmlFor="residenceAddress">
-						Indirizzo di residenza
+						{m.onboarding_personal_residence_address()}
 					</FieldLabel>
 					<Input
 						id="residenceAddress"
@@ -195,7 +202,7 @@ function PersonalInfoPage() {
 
 				<Field data-invalid={!!errors.residenceMunicipalityId}>
 					<FieldLabel htmlFor="residenceMunicipalityId">
-						Comune di residenza
+						{m.onboarding_personal_residence_municipality()}
 					</FieldLabel>
 					<Controller
 						control={control}
@@ -217,7 +224,7 @@ function PersonalInfoPage() {
 				</Field>
 
 				<Field data-invalid={!!errors.residenceZipCode}>
-					<FieldLabel htmlFor="residenceZipCode">CAP</FieldLabel>
+					<FieldLabel htmlFor="residenceZipCode">{m.common_zip()}</FieldLabel>
 					<Input
 						id="residenceZipCode"
 						placeholder="00100"
@@ -228,7 +235,7 @@ function PersonalInfoPage() {
 				</Field>
 
 				<Button type="submit" disabled={isSubmitting} className="w-full mt-2">
-					{isSubmitting ? "Salvataggio..." : "Continua"}
+					{isSubmitting ? m.onboarding_saving() : m.onboarding_continue()}
 				</Button>
 			</form>
 		</OnboardingLayout>
