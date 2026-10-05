@@ -1,9 +1,9 @@
 import { Badge } from "@bibs/ui/components/badge";
+import { m } from "@/paraglide/messages";
 
 export type MembershipStatus = "active" | "pending" | "banned" | "removed";
 
 type StatusConfig = {
-	label: string;
 	border: string;
 	bg: string;
 	text: string;
@@ -12,34 +12,45 @@ type StatusConfig = {
 
 const STATUS_STYLES: Record<MembershipStatus, StatusConfig> = {
 	active: {
-		label: "Attivo",
 		border: "border-olive/50",
 		bg: "bg-olive/10 dark:bg-olive/20",
 		text: "text-olive",
 		dot: "bg-olive",
 	},
 	pending: {
-		label: "In attesa",
 		border: "border-saffron-deep/50",
 		bg: "bg-saffron/15 dark:bg-saffron/20",
 		text: "text-saffron-deep",
 		dot: "bg-saffron-deep",
 	},
 	banned: {
-		label: "Sospeso",
 		border: "border-brick/50",
 		bg: "bg-brick/10 dark:bg-brick/20",
 		text: "text-brick",
 		dot: "bg-brick",
 	},
 	removed: {
-		label: "Rimosso",
 		border: "border-warm-shadow/40",
 		bg: "bg-transparent",
 		text: "text-warm-shadow",
 		dot: "bg-warm-shadow/70",
 	},
 };
+
+// Funzione e non costante: le etichette vanno lette a ogni render, dopo un
+// cambio di lingua.
+function statusLabel(status: MembershipStatus): string {
+	switch (status) {
+		case "active":
+			return m.team_status_active();
+		case "pending":
+			return m.team_status_pending();
+		case "banned":
+			return m.team_status_banned();
+		case "removed":
+			return m.team_status_removed();
+	}
+}
 
 type Props = {
 	status: MembershipStatus | string;
@@ -66,7 +77,7 @@ export function MembershipStatusBadge({ status, className }: Props) {
 				aria-hidden="true"
 				className={`size-1.5 shrink-0 rounded-full ${config.dot}`}
 			/>
-			{config.label}
+			{statusLabel(status as MembershipStatus)}
 		</Badge>
 	);
 }

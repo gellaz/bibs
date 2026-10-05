@@ -5,6 +5,7 @@ import {
 	PopoverTrigger,
 } from "@bibs/ui/components/popover";
 import { useStores } from "@/hooks/use-stores";
+import { m } from "@/paraglide/messages";
 
 const MAX_VISIBLE = 2;
 
@@ -15,7 +16,7 @@ export function StoreChips({ storeIds }: { storeIds: string[] }) {
 	if (storeIds.length === 0) {
 		return (
 			<span className="text-muted-foreground text-xs italic">
-				Nessun negozio
+				{m.team_no_stores()}
 			</span>
 		);
 	}

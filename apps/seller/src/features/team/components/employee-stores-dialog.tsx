@@ -19,6 +19,7 @@ import {
 	useUpdateEmployeeStores,
 } from "@/hooks/use-employee-stores";
 import { useStores } from "@/hooks/use-stores";
+import { m } from "@/paraglide/messages";
 
 interface Props {
 	employeeId: string;
@@ -66,7 +67,7 @@ export function EmployeeStoresDialog({
 	const submit = async () => {
 		try {
 			await update.mutateAsync(Array.from(selected));
-			toast.success("Assegnazioni aggiornate");
+			toast.success(m.team_stores_updated());
 			setOpen(false);
 		} catch (e) {
 			toast.error((e as Error).message);
@@ -78,9 +79,11 @@ export function EmployeeStoresDialog({
 			{trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Assegna negozi a {employeeName}</DialogTitle>
+					<DialogTitle>
+						{m.team_stores_title({ name: employeeName })}
+					</DialogTitle>
 					<DialogDescription>
-						Seleziona i negozi a cui {employeeName} ha accesso.
+						{m.team_stores_description({ name: employeeName })}
 					</DialogDescription>
 				</DialogHeader>
 				{isLoading ? (
@@ -134,20 +137,18 @@ export function EmployeeStoresDialog({
 				)}
 				{!isLoading && selected.size === 0 && (
 					<p className="px-2 text-destructive text-xs">
-						Seleziona almeno un negozio per salvare. Se vuoi rimuovere tutte le
-						assegnazioni, usa l&apos;azione &quot;Rimuovi&quot; dal menu del
-						dipendente.
+						{m.team_stores_none_selected()}
 					</p>
 				)}
 				<DialogFooter>
 					<DialogClose asChild>
-						<Button variant="ghost">Annulla</Button>
+						<Button variant="ghost">{m.common_cancel()}</Button>
 					</DialogClose>
 					<Button
 						onClick={submit}
 						disabled={update.isPending || selected.size === 0}
 					>
-						{update.isPending ? "Salvataggio…" : "Salva"}
+						{update.isPending ? m.common_saving() : m.common_save()}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
