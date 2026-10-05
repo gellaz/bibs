@@ -15,6 +15,8 @@ import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { api, unwrap } from "@/lib/api";
+import { richMessage } from "@/lib/rich-message";
+import { m } from "@/paraglide/messages";
 
 interface Props {
 	storeId: string;
@@ -36,15 +38,15 @@ export function CancelStoreDialog({
 	const cancelMutation = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.stores({ storeId }).delete();
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 		onSuccess: (data) => {
 			void qc.invalidateQueries({ queryKey: ["seller", "billing"] });
 			void qc.invalidateQueries({ queryKey: ["stores"] });
 			if ((data as any)?.status === "canceled") {
-				toast.success(`${storeName} archiviato`);
+				toast.success(m.billing_cancel_archived_toast({ store: storeName }));
 			} else {
-				toast.success(`Cancellazione programmata per ${storeName}`);
+				toast.success(m.billing_cancel_scheduled_toast({ store: storeName }));
 			}
 		},
 		onError: (e: Error) => toast.error(e.message),
@@ -67,38 +69,36 @@ export function CancelStoreDialog({
 					<AlertDialogMedia variant={isSuspended ? "destructive" : "warning"} />
 					<AlertDialogTitle>
 						{isSuspended
-							? `Cancellare definitivamente "${storeName}"?`
-							: `Cancellare il negozio "${storeName}"?`}
+							? m.billing_cancel_title_suspended({ store: storeName })
+							: m.billing_cancel_title({ store: storeName })}
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						{isSuspended ? (
-							<>
-								Il negozio è già sospeso per mancato pagamento. Cancellandolo,
-								sarà <strong>archiviato immediatamente</strong>. I dati storici
-								(ordini, prodotti, recensioni) saranno conservati ma in sola
-								lettura.
-							</>
-						) : (
-							<>
-								Continuerai a pagare e usarlo normalmente fino al{" "}
-								<strong>{periodEndDate}</strong> (fine del ciclo già pagato).
-								Dopo quella data il negozio sarà archiviato: non sarà più
-								visibile ai clienti e tu non potrai più modificarlo. I dati
-								storici saranno conservati ma in sola lettura.
-							</>
-						)}
+						{isSuspended
+							? richMessage(
+									m.billing_cancel_description_suspended({
+										archived: "{archived}",
+									}),
+									{
+										archived: (
+											<strong>{m.billing_cancel_archived_now()}</strong>
+										),
+									},
+								)
+							: richMessage(m.billing_cancel_description({ date: "{date}" }), {
+									date: <strong>{periodEndDate}</strong>,
+								})}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Annulla</AlertDialogCancel>
+					<AlertDialogCancel>{m.common_cancel()}</AlertDialogCancel>
 					<AlertDialogAction
 						variant="destructive"
 						onClick={() => cancelMutation.mutate()}
 						disabled={cancelMutation.isPending}
 					>
 						{isSuspended
-							? "Cancella definitivamente"
-							: "Conferma cancellazione"}
+							? m.billing_cancel_confirm_suspended()
+							: m.billing_cancel_confirm()}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

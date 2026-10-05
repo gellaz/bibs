@@ -1,6 +1,7 @@
 // apps/seller/src/hooks/use-employee-stores.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 /**
  * Fetches the stores assigned to a given employee. Owner-only endpoint server-side.
@@ -14,7 +15,7 @@ export function useEmployeeStores(employeeId: string | null) {
 			const response = await api()
 				.seller.employees({ employeeId })
 				.stores.get();
-			return unwrap(response, "Errore nel caricamento negozi assegnati").data;
+			return unwrap(response, m.team_stores_load_error()).data;
 		},
 		enabled: employeeId !== null,
 	});
@@ -31,7 +32,7 @@ export function useUpdateEmployeeStores(employeeId: string) {
 			const response = await api()
 				.seller.employees({ employeeId })
 				.stores.put({ storeIds });
-			return unwrap(response, "Errore nell'aggiornamento assegnazioni").data;
+			return unwrap(response, m.team_stores_update_error()).data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });

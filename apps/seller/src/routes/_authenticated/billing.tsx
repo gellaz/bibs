@@ -32,6 +32,8 @@ import { SectionHeader } from "@/components/section-header";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { api, unwrap } from "@/lib/api";
+import { richMessage } from "@/lib/rich-message";
+import { m } from "@/paraglide/messages";
 
 type ReactivationOutcome = "success" | "canceled";
 
@@ -46,18 +48,26 @@ export const Route = createFileRoute("/_authenticated/billing")({
 			: {},
 });
 
-const STATUS_BADGE: Record<
-	string,
-	{
-		label: string;
-		variant: "default" | "secondary" | "destructive" | "outline";
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
+
+// Funzione e non costante: le etichette vanno lette a ogni render, dopo un
+// cambio di lingua.
+function statusBadge(
+	status: string,
+): { label: string; variant: BadgeVariant } | undefined {
+	switch (status) {
+		case "active":
+			return { label: m.billing_status_active(), variant: "default" };
+		case "past_due":
+			return { label: m.billing_status_past_due(), variant: "destructive" };
+		case "canceling":
+			return { label: m.billing_status_canceling(), variant: "outline" };
+		case "suspended":
+			return { label: m.billing_status_suspended(), variant: "destructive" };
+		default:
+			return undefined;
 	}
-> = {
-	active: { label: "Attivo", variant: "default" },
-	past_due: { label: "Rinnovo fallito", variant: "destructive" },
-	canceling: { label: "In cancellazione", variant: "outline" },
-	suspended: { label: "Sospeso", variant: "destructive" },
-};
+}
 
 function formatEuro(cents: number): string {
 	return `€${(cents / 100).toFixed(2)}`;
@@ -113,11 +123,9 @@ function BillingPage() {
 			// depends on it instead of trusting the cached lists.
 			void queryClient.invalidateQueries({ queryKey: ["seller", "billing"] });
 			void queryClient.invalidateQueries({ queryKey: ["seller", "stores"] });
-			toast.success(
-				"Pagamento ricevuto: il negozio torna attivo tra pochi istanti.",
-			);
+			toast.success(m.billing_reactivation_success());
 		} else {
-			toast.info("Riattivazione annullata: nessun addebito.");
+			toast.info(m.billing_reactivation_canceled());
 		}
 		void navigate({ to: "/billing", search: {}, replace: true });
 	}, [reactivation, queryClient, navigate]);
@@ -127,7 +135,7 @@ function BillingPage() {
 		enabled: isOwner,
 		queryFn: async () => {
 			const r = await api().seller.billing.summary.get();
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 	});
 
@@ -136,7 +144,7 @@ function BillingPage() {
 		enabled: isOwner,
 		queryFn: async () => {
 			const r = await api().seller.billing.subscriptions.get();
-			return unwrap(r, "Errore").data ?? [];
+			return unwrap(r, m.common_error()).data ?? [];
 		},
 	});
 
@@ -147,14 +155,14 @@ function BillingPage() {
 			const r = await api().seller.billing.invoices.get({
 				query: { limit: 25 },
 			});
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 	});
 
 	const portalMutation = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.billing.portal.post();
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;
@@ -165,11 +173,11 @@ function BillingPage() {
 	const reactivateMutation = useMutation({
 		mutationFn: async (storeId: string) => {
 			const r = await api().seller.stores({ storeId }).reactivate.post();
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["seller", "billing"] });
-			toast.success("Cancellazione annullata");
+			toast.success(m.billing_cancel_undone());
 		},
 		onError: (e: Error) => toast.error(e.message),
 	});
@@ -177,41 +185,60 @@ function BillingPage() {
 	return (
 		<div className="space-y-6">
 			<SectionHeader
-				title="Billing"
-				subtitle="Riepilogo dei pagamenti e dei rinnovi"
+				title={m.billing_title()}
+				subtitle={m.billing_subtitle()}
 			/>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Riepilogo</CardTitle>
-					<CardDescription>
-						I tuoi negozi attivi e i prossimi rinnovi.
-					</CardDescription>
+					<CardTitle>{m.billing_summary_title()}</CardTitle>
+					<CardDescription>{m.billing_summary_description()}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{summaryLoading || !summary ? (
 						<Spinner />
 					) : summary.billableStoresCount === 0 ? (
 						<p className="text-muted-foreground text-sm">
-							Non hai ancora negozi attivi.
+							{m.billing_summary_empty()}
 						</p>
 					) : (
 						<div className="flex flex-col gap-4">
 							<p className="text-base">
-								Stai pagando{" "}
-								<strong>{formatEuro(summary.totalMonthlyCents)}/mese</strong>{" "}
-								per <strong>{summary.billableStoresCount}</strong>{" "}
-								{summary.billableStoresCount === 1
-									? "negozio attivo"
-									: "negozi attivi"}
-								.
+								{richMessage(
+									(summary.billableStoresCount === 1
+										? m.billing_summary_paying_one
+										: m.billing_summary_paying)({
+										amount: "{amount}",
+										count: "{count}",
+									}),
+									{
+										amount: (
+											<strong>
+												{m.billing_per_month({
+													amount: formatEuro(summary.totalMonthlyCents),
+												})}
+											</strong>
+										),
+										count: <strong>{summary.billableStoresCount}</strong>,
+									},
+								)}
 							</p>
 							{summary.nextRenewal && (
 								<p className="text-muted-foreground text-sm">
-									Prossimo rinnovo:{" "}
-									<strong>{formatDate(summary.nextRenewal.date)}</strong> per{" "}
-									<strong>{summary.nextRenewal.storeName}</strong> (
-									{formatEuro(summary.nextRenewal.amountCents)}).
+									{richMessage(
+										m.billing_next_renewal({
+											date: "{date}",
+											store: "{store}",
+											amount: "{amount}",
+										}),
+										{
+											date: (
+												<strong>{formatDate(summary.nextRenewal.date)}</strong>
+											),
+											store: <strong>{summary.nextRenewal.storeName}</strong>,
+											amount: formatEuro(summary.nextRenewal.amountCents),
+										},
+									)}
 								</p>
 							)}
 							<div>
@@ -223,7 +250,7 @@ function BillingPage() {
 									{portalMutation.isPending ? (
 										<Spinner />
 									) : (
-										"Gestisci pagamenti su Stripe"
+										m.billing_manage_on_stripe()
 									)}
 								</Button>
 							</div>
@@ -234,37 +261,41 @@ function BillingPage() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Abbonamenti per negozio</CardTitle>
+					<CardTitle>{m.billing_subscriptions_title()}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{subsLoading ? (
 						<Spinner />
 					) : !subs || subs.length === 0 ? (
 						<p className="text-muted-foreground text-sm">
-							Nessun abbonamento attivo.
+							{m.billing_subscriptions_empty()}
 						</p>
 					) : (
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Negozio</TableHead>
-									<TableHead>Stato</TableHead>
-									<TableHead>Quota</TableHead>
-									<TableHead>Prossimo rinnovo</TableHead>
+									<TableHead>{m.billing_col_store()}</TableHead>
+									<TableHead>{m.common_status()}</TableHead>
+									<TableHead>{m.billing_col_fee()}</TableHead>
+									<TableHead>{m.billing_col_next_renewal()}</TableHead>
 									<TableHead className="w-10" />
 								</TableRow>
 							</TableHeader>
 							<TableBody>
 								{subs.map((s) => {
-									const badge = STATUS_BADGE[s.status] ?? {
+									const badge = statusBadge(s.status) ?? {
 										label: s.status,
 										variant: "outline" as const,
 									};
 									const periodLabel =
 										s.status === "suspended"
-											? `Scaduto il ${formatDate(s.currentPeriodEnd, true)}`
+											? m.billing_period_expired({
+													date: formatDate(s.currentPeriodEnd, true),
+												})
 											: s.status === "canceling"
-												? `Disattivazione ${formatDate(s.currentPeriodEnd, true)}`
+												? m.billing_period_ending({
+														date: formatDate(s.currentPeriodEnd, true),
+													})
 												: formatDate(s.currentPeriodEnd, true);
 									return (
 										<TableRow key={s.storeId}>
@@ -272,7 +303,11 @@ function BillingPage() {
 											<TableCell>
 												<Badge variant={badge.variant}>{badge.label}</Badge>
 											</TableCell>
-											<TableCell>{formatEuro(s.feeAmountCents)}/mese</TableCell>
+											<TableCell>
+												{m.billing_per_month({
+													amount: formatEuro(s.feeAmountCents),
+												})}
+											</TableCell>
 											<TableCell>{periodLabel}</TableCell>
 											<TableCell>
 												<DropdownMenu>
@@ -280,7 +315,7 @@ function BillingPage() {
 														<Button
 															variant="ghost"
 															size="icon"
-															aria-label="Azioni"
+															aria-label={m.common_actions()}
 														>
 															<MoreVerticalIcon className="h-4 w-4" />
 														</Button>
@@ -289,7 +324,7 @@ function BillingPage() {
 														<DropdownMenuItem
 															onSelect={() => portalMutation.mutate()}
 														>
-															Gestisci pagamento
+															{m.billing_manage_payment()}
 														</DropdownMenuItem>
 														{(s.status === "active" ||
 															s.status === "past_due" ||
@@ -309,7 +344,7 @@ function BillingPage() {
 																		variant="destructive"
 																		onSelect={(e) => e.preventDefault()}
 																	>
-																		Cancella
+																		{m.billing_cancel()}
 																	</DropdownMenuItem>
 																}
 															/>
@@ -320,7 +355,7 @@ function BillingPage() {
 																	reactivateMutation.mutate(s.storeId)
 																}
 															>
-																Annulla cancellazione
+																{m.billing_undo_cancel()}
 															</DropdownMenuItem>
 														)}
 													</DropdownMenuContent>
@@ -336,24 +371,24 @@ function BillingPage() {
 			</Card>
 			<Card>
 				<CardHeader>
-					<CardTitle>Storico fatture</CardTitle>
+					<CardTitle>{m.billing_invoices_title()}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{invoicesLoading ? (
 						<Spinner />
 					) : !invoicesPage || invoicesPage.data.length === 0 ? (
 						<p className="text-muted-foreground text-sm">
-							Nessuna fattura ancora.
+							{m.billing_invoices_empty()}
 						</p>
 					) : (
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Data</TableHead>
-									<TableHead>Descrizione</TableHead>
-									<TableHead>Importo</TableHead>
-									<TableHead>Stato</TableHead>
-									<TableHead>PDF</TableHead>
+									<TableHead>{m.common_date()}</TableHead>
+									<TableHead>{m.billing_col_description()}</TableHead>
+									<TableHead>{m.billing_col_amount()}</TableHead>
+									<TableHead>{m.common_status()}</TableHead>
+									<TableHead>{m.billing_col_pdf()}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -377,7 +412,7 @@ function BillingPage() {
 													href={inv.invoicePdfUrl}
 													target="_blank"
 													rel="noopener noreferrer"
-													aria-label="Scarica fattura"
+													aria-label={m.billing_invoice_download()}
 												>
 													<Download className="h-4 w-4" />
 												</a>

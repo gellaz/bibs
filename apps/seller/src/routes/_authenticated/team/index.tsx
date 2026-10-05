@@ -86,7 +86,7 @@ function useEmployees(page: number, limit: number) {
 			const response = await api().seller.employees.get({
 				query: { page, limit },
 			});
-			return unwrap(response, "Errore nel caricamento dipendenti");
+			return unwrap(response, m.team_load_error());
 		},
 	});
 }
@@ -96,7 +96,7 @@ function useInvitations(enabled: boolean) {
 		queryKey: ["employee-invitations"],
 		queryFn: async () => {
 			const response = await api().seller.employees.invitations.get();
-			return unwrap(response, "Errore nel caricamento inviti");
+			return unwrap(response, m.team_invitations_load_error());
 		},
 		enabled,
 	});
@@ -107,7 +107,7 @@ function useInviteEmployee() {
 	return useMutation({
 		mutationFn: async (params: { email: string; storeIds: string[] }) => {
 			const response = await api().seller.employees.invite.post(params);
-			return unwrap(response, "Errore durante l'invio dell'invito");
+			return unwrap(response, m.team_invite_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
@@ -124,20 +124,16 @@ function useResendInvitation() {
 			const response = await api()
 				.seller.employees.invitations({ invitationId })
 				.resend.post();
-			return unwrap(response, "Errore durante il reinvio dell'invito");
+			return unwrap(response, m.team_resend_error());
 		},
 		onSuccess: ({ data: invitation }) => {
-			toast.success(`Invito reinviato a ${invitation.email}`);
+			toast.success(m.team_resent({ email: invitation.email }));
 			void queryClient.invalidateQueries({
 				queryKey: ["employee-invitations"],
 			});
 		},
 		onError: (err) => {
-			toast.error(
-				err instanceof Error
-					? err.message
-					: "Errore durante il reinvio dell'invito",
-			);
+			toast.error(err instanceof Error ? err.message : m.team_resend_error());
 		},
 	});
 }
@@ -149,7 +145,7 @@ function useCancelInvitation() {
 			const response = await api()
 				.seller.employees.invitations({ invitationId })
 				.delete();
-			return unwrap(response, "Errore durante l'annullamento dell'invito");
+			return unwrap(response, m.team_cancel_invite_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
@@ -158,9 +154,7 @@ function useCancelInvitation() {
 		},
 		onError: (err) => {
 			toast.error(
-				err instanceof Error
-					? err.message
-					: "Errore durante l'annullamento dell'invito",
+				err instanceof Error ? err.message : m.team_cancel_invite_error(),
 			);
 		},
 	});
@@ -171,7 +165,7 @@ function useBanEmployee() {
 	return useMutation({
 		mutationFn: async (employeeId: string) => {
 			const response = await api().seller.employees({ employeeId }).ban.patch();
-			return unwrap(response, "Errore durante il ban");
+			return unwrap(response, m.team_ban_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -186,7 +180,7 @@ function useUnbanEmployee() {
 			const response = await api()
 				.seller.employees({ employeeId })
 				.unban.patch();
-			return unwrap(response, "Errore durante la riabilitazione");
+			return unwrap(response, m.team_unban_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -199,7 +193,7 @@ function useRemoveEmployee() {
 	return useMutation({
 		mutationFn: async (employeeId: string) => {
 			const response = await api().seller.employees({ employeeId }).delete();
-			return unwrap(response, "Errore durante la rimozione");
+			return unwrap(response, m.team_remove_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -238,7 +232,7 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 			reset();
 			setOpen(false);
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Errore durante l'invio");
+			setError(err instanceof Error ? err.message : m.team_invite_send_error());
 		}
 	}
 
@@ -254,17 +248,14 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 				{trigger ?? (
 					<Button>
 						<SendIcon />
-						<span>Invita membro</span>
+						<span>{m.team_invite_trigger()}</span>
 					</Button>
 				)}
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Invita un collaboratore</DialogTitle>
-					<DialogDescription>
-						Inserisci l&apos;email del collaboratore. Riceverà un link per
-						creare la password e accedere al pannello seller.
-					</DialogDescription>
+					<DialogTitle>{m.team_invite_title()}</DialogTitle>
+					<DialogDescription>{m.team_invite_description()}</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 					{error && (
@@ -273,11 +264,11 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 						</div>
 					)}
 					<div className="flex flex-col gap-1.5">
-						<Label htmlFor="invite-email">Email</Label>
+						<Label htmlFor="invite-email">{m.team_invite_email()}</Label>
 						<Input
 							id="invite-email"
 							type="email"
-							placeholder="collaboratore@esempio.com"
+							placeholder={m.team_invite_email_placeholder()}
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
 							disabled={inviteMutation.isPending}
@@ -285,7 +276,7 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 						/>
 					</div>
 					<div className="flex flex-col gap-1.5">
-						<Label>Negozi a cui assegnare *</Label>
+						<Label>{m.team_invite_stores()}</Label>
 						<div className="flex max-h-48 flex-col gap-1 overflow-auto py-1">
 							{(allStores ?? []).map((s) => {
 								const isSelected = selectedStores.has(s.id);
@@ -331,14 +322,14 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 						</div>
 						{selectedStores.size === 0 && (
 							<p className="text-muted-foreground text-xs">
-								Almeno 1 negozio richiesto
+								{m.team_invite_stores_required()}
 							</p>
 						)}
 					</div>
 					<DialogFooter>
 						<DialogClose asChild>
 							<Button type="button" variant="outline">
-								Annulla
+								{m.common_cancel()}
 							</Button>
 						</DialogClose>
 						<Button
@@ -349,7 +340,9 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 								selectedStores.size === 0
 							}
 						>
-							{inviteMutation.isPending ? "Invio..." : "Invia invito"}
+							{inviteMutation.isPending
+								? m.team_invite_sending()
+								: m.team_invite_submit()}
 						</Button>
 					</DialogFooter>
 				</form>
@@ -392,9 +385,7 @@ function EmployeeActions({
 		} catch (err) {
 			// Surface the failure instead of an unhandled rejection, and ensure the
 			// dialog still closes (finally) rather than getting stuck open.
-			toast.error(
-				err instanceof Error ? err.message : "Operazione non riuscita",
-			);
+			toast.error(err instanceof Error ? err.message : m.team_action_failed());
 		} finally {
 			setConfirmAction(null);
 		}
@@ -409,21 +400,18 @@ function EmployeeActions({
 		}
 	> = {
 		ban: {
-			title: "Sospendere questo dipendente?",
-			description:
-				"Il dipendente non potrà più accedere al pannello seller fino alla riabilitazione.",
+			title: m.team_confirm_ban_title(),
+			description: m.team_confirm_ban_description(),
 			variant: "warning",
 		},
 		unban: {
-			title: "Riabilitare questo dipendente?",
-			description:
-				"Il dipendente potrà nuovamente accedere al pannello seller.",
+			title: m.team_confirm_unban_title(),
+			description: m.team_confirm_unban_description(),
 			variant: "info",
 		},
 		remove: {
-			title: "Rimuovere questo dipendente?",
-			description:
-				"Il dipendente verrà rimosso dal team. Questa operazione non è reversibile.",
+			title: m.team_confirm_remove_title(),
+			description: m.team_confirm_remove_description(),
 			variant: "destructive",
 		},
 	};
@@ -434,7 +422,7 @@ function EmployeeActions({
 				<DropdownMenuTrigger asChild>
 					<Button variant="ghost" size="icon-sm">
 						<MoreHorizontalIcon />
-						<span className="sr-only">Azioni</span>
+						<span className="sr-only">{m.common_actions()}</span>
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
@@ -446,19 +434,19 @@ function EmployeeActions({
 							}}
 						>
 							<PencilIcon />
-							Modifica negozi
+							{m.team_edit_stores()}
 						</DropdownMenuItem>
 					)}
 					{status === "active" && (
 						<DropdownMenuItem onClick={() => setConfirmAction("ban")}>
 							<ShieldBanIcon />
-							Sospendi
+							{m.team_ban()}
 						</DropdownMenuItem>
 					)}
 					{status === "banned" && (
 						<DropdownMenuItem onClick={() => setConfirmAction("unban")}>
 							<ShieldCheckIcon />
-							Riabilita
+							{m.team_unban()}
 						</DropdownMenuItem>
 					)}
 					{status !== "removed" && (
@@ -469,7 +457,7 @@ function EmployeeActions({
 								onClick={() => setConfirmAction("remove")}
 							>
 								<Trash2Icon />
-								Rimuovi
+								{m.team_remove()}
 							</DropdownMenuItem>
 						</>
 					)}
@@ -502,9 +490,9 @@ function EmployeeActions({
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Annulla</AlertDialogCancel>
+						<AlertDialogCancel>{m.common_cancel()}</AlertDialogCancel>
 						<AlertDialogAction onClick={handleConfirm} disabled={isPending}>
-							{isPending ? "Attendere..." : "Conferma"}
+							{isPending ? m.team_confirm_pending() : m.common_confirm()}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -609,7 +597,7 @@ function TeamPage() {
 		const cols: DataTableColumnDef<TeamRow>[] = [
 			{
 				id: "user",
-				header: "Utente",
+				header: m.team_col_user(),
 				enableHiding: false,
 				meta: {
 					headerClassName: "w-[30%] pl-6",
@@ -624,8 +612,8 @@ function TeamPage() {
 									{r.isSelf && (
 										<AvatarBadge
 											className="bg-saffron-deep ring-card"
-											aria-label="Sei tu"
-											title="Sei tu"
+											aria-label={m.team_you()}
+											title={m.team_you()}
 										/>
 									)}
 								</UserAvatar>
@@ -652,8 +640,8 @@ function TeamPage() {
 									{r.isSelf && (
 										<AvatarBadge
 											className="bg-saffron-deep ring-card"
-											aria-label="Sei tu"
-											title="Sei tu"
+											aria-label={m.team_you()}
+											title={m.team_you()}
 										/>
 									)}
 								</UserAvatar>
@@ -682,7 +670,7 @@ function TeamPage() {
 			},
 			{
 				id: "role",
-				header: "Ruolo",
+				header: m.team_col_role(),
 				meta: { headerClassName: "w-[13%]" },
 				cell: ({ row }) => {
 					const r = row.original;
@@ -695,7 +683,7 @@ function TeamPage() {
 			},
 			{
 				id: "status",
-				header: "Stato",
+				header: m.common_status(),
 				meta: { headerClassName: "w-[13%]" },
 				cell: ({ row }) => {
 					const r = row.original;
@@ -708,14 +696,14 @@ function TeamPage() {
 			},
 			{
 				id: "stores",
-				header: "Negozi",
+				header: m.team_col_stores(),
 				meta: { headerClassName: "w-[18%]" },
 				cell: ({ row }) => {
 					const r = row.original;
 					if (r.kind === "owner") {
 						return (
 							<span className="text-muted-foreground text-sm italic">
-								Tutti i negozi
+								{m.team_all_stores()}
 							</span>
 						);
 					}
@@ -726,7 +714,7 @@ function TeamPage() {
 			},
 			{
 				id: "createdAt",
-				header: "Data",
+				header: m.common_date(),
 				meta: {
 					headerClassName: "w-[14%]",
 					cellClassName: "text-muted-foreground text-sm",
@@ -779,20 +767,20 @@ function TeamPage() {
 							size="icon-sm"
 							disabled={resendMutation.isPending}
 							onClick={() => resendMutation.mutate(r.invitation.id)}
-							title="Reinvia invito"
+							title={m.team_resend()}
 						>
 							<RotateCwIcon />
-							<span className="sr-only">Reinvia invito</span>
+							<span className="sr-only">{m.team_resend()}</span>
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon-sm"
 							disabled={cancelMutation.isPending}
 							onClick={() => cancelMutation.mutate(r.invitation.id)}
-							title="Annulla invito"
+							title={m.team_cancel_invite()}
 						>
 							<XIcon />
-							<span className="sr-only">Annulla invito</span>
+							<span className="sr-only">{m.team_cancel_invite()}</span>
 						</Button>
 					</div>
 				);
@@ -807,12 +795,10 @@ function TeamPage() {
 			<div className="flex shrink-0 items-center justify-between">
 				<div>
 					<h1 className="font-display text-2xl font-semibold tracking-tight">
-						Team
+						{m.team_title()}
 					</h1>
 					<p className="text-muted-foreground text-sm">
-						{isOwner
-							? "Gestisci i membri del tuo team"
-							: "Visualizza i membri del team"}
+						{isOwner ? m.team_subtitle() : m.team_subtitle_readonly()}
 					</p>
 				</div>
 				{isOwner && <InviteEmployeeDialog />}
@@ -821,7 +807,9 @@ function TeamPage() {
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 shrink-0 rounded-lg border p-4">
 					<p className="text-sm">
-						Errore nel caricamento: {(error as Error).message}
+						{m.common_load_error_with_message({
+							message: (error as Error).message,
+						})}
 					</p>
 				</div>
 			)}
@@ -843,15 +831,15 @@ function TeamPage() {
 				hideHeaderWhenEmpty
 				emptyState={
 					<EmptyState
-						title="Nessun membro nel team"
-						description="Invita collaboratori per gestire insieme il tuo negozio."
+						title={m.team_empty_title()}
+						description={m.team_empty_description()}
 						action={
 							isOwner ? (
 								<InviteEmployeeDialog
 									trigger={
 										<Button>
 											<SendIcon />
-											Invita il primo collaboratore
+											{m.team_empty_action()}
 										</Button>
 									}
 								/>

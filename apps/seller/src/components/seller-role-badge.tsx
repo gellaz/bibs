@@ -1,4 +1,5 @@
 import { Badge } from "@bibs/ui/components/badge";
+import { m } from "@/paraglide/messages";
 
 export type SellerRole = "seller" | "employee";
 
@@ -23,7 +24,7 @@ export function SellerRoleBadge({ userRole, className }: Props) {
 				aria-hidden="true"
 				className={`size-1.5 shrink-0 rounded-full ${dotClass}`}
 			/>
-			{isOwner ? "Titolare" : "Dipendente"}
+			{isOwner ? m.team_role_owner() : m.team_role_employee()}
 		</Badge>
 	);
 }

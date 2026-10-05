@@ -6,6 +6,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangleIcon, CalendarIcon, LockIcon } from "lucide-react";
 import { type Subscription, useActiveStore } from "@/hooks/use-active-store";
 import { api, unwrap } from "@/lib/api";
+import { richMessage } from "@/lib/rich-message";
+import { m } from "@/paraglide/messages";
 
 export function StoreBillingBanner() {
 	const { activeStore, activeSubscription } = useActiveStore();
@@ -14,7 +16,7 @@ export function StoreBillingBanner() {
 	const portalMutation = useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.billing.portal.post();
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;
@@ -24,11 +26,11 @@ export function StoreBillingBanner() {
 
 	const reactivateMutation = useMutation({
 		mutationFn: async () => {
-			if (!activeStore) throw new Error("Nessun negozio selezionato");
+			if (!activeStore) throw new Error(m.store_no_active());
 			const r = await api()
 				.seller.stores({ storeId: activeStore.id })
 				.reactivate.post();
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 		onSuccess: () => {
 			// Optimistically flip the local subscription cache to 'active' so the banner
@@ -49,7 +51,7 @@ export function StoreBillingBanner() {
 			setTimeout(() => {
 				void qc.invalidateQueries({ queryKey: ["seller", "billing"] });
 			}, 1500);
-			toast.success("Cancellazione annullata");
+			toast.success(m.billing_cancel_undone());
 		},
 		onError: (e: Error) => toast.error(e.message),
 	});
@@ -66,11 +68,15 @@ export function StoreBillingBanner() {
 		return (
 			<Alert variant="destructive">
 				<AlertTriangleIcon className="h-4 w-4" />
-				<AlertTitle>Rinnovo non riuscito per {activeStore.name}</AlertTitle>
+				<AlertTitle>
+					{m.billing_banner_past_due_title({ store: activeStore.name })}
+				</AlertTitle>
 				<AlertDescription className="flex flex-col gap-3">
 					<span>
-						Aggiorna il metodo di pagamento entro il{" "}
-						<strong>{formattedDate}</strong> o il negozio sarà sospeso.
+						{richMessage(
+							m.billing_banner_past_due_description({ date: "{date}" }),
+							{ date: <strong>{formattedDate}</strong> },
+						)}
 					</span>
 					<div>
 						<Button
@@ -78,7 +84,7 @@ export function StoreBillingBanner() {
 							onClick={() => portalMutation.mutate()}
 							disabled={portalMutation.isPending}
 						>
-							Aggiorna pagamento
+							{m.billing_banner_update_payment()}
 						</Button>
 					</div>
 				</AlertDescription>
@@ -90,11 +96,15 @@ export function StoreBillingBanner() {
 		return (
 			<Alert>
 				<CalendarIcon className="h-4 w-4" />
-				<AlertTitle>{activeStore.name}: cancellazione programmata</AlertTitle>
+				<AlertTitle>
+					{m.billing_banner_canceling_title({ store: activeStore.name })}
+				</AlertTitle>
 				<AlertDescription className="flex flex-col gap-3">
 					<span>
-						Il negozio sarà disattivato il <strong>{formattedDate}</strong>.
-						Fino ad allora rimane attivo e visibile ai clienti.
+						{richMessage(
+							m.billing_banner_canceling_description({ date: "{date}" }),
+							{ date: <strong>{formattedDate}</strong> },
+						)}
 					</span>
 					<div>
 						<Button
@@ -103,7 +113,7 @@ export function StoreBillingBanner() {
 							onClick={() => reactivateMutation.mutate()}
 							disabled={reactivateMutation.isPending}
 						>
-							Annulla cancellazione
+							{m.billing_undo_cancel()}
 						</Button>
 					</div>
 				</AlertDescription>
@@ -115,18 +125,18 @@ export function StoreBillingBanner() {
 		return (
 			<Alert variant="destructive">
 				<LockIcon className="h-4 w-4" />
-				<AlertTitle>{activeStore.name} è sospeso</AlertTitle>
+				<AlertTitle>
+					{m.billing_banner_suspended_title({ store: activeStore.name })}
+				</AlertTitle>
 				<AlertDescription className="flex flex-col gap-3">
-					<span>
-						Non è visibile ai clienti. Paga il rinnovo per riattivarlo.
-					</span>
+					<span>{m.billing_banner_suspended_description()}</span>
 					<div>
 						<Button
 							size="sm"
 							onClick={() => portalMutation.mutate()}
 							disabled={portalMutation.isPending}
 						>
-							Riattiva ora
+							{m.billing_banner_reactivate_now()}
 						</Button>
 					</div>
 				</AlertDescription>
