@@ -5,13 +5,13 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type HolidayFormData,
 	holidayFormSchema,
 	monthNames,
 } from "@/features/holidays/schemas/holiday";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 interface HolidayFormProps {

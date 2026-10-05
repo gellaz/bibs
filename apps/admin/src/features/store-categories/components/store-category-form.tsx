@@ -5,13 +5,12 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type StoreCategoryFormData,
 	storeCategoryFormSchema,
 } from "@/features/store-categories/schemas/store-category";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 interface MacroOption {
@@ -40,22 +39,17 @@ export function StoreCategoryForm({
 	submitLabel,
 	pendingLabel,
 }: StoreCategoryFormProps) {
+	// Niente `reset(defaultValues)` in un effetto: il pannello passa un oggetto
+	// nuovo a ogni render e il reset riscriveva i campi prima del submit (si
+	// salvava il nome vecchio). Il dialog monta un form per riga (`key`).
 	const {
 		register,
 		handleSubmit,
-		reset,
 		formState: { errors },
 	} = useForm<StoreCategoryFormData>({
 		resolver: zodResolver(storeCategoryFormSchema),
 		defaultValues: defaultValues ?? { name: "", macroCategoryId: "" },
 	});
-
-	// Reset form when defaultValues change (e.g. switching between edit targets)
-	useEffect(() => {
-		if (defaultValues) {
-			reset(defaultValues);
-		}
-	}, [defaultValues, reset]);
 
 	const onFormSubmit: SubmitHandler<StoreCategoryFormData> = (data) => {
 		onSubmit(data);

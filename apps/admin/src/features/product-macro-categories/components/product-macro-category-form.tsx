@@ -8,12 +8,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@bibs/ui/components/select";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type ProductMacroCategoryFormData,
 	productMacroCategoryFormSchema,
 } from "@/features/product-macro-categories/schemas/product-macro-category";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 interface ProductMacroCategoryFormProps {

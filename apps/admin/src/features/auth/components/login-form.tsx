@@ -2,13 +2,13 @@ import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { PasswordInput } from "@bibs/ui/custom/password-input";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type LoginFormData,
 	loginFormSchema,
 } from "@/features/auth/schemas/login";
 import { passwordInputLabels } from "@/lib/ui-labels";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 interface LoginFormProps {
