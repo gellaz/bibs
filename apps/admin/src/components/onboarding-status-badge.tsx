@@ -1,5 +1,6 @@
 import { Badge } from "@bibs/ui/components/badge";
 import { cn } from "@bibs/ui/lib/utils";
+import { m } from "@/paraglide/messages";
 
 type OnboardingStatus =
 	| "pending_email"
@@ -15,49 +16,49 @@ type OnboardingStatus =
 const statusConfig: Record<
 	OnboardingStatus,
 	{
-		label: string;
+		label: () => string;
 		variant: "secondary" | "destructive" | "outline";
 		className?: string;
 	}
 > = {
 	pending_email: {
-		label: "In attesa di verifica email",
+		label: m.sellers_status_pending_email,
 		variant: "secondary",
 	},
 	pending_personal: {
-		label: "Dati anagrafici mancanti",
+		label: m.sellers_status_pending_personal,
 		variant: "secondary",
 	},
 	pending_document: {
-		label: "Documento mancante",
+		label: m.sellers_status_pending_document,
 		variant: "secondary",
 	},
 	pending_company: {
-		label: "Dati aziendali mancanti",
+		label: m.sellers_status_pending_company,
 		variant: "secondary",
 	},
 	pending_store: {
-		label: "Negozio mancante",
+		label: m.sellers_status_pending_store,
 		variant: "secondary",
 	},
 	pending_payment: {
-		label: "Pagamento mancante",
+		label: m.sellers_status_pending_payment,
 		variant: "secondary",
 	},
 	pending_review: {
-		label: "In attesa di revisione",
+		label: m.sellers_status_pending_review,
 		variant: "outline",
 		className:
 			"border-saffron/30 bg-saffron/10 text-saffron-deep dark:text-saffron dark:bg-saffron/20",
 	},
 	active: {
-		label: "Attivo",
+		label: m.sellers_status_active,
 		variant: "outline",
 		className:
 			"border-olive/30 bg-olive/10 text-olive dark:text-olive dark:bg-olive/20",
 	},
 	rejected: {
-		label: "Rifiutato",
+		label: m.sellers_status_rejected,
 		variant: "destructive",
 	},
 };
@@ -81,7 +82,7 @@ export function OnboardingStatusBadge({
 
 	return (
 		<Badge variant={config.variant} className={cn(config.className, className)}>
-			{config.label}
+			{config.label()}
 		</Badge>
 	);
 }

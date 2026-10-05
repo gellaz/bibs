@@ -38,11 +38,25 @@ type SortByField = "name" | "createdAt";
 type SortOrder = "asc" | "desc";
 
 const STATUS_TABS = [
-	{ value: "all", label: "Tutte", badgeColor: "default" },
-	{ value: "pending_review", label: "In revisione", badgeColor: "warning" },
-	{ value: "active", label: "Approvate", badgeColor: "success" },
-	{ value: "rejected", label: "Rifiutate", badgeColor: "destructive" },
+	{ value: "all", label: m.sellers_tab_all, badgeColor: "default" },
+	{
+		value: "pending_review",
+		label: m.sellers_tab_pending_review,
+		badgeColor: "warning",
+	},
+	{ value: "active", label: m.sellers_tab_active, badgeColor: "success" },
+	{
+		value: "rejected",
+		label: m.sellers_tab_rejected,
+		badgeColor: "destructive",
+	},
 ] as const;
+
+const EMPTY_DESCRIPTION: Record<string, () => string> = {
+	pending_review: m.sellers_empty_pending_review,
+	rejected: m.sellers_empty_rejected,
+	active: m.sellers_empty_active,
+};
 
 export const Route = createFileRoute("/_authenticated/sellers/")({
 	component: SellersPage,
@@ -147,7 +161,7 @@ function SellersPage() {
 
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Errore nel caricamento venditori",
+					response.error.value?.message || m.sellers_load_error(),
 				);
 			}
 
@@ -167,7 +181,7 @@ function SellersPage() {
 
 	const sellerTabs: TabNavItem[] = STATUS_TABS.map((tab) => ({
 		value: tab.value,
-		label: tab.label,
+		label: tab.label(),
 		badgeColor: tab.badgeColor,
 		count:
 			tab.value === "all"
@@ -196,12 +210,14 @@ function SellersPage() {
 				enableHiding: false,
 				enableSorting: true,
 				meta: {
-					menuLabel: "Venditore",
+					menuLabel: m.sellers_column_seller(),
 					headerClassName: "pl-4",
 					cellClassName: "pl-6 font-semibold",
 				},
 				header: ({ column }) => (
-					<SortableHeader column={column}>Venditore</SortableHeader>
+					<SortableHeader column={column}>
+						{m.sellers_column_seller()}
+					</SortableHeader>
 				),
 				cell: ({ row }) => {
 					const s = row.original;
@@ -220,13 +236,13 @@ function SellersPage() {
 			},
 			{
 				id: "email",
-				header: "Email",
+				header: m.common_email(),
 				meta: { cellClassName: "text-muted-foreground text-sm" },
 				cell: ({ row }) => row.original.user.email,
 			},
 			{
 				id: "organization",
-				header: "Azienda",
+				header: m.sellers_company(),
 				meta: { cellClassName: "text-sm" },
 				cell: ({ row }) =>
 					row.original.organization?.businessName ?? (
@@ -235,7 +251,7 @@ function SellersPage() {
 			},
 			{
 				id: "vatNumber",
-				header: "P.IVA",
+				header: m.sellers_column_vat(),
 				meta: { cellClassName: "text-sm" },
 				cell: ({ row }) =>
 					row.original.organization ? (
@@ -251,7 +267,7 @@ function SellersPage() {
 		if (!status) {
 			cols.push({
 				id: "onboardingStatus",
-				header: "Stato",
+				header: m.common_status(),
 				cell: ({ row }) => (
 					<OnboardingStatusBadge status={row.original.onboardingStatus} />
 				),
@@ -263,11 +279,13 @@ function SellersPage() {
 			accessorKey: "createdAt",
 			enableSorting: true,
 			meta: {
-				menuLabel: "Registrato il",
+				menuLabel: m.common_registered_at(),
 				cellClassName: "text-muted-foreground text-sm",
 			},
 			header: ({ column }) => (
-				<SortableHeader column={column}>Registrato il</SortableHeader>
+				<SortableHeader column={column}>
+					{m.common_registered_at()}
+				</SortableHeader>
 			),
 			cell: ({ row }) => formatDate(row.original.createdAt, { long: true }),
 		});
@@ -305,7 +323,7 @@ function SellersPage() {
 								}
 							>
 								<CheckCircle2Icon className="size-3.5" />
-								Approva
+								{m.sellers_approve()}
 							</Button>
 							<Button
 								variant="destructive"
@@ -320,7 +338,7 @@ function SellersPage() {
 								}
 							>
 								<XCircleIcon className="size-3.5" />
-								Rifiuta
+								{m.sellers_reject()}
 							</Button>
 						</div>
 					);
@@ -349,15 +367,15 @@ function SellersPage() {
 	return (
 		<div className="space-y-4">
 			<PageHeader
-				title="Venditori"
-				description="Gestisci le candidature dei venditori"
+				title={m.common_sellers()}
+				description={m.sellers_description()}
 			/>
 
 			<TabNav
 				tabs={sellerTabs}
 				activeTab={activeTab}
 				onTabChange={handleTabChange}
-				label="Stato dei venditori"
+				label={m.sellers_tabs_label()}
 			/>
 
 			<InputGroup className="max-w-md">
@@ -365,17 +383,17 @@ function SellersPage() {
 					<SearchIcon />
 				</InputGroupAddon>
 				<InputGroupInput
-					placeholder="Cerca per nome, email, azienda o P.IVA..."
+					placeholder={m.sellers_search_placeholder()}
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
-					aria-label="Cerca venditori"
+					aria-label={m.sellers_search_label()}
 				/>
 				{search.length > 0 && (
 					<InputGroupAddon align="inline-end">
 						<InputGroupButton
 							size="icon-xs"
 							onClick={() => setSearch("")}
-							aria-label="Cancella ricerca"
+							aria-label={m.common_clear_search()}
 						>
 							<XIcon />
 						</InputGroupButton>
@@ -386,7 +404,9 @@ function SellersPage() {
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
-						Errore nel caricamento: {(error as Error).message}
+						{m.common_load_error_with_message({
+							message: (error as Error).message,
+						})}
 					</p>
 				</div>
 			)}
@@ -403,22 +423,18 @@ function SellersPage() {
 					debouncedSearch ? (
 						<EmptyState
 							variant="no-results"
-							title="Nessun risultato"
-							description={`Nessun venditore corrisponde a "${debouncedSearch}".`}
+							title={m.common_no_results()}
+							description={m.sellers_no_results_description({
+								query: debouncedSearch,
+							})}
 						/>
 					) : (
 						<EmptyState
 							variant="empty"
-							title="Nessun venditore"
-							description={
-								status === "pending_review"
-									? "Nessuna candidatura in attesa di revisione."
-									: status === "rejected"
-										? "Nessuna candidatura rifiutata."
-										: status === "active"
-											? "Nessun venditore attivo."
-											: "Le nuove candidature appariranno qui."
-							}
+							title={m.sellers_empty_title()}
+							description={(
+								EMPTY_DESCRIPTION[status ?? ""] ?? m.sellers_empty_all
+							)()}
 						/>
 					)
 				}
@@ -434,8 +450,13 @@ function SellersPage() {
 					return (
 						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
 							<p className="text-muted-foreground text-sm tabular-nums">
-								{rangeStart}–{rangeEnd} di {total} venditor
-								{total === 1 ? "e" : "i"}
+								{(total === 1
+									? m.sellers_pagination_range_one
+									: m.sellers_pagination_range)({
+									start: rangeStart,
+									end: rangeEnd,
+									total,
+								})}
 							</p>
 							<div className="flex items-center gap-4">
 								<PageSizeSelector
