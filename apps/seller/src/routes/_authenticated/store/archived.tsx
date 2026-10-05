@@ -22,16 +22,26 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/store/archived")({
 	component: ArchivedPage,
 });
 
-const REASON_LABEL: Record<string, string> = {
-	seller_canceled: "Cancellato dal seller",
-	payment_failed_auto: "Auto-cancellato (insolvenza)",
-	admin_canceled: "Cancellato da admin",
-};
+// Funzione e non costante: le etichette vanno lette a ogni render, dopo un
+// cambio di lingua.
+function reasonLabel(reason: string): string {
+	switch (reason) {
+		case "seller_canceled":
+			return m.store_archived_reason_seller();
+		case "payment_failed_auto":
+			return m.store_archived_reason_payment();
+		case "admin_canceled":
+			return m.store_archived_reason_admin();
+		default:
+			return reason;
+	}
+}
 
 function formatDate(d: Date | string): string {
 	return new Intl.DateTimeFormat(intlLocale(), {
@@ -58,7 +68,7 @@ function ArchivedPage() {
 			const r = await api().seller.stores.archived.get({
 				query: { page: 1, limit: 50 },
 			});
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 		enabled: isOwner,
 	});
@@ -70,7 +80,7 @@ function ArchivedPage() {
 			const r = await api()
 				.seller.stores({ storeId })
 				["reactivation-checkout"].post();
-			return unwrap(r, "Errore").data;
+			return unwrap(r, m.common_error()).data;
 		},
 		onSuccess: (data) => {
 			if (data?.checkoutUrl) window.location.href = data.checkoutUrl;
@@ -82,33 +92,32 @@ function ArchivedPage() {
 		<div className="space-y-4">
 			<div>
 				<h1 className="text-2xl font-semibold tracking-tight">
-					Negozi archiviati
+					{m.store_archived_title()}
 				</h1>
 				<p className="text-muted-foreground text-sm">
-					Negozi cancellati. Prodotti, orari e immagini restano salvati: puoi
-					riattivare un negozio con un nuovo abbonamento.
+					{m.store_archived_description()}
 				</p>
 			</div>
 			<Card>
 				<CardHeader>
-					<CardTitle>Archivio</CardTitle>
+					<CardTitle>{m.store_archived_card_title()}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					{isLoading ? (
 						<Spinner />
 					) : !data || data.data.length === 0 ? (
 						<p className="text-muted-foreground text-sm">
-							Nessun negozio archiviato.
+							{m.store_archived_empty()}
 						</p>
 					) : (
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Nome</TableHead>
-									<TableHead>Indirizzo</TableHead>
-									<TableHead>Creato</TableHead>
-									<TableHead>Archiviato</TableHead>
-									<TableHead>Motivo</TableHead>
+									<TableHead>{m.common_name()}</TableHead>
+									<TableHead>{m.store_address()}</TableHead>
+									<TableHead>{m.store_archived_created()}</TableHead>
+									<TableHead>{m.store_archived_archived()}</TableHead>
+									<TableHead>{m.store_archived_reason()}</TableHead>
 									<TableHead className="w-28" />
 								</TableRow>
 							</TableHeader>
@@ -125,9 +134,7 @@ function ArchivedPage() {
 										</TableCell>
 										<TableCell>
 											<Badge variant="outline">
-												{r.cancelReason
-													? (REASON_LABEL[r.cancelReason] ?? r.cancelReason)
-													: "—"}
+												{r.cancelReason ? reasonLabel(r.cancelReason) : "—"}
 											</Badge>
 										</TableCell>
 										<TableCell className="text-right">
@@ -142,7 +149,7 @@ function ArchivedPage() {
 													reactivateMutation.variables === r.id ? (
 														<Spinner />
 													) : (
-														"Riattiva"
+														m.store_archived_reactivate()
 													)}
 												</Button>
 											)}

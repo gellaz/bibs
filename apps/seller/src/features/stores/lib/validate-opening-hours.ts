@@ -14,14 +14,14 @@ export function validateOpeningHours(
 		const sorted = [...day.slots].sort((a, b) => (a.open < b.open ? -1 : 1));
 		for (const slot of sorted) {
 			if (slot.close <= slot.open) {
-				errors[day.dayOfWeek] = m["store.form.hours_invalid_slot"]();
+				errors[day.dayOfWeek] = m.store_form_hours_invalid_slot();
 				break;
 			}
 		}
 		if (errors[day.dayOfWeek]) continue;
 		for (let i = 1; i < sorted.length; i++) {
 			if (sorted[i].open < sorted[i - 1].close) {
-				errors[day.dayOfWeek] = m["store.form.hours_overlap"]();
+				errors[day.dayOfWeek] = m.store_form_hours_overlap();
 				break;
 			}
 		}

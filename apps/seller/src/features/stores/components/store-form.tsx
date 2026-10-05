@@ -26,6 +26,7 @@ import {
 	municipalityComboboxLabels,
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
+import { m } from "@/paraglide/messages";
 import {
 	fetchGeocodeSuggestions,
 	type GeocodeSuggestionItem,
@@ -79,8 +80,8 @@ export function StoreForm({
 	onCancel,
 	isPending,
 	defaultValues,
-	submitLabel = "Crea Negozio",
-	pendingLabel = "Creazione...",
+	submitLabel = m.store_form_create(),
+	pendingLabel = m.store_form_creating(),
 	onNameChange,
 	readOnly = false,
 	lastSavedAt,
@@ -152,7 +153,7 @@ export function StoreForm({
 	const [locateMiss, setLocateMiss] = useState(false);
 	const locateFromAddress = async () => {
 		const { addressLine1, municipalityId } = getValues();
-		const municipality = municipalities?.find((m) => m.id === municipalityId);
+		const municipality = municipalities?.find((mu) => mu.id === municipalityId);
 		const q = [addressLine1, municipality?.name].filter(Boolean).join(", ");
 		setLocating(true);
 		setLocateMiss(false);
@@ -244,16 +245,16 @@ export function StoreForm({
 	return (
 		<form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10">
 			<FormSection
-				title="Identità"
-				description="Come si chiama il negozio e con che voce si racconta."
+				title={m.store_form_identity_title()}
+				description={m.store_form_identity_description()}
 			>
 				<Field data-invalid={!!errors.name}>
 					<FieldLabel htmlFor="store-name" required>
-						Nome
+						{m.common_name()}
 					</FieldLabel>
 					<Input
 						id="store-name"
-						placeholder="Es. Bottega del Gusto"
+						placeholder={m.store_form_name_placeholder()}
 						autoFocus
 						disabled={readOnly}
 						{...register("name")}
@@ -262,10 +263,12 @@ export function StoreForm({
 				</Field>
 
 				<Field>
-					<FieldLabel htmlFor="store-description">Descrizione</FieldLabel>
+					<FieldLabel htmlFor="store-description">
+						{m.store_form_description()}
+					</FieldLabel>
 					<Textarea
 						id="store-description"
-						placeholder="Una riga sul negozio (opzionale)"
+						placeholder={m.store_form_description_placeholder()}
 						rows={2}
 						disabled={readOnly}
 						{...register("description")}
@@ -276,8 +279,8 @@ export function StoreForm({
 			<Separator />
 
 			<FormSection
-				title="Indirizzo"
-				description="Dove si trova fisicamente, come ti raggiungono."
+				title={m.store_address()}
+				description={m.store_form_address_description()}
 			>
 				{!readOnly && (
 					<StoreAddressSearch onSelect={applySuggestion} disabled={isPending} />
@@ -298,7 +301,7 @@ export function StoreForm({
 						)}
 						{!readOnly && (
 							<p className="text-muted-foreground text-xs">
-								Trascina il pin se non cade sull'ingresso del negozio.
+								{m.store_form_map_hint()}
 							</p>
 						)}
 					</div>
@@ -317,10 +320,9 @@ export function StoreForm({
 								role={errors.location ? "alert" : undefined}
 							>
 								{errors.location
-									? "La posizione del negozio sulla mappa è obbligatoria: scegli un suggerimento qui sopra."
-									: "Senza posizione il negozio non compare nelle ricerche «vicino a te»."}
-								{locateMiss &&
-									" Non abbiamo trovato l'indirizzo: cercalo qui sopra."}
+									? m.store_form_location_required()
+									: m.store_form_location_missing()}
+								{locateMiss && ` ${m.store_form_locate_miss()}`}
 							</p>
 						</div>
 						{!readOnly && defaultValues?.addressLine1 && (
@@ -333,7 +335,7 @@ export function StoreForm({
 								onClick={locateFromAddress}
 							>
 								<LocateFixed className="size-4" aria-hidden />
-								{locating ? "Ricerca…" : "Posiziona dall'indirizzo"}
+								{locating ? m.store_form_locating() : m.store_form_locate()}
 							</Button>
 						)}
 					</div>
@@ -341,11 +343,11 @@ export function StoreForm({
 
 				<Field data-invalid={!!errors.addressLine1}>
 					<FieldLabel htmlFor="store-address1" required>
-						Indirizzo
+						{m.store_address()}
 					</FieldLabel>
 					<Input
 						id="store-address1"
-						placeholder="Via Roma 1"
+						placeholder={m.store_form_address_placeholder()}
 						disabled={readOnly}
 						{...register("addressLine1")}
 					/>
@@ -353,10 +355,12 @@ export function StoreForm({
 				</Field>
 
 				<Field>
-					<FieldLabel htmlFor="store-address2">Indirizzo (riga 2)</FieldLabel>
+					<FieldLabel htmlFor="store-address2">
+						{m.store_form_address2()}
+					</FieldLabel>
 					<Input
 						id="store-address2"
-						placeholder="Interno, piano, scala (opzionale)"
+						placeholder={m.store_form_address2_placeholder()}
 						disabled={readOnly}
 						{...register("addressLine2")}
 					/>
@@ -365,7 +369,7 @@ export function StoreForm({
 				<div className="grid grid-cols-[1fr_auto] gap-4">
 					<Field data-invalid={!!errors.municipalityId}>
 						<FieldLabel htmlFor="municipalityId" required>
-							Comune
+							{m.store_form_municipality()}
 						</FieldLabel>
 						<Controller
 							control={control}
@@ -387,7 +391,7 @@ export function StoreForm({
 					</Field>
 					<Field data-invalid={!!errors.zipCode} className="w-32">
 						<FieldLabel htmlFor="store-zip" required>
-							CAP
+							{m.store_form_zip()}
 						</FieldLabel>
 						<Input
 							id="store-zip"
@@ -405,13 +409,12 @@ export function StoreForm({
 			<Separator />
 
 			<FormSection
-				title="Orari di apertura"
-				description="Fasce orarie per ogni giorno. Le festività particolari si gestiscono dal calendario."
+				title={m.store_hours_title()}
+				description={m.store_form_hours_description()}
 			>
 				{!hasDeclaredHours && (
 					<p className="mb-4 rounded-md border border-border bg-muted px-3 py-2 text-muted-foreground text-sm">
-						Senza orari il negozio non compare nei risultati «Aperti ora» della
-						ricerca.
+						{m.store_form_hours_missing()}
 					</p>
 				)}
 				<OpeningHoursEditor
@@ -425,12 +428,12 @@ export function StoreForm({
 			<Separator />
 
 			<FormSection
-				title="Contatti"
-				description="Numeri di telefono e sito web pubblico."
+				title={m.store_form_contacts_title()}
+				description={m.store_form_contacts_description()}
 			>
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
-						<Label>Numeri di telefono</Label>
+						<Label>{m.store_form_phones()}</Label>
 						{!readOnly && (
 							<Button
 								type="button"
@@ -439,20 +442,20 @@ export function StoreForm({
 								onClick={() => append({ label: "", number: "" })}
 							>
 								<PlusIcon className="size-3" />
-								<span>Aggiungi</span>
+								<span>{m.common_add()}</span>
 							</Button>
 						)}
 					</div>
 					{fields.length === 0 ? (
 						<p className="text-sm text-muted-foreground italic">
-							Nessun numero impostato.
+							{m.store_form_phones_empty()}
 						</p>
 					) : (
 						<div className="space-y-2">
 							{fields.map((field, index) => (
 								<div key={field.id} className="flex gap-2">
 									<Input
-										placeholder="Etichetta (es. Principale)"
+										placeholder={m.store_form_phone_label_placeholder()}
 										className="w-1/3"
 										disabled={readOnly}
 										{...register(`phoneNumbers.${index}.label`)}
@@ -462,7 +465,7 @@ export function StoreForm({
 										className="flex-1"
 									>
 										<Input
-											placeholder="Numero di telefono"
+											placeholder={m.store_form_phone_number_placeholder()}
 											type="tel"
 											disabled={readOnly}
 											{...register(`phoneNumbers.${index}.number`)}
@@ -488,11 +491,13 @@ export function StoreForm({
 				</div>
 
 				<Field data-invalid={!!errors.websiteUrl}>
-					<FieldLabel htmlFor="store-website">Sito web</FieldLabel>
+					<FieldLabel htmlFor="store-website">
+						{m.store_form_website()}
+					</FieldLabel>
 					<Input
 						id="store-website"
 						type="url"
-						placeholder="https://esempio.it (opzionale)"
+						placeholder={m.store_form_website_placeholder()}
 						disabled={readOnly}
 						{...register("websiteUrl", {
 							// Load-bearing: ""→undefined fa passare la validazione
@@ -523,12 +528,12 @@ export function StoreForm({
 								className="mr-auto text-muted-foreground text-sm"
 								role="status"
 							>
-								Modifiche non salvate
+								{m.store_form_unsaved()}
 							</p>
 						)}
 						{onCancel && (
 							<Button type="button" variant="outline" onClick={onCancel}>
-								Annulla
+								{m.common_cancel()}
 							</Button>
 						)}
 						<Button

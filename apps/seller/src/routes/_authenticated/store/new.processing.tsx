@@ -38,7 +38,7 @@ function ProcessingPage() {
 			const res = await api()
 				.seller["checkout-sessions"]({ sessionId })
 				.status.get();
-			return unwrap(res, "Errore").data;
+			return unwrap(res, m.common_error()).data;
 		},
 		refetchInterval: (q) =>
 			q.state.data?.status === "ready" || timedOut ? false : POLL_INTERVAL_MS,
@@ -56,7 +56,7 @@ function ProcessingPage() {
 			// Await del refetch: il FirstStoreGate sceglie il layout su ["stores"],
 			// navigare con dati stale rimbalzerebbe la home su /store/new.
 			void qc.invalidateQueries({ queryKey: ["stores"] }).then(() => {
-				toast.success(m["store.processing.success"]());
+				toast.success(m.store_processing_success());
 				void navigate({ to: "/" });
 			});
 		}
@@ -66,19 +66,19 @@ function ProcessingPage() {
 		<div className="mx-auto max-w-md py-16">
 			<Card>
 				<CardHeader>
-					<CardTitle>{m["store.processing.title"]()}</CardTitle>
+					<CardTitle>{m.store_processing_title()}</CardTitle>
 				</CardHeader>
 				<CardContent className="flex flex-col items-center gap-4 py-8">
 					{!timedOut ? (
 						<>
 							<Spinner />
 							<p className="text-center text-sm text-muted-foreground">
-								{m["store.processing.body"]()}
+								{m.store_processing_body()}
 							</p>
 						</>
 					) : (
 						<p className="text-center text-sm text-muted-foreground">
-							{m["store.processing.timeout"]()}
+							{m.store_processing_timeout()}
 						</p>
 					)}
 				</CardContent>

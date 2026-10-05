@@ -56,13 +56,13 @@ function StoreSettingsPage() {
 	} = useQuery({
 		queryKey: ["store", storeId],
 		queryFn: async () => {
-			if (!storeId) throw new Error("No active store");
+			if (!storeId) throw new Error(m.store_no_active());
 			const response = await api().seller.stores.get({
 				query: { page: 1, limit: 100 },
 			});
-			const data = unwrap(response, "Errore nel caricamento negozio");
+			const data = unwrap(response, m.store_load_error());
 			const found = data.data.find((s) => s.id === storeId);
-			if (!found) throw new Error("Negozio non trovato");
+			if (!found) throw new Error(m.store_not_found());
 			return found;
 		},
 		enabled: !!storeId,
@@ -85,33 +85,31 @@ function StoreSettingsPage() {
 
 	const deleteImageMutation = useMutation({
 		mutationFn: async (imageId: string) => {
-			if (!storeId) throw new Error("No active store");
+			if (!storeId) throw new Error(m.store_no_active());
 			const response = await api()
 				.seller.stores({ storeId })
 				.images({ imageId })
 				.delete();
-			if (response.error) throw new Error("Errore nell'eliminazione immagine");
+			if (response.error) throw new Error(m.store_image_delete_error());
 		},
 		onSuccess: (_data, imageId) => {
 			setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
-			toast.success("Immagine eliminata");
+			toast.success(m.store_image_deleted());
 		},
 		onError: (error: Error) => toast.error(error.message),
 	});
 
 	const updateMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
-			if (!storeId) throw new Error("No active store");
+			if (!storeId) throw new Error(m.store_no_active());
 			const response = await api().seller.stores({ storeId }).patch(formData);
-			const data = unwrap(response, "Errore nell'aggiornamento");
+			const data = unwrap(response, m.store_update_error());
 			if (newFiles.length > 0) {
 				const imgResponse = await api()
 					.seller.stores({ storeId })
 					.images.post({ files: newFiles });
 				if (imgResponse.error) {
-					toast.warning(
-						"Negozio aggiornato ma errore nel caricamento immagini",
-					);
+					toast.warning(m.store_update_images_warning());
 				}
 				setNewFiles([]);
 			}
@@ -120,17 +118,17 @@ function StoreSettingsPage() {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });
 			void queryClient.invalidateQueries({ queryKey: ["store", storeId] });
-			toast.success("Negozio aggiornato con successo");
+			toast.success(m.store_updated());
 			setLastSavedAt(Date.now());
 		},
 		onError: (error: Error) =>
-			toast.error(error.message || "Errore durante l'aggiornamento"),
+			toast.error(error.message || m.store_update_error_generic()),
 	});
 
 	if (!activeStore) {
 		return (
 			<div className="bg-muted text-muted-foreground rounded-lg border p-4 text-sm">
-				Nessun negozio selezionato.
+				{m.store_no_active()}
 			</div>
 		);
 	}
@@ -147,7 +145,7 @@ function StoreSettingsPage() {
 		return (
 			<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
 				<p className="text-sm">
-					{(error as Error)?.message || "Negozio non trovato"}
+					{(error as Error)?.message || m.store_not_found()}
 				</p>
 			</div>
 		);
@@ -179,8 +177,8 @@ function StoreSettingsPage() {
 			}}
 			onSubmit={(data) => updateMutation.mutate(data)}
 			isPending={updateMutation.isPending}
-			submitLabel="Salva Modifiche"
-			pendingLabel="Salvataggio..."
+			submitLabel={m.store_settings_save()}
+			pendingLabel={m.store_settings_saving()}
 			onNameChange={handleNameChange}
 			readOnly={!isOwner}
 			lastSavedAt={lastSavedAt}
@@ -197,11 +195,11 @@ function StoreSettingsPage() {
 			<EntityFormHeader
 				icon={StoreIcon}
 				title={name || store.name}
-				placeholder="Impostazioni negozio"
+				placeholder={m.store_settings_title()}
 				subtitle={
 					isOwner
-						? "Modifica le informazioni del negozio attivo."
-						: "Informazioni del negozio (sola lettura)."
+						? m.store_settings_subtitle()
+						: m.store_settings_subtitle_readonly()
 				}
 			/>
 
@@ -211,8 +209,10 @@ function StoreSettingsPage() {
 						<div className="min-w-0">{storeForm}</div>
 						<div className="space-y-8">
 							<FormSection
-								title="Vetrina"
-								description={`Le foto che i clienti vedono per primi. Fino a ${MAX_STORE_IMAGES}, riordinabili.`}
+								title={m.store_showcase_title()}
+								description={m.store_showcase_description({
+									max: MAX_STORE_IMAGES,
+								})}
 							>
 								<ProductImageDropzone
 									files={newFiles}
@@ -257,7 +257,7 @@ function StoreSettingsPage() {
 					to="/store/closures"
 					className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
 				>
-					{m["store.closures.link"]()} →
+					{m.store_closures_link()} →
 				</Link>
 			)}
 
@@ -269,18 +269,18 @@ function StoreSettingsPage() {
 					<>
 						<Separator />
 						<FormSection
-							title="Zona di pericolo"
-							description="Cancellare il negozio interrompe la subscription mensile e archivia i dati al termine del ciclo già pagato."
+							title={m.store_danger_title()}
+							description={m.store_danger_description()}
 							tone="destructive"
 						>
 							<div className="rounded-lg border border-destructive/30 p-4">
 								<h3 className="text-sm font-semibold text-destructive">
-									Cancella questo negozio
+									{m.store_delete_title()}
 								</h3>
 								<p className="mt-1 text-sm text-muted-foreground">
 									{activeSubscription.status === "suspended"
-										? "Il negozio è sospeso per mancato pagamento. La cancellazione è immediata."
-										: "Il negozio rimarrà attivo fino alla fine del ciclo già pagato."}
+										? m.store_delete_suspended()
+										: m.store_delete_active()}
 								</p>
 								<CancelStoreDialog
 									storeId={activeStore.id}
@@ -294,7 +294,7 @@ function StoreSettingsPage() {
 									currentPeriodEnd={activeSubscription.currentPeriodEnd}
 									trigger={
 										<Button variant="destructive" className="mt-3">
-											Cancella questo negozio
+											{m.store_delete_title()}
 										</Button>
 									}
 								/>

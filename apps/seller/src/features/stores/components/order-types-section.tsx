@@ -24,7 +24,7 @@ export function OrderTypesSection({ storeId }: { storeId: string }) {
 		queryFn: async () =>
 			unwrap(
 				await api().seller.stores({ storeId })["order-types"].get(),
-				m["store.orderTypes.error"](),
+				m.store_order_types_error(),
 			).data,
 	});
 
@@ -34,18 +34,18 @@ export function OrderTypesSection({ storeId }: { storeId: string }) {
 				await api().seller.stores({ storeId })["order-types"].patch({
 					orderTypes,
 				}),
-				m["store.orderTypes.error"](),
+				m.store_order_types_error(),
 			).data,
 		onSuccess: (next) => {
 			qc.setQueryData(key, next);
-			toast.success(m["store.orderTypes.saved"]());
+			toast.success(m.store_order_types_saved());
 		},
 		onError: (error: Error) => toast.error(error.message),
 	});
 
 	if (!data) {
 		return (
-			<FormSection title={m["store.orderTypes.title"]()}>{null}</FormSection>
+			<FormSection title={m.store_order_types_title()}>{null}</FormSection>
 		);
 	}
 
@@ -66,14 +66,14 @@ export function OrderTypesSection({ storeId }: { storeId: string }) {
 
 	return (
 		<FormSection
-			title={m["store.orderTypes.title"]()}
-			description={m["store.orderTypes.description"]()}
+			title={m.store_order_types_title()}
+			description={m.store_order_types_description()}
 		>
 			<div className="space-y-5">
 				<Row
 					id="order-type-reserve"
 					label={m.orders_type_reserve_pickup()}
-					hint={m["store.orderTypes.reserve.hint"]()}
+					hint={m.store_order_types_reserve_hint()}
 					checked={on("reserve_pickup")}
 					disabled={
 						save.isPending ||
@@ -84,7 +84,7 @@ export function OrderTypesSection({ storeId }: { storeId: string }) {
 				<Row
 					id="order-type-pay"
 					label={m.orders_type_pay_pickup()}
-					hint={m["store.orderTypes.pay.hint"]()}
+					hint={m.store_order_types_pay_hint()}
 					checked={payOn}
 					// Accendere richiede il conto abilitato; spegnere è sempre permesso.
 					disabled={
@@ -96,18 +96,18 @@ export function OrderTypesSection({ storeId }: { storeId: string }) {
 				>
 					{!payOn && !data.chargesEnabled && (
 						<p className="text-xs text-muted-foreground">
-							{m["store.orderTypes.pay.needsPayments"]()}{" "}
+							{m.store_order_types_pay_needs_payments()}{" "}
 							<Link
 								to="/profile"
 								className="font-medium text-foreground underline-offset-4 hover:underline"
 							>
-								{m["store.orderTypes.pay.goToProfile"]()}
+								{m.store_order_types_pay_go_to_profile()}
 							</Link>
 						</p>
 					)}
 					{payOn && !payOffered && (
 						<p className="text-xs text-muted-foreground">
-							{m["store.orderTypes.pay.accountDisabled"]()}
+							{m.store_order_types_pay_account_disabled()}
 						</p>
 					)}
 				</Row>

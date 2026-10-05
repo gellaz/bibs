@@ -2,16 +2,19 @@ import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { ClockIcon, PlusCircleIcon, XIcon } from "lucide-react";
 import { useCallback } from "react";
+import { m } from "@/paraglide/messages";
 
-const DAY_LABELS = [
-	"Lunedì",
-	"Martedì",
-	"Mercoledì",
-	"Giovedì",
-	"Venerdì",
-	"Sabato",
-	"Domenica",
-] as const;
+// Funzione e non costante: i nomi vanno letti a ogni render, dopo un cambio
+// di lingua. Indice = dayOfWeek (0 = lunedì).
+const dayLabels = () => [
+	m.store_hours_monday(),
+	m.store_hours_tuesday(),
+	m.store_hours_wednesday(),
+	m.store_hours_thursday(),
+	m.store_hours_friday(),
+	m.store_hours_saturday(),
+	m.store_hours_sunday(),
+];
 
 interface TimeSlot {
 	open: string;
@@ -130,11 +133,11 @@ export function OpeningHoursEditor({
 		<div className="space-y-2">
 			<div className="flex items-center gap-2">
 				<ClockIcon className="size-4 text-muted-foreground" />
-				<Label className="text-sm font-medium">Orari di apertura</Label>
+				<Label className="text-sm font-medium">{m.store_hours_title()}</Label>
 			</div>
 
 			<div className="divide-y rounded-lg border">
-				{DAY_LABELS.map((dayLabel, dayOfWeek) => {
+				{dayLabels().map((dayLabel, dayOfWeek) => {
 					const schedule = getDaySchedule(dayOfWeek);
 					const isActive = !!schedule;
 
@@ -158,7 +161,7 @@ export function OpeningHoursEditor({
 												: "border-muted-foreground/30 text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"
 										}`}
 									>
-										{isActive ? "Aperto" : "Chiuso"}
+										{isActive ? m.store_hours_open() : m.store_hours_closed()}
 									</button>
 
 									<span className="w-20 text-sm font-semibold">{dayLabel}</span>
@@ -173,7 +176,7 @@ export function OpeningHoursEditor({
 												className="flex items-center gap-1.5"
 											>
 												<span className="text-xs text-muted-foreground w-12 shrink-0 @xl:hidden">
-													Dalle
+													{m.store_hours_from()}
 												</span>
 												<Input
 													type="time"
@@ -190,7 +193,7 @@ export function OpeningHoursEditor({
 													className="h-7 w-28 @xl:w-24 text-sm tabular-nums"
 												/>
 												<span className="text-xs text-muted-foreground shrink-0 text-center @xl:hidden w-8">
-													alle
+													{m.store_hours_to()}
 												</span>
 												<span className="hidden @xl:inline text-xs text-muted-foreground">
 													–
@@ -214,8 +217,8 @@ export function OpeningHoursEditor({
 														type="button"
 														onClick={() => removeSlot(dayOfWeek, slotIndex)}
 														className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-														title="Rimuovi fascia"
-														aria-label="Rimuovi fascia"
+														title={m.store_hours_remove_slot()}
+														aria-label={m.store_hours_remove_slot()}
 													>
 														<XIcon className="size-3.5" />
 													</button>
@@ -234,7 +237,7 @@ export function OpeningHoursEditor({
 										className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors shrink-0 self-start @xl:self-auto ml-16.5 @xl:ml-0"
 									>
 										<PlusCircleIcon className="size-3.5" />
-										Aggiungi fascia
+										{m.store_hours_add_slot()}
 									</button>
 								)}
 							</div>
