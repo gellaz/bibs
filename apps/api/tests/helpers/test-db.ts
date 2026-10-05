@@ -3,7 +3,9 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import {
-	GenericContainerBuilder,
+	GenericContainer,
+	getContainerRuntimeClient,
+	ImageName,
 	type StartedTestContainer,
 	Wait,
 } from "testcontainers";
@@ -11,7 +13,6 @@ import * as schema from "@/db/schemas";
 
 export type DrizzleTestDb = ReturnType<typeof drizzle<typeof schema>>;
 
-const POSTGIS_DIR = path.resolve(import.meta.dir, "../../../../docker/postgis");
 const API_DIR = path.resolve(import.meta.dir, "../../");
 const MIGRATIONS_DIR = path.resolve(API_DIR, "src/db/migrations");
 const TEST_IMAGE = "bibs-postgis-test:latest";
@@ -34,32 +35,46 @@ export function getTestDb(): DrizzleTestDb {
 }
 
 /**
- * Starts a PostGIS container (built from the project Dockerfile),
+ * Starts a PostGIS container from the prebuilt test image,
  * applies the Drizzle migrations, and returns a connected Drizzle instance.
  *
- * Call this in beforeAll() with a generous timeout (~120s on first build).
+ * Call this in beforeAll() with a generous timeout.
  */
 export async function setupTestContainer(): Promise<DrizzleTestDb> {
-	// Fixed tag + no session label: every test file (and every run) reuses the
-	// same cached image. The default build() tags `localhost/<uuid>:<uuid>` and
-	// stamps a per-session label, leaving one orphan image per test file.
-	// BuildKit keeps its own layer cache, so rebuilds resolve to the same image
-	// ID instead of re-running the Dockerfile (the legacy builder rebuilt it).
-	const image = await new GenericContainerBuilder(POSTGIS_DIR, "Dockerfile")
-		.withBuildkit()
-		.build(TEST_IMAGE, { deleteOnExit: false });
+	// The image is built once per run by `bun run test:image` (chained into
+	// `test:integration`), never here. Building it in every test file meant
+	// 4 concurrent BuildKit builds of the same tag under `--parallel=4`, and
+	// one now and then hung forever on "load remote build context" — the
+	// build has no timeout, so the file failed on its 120s beforeAll.
+	const client = await getContainerRuntimeClient();
+	if (!(await client.image.exists(ImageName.fromString(TEST_IMAGE)))) {
+		throw new Error(
+			`Test image "${TEST_IMAGE}" not found: run \`bun run test:image\` in apps/api first.`,
+		);
+	}
 
-	container = await image
-		.withEnvironment({
-			POSTGRES_DB: "bibs_test",
-			POSTGRES_USER: "test",
-			POSTGRES_PASSWORD: "test",
-		})
-		.withExposedPorts(5432)
-		.withWaitStrategy(
-			Wait.forLogMessage("database system is ready to accept connections", 2),
-		)
-		.start();
+	const start = () =>
+		new GenericContainer(TEST_IMAGE)
+			.withEnvironment({
+				POSTGRES_DB: "bibs_test",
+				POSTGRES_USER: "test",
+				POSTGRES_PASSWORD: "test",
+			})
+			.withExposedPorts(5432)
+			.withWaitStrategy(
+				Wait.forLogMessage("database system is ready to accept connections", 2),
+			)
+			.start();
+	// testcontainers gives Docker a hardcoded 10s to publish the mapped port;
+	// with several containers starting at once Docker Desktop occasionally
+	// misses it. Retry once on that error only — Ryuk reaps the leftover.
+	try {
+		container = await start();
+	} catch (err) {
+		if (!(err instanceof Error && err.message.includes("ports to be bound")))
+			throw err;
+		container = await start();
+	}
 
 	const connectionUri = `postgresql://test:test@${container.getHost()}:${container.getMappedPort(5432)}/bibs_test`;
 
