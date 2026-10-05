@@ -1,13 +1,13 @@
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type StoreMacroCategoryFormData,
 	storeMacroCategoryFormSchema,
 } from "@/features/store-macro-categories/schemas/store-macro-category";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 interface StoreMacroCategoryFormProps {

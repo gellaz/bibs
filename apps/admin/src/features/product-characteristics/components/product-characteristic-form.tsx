@@ -20,11 +20,11 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { CrudFormProps } from "@/features/crud/category-crud-panel";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 import { CHARACTERISTIC_DATA_TYPES, dataTypeLabel } from "../data-type";
 import { characteristicUpdateImpact, confirmDescription } from "../impact";

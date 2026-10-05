@@ -5,13 +5,13 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type StoreCategoryFormData,
 	storeCategoryFormSchema,
 } from "@/features/store-categories/schemas/store-category";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
 interface MacroOption {
