@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { richMessage } from "@/lib/rich-message";
+import { m } from "@/paraglide/messages";
 
 interface Props {
 	userId: string;
@@ -49,29 +51,29 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 	const banMutation = useMutation({
 		mutationFn: async () => {
 			const { error } = await authClient.admin.banUser({ userId });
-			if (error) throw new Error(error.message || "Errore durante il ban");
+			if (error) throw new Error(error.message || m.users_ban_error());
 		},
 		onSuccess: () => {
 			invalidate();
 			setConfirmBanOpen(false);
-			toast.success("Utente bannato");
+			toast.success(m.users_ban_success());
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante il ban");
+			toast.error(error.message || m.users_ban_error());
 		},
 	});
 
 	const unbanMutation = useMutation({
 		mutationFn: async () => {
 			const { error } = await authClient.admin.unbanUser({ userId });
-			if (error) throw new Error(error.message || "Errore durante lo sblocco");
+			if (error) throw new Error(error.message || m.users_unban_error());
 		},
 		onSuccess: () => {
 			invalidate();
-			toast.success("Utente sbloccato");
+			toast.success(m.users_unban_success());
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante lo sblocco");
+			toast.error(error.message || m.users_unban_error());
 		},
 	});
 
@@ -79,7 +81,11 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 		<>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon" aria-label="Azioni utente">
+					<Button
+						variant="ghost"
+						size="icon"
+						aria-label={m.users_actions_label()}
+					>
 						<MoreHorizontalIcon className="size-4" />
 					</Button>
 				</DropdownMenuTrigger>
@@ -89,14 +95,14 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 						onSelect={async () => {
 							try {
 								await navigator.clipboard.writeText(userId);
-								toast.success("ID copiato");
+								toast.success(m.users_id_copied());
 							} catch {
-								toast.error("Impossibile copiare l'ID");
+								toast.error(m.users_copy_id_error());
 							}
 						}}
 					>
 						<CopyIcon />
-						Copia ID
+						{m.users_copy_id()}
 					</DropdownMenuItem>
 
 					{canBan && (
@@ -109,7 +115,7 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 									onSelect={() => unbanMutation.mutate()}
 								>
 									<ShieldCheckIcon />
-									Sblocca utente
+									{m.users_unban()}
 								</DropdownMenuItem>
 							) : (
 								<DropdownMenuItem
@@ -118,7 +124,7 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 									onSelect={() => setConfirmBanOpen(true)}
 								>
 									<BanIcon />
-									Banna utente
+									{m.users_ban()}
 								</DropdownMenuItem>
 							)}
 						</>
@@ -129,16 +135,16 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 			<AlertDialog open={confirmBanOpen} onOpenChange={setConfirmBanOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Banna utente</AlertDialogTitle>
+						<AlertDialogTitle>{m.users_ban()}</AlertDialogTitle>
 						<AlertDialogDescription>
-							Sei sicuro di voler bannare <strong>{userName}</strong>? Verrà
-							disconnesso da tutte le sessioni attive e non potrà più accedere
-							finché non lo sblocchi.
+							{richMessage(m.users_ban_description({ name: "{name}" }), {
+								name: <strong>{userName}</strong>,
+							})}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel disabled={banMutation.isPending}>
-							Annulla
+							{m.common_cancel()}
 						</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
@@ -148,7 +154,9 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 							}}
 							disabled={banMutation.isPending}
 						>
-							{banMutation.isPending ? "Attendere..." : "Banna"}
+							{banMutation.isPending
+								? m.common_please_wait()
+								: m.users_ban_confirm()}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -16,6 +16,7 @@ import {
 	useSellerModeration,
 } from "@/components/seller-moderation-dialog";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/sellers/$sellerId")({
 	component: SellerDetailPage,
@@ -33,9 +34,7 @@ function SellerDetailPage() {
 			const response = await api().admin.sellers({ sellerId }).get();
 
 			if (response.error) {
-				throw new Error(
-					response.error.value?.message || "Errore nel caricamento",
-				);
+				throw new Error(response.error.value?.message || m.common_load_error());
 			}
 
 			return response.data;
@@ -61,11 +60,11 @@ function SellerDetailPage() {
 					className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
 				>
 					<ArrowLeftIcon className="size-4" />
-					Torna alla lista
+					{m.sellers_back_to_list()}
 				</Link>
 				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
 					<p className="text-sm">
-						{(error as Error)?.message || "Venditore non trovato"}
+						{(error as Error)?.message || m.sellers_not_found()}
 					</p>
 				</div>
 			</div>
@@ -110,7 +109,7 @@ function SellerDetailPage() {
 									}
 								>
 									<XCircleIcon className="size-3.5" />
-									Rifiuta
+									{m.sellers_reject()}
 								</Button>
 								<Button
 									variant="success"
@@ -126,7 +125,7 @@ function SellerDetailPage() {
 									}
 								>
 									<CheckCircle2Icon className="size-3.5" />
-									Approva
+									{m.sellers_approve()}
 								</Button>
 							</>
 						)}
@@ -148,17 +147,23 @@ function SellerDetailPage() {
 				<div className="grid gap-0 lg:grid-cols-2">
 					{/* Colonna sinistra: anagrafica + documento */}
 					<div className="border-border lg:border-r">
-						<Section title="Dati anagrafici">
-							<Field label="Nome" value={seller.firstName} />
-							<Field label="Cognome" value={seller.lastName} />
+						<Section title={m.sellers_section_personal()}>
+							<Field label={m.common_first_name()} value={seller.firstName} />
+							<Field label={m.common_last_name()} value={seller.lastName} />
 							<Field
-								label="Data di nascita"
+								label={m.common_birth_date()}
 								value={formatDate(seller.birthDate)}
 							/>
-							<Field label="Cittadinanza" value={seller.citizenship} />
-							<Field label="Paese di nascita" value={seller.birthCountry} />
 							<Field
-								label="Residenza"
+								label={m.sellers_citizenship()}
+								value={seller.citizenship}
+							/>
+							<Field
+								label={m.sellers_birth_country()}
+								value={seller.birthCountry}
+							/>
+							<Field
+								label={m.sellers_residence()}
 								value={formatAddress(
 									seller.residenceAddress,
 									seller.residenceZipCode,
@@ -169,14 +174,17 @@ function SellerDetailPage() {
 							/>
 						</Section>
 
-						<Section title="Documento d'identità">
-							<Field label="Numero" value={seller.documentNumber} />
+						<Section title={m.sellers_section_document()}>
 							<Field
-								label="Scadenza"
+								label={m.sellers_document_number()}
+								value={seller.documentNumber}
+							/>
+							<Field
+								label={m.sellers_document_expiry()}
 								value={formatDate(seller.documentExpiry)}
 							/>
 							<Field
-								label="Comune di rilascio"
+								label={m.sellers_document_issued_municipality()}
 								value={
 									seller.documentIssuedMunicipality
 										? `${seller.documentIssuedMunicipality.name} (${seller.documentIssuedMunicipality.provinceAcronym})`
@@ -185,7 +193,9 @@ function SellerDetailPage() {
 							/>
 							{seller.documentImageUrl && (
 								<div className="grid grid-cols-1 gap-x-3 px-4 py-1 sm:grid-cols-[140px_1fr] sm:py-0.5">
-									<dt className="text-muted-foreground text-sm">Immagine</dt>
+									<dt className="text-muted-foreground text-sm">
+										{m.sellers_document_image()}
+									</dt>
 									<dd>
 										<a
 											href={seller.documentImageUrl}
@@ -193,7 +203,7 @@ function SellerDetailPage() {
 											rel="noopener noreferrer"
 											className="text-primary hover:underline inline-flex items-center gap-1 text-sm"
 										>
-											Visualizza
+											{m.sellers_document_view()}
 											<ExternalLinkIcon className="size-3" />
 										</a>
 									</dd>
@@ -205,22 +215,22 @@ function SellerDetailPage() {
 					{/* Colonna destra: azienda */}
 					<div className="border-border border-t lg:border-t-0">
 						{seller.organization ? (
-							<Section title="Azienda">
+							<Section title={m.sellers_company()}>
 								<Field
-									label="Ragione sociale"
+									label={m.sellers_business_name()}
 									value={seller.organization.businessName}
 								/>
 								<Field
-									label="Partita IVA"
+									label={m.sellers_vat_number()}
 									value={seller.organization.vatNumber}
 									mono
 								/>
 								<Field
-									label="Forma giuridica"
+									label={m.sellers_legal_form()}
 									value={seller.organization.legalForm}
 								/>
 								<Field
-									label="Sede legale"
+									label={m.sellers_registered_office()}
 									value={formatAddress(
 										seller.organization.addressLine1,
 										seller.organization.zipCode,
@@ -232,7 +242,7 @@ function SellerDetailPage() {
 							</Section>
 						) : (
 							<div className="text-muted-foreground flex h-full items-center justify-center p-6 text-sm">
-								Dati aziendali non ancora inseriti
+								{m.sellers_company_missing()}
 							</div>
 						)}
 					</div>
@@ -255,7 +265,7 @@ function SellerDetailPage() {
 						}
 					>
 						<XCircleIcon className="size-4" />
-						Rifiuta
+						{m.sellers_reject()}
 					</Button>
 					<Button
 						variant="success"
@@ -270,7 +280,7 @@ function SellerDetailPage() {
 						}
 					>
 						<CheckCircle2Icon className="size-4" />
-						Approva
+						{m.sellers_approve()}
 					</Button>
 				</div>
 			)}

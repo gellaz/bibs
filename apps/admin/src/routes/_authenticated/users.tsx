@@ -125,9 +125,7 @@ function UsersPage() {
 			});
 
 			if (result.error) {
-				throw new Error(
-					result.error.message || "Errore nel caricamento utenti",
-				);
+				throw new Error(result.error.message || m.users_load_error());
 			}
 
 			return result.data;
@@ -166,18 +164,18 @@ function UsersPage() {
 				enableHiding: false,
 				enableSorting: true,
 				meta: {
-					menuLabel: "Nome",
+					menuLabel: m.common_name(),
 					headerClassName: "pl-6",
 					cellClassName: "pl-6 font-semibold",
 				},
 				header: ({ column }) => (
-					<SortableHeader column={column}>Nome</SortableHeader>
+					<SortableHeader column={column}>{m.common_name()}</SortableHeader>
 				),
 				cell: ({ row }) => (
 					<span className="flex items-center gap-2">
 						{displayName(row.original)}
 						{row.original.banned ? (
-							<Badge variant="destructive">Bannato</Badge>
+							<Badge variant="destructive">{m.users_banned()}</Badge>
 						) : null}
 					</span>
 				),
@@ -187,17 +185,17 @@ function UsersPage() {
 				accessorKey: "email",
 				enableSorting: true,
 				meta: {
-					menuLabel: "Email",
+					menuLabel: m.common_email(),
 					cellClassName: "text-muted-foreground text-sm",
 				},
 				header: ({ column }) => (
-					<SortableHeader column={column}>Email</SortableHeader>
+					<SortableHeader column={column}>{m.common_email()}</SortableHeader>
 				),
 				cell: ({ row }) => row.original.email,
 			},
 			{
 				id: "role",
-				header: "Ruolo",
+				header: m.users_column_role(),
 				cell: ({ row }) => <UserRoleBadge role={row.original.role} />,
 			},
 			{
@@ -205,11 +203,13 @@ function UsersPage() {
 				accessorKey: "createdAt",
 				enableSorting: true,
 				meta: {
-					menuLabel: "Registrato il",
+					menuLabel: m.common_registered_at(),
 					cellClassName: "text-muted-foreground text-sm",
 				},
 				header: ({ column }) => (
-					<SortableHeader column={column}>Registrato il</SortableHeader>
+					<SortableHeader column={column}>
+						{m.common_registered_at()}
+					</SortableHeader>
 				),
 				cell: ({ row }) => formatDate(row.original.createdAt, { long: true }),
 			},
@@ -243,8 +243,8 @@ function UsersPage() {
 	return (
 		<div className="space-y-4">
 			<PageHeader
-				title="Utenti"
-				description="Gestisci gli utenti registrati sulla piattaforma"
+				title={m.common_users()}
+				description={m.users_description()}
 			/>
 
 			<InputGroup className="max-w-md">
@@ -254,15 +254,15 @@ function UsersPage() {
 				<InputGroupInput
 					value={localQ}
 					onChange={(e) => setLocalQ(e.target.value)}
-					placeholder="Cerca per nome o email..."
-					aria-label="Cerca utenti"
+					placeholder={m.users_search_placeholder()}
+					aria-label={m.users_search_label()}
 				/>
 				{localQ.length > 0 && (
 					<InputGroupAddon align="inline-end">
 						<InputGroupButton
 							size="icon-xs"
 							onClick={() => setLocalQ("")}
-							aria-label="Cancella ricerca"
+							aria-label={m.common_clear_search()}
 						>
 							<XIcon />
 						</InputGroupButton>
@@ -273,7 +273,9 @@ function UsersPage() {
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
-						Errore nel caricamento: {(error as Error).message}
+						{m.common_load_error_with_message({
+							message: (error as Error).message,
+						})}
 					</p>
 				</div>
 			)}
@@ -290,14 +292,16 @@ function UsersPage() {
 					effectiveQ.length > 0 ? (
 						<EmptyState
 							variant="no-results"
-							title="Nessun risultato"
-							description={`Nessun utente corrisponde a "${effectiveQ}".`}
+							title={m.common_no_results()}
+							description={m.users_no_results_description({
+								query: effectiveQ,
+							})}
 						/>
 					) : (
 						<EmptyState
 							variant="empty"
-							title="Nessun utente"
-							description="Gli utenti registrati sulla piattaforma appariranno qui."
+							title={m.users_empty_title()}
+							description={m.users_empty_description()}
 						/>
 					)
 				}
@@ -306,8 +310,13 @@ function UsersPage() {
 			{total > 0 && (
 				<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
 					<p className="text-muted-foreground text-sm tabular-nums">
-						{offset + 1}–{Math.min(page * limit, total)} di {total} utent
-						{total === 1 ? "e" : "i"}
+						{(total === 1
+							? m.users_pagination_range_one
+							: m.users_pagination_range)({
+							start: offset + 1,
+							end: Math.min(page * limit, total),
+							total,
+						})}
 					</p>
 					<div className="flex items-center gap-4">
 						<PageSizeSelector

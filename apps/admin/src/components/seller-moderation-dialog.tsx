@@ -12,6 +12,8 @@ import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { richMessage } from "@/lib/rich-message";
+import { m } from "@/paraglide/messages";
 
 export interface ModerationTarget {
 	type: "verify" | "reject";
@@ -44,7 +46,7 @@ export function useSellerModeration(opts?: {
 			const response = await api().admin.sellers({ sellerId }).verify.patch();
 			if (response.error) {
 				throw new Error(
-					response.error.value?.message || "Errore nella verifica",
+					response.error.value?.message || m.sellers_verify_error(),
 				);
 			}
 			return response.data;
@@ -52,10 +54,10 @@ export function useSellerModeration(opts?: {
 		onSuccess: () => {
 			invalidateLists();
 			setTarget(null);
-			toast.success("Venditore approvato con successo");
+			toast.success(m.sellers_verify_success());
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante l'approvazione");
+			toast.error(error.message || m.sellers_verify_failed());
 		},
 	});
 
@@ -63,17 +65,19 @@ export function useSellerModeration(opts?: {
 		mutationFn: async (sellerId: string) => {
 			const response = await api().admin.sellers({ sellerId }).reject.patch();
 			if (response.error) {
-				throw new Error(response.error.value?.message || "Errore nel rifiuto");
+				throw new Error(
+					response.error.value?.message || m.sellers_reject_error(),
+				);
 			}
 			return response.data;
 		},
 		onSuccess: () => {
 			invalidateLists();
 			setTarget(null);
-			toast.success("Venditore rifiutato");
+			toast.success(m.sellers_reject_success());
 		},
 		onError: (error: Error) => {
-			toast.error(error.message || "Errore durante il rifiuto");
+			toast.error(error.message || m.sellers_reject_failed());
 		},
 	});
 
@@ -108,32 +112,31 @@ export function SellerModerationDialog({
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					<AlertDialogTitle>
-						{isVerify ? "Approva venditore" : "Rifiuta venditore"}
+						{isVerify ? m.sellers_verify_title() : m.sellers_reject_title()}
 					</AlertDialogTitle>
 					<AlertDialogDescription>
-						{isVerify ? (
-							<>
-								Sei sicuro di voler approvare{" "}
-								<strong>{target?.sellerName}</strong>? Il venditore potrà
-								iniziare a operare sulla piattaforma.
-							</>
-						) : (
-							<>
-								Sei sicuro di voler rifiutare{" "}
-								<strong>{target?.sellerName}</strong>? Il venditore dovrà
-								aggiornare i dati e ripresentare la richiesta.
-							</>
+						{richMessage(
+							(isVerify
+								? m.sellers_verify_description
+								: m.sellers_reject_description)({ name: "{name}" }),
+							{ name: <strong>{target?.sellerName}</strong> },
 						)}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={isPending}>Annulla</AlertDialogCancel>
+					<AlertDialogCancel disabled={isPending}>
+						{m.common_cancel()}
+					</AlertDialogCancel>
 					<AlertDialogAction
 						variant={isVerify ? "success" : "destructive"}
 						onClick={onConfirm}
 						disabled={isPending}
 					>
-						{isPending ? "Attendere..." : isVerify ? "Approva" : "Rifiuta"}
+						{isPending
+							? m.common_please_wait()
+							: isVerify
+								? m.sellers_approve()
+								: m.sellers_reject()}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
