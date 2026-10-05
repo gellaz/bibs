@@ -12,6 +12,7 @@ import { LoginForm } from "@/features/auth/components/login-form";
 import type { LoginFormData } from "@/features/auth/schemas/login";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-error";
+import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/login")({
@@ -69,20 +70,18 @@ function LoginPage() {
 				<CardHeader className="text-center">
 					<BrandMark className="mx-auto mb-2 size-12" />
 					<CardTitle className="font-display text-xl">bibs Seller</CardTitle>
-					<CardDescription>
-						Accedi con le tue credenziali venditore
-					</CardDescription>
+					<CardDescription>{m.auth_login_description()}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{emailNotVerified && (
 						<div className="mb-4 rounded-md bg-saffron/15 dark:bg-saffron/10 px-3 py-2 text-sm text-saffron-deep dark:text-saffron">
-							<p>Devi verificare la tua email prima di accedere.</p>
+							<p>{m.auth_login_unverified()}</p>
 							<Link
 								to="/verify-email"
 								search={{ email: emailNotVerified }}
 								className="font-medium underline"
 							>
-								Reinvia email di verifica
+								{m.auth_resend_verification()}
 							</Link>
 						</div>
 					)}
@@ -94,10 +93,13 @@ function LoginPage() {
 						{m.auth_login_forgot_password()}
 					</Link>
 					<p className="mt-4 text-center text-sm text-muted-foreground">
-						Non hai un account?{" "}
-						<Link to="/register" className="text-primary underline">
-							Registrati
-						</Link>
+						{richMessage(m.auth_login_no_account({ link: "{link}" }), {
+							link: (
+								<Link to="/register" className="text-primary underline">
+									{m.auth_register_submit()}
+								</Link>
+							),
+						})}
 					</p>
 				</CardContent>
 			</Card>

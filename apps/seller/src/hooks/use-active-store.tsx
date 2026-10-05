@@ -10,6 +10,7 @@ import {
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { useStores } from "@/hooks/use-stores";
 import { api, unwrap } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 const STORAGE_KEY = "bibs-seller-active-store";
 
@@ -68,7 +69,7 @@ export function ActiveStoreProvider({
 		queryKey: ["seller", "billing", "subscriptions"],
 		queryFn: async () => {
 			const r = await api().seller.billing.subscriptions.get();
-			return (unwrap(r, "Errore").data ?? []) as Subscription[];
+			return (unwrap(r, m.common_error()).data ?? []) as Subscription[];
 		},
 		// Billing is owner-only: an employee would only collect 403s.
 		enabled: enabled && isOwner,

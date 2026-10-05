@@ -13,6 +13,8 @@ import {
 	type RegisterFormData,
 	registerFormSchema,
 } from "@/features/auth/schemas/register";
+import { passwordInputLabels } from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 interface RegisterFormProps {
 	onSubmit: (data: RegisterFormData) => Promise<void>;
@@ -46,11 +48,11 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 			)}
 
 			<Field data-invalid={!!errors.email}>
-				<FieldLabel htmlFor="email">Email</FieldLabel>
+				<FieldLabel htmlFor="email">{m.auth_email_label()}</FieldLabel>
 				<Input
 					id="email"
 					type="email"
-					placeholder="venditore@esempio.it"
+					placeholder={m.auth_email_placeholder()}
 					autoComplete="email"
 					autoFocus
 					{...register("email")}
@@ -59,19 +61,23 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 			</Field>
 
 			<Field data-invalid={!!errors.password}>
-				<FieldLabel htmlFor="password">Password</FieldLabel>
+				<FieldLabel htmlFor="password">{m.auth_password_label()}</FieldLabel>
 				<PasswordInput
+					labels={passwordInputLabels()}
 					id="password"
 					autoComplete="new-password"
 					{...register("password")}
 				/>
-				<FieldDescription>Minimo 8 caratteri</FieldDescription>
+				<FieldDescription>{m.auth_password_hint()}</FieldDescription>
 				<FieldError errors={[errors.password]} />
 			</Field>
 
 			<Field data-invalid={!!errors.confirmPassword}>
-				<FieldLabel htmlFor="confirmPassword">Conferma password</FieldLabel>
+				<FieldLabel htmlFor="confirmPassword">
+					{m.auth_confirm_password_label()}
+				</FieldLabel>
 				<PasswordInput
+					labels={passwordInputLabels()}
 					id="confirmPassword"
 					autoComplete="new-password"
 					{...register("confirmPassword")}
@@ -80,7 +86,7 @@ export function RegisterForm({ onSubmit, apiError }: RegisterFormProps) {
 			</Field>
 
 			<Button type="submit" disabled={isSubmitting} className="w-full">
-				{isSubmitting ? "Registrazione in corso..." : "Registrati"}
+				{isSubmitting ? m.auth_register_submitting() : m.auth_register_submit()}
 			</Button>
 		</form>
 	);
