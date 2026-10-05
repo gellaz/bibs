@@ -10,7 +10,6 @@ import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { toast } from "@bibs/ui/components/sonner";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
@@ -21,10 +20,11 @@ import {
 } from "@/hooks/use-municipalities";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
 import { api, unwrap } from "@/lib/api";
+import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 import { VatChangeDialog } from "./vat-change-dialog";
 
-const schema = z.object({
+export const businessInfoSchema = z.object({
 	businessName: z
 		.string()
 		.min(1, { error: () => m.profile_business_name_required() }),
@@ -42,7 +42,7 @@ const schema = z.object({
 		.min(1, { error: () => m.profile_business_municipality_required() }),
 	country: z.string().min(2).max(2),
 });
-type Form = z.infer<typeof schema>;
+type Form = z.infer<typeof businessInfoSchema>;
 
 interface Props {
 	readOnly: boolean;
@@ -60,7 +60,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 	} = useMunicipalities();
 
 	const { register, handleSubmit, reset, control, formState } = useForm<Form>({
-		resolver: zodResolver(schema),
+		resolver: zodResolver(businessInfoSchema),
 	});
 
 	useEffect(() => {
@@ -192,11 +192,12 @@ export function BusinessInfoCard({ readOnly }: Props) {
 						</Field>
 					</div>
 
-					<Field>
+					<Field data-invalid={!!formState.errors.country}>
 						<FieldLabel htmlFor="country">
 							{m.profile_business_country()}
 						</FieldLabel>
 						<Input id="country" disabled={readOnly} {...register("country")} />
+						<FieldError errors={[formState.errors.country]} />
 					</Field>
 
 					{!readOnly && (
