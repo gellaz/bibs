@@ -4,7 +4,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.8.0",
@@ -47,7 +48,8 @@
 		"elysia": "catalog:",
 		"react": "catalog:",
 		"react-dom": "catalog:",
-		"tailwindcss": "catalog:"
+		"tailwindcss": "catalog:",
+		"vitest": "catalog:"
 	},
 	"exports": {
 		"./globals.css": "./src/styles/globals.css",

@@ -426,5 +426,16 @@
 	"profile_avatar_too_large": "File too large. Maximum 5 MB.",
 	"profile_avatar_upload_error": "Upload failed. Try again.",
 	"profile_avatar_updated": "Profile picture updated",
-	"profile_avatar_removed": "Profile picture removed"
+	"profile_avatar_removed": "Profile picture removed",
+	"shell_sidebar_toggle": "Toggle sidebar",
+	"billing_status_active": "Active",
+	"billing_status_past_due": "Renewal failed",
+	"billing_status_canceling": "Deletion scheduled",
+	"billing_status_suspended": "Suspended",
+	"billing_status_canceled": "Deleted",
+	"billing_subs_empty_title": "No subscriptions",
+	"billing_subs_empty_description": "Store subscriptions will appear here.",
+	"billing_subs_no_results_description": "No subscription matches the filters.",
+	"billing_overview_load_error": "Error loading the overview",
+	"billing_pricing_load_error": "Error loading pricing"
 }

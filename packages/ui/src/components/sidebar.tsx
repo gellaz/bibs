@@ -245,11 +245,14 @@ function Sidebar({
 	);
 }
 
+// bibs: `label` (testo accessibile del trigger e del rail) va passato dalle
+// app nella lingua corrente; il default resta quello del registry.
 function SidebarTrigger({
 	className,
 	onClick,
+	label = "Toggle Sidebar",
 	...props
-}: React.ComponentProps<typeof Button>) {
+}: React.ComponentProps<typeof Button> & { label?: string }) {
 	const { toggleSidebar } = useSidebar();
 
 	return (
@@ -266,22 +269,26 @@ function SidebarTrigger({
 			{...props}
 		>
 			<PanelLeftIcon />
-			<span className="sr-only">Toggle Sidebar</span>
+			<span className="sr-only">{label}</span>
 		</Button>
 	);
 }
 
-function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
+function SidebarRail({
+	className,
+	label = "Toggle Sidebar",
+	...props
+}: React.ComponentProps<"button"> & { label?: string }) {
 	const { toggleSidebar } = useSidebar();
 
 	return (
 		<button
 			data-sidebar="rail"
 			data-slot="sidebar-rail"
-			aria-label="Toggle Sidebar"
+			aria-label={label}
 			tabIndex={-1}
 			onClick={toggleSidebar}
-			title="Toggle Sidebar"
+			title={label}
 			className={cn(
 				"hover:after:bg-sidebar-border absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
 				"in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",

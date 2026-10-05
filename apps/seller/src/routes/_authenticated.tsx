@@ -166,7 +166,10 @@ function AuthenticatedLayout() {
 						<AppSidebar />
 						<SidebarInset>
 							<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
-								<SidebarTrigger className="-ml-1" />
+								<SidebarTrigger
+									className="-ml-1"
+									label={m.shell_sidebar_toggle()}
+								/>
 								<div aria-hidden className="h-4 w-px bg-border" />
 								<AppBreadcrumb />
 							</header>
@@ -266,7 +269,10 @@ function EmployeeStoreGate({
 				<AppSidebar />
 				<SidebarInset>
 					<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
-						<SidebarTrigger className="-ml-1" />
+						<SidebarTrigger
+							className="-ml-1"
+							label={m.shell_sidebar_toggle()}
+						/>
 						<div aria-hidden className="h-4 w-px bg-border" />
 						<AppBreadcrumb />
 					</header>

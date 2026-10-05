@@ -131,7 +131,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 				<NavUser />
 			</SidebarFooter>
 
-			<SidebarRail />
+			<SidebarRail label={m.shell_sidebar_toggle()} />
 		</Sidebar>
 	);
 }

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
-import { parsePricingForm } from "./pricing-form";
+import { expiryHoursLabel, parsePricingForm } from "./pricing-form";
 
 const originalGetLocale = getLocale;
 
@@ -43,5 +43,19 @@ describe("parsePricingForm", () => {
 		expect(parsePricingForm({ ...VALID, hours: "500" })).toEqual({
 			errors: { hours: "A whole number of hours between 1 and 168" },
 		});
+	});
+});
+
+describe("expiryHoursLabel", () => {
+	it("singolare e plurale in italiano", () => {
+		overwriteGetLocale(() => "it");
+		expect(expiryHoursLabel(1)).toBe("1 ora");
+		expect(expiryHoursLabel(24)).toBe("24 ore");
+	});
+
+	it("follows the current language", () => {
+		overwriteGetLocale(() => "en");
+		expect(expiryHoursLabel(1)).toBe("1 hour");
+		expect(expiryHoursLabel(24)).toBe("24 hours");
 	});
 });

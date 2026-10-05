@@ -108,6 +108,9 @@ describe("confirmDescription", () => {
 		expect(confirmDescription(false, 3)).toBe(
 			"Le opzioni rimosse sono in uso: 3 prodotti perderanno il valore, che verrà eliminato definitivamente.",
 		);
+		expect(confirmDescription(false, 1)).toBe(
+			"Le opzioni rimosse sono in uso: 1 prodotto perderà il valore, che verrà eliminato definitivamente.",
+		);
 	});
 
 	it("follows the current language", () => {

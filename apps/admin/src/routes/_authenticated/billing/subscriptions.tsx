@@ -1,4 +1,5 @@
 import { Badge } from "@bibs/ui/components/badge";
+import { Button } from "@bibs/ui/components/button";
 import { Input } from "@bibs/ui/components/input";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -10,12 +11,15 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
 import { api } from "@/lib/api";
 import { dataPaginationLabels } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
@@ -38,7 +42,7 @@ function SubscriptionsPage() {
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 
-	const { data, isLoading } = useQuery({
+	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin", "billing", "subs", sellerEmail, storeName, page, limit],
 		queryFn: async () => {
 			const r = await api().admin.billing.subscriptions.get({
@@ -57,6 +61,8 @@ function SubscriptionsPage() {
 	const total = data?.pagination.total ?? 0;
 	const totalPages = Math.max(1, Math.ceil(total / limit));
 	const offset = (page - 1) * limit;
+	const rows = data?.data ?? [];
+	const isFiltered = sellerEmail.length > 0 || storeName.length > 0;
 
 	return (
 		<div className="space-y-4">
@@ -80,6 +86,37 @@ function SubscriptionsPage() {
 			</div>
 			{isLoading ? (
 				<Spinner />
+			) : error ? (
+				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
+					<p className="text-sm">
+						{m.common_load_error_with_message({ message: error.message })}
+					</p>
+				</div>
+			) : rows.length === 0 ? (
+				isFiltered ? (
+					<EmptyState
+						variant="no-results"
+						title={m.common_no_results()}
+						description={m.billing_subs_no_results_description()}
+						action={
+							<Button
+								variant="outline"
+								onClick={() => {
+									setSellerEmail("");
+									setStoreName("");
+									setPage(1);
+								}}
+							>
+								{m.common_clear_search()}
+							</Button>
+						}
+					/>
+				) : (
+					<EmptyState
+						title={m.billing_subs_empty_title()}
+						description={m.billing_subs_empty_description()}
+					/>
+				)
 			) : (
 				<>
 					<Table>
@@ -94,18 +131,23 @@ function SubscriptionsPage() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{data?.data.map((r) => (
-								<TableRow key={r.id}>
-									<TableCell>{r.sellerEmail}</TableCell>
-									<TableCell>{r.storeName}</TableCell>
-									<TableCell>
-										<Badge>{r.status}</Badge>
-									</TableCell>
-									<TableCell>€{(r.feeAmountCents / 100).toFixed(2)}</TableCell>
-									<TableCell>{formatDate(r.currentPeriodEnd)}</TableCell>
-									<TableCell>{formatDate(r.createdAt)}</TableCell>
-								</TableRow>
-							))}
+							{rows.map((r) => {
+								const badge = subscriptionStatusBadge(r.status);
+								return (
+									<TableRow key={r.id}>
+										<TableCell>{r.sellerEmail}</TableCell>
+										<TableCell>{r.storeName}</TableCell>
+										<TableCell>
+											<Badge variant={badge.variant}>{badge.label}</Badge>
+										</TableCell>
+										<TableCell>
+											{formatPriceEur(r.feeAmountCents / 100)}
+										</TableCell>
+										<TableCell>{formatDate(r.currentPeriodEnd)}</TableCell>
+										<TableCell>{formatDate(r.createdAt)}</TableCell>
+									</TableRow>
+								);
+							})}
 						</TableBody>
 					</Table>
 					{total > 0 && (

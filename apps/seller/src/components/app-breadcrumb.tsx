@@ -27,6 +27,14 @@ const SEGMENT_LABEL: Record<string, () => string> = {
 	payment: m.shell_crumb_payment,
 	"personal-info": m.shell_crumb_personal_info,
 	pending: m.shell_crumb_pending,
+	archived: m.shell_nav_archive,
+	closures: m.shell_crumb_closures,
+	billing: m.shell_nav_billing,
+	// `payment` è lo step dell'onboarding, `payments` le pagine di ritorno da Stripe.
+	payments: m.shell_crumb_payments,
+	return: m.shell_crumb_return,
+	refresh: m.shell_crumb_refresh,
+	processing: m.shell_crumb_processing,
 };
 
 const UUID_RE =
