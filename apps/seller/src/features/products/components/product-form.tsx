@@ -1,4 +1,3 @@
-import { CreateProductBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
@@ -12,14 +11,13 @@ import {
 import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
-import { typeboxResolver } from "@hookform/resolvers/typebox";
-import { type Static, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
 import { api, unwrap } from "@/lib/api";
+import { typeboxResolver } from "@/lib/typebox-resolver";
 import { m } from "@/paraglide/messages";
 import { useCategoryCharacteristics } from "../hooks/use-category-characteristics";
 import {
@@ -31,6 +29,10 @@ import {
 	type SavedCharacteristicValue,
 	toFormValues,
 } from "../lib/characteristic-form";
+import {
+	CreateProductFormBody,
+	type ProductFormData,
+} from "../lib/product-form-schema";
 import { BrandCombobox, type BrandComboboxValue } from "./brand-combobox";
 import { CharacteristicLossDialog } from "./characteristic-loss-dialog";
 import {
@@ -43,21 +45,6 @@ import {
 	ProductImageDropzone,
 } from "./product-image-dropzone";
 
-// storeId is injected by the route at submit time — exclude it from form validation.
-// price uses a looser pattern than the API's strict `^\d+\.\d{2}$`: a seller may
-// type `9` or `9.9` in the number input, and onFormSubmit normalizes the value to
-// exactly two decimals before it is sent on. Validating against the strict pattern
-// here would reject those valid inputs outright (the normalization never runs).
-const CreateProductFormBody = Type.Object({
-	...Type.Omit(CreateProductBody, ["storeId", "price", "characteristicValues"])
-		.properties,
-	price: Type.String({
-		pattern: "^\\d+(\\.\\d{1,2})?$",
-		description: "Prezzo (max 2 decimali, es. '9', '9.9' o '9.99')",
-		error: "Inserisci un prezzo valido (max 2 decimali)",
-	}),
-});
-type ProductFormData = Static<typeof CreateProductFormBody>;
 const compiledSchema = TypeCompiler.Compile(CreateProductFormBody);
 
 export type { ExistingImage };

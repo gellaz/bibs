@@ -10,7 +10,6 @@ import {
 	SelectValue,
 } from "@bibs/ui/components/select";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import { typeboxResolver } from "@hookform/resolvers/typebox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -24,6 +23,7 @@ import {
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useUpdatePersonalInfo } from "@/hooks/use-onboarding";
+import { typeboxResolver } from "@/lib/typebox-resolver";
 import { m } from "@/paraglide/messages";
 
 type PersonalInfoFormData = Static<typeof PersonalInfoBody>;

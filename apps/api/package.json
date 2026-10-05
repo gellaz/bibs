@@ -48,6 +48,9 @@
 		},
 		"./schemas": {
 			"default": "./src/lib/schemas/forms/index.ts"
+		},
+		"./validation-rule": {
+			"default": "./src/lib/validation-rule.ts"
 		}
 	}
 }

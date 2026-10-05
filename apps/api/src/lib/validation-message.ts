@@ -1,7 +1,6 @@
-import { Kind, type TSchema } from "@sinclair/typebox";
-import { type ValueError, ValueErrorType } from "@sinclair/typebox/errors";
-import { Value } from "@sinclair/typebox/value";
+import type { ValueError } from "@sinclair/typebox/errors";
 import type { ValidationError } from "elysia";
+import { validationRule } from "./validation-rule";
 
 // Etichette italiane per i campi di input che arrivano dai form, sull'ultimo
 // segmento del path. I campi assenti restano col path tecnico: utile al debug
@@ -104,82 +103,51 @@ function items(n: number): string {
 
 /** La regola violata, in italiano, senza il nome del campo. */
 function describeRule(error: ValueError): string {
-	const { schema, value } = error;
-	if (value === undefined) return REQUIRED;
-
-	switch (error.type) {
-		case ValueErrorType.Union:
-			return describeUnion(schema, value);
-		case ValueErrorType.Kind:
-			return schema[Kind] === "File" || schema[Kind] === "Files"
-				? "tipo di file non ammesso"
-				: INVALID;
-		case ValueErrorType.Literal:
-			return "valore non ammesso";
-		case ValueErrorType.String:
+	const rule = validationRule(error);
+	switch (rule.kind) {
+		case "required":
+			return REQUIRED;
+		case "string":
 			return "deve essere un testo";
-		case ValueErrorType.Number:
+		case "number":
 			return "deve essere un numero";
-		case ValueErrorType.Integer:
+		case "integer":
 			return "deve essere un numero intero";
-		case ValueErrorType.Boolean:
+		case "boolean":
 			return "deve essere vero o falso";
-		case ValueErrorType.Array:
+		case "array":
 			return "deve essere un elenco";
-		case ValueErrorType.StringMinLength:
-			// normalize toglie gli spazi prima della validazione: minLength 1 = vuoto.
-			return schema.minLength <= 1
-				? REQUIRED
-				: `almeno ${schema.minLength} caratteri`;
-		case ValueErrorType.StringMaxLength:
-			return `al massimo ${schema.maxLength} caratteri`;
-		case ValueErrorType.StringPattern:
+		case "date":
+			return "data non valida";
+		case "notAllowed":
+			return "valore non ammesso";
+		case "fileType":
+			return "tipo di file non ammesso";
+		case "minLength":
+			return `almeno ${rule.limit} caratteri`;
+		case "maxLength":
+			return `al massimo ${rule.limit} caratteri`;
+		case "pattern":
 			return "formato non valido";
-		case ValueErrorType.StringFormat:
-		case ValueErrorType.StringFormatUnknown:
-			return FORMAT_RULES[schema.format] ?? "formato non valido";
-		case ValueErrorType.IntegerMinimum:
-		case ValueErrorType.NumberMinimum:
-			return `deve essere almeno ${schema.minimum}`;
-		case ValueErrorType.IntegerMaximum:
-		case ValueErrorType.NumberMaximum:
-			return `deve essere al massimo ${schema.maximum}`;
-		case ValueErrorType.IntegerExclusiveMinimum:
-		case ValueErrorType.NumberExclusiveMinimum:
-			return `deve essere maggiore di ${schema.exclusiveMinimum}`;
-		case ValueErrorType.IntegerExclusiveMaximum:
-		case ValueErrorType.NumberExclusiveMaximum:
-			return `deve essere minore di ${schema.exclusiveMaximum}`;
-		case ValueErrorType.ArrayMinItems:
-			return `almeno ${items(schema.minItems)}`;
-		case ValueErrorType.ArrayMaxItems:
-			return `al massimo ${items(schema.maxItems)}`;
-		case ValueErrorType.ArrayUniqueItems:
+		case "format":
+			return FORMAT_RULES[rule.format] ?? "formato non valido";
+		case "minimum":
+			return `deve essere almeno ${rule.limit}`;
+		case "maximum":
+			return `deve essere al massimo ${rule.limit}`;
+		case "exclusiveMinimum":
+			return `deve essere maggiore di ${rule.limit}`;
+		case "exclusiveMaximum":
+			return `deve essere minore di ${rule.limit}`;
+		case "minItems":
+			return `almeno ${items(rule.limit)}`;
+		case "maxItems":
+			return `al massimo ${items(rule.limit)}`;
+		case "uniqueItems":
 			return "elementi duplicati";
-		default:
+		case "invalid":
 			return INVALID;
 	}
-}
-
-// t.Integer, t.Nullable e t.Date sono Union: TypeBox dice solo «Expected union
-// value». Si scartano il ramo null e quello di coercizione da stringa e si
-// rivalida il valore sul ramo che resta, per avere la regola vera.
-function describeUnion(schema: TSchema, value: unknown): string {
-	const anyOf: TSchema[] = schema.anyOf ?? [];
-	if (anyOf.length > 0 && anyOf.every((branch) => "const" in branch)) {
-		return "valore non ammesso";
-	}
-	if (anyOf.some((branch) => branch.type === "Date")) {
-		return "data non valida";
-	}
-	const branches = anyOf.filter(
-		(branch) =>
-			branch.type !== "null" &&
-			!(branch.type === "string" && branch.format === "integer"),
-	);
-	const only = branches.length === 1 ? branches[0] : undefined;
-	const inner = only && Value.Errors(only, value).First();
-	return inner ? describeRule(inner) : INVALID;
 }
 
 /** «Quantità (riga 2)» per `/items/1/quantity`, path tecnico se non in dizionario. */
