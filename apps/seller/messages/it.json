@@ -932,5 +932,16 @@
 	"auth_invite_network_error": "Errore di rete. Riprova.",
 	"auth_invite_success_title": "Account creato!",
 	"auth_invite_success_body": "Il tuo account è stato creato con successo.",
-	"auth_invite_go_to_login": "Vai al login"
+	"auth_invite_go_to_login": "Vai al login",
+	"shell_sidebar_toggle": "Mostra/nascondi barra laterale",
+	"shell_crumb_closures": "Chiusure",
+	"shell_crumb_payments": "Pagamenti",
+	"shell_crumb_return": "Ritorno",
+	"shell_crumb_refresh": "Aggiornamento",
+	"shell_crumb_processing": "In elaborazione",
+	"billing_invoice_status_paid": "Pagata",
+	"billing_invoice_status_open": "Da pagare",
+	"billing_invoice_status_void": "Annullata",
+	"billing_invoice_status_uncollectible": "Non riscossa",
+	"billing_invoice_status_draft": "Bozza"
 }

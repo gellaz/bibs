@@ -68,3 +68,10 @@ export function parsePricingForm(
 		},
 	};
 }
+
+/** «1 ora» / «24 ore»: la scadenza dei checkout pending nella lingua corrente. */
+export function expiryHoursLabel(count: number): string {
+	return count === 1
+		? m.billing_pricing_hours_one({ count })
+		: m.billing_pricing_hours({ count });
+}

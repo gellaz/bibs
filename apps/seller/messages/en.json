@@ -932,5 +932,16 @@
 	"auth_invite_network_error": "Network error. Try again.",
 	"auth_invite_success_title": "Account created!",
 	"auth_invite_success_body": "Your account has been created.",
-	"auth_invite_go_to_login": "Go to sign in"
+	"auth_invite_go_to_login": "Go to sign in",
+	"shell_sidebar_toggle": "Toggle sidebar",
+	"shell_crumb_closures": "Closures",
+	"shell_crumb_payments": "Payments",
+	"shell_crumb_return": "Return",
+	"shell_crumb_refresh": "Refresh",
+	"shell_crumb_processing": "Processing",
+	"billing_invoice_status_paid": "Paid",
+	"billing_invoice_status_open": "Open",
+	"billing_invoice_status_void": "Void",
+	"billing_invoice_status_uncollectible": "Uncollectible",
+	"billing_invoice_status_draft": "Draft"
 }

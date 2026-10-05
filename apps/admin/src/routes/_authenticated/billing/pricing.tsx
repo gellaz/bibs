@@ -18,11 +18,14 @@ import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { formatPriceEur } from "@bibs/ui/custom/price";
+import { unwrap } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
 	EMPTY_PRICING_FIELDS,
+	expiryHoursLabel,
 	type PricingFields,
 	type PricingValue,
 	parsePricingForm,
@@ -36,12 +39,15 @@ export const Route = createFileRoute("/_authenticated/billing/pricing")({
 
 function PricingPage() {
 	const qc = useQueryClient();
-	const { data: current, isLoading } = useQuery({
+	const {
+		data: current,
+		isLoading,
+		error,
+	} = useQuery({
 		queryKey: ["admin", "billing", "pricing", "current"],
 		queryFn: async () => {
 			const r = await api().admin.billing.pricing.current.get();
-			if (r.error) throw new Error(r.error.value?.message);
-			return r.data?.data;
+			return unwrap(r, m.billing_pricing_load_error()).data;
 		},
 	});
 
@@ -80,6 +86,14 @@ function PricingPage() {
 		onError: (e: Error) => toast.error(e.message),
 	});
 
+	if (error)
+		return (
+			<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
+				<p className="text-sm">
+					{m.common_load_error_with_message({ message: error.message })}
+				</p>
+			</div>
+		);
 	if (isLoading || !current) return <Spinner />;
 
 	return (
@@ -89,8 +103,8 @@ function PricingPage() {
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">
 				<p>
-					<strong>{m.billing_pricing_monthly_fee()}</strong> €
-					{(current.storeMonthlyFeeCents / 100).toFixed(2)} {current.currency}
+					<strong>{m.billing_pricing_monthly_fee()}</strong>{" "}
+					{formatPriceEur(current.storeMonthlyFeeCents / 100)}
 				</p>
 				<p>
 					<strong>{m.billing_pricing_auto_cancel()}</strong>{" "}
@@ -98,11 +112,7 @@ function PricingPage() {
 				</p>
 				<p>
 					<strong>{m.billing_pricing_expiry()}</strong>{" "}
-					{(current.pendingCreationExpiryHours === 1
-						? m.billing_pricing_hours_one
-						: m.billing_pricing_hours)({
-						count: current.pendingCreationExpiryHours,
-					})}
+					{expiryHoursLabel(current.pendingCreationExpiryHours)}
 				</p>
 				<p className="text-muted-foreground text-xs">
 					{m.billing_pricing_price_id({ id: current.stripePriceId })}

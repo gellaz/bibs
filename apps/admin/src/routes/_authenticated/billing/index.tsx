@@ -5,6 +5,8 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { formatPriceEur } from "@bibs/ui/custom/price";
+import { unwrap } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { api } from "@/lib/api";
@@ -14,20 +16,23 @@ export const Route = createFileRoute("/_authenticated/billing/")({
 	component: OverviewPage,
 });
 
-function formatEuro(cents: number) {
-	return `€${(cents / 100).toFixed(2)}`;
-}
-
 function OverviewPage() {
-	const { data, isLoading } = useQuery({
+	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin", "billing", "overview"],
 		queryFn: async () => {
 			const r = await api().admin.billing.overview.get();
-			if (r.error) throw new Error(r.error.value?.message);
-			return r.data?.data;
+			return unwrap(r, m.billing_overview_load_error()).data;
 		},
 	});
 
+	if (error)
+		return (
+			<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
+				<p className="text-sm">
+					{m.common_load_error_with_message({ message: error.message })}
+				</p>
+			</div>
+		);
 	if (isLoading || !data) return <Spinner />;
 
 	return (
@@ -37,7 +42,9 @@ function OverviewPage() {
 					<CardTitle>{m.billing_mrr()}</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<p className="text-3xl font-semibold">{formatEuro(data.mrrCents)}</p>
+					<p className="text-3xl font-semibold">
+						{formatPriceEur(data.mrrCents / 100)}
+					</p>
 				</CardContent>
 			</Card>
 			<Card>

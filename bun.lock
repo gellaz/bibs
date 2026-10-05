@@ -239,6 +239,7 @@
         "react": "catalog:",
         "react-dom": "catalog:",
         "tailwindcss": "catalog:",
+        "vitest": "catalog:",
       },
       "peerDependencies": {
         "react": "^19.3.0",

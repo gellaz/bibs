@@ -23,6 +23,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { formatPriceEur } from "@bibs/ui/custom/price";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -30,6 +31,7 @@ import { Download, MoreVerticalIcon } from "lucide-react";
 import { useEffect } from "react";
 import { SectionHeader } from "@/components/section-header";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
+import { invoiceStatusLabel } from "@/features/billing/invoice-status";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { api, unwrap } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
@@ -70,7 +72,7 @@ function statusBadge(
 }
 
 function formatEuro(cents: number): string {
-	return `€${(cents / 100).toFixed(2)}`;
+	return formatPriceEur(cents / 100);
 }
 
 const DATE_FMT: Intl.DateTimeFormatOptions = {
@@ -403,7 +405,7 @@ function BillingPage() {
 													inv.status === "paid" ? "default" : "destructive"
 												}
 											>
-												{inv.status ?? "—"}
+												{invoiceStatusLabel(inv.status)}
 											</Badge>
 										</TableCell>
 										<TableCell>
