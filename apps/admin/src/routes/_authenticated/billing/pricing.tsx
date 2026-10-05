@@ -21,7 +21,14 @@ import { Spinner } from "@bibs/ui/components/spinner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import {
+	EMPTY_PRICING_FIELDS,
+	type PricingFields,
+	type PricingValue,
+	parsePricingForm,
+} from "@/features/billing/pricing-form";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing/pricing")({
 	component: PricingPage,
@@ -39,7 +46,7 @@ function PricingPage() {
 	});
 
 	const [open, setOpen] = useState(false);
-	const [fields, setFields] = useState<PricingFields>(EMPTY_FIELDS);
+	const [fields, setFields] = useState<PricingFields>(EMPTY_PRICING_FIELDS);
 	const [touched, setTouched] = useState<Set<keyof PricingFields>>(new Set());
 	const parsed = parsePricingForm(fields);
 	const errors = "errors" in parsed ? parsed.errors : {};
@@ -67,7 +74,7 @@ function PricingPage() {
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["admin", "billing"] });
-			toast.success("Pricing aggiornato");
+			toast.success(m.billing_pricing_updated());
 			setOpen(false);
 		},
 		onError: (e: Error) => toast.error(e.message),
@@ -78,23 +85,27 @@ function PricingPage() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Pricing corrente</CardTitle>
+				<CardTitle>{m.billing_pricing_current()}</CardTitle>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-2">
 				<p>
-					<strong>Quota mensile:</strong> €
+					<strong>{m.billing_pricing_monthly_fee()}</strong> €
 					{(current.storeMonthlyFeeCents / 100).toFixed(2)} {current.currency}
 				</p>
 				<p>
-					<strong>Auto-cancel sospensione:</strong>{" "}
-					{current.suspendedAutoCancelDays} giorni
+					<strong>{m.billing_pricing_auto_cancel()}</strong>{" "}
+					{m.billing_pricing_days({ count: current.suspendedAutoCancelDays })}
 				</p>
 				<p>
-					<strong>Expiry checkout pendente:</strong>{" "}
-					{current.pendingCreationExpiryHours} ore
+					<strong>{m.billing_pricing_expiry()}</strong>{" "}
+					{(current.pendingCreationExpiryHours === 1
+						? m.billing_pricing_hours_one
+						: m.billing_pricing_hours)({
+						count: current.pendingCreationExpiryHours,
+					})}
 				</p>
 				<p className="text-muted-foreground text-xs">
-					Stripe Price ID: {current.stripePriceId}
+					{m.billing_pricing_price_id({ id: current.stripePriceId })}
 				</p>
 
 				<Dialog open={open} onOpenChange={setOpen}>
@@ -111,20 +122,21 @@ function PricingPage() {
 								setTouched(new Set());
 							}}
 						>
-							Modifica
+							{m.common_edit()}
 						</Button>
 					</DialogTrigger>
 					<DialogContent>
 						<DialogHeader>
-							<DialogTitle>Modifica pricing</DialogTitle>
+							<DialogTitle>{m.billing_pricing_dialog_title()}</DialogTitle>
 							<DialogDescription>
-								Crea un nuovo Stripe Price. Le subscription esistenti restano
-								sul prezzo precedente.
+								{m.billing_pricing_dialog_description()}
 							</DialogDescription>
 						</DialogHeader>
 						<div className="flex flex-col gap-3">
 							<Field data-invalid={!!shownError("fee")}>
-								<FieldLabel htmlFor="pricing-fee">Quota mensile (€)</FieldLabel>
+								<FieldLabel htmlFor="pricing-fee">
+									{m.billing_pricing_fee_label()}
+								</FieldLabel>
 								<Input
 									id="pricing-fee"
 									type="number"
@@ -137,7 +149,7 @@ function PricingPage() {
 							</Field>
 							<Field data-invalid={!!shownError("days")}>
 								<FieldLabel htmlFor="pricing-days">
-									Auto-cancel dopo (giorni)
+									{m.billing_pricing_days_label()}
 								</FieldLabel>
 								<Input
 									id="pricing-days"
@@ -151,7 +163,7 @@ function PricingPage() {
 							</Field>
 							<Field data-invalid={!!shownError("hours")}>
 								<FieldLabel htmlFor="pricing-hours">
-									Expiry pending checkout (ore)
+									{m.billing_pricing_hours_label()}
 								</FieldLabel>
 								<Input
 									id="pricing-hours"
@@ -165,7 +177,7 @@ function PricingPage() {
 							</Field>
 							<Field data-invalid={!!shownError("productId")}>
 								<FieldLabel htmlFor="pricing-product">
-									Stripe Product ID
+									{m.billing_pricing_product_label()}
 								</FieldLabel>
 								<Input
 									id="pricing-product"
@@ -183,7 +195,7 @@ function PricingPage() {
 								}}
 								disabled={!("value" in parsed) || mutation.isPending}
 							>
-								Conferma
+								{m.common_confirm()}
 							</Button>
 						</DialogFooter>
 					</DialogContent>
@@ -191,75 +203,4 @@ function PricingPage() {
 			</CardContent>
 		</Card>
 	);
-}
-
-interface PricingFields {
-	fee: string;
-	days: string;
-	hours: string;
-	productId: string;
-}
-
-interface PricingValue {
-	storeMonthlyFeeCents: number;
-	suspendedAutoCancelDays: number;
-	pendingCreationExpiryHours: number;
-	productId: string;
-}
-
-const EMPTY_FIELDS: PricingFields = {
-	fee: "",
-	days: "",
-	hours: "",
-	productId: "",
-};
-
-/** Whole number within [min, max], or null. Rejects "", "2.5", "1e3". */
-function parseWhole(raw: string, min: number, max: number): number | null {
-	if (!/^\d+$/.test(raw.trim())) return null;
-	const n = Number(raw);
-	return n >= min && n <= max ? n : null;
-}
-
-/**
- * The dialog keeps what the admin typed (strings) and turns it into numbers
- * only here, with the same bounds the API enforces — so an emptied field is
- * an error message, never a NaN in the request.
- */
-function parsePricingForm(
-	f: PricingFields,
-):
-	| { value: PricingValue }
-	| { errors: Partial<Record<keyof PricingFields, string>> } {
-	const errors: Partial<Record<keyof PricingFields, string>> = {};
-
-	// Euro and cents, at most two decimals: no silent rounding of a price.
-	const feeRaw = f.fee.trim().replace(",", ".");
-	const feeCents = /^\d+(\.\d{1,2})?$/.test(feeRaw)
-		? Math.round(Number(feeRaw) * 100)
-		: Number.NaN;
-	if (!(feeCents >= 100))
-		errors.fee =
-			"Inserisci una quota di almeno 1,00 €, con al massimo due decimali";
-
-	const days = parseWhole(f.days, 7, 365);
-	if (days === null) errors.days = "Un numero intero di giorni tra 7 e 365";
-
-	const hours = parseWhole(f.hours, 1, 168);
-	if (hours === null) errors.hours = "Un numero intero di ore tra 1 e 168";
-
-	const productId = f.productId.trim();
-	if (!/^prod_[A-Za-z0-9]+$/.test(productId))
-		errors.productId = "L'ID prodotto Stripe inizia con prod_";
-
-	if (Object.keys(errors).length > 0 || days === null || hours === null)
-		return { errors };
-	return {
-		value: {
-			storeMonthlyFeeCents: feeCents,
-			suspendedAutoCancelDays: days,
-			pendingCreationExpiryHours: hours,
-			productId,
-		},
-	};
 }

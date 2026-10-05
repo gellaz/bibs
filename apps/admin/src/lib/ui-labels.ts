@@ -21,3 +21,19 @@ export function tableColumnsToggleLabels(): TableColumnsToggleLabels {
 		locked: m.common_columns_locked(),
 	};
 }
+
+export function passwordInputLabels(): { show: string; hide: string } {
+	return { show: m.common_password_show(), hide: m.common_password_hide() };
+}
+
+export function themeToggleLabels(): {
+	light: string;
+	dark: string;
+	system: string;
+} {
+	return {
+		light: m.shell_theme_light(),
+		dark: m.shell_theme_dark(),
+		system: m.shell_theme_system(),
+	};
+}

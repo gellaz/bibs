@@ -8,6 +8,8 @@ import {
 	type LoginFormData,
 	loginFormSchema,
 } from "@/features/auth/schemas/login";
+import { passwordInputLabels } from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 interface LoginFormProps {
 	onSubmit: (data: LoginFormData) => Promise<void>;
@@ -37,7 +39,7 @@ export function LoginForm({ onSubmit, apiError }: LoginFormProps) {
 			)}
 
 			<Field data-invalid={!!errors.email}>
-				<FieldLabel htmlFor="email">Email</FieldLabel>
+				<FieldLabel htmlFor="email">{m.common_email()}</FieldLabel>
 				<Input
 					id="email"
 					type="email"
@@ -50,17 +52,18 @@ export function LoginForm({ onSubmit, apiError }: LoginFormProps) {
 			</Field>
 
 			<Field data-invalid={!!errors.password}>
-				<FieldLabel htmlFor="password">Password</FieldLabel>
+				<FieldLabel htmlFor="password">{m.auth_password()}</FieldLabel>
 				<PasswordInput
 					id="password"
 					autoComplete="current-password"
+					labels={passwordInputLabels()}
 					{...register("password")}
 				/>
 				<FieldError errors={[errors.password]} />
 			</Field>
 
 			<Button type="submit" disabled={isSubmitting} className="w-full">
-				{isSubmitting ? "Accesso in corso..." : "Accedi"}
+				{isSubmitting ? m.auth_login_submitting() : m.auth_login_submit()}
 			</Button>
 		</form>
 	);

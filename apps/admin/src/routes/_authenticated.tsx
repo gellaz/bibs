@@ -15,6 +15,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated")({
 	component: AuthenticatedLayout,
@@ -45,10 +46,8 @@ function AuthenticatedLayout() {
 	if (session.user.role !== "admin") {
 		return (
 			<div className="flex h-screen flex-col items-center justify-center gap-4">
-				<h1 className="text-2xl font-bold">Accesso negato</h1>
-				<p className="text-muted-foreground">
-					Solo gli amministratori possono accedere a questa area.
-				</p>
+				<h1 className="text-2xl font-bold">{m.shell_access_denied_title()}</h1>
+				<p className="text-muted-foreground">{m.shell_access_denied_body()}</p>
 				<button
 					type="button"
 					onClick={() =>
@@ -56,7 +55,7 @@ function AuthenticatedLayout() {
 					}
 					className="text-sm underline"
 				>
-					Esci e accedi con un altro account
+					{m.shell_sign_out_other_account()}
 				</button>
 			</div>
 		);

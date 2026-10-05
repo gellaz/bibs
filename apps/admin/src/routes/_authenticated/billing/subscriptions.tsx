@@ -49,7 +49,7 @@ function SubscriptionsPage() {
 					...(storeName ? { storeName } : {}),
 				},
 			});
-			return unwrap(r, "Errore caricamento abbonamenti").data;
+			return unwrap(r, m.billing_subs_load_error()).data;
 		},
 		placeholderData: keepPreviousData,
 	});
@@ -62,7 +62,7 @@ function SubscriptionsPage() {
 		<div className="space-y-4">
 			<div className="flex gap-2">
 				<Input
-					placeholder="Email seller"
+					placeholder={m.billing_subs_search_email()}
 					value={sellerEmail}
 					onChange={(e) => {
 						setSellerEmail(e.target.value);
@@ -70,7 +70,7 @@ function SubscriptionsPage() {
 					}}
 				/>
 				<Input
-					placeholder="Nome negozio"
+					placeholder={m.billing_subs_search_store()}
 					value={storeName}
 					onChange={(e) => {
 						setStoreName(e.target.value);
@@ -85,12 +85,12 @@ function SubscriptionsPage() {
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Seller</TableHead>
-								<TableHead>Negozio</TableHead>
-								<TableHead>Stato</TableHead>
-								<TableHead>Quota</TableHead>
-								<TableHead>Rinnovo</TableHead>
-								<TableHead>Creata</TableHead>
+								<TableHead>{m.billing_subs_col_seller()}</TableHead>
+								<TableHead>{m.billing_subs_col_store()}</TableHead>
+								<TableHead>{m.common_status()}</TableHead>
+								<TableHead>{m.billing_subs_col_fee()}</TableHead>
+								<TableHead>{m.billing_subs_col_renewal()}</TableHead>
+								<TableHead>{m.billing_subs_col_created()}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -111,8 +111,13 @@ function SubscriptionsPage() {
 					{total > 0 && (
 						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
 							<p className="text-muted-foreground text-sm tabular-nums">
-								{offset + 1}–{Math.min(page * limit, total)} di {total}{" "}
-								{total === 1 ? "abbonamento" : "abbonamenti"}
+								{(total === 1
+									? m.billing_subs_range_one
+									: m.billing_subs_range)({
+									start: offset + 1,
+									end: Math.min(page * limit, total),
+									total,
+								})}
 							</p>
 							<div className="flex items-center gap-4">
 								<PageSizeSelector
