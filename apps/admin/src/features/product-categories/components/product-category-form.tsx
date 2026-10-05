@@ -5,7 +5,6 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
-import { useEffect } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type ProductCategoryFormData,
@@ -40,21 +39,17 @@ export function ProductCategoryForm({
 	submitLabel,
 	pendingLabel,
 }: ProductCategoryFormProps) {
+	// Niente `reset(defaultValues)` in un effetto: il pannello passa un oggetto
+	// nuovo a ogni render e il reset riscriveva i campi prima del submit (si
+	// salvava il nome vecchio). Il dialog monta un form per riga (`key`).
 	const {
 		register,
 		handleSubmit,
-		reset,
 		formState: { errors },
 	} = useForm<ProductCategoryFormData>({
 		resolver: zodResolver(productCategoryFormSchema),
 		defaultValues: defaultValues ?? { name: "", macroCategoryId: "" },
 	});
-
-	useEffect(() => {
-		if (defaultValues) {
-			reset(defaultValues);
-		}
-	}, [defaultValues, reset]);
 
 	const onFormSubmit: SubmitHandler<ProductCategoryFormData> = (data) => {
 		onSubmit(data);

@@ -1,7 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import { useEffect } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type StoreMacroCategoryFormData,
@@ -27,22 +26,17 @@ export function StoreMacroCategoryForm({
 	submitLabel,
 	pendingLabel,
 }: StoreMacroCategoryFormProps) {
+	// Niente `reset(defaultValues)` in un effetto: il pannello passa un oggetto
+	// nuovo a ogni render e il reset riscriveva i campi prima del submit (si
+	// salvava il nome vecchio). Il dialog monta un form per riga (`key`).
 	const {
 		register,
 		handleSubmit,
-		reset,
 		formState: { errors },
 	} = useForm<StoreMacroCategoryFormData>({
 		resolver: zodResolver(storeMacroCategoryFormSchema),
 		defaultValues: defaultValues ?? { name: "" },
 	});
-
-	// Reset form when defaultValues change (e.g. switching between edit targets)
-	useEffect(() => {
-		if (defaultValues) {
-			reset(defaultValues);
-		}
-	}, [defaultValues, reset]);
 
 	const onFormSubmit: SubmitHandler<StoreMacroCategoryFormData> = (data) => {
 		onSubmit(data);
