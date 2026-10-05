@@ -35,8 +35,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDaysIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { HolidayForm } from "@/features/holidays/components/holiday-form";
-import { MONTHS } from "@/features/holidays/schemas/holiday";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 interface HolidayDefinition {
 	id: string;
@@ -59,12 +59,17 @@ interface HolidaysPanelProps {
 /** Human-readable "quando" for a holiday definition. */
 function describeHoliday(h: HolidayDefinition): string {
 	if (h.type === "fixed" && h.month && h.day) {
-		return `${h.day} ${MONTHS[h.month - 1].toLowerCase()}`;
+		return new Date(2000, h.month - 1, h.day).toLocaleDateString(intlLocale(), {
+			day: "numeric",
+			month: "long",
+		});
 	}
 	if (h.type === "easter_relative") {
-		if (h.easterOffsetDays === 0) return "Domenica di Pasqua";
-		if (h.easterOffsetDays === 1) return "Lunedì dell'Angelo";
-		return `Pasqua ${h.easterOffsetDays! > 0 ? "+" : ""}${h.easterOffsetDays} giorni`;
+		if (h.easterOffsetDays === 0) return m.holidays_easter_sunday();
+		if (h.easterOffsetDays === 1) return m.holidays_easter_monday();
+		return m.holidays_easter_offset({
+			offset: `${h.easterOffsetDays! > 0 ? "+" : ""}${h.easterOffsetDays}`,
+		});
 	}
 	if (h.type === "one_off" && h.oneOffDate) {
 		const [y, mo, d] = toYMD(h.oneOffDate).split("-").map(Number);
@@ -100,7 +105,7 @@ export function HolidaysPanel({
 		queryKey: ["holiday-definitions"],
 		queryFn: async () => {
 			const response = await api().admin["holiday-definitions"].get();
-			return unwrap(response, "Errore nel caricamento festività");
+			return unwrap(response, m.holidays_load_error());
 		},
 	});
 
@@ -123,15 +128,14 @@ export function HolidaysPanel({
 				| { type: "one_off"; name: string; oneOffDate: string },
 		) => {
 			const response = await api().admin["holiday-definitions"].post(input);
-			return unwrap(response, "Errore durante la creazione");
+			return unwrap(response, m.common_create_error());
 		},
 		onSuccess: () => {
 			invalidate();
 			onCreateOpenChange(false);
-			toast.success("Festività creata con successo");
+			toast.success(m.holidays_create_ok());
 		},
-		onError: (e: Error) =>
-			toast.error(e.message || "Errore durante la creazione"),
+		onError: (e: Error) => toast.error(e.message || m.common_create_error()),
 	});
 
 	const updateMutation = useMutation({
@@ -144,16 +148,15 @@ export function HolidaysPanel({
 			const response = await api()
 				.admin["holiday-definitions"]({ holidayId: id })
 				.patch(patch);
-			return unwrap(response, "Errore durante l'aggiornamento");
+			return unwrap(response, m.common_update_error());
 		},
 		onSuccess: () => {
 			invalidate();
 			setEditOpen(false);
 			setSelected(null);
-			toast.success("Festività aggiornata con successo");
+			toast.success(m.holidays_update_ok());
 		},
-		onError: (e: Error) =>
-			toast.error(e.message || "Errore durante l'aggiornamento"),
+		onError: (e: Error) => toast.error(e.message || m.common_update_error()),
 	});
 
 	const deleteMutation = useMutation({
@@ -161,16 +164,15 @@ export function HolidaysPanel({
 			const response = await api()
 				.admin["holiday-definitions"]({ holidayId: id })
 				.delete();
-			return unwrap(response, "Errore durante l'eliminazione");
+			return unwrap(response, m.common_delete_error());
 		},
 		onSuccess: () => {
 			invalidate();
 			setDeleteOpen(false);
 			setSelected(null);
-			toast.success("Festività eliminata con successo");
+			toast.success(m.holidays_delete_ok());
 		},
-		onError: (e: Error) =>
-			toast.error(e.message || "Errore durante l'eliminazione"),
+		onError: (e: Error) => toast.error(e.message || m.common_delete_error()),
 	});
 
 	const rows = useMemo<HolidayDefinition[]>(
@@ -182,7 +184,7 @@ export function HolidaysPanel({
 		() => [
 			{
 				id: "name",
-				header: "Nome",
+				header: m.common_name(),
 				enableHiding: false,
 				meta: {
 					headerClassName: "w-[30%] pl-4",
@@ -192,7 +194,7 @@ export function HolidaysPanel({
 			},
 			{
 				id: "when",
-				header: "Quando",
+				header: m.holidays_column_when(),
 				meta: {
 					headerClassName: "w-[30%]",
 					cellClassName: "text-muted-foreground",
@@ -201,7 +203,7 @@ export function HolidaysPanel({
 			},
 			{
 				id: "status",
-				header: "Stato",
+				header: m.holidays_column_status(),
 				meta: { headerClassName: "w-[20%]" },
 				cell: ({ row }) => (
 					<span
@@ -211,7 +213,9 @@ export function HolidaysPanel({
 								: "text-muted-foreground text-sm"
 						}
 					>
-						{row.original.isActive ? "Attiva" : "Disattivata"}
+						{row.original.isActive
+							? m.holidays_status_active()
+							: m.holidays_status_inactive()}
 					</span>
 				),
 			},
@@ -235,12 +239,14 @@ export function HolidaysPanel({
 								})
 							}
 						>
-							{row.original.isActive ? "Disattiva" : "Attiva"}
+							{row.original.isActive
+								? m.holidays_deactivate()
+								: m.holidays_activate()}
 						</Button>
 						<Button
 							variant="ghost"
 							size="icon-sm"
-							aria-label="Rinomina festività"
+							aria-label={m.holidays_rename_aria()}
 							onClick={() => {
 								setSelected(row.original);
 								setEditName(row.original.name);
@@ -252,7 +258,7 @@ export function HolidaysPanel({
 						<Button
 							variant="ghost"
 							size="icon-sm"
-							aria-label="Elimina festività"
+							aria-label={m.holidays_delete_aria()}
 							onClick={() => {
 								setSelected(row.original);
 								setDeleteOpen(true);
@@ -272,7 +278,9 @@ export function HolidaysPanel({
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
-						Errore nel caricamento: {(error as Error).message}
+						{m.common_load_error_with_message({
+							message: (error as Error).message,
+						})}
 					</p>
 				</div>
 			)}
@@ -288,10 +296,10 @@ export function HolidaysPanel({
 						<CalendarDaysIcon className="text-muted-foreground/40 size-8" />
 						<div>
 							<p className="text-muted-foreground font-medium">
-								Nessuna festività
+								{m.holidays_empty_title()}
 							</p>
 							<p className="text-muted-foreground/60 text-sm">
-								Crea la prima festività per iniziare
+								{m.holidays_empty_subtitle()}
 							</p>
 						</div>
 					</div>
@@ -301,13 +309,13 @@ export function HolidaysPanel({
 			<div className="rounded-lg border p-4 space-y-3">
 				<div className="flex items-center gap-3">
 					<span className="text-sm font-medium">
-						Anteprima date risolte per anno
+						{m.holidays_preview_title()}
 					</span>
 					<NativeSelect
 						className="w-32"
 						value={String(previewYear)}
 						onChange={(e) => setPreviewYear(Number(e.target.value))}
-						aria-label="Anno anteprima"
+						aria-label={m.holidays_preview_year()}
 					>
 						{YEARS.map((y) => (
 							<NativeSelectOption key={y} value={String(y)}>
@@ -331,10 +339,9 @@ export function HolidaysPanel({
 			<Dialog open={createOpen} onOpenChange={onCreateOpenChange}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Nuova Festività</DialogTitle>
+						<DialogTitle>{m.configurations_new_holiday()}</DialogTitle>
 						<DialogDescription>
-							Definisci una festività fissa, relativa alla Pasqua o una data
-							singola.
+							{m.holidays_create_description()}
 						</DialogDescription>
 					</DialogHeader>
 					<HolidayForm
@@ -369,14 +376,16 @@ export function HolidaysPanel({
 			<Dialog open={editOpen} onOpenChange={setEditOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Rinomina Festività</DialogTitle>
+						<DialogTitle>{m.holidays_rename_title()}</DialogTitle>
 						<DialogDescription>
-							Modifica il nome della festività.
+							{m.holidays_rename_description()}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">
 						<Field>
-							<FieldLabel htmlFor="edit-holiday-name">Nome</FieldLabel>
+							<FieldLabel htmlFor="edit-holiday-name">
+								{m.common_name()}
+							</FieldLabel>
 							<Input
 								id="edit-holiday-name"
 								value={editName}
@@ -386,7 +395,7 @@ export function HolidaysPanel({
 					</div>
 					<div className="flex justify-end gap-3">
 						<Button variant="outline" onClick={() => setEditOpen(false)}>
-							Annulla
+							{m.common_cancel()}
 						</Button>
 						<Button
 							disabled={
@@ -400,7 +409,7 @@ export function HolidaysPanel({
 									});
 							}}
 						>
-							{updateMutation.isPending ? "Salvataggio..." : "Salva"}
+							{updateMutation.isPending ? m.common_saving() : m.common_save()}
 						</Button>
 					</div>
 				</DialogContent>
@@ -409,11 +418,11 @@ export function HolidaysPanel({
 			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+						<AlertDialogTitle>
+							{m.common_confirm_delete_title()}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							Sei sicuro di voler eliminare "{selected?.name}"? Gli opt-out dei
-							negozi collegati verranno rimossi. Questa azione non può essere
-							annullata.
+							{m.holidays_delete_description({ name: selected?.name ?? "" })}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -423,7 +432,7 @@ export function HolidaysPanel({
 								setSelected(null);
 							}}
 						>
-							Annulla
+							{m.common_cancel()}
 						</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
@@ -432,7 +441,9 @@ export function HolidaysPanel({
 								if (selected) deleteMutation.mutate(selected.id);
 							}}
 						>
-							{deleteMutation.isPending ? "Eliminazione..." : "Elimina"}
+							{deleteMutation.isPending
+								? m.common_deleting()
+								: m.common_delete()}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

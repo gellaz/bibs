@@ -7,6 +7,7 @@ import {
 	SheetTitle,
 } from "@bibs/ui/components/sheet";
 import { useState } from "react";
+import { m } from "@/paraglide/messages";
 import { CategoryCharacteristicsPanel } from "./category-characteristics-panel";
 
 interface CategoryRef {
@@ -37,17 +38,20 @@ export function CategoryCharacteristicsButton({
 				size="xs"
 				className="rounded-full tabular-nums"
 				onClick={() => setOpen(true)}
-				aria-label={`Gestisci le caratteristiche di ${category.name}`}
+				aria-label={m.characteristics_manage_aria({ name: category.name })}
 			>
-				{n} caratteristic{n === 1 ? "a" : "he"}
+				{n === 1
+					? m.characteristics_count_one({ count: n })
+					: m.characteristics_count({ count: n })}
 			</Button>
 			<Sheet open={open} onOpenChange={setOpen}>
 				<SheetContent className="data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
 					<SheetHeader>
 						<SheetTitle>{category.name}</SheetTitle>
 						<SheetDescription>
-							{category.macroCategory.name} · Scegli quali caratteristiche
-							compila il venditore per i prodotti di questa sotto-categoria.
+							{m.characteristics_matrix_description({
+								macro: category.macroCategory.name,
+							})}
 						</SheetDescription>
 					</SheetHeader>
 					<div className="flex min-h-0 flex-1 flex-col px-4 pb-4">

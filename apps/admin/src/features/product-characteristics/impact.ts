@@ -1,3 +1,4 @@
+import { m } from "@/paraglide/messages";
 import type {
 	CharacteristicBaseline,
 	ProductCharacteristicFormData,
@@ -27,4 +28,15 @@ export function characteristicUpdateImpact(
 	return baseline.options
 		.filter((o) => !kept.has(o.id))
 		.reduce((sum, o) => sum + o.valueCount, 0);
+}
+
+/** Il testo della conferma: cambio di tipo o opzioni rimosse in uso. */
+export function confirmDescription(typeChanged: boolean, count: number) {
+	if (typeChanged)
+		return count === 1
+			? m.characteristics_confirm_type_change_one({ count })
+			: m.characteristics_confirm_type_change({ count });
+	return count === 1
+		? m.characteristics_confirm_options_removed_one({ count })
+		: m.characteristics_confirm_options_removed({ count });
 }

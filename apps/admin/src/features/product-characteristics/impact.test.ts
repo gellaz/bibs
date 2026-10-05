@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { characteristicUpdateImpact } from "./impact";
+import { afterEach, describe, expect, it } from "vitest";
+import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
+import { characteristicUpdateImpact, confirmDescription } from "./impact";
 import type {
 	CharacteristicBaseline,
 	ProductCharacteristicFormData,
@@ -89,5 +90,36 @@ describe("characteristicUpdateImpact", () => {
 				}),
 			),
 		).toBe(4);
+	});
+});
+
+describe("confirmDescription", () => {
+	const originalGetLocale = getLocale;
+	afterEach(() => overwriteGetLocale(originalGetLocale));
+
+	it("cambio di tipo e opzioni rimosse, singolare e plurale", () => {
+		overwriteGetLocale(() => "it");
+		expect(confirmDescription(true, 2)).toBe(
+			"Cambiando tipo, i valori già compilati su 2 prodotti verranno eliminati definitivamente.",
+		);
+		expect(confirmDescription(true, 1)).toBe(
+			"Cambiando tipo, i valori già compilati su 1 prodotto verranno eliminati definitivamente.",
+		);
+		expect(confirmDescription(false, 3)).toBe(
+			"Le opzioni rimosse sono in uso: 3 prodotti perderanno il valore, che verrà eliminato definitivamente.",
+		);
+	});
+
+	it("follows the current language", () => {
+		overwriteGetLocale(() => "en");
+		expect(confirmDescription(true, 1)).toBe(
+			"Changing the type will permanently delete the values already filled in on 1 product.",
+		);
+		expect(confirmDescription(false, 4)).toBe(
+			"The removed options are in use: 4 products will lose their value, which will be permanently deleted.",
+		);
+		expect(confirmDescription(false, 1)).toBe(
+			"The removed options are in use: 1 product will lose its value, which will be permanently deleted.",
+		);
 	});
 });
