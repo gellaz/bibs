@@ -6,6 +6,7 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { createFileRoute } from "@tanstack/react-router";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/")({
 	component: Dashboard,
@@ -16,25 +17,18 @@ function Dashboard() {
 		<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 			<Card>
 				<CardHeader>
-					<CardDescription>Ordini oggi</CardDescription>
+					<CardDescription>{m.dashboard_orders_today()}</CardDescription>
 					<CardTitle className="text-2xl tabular-nums">0</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<p className="text-xs text-muted-foreground">Nessun ordine</p>
+					<p className="text-xs text-muted-foreground">
+						{m.dashboard_no_orders()}
+					</p>
 				</CardContent>
 			</Card>
 			<Card>
 				<CardHeader>
-					<CardDescription>Venditori attivi</CardDescription>
-					<CardTitle className="text-2xl tabular-nums">0</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p className="text-xs text-muted-foreground">—</p>
-				</CardContent>
-			</Card>
-			<Card>
-				<CardHeader>
-					<CardDescription>Clienti registrati</CardDescription>
+					<CardDescription>{m.dashboard_active_sellers()}</CardDescription>
 					<CardTitle className="text-2xl tabular-nums">0</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -43,7 +37,18 @@ function Dashboard() {
 			</Card>
 			<Card>
 				<CardHeader>
-					<CardDescription>Categorie</CardDescription>
+					<CardDescription>
+						{m.dashboard_registered_customers()}
+					</CardDescription>
+					<CardTitle className="text-2xl tabular-nums">0</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<p className="text-xs text-muted-foreground">—</p>
+				</CardContent>
+			</Card>
+			<Card>
+				<CardHeader>
+					<CardDescription>{m.dashboard_categories()}</CardDescription>
 					<CardTitle className="text-2xl tabular-nums">0</CardTitle>
 				</CardHeader>
 				<CardContent>

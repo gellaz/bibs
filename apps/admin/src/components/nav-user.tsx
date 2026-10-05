@@ -20,6 +20,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
 import { LocaleSelect } from "@/components/locale-select";
 import { authClient } from "@/lib/auth-client";
+import { themeToggleLabels } from "@/lib/ui-labels";
+import { m } from "@/paraglide/messages";
 
 export function NavUser() {
 	const { isMobile } = useSidebar();
@@ -71,7 +73,10 @@ export function NavUser() {
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuGroup>
-							<ThemeToggle />
+							<ThemeToggle
+								label={m.shell_theme_label()}
+								labels={themeToggleLabels()}
+							/>
 							<LocaleSelect />
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
@@ -83,7 +88,7 @@ export function NavUser() {
 							}}
 						>
 							<LogOutIcon />
-							Esci
+							{m.common_sign_out()}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

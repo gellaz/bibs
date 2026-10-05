@@ -13,6 +13,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 import appCss from "../styles.css?url";
 
@@ -39,9 +40,9 @@ function NotFound() {
 	return (
 		<div className="flex min-h-[50vh] flex-col items-center justify-center gap-4">
 			<h1 className="font-display text-4xl font-bold">404</h1>
-			<p className="text-muted-foreground">Pagina non trovata</p>
+			<p className="text-muted-foreground">{m.shell_not_found()}</p>
 			<Link to="/" className="text-primary underline">
-				Torna alla home
+				{m.shell_back_home()}
 			</Link>
 		</div>
 	);

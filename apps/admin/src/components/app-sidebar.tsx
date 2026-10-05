@@ -24,17 +24,19 @@ import {
 	WalletIcon,
 } from "lucide-react";
 import { NavUser } from "@/components/nav-user";
+import { m } from "@/paraglide/messages";
 
+// Titoli come funzioni: vanno letti a ogni render, dopo un cambio di lingua.
 const navItems = [
-	{ title: "Home", to: "/" as const, icon: HomeIcon },
-	{ title: "Utenti", to: "/users" as const, icon: UsersIcon },
-	{ title: "Venditori", to: "/sellers" as const, icon: ShieldCheckIcon },
-	{ title: "Negozi", to: "/stores" as const, icon: StoreIcon },
-	{ title: "Articoli", to: "/products" as const, icon: PackageIcon },
-	{ title: "Incassi", to: "/collections" as const, icon: WalletIcon },
-	{ title: "Billing", to: "/billing" as const, icon: CreditCardIcon },
+	{ title: m.shell_nav_home, to: "/" as const, icon: HomeIcon },
+	{ title: m.common_users, to: "/users" as const, icon: UsersIcon },
+	{ title: m.common_sellers, to: "/sellers" as const, icon: ShieldCheckIcon },
+	{ title: m.common_stores, to: "/stores" as const, icon: StoreIcon },
+	{ title: m.common_products, to: "/products" as const, icon: PackageIcon },
+	{ title: m.common_revenue, to: "/collections" as const, icon: WalletIcon },
+	{ title: m.billing_title, to: "/billing" as const, icon: CreditCardIcon },
 	{
-		title: "Configurazioni",
+		title: m.configurations_title,
 		to: "/configurations" as const,
 		icon: SettingsIcon,
 	},
@@ -67,7 +69,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
 			<SidebarContent>
 				<SidebarGroup>
-					<SidebarGroupLabel>Navigazione</SidebarGroupLabel>
+					<SidebarGroupLabel>{m.shell_nav_label()}</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{navItems.map((item) => {
@@ -76,16 +78,16 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 										? pathname === "/"
 										: pathname.startsWith(item.to);
 								return (
-									<SidebarMenuItem key={item.title}>
+									<SidebarMenuItem key={item.to}>
 										<SidebarMenuButton
 											asChild
-											tooltip={item.title}
+											tooltip={item.title()}
 											isActive={isActive}
 											className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
 										>
 											<Link to={item.to}>
 												<item.icon />
-												<span>{item.title}</span>
+												<span>{item.title()}</span>
 											</Link>
 										</SidebarMenuButton>
 									</SidebarMenuItem>

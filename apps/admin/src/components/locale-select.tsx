@@ -2,13 +2,8 @@ import { LocaleToggle } from "@bibs/ui/custom/locale-toggle";
 import { m } from "@/paraglide/messages";
 import { getLocale, locales, setLocale } from "@/paraglide/runtime";
 
-/**
- * Selettore lingua, per ora solo in dev: l'inglese di questa app non è ancora
- * tradotto (vedi P4 nell'audit). Serve a provare le PR di traduzione; nelle
- * build di produzione non c'è.
- */
+/** Selettore lingua del menu utente: la scelta resta nel cookie. */
 export function LocaleSelect() {
-	if (!import.meta.env.DEV) return null;
 	return (
 		<LocaleToggle
 			locales={locales}

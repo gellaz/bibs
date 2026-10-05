@@ -8,6 +8,7 @@ import { Spinner } from "@bibs/ui/components/spinner";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing/")({
 	component: OverviewPage,
@@ -33,7 +34,7 @@ function OverviewPage() {
 		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
 			<Card>
 				<CardHeader>
-					<CardTitle>MRR</CardTitle>
+					<CardTitle>{m.billing_mrr()}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<p className="text-3xl font-semibold">{formatEuro(data.mrrCents)}</p>
@@ -41,7 +42,7 @@ function OverviewPage() {
 			</Card>
 			<Card>
 				<CardHeader>
-					<CardTitle>Negozi attivi</CardTitle>
+					<CardTitle>{m.billing_active_stores()}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<p className="text-3xl font-semibold">{data.activeStoresCount}</p>
@@ -49,7 +50,7 @@ function OverviewPage() {
 			</Card>
 			<Card>
 				<CardHeader>
-					<CardTitle>In dunning</CardTitle>
+					<CardTitle>{m.billing_past_due()}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<p className="text-3xl font-semibold">{data.pastDueCount}</p>
@@ -57,7 +58,7 @@ function OverviewPage() {
 			</Card>
 			<Card>
 				<CardHeader>
-					<CardTitle>Sospesi</CardTitle>
+					<CardTitle>{m.billing_suspended()}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<p className="text-3xl font-semibold">{data.suspendedCount}</p>

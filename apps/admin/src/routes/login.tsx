@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/login-form";
 import type { LoginFormData } from "@/features/auth/schemas/login";
 import { authClient } from "@/lib/auth-client";
+import { authErrorMessage } from "@/lib/auth-error";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/login")({
 	component: LoginPage,
@@ -40,16 +42,19 @@ function LoginPage() {
 
 			if (signInError) {
 				if (signInError.status === 403) {
-					setError("Email non verificata. Controlla la tua casella di posta.");
+					setError(m.auth_login_email_not_verified());
 					return;
 				}
-				setError(signInError.message ?? "Credenziali non valide");
+				// Il `message` di better-auth è in inglese: si traduce dal `code`.
+				setError(
+					authErrorMessage(signInError, m.auth_login_invalid_credentials()),
+				);
 				return;
 			}
 
 			void navigate({ to: "/" });
 		} catch {
-			setError("Errore durante il login. Riprova.");
+			setError(m.auth_login_error());
 		}
 	}
 
@@ -63,9 +68,7 @@ function LoginPage() {
 				<CardHeader className="text-center">
 					<BrandMark className="mx-auto mb-2 size-12" />
 					<CardTitle className="font-display text-xl">bibs Admin</CardTitle>
-					<CardDescription>
-						Accedi con le tue credenziali amministratore
-					</CardDescription>
+					<CardDescription>{m.auth_login_subtitle()}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<LoginForm onSubmit={handleSubmit} apiError={error} />

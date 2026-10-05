@@ -6,6 +6,7 @@ import {
 	useLocation,
 } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing")({
 	component: BillingLayout,
@@ -22,19 +23,21 @@ function BillingLayout() {
 	return (
 		<div className="space-y-4">
 			<PageHeader
-				title="Billing"
-				description="Gestisci pricing e abbonamenti seller"
+				title={m.billing_title()}
+				description={m.billing_description()}
 			/>
 			<Tabs value={value}>
 				<TabsList>
 					<TabsTrigger value="overview" asChild>
-						<Link to="/billing">Overview</Link>
+						<Link to="/billing">{m.billing_tab_overview()}</Link>
 					</TabsTrigger>
 					<TabsTrigger value="pricing" asChild>
-						<Link to="/billing/pricing">Pricing</Link>
+						<Link to="/billing/pricing">{m.billing_tab_pricing()}</Link>
 					</TabsTrigger>
 					<TabsTrigger value="subscriptions" asChild>
-						<Link to="/billing/subscriptions">Abbonamenti</Link>
+						<Link to="/billing/subscriptions">
+							{m.billing_tab_subscriptions()}
+						</Link>
 					</TabsTrigger>
 				</TabsList>
 			</Tabs>
