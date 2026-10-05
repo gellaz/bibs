@@ -15,6 +15,7 @@ import type { CsvImportResult } from "@/features/csv-import/components/csv-impor
 import { ProductCategoryForm } from "@/features/product-categories/components/product-category-form";
 import type { ProductCategoryFormData } from "@/features/product-categories/schemas/product-category";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 interface MacroCategory {
 	id: string;
@@ -39,7 +40,7 @@ function useMacros() {
 			const res = await api()["product-macro-categories"].get({
 				query: { limit: 100, sortBy: "name", sortOrder: "asc" },
 			});
-			return unwrap(res, "Errore caricamento macro categorie");
+			return unwrap(res, m.categories_macros_load_error());
 		},
 		// Both the toolbar filter and the form mount their own observer of this
 		// query; a stale time keeps the second mount (opening a dialog) from
@@ -74,31 +75,33 @@ function MacroFilter({
 			value={values.macroCategoryId ?? ""}
 			onChange={(e) => set("macroCategoryId", e.target.value)}
 			disabled={isLoading}
-			aria-label="Filtra per macro categoria"
+			aria-label={m.categories_macro_filter_aria()}
 		>
-			<NativeSelectOption value="">Tutte le macro categorie</NativeSelectOption>
-			{macros.map((m) => (
-				<NativeSelectOption key={m.id} value={m.id}>
-					{m.name}
+			<NativeSelectOption value="">
+				{m.categories_macro_filter_all()}
+			</NativeSelectOption>
+			{macros.map((mc) => (
+				<NativeSelectOption key={mc.id} value={mc.id}>
+					{mc.name}
 				</NativeSelectOption>
 			))}
 		</NativeSelect>
 	);
 }
 
-const macroColumn: DataTableColumnDef<ProductCategory> = {
+const macroColumn = (): DataTableColumnDef<ProductCategory> => ({
 	id: "macroCategory",
-	header: "Macro Categoria",
+	header: m.categories_macro_column(),
 	meta: { cellClassName: "text-muted-foreground" },
 	cell: ({ row }) => row.original.macroCategory?.name ?? "—",
-};
+});
 
-const characteristicsColumn: DataTableColumnDef<ProductCategory> = {
+const characteristicsColumn = (): DataTableColumnDef<ProductCategory> => ({
 	id: "characteristics",
-	header: "Caratteristiche",
-	meta: { menuLabel: "Caratteristiche" },
+	header: m.categories_product_characteristics_column(),
+	meta: { menuLabel: m.categories_product_characteristics_column() },
 	cell: ({ row }) => <CategoryCharacteristicsButton category={row.original} />,
-};
+});
 
 export const productCategoriesConfig: CategoryCrudConfig<
 	ProductCategory,
@@ -133,7 +136,7 @@ export const productCategoriesConfig: CategoryCrudConfig<
 	remove: (id) =>
 		api().admin["product-categories"]({ productCategoryId: id }).delete(),
 
-	extraColumns: [macroColumn, characteristicsColumn],
+	extraColumns: () => [macroColumn(), characteristicsColumn()],
 	emptyIcon: <TagsIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ConnectedProductCategoryForm {...p} />,
@@ -144,41 +147,46 @@ export const productCategoriesConfig: CategoryCrudConfig<
 	csvImport: {
 		onImport: async (file): Promise<CsvImportResult> => {
 			const res = await api().admin["product-categories"].import.post({ file });
-			return unwrap(res, "Errore durante l'import").data;
+			return unwrap(res, m.common_import_error()).data;
 		},
-		title: "Importa Categorie Prodotto",
-		description:
-			"Carica un file CSV per popolare in blocco macro categorie e sotto-categorie.",
-		formatHint:
-			"Header attesi: macro_category, subcategory. L'import è idempotente: le categorie già presenti vengono saltate.",
+		labels: () => ({
+			title: m.categories_product_import_title(),
+			description: m.categories_product_import_description(),
+			// Le intestazioni sono quelle che l'API si aspetta: non si traducono.
+			formatHint: m.categories_import_hint({
+				headers: "macro_category, subcategory",
+			}),
+		}),
 	},
 
-	labels: {
-		searchPlaceholder: "Cerca categoria prodotto...",
+	labels: () => ({
+		searchPlaceholder: m.categories_product_search(),
 		empty: {
-			title: "Nessuna categoria prodotto trovata",
-			subtitle: "Crea la prima categoria prodotto per iniziare",
+			title: m.categories_product_empty(),
+			subtitle: m.categories_product_empty_subtitle(),
 		},
-		total: (n) => `Totale: ${n} categori${n === 1 ? "a" : "e"} prodotto`,
+		total: (count) =>
+			count === 1
+				? m.categories_product_total_one({ count })
+				: m.categories_product_total({ count }),
 		createDialog: {
-			title: "Nuova Categoria Prodotto",
-			description:
-				"Inserisci macro categoria e nome della nuova sotto-categoria.",
+			title: m.categories_product_create_title(),
+			description: m.categories_product_create_description(),
 		},
 		editDialog: {
-			title: "Modifica Categoria Prodotto",
-			description: "Modifica nome e macro della sotto-categoria selezionata.",
+			title: m.categories_product_edit_title(),
+			description: m.categories_product_edit_description(),
 		},
 		deleteDescription: (name) =>
-			`Sei sicuro di voler eliminare la categoria prodotto "${name}"? Questa azione non può essere annullata.`,
+			m.categories_product_delete_description({ name }),
 		toasts: {
-			createOk: "Categoria prodotto creata con successo",
-			updateOk: "Categoria prodotto aggiornata con successo",
-			deleteOk: "Categoria prodotto eliminata con successo",
+			createOk: m.categories_product_created(),
+			updateOk: m.categories_product_updated(),
+			deleteOk: m.categories_product_deleted(),
 		},
 		rowAria: {
-			edit: "Modifica categoria prodotto",
-			delete: "Elimina categoria prodotto",
+			edit: m.categories_product_edit_aria(),
+			delete: m.categories_product_delete_aria(),
 		},
-	},
+	}),
 };

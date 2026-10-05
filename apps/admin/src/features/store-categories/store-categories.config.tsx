@@ -13,6 +13,7 @@ import type { CsvImportResult } from "@/features/csv-import/components/csv-impor
 import { StoreCategoryForm } from "@/features/store-categories/components/store-category-form";
 import type { StoreCategoryFormData } from "@/features/store-categories/schemas/store-category";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 interface MacroCategory {
 	id: string;
@@ -39,7 +40,7 @@ function useMacros() {
 			});
 			if (res.error)
 				throw new Error(
-					res.error.value?.message || "Failed to fetch store macro categories",
+					res.error.value?.message || m.categories_macros_load_error(),
 				);
 			return res.data;
 		},
@@ -72,9 +73,11 @@ function MacroFilter({
 			value={values.macroCategoryId ?? ""}
 			onChange={(e) => set("macroCategoryId", e.target.value)}
 			disabled={isLoading}
-			aria-label="Filtra per macro categoria"
+			aria-label={m.categories_macro_filter_aria()}
 		>
-			<NativeSelectOption value="">Tutte le macro categorie</NativeSelectOption>
+			<NativeSelectOption value="">
+				{m.categories_macro_filter_all()}
+			</NativeSelectOption>
 			{macros.map((mc) => (
 				<NativeSelectOption key={mc.id} value={mc.id}>
 					{mc.name}
@@ -84,12 +87,12 @@ function MacroFilter({
 	);
 }
 
-const macroColumn: DataTableColumnDef<StoreCategory> = {
+const macroColumn = (): DataTableColumnDef<StoreCategory> => ({
 	id: "macroCategory",
-	header: "Macro Categoria",
+	header: m.categories_macro_column(),
 	meta: { cellClassName: "text-muted-foreground" },
 	cell: ({ row }) => row.original.macroCategory?.name ?? "—",
-};
+});
 
 export const storeCategoriesConfig: CategoryCrudConfig<
 	StoreCategory,
@@ -123,7 +126,7 @@ export const storeCategoriesConfig: CategoryCrudConfig<
 			.patch({ name: form.name, macroCategoryId: form.macroCategoryId }),
 	remove: (id) => api().admin["store-categories"]({ categoryId: id }).delete(),
 
-	extraColumns: [macroColumn],
+	extraColumns: () => [macroColumn()],
 	emptyIcon: <StoreIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ConnectedStoreCategoryForm {...p} />,
@@ -135,41 +138,47 @@ export const storeCategoriesConfig: CategoryCrudConfig<
 		onImport: async (file): Promise<CsvImportResult> => {
 			const res = await api().admin["store-categories"].import.post({ file });
 			if (res.error)
-				throw new Error(res.error.value?.message || "Errore durante l'import");
+				throw new Error(res.error.value?.message || m.common_import_error());
 			const data = res.data?.data;
-			if (!data) throw new Error("Risposta non valida dal server");
+			if (!data) throw new Error(m.csv_invalid_response());
 			return data;
 		},
-		title: "Importa Categorie Negozio",
-		description:
-			"Carica un file CSV per popolare in blocco macro categorie e categorie negozio.",
-		formatHint:
-			"Header attesi: macro_category, name. L'import è idempotente: le categorie già presenti vengono saltate.",
+		labels: () => ({
+			title: m.categories_store_import_title(),
+			description: m.categories_store_import_description(),
+			// Le intestazioni sono quelle che l'API si aspetta: non si traducono.
+			formatHint: m.categories_import_hint({ headers: "macro_category, name" }),
+		}),
 	},
 
-	labels: {
-		searchPlaceholder: "Cerca categoria negozio...",
+	labels: () => ({
+		searchPlaceholder: m.categories_store_search(),
 		empty: {
-			title: "Nessuna categoria negozio trovata",
-			subtitle: "Crea la prima categoria per iniziare",
+			title: m.categories_store_empty(),
+			subtitle: m.categories_store_empty_subtitle(),
 		},
-		total: (n) => `Totale: ${n} categori${n === 1 ? "a" : "e"}`,
+		total: (count) =>
+			count === 1
+				? m.categories_store_total_one({ count })
+				: m.categories_store_total({ count }),
 		createDialog: {
-			title: "Nuova Categoria Negozio",
-			description:
-				"Inserisci macro categoria e nome della nuova categoria negozio.",
+			title: m.categories_store_create_title(),
+			description: m.categories_store_create_description(),
 		},
 		editDialog: {
-			title: "Modifica Categoria Negozio",
-			description: "Modifica nome e macro della categoria selezionata.",
+			title: m.categories_store_edit_title(),
+			description: m.categories_store_edit_description(),
 		},
 		deleteDescription: (name) =>
-			`Sei sicuro di voler eliminare la categoria "${name}"? Questa azione non può essere annullata.`,
+			m.categories_store_delete_description({ name }),
 		toasts: {
-			createOk: "Categoria negozio creata con successo",
-			updateOk: "Categoria negozio aggiornata con successo",
-			deleteOk: "Categoria negozio eliminata con successo",
+			createOk: m.categories_store_created(),
+			updateOk: m.categories_store_updated(),
+			deleteOk: m.categories_store_deleted(),
 		},
-		rowAria: { edit: "Modifica categoria", delete: "Elimina categoria" },
-	},
+		rowAria: {
+			edit: m.categories_store_edit_aria(),
+			delete: m.categories_store_delete_aria(),
+		},
+	}),
 };

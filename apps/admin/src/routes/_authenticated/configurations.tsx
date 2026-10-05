@@ -12,6 +12,7 @@ import { productMacroCategoriesConfig } from "@/features/product-macro-categorie
 import { storeCategoriesConfig } from "@/features/store-categories/store-categories.config";
 import { storeMacroCategoriesConfig } from "@/features/store-macro-categories/store-macro-categories.config";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/configurations")({
 	component: ConfigurationsPage,
@@ -37,32 +38,32 @@ function ConfigurationsPage() {
 	const tabs: TabNavItem[] = [
 		{
 			value: "product-macro-categories",
-			label: "Macro Categorie Prodotto",
+			label: m.configurations_tab_product_macro_categories(),
 			count: countsData?.productMacroCategories ?? null,
 		},
 		{
 			value: "product-categories",
-			label: "Categorie Prodotto",
+			label: m.configurations_tab_product_categories(),
 			count: countsData?.productCategories ?? null,
 		},
 		{
 			value: "product-characteristics",
-			label: "Caratteristiche Prodotto",
+			label: m.configurations_tab_product_characteristics(),
 			count: countsData?.productCharacteristics ?? null,
 		},
 		{
 			value: "store-macro-categories",
-			label: "Macro Categorie Negozio",
+			label: m.configurations_tab_store_macro_categories(),
 			count: countsData?.storeMacroCategories ?? null,
 		},
 		{
 			value: "store-categories",
-			label: "Categorie Negozio",
+			label: m.configurations_tab_store_categories(),
 			count: countsData?.storeCategories ?? null,
 		},
 		{
 			value: "holidays",
-			label: "Festività",
+			label: m.configurations_tab_holidays(),
 			count: null,
 		},
 	];
@@ -75,22 +76,22 @@ function ConfigurationsPage() {
 	return (
 		<div className="space-y-4">
 			<PageHeader
-				title="Configurazioni"
-				description="Gestisci le configurazioni della piattaforma"
+				title={m.configurations_title()}
+				description={m.configurations_description()}
 			/>
 
 			<TabNav
 				tabs={tabs}
 				activeTab={tab}
 				onTabChange={handleTabChange}
-				label="Configurazioni"
+				label={m.configurations_title()}
 			>
 				<CreateButton onClick={() => setCreateOpen(true)}>
 					{tab === "holidays"
-						? "Nuova Festività"
+						? m.configurations_new_holiday()
 						: tab === "product-characteristics"
-							? "Nuova Caratteristica"
-							: "Nuova Categoria"}
+							? m.configurations_new_characteristic()
+							: m.configurations_new_category()}
 				</CreateButton>
 			</TabNav>
 

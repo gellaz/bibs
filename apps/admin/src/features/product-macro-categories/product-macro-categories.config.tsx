@@ -4,6 +4,7 @@ import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import { ProductMacroCategoryForm } from "@/features/product-macro-categories/components/product-macro-category-form";
 import type { ProductMacroCategoryFormData } from "@/features/product-macro-categories/schemas/product-macro-category";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 interface ProductMacroCategory {
 	id: string;
@@ -12,12 +13,15 @@ interface ProductMacroCategory {
 	createdAt: Date | string;
 }
 
-const vatColumn: DataTableColumnDef<ProductMacroCategory> = {
+const vatColumn = (): DataTableColumnDef<ProductMacroCategory> => ({
 	id: "suggestedVatRate",
-	header: "IVA suggerita",
-	meta: { menuLabel: "IVA suggerita", cellClassName: "text-sm tabular-nums" },
+	header: m.categories_product_macro_vat_column(),
+	meta: {
+		menuLabel: m.categories_product_macro_vat_column(),
+		cellClassName: "text-sm tabular-nums",
+	},
 	cell: ({ row }) => `${row.original.suggestedVatRate}%`,
-};
+});
 
 export const productMacroCategoriesConfig: CategoryCrudConfig<
 	ProductMacroCategory,
@@ -49,37 +53,40 @@ export const productMacroCategoriesConfig: CategoryCrudConfig<
 	remove: (id) =>
 		api().admin["product-macro-categories"]({ macroCategoryId: id }).delete(),
 
-	extraColumns: [vatColumn],
+	extraColumns: () => [vatColumn()],
 	emptyIcon: <LayersIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ProductMacroCategoryForm {...p} />,
 	editDefaults: (e) => ({ name: e.name, suggestedVatRate: e.suggestedVatRate }),
 
-	labels: {
-		searchPlaceholder: "Cerca macro categoria...",
+	labels: () => ({
+		searchPlaceholder: m.categories_product_macro_search(),
 		empty: {
-			title: "Nessuna macro categoria trovata",
-			subtitle: "Crea la prima macro categoria per iniziare",
+			title: m.categories_product_macro_empty(),
+			subtitle: m.categories_macro_empty_subtitle(),
 		},
-		total: (n) => `Totale: ${n} macro categori${n === 1 ? "a" : "e"}`,
+		total: (count) =>
+			count === 1
+				? m.categories_macro_total_one({ count })
+				: m.categories_macro_total({ count }),
 		createDialog: {
-			title: "Nuova Macro Categoria Prodotto",
-			description: "Inserisci il nome della nuova macro categoria prodotto.",
+			title: m.categories_product_macro_create_title(),
+			description: m.categories_product_macro_create_description(),
 		},
 		editDialog: {
-			title: "Modifica Macro Categoria Prodotto",
-			description: "Modifica il nome della macro categoria selezionata.",
+			title: m.categories_product_macro_edit_title(),
+			description: m.categories_macro_edit_description(),
 		},
 		deleteDescription: (name) =>
-			`Sei sicuro di voler eliminare la macro categoria "${name}"? L'eliminazione fallirà se ci sono ancora sotto-categorie collegate.`,
+			m.categories_product_macro_delete_description({ name }),
 		toasts: {
-			createOk: "Macro categoria prodotto creata con successo",
-			updateOk: "Macro categoria prodotto aggiornata con successo",
-			deleteOk: "Macro categoria prodotto eliminata con successo",
+			createOk: m.categories_product_macro_created(),
+			updateOk: m.categories_product_macro_updated(),
+			deleteOk: m.categories_product_macro_deleted(),
 		},
 		rowAria: {
-			edit: "Modifica macro categoria",
-			delete: "Elimina macro categoria",
+			edit: m.categories_macro_edit_aria(),
+			delete: m.categories_macro_delete_aria(),
 		},
-	},
+	}),
 };
