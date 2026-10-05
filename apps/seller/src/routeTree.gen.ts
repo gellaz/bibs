@@ -44,7 +44,7 @@ import { Route as AuthenticatedStoreArchivedRouteImport } from './routes/_authen
 import { Route as AuthenticatedStoreClosuresRouteImport } from './routes/_authenticated/store/closures'
 import { Route as AuthenticatedStoreNewRouteImport } from './routes/_authenticated/store/new'
 import { Route as AuthenticatedTeamIndexRouteImport } from './routes/_authenticated/team/index'
-import { Route as AuthenticatedStoreNewProcessingRouteImport } from './routes/_authenticated/store/new.processing'
+import { Route as AuthenticatedStoreNewProcessingRouteImport } from './routes/_authenticated/store/new_.processing'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -238,9 +238,9 @@ const AuthenticatedTeamIndexRoute = AuthenticatedTeamIndexRouteImport.update({
 } as any)
 const AuthenticatedStoreNewProcessingRoute =
   AuthenticatedStoreNewProcessingRouteImport.update({
-    id: '/processing',
-    path: '/processing',
-    getParentRoute: () => AuthenticatedStoreNewRoute,
+    id: '/new_/processing',
+    path: '/new/processing',
+    getParentRoute: () => AuthenticatedStoreRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -272,7 +272,7 @@ export interface FileRoutesByFullPath {
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/store/archived': typeof AuthenticatedStoreArchivedRoute
   '/store/closures': typeof AuthenticatedStoreClosuresRoute
-  '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
+  '/store/new': typeof AuthenticatedStoreNewRoute
   '/orders/': typeof AuthenticatedOrdersIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
   '/promotions/': typeof AuthenticatedPromotionsIndexRoute
@@ -304,7 +304,7 @@ export interface FileRoutesByTo {
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/store/archived': typeof AuthenticatedStoreArchivedRoute
   '/store/closures': typeof AuthenticatedStoreClosuresRoute
-  '/store/new': typeof AuthenticatedStoreNewRouteWithChildren
+  '/store/new': typeof AuthenticatedStoreNewRoute
   '/orders': typeof AuthenticatedOrdersIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
   '/promotions': typeof AuthenticatedPromotionsIndexRoute
@@ -343,13 +343,13 @@ export interface FileRoutesById {
   '/_authenticated/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/_authenticated/store/archived': typeof AuthenticatedStoreArchivedRoute
   '/_authenticated/store/closures': typeof AuthenticatedStoreClosuresRoute
-  '/_authenticated/store/new': typeof AuthenticatedStoreNewRouteWithChildren
+  '/_authenticated/store/new': typeof AuthenticatedStoreNewRoute
   '/_authenticated/orders/': typeof AuthenticatedOrdersIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
   '/_authenticated/promotions/': typeof AuthenticatedPromotionsIndexRoute
   '/_authenticated/store/': typeof AuthenticatedStoreIndexRoute
   '/_authenticated/team/': typeof AuthenticatedTeamIndexRoute
-  '/_authenticated/store/new/processing': typeof AuthenticatedStoreNewProcessingRoute
+  '/_authenticated/store/new_/processing': typeof AuthenticatedStoreNewProcessingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -458,7 +458,7 @@ export interface FileRouteTypes {
     | '/_authenticated/promotions/'
     | '/_authenticated/store/'
     | '/_authenticated/team/'
-    | '/_authenticated/store/new/processing'
+    | '/_authenticated/store/new_/processing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -718,12 +718,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTeamIndexRouteImport
       parentRoute: typeof AuthenticatedTeamRoute
     }
-    '/_authenticated/store/new/processing': {
-      id: '/_authenticated/store/new/processing'
-      path: '/processing'
+    '/_authenticated/store/new_/processing': {
+      id: '/_authenticated/store/new_/processing'
+      path: '/new/processing'
       fullPath: '/store/new/processing'
       preLoaderRoute: typeof AuthenticatedStoreNewProcessingRouteImport
-      parentRoute: typeof AuthenticatedStoreNewRoute
+      parentRoute: typeof AuthenticatedStoreRoute
     }
   }
 }
@@ -777,31 +777,20 @@ const AuthenticatedPromotionsRouteWithChildren =
     AuthenticatedPromotionsRouteChildren,
   )
 
-interface AuthenticatedStoreNewRouteChildren {
-  AuthenticatedStoreNewProcessingRoute: typeof AuthenticatedStoreNewProcessingRoute
-}
-
-const AuthenticatedStoreNewRouteChildren: AuthenticatedStoreNewRouteChildren = {
-  AuthenticatedStoreNewProcessingRoute: AuthenticatedStoreNewProcessingRoute,
-}
-
-const AuthenticatedStoreNewRouteWithChildren =
-  AuthenticatedStoreNewRoute._addFileChildren(
-    AuthenticatedStoreNewRouteChildren,
-  )
-
 interface AuthenticatedStoreRouteChildren {
   AuthenticatedStoreArchivedRoute: typeof AuthenticatedStoreArchivedRoute
   AuthenticatedStoreClosuresRoute: typeof AuthenticatedStoreClosuresRoute
-  AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRouteWithChildren
+  AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRoute
   AuthenticatedStoreIndexRoute: typeof AuthenticatedStoreIndexRoute
+  AuthenticatedStoreNewProcessingRoute: typeof AuthenticatedStoreNewProcessingRoute
 }
 
 const AuthenticatedStoreRouteChildren: AuthenticatedStoreRouteChildren = {
   AuthenticatedStoreArchivedRoute: AuthenticatedStoreArchivedRoute,
   AuthenticatedStoreClosuresRoute: AuthenticatedStoreClosuresRoute,
-  AuthenticatedStoreNewRoute: AuthenticatedStoreNewRouteWithChildren,
+  AuthenticatedStoreNewRoute: AuthenticatedStoreNewRoute,
   AuthenticatedStoreIndexRoute: AuthenticatedStoreIndexRoute,
+  AuthenticatedStoreNewProcessingRoute: AuthenticatedStoreNewProcessingRoute,
 }
 
 const AuthenticatedStoreRouteWithChildren =
