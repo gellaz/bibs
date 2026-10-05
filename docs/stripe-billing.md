@@ -1,6 +1,8 @@
 # Stripe billing — developer runbook
 
 How money works in bibs today, and how to exercise the whole flow on your machine.
+For the conceptual guide to every payment flow, with worked examples and Stripe fees,
+see [pagamenti.md](pagamenti.md).
 Architecture context: [architecture.md](architecture.md). Design rationale:
 [the billing spec](superpowers/specs/2026-05-26-seller-store-subscription-billing-design.md).
 
