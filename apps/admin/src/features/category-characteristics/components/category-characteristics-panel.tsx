@@ -17,9 +17,9 @@ import { SearchIcon } from "lucide-react";
 import { useState } from "react";
 import {
 	type CharacteristicDataType,
-	DATA_TYPE_LABELS,
-	productsPhrase,
+	dataTypeLabel,
 } from "@/features/product-characteristics/data-type";
+import { m } from "@/paraglide/messages";
 import { useCategoryCharacteristics } from "../hooks/use-category-characteristics";
 
 interface Row {
@@ -33,6 +33,20 @@ interface Row {
 }
 
 type Tab = "all" | "included";
+
+/** «valori su N prodotti» nella riga di una caratteristica. */
+export function valuesOn(count: number) {
+	return count === 1
+		? m.characteristics_values_on_one({ count })
+		: m.characteristics_values_on({ count });
+}
+
+/** Il testo della conferma di rimozione di una caratteristica con valori. */
+export function removeDescription(count: number) {
+	return count === 1
+		? m.characteristics_remove_description_one({ count })
+		: m.characteristics_remove_description({ count });
+}
 
 export function CategoryCharacteristicsPanel({
 	categoryId,
@@ -67,16 +81,16 @@ export function CategoryCharacteristicsPanel({
 	const columns: DataTableColumnDef<Row>[] = [
 		{
 			id: "name",
-			header: "Caratteristica",
+			header: m.characteristics_column_name(),
 			meta: { cellClassName: "pl-4", headerClassName: "pl-4" },
 			cell: ({ row }) => (
 				<div className="flex flex-col">
 					<span className="font-medium">{row.original.name}</span>
 					<span className="text-muted-foreground text-xs">
-						{DATA_TYPE_LABELS[row.original.dataType]}
+						{dataTypeLabel(row.original.dataType)}
 						{row.original.unit ? ` · ${row.original.unit}` : ""}
 						{row.original.valueCount > 0
-							? ` · valori su ${productsPhrase(row.original.valueCount)}`
+							? ` · ${valuesOn(row.original.valueCount)}`
 							: ""}
 					</span>
 				</div>
@@ -84,20 +98,22 @@ export function CategoryCharacteristicsPanel({
 		},
 		{
 			id: "included",
-			header: "Inclusa",
+			header: m.characteristics_column_included(),
 			meta: { cellClassName: "w-24" },
 			cell: ({ row }) => (
 				<Switch
 					checked={row.original.included}
 					disabled={isMutating}
 					onCheckedChange={(v) => toggleIncluded(row.original, v)}
-					aria-label={`Includi ${row.original.name}`}
+					aria-label={m.characteristics_include_aria({
+						name: row.original.name,
+					})}
 				/>
 			),
 		},
 		{
 			id: "required",
-			header: "Obbligatoria",
+			header: m.characteristics_column_required(),
 			meta: { cellClassName: "w-28 pr-4", headerClassName: "pr-4" },
 			cell: ({ row }) => (
 				<Switch
@@ -106,7 +122,9 @@ export function CategoryCharacteristicsPanel({
 					onCheckedChange={(v) =>
 						include.mutate({ characteristicId: row.original.id, required: v })
 					}
-					aria-label={`Rendi obbligatoria ${row.original.name}`}
+					aria-label={m.characteristics_require_aria({
+						name: row.original.name,
+					})}
 				/>
 			),
 		},
@@ -116,24 +134,32 @@ export function CategoryCharacteristicsPanel({
 		<div className="flex min-h-0 flex-1 flex-col gap-3">
 			{error && (
 				<p className="text-destructive text-sm">
-					Errore nel caricamento: {error.message}
+					{m.common_load_error_with_message({ message: error.message })}
 				</p>
 			)}
 
 			<TabNav
 				tabs={[
-					{ value: "all", label: "Tutte", count: rows.length },
-					{ value: "included", label: "Incluse", count: includedCount },
+					{
+						value: "all",
+						label: m.characteristics_tab_all(),
+						count: rows.length,
+					},
+					{
+						value: "included",
+						label: m.characteristics_tab_included(),
+						count: includedCount,
+					},
 				]}
 				activeTab={tab}
 				onTabChange={(v) => setTab(v as Tab)}
-				label="Caratteristiche della categoria"
+				label={m.characteristics_tabs_label()}
 			/>
 
 			<div className="relative">
 				<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
 				<Input
-					placeholder="Cerca caratteristica..."
+					placeholder={m.characteristics_search()}
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 					className="pl-9"
@@ -150,8 +176,8 @@ export function CategoryCharacteristicsPanel({
 					emptyState={
 						<p className="text-muted-foreground text-sm">
 							{tab === "included"
-								? "Nessuna caratteristica inclusa in questa sotto-categoria."
-								: "Nessuna caratteristica corrisponde alla ricerca."}
+								? m.characteristics_matrix_empty_included()
+								: m.characteristics_matrix_empty_search()}
 						</p>
 					}
 				/>
@@ -164,17 +190,17 @@ export function CategoryCharacteristicsPanel({
 				<AlertDialogContent>
 					<AlertDialogHeader>
 						<AlertDialogTitle>
-							Rimuovere "{pendingRemoval?.name}"?
+							{m.characteristics_remove_title({
+								name: pendingRemoval?.name ?? "",
+							})}
 						</AlertDialogTitle>
 						<AlertDialogDescription>
-							Questa caratteristica ha valori su{" "}
-							{productsPhrase(pendingRemoval?.valueCount ?? 0)} di questa
-							sotto-categoria: verranno eliminati definitivamente.
+							{removeDescription(pendingRemoval?.valueCount ?? 0)}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel onClick={() => setPendingRemoval(null)}>
-							Annulla
+							{m.common_cancel()}
 						</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
@@ -187,7 +213,7 @@ export function CategoryCharacteristicsPanel({
 								setPendingRemoval(null);
 							}}
 						>
-							Rimuovi ed elimina i valori
+							{m.characteristics_remove_action()}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

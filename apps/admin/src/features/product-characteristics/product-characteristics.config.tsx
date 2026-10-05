@@ -8,12 +8,12 @@ import { ListChecksIcon } from "lucide-react";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import type { CsvImportResult } from "@/features/csv-import/components/csv-import-dialog";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 import { ProductCharacteristicForm } from "./components/product-characteristic-form";
 import {
 	CHARACTERISTIC_DATA_TYPES,
 	type CharacteristicDataType,
-	DATA_TYPE_LABELS,
-	productsPhrase,
+	dataTypeLabel,
 } from "./data-type";
 import type { ProductCharacteristicSubmit } from "./schemas/product-characteristic";
 
@@ -54,19 +54,19 @@ function toBody({ form }: ProductCharacteristicSubmit) {
 const extraColumns = (): DataTableColumnDef<ProductCharacteristic>[] => [
 	{
 		id: "dataType",
-		header: "Tipo",
+		header: m.common_type(),
 		meta: { cellClassName: "text-muted-foreground" },
-		cell: ({ row }) => DATA_TYPE_LABELS[row.original.dataType],
+		cell: ({ row }) => dataTypeLabel(row.original.dataType),
 	},
 	{
 		id: "unit",
-		header: "Unità",
+		header: m.characteristics_column_unit(),
 		meta: { cellClassName: "text-muted-foreground" },
 		cell: ({ row }) => row.original.unit ?? "—",
 	},
 	{
 		id: "options",
-		header: "Valori ammessi",
+		header: m.characteristics_column_options(),
 		meta: { cellClassName: "text-muted-foreground max-w-80 truncate" },
 		cell: ({ row }) => {
 			const { options } = row.original;
@@ -93,12 +93,14 @@ function DataTypeFilter({
 			className="w-48"
 			value={values.dataType ?? ""}
 			onChange={(e) => set("dataType", e.target.value)}
-			aria-label="Filtra per tipo"
+			aria-label={m.characteristics_filter_type()}
 		>
-			<NativeSelectOption value="">Tutti i tipi</NativeSelectOption>
+			<NativeSelectOption value="">
+				{m.characteristics_all_types()}
+			</NativeSelectOption>
 			{CHARACTERISTIC_DATA_TYPES.map((d) => (
 				<NativeSelectOption key={d} value={d}>
-					{DATA_TYPE_LABELS[d]}
+					{dataTypeLabel(d)}
 				</NativeSelectOption>
 			))}
 		</NativeSelect>
@@ -170,45 +172,48 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 			const res = await api().admin["product-characteristics"].import.post({
 				file,
 			});
-			return unwrap(res, "Errore durante l'import").data;
+			return unwrap(res, m.common_import_error()).data;
 		},
 		labels: () => ({
-			title: "Importa Caratteristiche Prodotto",
-			description:
-				"Carica un file CSV per creare o correggere in blocco il dizionario.",
-			formatHint:
-				"Header attesi: name, data_type, unit, options (separate da |). Le voci già presenti vengono aggiornate; un cambio di tipo su una voce con valori viene rifiutato e va fatto da qui.",
+			title: m.characteristics_import_title(),
+			description: m.characteristics_import_description(),
+			formatHint: m.characteristics_import_hint(),
 		}),
 	},
 
 	labels: () => ({
-		searchPlaceholder: "Cerca caratteristica...",
+		searchPlaceholder: m.characteristics_search(),
 		empty: {
-			title: "Nessuna caratteristica trovata",
-			subtitle: "Crea la prima caratteristica o importa il dizionario da CSV",
+			title: m.characteristics_empty_title(),
+			subtitle: m.characteristics_empty_subtitle(),
 		},
-		total: (n) => `Totale: ${n} caratteristic${n === 1 ? "a" : "he"}`,
+		total: (count) =>
+			count === 1
+				? m.characteristics_total_one({ count })
+				: m.characteristics_total({ count }),
 		createDialog: {
-			title: "Nuova Caratteristica",
-			description:
-				"Scegli nome e tipo. Le liste chiuse richiedono almeno un'opzione.",
+			title: m.configurations_new_characteristic(),
+			description: m.characteristics_create_description(),
 		},
 		editDialog: {
-			title: "Modifica Caratteristica",
-			description: "Modifica nome, tipo, unità e opzioni della caratteristica.",
+			title: m.characteristics_edit_title(),
+			description: m.characteristics_edit_description(),
 		},
-		deleteDescription: (name, e) =>
-			e.valueCount > 0
-				? `"${name}" ha valori su ${productsPhrase(e.valueCount)}: verranno eliminati definitivamente, insieme alla caratteristica e alle sue assegnazioni alle sotto-categorie.`
-				: `Sei sicuro di voler eliminare la caratteristica "${name}"? Verrà tolta da tutte le sotto-categorie. Questa azione non può essere annullata.`,
+		deleteDescription: (name, e) => {
+			const count = e.valueCount;
+			if (count === 0) return m.characteristics_delete_description({ name });
+			return count === 1
+				? m.characteristics_delete_with_values_one({ name, count })
+				: m.characteristics_delete_with_values({ name, count });
+		},
 		toasts: {
-			createOk: "Caratteristica creata con successo",
-			updateOk: "Caratteristica aggiornata con successo",
-			deleteOk: "Caratteristica eliminata con successo",
+			createOk: m.characteristics_create_ok(),
+			updateOk: m.characteristics_update_ok(),
+			deleteOk: m.characteristics_delete_ok(),
 		},
 		rowAria: {
-			edit: "Modifica caratteristica",
-			delete: "Elimina caratteristica",
+			edit: m.characteristics_edit_aria(),
+			delete: m.characteristics_delete_aria(),
 		},
 	}),
 };

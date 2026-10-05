@@ -1,6 +1,7 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 export function categoryCharacteristicsKey(categoryId: string) {
 	return ["admin-category-characteristics", categoryId] as const;
@@ -18,8 +19,7 @@ export function useCategoryCharacteristics(categoryId: string) {
 			const res = await endpoint().get();
 			if (res.error)
 				throw new Error(
-					res.error.value?.message ||
-						"Errore nel caricamento delle caratteristiche",
+					res.error.value?.message || m.characteristics_load_error(),
 				);
 			return res.data?.data ?? [];
 		},
@@ -46,9 +46,7 @@ export function useCategoryCharacteristics(categoryId: string) {
 				required: p.required,
 			});
 			if (res.error)
-				throw new Error(
-					res.error.value?.message || "Errore durante il salvataggio",
-				);
+				throw new Error(res.error.value?.message || m.common_save_error());
 		},
 		onSuccess: refresh,
 		onError: (e: Error) => toast.error(e.message),
@@ -65,9 +63,7 @@ export function useCategoryCharacteristics(categoryId: string) {
 				confirmAffected: p.confirmAffected,
 			});
 			if (res.error)
-				throw new Error(
-					res.error.value?.message || "Errore durante la rimozione",
-				);
+				throw new Error(res.error.value?.message || m.common_remove_error());
 		},
 		onSuccess: refresh,
 		// Anche sull'errore: un 409 per conteggio vecchio deve portare in pagina

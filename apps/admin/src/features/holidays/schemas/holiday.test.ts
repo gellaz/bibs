@@ -1,5 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { type HolidayFormData, holidayFormSchema } from "./holiday";
+import { setIntlLocaleResolver } from "@bibs/ui/lib/intl-locale";
+import { afterEach, describe, expect, it } from "vitest";
+import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
+import { type HolidayFormData, holidayFormSchema, monthNames } from "./holiday";
+
+const originalGetLocale = getLocale;
+
+afterEach(() => {
+	overwriteGetLocale(originalGetLocale);
+	setIntlLocaleResolver(() => "it-IT");
+});
 
 function errorPaths(data: HolidayFormData) {
 	const result = holidayFormSchema.safeParse(data);
@@ -53,5 +62,48 @@ describe("holidayFormSchema", () => {
 		expect(
 			errorPaths({ type: "fixed", name: "", month: "1", day: "1" }),
 		).toEqual(["name"]);
+	});
+});
+
+describe("messaggi dello schema", () => {
+	function messages(data: HolidayFormData) {
+		const result = holidayFormSchema.safeParse(data);
+		return result.success ? [] : result.error.issues.map((i) => i.message);
+	}
+
+	it("in italiano", () => {
+		overwriteGetLocale(() => "it");
+		expect(messages({ type: "fixed", name: "", month: "13" })).toEqual([
+			"Il nome è obbligatorio",
+			"Mese non valido",
+			"Giorno non valido",
+		]);
+	});
+
+	it("follow the current language", () => {
+		overwriteGetLocale(() => "en");
+		expect(messages({ type: "one_off", name: "" })).toEqual([
+			"Name is required",
+			"Date is required",
+		]);
+		expect(messages({ type: "easter_relative", name: "Easter" })).toEqual([
+			"Offset is required",
+		]);
+	});
+});
+
+describe("monthNames", () => {
+	it("dodici mesi con l'iniziale maiuscola", () => {
+		setIntlLocaleResolver(() => "it-IT");
+		const months = monthNames();
+		expect(months).toHaveLength(12);
+		expect(months[0]).toBe("Gennaio");
+		expect(months[11]).toBe("Dicembre");
+	});
+
+	it("follows the current language", () => {
+		setIntlLocaleResolver(() => "en-GB");
+		expect(monthNames()[0]).toBe("January");
+		expect(monthNames()[7]).toBe("August");
 	});
 });

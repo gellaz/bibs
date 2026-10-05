@@ -1,9 +1,14 @@
 import { z } from "zod";
+import { m } from "@/paraglide/messages";
 import { CHARACTERISTIC_DATA_TYPES } from "../data-type";
 
 export const productCharacteristicFormSchema = z
 	.object({
-		name: z.string().trim().min(1, "Il nome è obbligatorio").max(100),
+		name: z
+			.string()
+			.trim()
+			.min(1, { error: () => m.common_name_required() })
+			.max(100),
 		dataType: z.enum(CHARACTERISTIC_DATA_TYPES),
 		// La lunghezza massima si valida in superRefine, solo quando il campo è
 		// visibile: un `.max()` qui bloccherebbe il salvataggio in silenzio anche
@@ -22,7 +27,7 @@ export const productCharacteristicFormSchema = z
 			ctx.addIssue({
 				code: "custom",
 				path: ["unit"],
-				message: "L'unità di misura non può superare 20 caratteri",
+				message: m.characteristics_unit_too_long(),
 			});
 		}
 
@@ -33,7 +38,7 @@ export const productCharacteristicFormSchema = z
 				ctx.addIssue({
 					code: "custom",
 					path: ["options", index, "value"],
-					message: "Il valore dell'opzione non può superare 100 caratteri",
+					message: m.characteristics_option_too_long(),
 				});
 			}
 		});
@@ -43,7 +48,7 @@ export const productCharacteristicFormSchema = z
 			ctx.addIssue({
 				code: "custom",
 				path: ["options"],
-				message: "Una lista chiusa richiede almeno un'opzione",
+				message: m.characteristics_options_required(),
 			});
 		}
 		const dup = values.find((v, i) => values.indexOf(v) !== i);
@@ -51,7 +56,7 @@ export const productCharacteristicFormSchema = z
 			ctx.addIssue({
 				code: "custom",
 				path: ["options"],
-				message: `Opzione ripetuta: "${dup}"`,
+				message: m.characteristics_option_duplicate({ value: dup }),
 			});
 		}
 	});

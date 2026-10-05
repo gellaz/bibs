@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
 import {
 	type ProductCharacteristicFormData,
 	productCharacteristicFormSchema,
@@ -48,5 +49,21 @@ describe("productCharacteristicFormSchema", () => {
 
 	it("le opzioni non contano per un tipo diverso da enum", () => {
 		expect(parse({ dataType: "boolean", options: [] }).success).toBe(true);
+	});
+});
+
+describe("productCharacteristicFormSchema in English", () => {
+	const originalGetLocale = getLocale;
+	afterEach(() => overwriteGetLocale(originalGetLocale));
+
+	it("reads its messages at validation time", () => {
+		overwriteGetLocale(() => "en");
+		expect(messages(parse({ name: " " }))).toContain("Name is required");
+		expect(messages(parse({ options: [] }))).toContain(
+			"A fixed list needs at least one option",
+		);
+		expect(
+			messages(parse({ options: [{ value: "Red" }, { value: "Red" }] })),
+		).toContain('Duplicate option: "Red"');
 	});
 });

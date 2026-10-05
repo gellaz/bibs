@@ -1,3 +1,5 @@
+import { m } from "@/paraglide/messages";
+
 export const CHARACTERISTIC_DATA_TYPES = [
 	"text",
 	"number",
@@ -6,13 +8,16 @@ export const CHARACTERISTIC_DATA_TYPES = [
 ] as const;
 export type CharacteristicDataType = (typeof CHARACTERISTIC_DATA_TYPES)[number];
 
-export const DATA_TYPE_LABELS: Record<CharacteristicDataType, string> = {
-	text: "Testo",
-	number: "Numero",
-	boolean: "Sì/No",
-	enum: "Lista chiusa",
-};
-
-export function productsPhrase(n: number): string {
-	return `${n} prodott${n === 1 ? "o" : "i"}`;
+/** Etichetta del tipo nella lingua corrente: letta a ogni render. */
+export function dataTypeLabel(dataType: CharacteristicDataType): string {
+	switch (dataType) {
+		case "text":
+			return m.characteristics_type_text();
+		case "number":
+			return m.characteristics_type_number();
+		case "boolean":
+			return m.characteristics_type_boolean();
+		case "enum":
+			return m.characteristics_type_enum();
+	}
 }

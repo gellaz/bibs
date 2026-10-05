@@ -25,12 +25,9 @@ import { PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import type { CrudFormProps } from "@/features/crud/category-crud-panel";
-import {
-	CHARACTERISTIC_DATA_TYPES,
-	DATA_TYPE_LABELS,
-	productsPhrase,
-} from "../data-type";
-import { characteristicUpdateImpact } from "../impact";
+import { m } from "@/paraglide/messages";
+import { CHARACTERISTIC_DATA_TYPES, dataTypeLabel } from "../data-type";
+import { characteristicUpdateImpact, confirmDescription } from "../impact";
 import {
 	type ProductCharacteristicFormData,
 	type ProductCharacteristicSubmit,
@@ -90,17 +87,21 @@ export function ProductCharacteristicForm({
 			<form onSubmit={handleSubmit(submit)}>
 				<div className="space-y-4 py-4">
 					<Field data-invalid={!!errors.name}>
-						<FieldLabel htmlFor="characteristic-name">Nome</FieldLabel>
+						<FieldLabel htmlFor="characteristic-name">
+							{m.common_name()}
+						</FieldLabel>
 						<Input
 							id="characteristic-name"
-							placeholder="Es. Colore"
+							placeholder={m.characteristics_name_placeholder()}
 							{...register("name")}
 						/>
 						<FieldError errors={[errors.name]} />
 					</Field>
 
 					<Field>
-						<FieldLabel htmlFor="characteristic-type">Tipo</FieldLabel>
+						<FieldLabel htmlFor="characteristic-type">
+							{m.common_type()}
+						</FieldLabel>
 						<NativeSelect
 							id="characteristic-type"
 							className="w-full"
@@ -108,14 +109,17 @@ export function ProductCharacteristicForm({
 						>
 							{CHARACTERISTIC_DATA_TYPES.map((d) => (
 								<NativeSelectOption key={d} value={d}>
-									{DATA_TYPE_LABELS[d]}
+									{dataTypeLabel(d)}
 								</NativeSelectOption>
 							))}
 						</NativeSelect>
 						{baseline && baseline.valueCount > 0 && (
 							<FieldDescription>
-								Cambiare tipo elimina i valori già compilati su{" "}
-								{productsPhrase(baseline.valueCount)}.
+								{baseline.valueCount === 1
+									? m.characteristics_type_change_hint_one({ count: 1 })
+									: m.characteristics_type_change_hint({
+											count: baseline.valueCount,
+										})}
 							</FieldDescription>
 						)}
 					</Field>
@@ -123,15 +127,15 @@ export function ProductCharacteristicForm({
 					{dataType === "number" && (
 						<Field data-invalid={!!errors.unit}>
 							<FieldLabel htmlFor="characteristic-unit">
-								Unità di misura
+								{m.characteristics_unit()}
 							</FieldLabel>
 							<Input
 								id="characteristic-unit"
-								placeholder="Es. g, cm, W"
+								placeholder={m.characteristics_unit_placeholder()}
 								{...register("unit")}
 							/>
 							<FieldDescription>
-								Facoltativa. Cambiarla non converte i valori già inseriti.
+								{m.characteristics_unit_hint()}
 							</FieldDescription>
 							<FieldError errors={[errors.unit]} />
 						</Field>
@@ -139,7 +143,7 @@ export function ProductCharacteristicForm({
 
 					{dataType === "enum" && (
 						<Field data-invalid={!!errors.options}>
-							<FieldLabel>Opzioni</FieldLabel>
+							<FieldLabel>{m.characteristics_options()}</FieldLabel>
 							<div className="space-y-2">
 								{/* Colore, il caso reale più estremo, ha 17 opzioni: senza un
 								limite di altezza qui la finestra di dialogo (che non ha un suo
@@ -150,14 +154,18 @@ export function ProductCharacteristicForm({
 										<div key={field.id} className="space-y-1">
 											<div className="flex items-center gap-2">
 												<Input
-													aria-label={`Opzione ${index + 1}`}
+													aria-label={m.characteristics_option_aria({
+														n: index + 1,
+													})}
 													{...register(`options.${index}.value`)}
 												/>
 												<Button
 													type="button"
 													variant="ghost"
 													size="icon-sm"
-													aria-label={`Rimuovi opzione ${index + 1}`}
+													aria-label={m.characteristics_remove_option_aria({
+														n: index + 1,
+													})}
 													onClick={() => remove(index)}
 												>
 													<XIcon className="size-4" />
@@ -174,12 +182,11 @@ export function ProductCharacteristicForm({
 									onClick={() => append({ value: "" })}
 								>
 									<PlusIcon />
-									Aggiungi opzione
+									{m.characteristics_add_option()}
 								</Button>
 							</div>
 							<FieldDescription>
-								Rinominare un'opzione conserva i valori dei prodotti; rimuoverla
-								li elimina.
+								{m.characteristics_options_hint()}
 							</FieldDescription>
 							<FieldError errors={[errors.options?.root ?? errors.options]} />
 						</Field>
@@ -188,7 +195,7 @@ export function ProductCharacteristicForm({
 
 				<div className="flex justify-end gap-3">
 					<Button type="button" variant="outline" onClick={onCancel}>
-						Annulla
+						{m.common_cancel()}
 					</Button>
 					<Button type="submit" disabled={isPending}>
 						{isPending ? pendingLabel : submitLabel}
@@ -202,16 +209,16 @@ export function ProductCharacteristicForm({
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Conferma modifica</AlertDialogTitle>
+						<AlertDialogTitle>
+							{m.characteristics_confirm_title()}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							{typeChanged
-								? `Cambiando tipo, i valori già compilati su ${productsPhrase(pending?.affected ?? 0)} verranno eliminati definitivamente.`
-								: `Le opzioni rimosse sono in uso: ${productsPhrase(pending?.affected ?? 0)} perderanno il valore, che verrà eliminato definitivamente.`}
+							{confirmDescription(typeChanged, pending?.affected ?? 0)}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel onClick={() => setPending(null)}>
-							Annulla
+							{m.common_cancel()}
 						</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
@@ -225,7 +232,7 @@ export function ProductCharacteristicForm({
 								setPending(null);
 							}}
 						>
-							Elimina i valori e salva
+							{m.characteristics_confirm_action()}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
