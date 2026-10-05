@@ -17,7 +17,8 @@ authentication (email/password, RBAC via admin plugin). An OpenAPI spec is auto-
 - `bun run typecheck` — run TypeScript type checking (`tsc --noEmit`)
 - `bun test` — run all tests (unit + integration)
 - `bun run test:unit` — run unit tests only (`tests/unit/`)
-- `bun run test:integration` — run integration tests only (`tests/integration/`, 180s timeout)
+- `bun run test:integration` — run integration tests only (`tests/integration/`, 180s timeout; builds the test image first)
+- `bun run test:image` — build the `bibs-postgis-test:latest` image the integration tests start (needed once before running a single integration file with `bun test`)
 - `bun run infra:up` — start PostGIS (5432), MinIO (9000/9001) and Mailpit (8025/1025) containers
 - `bun run infra:down` — stop and remove containers
 - `bun run infra:reset` — stop containers and delete volumes (full reset)
@@ -725,7 +726,20 @@ Run tests:
 bun test            # all tests
 bun run test:unit   # unit only
 bun run test:integration  # integration only (requires Docker)
+bun run test:image && bun test tests/integration/<file>.test.ts  # a single integration file
 ```
+
+### Why the test image is built once, outside the test files
+
+`test:integration` runs `test:image` (`docker build` of `docker/postgis`, cached) and
+`setupTestContainer()` only *starts* that image — it throws if the image is missing
+instead of building it. Each file used to build it itself via testcontainers, which under
+`--parallel=4` meant concurrent BuildKit builds of the same tag: now and then one hung
+forever on `[internal] load remote build context` (testcontainers puts no timeout on a
+build), and the file failed on its 120 s `beforeAll` as "a beforeEach/afterEach hook
+timed out" with an `(unnamed)` test. Reproduced on Docker Desktop with 6 fresh processes
+building at once (2 of 6 stuck in the second round). Don't move the build back into the
+helper.
 
 ### Why integration tests run with `--isolate`
 

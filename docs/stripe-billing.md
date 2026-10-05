@@ -250,6 +250,7 @@ via testcontainers:
 
 ```bash
 cd apps/api
+bun run test:image                                                 # once: builds the PostGIS test image
 bun test tests/integration/stripe-webhook-scaffold.test.ts        # signature + idempotency wiring
 bun test tests/integration/seller-stores-checkout.test.ts
 bun test tests/integration/stripe-webhook-checkout-completed.test.ts
