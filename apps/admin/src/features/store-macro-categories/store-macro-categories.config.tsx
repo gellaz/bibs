@@ -3,6 +3,7 @@ import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import { StoreMacroCategoryForm } from "@/features/store-macro-categories/components/store-macro-category-form";
 import type { StoreMacroCategoryFormData } from "@/features/store-macro-categories/schemas/store-macro-category";
 import { api } from "@/lib/api";
+import { m } from "@/paraglide/messages";
 
 interface StoreMacroCategory {
 	id: string;
@@ -42,31 +43,34 @@ export const storeMacroCategoriesConfig: CategoryCrudConfig<
 	renderForm: (p) => <StoreMacroCategoryForm {...p} />,
 	editDefaults: (e) => ({ name: e.name }),
 
-	labels: {
-		searchPlaceholder: "Cerca macro categoria negozio...",
+	labels: () => ({
+		searchPlaceholder: m.categories_store_macro_search(),
 		empty: {
-			title: "Nessuna macro categoria negozio trovata",
-			subtitle: "Crea la prima macro categoria per iniziare",
+			title: m.categories_store_macro_empty(),
+			subtitle: m.categories_macro_empty_subtitle(),
 		},
-		total: (n) => `Totale: ${n} macro categori${n === 1 ? "a" : "e"}`,
+		total: (count) =>
+			count === 1
+				? m.categories_macro_total_one({ count })
+				: m.categories_macro_total({ count }),
 		createDialog: {
-			title: "Nuova Macro Categoria Negozio",
-			description: "Inserisci il nome della nuova macro categoria negozio.",
+			title: m.categories_store_macro_create_title(),
+			description: m.categories_store_macro_create_description(),
 		},
 		editDialog: {
-			title: "Modifica Macro Categoria Negozio",
-			description: "Modifica il nome della macro categoria selezionata.",
+			title: m.categories_store_macro_edit_title(),
+			description: m.categories_macro_edit_description(),
 		},
 		deleteDescription: (name) =>
-			`Sei sicuro di voler eliminare la macro categoria "${name}"? L'eliminazione fallirà se ci sono ancora categorie collegate.`,
+			m.categories_store_macro_delete_description({ name }),
 		toasts: {
-			createOk: "Macro categoria negozio creata con successo",
-			updateOk: "Macro categoria negozio aggiornata con successo",
-			deleteOk: "Macro categoria negozio eliminata con successo",
+			createOk: m.categories_store_macro_created(),
+			updateOk: m.categories_store_macro_updated(),
+			deleteOk: m.categories_store_macro_deleted(),
 		},
 		rowAria: {
-			edit: "Modifica macro categoria",
-			delete: "Elimina macro categoria",
+			edit: m.categories_macro_edit_aria(),
+			delete: m.categories_macro_delete_aria(),
 		},
-	},
+	}),
 };

@@ -95,7 +95,9 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 	update: (id: string, form: TForm) => Promise<EdenRes<unknown>>;
 	remove: (id: string, entity: TEntity) => Promise<EdenRes<unknown>>;
 
-	extraColumns?: DataTableColumnDef<TEntity>[];
+	// Funzioni e non costanti: i testi vanno letti a ogni render, nella lingua
+	// corrente (anche in SSR).
+	extraColumns?: () => DataTableColumnDef<TEntity>[];
 	emptyIcon: ReactNode;
 
 	renderForm: (p: CrudFormProps<TForm>) => ReactNode;
@@ -107,12 +109,10 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 	}) => ReactNode;
 	csvImport?: {
 		onImport: (file: File) => Promise<CsvImportResult>;
-		title: string;
-		description: string;
-		formatHint: string;
+		labels: () => { title: string; description: string; formatHint: string };
 	};
 
-	labels: {
+	labels: () => {
 		searchPlaceholder: string;
 		empty: { title: string; subtitle: string };
 		total: (n: number) => string;
@@ -191,7 +191,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					sortOrder,
 					...activeFilters,
 				}),
-				"Errore nel caricamento dei dati",
+				m.crud_load_error(),
 			),
 	});
 
@@ -204,24 +204,23 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 
 	const createMutation = useMutation({
 		mutationFn: (form: TForm) =>
-			unwrap(config.create(form), "Errore durante la creazione"),
+			unwrap(config.create(form), m.common_create_error()),
 		onSuccess: () => {
 			invalidateAll();
 			onCreateOpenChange(false);
-			toast.success(config.labels.toasts.createOk);
+			toast.success(config.labels().toasts.createOk);
 		},
-		onError: (e: Error) =>
-			toast.error(e.message || "Errore durante la creazione"),
+		onError: (e: Error) => toast.error(e.message || m.common_create_error()),
 	});
 
 	const updateMutation = useMutation({
 		mutationFn: ({ id, form }: { id: string; form: TForm }) =>
-			unwrap(config.update(id, form), "Errore durante l'aggiornamento"),
+			unwrap(config.update(id, form), m.common_update_error()),
 		onSuccess: () => {
 			invalidateAll();
 			setEditOpen(false);
 			setSelected(null);
-			toast.success(config.labels.toasts.updateOk);
+			toast.success(config.labels().toasts.updateOk);
 		},
 		onError: (e: Error) => {
 			// The 409 means the count the form confirmed against is stale.
@@ -229,24 +228,24 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			// `current`, derived from the fresh row) so a retry sends the real
 			// count instead of looping on the same confirmation forever.
 			invalidateAll();
-			toast.error(e.message || "Errore durante l'aggiornamento");
+			toast.error(e.message || m.common_update_error());
 		},
 	});
 
 	const deleteMutation = useMutation({
 		mutationFn: (entity: TEntity) =>
-			unwrap(config.remove(entity.id, entity), "Errore durante l'eliminazione"),
+			unwrap(config.remove(entity.id, entity), m.common_delete_error()),
 		onSuccess: () => {
 			invalidateAll();
 			setDeleteOpen(false);
 			setSelected(null);
-			toast.success(config.labels.toasts.deleteOk);
+			toast.success(config.labels().toasts.deleteOk);
 		},
 		onError: (e: Error) => {
 			// Same reasoning as above: refetch so the confirmation dialog (still
 			// open, reading `current`) shows the up-to-date count on retry.
 			invalidateAll();
-			toast.error(e.message || "Errore durante l'eliminazione");
+			toast.error(e.message || m.common_delete_error());
 		},
 	});
 
@@ -262,12 +261,15 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 		deleteMutation.mutate(current);
 	};
 
+	const labels = config.labels();
+	const csvLabels = config.csvImport?.labels();
+
 	const columns = useMemo<DataTableColumnDef<TEntity>[]>(() => {
 		const nameCol: DataTableColumnDef<TEntity> = {
 			id: "name",
 			enableHiding: false,
 			meta: {
-				menuLabel: "Nome",
+				menuLabel: m.common_name(),
 				headerClassName: "pl-4",
 				cellClassName: "pl-6 font-semibold",
 			},
@@ -277,7 +279,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					sortOrder={sortOrder}
 					onSort={() => handleSort("name")}
 				>
-					Nome
+					{m.common_name()}
 				</SortableHeadButton>
 			),
 			cell: ({ row }) => row.original.name,
@@ -285,7 +287,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 		const createdAtCol: DataTableColumnDef<TEntity> = {
 			id: "createdAt",
 			meta: {
-				menuLabel: "Data creazione",
+				menuLabel: m.crud_column_created_at_menu(),
 				cellClassName: "text-muted-foreground text-sm",
 			},
 			header: () => (
@@ -294,7 +296,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					sortOrder={sortOrder}
 					onSort={() => handleSort("createdAt")}
 				>
-					Data Creazione
+					{m.crud_column_created_at()}
 				</SortableHeadButton>
 			),
 			cell: ({ row }) => formatDate(row.original.createdAt, { long: true }),
@@ -322,7 +324,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 							setSelected(row.original);
 							setEditOpen(true);
 						}}
-						aria-label={config.labels.rowAria.edit}
+						aria-label={config.labels().rowAria.edit}
 					>
 						<PencilIcon className="size-4" />
 					</Button>
@@ -333,14 +335,19 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 							setSelected(row.original);
 							setDeleteOpen(true);
 						}}
-						aria-label={config.labels.rowAria.delete}
+						aria-label={config.labels().rowAria.delete}
 					>
 						<Trash2Icon className="size-4" />
 					</Button>
 				</div>
 			),
 		};
-		return [nameCol, ...(config.extraColumns ?? []), createdAtCol, actionsCol];
+		return [
+			nameCol,
+			...(config.extraColumns?.() ?? []),
+			createdAtCol,
+			actionsCol,
+		];
 	}, [sortBy, sortOrder, config]);
 
 	const rows = data?.data ?? EMPTY;
@@ -350,7 +357,9 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
-						Errore nel caricamento: {(error as Error).message}
+						{m.common_load_error_with_message({
+							message: (error as Error).message,
+						})}
 					</p>
 				</div>
 			)}
@@ -359,7 +368,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				<div className="relative flex-1">
 					<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
 					<Input
-						placeholder={config.labels.searchPlaceholder}
+						placeholder={labels.searchPlaceholder}
 						value={search}
 						onChange={(e) => {
 							setSearch(e.target.value);
@@ -372,7 +381,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				{config.csvImport && (
 					<Button variant="outline" onClick={() => setImportOpen(true)}>
 						<UploadIcon />
-						<span>Importa CSV</span>
+						<span>{m.crud_import_csv()}</span>
 					</Button>
 				)}
 			</div>
@@ -388,10 +397,10 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 						{config.emptyIcon}
 						<div>
 							<p className="text-muted-foreground font-medium">
-								{config.labels.empty.title}
+								{labels.empty.title}
 							</p>
 							<p className="text-muted-foreground/60 text-sm">
-								{config.labels.empty.subtitle}
+								{labels.empty.subtitle}
 							</p>
 						</div>
 					</div>
@@ -401,7 +410,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			{data?.pagination && data.pagination.total > 0 && (
 				<div className="flex items-center justify-between">
 					<div className="text-muted-foreground text-sm">
-						{config.labels.total(data.pagination.total)}
+						{labels.total(data.pagination.total)}
 					</div>
 					<div className="flex items-center gap-4">
 						<PageSizeSelector
@@ -425,17 +434,17 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			<Dialog open={createOpen} onOpenChange={onCreateOpenChange}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>{config.labels.createDialog.title}</DialogTitle>
+						<DialogTitle>{labels.createDialog.title}</DialogTitle>
 						<DialogDescription>
-							{config.labels.createDialog.description}
+							{labels.createDialog.description}
 						</DialogDescription>
 					</DialogHeader>
 					{config.renderForm({
 						onSubmit: (form) => createMutation.mutate(form),
 						onCancel: () => onCreateOpenChange(false),
 						isPending: createMutation.isPending,
-						submitLabel: "Crea",
-						pendingLabel: "Creazione...",
+						submitLabel: m.common_create(),
+						pendingLabel: m.common_creating(),
 					})}
 				</DialogContent>
 			</Dialog>
@@ -443,9 +452,9 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			<Dialog open={editOpen} onOpenChange={setEditOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>{config.labels.editDialog.title}</DialogTitle>
+						<DialogTitle>{labels.editDialog.title}</DialogTitle>
 						<DialogDescription>
-							{config.labels.editDialog.description}
+							{labels.editDialog.description}
 						</DialogDescription>
 					</DialogHeader>
 					{selected && current && (
@@ -459,21 +468,21 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 									setSelected(null);
 								},
 								isPending: updateMutation.isPending,
-								submitLabel: "Salva",
-								pendingLabel: "Salvataggio...",
+								submitLabel: m.common_save(),
+								pendingLabel: m.common_saving(),
 							})}
 						</div>
 					)}
 				</DialogContent>
 			</Dialog>
 
-			{config.csvImport && (
+			{config.csvImport && csvLabels && (
 				<CsvImportDialog
 					open={importOpen}
 					onOpenChange={setImportOpen}
-					title={config.csvImport.title}
-					description={config.csvImport.description}
-					formatHint={config.csvImport.formatHint}
+					title={csvLabels.title}
+					description={csvLabels.description}
+					formatHint={csvLabels.formatHint}
 					onImport={config.csvImport.onImport}
 					onSuccess={invalidateAll}
 				/>
@@ -482,11 +491,11 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+						<AlertDialogTitle>
+							{m.common_confirm_delete_title()}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							{current
-								? config.labels.deleteDescription(current.name, current)
-								: null}
+							{current ? labels.deleteDescription(current.name, current) : null}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -496,14 +505,16 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 								setSelected(null);
 							}}
 						>
-							Annulla
+							{m.common_cancel()}
 						</AlertDialogCancel>
 						<AlertDialogAction
 							variant="destructive"
 							onClick={handleDelete}
 							disabled={deleteMutation.isPending}
 						>
-							{deleteMutation.isPending ? "Eliminazione..." : "Elimina"}
+							{deleteMutation.isPending
+								? m.common_deleting()
+								: m.common_delete()}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

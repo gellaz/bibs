@@ -12,6 +12,7 @@ import {
 	type ProductCategoryFormData,
 	productCategoryFormSchema,
 } from "@/features/product-categories/schemas/product-category";
+import { m } from "@/paraglide/messages";
 
 interface MacroOption {
 	id: string;
@@ -64,7 +65,7 @@ export function ProductCategoryForm({
 			<div className="space-y-4 py-4">
 				<Field data-invalid={!!errors.macroCategoryId}>
 					<FieldLabel htmlFor="product-category-macro">
-						Macro Categoria
+						{m.categories_macro_column()}
 					</FieldLabel>
 					<NativeSelect
 						id="product-category-macro"
@@ -74,12 +75,12 @@ export function ProductCategoryForm({
 					>
 						<NativeSelectOption value="">
 							{macrosLoading
-								? "Caricamento..."
-								: "Seleziona macro categoria..."}
+								? m.common_loading()
+								: m.categories_macro_select_placeholder()}
 						</NativeSelectOption>
-						{macros.map((m) => (
-							<NativeSelectOption key={m.id} value={m.id}>
-								{m.name}
+						{macros.map((mc) => (
+							<NativeSelectOption key={mc.id} value={mc.id}>
+								{mc.name}
 							</NativeSelectOption>
 						))}
 					</NativeSelect>
@@ -87,10 +88,12 @@ export function ProductCategoryForm({
 				</Field>
 
 				<Field data-invalid={!!errors.name}>
-					<FieldLabel htmlFor="product-category-name">Nome</FieldLabel>
+					<FieldLabel htmlFor="product-category-name">
+						{m.common_name()}
+					</FieldLabel>
 					<Input
 						id="product-category-name"
-						placeholder="Es. Smartphone"
+						placeholder={m.categories_product_name_placeholder()}
 						{...register("name")}
 					/>
 					<FieldError errors={[errors.name]} />
@@ -99,7 +102,7 @@ export function ProductCategoryForm({
 
 			<div className="flex justify-end gap-3">
 				<Button type="button" variant="outline" onClick={onCancel}>
-					Annulla
+					{m.common_cancel()}
 				</Button>
 				<Button type="submit" disabled={isPending}>
 					{isPending ? pendingLabel : submitLabel}

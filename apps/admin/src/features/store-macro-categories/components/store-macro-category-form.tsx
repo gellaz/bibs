@@ -8,6 +8,7 @@ import {
 	type StoreMacroCategoryFormData,
 	storeMacroCategoryFormSchema,
 } from "@/features/store-macro-categories/schemas/store-macro-category";
+import { m } from "@/paraglide/messages";
 
 interface StoreMacroCategoryFormProps {
 	defaultValues?: StoreMacroCategoryFormData;
@@ -51,10 +52,12 @@ export function StoreMacroCategoryForm({
 		<form onSubmit={handleSubmit(onFormSubmit)}>
 			<div className="space-y-4 py-4">
 				<Field data-invalid={!!errors.name}>
-					<FieldLabel htmlFor="store-macro-category-name">Nome</FieldLabel>
+					<FieldLabel htmlFor="store-macro-category-name">
+						{m.common_name()}
+					</FieldLabel>
 					<Input
 						id="store-macro-category-name"
-						placeholder="Es. Alimentari"
+						placeholder={m.categories_store_macro_name_placeholder()}
 						autoFocus
 						{...register("name")}
 					/>
@@ -64,7 +67,7 @@ export function StoreMacroCategoryForm({
 
 			<div className="flex justify-end gap-3">
 				<Button type="button" variant="outline" onClick={onCancel}>
-					Annulla
+					{m.common_cancel()}
 				</Button>
 				<Button type="submit" disabled={isPending}>
 					{isPending ? pendingLabel : submitLabel}

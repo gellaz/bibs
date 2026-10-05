@@ -14,6 +14,7 @@ import {
 	type ProductMacroCategoryFormData,
 	productMacroCategoryFormSchema,
 } from "@/features/product-macro-categories/schemas/product-macro-category";
+import { m } from "@/paraglide/messages";
 
 interface ProductMacroCategoryFormProps {
 	defaultValues?: ProductMacroCategoryFormData;
@@ -59,10 +60,12 @@ export function ProductMacroCategoryForm({
 		<form onSubmit={handleSubmit(onFormSubmit)}>
 			<div className="space-y-4 py-4">
 				<Field data-invalid={!!errors.name}>
-					<FieldLabel htmlFor="product-macro-category-name">Nome</FieldLabel>
+					<FieldLabel htmlFor="product-macro-category-name">
+						{m.common_name()}
+					</FieldLabel>
 					<Input
 						id="product-macro-category-name"
-						placeholder="Es. Elettronica"
+						placeholder={m.categories_product_macro_name_placeholder()}
 						autoFocus
 						{...register("name")}
 					/>
@@ -71,7 +74,7 @@ export function ProductMacroCategoryForm({
 
 				<Field>
 					<FieldLabel htmlFor="product-macro-category-vat">
-						Aliquota IVA suggerita
+						{m.categories_product_macro_vat_label()}
 					</FieldLabel>
 					<Controller
 						control={control}
@@ -95,15 +98,14 @@ export function ProductMacroCategoryForm({
 						)}
 					/>
 					<p className="text-muted-foreground text-xs">
-						Pre-compila l'aliquota dei nuovi prodotti di questa macro. Il
-						venditore può sempre modificarla.
+						{m.categories_product_macro_vat_hint()}
 					</p>
 				</Field>
 			</div>
 
 			<div className="flex justify-end gap-3">
 				<Button type="button" variant="outline" onClick={onCancel}>
-					Annulla
+					{m.common_cancel()}
 				</Button>
 				<Button type="submit" disabled={isPending}>
 					{isPending ? pendingLabel : submitLabel}

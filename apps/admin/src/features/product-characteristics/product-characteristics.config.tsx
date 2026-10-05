@@ -51,7 +51,7 @@ function toBody({ form }: ProductCharacteristicSubmit) {
 	};
 }
 
-const extraColumns: DataTableColumnDef<ProductCharacteristic>[] = [
+const extraColumns = (): DataTableColumnDef<ProductCharacteristic>[] => [
 	{
 		id: "dataType",
 		header: "Tipo",
@@ -172,14 +172,16 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 			});
 			return unwrap(res, "Errore durante l'import").data;
 		},
-		title: "Importa Caratteristiche Prodotto",
-		description:
-			"Carica un file CSV per creare o correggere in blocco il dizionario.",
-		formatHint:
-			"Header attesi: name, data_type, unit, options (separate da |). Le voci già presenti vengono aggiornate; un cambio di tipo su una voce con valori viene rifiutato e va fatto da qui.",
+		labels: () => ({
+			title: "Importa Caratteristiche Prodotto",
+			description:
+				"Carica un file CSV per creare o correggere in blocco il dizionario.",
+			formatHint:
+				"Header attesi: name, data_type, unit, options (separate da |). Le voci già presenti vengono aggiornate; un cambio di tipo su una voce con valori viene rifiutato e va fatto da qui.",
+		}),
 	},
 
-	labels: {
+	labels: () => ({
 		searchPlaceholder: "Cerca caratteristica...",
 		empty: {
 			title: "Nessuna caratteristica trovata",
@@ -208,5 +210,5 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 			edit: "Modifica caratteristica",
 			delete: "Elimina caratteristica",
 		},
-	},
+	}),
 };

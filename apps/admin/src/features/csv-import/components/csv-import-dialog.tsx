@@ -18,6 +18,7 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { useEffect, useState } from "react";
+import { m } from "@/paraglide/messages";
 
 // Category imports are additive and report skipped rows; the dictionary's
 // import is in-place update and reports updated rows.
@@ -78,7 +79,7 @@ export function CsvImportDialog({
 			}
 		} catch (err) {
 			setErrorMessage(
-				err instanceof Error ? err.message : "Errore durante l'import",
+				err instanceof Error ? err.message : m.common_import_error(),
 			);
 		} finally {
 			setSubmitting(false);
@@ -97,21 +98,25 @@ export function CsvImportDialog({
 					<div className="space-y-4 py-2">
 						<div className="grid grid-cols-3 gap-3">
 							<div className="bg-muted/50 rounded-lg border p-3">
-								<div className="text-muted-foreground text-xs">Create</div>
+								<div className="text-muted-foreground text-xs">
+									{m.csv_created()}
+								</div>
 								<div className="text-2xl font-semibold tabular-nums">
 									{result.created}
 								</div>
 							</div>
 							<div className="bg-muted/50 rounded-lg border p-3">
 								<div className="text-muted-foreground text-xs">
-									{"updated" in result ? "Aggiornate" : "Saltate"}
+									{"updated" in result ? m.csv_updated() : m.csv_skipped()}
 								</div>
 								<div className="text-2xl font-semibold tabular-nums">
 									{"updated" in result ? result.updated : result.skipped}
 								</div>
 							</div>
 							<div className="bg-muted/50 rounded-lg border p-3">
-								<div className="text-muted-foreground text-xs">Errori</div>
+								<div className="text-muted-foreground text-xs">
+									{m.csv_errors()}
+								</div>
 								<div className="text-2xl font-semibold tabular-nums">
 									{result.failed}
 								</div>
@@ -123,8 +128,8 @@ export function CsvImportDialog({
 								<Table>
 									<TableHeader>
 										<TableRow className="bg-muted/50 hover:bg-muted/50">
-											<TableHead className="w-20 pl-4">Riga</TableHead>
-											<TableHead>Errore</TableHead>
+											<TableHead className="w-20 pl-4">{m.csv_row()}</TableHead>
+											<TableHead>{m.csv_error()}</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -144,7 +149,7 @@ export function CsvImportDialog({
 				) : (
 					<div className="space-y-4 py-2">
 						<Field>
-							<FieldLabel htmlFor="csv-file">File CSV</FieldLabel>
+							<FieldLabel htmlFor="csv-file">{m.csv_file()}</FieldLabel>
 							<Input
 								id="csv-file"
 								type="file"
@@ -165,7 +170,9 @@ export function CsvImportDialog({
 
 				<DialogFooter>
 					{result ? (
-						<Button onClick={() => onOpenChange(false)}>Chiudi</Button>
+						<Button onClick={() => onOpenChange(false)}>
+							{m.common_close()}
+						</Button>
 					) : (
 						<>
 							<Button
@@ -173,10 +180,10 @@ export function CsvImportDialog({
 								onClick={() => onOpenChange(false)}
 								disabled={submitting}
 							>
-								Annulla
+								{m.common_cancel()}
 							</Button>
 							<Button onClick={handleSubmit} disabled={!file || submitting}>
-								{submitting ? "Importazione..." : "Importa"}
+								{submitting ? m.csv_importing() : m.csv_import()}
 							</Button>
 						</>
 					)}
