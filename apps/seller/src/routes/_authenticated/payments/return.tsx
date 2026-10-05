@@ -28,7 +28,7 @@ function PaymentsReturnPage() {
 	return (
 		<div className="flex h-64 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
 			<Spinner className="size-8" />
-			{m["payments.return.checking"]()}
+			{m.payments_return_checking()}
 		</div>
 	);
 }

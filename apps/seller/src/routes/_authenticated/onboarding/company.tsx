@@ -19,27 +19,17 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
+import { LEGAL_FORMS } from "@/features/onboarding/legal-forms";
 import {
 	municipalitiesQueryOptions,
 	municipalityComboboxLabels,
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateCompany } from "@/hooks/use-onboarding";
+import { m } from "@/paraglide/messages";
 
 type CompanyFormData = Static<typeof CompanyBody>;
 const compiledSchema = TypeCompiler.Compile(CompanyBody);
-
-const LEGAL_FORMS = [
-	"Ditta individuale",
-	"SRL",
-	"SRLS",
-	"SAS",
-	"SNC",
-	"SPA",
-	"Cooperativa",
-	"Associazione",
-	"Altro",
-];
 
 export const Route = createFileRoute("/_authenticated/onboarding/company")({
 	loader: ({ context }) =>
@@ -76,7 +66,7 @@ function CompanyPage() {
 			void navigate({ to: "/onboarding/pending" });
 		} catch (err) {
 			setApiError(
-				err instanceof Error ? err.message : "Errore durante il salvataggio",
+				err instanceof Error ? err.message : m.onboarding_save_error(),
 			);
 		}
 	};
@@ -84,8 +74,8 @@ function CompanyPage() {
 	return (
 		<OnboardingLayout
 			currentStatus="pending_company"
-			title="Dati aziendali"
-			description="Inserisci le informazioni della tua azienda"
+			title={m.onboarding_company_title()}
+			description={m.onboarding_company_description()}
 		>
 			<form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
 				{apiError && (
@@ -95,7 +85,9 @@ function CompanyPage() {
 				)}
 
 				<Field data-invalid={!!errors.businessName}>
-					<FieldLabel htmlFor="businessName">Ragione sociale</FieldLabel>
+					<FieldLabel htmlFor="businessName">
+						{m.common_business_name()}
+					</FieldLabel>
 					<Input
 						id="businessName"
 						placeholder="La Bottega di Mario SRL"
@@ -106,7 +98,7 @@ function CompanyPage() {
 				</Field>
 
 				<Field data-invalid={!!errors.vatNumber}>
-					<FieldLabel htmlFor="vatNumber">Partita IVA</FieldLabel>
+					<FieldLabel htmlFor="vatNumber">{m.common_vat_number()}</FieldLabel>
 					<Input
 						id="vatNumber"
 						inputMode="numeric"
@@ -114,19 +106,19 @@ function CompanyPage() {
 						maxLength={11}
 						{...register("vatNumber")}
 					/>
-					<FieldDescription>
-						11 cifre — sarà verificata da un amministratore
-					</FieldDescription>
+					<FieldDescription>{m.onboarding_company_vat_hint()}</FieldDescription>
 					<FieldError errors={[errors.vatNumber]} />
 				</Field>
 
 				<Field data-invalid={!!errors.legalForm}>
-					<FieldLabel htmlFor="legalForm">Forma giuridica</FieldLabel>
+					<FieldLabel htmlFor="legalForm">{m.common_legal_form()}</FieldLabel>
 					<NativeSelect className="w-full" {...register("legalForm")}>
-						<NativeSelectOption value="">Seleziona...</NativeSelectOption>
+						<NativeSelectOption value="">
+							{m.onboarding_company_legal_form_placeholder()}
+						</NativeSelectOption>
 						{LEGAL_FORMS.map((form) => (
-							<NativeSelectOption key={form} value={form}>
-								{form}
+							<NativeSelectOption key={form.value} value={form.value}>
+								{form.label()}
 							</NativeSelectOption>
 						))}
 					</NativeSelect>
@@ -134,7 +126,9 @@ function CompanyPage() {
 				</Field>
 
 				<Field data-invalid={!!errors.addressLine1}>
-					<FieldLabel htmlFor="addressLine1">Indirizzo sede legale</FieldLabel>
+					<FieldLabel htmlFor="addressLine1">
+						{m.onboarding_company_address()}
+					</FieldLabel>
 					<Input
 						id="addressLine1"
 						placeholder="Via Roma 1"
@@ -144,7 +138,9 @@ function CompanyPage() {
 				</Field>
 
 				<Field data-invalid={!!errors.municipalityId}>
-					<FieldLabel htmlFor="municipalityId">Comune</FieldLabel>
+					<FieldLabel htmlFor="municipalityId">
+						{m.common_municipality()}
+					</FieldLabel>
 					<Controller
 						control={control}
 						name="municipalityId"
@@ -165,7 +161,7 @@ function CompanyPage() {
 				</Field>
 
 				<Field data-invalid={!!errors.zipCode}>
-					<FieldLabel htmlFor="zipCode">CAP</FieldLabel>
+					<FieldLabel htmlFor="zipCode">{m.common_zip()}</FieldLabel>
 					<Input
 						id="zipCode"
 						placeholder="00100"
@@ -181,7 +177,7 @@ function CompanyPage() {
 						disabled={isSubmitting || goBackMutation.isPending}
 						className="flex-1"
 					>
-						{isSubmitting ? "Salvataggio..." : "Continua"}
+						{isSubmitting ? m.onboarding_saving() : m.onboarding_continue()}
 					</Button>
 					<Button
 						type="button"
@@ -193,11 +189,15 @@ function CompanyPage() {
 								await goBackMutation.mutateAsync(undefined);
 								void navigate({ to: "/onboarding/document" });
 							} catch (err) {
-								setApiError(err instanceof Error ? err.message : "Errore");
+								setApiError(
+									err instanceof Error ? err.message : m.common_error(),
+								);
 							}
 						}}
 					>
-						{goBackMutation.isPending ? "Attendere..." : "Indietro"}
+						{goBackMutation.isPending
+							? m.onboarding_waiting()
+							: m.common_back()}
 					</Button>
 				</div>
 			</form>

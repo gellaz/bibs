@@ -19,7 +19,7 @@ import {
 type OnlinePaymentsStatus = "none" | "incomplete" | "in_review" | "enabled";
 
 // Paraglide genera funzioni per chiave; l'accesso con template literal
-// (`m[`payments.status.${status}`]`) non tipizza su un index dinamico, quindi
+// (`m[`payments_status_${status}`]`) non tipizza su un index dinamico, quindi
 // si usa una mappa esplicita chiusa sulla union letterale dello stato.
 const STATUS_VARIANT: Record<OnlinePaymentsStatus, "secondary" | "outline"> = {
 	none: "secondary",
@@ -29,17 +29,17 @@ const STATUS_VARIANT: Record<OnlinePaymentsStatus, "secondary" | "outline"> = {
 };
 
 const STATUS_LABEL: Record<OnlinePaymentsStatus, () => string> = {
-	none: m["payments.status.none"],
-	incomplete: m["payments.status.incomplete"],
-	in_review: m["payments.status.in_review"],
-	enabled: m["payments.status.enabled"],
+	none: m.payments_status_none,
+	incomplete: m.payments_status_incomplete,
+	in_review: m.payments_status_in_review,
+	enabled: m.payments_status_enabled,
 };
 
 const STATUS_BODY: Record<OnlinePaymentsStatus, () => string> = {
-	none: m["payments.none.body"],
-	incomplete: m["payments.incomplete.body"],
-	in_review: m["payments.in_review.body"],
-	enabled: m["payments.enabled.body"],
+	none: m.payments_none_body,
+	incomplete: m.payments_incomplete_body,
+	in_review: m.payments_in_review_body,
+	enabled: m.payments_enabled_body,
 };
 
 export function OnlinePaymentsCard() {
@@ -58,7 +58,7 @@ export function OnlinePaymentsCard() {
 		<Card>
 			<CardHeader>
 				<div className="flex items-center justify-between gap-3">
-					<CardTitle>{m["payments.title"]()}</CardTitle>
+					<CardTitle>{m.payments_title()}</CardTitle>
 					<Badge
 						variant={STATUS_VARIANT[op.status]}
 						className={
@@ -70,13 +70,13 @@ export function OnlinePaymentsCard() {
 						{STATUS_LABEL[op.status]()}
 					</Badge>
 				</div>
-				<CardDescription>{m["payments.description"]()}</CardDescription>
+				<CardDescription>{m.payments_description()}</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4 text-sm">
 				<p>{STATUS_BODY[op.status]()}</p>
 				{op.status === "enabled" && !op.payoutsEnabled && (
 					<p className="text-muted-foreground">
-						{m["payments.payouts.pending"]()}
+						{m.payments_payouts_pending()}
 					</p>
 				)}
 				<div className="flex flex-wrap gap-2">
@@ -86,8 +86,8 @@ export function OnlinePaymentsCard() {
 							disabled={start.isPending || start.isSuccess}
 						>
 							{start.isPending || start.isSuccess
-								? m["payments.redirecting"]()
-								: m["payments.cta.start"]()}
+								? m.payments_redirecting()
+								: m.payments_cta_start()}
 						</Button>
 					)}
 					{(op.status === "incomplete" || op.status === "in_review") && (
@@ -96,8 +96,8 @@ export function OnlinePaymentsCard() {
 							disabled={start.isPending || start.isSuccess}
 						>
 							{start.isPending || start.isSuccess
-								? m["payments.redirecting"]()
-								: m["payments.cta.continue"]()}
+								? m.payments_redirecting()
+								: m.payments_cta_continue()}
 						</Button>
 					)}
 					{op.status !== "none" && op.status !== "enabled" && (
@@ -107,7 +107,7 @@ export function OnlinePaymentsCard() {
 							disabled={sync.isPending}
 						>
 							{sync.isPending && <Spinner className="size-4" />}
-							{m["payments.cta.refresh"]()}
+							{m.payments_cta_refresh()}
 						</Button>
 					)}
 				</div>

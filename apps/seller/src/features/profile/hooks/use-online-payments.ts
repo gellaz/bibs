@@ -7,7 +7,7 @@ export function useStartOnboarding() {
 	return useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.settings.payments.onboarding.post();
-			const { url } = unwrap(r, m["payments.error.start"]()).data;
+			const { url } = unwrap(r, m.payments_error_start()).data;
 			window.location.assign(url);
 		},
 	});
@@ -18,7 +18,7 @@ export function useSyncOnlinePayments() {
 	return useMutation({
 		mutationFn: async () => {
 			const r = await api().seller.settings.payments.sync.post();
-			return unwrap(r, m["payments.error.sync"]()).data;
+			return unwrap(r, m.payments_error_sync()).data;
 		},
 		onSuccess: () =>
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] }),

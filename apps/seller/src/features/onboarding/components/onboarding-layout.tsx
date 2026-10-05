@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { authClient } from "@/lib/auth-client";
+import { m } from "@/paraglide/messages";
 import { type OnboardingStatus, OnboardingStepper } from "./onboarding-stepper";
 
 interface OnboardingLayoutProps {
@@ -50,7 +51,7 @@ export function OnboardingLayout({
 								className="w-full text-muted-foreground"
 								onClick={handleLogout}
 							>
-								Esci
+								{m.common_sign_out()}
 							</Button>
 						</div>
 					</CardContent>
