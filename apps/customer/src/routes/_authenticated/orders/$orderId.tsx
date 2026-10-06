@@ -18,6 +18,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { NoticePage } from "@/components/notice";
 import { TileImage } from "@/components/tile";
+import {
+	paidCancelDescription,
+	paidCancelSuccess,
+} from "@/features/orders/cancel-copy";
 import { canCustomerCancel } from "@/features/orders/order-display";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
@@ -216,9 +220,7 @@ function OrderDetailPage() {
 							</AlertDialogTitle>
 							<AlertDialogDescription>
 								{paid
-									? m.orders_cancel_paid_description({
-											amount: formatPriceEur(order.total),
-										})
+									? paidCancelDescription(order, formatPriceEur)
 									: m.orders_cancel_description()}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
@@ -231,7 +233,7 @@ function OrderDetailPage() {
 										onSuccess: () =>
 											toast.success(
 												paid
-													? m.orders_cancel_paid_success()
+													? paidCancelSuccess(order)
 													: m.orders_cancel_success(),
 											),
 									})
