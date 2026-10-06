@@ -293,7 +293,7 @@ PaymentIntent.
 **Anteprima.** `GET /customer/checkout/preview` restituisce gli importi con e senza punti
 usando le stesse funzioni della conferma, in sola lettura: l'interruttore non fa chiamate. Se
 il saldo scende tra anteprima e conferma, la conferma risponde 409 («Punti insufficienti,
-riprova») e l'app rilegge l'anteprima.
+riprova»): l'app mostra un avviso e riporta al carrello, e l'anteprima viene richiesta di nuovo alla riapertura del riepilogo.
 
 ## Cosa NON esiste ancora
 

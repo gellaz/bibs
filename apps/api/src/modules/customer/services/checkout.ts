@@ -325,12 +325,20 @@ export async function createCheckout(params: CreateCheckoutParams) {
 	// Un fallimento non tocca il cliente (gli ordini sono confermati): la quota
 	// punti la ritenta retryStoreTransfers.
 	if (zeroDue) {
-		const failed = await transferStorePayouts(id, null);
-		if (failed.length > 0)
+		try {
+			const failed = await transferStorePayouts(id, null);
+			if (failed.length > 0)
+				logger.error(
+					{ checkoutId: id, orderIds: failed },
+					"Quota punti al negozio rimasta in sospeso: la ritenta il cron",
+				);
+		} catch (err) {
+			// Mai far fallire la risposta: gli ordini sono già confermati.
 			logger.error(
-				{ checkoutId: id, orderIds: failed },
-				"Quota punti al negozio rimasta in sospeso: la ritenta il cron",
+				{ err, checkoutId: id },
+				"Trasferimento della quota punti fallito: la ritenta il cron",
 			);
+		}
 	}
 	return getCheckout({ checkoutId: id, customerProfileId });
 }
@@ -366,45 +374,49 @@ export async function previewCheckout(p: {
 	customerPoints: number;
 	stores: CheckoutStoreChoice[];
 }) {
-	return db.transaction(async (tx) => {
-		const resolved = await resolveCheckoutLines(tx, {
-			customerProfileId: p.customerProfileId,
-			stores: p.stores,
-			lock: false,
-		});
-		const plan = await priceCheckout(tx, {
-			customerProfileId: p.customerProfileId,
-			customerPoints: p.customerPoints,
-			usePoints: true,
-			resolved,
-		});
-		const pay = plan.filter((s) => s.priced.type === "pay_pickup");
-		const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
-		const grossPay = sum(pay.map((s) => s.priced.totalCents));
-		const discount = sum(pay.map((s) => s.discountCents));
-		return {
-			balance: p.customerPoints,
-			payInStore: fromCents(
-				sum(
-					plan
-						.filter((s) => s.priced.type === "reserve_pickup")
-						.map((s) => s.priced.totalCents),
+	// Sola lettura imposta da Postgres: l'anteprima non deve poter scrivere.
+	return db.transaction(
+		async (tx) => {
+			const resolved = await resolveCheckoutLines(tx, {
+				customerProfileId: p.customerProfileId,
+				stores: p.stores,
+				lock: false,
+			});
+			const plan = await priceCheckout(tx, {
+				customerProfileId: p.customerProfileId,
+				customerPoints: p.customerPoints,
+				usePoints: true,
+				resolved,
+			});
+			const pay = plan.filter((s) => s.priced.type === "pay_pickup");
+			const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
+			const grossPay = sum(pay.map((s) => s.priced.totalCents));
+			const discount = sum(pay.map((s) => s.discountCents));
+			return {
+				balance: p.customerPoints,
+				payInStore: fromCents(
+					sum(
+						plan
+							.filter((s) => s.priced.type === "reserve_pickup")
+							.map((s) => s.priced.totalCents),
+					),
 				),
-			),
-			withoutPoints: { amountDueOnline: fromCents(grossPay) },
-			withPoints:
-				discount > 0
-					? {
-							pointsSpent: sum(pay.map((s) => s.points)),
-							discount: fromCents(discount),
-							amountDueOnline: fromCents(grossPay - discount),
-							perStore: pay.map((s) => ({
-								storeId: s.choice.storeId,
-								pointsSpent: s.points,
-								discount: fromCents(s.discountCents),
-							})),
-						}
-					: null,
-		};
-	});
+				withoutPoints: { amountDueOnline: fromCents(grossPay) },
+				withPoints:
+					discount > 0
+						? {
+								pointsSpent: sum(pay.map((s) => s.points)),
+								discount: fromCents(discount),
+								amountDueOnline: fromCents(grossPay - discount),
+								perStore: pay.map((s) => ({
+									storeId: s.choice.storeId,
+									pointsSpent: s.points,
+									discount: fromCents(s.discountCents),
+								})),
+							}
+						: null,
+			};
+		},
+		{ accessMode: "read only" },
+	);
 }

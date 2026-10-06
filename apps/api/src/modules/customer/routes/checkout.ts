@@ -32,6 +32,7 @@ export const checkoutRoutes = new Elysia()
 		{
 			query: t.Object({
 				stores: t.String({
+					maxLength: 5000,
 					description:
 						"Scelta per negozio, `storeId:tipo` separati da virgola (tipo: reserve_pickup | pay_pickup)",
 				}),
@@ -83,7 +84,11 @@ export const checkoutRoutes = new Elysia()
 							{ description: "Modalità d'acquisto scelta per il negozio" },
 						),
 					}),
-					{ minItems: 1, description: "Negozi del carrello da ordinare" },
+					{
+						minItems: 1,
+						maxItems: 50,
+						description: "Negozi del carrello da ordinare",
+					},
 				),
 				usePoints: t.Optional(
 					t.Boolean({

@@ -342,6 +342,7 @@ describe("checkout con i punti", () => {
 			usePoints: true,
 			stores: [{ storeId: pay1.store.id, type: "pay_pickup" }],
 		});
+		expect(transfersCreate).toHaveBeenCalledTimes(1);
 		expect(result.orders[0].status).toBe("confirmed");
 		const [row] = await getTestDb()
 			.select()
