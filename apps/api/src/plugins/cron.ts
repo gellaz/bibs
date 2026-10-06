@@ -4,6 +4,7 @@ import { runAutoCancelSuspended } from "@/jobs/auto-cancel-suspended-stores";
 import { runExpirePending } from "@/jobs/expire-pending-store-creations";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
 import { expireUnpaidOrders } from "@/lib/jobs/expire-unpaid-orders";
+import { retryStoreTransfers } from "@/lib/jobs/retry-store-transfers";
 import { logger } from "@/lib/logger";
 
 export const cronJobs = new Elysia({ name: "cron-jobs" })
@@ -40,6 +41,28 @@ export const cronJobs = new Elysia({ name: "cron-jobs" })
 						);
 				} catch (error) {
 					logger.error({ err: error }, "Errore durante scadenza pagamenti");
+				}
+			},
+		}),
+	)
+	.use(
+		cron({
+			name: "retryStoreTransfers",
+			// Hourly, at :30 so it doesn't overlap the other hourly job
+			pattern: "30 * * * *",
+			async run() {
+				try {
+					const count = await retryStoreTransfers();
+					if (count > 0)
+						logger.info(
+							{ count },
+							"Trasferimenti ai negozi completati via cron",
+						);
+				} catch (error) {
+					logger.error(
+						{ err: error },
+						"Errore durante il ritentativo dei trasferimenti ai negozi",
+					);
 				}
 			},
 		}),

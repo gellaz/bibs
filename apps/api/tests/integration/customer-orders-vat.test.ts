@@ -142,7 +142,7 @@ describe("createOrder — VAT snapshot + castelletto", () => {
 		const newOrder = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: points,
-			type: "reserve_pickup",
+			type: "pay_pickup",
 			storeId: store.id,
 			items: [
 				{ storeProductId: spA.id, quantity: 1 },

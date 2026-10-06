@@ -23,8 +23,10 @@ mock.module("@/db", () => ({
 
 import { and, eq, sql } from "drizzle-orm";
 import { customerProfile } from "@/db/schemas/customer";
+import { order } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
-import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
+import { cancelUnpaidOrder } from "@/lib/jobs/expire-unpaid-orders";
+import { createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
@@ -116,14 +118,15 @@ describe("point_transactions — Σ amount = saldo", () => {
 		const cancelled = await createOrder({
 			customerProfileId: cpId,
 			customerPoints: 100,
-			type: "reserve_pickup",
+			type: "pay_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 			pointsToSpend: 100,
 		});
 		expect(await redeemedAmount(cancelled.id)).toBe(-100);
 		expect(await ledgerSum(cpId)).toBe(await balance(cpId));
-		await cancelOrder({ orderId: cancelled.id, customerProfileId: cpId });
+		// Mai pagato: lo annulla la scadenza dei 30 minuti.
+		await cancelUnpaidOrder(cancelled.id);
 		expect(await balance(cpId)).toBe(100);
 		expect(await ledgerSum(cpId)).toBe(100);
 
@@ -131,12 +134,17 @@ describe("point_transactions — Σ amount = saldo", () => {
 		const picked = await createOrder({
 			customerProfileId: cpId,
 			customerPoints: 100,
-			type: "reserve_pickup",
+			type: "pay_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 			pointsToSpend: 100,
 		});
 		expect(await redeemedAmount(picked.id)).toBe(-100);
+		// Pagato: lo conferma il webhook del PaymentIntent.
+		await getTestDb()
+			.update(order)
+			.set({ status: "confirmed" })
+			.where(eq(order.id, picked.id));
 		await pickup(picked.id);
 		expect(await balance(cpId)).toBe(9);
 		expect(await ledgerSum(cpId)).toBe(9);

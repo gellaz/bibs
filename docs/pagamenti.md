@@ -230,15 +230,31 @@ Esempio: ordine «Paga e ritira» da 12 € con 500 punti (5 €).
 | Fee Stripe (1,5% × 7 + 0,25) | 0,36 € |
 | **Resta a bibs** | 7,00 − 11,40 − 0,36 = **−4,76 €** (i 5 € di sconto meno la commissione, più la fee) |
 
-> **Stato del codice: non ancora allineato.** Oggi `placeOrder` scala i punti da
-> `orders.total`, e commissione e trasferimento partono dal totale già scontato, cioè lo
-> sconto lo paga il negozio (nell'esempio riceverebbe 6,65 €). Non è raggiungibile dai
-> clienti perché il **checkout dal carrello non fa spendere punti** (lo sconto esiste solo
-> sul vecchio `POST /customer/orders`). Prima di abilitare i punti nel checkout vanno
-> fatti: punti solo su `pay_pickup`; commissione e trasferimento calcolati sul lordo
-> pre-punti; rimborso e storno coerenti con i nuovi importi; gestire un importo da pagare
-> pari a 0 (oggi l'ordine resta senza PaymentIntent e il cron lo annulla dopo 30 minuti)
-> o sotto 0,50 € (minimo di Stripe per un addebito in EUR).
+Come gira nel codice:
+
+- `orders.points_discount` fissa lo sconto in euro alla creazione; `orders.total` resta
+  quanto paga il cliente. La commissione si calcola sul lordo (`total + points_discount`).
+- La quota del negozio (lordo − commissione) parte in **due trasferimenti**
+  (`storePayoutSplit` in `apps/api/src/lib/platform-fee.ts`). Stripe non lascia trasferire,
+  legato a un pagamento, più di quanto è stato pagato:
+
+  | Trasferimento | Importo nell'esempio | Da dove esce | Id sull'ordine |
+  |---|---|---|---|
+  | Parte pagata dal cliente | 7,00 € | dal pagamento (`source_transaction`) | `stripe_transfer_id` |
+  | Quota punti | 4,40 € | dal **saldo disponibile di bibs** | `stripe_points_transfer_id` |
+
+- **Se il saldo bibs non basta**, Stripe rifiuta la quota punti: il webhook risponde 5xx e
+  Stripe riconsegna l'evento; in più il cron orario `retryStoreTransfers` (al minuto 30)
+  ritenta i trasferimenti rimasti indietro. Il pagato al negozio parte comunque.
+  **Va quindi tenuta una scorta sul saldo Stripe di bibs**: commissioni e abbonamenti la
+  alimentano, ma i payout automatici verso la banca di bibs la svuotano.
+- **Annullamento**: al cliente torna quanto ha pagato (7 €), al negozio si stornano
+  entrambi i trasferimenti (7 € + 4,40 €).
+
+> **Non ancora attivo per i clienti:** il checkout dal carrello non fa ancora spendere punti
+> (arriva in una PR successiva, API + app customer). Lì andranno gestiti anche un importo da
+> pagare pari a 0 € (oggi l'ordine resterebbe senza PaymentIntent e il cron lo annullerebbe
+> dopo 30 minuti) e sotto 0,50 € (minimo di Stripe per un addebito in EUR).
 
 ## Cosa NON esiste ancora
 
@@ -260,6 +276,7 @@ Esempio: ordine «Paga e ritira» da 12 € con 500 punti (5 €).
 | Creazione ordine, totale, punti, IVA | `apps/api/src/modules/customer/services/orders.ts` |
 | PaymentIntent, trasferimenti, rimborsi, storni | `apps/api/src/modules/billing/services/order-payments.ts` |
 | Scadenze (30 min pagamento, 48 h prenotazione) | `apps/api/src/lib/jobs/expire-unpaid-orders.ts`, `expire-reservations.ts` |
+| Ritentativo dei trasferimenti ai negozi | `apps/api/src/lib/jobs/retry-store-transfers.ts` |
 | Stati e transizioni d'ordine | `apps/api/src/lib/order-state-machine.ts` |
 | Conto Connect del seller | `apps/api/src/modules/billing/services/connect-account.ts`, `apps/api/src/lib/connect-status.ts` |
 | Abbonamenti e webhook | `apps/api/src/modules/webhooks/`, [stripe-billing.md](stripe-billing.md) |

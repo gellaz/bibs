@@ -40,7 +40,6 @@ export const ordersRoutes = new Elysia()
 					storeId: data.storeId,
 					total: data.total,
 					itemCount: body.items.length,
-					pointsSpent: body.pointsToSpend || 0,
 					action: "order_created",
 				},
 				`Ordine creato: ${data.type}`,
@@ -66,12 +65,6 @@ export const ordersRoutes = new Elysia()
 					t.String({
 						description:
 							"ID indirizzo di spedizione (obbligatorio per pay_deliver)",
-					}),
-				),
-				pointsToSpend: t.Optional(
-					t.Integer({
-						minimum: 0,
-						description: "Punti fedeltà da utilizzare come sconto",
 					}),
 				),
 				idempotencyKey: t.Optional(

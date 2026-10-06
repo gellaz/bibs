@@ -64,7 +64,12 @@ beforeEach(async () => {
 async function seedPr2(
 	status: "pending" | "confirmed",
 	transferId: string | null = "tr_1",
-	amounts: { total?: string; platformFee?: string } = {},
+	amounts: {
+		total?: string;
+		platformFee?: string;
+		pointsDiscount?: string;
+		pointsTransferId?: string;
+	} = {},
 ) {
 	const total = amounts.total ?? "10.00";
 	const platformFee = amounts.platformFee ?? "0.50";
@@ -94,8 +99,10 @@ async function seedPr2(
 			status,
 			total,
 			platformFee,
+			pointsDiscount: amounts.pointsDiscount ?? "0",
 			checkoutId: co.id,
 			stripeTransferId: status === "confirmed" ? transferId : null,
+			stripePointsTransferId: amounts.pointsTransferId ?? null,
 		})
 		.returning();
 	await db.insert(orderItem).values({
@@ -207,6 +214,54 @@ describe("annullamento PR2 confermato", () => {
 		await cancelSellerOrder({ orderId: s.order.id, storeIds: [s.store.id] });
 		expect(refundsCreate).not.toHaveBeenCalled();
 		expect(createReversal).not.toHaveBeenCalled();
+		expect((await reload(s.order.id)).status).toBe("cancelled");
+	});
+});
+
+describe("annullamento PR2 con sconto punti (a carico di bibs)", () => {
+	it("rimborso del pagato, storno di entrambi i trasferimenti: il pagato e la quota punti", async () => {
+		// Lordo 12 €, 5 € di punti: pagati 7 €, al negozio 7 € + 4,40 € dal saldo.
+		const s = await seedPr2("confirmed", "tr_1", {
+			total: "7.00",
+			platformFee: "0.60",
+			pointsDiscount: "5.00",
+			pointsTransferId: "tr_pts",
+		});
+		await cancelSellerOrder({ orderId: s.order.id, storeIds: [s.store.id] });
+
+		expect(refundsCreate.mock.calls[0]).toEqual([
+			expect.objectContaining({ payment_intent: "pi_1", amount: 700 }),
+			{ idempotencyKey: `refund:${s.order.id}` },
+		]);
+		expect(createReversal.mock.calls).toContainEqual([
+			"tr_1",
+			expect.objectContaining({ amount: 700 }),
+			{ idempotencyKey: `reversal:${s.order.id}` },
+		]);
+		expect(createReversal.mock.calls).toContainEqual([
+			"tr_pts",
+			expect.objectContaining({ amount: 440 }),
+			{ idempotencyKey: `points-reversal:${s.order.id}` },
+		]);
+	});
+
+	it("interamente coperto da punti: niente rimborso, si storna la quota punti", async () => {
+		const s = await seedPr2("confirmed", null, {
+			total: "0.00",
+			platformFee: "0.25",
+			pointsDiscount: "5.00",
+			pointsTransferId: "tr_pts",
+		});
+		await cancelSellerOrder({ orderId: s.order.id, storeIds: [s.store.id] });
+
+		expect(refundsCreate).not.toHaveBeenCalled();
+		expect(createReversal.mock.calls).toEqual([
+			[
+				"tr_pts",
+				expect.objectContaining({ amount: 475 }),
+				{ idempotencyKey: `points-reversal:${s.order.id}` },
+			],
+		]);
 		expect((await reload(s.order.id)).status).toBe("cancelled");
 	});
 });

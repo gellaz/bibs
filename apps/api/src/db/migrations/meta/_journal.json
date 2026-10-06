@@ -127,6 +127,13 @@
       "when": 1790684000675,
       "tag": "0017_pricing_stripe_product_id",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791273130860,
+      "tag": "0018_order_points_discount",
+      "breakpoints": true
     }
   ]
 }

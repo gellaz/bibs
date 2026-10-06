@@ -346,6 +346,85 @@ describe("payment_intent.succeeded", () => {
 	});
 });
 
+describe("payment_intent.succeeded — sconto punti a carico di bibs", () => {
+	/** Il primo ordine diventa: lordo 12 €, 5 € di punti, il cliente paga 7 €. */
+	async function seedWithPoints() {
+		const seeded = await seedPaidCheckout();
+		await getTestDb()
+			.update(order)
+			.set({ total: "7.00", pointsDiscount: "5.00", platformFee: "0.60" })
+			.where(eq(order.id, seeded.orders[0].order.id));
+		return seeded;
+	}
+
+	it("il negozio riceve il lordo meno commissione: il pagato col pagamento, la quota punti dal saldo bibs", async () => {
+		const { co, orders } = await seedWithPoints();
+		const id = orders[0].order.id;
+		await deliver(piEvent("evt_pts", "payment_intent.succeeded"));
+
+		const calls = transfersCreate.mock.calls.map(([p, opts]) => ({ p, opts }));
+		expect(calls).toContainEqual({
+			p: expect.objectContaining({
+				amount: 700,
+				destination: "acct_1",
+				source_transaction: "ch_1",
+			}),
+			opts: { idempotencyKey: `transfer:${id}` },
+		});
+		const fromBalance = calls.find(
+			(c) => c.opts?.idempotencyKey === `points-transfer:${id}`,
+		);
+		expect(fromBalance?.p).toMatchObject({
+			amount: 440,
+			currency: "eur",
+			destination: "acct_1",
+			transfer_group: co.id,
+		});
+		// Senza source_transaction: esce dal saldo disponibile di bibs.
+		expect(fromBalance?.p.source_transaction).toBeUndefined();
+
+		const after = await reload(id);
+		expect(after.stripeTransferId).toMatch(/^tr_/);
+		expect(after.stripePointsTransferId).toMatch(/^tr_/);
+		// L'ordine senza punti ha un solo trasferimento.
+		expect(
+			(await reload(orders[1].order.id)).stripePointsTransferId,
+		).toBeNull();
+	});
+
+	it("saldo bibs insufficiente → 5xx, alla riconsegna si ritenta solo la quota punti", async () => {
+		const { orders } = await seedWithPoints();
+		const id = orders[0].order.id;
+		transfersCreate.mockImplementation(async (p: any, o?: any) => {
+			if (o?.idempotencyKey?.startsWith("points-transfer:"))
+				throw new Error("insufficient available balance");
+			return { id: `tr_${++transferSeq}`, amount: p.amount };
+		});
+		try {
+			await expect(
+				deliver(piEvent("evt_bal", "payment_intent.succeeded")),
+			).rejects.toThrow();
+			const after1 = await reload(id);
+			expect(after1.status).toBe("confirmed");
+			expect(after1.stripeTransferId).toMatch(/^tr_/);
+			expect(after1.stripePointsTransferId).toBeNull();
+		} finally {
+			transfersCreate.mockImplementation(async (p: any, _o?: any) => ({
+				id: `tr_${++transferSeq}`,
+				amount: p.amount,
+			}));
+		}
+
+		transfersCreate.mockClear();
+		await deliver(piEvent("evt_bal", "payment_intent.succeeded"));
+		expect(transfersCreate).toHaveBeenCalledTimes(1);
+		expect(transfersCreate.mock.calls[0][1]).toEqual({
+			idempotencyKey: `points-transfer:${id}`,
+		});
+		expect((await reload(id)).stripePointsTransferId).toMatch(/^tr_/);
+	});
+});
+
 describe("payment_intent.payment_failed / canceled", () => {
 	it("pagamento rifiutato: gli ordini restano pending (il cliente può riprovare)", async () => {
 		const { orders } = await seedPaidCheckout();

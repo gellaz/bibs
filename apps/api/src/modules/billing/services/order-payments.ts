@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
 import Stripe from "stripe";
 import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
@@ -8,6 +8,7 @@ import { store } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { toCents } from "@/lib/money";
+import { storePayoutSplit } from "@/lib/platform-fee";
 import { stripe } from "@/lib/stripe";
 
 /** Stati in cui il cliente può ancora (ri)tentare il pagamento. */
@@ -91,73 +92,92 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /**
  * Rimborso di un PR2 pagato, dentro la tx di annullamento (dopo il CAS di
  * stato): se il rimborso fallisce la tx si annulla e l'ordine resta com'era.
- * Lo storno del trasferimento è best-effort: se il negozio ha già incassato e
- * non ha saldo, Stripe lo rifiuta, ma il cliente è già rimborsato; resta nel
- * log per il recupero manuale.
+ * Al cliente torna quanto ha pagato (`total`); al negozio si stornano i due
+ * trasferimenti, il pagato e la quota punti coperta da bibs. Gli storni sono
+ * best-effort: se il negozio ha già incassato e non ha saldo, Stripe li
+ * rifiuta, ma il cliente è già rimborsato; restano nel log per il recupero
+ * manuale.
  */
 export async function refundOrderPayment(
 	tx: Tx,
 	o: {
 		id: string;
 		total: string;
+		pointsDiscount: string;
 		platformFee: string;
 		checkoutId: string | null;
 		stripeTransferId: string | null;
+		stripePointsTransferId: string | null;
 	},
 ): Promise<void> {
 	// Stripe rifiuta un rimborso di importo 0 (nessun pagamento da restituire):
-	// un PR2 a saldo zero (es. interamente coperto da punti) si annulla senza
-	// toccare Stripe.
-	if (toCents(o.total) === 0) return;
+	// un PR2 a saldo zero (interamente coperto da punti) non tocca il rimborso,
+	// ma la quota punti già trasferita al negozio va stornata lo stesso.
+	if (toCents(o.total) > 0) {
+		const co = o.checkoutId
+			? await tx.query.checkout.findFirst({
+					where: eq(checkout.id, o.checkoutId),
+					columns: { stripePaymentIntentId: true },
+				})
+			: undefined;
+		if (!co?.stripePaymentIntentId)
+			throw new ServiceError(409, "Pagamento dell'ordine non trovato");
 
-	const co = o.checkoutId
-		? await tx.query.checkout.findFirst({
-				where: eq(checkout.id, o.checkoutId),
-				columns: { stripePaymentIntentId: true },
-			})
-		: undefined;
-	if (!co?.stripePaymentIntentId)
-		throw new ServiceError(409, "Pagamento dell'ordine non trovato");
-
-	let refundId: string;
-	try {
-		const refund = await stripe.refunds.create(
-			{
-				payment_intent: co.stripePaymentIntentId,
-				amount: toCents(o.total),
-				metadata: { orderId: o.id },
-			},
-			{ idempotencyKey: `refund:${o.id}` },
-		);
-		refundId = refund.id;
-	} catch (err) {
-		if (err instanceof Stripe.errors.StripeError) {
-			logger.error({ err, orderId: o.id }, "stripe.refunds.create failed");
-			throw new ServiceError(
-				502,
-				"Rimborso non riuscito. Riprova tra qualche minuto.",
-			);
-		}
-		throw err;
-	}
-	await tx
-		.update(order)
-		.set({ stripeRefundId: refundId })
-		.where(eq(order.id, o.id));
-
-	if (o.stripeTransferId) {
+		let refundId: string;
 		try {
-			await stripe.transfers.createReversal(
-				o.stripeTransferId,
+			const refund = await stripe.refunds.create(
 				{
-					amount: toCents(o.total) - toCents(o.platformFee),
+					payment_intent: co.stripePaymentIntentId,
+					amount: toCents(o.total),
 					metadata: { orderId: o.id },
 				},
-				{ idempotencyKey: `reversal:${o.id}` },
+				{ idempotencyKey: `refund:${o.id}` },
+			);
+			refundId = refund.id;
+		} catch (err) {
+			if (err instanceof Stripe.errors.StripeError) {
+				logger.error({ err, orderId: o.id }, "stripe.refunds.create failed");
+				throw new ServiceError(
+					502,
+					"Rimborso non riuscito. Riprova tra qualche minuto.",
+				);
+			}
+			throw err;
+		}
+		await tx
+			.update(order)
+			.set({ stripeRefundId: refundId })
+			.where(eq(order.id, o.id));
+	}
+
+	const split = storePayoutSplit({
+		totalCents: toCents(o.total),
+		pointsDiscountCents: toCents(o.pointsDiscount),
+		platformFeeCents: toCents(o.platformFee),
+	});
+	const reversals = [
+		{
+			transferId: o.stripeTransferId,
+			amount: split.fromCharge,
+			key: "reversal",
+		},
+		{
+			transferId: o.stripePointsTransferId,
+			amount: split.fromBalance,
+			key: "points-reversal",
+		},
+	];
+	for (const r of reversals) {
+		if (!r.transferId || r.amount <= 0) continue;
+		try {
+			await stripe.transfers.createReversal(
+				r.transferId,
+				{ amount: r.amount, metadata: { orderId: o.id } },
+				{ idempotencyKey: `${r.key}:${o.id}` },
 			);
 		} catch (err) {
 			logger.error(
-				{ err, orderId: o.id, transferId: o.stripeTransferId },
+				{ err, orderId: o.id, transferId: r.transferId },
 				"Storno del trasferimento non riuscito: recupero manuale",
 			);
 		}
@@ -256,6 +276,7 @@ export async function settleCheckoutPayment(
 		.select({
 			id: order.id,
 			total: order.total,
+			pointsDiscount: order.pointsDiscount,
 			platformFee: order.platformFee,
 			destination: paymentMethod.stripeAccountId,
 		})
@@ -272,14 +293,21 @@ export async function settleCheckoutPayment(
 			and(
 				ofCheckout,
 				inArray(order.status, [...PAID_STATUSES]),
-				isNull(order.stripeTransferId),
+				or(
+					isNull(order.stripeTransferId),
+					isNull(order.stripePointsTransferId),
+				),
 			),
 		);
 
 	const transferFailed: string[] = [];
 	for (const o of payable) {
-		const amount = toCents(o.total) - toCents(o.platformFee);
-		if (amount <= 0) continue;
+		const split = storePayoutSplit({
+			totalCents: toCents(o.total),
+			pointsDiscountCents: toCents(o.pointsDiscount),
+			platformFeeCents: toCents(o.platformFee),
+		});
+		if (split.fromCharge <= 0 && split.fromBalance <= 0) continue;
 		const destination = o.destination;
 		if (!destination) {
 			logger.error(
@@ -295,39 +323,77 @@ export async function settleCheckoutPayment(
 				// select e qui un cancel concorrente (refundOrderPayment) può aver già
 				// annullato l'ordine. Il lock fa attendere il CAS di annullamento in
 				// corso: o il cancel vince e qui si salta (ordine non più pagato), o
-				// questo trasferimento scrive stripeTransferId per primo e il cancel,
-				// che legge dopo, lo trova e lo storna.
+				// questo trasferimento scrive il suo id per primo e il cancel, che
+				// legge dopo, lo trova e lo storna.
 				const [row] = await tx
 					.select({
 						status: order.status,
 						stripeTransferId: order.stripeTransferId,
+						stripePointsTransferId: order.stripePointsTransferId,
 					})
 					.from(order)
 					.where(eq(order.id, o.id))
 					.for("update");
-				if (
-					!row ||
-					!(PAID_STATUSES as readonly string[]).includes(row.status) ||
-					row.stripeTransferId
-				)
+				if (!row || !(PAID_STATUSES as readonly string[]).includes(row.status))
 					return;
 
-				const transfer = await stripe.transfers.create(
-					{
-						amount,
-						currency: "eur",
-						destination,
-						source_transaction: chargeId,
-						transfer_group: co.id,
-						metadata: { orderId: o.id, checkoutId: co.id },
-					},
-					{ idempotencyKey: `transfer:${o.id}` },
-				);
-				await tx
-					.update(order)
-					.set({ stripeTransferId: transfer.id })
-					.where(eq(order.id, o.id));
+				if (split.fromCharge > 0 && !row.stripeTransferId) {
+					const transfer = await stripe.transfers.create(
+						{
+							amount: split.fromCharge,
+							currency: "eur",
+							destination,
+							source_transaction: chargeId,
+							transfer_group: co.id,
+							metadata: { orderId: o.id, checkoutId: co.id },
+						},
+						{ idempotencyKey: `transfer:${o.id}` },
+					);
+					await tx
+						.update(order)
+						.set({ stripeTransferId: transfer.id })
+						.where(eq(order.id, o.id));
+				}
 			});
+			// Quota punti in una tx a sé: se il saldo bibs non basta fallisce solo
+			// lei, il trasferimento del pagato resta scritto.
+			if (split.fromBalance > 0)
+				await db.transaction(async (tx) => {
+					const [row] = await tx
+						.select({
+							status: order.status,
+							stripePointsTransferId: order.stripePointsTransferId,
+						})
+						.from(order)
+						.where(eq(order.id, o.id))
+						.for("update");
+					if (
+						!row ||
+						!(PAID_STATUSES as readonly string[]).includes(row.status) ||
+						row.stripePointsTransferId
+					)
+						return;
+					// Senza source_transaction: esce dal saldo disponibile di bibs,
+					// e Stripe la rifiuta se il saldo non basta.
+					const transfer = await stripe.transfers.create(
+						{
+							amount: split.fromBalance,
+							currency: "eur",
+							destination,
+							transfer_group: co.id,
+							metadata: {
+								orderId: o.id,
+								checkoutId: co.id,
+								reason: "points_discount",
+							},
+						},
+						{ idempotencyKey: `points-transfer:${o.id}` },
+					);
+					await tx
+						.update(order)
+						.set({ stripePointsTransferId: transfer.id })
+						.where(eq(order.id, o.id));
+				});
 		} catch (err) {
 			logger.error({ err, orderId: o.id }, "stripe.transfers.create failed");
 			transferFailed.push(o.id);
