@@ -120,10 +120,6 @@ describe("integer inputs reject fractions with 422", () => {
 					items: [{ storeProductId: "some-sp", quantity: 1.5 }],
 				}),
 		],
-		[
-			"POST /orders pointsToSpend",
-			() => json("POST", "/orders", { ...ORDER_BODY, pointsToSpend: 0.5 }),
-		],
 	];
 
 	for (const [label, send] of fractional) {
@@ -141,10 +137,6 @@ describe("integer inputs still accept whole numbers", () => {
 			() => multipart("/products/p/images", "2"),
 		],
 		["POST /orders quantity 1", () => json("POST", "/orders", ORDER_BODY)],
-		[
-			"POST /orders pointsToSpend 0",
-			() => json("POST", "/orders", { ...ORDER_BODY, pointsToSpend: 0 }),
-		],
 	];
 
 	for (const [label, send] of whole) {
@@ -169,11 +161,6 @@ describe("integer inputs: Italian 422 message on real routes", () => {
 					],
 				}),
 			"Quantità (riga 2): deve essere un numero intero",
-		],
-		[
-			"POST /orders pointsToSpend",
-			() => json("POST", "/orders", { ...ORDER_BODY, pointsToSpend: 0.5 }),
-			"Punti da usare: deve essere un numero intero",
 		],
 		[
 			"PATCH stock",

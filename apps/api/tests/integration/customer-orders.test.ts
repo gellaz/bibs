@@ -274,15 +274,19 @@ describe("createOrder — points discount", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: 100,
-			type: "reserve_pickup",
+			type: "pay_pickup",
 			storeId: testStore.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }], // €10.00
 			pointsToSpend: 100, // 100 pts = €1.00 discount
 		});
 
-		// €10.00 - €1.00 = €9.00
+		// €10.00 - €1.00 = €9.00 pagati dal cliente
 		expect(result.total).toBe("9.00");
 		expect(result.pointsSpent).toBe(100);
+		// Lo sconto punti lo copre bibs: resta sull'ordine, e la commissione si
+		// calcola sul lordo (5% di 10 €), non sul pagato.
+		expect(result.pointsDiscount).toBe("1.00");
+		expect(result.platformFee).toBe("0.50");
 
 		const [profile] = await db
 			.select()
@@ -290,6 +294,30 @@ describe("createOrder — points discount", () => {
 			.where(eq(customerProfile.id, customer.profile.id));
 		// All 100 points deducted; nothing earned until pickup
 		expect(profile.points).toBe(0);
+	});
+});
+
+describe("createOrder — points only on pay_pickup", () => {
+	it("rejects points on reserve_pickup: the store would collect less at the till", async () => {
+		const { store, storeProduct: sp } = await seedBasicFixtures();
+		const customer = await createTestCustomer(getTestDb(), { points: 100 });
+
+		await expect(
+			createOrder({
+				customerProfileId: customer.profile.id,
+				customerPoints: 100,
+				type: "reserve_pickup",
+				storeId: store.id,
+				items: [{ storeProductId: sp.id, quantity: 1 }],
+				pointsToSpend: 100,
+			}),
+		).rejects.toMatchObject({ status: 400 });
+
+		const [profile] = await getTestDb()
+			.select()
+			.from(customerProfile)
+			.where(eq(customerProfile.id, customer.profile.id));
+		expect(profile.points).toBe(100);
 	});
 });
 
@@ -315,7 +343,7 @@ describe("createOrder — points CAS guard", () => {
 			createOrder({
 				customerProfileId: customer.profile.id,
 				customerPoints: 100,
-				type: "reserve_pickup",
+				type: "pay_pickup",
 				storeId: testStore.id,
 				items: [{ storeProductId: sp.id, quantity: 1 }],
 				pointsToSpend: 100,
@@ -353,12 +381,12 @@ describe("createOrder — validation errors", () => {
 			createOrder({
 				customerProfileId: customer.profile.id,
 				customerPoints: 0, // 0 available
-				type: "reserve_pickup",
+				type: "pay_pickup",
 				storeId: store.id,
 				items: [{ storeProductId: sp.id, quantity: 1 }],
 				pointsToSpend: 50, // but 0 available
 			}),
-		).rejects.toMatchObject({ status: 400 });
+		).rejects.toMatchObject({ status: 400, message: "Punti insufficienti" });
 	});
 
 	it("throws ServiceError 400 when pay_deliver has no shipping address", async () => {
@@ -474,16 +502,22 @@ describe("cancelOrder", () => {
 		const sp = await createTestStoreProduct(db, testStore.id, prod.id, {
 			stock: 10,
 		});
-		const customer = await createTestCustomer(db, { points: 100 });
+		const customer = await createTestCustomer(db, { points: 0 });
 
+		// Una prenotazione con punti spesi non nasce più dal checkout (i punti
+		// sono solo su pay_pickup), ma l'annullamento deve restituirli a
+		// qualunque ordine li abbia: la si scrive com'era.
 		const newOrder = await createOrder({
 			customerProfileId: customer.profile.id,
-			customerPoints: 100,
+			customerPoints: 0,
 			type: "reserve_pickup",
 			storeId: testStore.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
-			pointsToSpend: 100,
 		});
+		await db
+			.update(order)
+			.set({ pointsSpent: 100 })
+			.where(eq(order.id, newOrder.id));
 
 		await cancelOrder({
 			orderId: newOrder.id,

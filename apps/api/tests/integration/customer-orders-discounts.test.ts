@@ -252,7 +252,7 @@ describe("createOrder — seller percentage discounts", () => {
 		const result = await createOrder({
 			customerProfileId: customer.profile.id,
 			customerPoints: config.pointsPerEuroDiscount,
-			type: "reserve_pickup",
+			type: "pay_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 1 }],
 			pointsToSpend: config.pointsPerEuroDiscount, // exactly €1 of points discount

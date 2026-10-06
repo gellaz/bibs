@@ -98,9 +98,17 @@ export const order = pgTable(
 		platformFee: numeric("platform_fee", { precision: 10, scale: 2 })
 			.default("0")
 			.notNull(),
+		// Sconto punti in euro, fissato alla creazione: lo copre bibs, quindi
+		// `total` è quanto paga il cliente e il negozio riceve
+		// total + pointsDiscount − platformFee (lib/platform-fee.ts).
+		pointsDiscount: numeric("points_discount", { precision: 10, scale: 2 })
+			.default("0")
+			.notNull(),
 		// Trasferimento al conto Connect del negozio (settleCheckoutPayment) e
-		// rimborso al cliente (refundOrderPayment): mai due volte.
+		// rimborso al cliente (refundOrderPayment): mai due volte. La quota
+		// punti esce dal saldo bibs con un trasferimento a parte.
 		stripeTransferId: text("stripe_transfer_id"),
+		stripePointsTransferId: text("stripe_points_transfer_id"),
 		stripeRefundId: text("stripe_refund_id"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
@@ -146,8 +154,12 @@ export const order = pgTable(
 		check("order_points_earned_non_negative", sql`${table.pointsEarned} >= 0`),
 		check("order_points_spent_non_negative", sql`${table.pointsSpent} >= 0`),
 		check(
+			"order_points_discount_non_negative",
+			sql`${table.pointsDiscount} >= 0`,
+		),
+		check(
 			"order_platform_fee_range",
-			sql`${table.platformFee} >= 0 AND ${table.platformFee} <= ${table.total}`,
+			sql`${table.platformFee} >= 0 AND ${table.platformFee} <= ${table.total} + ${table.pointsDiscount}`,
 		),
 		// DB-level domain guard for the state-machine columns: the varchar({enum})
 		// helper emits a bare varchar, so without these CHECKs an out-of-domain

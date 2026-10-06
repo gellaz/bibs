@@ -393,8 +393,15 @@ export async function placeOrder(
 		});
 	}
 
-	// Points discount (all in cents)
+	// Points discount (all in cents). Lo sconto punti lo copre bibs: solo su
+	// pay_pickup, dove i soldi passano da bibs che trasferisce al negozio il
+	// lordo. Su una prenotazione il negozio incasserebbe meno alla cassa.
 	let discountCents = 0;
+	if (pointsToSpend > 0 && type !== "pay_pickup")
+		throw new ServiceError(
+			400,
+			"I punti si possono usare solo con «Paga e ritira»",
+		);
 	if (pointsToSpend > 0) {
 		if (pointsToSpend > customerPoints)
 			throw new ServiceError(400, "Punti insufficienti");
@@ -433,9 +440,10 @@ export async function placeOrder(
 	const paymentExpiresAt = isPay
 		? new Date(Date.now() + config.paymentWindowMinutes * 60 * 1000)
 		: null;
-	// Commissione solo su PR2 (spec: per gli ordini non PR2 resta 0).
+	// Commissione solo su PR2 (spec: per gli ordini non PR2 resta 0), sul
+	// lordo prima dei punti: il negozio incassa come senza sconto.
 	const platformFee = fromCents(
-		type === "pay_pickup" ? platformFeeCents(finalTotalCents) : 0,
+		type === "pay_pickup" ? platformFeeCents(totalCents) : 0,
 	);
 
 	const reservationExpiresAt =
@@ -462,6 +470,7 @@ export async function placeOrder(
 			reservationExpiresAt,
 			paymentExpiresAt,
 			platformFee,
+			pointsDiscount: fromCents(discountCents),
 			pointsEarned: 0,
 			pointsSpent: actualPointsSpent,
 			idempotencyKey: link.idempotencyKey ?? null,
