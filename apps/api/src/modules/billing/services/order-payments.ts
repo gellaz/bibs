@@ -272,6 +272,40 @@ export async function settleCheckoutPayment(
 		}
 	}
 
+	const transferFailed = await transferStorePayouts(co.id, chargeId);
+
+	// Un solo errore per tutto ciò che è mancato in questa consegna (rimborsi e
+	// trasferimenti): il webhook risponde 5xx una volta sola e la riconsegna di
+	// Stripe ritenta solo ciò che manca ancora (le query sopra sono già CAS).
+	if (refundFailed.length > 0 || transferFailed.length > 0) {
+		const parts: string[] = [];
+		if (refundFailed.length > 0)
+			parts.push(
+				`rimborsi non riusciti per gli ordini ${refundFailed.join(", ")}`,
+			);
+		if (transferFailed.length > 0)
+			parts.push(
+				`trasferimenti non riusciti per gli ordini ${transferFailed.join(", ")}`,
+			);
+		throw new Error(parts.join("; "));
+	}
+}
+
+/**
+ * I trasferimenti ai negozi dei PR2 pagati di un checkout che non li hanno
+ * ancora (pagato con source_transaction, quota punti dal saldo bibs), con key
+ * per ordine: rieseguibile. `chargeId` null = checkout coperto dai punti,
+ * senza incasso: c'è solo la quota punti. Non lancia per errori Stripe:
+ * restituisce gli ordini rimasti indietro, li ritenta il chiamante o il cron.
+ */
+export async function transferStorePayouts(
+	checkoutId: string,
+	chargeId: string | null,
+): Promise<string[]> {
+	const ofCheckout = and(
+		eq(order.checkoutId, checkoutId),
+		eq(order.type, "pay_pickup"),
+	);
 	const payable = await db
 		.select({
 			id: order.id,
@@ -318,6 +352,10 @@ export async function settleCheckoutPayment(
 			continue;
 		}
 		try {
+			if (split.fromCharge > 0 && !chargeId)
+				throw new Error(
+					`Ordine ${o.id}: quota pagata senza charge da cui trasferirla`,
+				);
 			await db.transaction(async (tx) => {
 				// Rilettura lockata: `payable` sopra è una foto di prima. Tra quella
 				// select e qui un cancel concorrente (refundOrderPayment) può aver già
@@ -337,15 +375,16 @@ export async function settleCheckoutPayment(
 				if (!row || !(PAID_STATUSES as readonly string[]).includes(row.status))
 					return;
 
-				if (split.fromCharge > 0 && !row.stripeTransferId) {
+				// `chargeId &&` solo per il tipo: con fromCharge > 0 c'è (controllato sopra).
+				if (split.fromCharge > 0 && chargeId && !row.stripeTransferId) {
 					const transfer = await stripe.transfers.create(
 						{
 							amount: split.fromCharge,
 							currency: "eur",
 							destination,
 							source_transaction: chargeId,
-							transfer_group: co.id,
-							metadata: { orderId: o.id, checkoutId: co.id },
+							transfer_group: checkoutId,
+							metadata: { orderId: o.id, checkoutId },
 						},
 						{ idempotencyKey: `transfer:${o.id}` },
 					);
@@ -380,10 +419,10 @@ export async function settleCheckoutPayment(
 							amount: split.fromBalance,
 							currency: "eur",
 							destination,
-							transfer_group: co.id,
+							transfer_group: checkoutId,
 							metadata: {
 								orderId: o.id,
-								checkoutId: co.id,
+								checkoutId,
 								reason: "points_discount",
 							},
 						},
@@ -400,19 +439,5 @@ export async function settleCheckoutPayment(
 		}
 	}
 
-	// Un solo errore per tutto ciò che è mancato in questa consegna (rimborsi e
-	// trasferimenti): il webhook risponde 5xx una volta sola e la riconsegna di
-	// Stripe ritenta solo ciò che manca ancora (le query sopra sono già CAS).
-	if (refundFailed.length > 0 || transferFailed.length > 0) {
-		const parts: string[] = [];
-		if (refundFailed.length > 0)
-			parts.push(
-				`rimborsi non riusciti per gli ordini ${refundFailed.join(", ")}`,
-			);
-		if (transferFailed.length > 0)
-			parts.push(
-				`trasferimenti non riusciti per gli ordini ${transferFailed.join(", ")}`,
-			);
-		throw new Error(parts.join("; "));
-	}
+	return transferFailed;
 }

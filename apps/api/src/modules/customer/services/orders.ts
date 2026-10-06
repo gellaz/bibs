@@ -235,20 +235,43 @@ export async function assignPickupCode(
 	throw new ServiceError(409, "Riprova: codice di ritiro non disponibile");
 }
 
-export async function placeOrder(
+interface ResolvedItem {
+	storeProductId: string;
+	productId: string;
+	productName: string;
+	productEan: string | null;
+	brandName: string | null;
+	productImageUrl: string | null;
+	quantity: number;
+	unitPrice: string;
+	listPrice: string;
+	discountPercent: number | null;
+	vatRate: string;
+	vatAmount: string;
+}
+
+/** Un ordine prezzato e validato, non ancora scritto: lordo prima dei punti. */
+export interface PricedOrder {
+	customerProfileId: string;
+	type: PlaceOrderParams["type"];
+	storeId: string;
+	shippingAddressId?: string;
+	shippingCost: string | null;
+	shippingAddressSnapshot: ShippingAddressSnapshot | null;
+	totalCents: number;
+	resolvedItems: ResolvedItem[];
+}
+
+/**
+ * Prima metà di placeOrder: valida (tipo, indirizzo, negozio vendibile,
+ * prodotti, stock) e prezza le righe con gli sconti venditore. Solo letture:
+ * l'anteprima del checkout la chiama senza scrivere niente.
+ */
+export async function priceOrder(
 	tx: OrderTx,
-	params: PlaceOrderParams,
-	link: { idempotencyKey?: string; checkoutId?: string } = {},
-) {
-	const {
-		customerProfileId,
-		customerPoints,
-		type,
-		storeId,
-		items,
-		shippingAddressId,
-		pointsToSpend = 0,
-	} = params;
+	params: Omit<PlaceOrderParams, "customerPoints" | "pointsToSpend">,
+): Promise<PricedOrder> {
+	const { customerProfileId, type, storeId, items, shippingAddressId } = params;
 
 	// `direct` = il cliente inquadra il QR del negozio e paga dall'app. Il
 	// flusso con il pagamento non esiste ancora: senza, un direct nasceva
@@ -315,20 +338,7 @@ export async function placeOrder(
 
 	// Verify stock availability and calculate total (in cents to avoid float errors)
 	let totalCents = 0;
-	const resolvedItems: {
-		storeProductId: string;
-		productId: string;
-		productName: string;
-		productEan: string | null;
-		brandName: string | null;
-		productImageUrl: string | null;
-		quantity: number;
-		unitPrice: string;
-		listPrice: string;
-		discountPercent: number | null;
-		vatRate: string;
-		vatAmount: string;
-	}[] = [];
+	const resolvedItems: ResolvedItem[] = [];
 
 	for (const item of items) {
 		const sp = await tx.query.storeProduct.findFirst({
@@ -392,6 +402,43 @@ export async function placeOrder(
 			vatAmount: fromCents(vatCents),
 		});
 	}
+
+	return {
+		customerProfileId,
+		type,
+		storeId,
+		shippingAddressId,
+		shippingCost,
+		shippingAddressSnapshot,
+		totalCents,
+		resolvedItems,
+	};
+}
+
+/**
+ * Seconda metà di placeOrder: sconto punti, castelletto, insert di ordine e
+ * righe, scalo di stock e punti (CAS). I punti valgono solo su pay_pickup.
+ */
+export async function insertOrder(
+	tx: OrderTx,
+	priced: PricedOrder,
+	opts: {
+		customerPoints: number;
+		pointsToSpend?: number;
+		link?: { idempotencyKey?: string; checkoutId?: string };
+	},
+) {
+	const {
+		customerProfileId,
+		type,
+		storeId,
+		shippingAddressId,
+		shippingCost,
+		shippingAddressSnapshot,
+		totalCents,
+		resolvedItems,
+	} = priced;
+	const { customerPoints, pointsToSpend = 0, link = {} } = opts;
 
 	// Points discount (all in cents). Lo sconto punti lo copre bibs: solo su
 	// pay_pickup, dove i soldi passano da bibs che trasferisce al negozio il
@@ -551,6 +598,16 @@ export async function placeOrder(
 	}
 
 	return newOrder;
+}
+
+export async function placeOrder(
+	tx: OrderTx,
+	params: PlaceOrderParams,
+	link: { idempotencyKey?: string; checkoutId?: string } = {},
+) {
+	const { customerPoints, pointsToSpend, ...rest } = params;
+	const priced = await priceOrder(tx, rest);
+	return insertOrder(tx, priced, { customerPoints, pointsToSpend, link });
 }
 
 export async function createOrder(params: CreateOrderParams) {

@@ -739,6 +739,9 @@ export const OrderSchema = t.Object({
 		description: "Punti fedeltà guadagnati",
 	}),
 	pointsSpent: t.Number({ minimum: 0, description: "Punti fedeltà spesi" }),
+	pointsDiscount: t.String({
+		description: "Sconto punti in euro, coperto da bibs (0 se nessun punto)",
+	}),
 	createdAt: t.Date(),
 	updatedAt: t.Date(),
 });

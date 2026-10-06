@@ -60,6 +60,9 @@ checkout ──► ordine «pending», stock scalato, PaymentIntent creato (fine
    │                     ├► ordine «confirmed»
    │                     └► transfer al negozio = totale − commissione bibs
    │
+   ├─ punti coprono tutto (0 €) ──► ordini «confirmed» subito, nessun PaymentIntent
+   │                                  └► solo trasferimento quota punti dal saldo bibs
+   │
    └─ nessun pagamento entro 30 min ──► cron expireUnpaidOrders
                          ├► PaymentIntent annullato (nessuna fee Stripe)
                          └► ordine «cancelled», stock e punti restituiti
@@ -251,16 +254,51 @@ Come gira nel codice:
 - **Annullamento**: al cliente torna quanto ha pagato (7 €), al negozio si stornano
   entrambi i trasferimenti (7 € + 4,40 €).
 
-> **Non ancora attivo per i clienti:** il checkout dal carrello non fa ancora spendere punti
-> (arriva in una PR successiva, API + app customer). Lì andranno gestiti anche un importo da
-> pagare pari a 0 € (oggi l'ordine resterebbe senza PaymentIntent e il cron lo annullerebbe
-> dopo 30 minuti) e sotto 0,50 € (minimo di Stripe per un addebito in EUR).
+### Usare i punti al checkout
+
+Nel riepilogo (`/checkout/review`) compare l'interruttore «Usa N punti», **spento di
+default**: acceso, usa il massimo spendibile (saldo, plafonato al totale «Paga e ritira»).
+Non c'è una quantità libera: il client manda solo `usePoints: true` e il server rilegge il
+saldo e ricalcola tutto. Le prenotazioni in negozio restano sempre senza punti.
+
+**Online si paga 0 € oppure almeno 0,50 €** (minimo Stripe per un addebito in EUR):
+
+- se il saldo copre tutto, si copre tutto e si paga 0 €;
+- se il residuo finirebbe tra 0,01 e 0,49 € e il saldo non basta per azzerarlo, si usano meno
+  punti, quanto serve a lasciare esattamente 0,50 €.
+
+Esempio: ordine da 20,00 € con 1.980 punti (19,80 €). Il residuo sarebbe 0,20 €, quindi si
+usano **1.950 punti** (19,50 €) e il cliente paga **0,50 €**.
+
+**Ripartizione tra i negozi.** Con più negozi «Paga e ritira» c'è un solo pagamento, ma lo
+sconto va diviso in proporzione al lordo di ogni ordine (resti maggiori, la somma delle
+quote è esatta). Esempio: negozio A 20,00 € e B 7,50 € (lordo 27,50 €), 1.000 punti (10 €):
+
+| Negozio | Lordo | Sconto punti | Punti |
+|---|---|---|---|
+| A | 20,00 € | −7,27 € | 727 |
+| B | 7,50 € | −2,73 € | 273 |
+| **Pagamento unico** | 27,50 € | −10,00 € | 1.000 → **17,50 €** |
+
+Annullando solo B tornano i suoi 273 punti.
+
+**Checkout a 0 €.** Non nasce nessun PaymentIntent: gli ordini «Paga e ritira» passano a
+«confirmed» subito (senza scadenza di pagamento, quindi `expireUnpaidOrders` non li tocca) e
+la pagina di conferma si apre come per una prenotazione. Al negozio parte solo la quota
+punti, dal saldo disponibile di bibs (`transferStorePayouts`, la stessa funzione che dopo un
+pagamento fa partire tutti i trasferimenti). Se il saldo bibs non basta, un fallimento non fa
+fallire la risposta: lo ritenta `retryStoreTransfers`, che copre anche i checkout senza
+PaymentIntent.
+
+**Anteprima.** `GET /customer/checkout/preview` restituisce gli importi con e senza punti
+usando le stesse funzioni della conferma, in sola lettura: l'interruttore non fa chiamate. Se
+il saldo scende tra anteprima e conferma, la conferma risponde 409 («Punti insufficienti,
+riprova»): l'app mostra un avviso e riporta al carrello, e l'anteprima viene richiesta di nuovo alla riapertura del riepilogo.
 
 ## Cosa NON esiste ancora
 
 - Pagamento online per `pay_deliver` (PS3) e per gli ordini `direct`.
-- Punti spendibili al checkout, con lo sconto a carico di bibs (vedi
-  [Chi paga lo sconto punti](#chi-paga-lo-sconto-punti)).
+- Ordine «Paga e ritira» con totale sotto 0,50 € senza punti: Stripe lo rifiuta (502).
 - Gestione delle contestazioni (*dispute/chargeback*): si fa a mano dalla Dashboard Stripe.
 - Importo minimo per pagare online o commissione con parte fissa: oggi la commissione è
   solo percentuale (vedi esempio 3).
@@ -273,6 +311,8 @@ Come gira nel codice:
 | Tipologie offerte al checkout | `apps/api/src/lib/order-types.ts` |
 | Commissione | `apps/api/src/lib/config.ts`, `apps/api/src/lib/platform-fee.ts` |
 | Checkout (un ordine per negozio, un PaymentIntent) | `apps/api/src/modules/customer/services/checkout.ts` |
+| Ripartizione dei punti tra gli ordini | `apps/api/src/lib/points-allocation.ts` |
+| Anteprima del checkout | `apps/api/src/modules/customer/services/checkout.ts` (`previewCheckout`) |
 | Creazione ordine, totale, punti, IVA | `apps/api/src/modules/customer/services/orders.ts` |
 | PaymentIntent, trasferimenti, rimborsi, storni | `apps/api/src/modules/billing/services/order-payments.ts` |
 | Scadenze (30 min pagamento, 48 h prenotazione) | `apps/api/src/lib/jobs/expire-unpaid-orders.ts`, `expire-reservations.ts` |

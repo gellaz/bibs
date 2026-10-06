@@ -1,9 +1,15 @@
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CART_KEY } from "@/features/cart/use-cart";
+import { POINTS_KEY } from "@/features/points/use-points";
 import { api } from "@/lib/api";
 import { m } from "@/paraglide/messages";
-import { type CheckoutType, checkoutFailure } from "./checkout-choice";
+import {
+	type CheckoutChoice,
+	type CheckoutType,
+	checkoutFailure,
+	serializeChoice,
+} from "./checkout-choice";
 import { paymentState } from "./payment-state";
 
 /** Errore di conferma con lo status HTTP (assente se la rete non ha risposto). */
@@ -27,6 +33,28 @@ function errorMessage(res: { data: unknown; error: unknown }) {
 }
 
 export const ORDERS_KEY = ["customer", "orders"] as const;
+export const CHECKOUT_PREVIEW_KEY = ["customer", "checkout-preview"] as const;
+
+/** Importi del riepilogo dall'API, con e senza punti: l'interruttore non fa chiamate. */
+export function useCheckoutPreview(choice: CheckoutChoice, enabled: boolean) {
+	const stores = serializeChoice(choice) ?? "";
+	return useQuery({
+		queryKey: [...CHECKOUT_PREVIEW_KEY, stores],
+		enabled: enabled && stores !== "",
+		retry: false,
+		queryFn: async () => {
+			const res = await api().customer.checkout.preview.get({
+				query: { stores },
+			});
+			if (res.error)
+				throw new CheckoutError(
+					errorMessage(res),
+					(res.error as { status?: number }).status,
+				);
+			return unwrap(res, m.error_generic()).data;
+		},
+	});
+}
 
 export function useCreateCheckout() {
 	const qc = useQueryClient();
@@ -34,6 +62,7 @@ export function useCreateCheckout() {
 		mutationFn: async (body: {
 			idempotencyKey: string;
 			stores: { storeId: string; type: CheckoutType }[];
+			usePoints: boolean;
 		}) => {
 			const res = await api().customer.checkout.post(body);
 			if (res.error)
@@ -46,6 +75,8 @@ export function useCreateCheckout() {
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: CART_KEY });
 			void qc.invalidateQueries({ queryKey: ORDERS_KEY });
+			void qc.invalidateQueries({ queryKey: POINTS_KEY });
+			void qc.invalidateQueries({ queryKey: CHECKOUT_PREVIEW_KEY });
 		},
 		// Un 4xx vuol dire carrello cambiato: si rilegge. Dopo un errore di rete
 		// no: il server potrebbe aver già svuotato il carrello, e rileggerlo

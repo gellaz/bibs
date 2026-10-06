@@ -12,6 +12,7 @@ import {
 	serializeChoice,
 } from "@/features/checkout/checkout-choice";
 import { StoreChoice } from "@/features/checkout/store-choice";
+import { useCustomerPoints } from "@/features/points/use-points";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/checkout/")({
@@ -31,6 +32,7 @@ function CheckoutChoicePage() {
 	const search = Route.useSearch();
 	const navigate = useNavigate({ from: Route.fullPath });
 	const { cart, isPending } = useCart();
+	const points = useCustomerPoints(1);
 
 	if (isPending)
 		return (
@@ -94,6 +96,7 @@ function CheckoutChoicePage() {
 							storeId={group.store.id}
 							options={group.store.orderTypes}
 							value={choice[group.store.id]}
+							pointsBalance={points.data?.balance}
 							onChange={(type) =>
 								void navigate({
 									search: {
