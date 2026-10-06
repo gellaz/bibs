@@ -59,6 +59,7 @@ import { order } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { expireUnpaidOrders } from "@/lib/jobs/expire-unpaid-orders";
 import { createCheckout } from "@/modules/customer/services/checkout";
+import { cancelOrder } from "@/modules/customer/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCartItem,
@@ -298,5 +299,76 @@ describe("checkout con i punti", () => {
 		expect(again.id).toBe(first.id);
 		expect(again.orders[0].pointsSpent).toBe(0);
 		expect(await balanceOf(customer.profile.id)).toBe(1000);
+	});
+	it("a 0 €: parte solo la quota punti, dal saldo bibs", async () => {
+		const { customer, pay1 } = await cart(5000);
+		const result = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 5000,
+			idempotencyKey: crypto.randomUUID(),
+			usePoints: true,
+			stores: [{ storeId: pay1.store.id, type: "pay_pickup" }],
+		});
+		const o = result.orders[0];
+		expect(transfersCreate).toHaveBeenCalledTimes(1);
+		const [params, opts] = transfersCreate.mock.calls[0];
+		// lordo 20,00 − commissione 1,00 = 19,00, tutto dal saldo bibs
+		expect(params.amount).toBe(1900);
+		expect(params.source_transaction).toBeUndefined();
+		expect(params.transfer_group).toBe(result.id);
+		expect(opts).toEqual({ idempotencyKey: `points-transfer:${o.id}` });
+		const [row] = await getTestDb()
+			.select()
+			.from(order)
+			.where(eq(order.id, o.id));
+		expect(row.stripePointsTransferId).toBe("tr_1");
+		expect(row.stripeTransferId).toBeNull();
+	});
+
+	it("a 0 € con trasferimento rifiutato: checkout riuscito, quota in sospeso", async () => {
+		const { customer, pay1 } = await cart(5000);
+		transfersCreate.mockImplementationOnce(async () => {
+			throw new Error("insufficient balance");
+		});
+		const result = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 5000,
+			idempotencyKey: crypto.randomUUID(),
+			usePoints: true,
+			stores: [{ storeId: pay1.store.id, type: "pay_pickup" }],
+		});
+		expect(result.orders[0].status).toBe("confirmed");
+		const [row] = await getTestDb()
+			.select()
+			.from(order)
+			.where(eq(order.id, result.orders[0].id));
+		expect(row.stripePointsTransferId).toBeNull();
+	});
+
+	it("annullare un ordine di un checkout a 0 €: tornano solo i suoi punti", async () => {
+		const { customer, pay1, pay2 } = await cart(5000);
+		const result = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 5000,
+			idempotencyKey: crypto.randomUUID(),
+			usePoints: true,
+			stores: [
+				{ storeId: pay1.store.id, type: "pay_pickup" },
+				{ storeId: pay2.store.id, type: "pay_pickup" },
+			],
+		});
+		expect(await balanceOf(customer.profile.id)).toBe(2250);
+		const o2 = result.orders.find((o) => o.storeId === pay2.store.id)!;
+
+		await cancelOrder({
+			orderId: o2.id,
+			customerProfileId: customer.profile.id,
+		});
+
+		expect(await balanceOf(customer.profile.id)).toBe(3000);
+		expect(refundsCreate).not.toHaveBeenCalled(); // pagato 0 €
+		expect(createReversal).toHaveBeenCalledTimes(1);
+		// quota punti di o2: 7,50 − commissione 0,38 = 7,12
+		expect(createReversal.mock.calls[0][1].amount).toBe(712);
 	});
 });

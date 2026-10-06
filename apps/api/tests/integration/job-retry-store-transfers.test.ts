@@ -186,4 +186,23 @@ describe("retryStoreTransfers", () => {
 		const asked = paymentIntentsRetrieve.mock.calls.map(([id]) => id);
 		expect(asked.sort()).toEqual(expected.sort());
 	});
+	it("checkout a 0 € senza PaymentIntent: ritenta la quota punti senza interrogare Stripe sul PI", async () => {
+		const o = await seedPaid({
+			total: "0.00",
+			pointsDiscount: "20.00",
+			platformFee: "1.00",
+			stripeTransferId: null,
+		});
+		await getTestDb()
+			.update(checkout)
+			.set({ stripePaymentIntentId: null, amountDueOnline: "0" })
+			.where(eq(checkout.id, o.checkoutId as string));
+
+		expect(await retryStoreTransfers()).toBe(1);
+		expect(paymentIntentsRetrieve).not.toHaveBeenCalled();
+		expect(transfersCreate).toHaveBeenCalledTimes(1);
+		expect(transfersCreate.mock.calls[0][0]).toMatchObject({ amount: 1900 });
+		expect(transfersCreate.mock.calls[0][0].source_transaction).toBeUndefined();
+		expect((await reload(o.id)).stripePointsTransferId).toMatch(/^tr_/);
+	});
 });

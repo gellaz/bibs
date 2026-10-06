@@ -6,6 +6,7 @@ import { order } from "@/db/schemas/order";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import { fromCents, toCents } from "@/lib/money";
 import { offeredOrderTypes, sellerChargesEnabledSql } from "@/lib/order-types";
 import { allocateCheckoutPoints } from "@/lib/points-allocation";
@@ -13,6 +14,7 @@ import { publiclyVisibleStore } from "@/lib/store-visibility";
 import {
 	createCheckoutPaymentIntent,
 	payableClientSecret,
+	transferStorePayouts,
 } from "@/modules/billing/services/order-payments";
 import type { OrderTx, PricedOrder } from "./orders";
 import { insertOrder, listCustomerOrders, priceOrder } from "./orders";
@@ -304,7 +306,7 @@ export async function createCheckout(params: CreateCheckoutParams) {
 					);
 			}
 
-			return row.id;
+			return { id: row.id, zeroDue: hasPay && amountDueCents === 0 };
 		})
 		.catch(async (err: unknown) => {
 			// Race sulla key: un'altra richiesta identica ha vinto l'insert.
@@ -312,10 +314,23 @@ export async function createCheckout(params: CreateCheckoutParams) {
 				const winner = await db.query.checkout.findFirst({
 					where: eq(checkout.idempotencyKey, idempotencyKey),
 				});
-				if (winner?.customerProfileId === customerProfileId) return winner.id;
+				if (winner?.customerProfileId === customerProfileId)
+					return { id: winner.id, zeroDue: false };
 			}
 			throw err;
 		});
 
-	return getCheckout({ checkoutId: await created, customerProfileId });
+	const { id, zeroDue } = await created;
+	// Fuori dalla tx: Stripe non si chiama con le righe ancora non committate.
+	// Un fallimento non tocca il cliente (gli ordini sono confermati): la quota
+	// punti la ritenta retryStoreTransfers.
+	if (zeroDue) {
+		const failed = await transferStorePayouts(id, null);
+		if (failed.length > 0)
+			logger.error(
+				{ checkoutId: id, orderIds: failed },
+				"Quota punti al negozio rimasta in sospeso: la ritenta il cron",
+			);
+	}
+	return getCheckout({ checkoutId: id, customerProfileId });
 }
