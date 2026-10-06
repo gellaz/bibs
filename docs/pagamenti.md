@@ -306,8 +306,8 @@ riprova»): l'app mostra un avviso e riporta al carrello, e l'anteprima viene ri
 
 - Pagamento online per `pay_deliver` (PS3) e per gli ordini `direct`.
 - Gestione delle contestazioni (*dispute/chargeback*): si fa a mano dalla Dashboard Stripe.
-- Importo minimo per pagare online o commissione con parte fissa: oggi la commissione è
-  solo percentuale (vedi esempio 3).
+- Importo minimo di bibs per pagare online (oltre al minimo tecnico Stripe di 0,50 €) o
+  commissione con parte fissa: oggi la commissione è solo percentuale (vedi esempio 3).
 - Fattura elettronica (SDI): ci si affida alle ricevute Stripe.
 
 ## Dove sta nel codice
