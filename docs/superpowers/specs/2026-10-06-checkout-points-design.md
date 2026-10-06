@@ -76,7 +76,8 @@
 
 1. `Σ = somma dei lordi`; sconto massimo `D = min(centesimi del saldo, Σ)`, dove centesimi del
    saldo `= floor(balance * 100 / pointsPerEuroDiscount)`.
-2. Se `0 < Σ − D < 50`: con `centesimi del saldo ≥ Σ` → `D = Σ`; altrimenti `D = max(0, Σ − 50)`.
+2. Se `0 < Σ − D < 50` → `D = max(0, Σ − 50)`. (Con saldo ≥ Σ il passo 1 dà già `D = Σ`, cioè
+   0 €: il residuo sotto 0,50 € capita solo con saldo insufficiente.)
 3. `D` ripartito sui lordi con resti maggiori (riuso `apportionDiscount` di `lib/vat.ts` se la
    firma regge, altrimenti una gemella locale con lo stesso algoritmo). Σ delle quote = `D`.
 4. Punti per ordine `= quota_cent * pointsPerEuroDiscount / 100` (oggi 1:1, intero).
