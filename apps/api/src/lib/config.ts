@@ -9,6 +9,8 @@ export const config = {
 	paymentWindowMinutes: 30,
 	/** Commissione bibs sui pagamenti online (PR2), in percentuale del totale */
 	platformFeePercent: 5,
+	/** Minimo addebito Stripe in EUR (centesimi): sotto, il PaymentIntent è rifiutato */
+	stripeMinChargeCents: 50,
 	/** Maximum number of images per product */
 	maxImagesPerProduct: 10,
 	/** Maximum number of images per store */
