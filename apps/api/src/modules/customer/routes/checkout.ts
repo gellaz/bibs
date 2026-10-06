@@ -51,12 +51,18 @@ export const checkoutRoutes = new Elysia()
 					}),
 					{ minItems: 1, description: "Negozi del carrello da ordinare" },
 				),
+				usePoints: t.Optional(
+					t.Boolean({
+						description:
+							"Usa i punti sugli ordini Paga e ritira: il server decide quanti (saldo, regola 0 € o almeno 0,50 €) e li ripartisce tra i negozi",
+					}),
+				),
 			}),
 			response: withConflictErrors({ 200: okRes(CheckoutSchema) }),
 			detail: {
 				summary: "Conferma checkout",
 				description:
-					"Crea un ordine per ogni negozio scelto, leggendo le righe dal carrello, in un'unica transazione. Le righe ordinate escono dal carrello; quelle non disponibili restano. 409 se il carrello è cambiato. Con ordini Paga e ritira crea un unico pagamento: la risposta porta `payment.clientSecret`. 502 se il pagamento online non è disponibile.",
+					"Crea un ordine per ogni negozio scelto, leggendo le righe dal carrello, in un'unica transazione. Le righe ordinate escono dal carrello; quelle non disponibili restano. 409 se il carrello è cambiato. Con ordini Paga e ritira crea un unico pagamento: la risposta porta `payment.clientSecret`. 502 se il pagamento online non è disponibile. Con `usePoints` gli ordini Paga e ritira possono arrivare a 0 €: in quel caso nascono confermati e `payment` è null.",
 				tags: ["Customer - Checkout"],
 			},
 		},

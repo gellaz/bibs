@@ -2,23 +2,162 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { cartItem } from "@/db/schemas/cart";
 import { checkout } from "@/db/schemas/checkout";
+import { order } from "@/db/schemas/order";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
 import { offeredOrderTypes, sellerChargesEnabledSql } from "@/lib/order-types";
+import { allocateCheckoutPoints } from "@/lib/points-allocation";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import {
 	createCheckoutPaymentIntent,
 	payableClientSecret,
 } from "@/modules/billing/services/order-payments";
-import { listCustomerOrders, placeOrder } from "./orders";
+import type { OrderTx, PricedOrder } from "./orders";
+import { insertOrder, listCustomerOrders, priceOrder } from "./orders";
+
+export interface CheckoutStoreChoice {
+	storeId: string;
+	type: "reserve_pickup" | "pay_pickup";
+}
 
 export interface CreateCheckoutParams {
 	customerProfileId: string;
 	customerPoints: number;
 	idempotencyKey: string;
-	stores: { storeId: string; type: "reserve_pickup" | "pay_pickup" }[];
+	stores: CheckoutStoreChoice[];
+	usePoints?: boolean;
+}
+
+/**
+ * Le righe del carrello per i negozi scelti, con gli stessi rifiuti per
+ * conferma e anteprima: negozio senza articoli acquistabili (409), modalità
+ * non offerta (400), stock insufficiente (409). Con `lock` le righe si
+ * bloccano: due conferme concorrenti non leggono le stesse righe.
+ */
+export async function resolveCheckoutLines(
+	tx: OrderTx,
+	p: {
+		customerProfileId: string;
+		stores: CheckoutStoreChoice[];
+		lock: boolean;
+	},
+) {
+	const storeIds = p.stores.map((s) => s.storeId);
+	if (new Set(storeIds).size !== storeIds.length)
+		throw new ServiceError(400, "Ogni negozio può comparire una sola volta");
+
+	const query = tx
+		.select({
+			id: cartItem.id,
+			storeProductId: cartItem.storeProductId,
+			quantity: cartItem.quantity,
+			stock: storeProduct.stock,
+			productStatus: product.status,
+			storeId: store.id,
+			storeName: store.name,
+			orderTypes: store.orderTypes,
+			chargesEnabled: sellerChargesEnabledSql,
+		})
+		.from(cartItem)
+		.innerJoin(storeProduct, eq(storeProduct.id, cartItem.storeProductId))
+		.innerJoin(product, eq(product.id, storeProduct.productId))
+		.innerJoin(store, eq(store.id, storeProduct.storeId))
+		.where(
+			and(
+				eq(cartItem.customerProfileId, p.customerProfileId),
+				inArray(store.id, storeIds),
+				publiclyVisibleStore(),
+			),
+		)
+		.$dynamic();
+	// Due checkout dello stesso cliente (due schede, chiavi diverse) non
+	// devono leggere le stesse righe: il secondo aspetta il primo e poi
+	// non le trova più → 409, invece di un ordine doppio.
+	const lines = p.lock
+		? await query.for("update", { of: cartItem })
+		: await query;
+
+	return p.stores.map((choice) => {
+		const own = lines.filter((l) => l.storeId === choice.storeId);
+		const buyable = own.filter((l) => l.productStatus === "active");
+		if (buyable.length === 0)
+			throw new ServiceError(
+				409,
+				"Il carrello è cambiato: questo negozio non ha più articoli acquistabili",
+			);
+		if (
+			!offeredOrderTypes(own[0].orderTypes, {
+				chargesEnabled: own[0].chargesEnabled,
+			}).includes(choice.type)
+		)
+			throw new ServiceError(
+				400,
+				`${own[0].storeName} non offre questa modalità d'acquisto`,
+			);
+		if (buyable.some((l) => l.stock < l.quantity))
+			throw new ServiceError(
+				409,
+				"Il carrello è cambiato: alcune quantità non sono più disponibili",
+			);
+		return {
+			choice,
+			buyable: buyable.map((l) => ({
+				id: l.id,
+				storeProductId: l.storeProductId,
+				quantity: l.quantity,
+			})),
+		};
+	});
+}
+
+/**
+ * Prezza ogni negozio e, se il cliente usa i punti, li ripartisce tra i PR2
+ * (allocateCheckoutPoints). Solo letture: la conferma inserisce dopo,
+ * l'anteprima si ferma qui.
+ */
+export async function priceCheckout(
+	tx: OrderTx,
+	p: {
+		customerProfileId: string;
+		customerPoints: number;
+		usePoints: boolean;
+		resolved: Awaited<ReturnType<typeof resolveCheckoutLines>>;
+	},
+) {
+	const priced: PricedOrder[] = [];
+	for (const r of p.resolved)
+		priced.push(
+			await priceOrder(tx, {
+				customerProfileId: p.customerProfileId,
+				type: r.choice.type,
+				storeId: r.choice.storeId,
+				items: r.buyable.map((l) => ({
+					storeProductId: l.storeProductId,
+					quantity: l.quantity,
+				})),
+			}),
+		);
+
+	const payIdx = priced.flatMap((o, i) => (o.type === "pay_pickup" ? [i] : []));
+	const allocation = allocateCheckoutPoints({
+		balance: p.usePoints ? p.customerPoints : 0,
+		grossCents: payIdx.map((i) => priced[i].totalCents),
+	});
+	const points = priced.map(() => 0);
+	const discountCents = priced.map(() => 0);
+	payIdx.forEach((i, k) => {
+		points[i] = allocation.points[k];
+		discountCents[i] = allocation.discountCents[k];
+	});
+
+	return p.resolved.map((r, i) => ({
+		...r,
+		priced: priced[i],
+		points: points[i],
+		discountCents: discountCents[i],
+	}));
 }
 
 /** Un checkout con i suoi ordini, nella stessa forma della lista ordini. */
@@ -64,9 +203,17 @@ export async function getCheckout(params: {
  * tipologia. Righe non disponibili: saltate, restano nel carrello. Stock
  * insufficiente: 409, il cliente torna al carrello. PR2 nasce pending; il
  * PaymentIntent unico copre la somma dei PR2.
+ * Con `usePoints` i punti si ripartiscono tra i PR2 (allocateCheckoutPoints);
+ * se coprono tutto, i PR2 nascono confermati senza PaymentIntent.
  */
 export async function createCheckout(params: CreateCheckoutParams) {
-	const { customerProfileId, customerPoints, idempotencyKey, stores } = params;
+	const {
+		customerProfileId,
+		customerPoints,
+		idempotencyKey,
+		stores,
+		usePoints = false,
+	} = params;
 
 	const existing = await db.query.checkout.findFirst({
 		where: eq(checkout.idempotencyKey, idempotencyKey),
@@ -77,10 +224,6 @@ export async function createCheckout(params: CreateCheckoutParams) {
 		return getCheckout({ checkoutId: existing.id, customerProfileId });
 	}
 
-	const storeIds = stores.map((s) => s.storeId);
-	if (new Set(storeIds).size !== storeIds.length)
-		throw new ServiceError(400, "Ogni negozio può comparire una sola volta");
-
 	const created = db
 		.transaction(async (tx) => {
 			const [row] = await tx
@@ -88,76 +231,30 @@ export async function createCheckout(params: CreateCheckoutParams) {
 				.values({ customerProfileId, idempotencyKey })
 				.returning({ id: checkout.id });
 
-			// Righe del carrello per i negozi scelti, con quanto serve a decidere
-			// se sono acquistabili (stessa definizione di getCart).
-			const lines = await tx
-				.select({
-					id: cartItem.id,
-					storeProductId: cartItem.storeProductId,
-					quantity: cartItem.quantity,
-					stock: storeProduct.stock,
-					productStatus: product.status,
-					storeId: store.id,
-					storeName: store.name,
-					orderTypes: store.orderTypes,
-					chargesEnabled: sellerChargesEnabledSql,
-				})
-				.from(cartItem)
-				.innerJoin(storeProduct, eq(storeProduct.id, cartItem.storeProductId))
-				.innerJoin(product, eq(product.id, storeProduct.productId))
-				.innerJoin(store, eq(store.id, storeProduct.storeId))
-				.where(
-					and(
-						eq(cartItem.customerProfileId, customerProfileId),
-						inArray(store.id, storeIds),
-						publiclyVisibleStore(),
-					),
-				)
-				// Due checkout dello stesso cliente (due schede, chiavi diverse) non
-				// devono leggere le stesse righe: il secondo aspetta il primo e poi
-				// non le trova più → 409, invece di un ordine doppio.
-				.for("update", { of: cartItem });
+			const resolved = await resolveCheckoutLines(tx, {
+				customerProfileId,
+				stores,
+				lock: true,
+			});
+			const plan = await priceCheckout(tx, {
+				customerProfileId,
+				customerPoints,
+				usePoints,
+				resolved,
+			});
 
 			let amountDueCents = 0;
-			for (const choice of stores) {
-				const own = lines.filter((l) => l.storeId === choice.storeId);
-				const buyable = own.filter((l) => l.productStatus === "active");
-				if (buyable.length === 0)
-					throw new ServiceError(
-						409,
-						"Il carrello è cambiato: questo negozio non ha più articoli acquistabili",
-					);
-				if (
-					!offeredOrderTypes(own[0].orderTypes, {
-						chargesEnabled: own[0].chargesEnabled,
-					}).includes(choice.type)
-				)
-					throw new ServiceError(
-						400,
-						`${own[0].storeName} non offre questa modalità d'acquisto`,
-					);
-				if (buyable.some((l) => l.stock < l.quantity))
-					throw new ServiceError(
-						409,
-						"Il carrello è cambiato: alcune quantità non sono più disponibili",
-					);
-
-				const placed = await placeOrder(
-					tx,
-					{
-						customerProfileId,
-						customerPoints,
-						type: choice.type,
-						storeId: choice.storeId,
-						items: buyable.map((l) => ({
-							storeProductId: l.storeProductId,
-							quantity: l.quantity,
-						})),
-					},
-					{ checkoutId: row.id },
-				);
-				if (placed.type === "pay_pickup")
+			let hasPay = false;
+			for (const step of plan) {
+				const placed = await insertOrder(tx, step.priced, {
+					customerPoints,
+					pointsToSpend: step.points,
+					link: { checkoutId: row.id },
+				});
+				if (placed.type === "pay_pickup") {
+					hasPay = true;
 					amountDueCents += toCents(placed.total);
+				}
 
 				const removed = await tx
 					.delete(cartItem)
@@ -166,14 +263,14 @@ export async function createCheckout(params: CreateCheckoutParams) {
 							eq(cartItem.customerProfileId, customerProfileId),
 							inArray(
 								cartItem.id,
-								buyable.map((l) => l.id),
+								step.buyable.map((l) => l.id),
 							),
 						),
 					)
 					.returning({ id: cartItem.id });
-				// Rete di sicurezza del lock qui sopra: se le righe ordinate non sono
-				// più tutte lì, qualcun altro le ha già consumate.
-				if (removed.length !== buyable.length)
+				// Rete di sicurezza del lock: se le righe ordinate non sono più
+				// tutte lì, qualcun altro le ha già consumate.
+				if (removed.length !== step.buyable.length)
 					throw new ServiceError(
 						409,
 						"Il carrello è cambiato: alcune quantità non sono più disponibili",
@@ -195,6 +292,16 @@ export async function createCheckout(params: CreateCheckoutParams) {
 						amountDueOnline: fromCents(amountDueCents),
 					})
 					.where(eq(checkout.id, row.id));
+			} else if (hasPay) {
+				// Tutto coperto dai punti: niente da incassare, niente PaymentIntent.
+				// I PR2 si confermano qui, senza finestra di pagamento: il cron
+				// delle scadenze guarda solo i pending e non li tocca.
+				await tx
+					.update(order)
+					.set({ status: "confirmed", paymentExpiresAt: null })
+					.where(
+						and(eq(order.checkoutId, row.id), eq(order.type, "pay_pickup")),
+					);
 			}
 
 			return row.id;
