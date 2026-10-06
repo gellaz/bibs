@@ -44,10 +44,15 @@ export function resolveChoice(
 	};
 }
 
-/** Il bottone dice cosa succede: prenotazione, pagamento, o entrambi. */
-export function confirmLabel(types: CheckoutType[]): string {
+/** Il bottone dice cosa succede: prenotazione, pagamento, o entrambi. Con un
+ *  PR2 interamente coperto dai punti non si paga niente: «Conferma ordine». */
+export function confirmLabel(
+	types: CheckoutType[],
+	payNowCents?: number,
+): string {
 	const reserve = types.includes("reserve_pickup");
 	const pay = types.includes("pay_pickup");
+	if (pay && payNowCents === 0) return m.checkout_confirm_order();
 	if (reserve && pay) return m.checkout_confirm_reserve_and_pay();
 	return pay ? m.checkout_confirm_pay() : m.checkout_confirm_reserve();
 }

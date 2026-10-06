@@ -75,3 +75,16 @@ describe("checkoutFailure", () => {
 		expect(checkoutFailure(503)).toBe("retry");
 	});
 });
+
+describe("confirmLabel a 0 €", () => {
+	it("PR2 coperto dai punti: Conferma ordine, non Paga", () => {
+		expect(confirmLabel(["pay_pickup"], 0)).toBe("Conferma ordine");
+		expect(confirmLabel(["pay_pickup", "reserve_pickup"], 0)).toBe(
+			"Conferma ordine",
+		);
+	});
+	it("con importo: invariato", () => {
+		expect(confirmLabel(["pay_pickup"], 1240)).toBe("Paga");
+		expect(confirmLabel(["pay_pickup"])).toBe("Paga");
+	});
+});

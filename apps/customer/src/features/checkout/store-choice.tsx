@@ -1,6 +1,7 @@
 import { RadioGroup, RadioGroupItem } from "@bibs/ui/components/radio-group";
 import { m } from "@/paraglide/messages";
 import type { CheckoutType } from "./checkout-choice";
+import { formatPoints } from "./points-toggle";
 
 const LABEL: Record<CheckoutType, () => string> = {
 	reserve_pickup: m.checkout_type_reserve_pickup,
@@ -26,11 +27,14 @@ export function StoreChoice({
 	options,
 	value,
 	onChange,
+	pointsBalance,
 }: {
 	storeId: string;
 	options: CheckoutType[];
 	value: CheckoutType | undefined;
 	onChange: (v: CheckoutType) => void;
+	/** Saldo punti del cliente: se c'è, la spiegazione di `pay_pickup` lo ricorda. */
+	pointsBalance?: number;
 }) {
 	return (
 		<RadioGroup
@@ -53,6 +57,9 @@ export function StoreChoice({
 							</span>
 							<span className="block text-muted-foreground text-sm">
 								{HINT[type]()}
+								{type === "pay_pickup" && pointsBalance
+									? ` ${m.checkout_type_pay_pickup_points_hint({ points: formatPoints(pointsBalance) })}`
+									: null}
 							</span>
 						</span>
 					</label>

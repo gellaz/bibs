@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { NoticePage } from "@/components/notice";
 import { donePageState } from "@/features/checkout/payment-state";
+import { formatPoints } from "@/features/checkout/points-toggle";
 import { useCheckout } from "@/features/checkout/use-checkout";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { formatPickupCode } from "@/features/orders/pickup-code";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/checkout/$checkoutId/")({
 });
 
 const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
+const toCents = (v: string) => Math.round(Number(v) * 100);
 
 function CheckoutDonePage() {
 	const { checkoutId } = Route.useParams();
@@ -175,6 +177,22 @@ function CheckoutDonePage() {
 					</li>
 				))}
 			</ul>
+
+			{(() => {
+				const spent = data.orders.reduce((s, o) => s + o.pointsSpent, 0);
+				const discount = data.orders.reduce(
+					(s, o) => s + toCents(o.pointsDiscount),
+					0,
+				);
+				return spent > 0 ? (
+					<p className="text-muted-foreground text-sm tabular-nums">
+						{m.checkout_done_points_used({
+							points: formatPoints(spent),
+							amount: formatPriceEur(discount / 100),
+						})}
+					</p>
+				) : null;
+			})()}
 
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
 				<Button asChild variant="secondary" className="min-h-11">
