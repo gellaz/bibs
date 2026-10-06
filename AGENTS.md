@@ -15,7 +15,8 @@ This file provides guidance when working with the **bibs** monorepo.
 
 Cross-app architecture (type flow, API patterns, data model, frontend stack):
 [docs/architecture.md](docs/architecture.md). Stripe billing dev runbook:
-[docs/stripe-billing.md](docs/stripe-billing.md).
+[docs/stripe-billing.md](docs/stripe-billing.md); payment flows and fees with examples:
+[docs/pagamenti.md](docs/pagamenti.md).
 
 ## Design Context
 

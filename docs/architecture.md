@@ -2,7 +2,8 @@
 
 Cross-app overview of the **bibs** monorepo. For setup see the [root README](../README.md);
 for project rules and conventions see [AGENTS.md](../AGENTS.md); for the Stripe billing
-flow see [stripe-billing.md](stripe-billing.md).
+flow see [stripe-billing.md](stripe-billing.md) and, for every payment flow with examples,
+[pagamenti.md](pagamenti.md).
 
 ## The monorepo at a glance
 
@@ -116,8 +117,8 @@ Table definitions live in `apps/api/src/db/schemas/` (one file per concern; barr
   (earned/redeemed/refunded), `customer_addresses` (PostGIS).
 - **Billing (Stripe)** — `pricing_config` (the monthly store fee + live Stripe price id),
   `pending_store_creation` (store form parked until payment), `store_subscriptions`,
-  `stripe_events` (webhook idempotency); `payment_methods` exists but is **dormant**
-  (reserved for future customer-order payments).
+  `stripe_events` (webhook idempotency); `payment_methods` (the seller's Stripe Connect
+  account, used by «Paga e ritira») — see [pagamenti.md](pagamenti.md).
 - **Geo** — Italian `regions` / `provinces` / `municipalities`, seeded from committed JSON.
 
 ```mermaid
