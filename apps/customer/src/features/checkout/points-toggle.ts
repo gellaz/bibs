@@ -39,7 +39,7 @@ export function amountDueOnline(
 export function onlineChargeBlocked(
 	preview: {
 		withoutPoints: { belowMinimum: boolean };
-		withPoints: unknown | null;
+		withPoints: { amountDueOnline: string } | null;
 	},
 	usePoints: boolean,
 ): boolean {

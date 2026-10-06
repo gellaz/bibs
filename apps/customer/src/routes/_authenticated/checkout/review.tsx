@@ -311,7 +311,9 @@ function CheckoutReviewPage() {
 									min: formatPriceEur(data.minAmountOnline),
 								})}
 							</p>
-							{withPoints && <p>{m.checkout_min_charge_points()}</p>}
+							{withPoints && toCents(withPoints.amountDueOnline) === 0 && (
+								<p>{m.checkout_min_charge_points()}</p>
+							)}
 						</div>
 					)}
 					{payInStore > 0 && (
