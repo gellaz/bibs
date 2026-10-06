@@ -32,3 +32,17 @@ export function amountDueOnline(
 		? preview.withPoints.amountDueOnline
 		: preview.withoutPoints.amountDueOnline;
 }
+
+/** L'importo online dello scenario scelto è sotto il minimo Stripe: la
+ *  conferma va bloccata. Con i punti accesi l'importo è per costruzione
+ *  0 € o almeno il minimo, quindi conta solo lo scenario senza punti. */
+export function onlineChargeBlocked(
+	preview: {
+		withoutPoints: { belowMinimum: boolean };
+		withPoints: unknown | null;
+	},
+	usePoints: boolean,
+): boolean {
+	if (usePoints && preview.withPoints) return false;
+	return preview.withoutPoints.belowMinimum;
+}
