@@ -257,7 +257,8 @@ export async function createCheckout(params: CreateCheckoutParams) {
 				resolved,
 			});
 			// Stripe non incassa tra 0,01 e 0,49 €: si rifiuta qui, prima di
-			// qualunque insert, così la tx si annulla e il carrello resta.
+			// inserire gli ordini; il rollback della tx rimuove anche la riga
+			// checkout già inserita e il carrello resta.
 			if (isBelowOnlineMinimum(plan.amountDueOnlineCents))
 				throw new ServiceError(
 					400,
@@ -297,6 +298,11 @@ export async function createCheckout(params: CreateCheckoutParams) {
 						"Il carrello è cambiato: alcune quantità non sono più disponibili",
 					);
 			}
+
+			// Rete di sicurezza: Stripe non deve ricevere un importo diverso da
+			// quello controllato sopra; il throw annulla la tx.
+			if (amountDueCents !== plan.amountDueOnlineCents)
+				throw new ServiceError(500, "Importo del checkout incoerente");
 
 			// Un solo pagamento per tutti i negozi PR2 del checkout. Dentro la tx:
 			// se Stripe fallisce (502) non nasce nessun ordine e il carrello resta.

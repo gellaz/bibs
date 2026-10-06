@@ -387,7 +387,7 @@
 	"checkout_pay_by_card": "Da pagare con carta",
 	"checkout_confirm_order": "Conferma ordine",
 	"checkout_min_charge_note": "I pagamenti online partono da {min}. Per questo ordine scegli «Prenota e paga in negozio» o aggiungi articoli.",
-	"checkout_min_charge_points": "Oppure attiva i punti: paghi 0 €.",
+	"checkout_min_charge_points": "Oppure attiva i punti: paghi 0 € online.",
 	"checkout_preview_failed": "Non riusciamo a calcolare il totale.",
 	"checkout_done_points_used": "Punti usati: {points} (−{amount})",
 	"orders_complete_payment": "Completa il pagamento",
