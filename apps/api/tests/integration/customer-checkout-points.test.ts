@@ -54,11 +54,16 @@ mock.module("@/lib/stripe", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import { cartItem } from "@/db/schemas/cart";
 import { customerProfile } from "@/db/schemas/customer";
 import { order } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { expireUnpaidOrders } from "@/lib/jobs/expire-unpaid-orders";
-import { createCheckout } from "@/modules/customer/services/checkout";
+import {
+	createCheckout,
+	parseStoresParam,
+	previewCheckout,
+} from "@/modules/customer/services/checkout";
 import { cancelOrder } from "@/modules/customer/services/orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
@@ -370,5 +375,120 @@ describe("checkout con i punti", () => {
 		expect(createReversal).toHaveBeenCalledTimes(1);
 		// quota punti di o2: 7,50 − commissione 0,38 = 7,12
 		expect(createReversal.mock.calls[0][1].amount).toBe(712);
+	});
+});
+
+describe("anteprima del checkout", () => {
+	it("parità: la preview prevede esattamente gli ordini creati", async () => {
+		const { customer, pay1, pay2, reserve } = await cart(1000);
+		const stores = [
+			{ storeId: pay1.store.id, type: "pay_pickup" as const },
+			{ storeId: pay2.store.id, type: "pay_pickup" as const },
+			{ storeId: reserve.store.id, type: "reserve_pickup" as const },
+		];
+		const preview = await previewCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 1000,
+			stores,
+		});
+		expect(preview).toEqual({
+			balance: 1000,
+			payInStore: "4.00",
+			withoutPoints: { amountDueOnline: "27.50" },
+			withPoints: {
+				pointsSpent: 1000,
+				discount: "10.00",
+				amountDueOnline: "17.50",
+				perStore: [
+					{ storeId: pay1.store.id, pointsSpent: 727, discount: "7.27" },
+					{ storeId: pay2.store.id, pointsSpent: 273, discount: "2.73" },
+				],
+			},
+		});
+
+		const created = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 1000,
+			idempotencyKey: crypto.randomUUID(),
+			usePoints: true,
+			stores,
+		});
+		expect(created.amountDueOnline).toBe(preview.withPoints!.amountDueOnline);
+		for (const s of preview.withPoints!.perStore) {
+			const o = created.orders.find((x) => x.storeId === s.storeId)!;
+			expect(o.pointsSpent).toBe(s.pointsSpent);
+			expect(o.pointsDiscount).toBe(s.discount);
+		}
+	});
+
+	it("non scrive niente: carrello, stock e saldo intatti", async () => {
+		const { customer, pay1 } = await cart(1000);
+		await previewCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 1000,
+			stores: [{ storeId: pay1.store.id, type: "pay_pickup" }],
+		});
+		expect(await getTestDb().select().from(order)).toHaveLength(0);
+		expect(await balanceOf(customer.profile.id)).toBe(1000);
+	});
+
+	it("withPoints null senza PR2 o con saldo zero", async () => {
+		const a = await cart(1000);
+		expect(
+			(
+				await previewCheckout({
+					customerProfileId: a.customer.profile.id,
+					customerPoints: 1000,
+					stores: [{ storeId: a.reserve.store.id, type: "reserve_pickup" }],
+				})
+			).withPoints,
+		).toBeNull();
+		await truncateAll(getTestDb());
+		const b = await cart(0);
+		expect(
+			(
+				await previewCheckout({
+					customerProfileId: b.customer.profile.id,
+					customerPoints: 0,
+					stores: [{ storeId: b.pay1.store.id, type: "pay_pickup" }],
+				})
+			).withPoints,
+		).toBeNull();
+	});
+
+	it("rifiuta come la conferma: modalità non offerta 400, negozio senza righe 409", async () => {
+		const { customer, reserve, pay1 } = await cart(1000);
+		await expect(
+			previewCheckout({
+				customerProfileId: customer.profile.id,
+				customerPoints: 1000,
+				stores: [{ storeId: reserve.store.id, type: "pay_pickup" }],
+			}),
+		).rejects.toMatchObject({ status: 400 });
+		await getTestDb()
+			.delete(cartItem)
+			.where(eq(cartItem.storeProductId, pay1.sp.id));
+		await expect(
+			previewCheckout({
+				customerProfileId: customer.profile.id,
+				customerPoints: 1000,
+				stores: [{ storeId: pay1.store.id, type: "pay_pickup" }],
+			}),
+		).rejects.toMatchObject({ status: 409 });
+	});
+});
+
+describe("parseStoresParam", () => {
+	it("legge il formato di serializeChoice", () => {
+		expect(parseStoresParam("a:pay_pickup,b:reserve_pickup")).toEqual([
+			{ storeId: "a", type: "pay_pickup" },
+			{ storeId: "b", type: "reserve_pickup" },
+		]);
+	});
+	it("400 su vuoto, tipo sconosciuto o coppia rotta", () => {
+		for (const raw of ["", "a:direct", "a", ":pay_pickup"])
+			expect(() => parseStoresParam(raw)).toThrow(
+				expect.objectContaining({ status: 400 }),
+			);
 	});
 });

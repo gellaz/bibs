@@ -187,6 +187,38 @@ export const CheckoutSchema = t.Object({
 	orders: t.Array(CustomerOrderWithRelationsSchema),
 });
 
+export const CheckoutPreviewSchema = t.Object({
+	balance: t.Number({ minimum: 0, description: "Saldo punti del cliente" }),
+	payInStore: t.String({
+		description: "Somma degli ordini Prenota e paga in negozio",
+	}),
+	withoutPoints: t.Object({
+		amountDueOnline: t.String({ description: "Da pagare online senza punti" }),
+	}),
+	withPoints: t.Nullable(
+		t.Object(
+			{
+				pointsSpent: t.Number({ minimum: 0 }),
+				discount: t.String({ description: "Sconto punti totale in euro" }),
+				amountDueOnline: t.String({
+					description: "Da pagare online con i punti: 0 oppure almeno 0,50",
+				}),
+				perStore: t.Array(
+					t.Object({
+						storeId: t.String(),
+						pointsSpent: t.Number({ minimum: 0 }),
+						discount: t.String(),
+					}),
+				),
+			},
+			{
+				description:
+					"Null se non ci sono ordini Paga e ritira o i punti non danno sconto",
+			},
+		),
+	),
+});
+
 // Seller settings (profile + org + online payments + pending changes)
 export const SellerSettingsSchema = t.Object({
 	profile: SellerProfileSchema,

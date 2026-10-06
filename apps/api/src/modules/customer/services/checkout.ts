@@ -334,3 +334,77 @@ export async function createCheckout(params: CreateCheckoutParams) {
 	}
 	return getCheckout({ checkoutId: id, customerProfileId });
 }
+
+const CHECKOUT_TYPES = ["reserve_pickup", "pay_pickup"] as const;
+
+/** `storeId:type,storeId:type` (il formato della scelta nel customer). */
+export function parseStoresParam(raw: string): CheckoutStoreChoice[] {
+	const stores = raw
+		.split(",")
+		.filter(Boolean)
+		.map((pair) => {
+			const [storeId, type] = pair.split(":");
+			if (
+				!storeId ||
+				!CHECKOUT_TYPES.includes(type as CheckoutStoreChoice["type"])
+			)
+				throw new ServiceError(400, "Scelta dei negozi non valida");
+			return { storeId, type: type as CheckoutStoreChoice["type"] };
+		});
+	if (stores.length === 0)
+		throw new ServiceError(400, "Scelta dei negozi non valida");
+	return stores;
+}
+
+/**
+ * Gli importi del checkout prima della conferma, con e senza punti, calcolati
+ * dalle stesse funzioni di createCheckout (righe, prezzi, ripartizione): la
+ * conferma con `usePoints` produce esattamente `withPoints`. Solo letture.
+ */
+export async function previewCheckout(p: {
+	customerProfileId: string;
+	customerPoints: number;
+	stores: CheckoutStoreChoice[];
+}) {
+	return db.transaction(async (tx) => {
+		const resolved = await resolveCheckoutLines(tx, {
+			customerProfileId: p.customerProfileId,
+			stores: p.stores,
+			lock: false,
+		});
+		const plan = await priceCheckout(tx, {
+			customerProfileId: p.customerProfileId,
+			customerPoints: p.customerPoints,
+			usePoints: true,
+			resolved,
+		});
+		const pay = plan.filter((s) => s.priced.type === "pay_pickup");
+		const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
+		const grossPay = sum(pay.map((s) => s.priced.totalCents));
+		const discount = sum(pay.map((s) => s.discountCents));
+		return {
+			balance: p.customerPoints,
+			payInStore: fromCents(
+				sum(
+					plan
+						.filter((s) => s.priced.type === "reserve_pickup")
+						.map((s) => s.priced.totalCents),
+				),
+			),
+			withoutPoints: { amountDueOnline: fromCents(grossPay) },
+			withPoints:
+				discount > 0
+					? {
+							pointsSpent: sum(pay.map((s) => s.points)),
+							discount: fromCents(discount),
+							amountDueOnline: fromCents(grossPay - discount),
+							perStore: pay.map((s) => ({
+								storeId: s.choice.storeId,
+								pointsSpent: s.points,
+								discount: fromCents(s.discountCents),
+							})),
+						}
+					: null,
+		};
+	});
+}

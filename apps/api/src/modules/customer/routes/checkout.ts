@@ -2,15 +2,49 @@ import { Elysia, t } from "elysia";
 import { getLogger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
 import {
+	CheckoutPreviewSchema,
 	CheckoutSchema,
 	okRes,
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
 import { withCustomer } from "../context";
-import { createCheckout, getCheckout } from "../services/checkout";
+import {
+	createCheckout,
+	getCheckout,
+	parseStoresParam,
+	previewCheckout,
+} from "../services/checkout";
 
 export const checkoutRoutes = new Elysia()
+	.get(
+		"/checkout/preview",
+		async (ctx) => {
+			const { customerProfile: cp, query } = withCustomer(ctx);
+			return ok(
+				await previewCheckout({
+					customerProfileId: cp.id,
+					customerPoints: cp.points,
+					stores: parseStoresParam(query.stores),
+				}),
+			);
+		},
+		{
+			query: t.Object({
+				stores: t.String({
+					description:
+						"Scelta per negozio, `storeId:tipo` separati da virgola (tipo: reserve_pickup | pay_pickup)",
+				}),
+			}),
+			response: withConflictErrors({ 200: okRes(CheckoutPreviewSchema) }),
+			detail: {
+				summary: "Anteprima checkout",
+				description:
+					"Gli importi del checkout con e senza punti, senza creare niente. Stessi rifiuti della conferma: 409 se il carrello è cambiato, 400 se una modalità non è offerta.",
+				tags: ["Customer - Checkout"],
+			},
+		},
+	)
 	.post(
 		"/checkout",
 		async (ctx) => {
