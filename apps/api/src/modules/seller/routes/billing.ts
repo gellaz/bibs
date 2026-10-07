@@ -44,7 +44,7 @@ const PortalSchema = t.Object({ url: t.String() });
 const InvoiceSchema = t.Object({
 	id: t.String(),
 	createdAt: t.Date(),
-	amountPaidCents: t.Integer(),
+	totalCents: t.Integer(),
 	currency: t.String(),
 	status: t.Nullable(t.String()),
 	invoicePdfUrl: t.Nullable(t.String()),
