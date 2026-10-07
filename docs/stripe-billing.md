@@ -103,7 +103,7 @@ stays NULL on handler failure so Stripe's retry reprocesses it).
 
    ```bash
    stripe login          # once
-   stripe listen --forward-to localhost:3000/webhooks/stripe
+   stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe
    ```
 
    It prints `whsec_…` — put it in `apps/api/.env` and restart the API:
@@ -225,7 +225,7 @@ were never touched, so they come back as they were. If the row is no longer
 canceled and logged for a manual refund. Success/cancel URLs return to `/billing`.
 
 To try it locally: seed or produce a `canceled` store, click «Riattiva», pay with
-`4242…` while `stripe listen --forward-to localhost:3000/webhooks/stripe` runs.
+`4242…` while `stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe` runs.
 
 ## Seed-provided states (no Stripe needed)
 
@@ -325,12 +325,14 @@ verifiche richieste): serve per `losses_collector: "application"`, altrimenti
 ### Forwarding locale
 
 ```bash
-stripe listen \
+stripe listen --all-snapshot \
   --forward-to localhost:3000/webhooks/stripe \
   --forward-connect-to localhost:3000/webhooks/stripe/connect
 ```
 
-I thin events non passano da `--forward-connect-to`: serve un secondo listener.
+Dalla CLI 1.53 `stripe listen` vuole l'elenco degli eventi: `--all-snapshot` per
+quelli classici. I thin events non passano da `--forward-connect-to`: serve un
+secondo listener.
 
 ```bash
 stripe listen \
@@ -360,7 +362,7 @@ del task 8).
 
 1. `STRIPE_SECRET_KEY` (API) e `VITE_STRIPE_PUBLISHABLE_KEY` (`apps/customer/.env.local`)
    della stessa modalità test.
-2. `stripe listen --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect`
+2. `stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect`
    — i `payment_intent.*` arrivano sulla route piattaforma.
 3. Il negozio deve avere «Paga e ritira» acceso e il conto Connect abilitato (profilo seller →
    Pagamenti online, onboarding di test).
