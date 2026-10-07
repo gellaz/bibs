@@ -96,7 +96,35 @@ describe("POST /webhooks/stripe/connect status codes", () => {
 	});
 });
 
+describe("POST /webhooks/stripe/thin status codes", () => {
+	it("returns 400 when the stripe-signature header is missing", async () => {
+		const res = await post("raw", {}, "/webhooks/stripe/thin");
+		expect(res.status).toBe(400);
+	});
+
+	it("returns 500 on handler failure so Stripe retries", async () => {
+		handleStripeWebhook.mockImplementationOnce(async () => {
+			throw new Error("db connection lost mid-handler");
+		});
+		const res = await post(
+			"raw",
+			{ "stripe-signature": "sig" },
+			"/webhooks/stripe/thin",
+		);
+		expect(res.status).toBe(500);
+	});
+});
+
 describe("dispatcher scope", () => {
+	it("la route thin passa scope: 'thin' al dispatcher", async () => {
+		await post("raw", { "stripe-signature": "sig" }, "/webhooks/stripe/thin");
+		expect(handleStripeWebhook).toHaveBeenCalledWith({
+			payload: "raw",
+			signature: "sig",
+			scope: "thin",
+		});
+	});
+
 	it("la route connect passa scope: 'connect' al dispatcher", async () => {
 		await post(
 			"raw",
