@@ -103,7 +103,7 @@ stays NULL on handler failure so Stripe's retry reprocesses it).
 
    ```bash
    stripe login          # once
-   stripe listen --forward-to localhost:3000/webhooks/stripe
+   stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe
    ```
 
    It prints `whsec_…` — put it in `apps/api/.env` and restart the API:
@@ -225,7 +225,7 @@ were never touched, so they come back as they were. If the row is no longer
 canceled and logged for a manual refund. Success/cancel URLs return to `/billing`.
 
 To try it locally: seed or produce a `canceled` store, click «Riattiva», pay with
-`4242…` while `stripe listen --forward-to localhost:3000/webhooks/stripe` runs.
+`4242…` while `stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe` runs.
 
 ## Seed-provided states (no Stripe needed)
 
@@ -296,11 +296,18 @@ e `POST /seller/settings/payments/sync` (chiamato dal FE al ritorno
 dall'onboarding) chiamano tutti `refreshConnectAccount`, che **rilegge il conto
 da Stripe** (`v2.core.accounts.retrieve` con `include:
 ["configuration.recipient", "requirements"]`) invece di fidarsi dello snapshot
-dell'evento — gli eventi possono arrivare fuori ordine. Il webhook resta sugli
-eventi v1 `account.updated`/`capability.updated`: Stripe li emette anche per i
-conti v2 nella scope «Connected accounts» (per `capability.updated` l'id conto
-è `event.account`, con fallback a `data.object.account`); non gestiamo thin
-events v2.
+dell'evento — gli eventi possono arrivare fuori ordine. Gli eventi v1
+`account.updated`/`capability.updated` arrivano anche per i conti v2 nella scope
+«Connected accounts» (per `capability.updated` l'id conto è `event.account`, con
+fallback a `data.object.account`), ma **non bastano**: a fine onboarding
+precedono di qualche secondo l'attivazione di `stripe_transfers`, che Stripe
+annuncia solo col thin event v2
+`v2.core.account[configuration.recipient].capability_status_updated` (#250).
+Per questo c'è una terza route, `POST /webhooks/stripe/thin`, che gestisce quel
+tipo e `v2.core.account[requirements].updated` con lo stesso
+`refreshConnectAccount` e lo stesso ledger `stripe_events`. La card «Pagamenti
+online» del profilo rilegge `/seller/settings` ogni 10 s finché lo stato è
+`incomplete`/`in_review`, così l'attivazione compare senza ricaricare.
 
 `pay_pickup` («Paga e ritira») nelle «Tipologie d'acquisto» del negozio è
 attivabile solo con `chargesEnabled`; resta comunque **non offerto ai clienti**
@@ -318,12 +325,25 @@ verifiche richieste): serve per `losses_collector: "application"`, altrimenti
 ### Forwarding locale
 
 ```bash
-stripe listen \
+stripe listen --all-snapshot \
   --forward-to localhost:3000/webhooks/stripe \
   --forward-connect-to localhost:3000/webhooks/stripe/connect
 ```
 
-Un solo `whsec_…` per entrambe le route in locale → basta `STRIPE_WEBHOOK_SECRET`.
+Dalla CLI 1.53 `stripe listen` vuole l'elenco degli eventi: `--all-snapshot` per
+quelli classici. I thin events non passano da `--forward-connect-to`: serve un
+secondo listener.
+
+```bash
+stripe listen \
+  --events 'v2.core.account[configuration.recipient].capability_status_updated,v2.core.account[requirements].updated' \
+  --forward-to localhost:3000/webhooks/stripe/thin
+```
+
+Un solo `whsec_…` per tutte le route in locale (è legato al login della CLI) → basta
+`STRIPE_WEBHOOK_SECRET`. In produzione i thin events arrivano da una event destination
+con payload *thin* sottoscritta ai due tipi qui sopra, col suo segreto in
+`STRIPE_THIN_WEBHOOK_SECRET` (fallback a `STRIPE_WEBHOOK_SECRET`).
 In produzione gli eventi dei conti collegati arrivano da una event destination
 separata («Connected accounts»), con il suo segreto in
 `STRIPE_CONNECT_WEBHOOK_SECRET` (fallback a `STRIPE_WEBHOOK_SECRET` se assente);
@@ -342,7 +362,7 @@ del task 8).
 
 1. `STRIPE_SECRET_KEY` (API) e `VITE_STRIPE_PUBLISHABLE_KEY` (`apps/customer/.env.local`)
    della stessa modalità test.
-2. `stripe listen --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect`
+2. `stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect`
    — i `payment_intent.*` arrivano sulla route piattaforma.
 3. Il negozio deve avere «Paga e ritira» acceso e il conto Connect abilitato (profilo seller →
    Pagamenti online, onboarding di test).
