@@ -133,7 +133,7 @@ export async function listInvoices(params: ListInvoicesParams) {
 		data: list.data.map((inv) => ({
 			id: inv.id,
 			createdAt: new Date(inv.created * 1000),
-			amountPaidCents: inv.amount_paid,
+			totalCents: inv.total,
 			currency: inv.currency.toUpperCase(),
 			status: inv.status ?? null,
 			invoicePdfUrl: inv.invoice_pdf ?? null,
