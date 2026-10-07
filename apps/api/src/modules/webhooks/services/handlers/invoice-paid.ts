@@ -20,9 +20,15 @@ export async function handleInvoicePaid(event: Stripe.Event): Promise<void> {
 		where: eq(storeSubscription.stripeSubscriptionId, subscriptionId),
 	});
 	if (!existing) {
-		logger.warn(
-			{ stripeSubscriptionId: subscriptionId },
-			"invoice.payment_succeeded for unknown sub, skipping",
+		// La prima fattura di un negozio nuovo arriva di solito prima di
+		// checkout.session.completed, che crea la riga già active col
+		// current_period_end della subscription: niente da recuperare.
+		const firstInvoice = invoice.billing_reason === "subscription_create";
+		logger[firstInvoice ? "info" : "warn"](
+			{ stripeSubscriptionId: subscriptionId, invoiceId: invoice.id },
+			firstInvoice
+				? "First invoice before checkout.session.completed, row not created yet: skipping"
+				: "invoice.payment_succeeded for unknown sub, skipping",
 		);
 		return;
 	}

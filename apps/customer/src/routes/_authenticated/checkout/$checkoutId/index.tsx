@@ -57,6 +57,11 @@ function CheckoutDonePage() {
 
 	const payment = donePageState(data.orders, data.payment != null);
 	const hasReservation = data.orders.some((o) => o.type === "reserve_pickup");
+	// «Prenotazione» solo se nessun ordine è stato pagato online.
+	const onlyReservations = data.orders.every(
+		(o) => o.type === "reserve_pickup",
+	);
+	const many = data.orders.length > 1;
 
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6">
@@ -83,9 +88,13 @@ function CheckoutDonePage() {
 								? m.checkout_done_unpaid_title()
 								: payment === "failed"
 									? m.checkout_done_payment_failed_title()
-									: data.orders.length > 1
-										? m.checkout_done_title_many()
-										: m.checkout_done_title()}
+									: onlyReservations
+										? many
+											? m.checkout_done_title_many()
+											: m.checkout_done_title()
+										: many
+											? m.checkout_done_title_order_many()
+											: m.checkout_done_title_order()}
 					</h1>
 					<p className="text-muted-foreground text-sm">
 						{payment === "awaiting_confirmation"

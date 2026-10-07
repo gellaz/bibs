@@ -2,6 +2,7 @@ import { Button } from "@bibs/ui/components/button";
 import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -33,6 +34,13 @@ export const Route = createFileRoute("/_authenticated/store/")({
 });
 
 const MAX_STORE_IMAGES = 8;
+
+const formatPeriodEnd = (date: Date | string) =>
+	new Intl.DateTimeFormat(intlLocale(), {
+		day: "numeric",
+		month: "long",
+		year: "numeric",
+	}).format(new Date(date));
 
 function StoreSettingsPage() {
 	const { activeStore, activeSubscription } = useActiveStore();
@@ -264,8 +272,7 @@ function StoreSettingsPage() {
 			{isOwner &&
 				activeStore &&
 				activeSubscription &&
-				activeSubscription.status !== "canceled" &&
-				activeSubscription.status !== "canceling" && (
+				activeSubscription.status !== "canceled" && (
 					<>
 						<Separator />
 						<FormSection
@@ -273,32 +280,62 @@ function StoreSettingsPage() {
 							description={m.store_danger_description()}
 							tone="destructive"
 						>
-							<div className="rounded-lg border border-destructive/30 p-4">
-								<h3 className="text-sm font-semibold text-destructive">
-									{m.store_delete_title()}
-								</h3>
-								<p className="mt-1 text-sm text-muted-foreground">
-									{activeSubscription.status === "suspended"
-										? m.store_delete_suspended()
-										: m.store_delete_active()}
-								</p>
-								<CancelStoreDialog
-									storeId={activeStore.id}
-									storeName={activeStore.name}
-									status={
-										activeSubscription.status as
-											| "active"
-											| "past_due"
-											| "suspended"
-									}
-									currentPeriodEnd={activeSubscription.currentPeriodEnd}
-									trigger={
-										<Button variant="destructive" className="mt-3">
-											{m.store_delete_title()}
-										</Button>
-									}
-								/>
-							</div>
+							{/* past_due resta past_due anche con la cancellazione
+							    programmata: conta cancelAtPeriodEnd. */}
+							{activeSubscription.status === "canceling" ||
+							activeSubscription.cancelAtPeriodEnd ? (
+								<div className="rounded-lg border border-border p-4">
+									<h3 className="text-sm font-semibold text-foreground">
+										{m.store_delete_scheduled_title()}
+									</h3>
+									<p className="mt-1 text-sm text-muted-foreground">
+										{m.store_delete_scheduled({
+											date: formatPeriodEnd(
+												activeSubscription.currentPeriodEnd,
+											),
+										})}
+									</p>
+									<Link
+										to="/billing"
+										className="mt-3 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
+									>
+										{m.store_delete_scheduled_undo()} →
+									</Link>
+								</div>
+							) : (
+								<div className="rounded-lg border border-destructive/30 p-4">
+									<h3 className="text-sm font-semibold text-destructive">
+										{m.store_delete_title()}
+									</h3>
+									<p className="mt-1 text-sm text-muted-foreground">
+										{activeSubscription.status === "suspended"
+											? m.store_delete_suspended()
+											: activeSubscription.status === "past_due"
+												? m.store_delete_past_due({
+														date: formatPeriodEnd(
+															activeSubscription.currentPeriodEnd,
+														),
+													})
+												: m.store_delete_active()}
+									</p>
+									<CancelStoreDialog
+										storeId={activeStore.id}
+										storeName={activeStore.name}
+										status={
+											activeSubscription.status as
+												| "active"
+												| "past_due"
+												| "suspended"
+										}
+										currentPeriodEnd={activeSubscription.currentPeriodEnd}
+										trigger={
+											<Button variant="destructive" className="mt-3">
+												{m.store_delete_title()}
+											</Button>
+										}
+									/>
+								</div>
+							)}
 						</FormSection>
 					</>
 				)}

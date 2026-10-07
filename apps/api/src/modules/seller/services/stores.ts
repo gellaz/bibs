@@ -278,6 +278,11 @@ export async function cancelStoreSubscription(
 	switch (sub.status) {
 		case "active":
 		case "past_due": {
+			// Già programmata (past_due resta past_due anche con
+			// cancel_at_period_end, vedi mapStripeStatus): idempotente.
+			if (sub.cancelAtPeriodEnd) {
+				return { status: "canceling", effectiveAt: sub.currentPeriodEnd };
+			}
 			// Stripe first: persist cancelReason only after Stripe confirms the
 			// mutation. If Stripe throws, the DB write below never runs, so the
 			// row never ends up flagged 'seller_canceled' while the subscription
@@ -285,9 +290,16 @@ export async function cancelStoreSubscription(
 			await stripe.subscriptions.update(sub.stripeSubscriptionId, {
 				cancel_at_period_end: true,
 			});
+			// Lo stato lo porterebbe anche customer.subscription.updated, ma il FE
+			// rilegge subito: scriviamo ora quello che mapStripeStatus ne
+			// ricaverà (past_due vince su cancel_at_period_end).
 			await db
 				.update(storeSubscription)
-				.set({ cancelReason: "seller_canceled" })
+				.set({
+					cancelReason: "seller_canceled",
+					cancelAtPeriodEnd: true,
+					...(sub.status === "active" ? { status: "canceling" as const } : {}),
+				})
 				.where(eq(storeSubscription.id, sub.id));
 			return { status: "canceling", effectiveAt: sub.currentPeriodEnd };
 		}
@@ -330,12 +342,20 @@ export async function reactivateStoreSubscription(
 	params: SubParams,
 ): Promise<ReactivateResult> {
 	const sub = await loadOwnedSubscription(params);
-	if (sub.status !== "canceling") {
+	if (sub.status !== "canceling" && !sub.cancelAtPeriodEnd) {
 		throw new ServiceError(409, "Negozio non in cancellazione");
 	}
 	await stripe.subscriptions.update(sub.stripeSubscriptionId, {
 		cancel_at_period_end: false,
 	});
+	// Come in cancelStoreSubscription: non aspettiamo il webhook.
+	await db
+		.update(storeSubscription)
+		.set({
+			cancelAtPeriodEnd: false,
+			...(sub.status === "canceling" ? { status: "active" as const } : {}),
+		})
+		.where(eq(storeSubscription.id, sub.id));
 	return { status: "active" };
 }
 

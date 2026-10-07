@@ -84,9 +84,12 @@ export function CancelStoreDialog({
 										),
 									},
 								)
-							: richMessage(m.billing_cancel_description({ date: "{date}" }), {
-									date: <strong>{periodEndDate}</strong>,
-								})}
+							: richMessage(
+									(status === "past_due"
+										? m.billing_cancel_description_past_due
+										: m.billing_cancel_description)({ date: "{date}" }),
+									{ date: <strong>{periodEndDate}</strong> },
+								)}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>

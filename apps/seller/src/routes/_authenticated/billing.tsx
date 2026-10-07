@@ -294,7 +294,7 @@ function BillingPage() {
 											? m.billing_period_expired({
 													date: formatDate(s.currentPeriodEnd, true),
 												})
-											: s.status === "canceling"
+											: s.status === "canceling" || s.cancelAtPeriodEnd
 												? m.billing_period_ending({
 														date: formatDate(s.currentPeriodEnd, true),
 													})
@@ -328,8 +328,9 @@ function BillingPage() {
 														>
 															{m.billing_manage_payment()}
 														</DropdownMenuItem>
-														{(s.status === "active" ||
-															s.status === "past_due" ||
+														{(((s.status === "active" ||
+															s.status === "past_due") &&
+															!s.cancelAtPeriodEnd) ||
 															s.status === "suspended") && (
 															<CancelStoreDialog
 																storeId={s.storeId}
@@ -351,7 +352,9 @@ function BillingPage() {
 																}
 															/>
 														)}
-														{s.status === "canceling" && (
+														{(s.status === "canceling" ||
+															(s.status === "past_due" &&
+																s.cancelAtPeriodEnd)) && (
 															<DropdownMenuItem
 																onSelect={() =>
 																	reactivateMutation.mutate(s.storeId)

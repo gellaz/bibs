@@ -56,6 +56,7 @@ beforeEach(async () => {
 
 async function seedSub(
 	status: "active" | "past_due" | "suspended" | "canceling" | "canceled",
+	cancelAtPeriodEnd = status === "canceling",
 ) {
 	const { profile } = await createTestSeller(getTestDb(), { email: "a@b.it" });
 	const storeRow = await createTestStore(getTestDb(), profile.id);
@@ -69,6 +70,7 @@ async function seedSub(
 			feeAmountCents: 2900,
 			currency: "EUR",
 			status,
+			cancelAtPeriodEnd,
 			currentPeriodEnd: new Date(Date.now() + 15 * 86400000),
 		})
 		.returning();
@@ -152,6 +154,64 @@ describe("cancelStoreSubscription", () => {
 			.where(eq(storeSubscription.id, sub.id))
 			.then((r) => r[0]);
 		expect(updated.cancelReason).toBeNull();
+	});
+});
+
+// Il FE rilegge subito dopo la mutation: lo stato non può aspettare il
+// webhook customer.subscription.updated (#250).
+describe("stato locale dopo la conferma di Stripe", () => {
+	async function row(id: string) {
+		const [r] = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, id));
+		return r;
+	}
+
+	it("active → cancel: canceling + cancelAtPeriodEnd subito in DB", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("active");
+		await cancelStoreSubscription({ sellerProfileId, storeId });
+		expect(await row(sub.id)).toMatchObject({
+			status: "canceling",
+			cancelAtPeriodEnd: true,
+		});
+	});
+
+	it("past_due → cancel: resta past_due, cancelAtPeriodEnd true", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("past_due");
+		await cancelStoreSubscription({ sellerProfileId, storeId });
+		expect(await row(sub.id)).toMatchObject({
+			status: "past_due",
+			cancelAtPeriodEnd: true,
+		});
+	});
+
+	it("past_due con cancellazione programmata → idempotente", async () => {
+		const { sellerProfileId, storeId } = await seedSub("past_due", true);
+		const result = await cancelStoreSubscription({ sellerProfileId, storeId });
+		expect(result.status).toBe("canceling");
+		expect(subUpdate).not.toHaveBeenCalled();
+	});
+
+	it("canceling → reactivate: active, cancelAtPeriodEnd false", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("canceling");
+		await reactivateStoreSubscription({ sellerProfileId, storeId });
+		expect(await row(sub.id)).toMatchObject({
+			status: "active",
+			cancelAtPeriodEnd: false,
+		});
+	});
+
+	it("past_due con cancellazione programmata → reactivate la annulla", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("past_due", true);
+		await reactivateStoreSubscription({ sellerProfileId, storeId });
+		expect(subUpdate).toHaveBeenCalledWith("sub_past_due", {
+			cancel_at_period_end: false,
+		});
+		expect(await row(sub.id)).toMatchObject({
+			status: "past_due",
+			cancelAtPeriodEnd: false,
+		});
 	});
 });
 
