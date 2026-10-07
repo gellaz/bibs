@@ -6,7 +6,10 @@ import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { stripe } from "@/lib/stripe";
-import { handleConnectAccountEvent } from "./handlers/account-updated";
+import {
+	handleConnectAccountEvent,
+	handleConnectAccountNotification,
+} from "./handlers/account-updated";
 import { handleCheckoutCompleted } from "./handlers/checkout-completed";
 import { handleInvoiceFailed } from "./handlers/invoice-failed";
 import { handleInvoicePaid } from "./handlers/invoice-paid";
@@ -21,9 +24,11 @@ interface HandleWebhookParams {
 	 * platform: eventi del nostro conto (billing). connect: eventi dei conti
 	 * collegati, che in produzione arrivano da una event destination separata
 	 * con un segreto suo; `stripe listen --forward-connect-to` usa invece lo
-	 * stesso segreto di --forward-to, da qui il fallback.
+	 * stesso segreto di --forward-to, da qui il fallback. thin: thin events v2
+	 * (payload `v2.core.event`, solo id e oggetto collegato), anche loro da una
+	 * destination dedicata; in locale arrivano da un secondo `stripe listen`.
 	 */
-	scope?: "platform" | "connect";
+	scope?: "platform" | "connect" | "thin";
 }
 
 export async function handleStripeWebhook(
@@ -33,14 +38,33 @@ export async function handleStripeWebhook(
 	const secret =
 		scope === "connect"
 			? (env.STRIPE_CONNECT_WEBHOOK_SECRET ?? env.STRIPE_WEBHOOK_SECRET)
-			: env.STRIPE_WEBHOOK_SECRET;
+			: scope === "thin"
+				? (env.STRIPE_THIN_WEBHOOK_SECRET ?? env.STRIPE_WEBHOOK_SECRET)
+				: env.STRIPE_WEBHOOK_SECRET;
 	if (!secret) {
 		throw new ServiceError(500, "Stripe webhook secret not configured");
 	}
 
-	// Use the async variant: Bun's runtime only exposes Web SubtleCrypto, which
+	// Use the async variants: Bun's runtime only exposes Web SubtleCrypto, which
 	// the Stripe SDK can't use synchronously (constructEvent throws
 	// CryptoProviderOnlySupportsAsyncError on Bun/Edge/Workers).
+	if (scope === "thin") {
+		let notification: Stripe.V2.Core.EventNotification;
+		try {
+			notification = await stripe.parseEventNotificationAsync(
+				payload,
+				signature,
+				secret,
+			);
+		} catch (err) {
+			logger.warn({ err }, "Stripe webhook signature verification failed");
+			throw new ServiceError(400, "Invalid Stripe signature");
+		}
+		return processOnce(notification.id, notification.type, () =>
+			dispatchThin(notification),
+		);
+	}
+
 	let event: Stripe.Event;
 	try {
 		event = (await stripe.webhooks.constructEventAsync(
@@ -52,7 +76,18 @@ export async function handleStripeWebhook(
 		logger.warn({ err }, "Stripe webhook signature verification failed");
 		throw new ServiceError(400, "Invalid Stripe signature");
 	}
+	return processOnce(event.id, event.type, () => dispatch(event, scope));
+}
 
+/**
+ * Runs the handler at most once per Stripe event id (snapshot and thin events
+ * share the ledger: ids are unique across both).
+ */
+async function processOnce(
+	eventId: string,
+	eventType: string,
+	handle: () => Promise<void>,
+): Promise<void> {
 	// Claim the event for processing. The dedup ledger gates on processed_at, NOT
 	// on row existence: a brand-new event inserts a row, an event left unprocessed
 	// by a previously failed delivery is re-claimed (so Stripe redeliveries retry
@@ -61,37 +96,55 @@ export async function handleStripeWebhook(
 	// stranding the event.
 	const claimed = await db
 		.insert(stripeEvent)
-		.values({ eventId: event.id, eventType: event.type })
+		.values({ eventId, eventType })
 		.onConflictDoUpdate({
 			target: stripeEvent.eventId,
-			set: { eventType: event.type },
+			set: { eventType },
 			setWhere: isNull(stripeEvent.processedAt),
 		})
 		.returning({ eventId: stripeEvent.eventId });
 
 	if (claimed.length === 0) {
 		logger.info(
-			{ eventId: event.id, type: event.type },
+			{ eventId, type: eventType },
 			"Event already processed, skipping",
 		);
 		return;
 	}
 
 	try {
-		await dispatch(event, scope);
+		await handle();
 		await db
 			.update(stripeEvent)
 			.set({ processedAt: new Date() })
-			.where(eq(stripeEvent.eventId, event.id));
+			.where(eq(stripeEvent.eventId, eventId));
 	} catch (err) {
 		// Leave processed_at NULL so the claim above re-acquires the event on the
 		// next delivery. The route returns a 5xx on this throw, which makes Stripe
 		// redeliver (with backoff) instead of considering the event done.
-		logger.error(
-			{ err, eventId: event.id, type: event.type },
-			"Webhook handler failed",
-		);
+		logger.error({ err, eventId, type: eventType }, "Webhook handler failed");
 		throw err;
+	}
+}
+
+/**
+ * Thin events dei conti Accounts v2. L'attivazione di `stripe_transfers`
+ * arriva solo come `capability_status_updated`: gli eventi v1
+ * account.updated/capability.updated possono precederla di qualche secondo e
+ * poi tacere, lasciando charges_enabled a false (issue #250).
+ */
+async function dispatchThin(
+	notification: Stripe.V2.Core.EventNotification,
+): Promise<void> {
+	switch (notification.type) {
+		case "v2.core.account[configuration.recipient].capability_status_updated":
+		case "v2.core.account[requirements].updated":
+			return handleConnectAccountNotification(notification);
+		default:
+			logger.info(
+				{ eventId: notification.id, type: notification.type },
+				"Stripe thin event received but not handled",
+			);
 	}
 }
 

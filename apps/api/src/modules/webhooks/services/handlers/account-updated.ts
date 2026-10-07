@@ -6,8 +6,9 @@ import { refreshConnectAccount } from "@/modules/billing/services/connect-accoun
  * I conti sono creati con Accounts v2, ma Stripe continua a emettere gli
  * eventi v1 `account.updated` e `capability.updated` (scope "Connected
  * accounts") anche per i conti v2: qui serve solo l'id, lo stato vero lo
- * rilegge refreshConnectAccount via `v2.core.accounts.retrieve`. Nessun thin
- * event v2 da gestire.
+ * rilegge refreshConnectAccount via `v2.core.accounts.retrieve`. Non bastano
+ * da soli: l'attivazione di `stripe_transfers` può arrivare dopo l'ultimo
+ * evento v1, e la porta solo il thin event v2 (handleConnectAccountNotification).
  */
 export async function handleConnectAccountEvent(
 	event: Stripe.Event,
@@ -20,11 +21,34 @@ export async function handleConnectAccountEvent(
 		);
 		return;
 	}
+	await refresh(accountId, event.id, event.type);
+}
 
+export type ConnectAccountNotification = Extract<
+	Stripe.V2.Core.EventNotification,
+	{
+		type:
+			| "v2.core.account[configuration.recipient].capability_status_updated"
+			| "v2.core.account[requirements].updated";
+	}
+>;
+
+/** Thin event v2 di un conto: l'id è nell'oggetto collegato. */
+export async function handleConnectAccountNotification(
+	notification: ConnectAccountNotification,
+): Promise<void> {
+	await refresh(
+		notification.related_object.id,
+		notification.id,
+		notification.type,
+	);
+}
+
+async function refresh(accountId: string, eventId: string, type: string) {
 	const row = await refreshConnectAccount(accountId);
 	if (!row) {
 		logger.warn(
-			{ eventId: event.id, type: event.type, stripeAccountId: accountId },
+			{ eventId, type, stripeAccountId: accountId },
 			"Connect event for unknown connected account, skipping",
 		);
 	}
