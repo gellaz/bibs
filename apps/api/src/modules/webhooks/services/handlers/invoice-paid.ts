@@ -20,16 +20,24 @@ export async function handleInvoicePaid(event: Stripe.Event): Promise<void> {
 		where: eq(storeSubscription.stripeSubscriptionId, subscriptionId),
 	});
 	if (!existing) {
-		logger.warn(
-			{ stripeSubscriptionId: subscriptionId },
-			"invoice.payment_succeeded for unknown sub, skipping",
+		// La prima fattura di un negozio nuovo arriva di solito prima di
+		// checkout.session.completed, che crea la riga già active col
+		// current_period_end della subscription: niente da recuperare.
+		const firstInvoice = invoice.billing_reason === "subscription_create";
+		logger[firstInvoice ? "info" : "warn"](
+			{ stripeSubscriptionId: subscriptionId, invoiceId: invoice.id },
+			firstInvoice
+				? "First invoice before checkout.session.completed, row not created yet: skipping"
+				: "invoice.payment_succeeded for unknown sub, skipping",
 		);
 		return;
 	}
 
 	const periodEnd = invoice.lines.data[0]?.period?.end;
+	// Pagato ma con la cancellazione programmata: resta in cancellazione,
+	// come farebbe mapStripeStatus (active + cancel_at_period_end → canceling).
 	const update: Partial<typeof storeSubscription.$inferInsert> = {
-		status: "active",
+		status: existing.cancelAtPeriodEnd ? "canceling" : "active",
 		suspendedAt: null,
 	};
 	if (periodEnd) {

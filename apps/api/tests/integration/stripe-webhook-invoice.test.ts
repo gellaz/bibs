@@ -56,7 +56,8 @@ beforeEach(async () => {
 
 async function seedSubscription(
 	stripeSubId: string,
-	status: "active" | "past_due" = "active",
+	status: "active" | "past_due" | "canceling" = "active",
+	cancelAtPeriodEnd = false,
 ) {
 	const { profile } = await createTestSeller(getTestDb(), { email: "a@b.it" });
 	const storeRow = await createTestStore(getTestDb(), profile.id);
@@ -70,6 +71,7 @@ async function seedSubscription(
 			feeAmountCents: 2900,
 			currency: "EUR",
 			status,
+			cancelAtPeriodEnd,
 			currentPeriodEnd: new Date(Date.now() + 30 * 86400000),
 		})
 		.returning();
@@ -120,6 +122,32 @@ describe("invoice.payment_succeeded", () => {
 		expect(after.status).toBe("active");
 		expect(after.currentPeriodEnd.getTime()).toBe(newPeriodEnd * 1000);
 		expect(after.suspendedAt).toBeNull();
+	});
+});
+
+// Rinnovo pagato su un negozio con la cancellazione già programmata: resta
+// in cancellazione. Prima diventava `active` con cancel_at_period_end=true
+// (emerso negli smoke di #250).
+describe("invoice.payment_succeeded con cancellazione programmata", () => {
+	it.each([
+		["past_due", "sub_INV_PD_CANCEL"],
+		["canceling", "sub_INV_CANCELING"],
+	] as const)("%s + cancelAtPeriodEnd → canceling", async (status, subId) => {
+		const sub = await seedSubscription(subId, status, true);
+		currentEvent = {
+			id: `evt_${subId}`,
+			type: "invoice.payment_succeeded",
+			data: { object: makeInvoiceObject(subId, { lines: { data: [] } }) },
+		};
+
+		await handleStripeWebhook({ payload: "raw", signature: "t=1,v1=ok" });
+
+		const [after] = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, sub.id));
+		expect(after.status).toBe("canceling");
+		expect(after.cancelAtPeriodEnd).toBe(true);
 	});
 });
 

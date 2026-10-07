@@ -253,16 +253,28 @@ function CheckoutReviewPage() {
 				)
 			) : (
 				<div className="space-y-3">
-					{payNow > 0 && (
-						<div className="flex items-baseline justify-between">
-							<span className="font-medium text-foreground">
-								{m.checkout_pay_now()}
-							</span>
-							<span className="font-semibold text-foreground text-xl tabular-nums">
-								{formatPriceEur(payNow / 100)}
-							</span>
-						</div>
-					)}
+					{/* Coi punti attivi l'importo da pagare è quello con carta, sotto:
+					    qui resta il totale di partenza, in secondo piano. */}
+					{payNow > 0 &&
+						(pointsOn ? (
+							<div className="flex items-baseline justify-between text-sm">
+								<span className="text-muted-foreground">
+									{m.checkout_pay_before_points()}
+								</span>
+								<span className="font-medium tabular-nums">
+									{formatPriceEur(payNow / 100)}
+								</span>
+							</div>
+						) : (
+							<div className="flex items-baseline justify-between">
+								<span className="font-medium text-foreground">
+									{m.checkout_pay_now()}
+								</span>
+								<span className="font-semibold text-foreground text-xl tabular-nums">
+									{formatPriceEur(payNow / 100)}
+								</span>
+							</div>
+						))}
 					{withPoints && (
 						<label
 							htmlFor="checkout-use-points"
