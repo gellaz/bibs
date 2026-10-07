@@ -34,8 +34,10 @@ export async function handleInvoicePaid(event: Stripe.Event): Promise<void> {
 	}
 
 	const periodEnd = invoice.lines.data[0]?.period?.end;
+	// Pagato ma con la cancellazione programmata: resta in cancellazione,
+	// come farebbe mapStripeStatus (active + cancel_at_period_end → canceling).
 	const update: Partial<typeof storeSubscription.$inferInsert> = {
-		status: "active",
+		status: existing.cancelAtPeriodEnd ? "canceling" : "active",
 		suspendedAt: null,
 	};
 	if (periodEnd) {

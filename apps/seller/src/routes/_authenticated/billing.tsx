@@ -353,16 +353,16 @@ function BillingPage() {
 															/>
 														)}
 														{(s.status === "canceling" ||
-															(s.status === "past_due" &&
-																s.cancelAtPeriodEnd)) && (
-															<DropdownMenuItem
-																onSelect={() =>
-																	reactivateMutation.mutate(s.storeId)
-																}
-															>
-																{m.billing_undo_cancel()}
-															</DropdownMenuItem>
-														)}
+															s.cancelAtPeriodEnd) &&
+															s.status !== "suspended" && (
+																<DropdownMenuItem
+																	onSelect={() =>
+																		reactivateMutation.mutate(s.storeId)
+																	}
+																>
+																	{m.billing_undo_cancel()}
+																</DropdownMenuItem>
+															)}
 													</DropdownMenuContent>
 												</DropdownMenu>
 											</TableCell>
