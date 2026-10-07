@@ -8,7 +8,7 @@ type WebhookContext = {
 	set: { status?: number | string };
 };
 
-function receive(scope: "platform" | "connect") {
+function receive(scope: "platform" | "connect" | "thin") {
 	return async (ctx: WebhookContext) => {
 		const signature = ctx.headers["stripe-signature"];
 		if (!signature) {
@@ -63,5 +63,13 @@ export const stripeWebhookRoutes = new Elysia()
 		webhookOptions(
 			"Webhook Stripe Connect",
 			"Eventi dei conti collegati (account.updated). Firma verificata con STRIPE_CONNECT_WEBHOOK_SECRET.",
+		),
+	)
+	.post(
+		"/webhooks/stripe/thin",
+		receive("thin"),
+		webhookOptions(
+			"Webhook Stripe thin events",
+			"Thin events v2 dei conti collegati (capability e requisiti Accounts v2). Firma verificata con STRIPE_THIN_WEBHOOK_SECRET.",
 		),
 	);

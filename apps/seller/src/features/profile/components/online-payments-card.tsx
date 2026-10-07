@@ -43,7 +43,7 @@ const STATUS_BODY: Record<OnlinePaymentsStatus, () => string> = {
 };
 
 export function OnlinePaymentsCard() {
-	const { data } = useSellerSettings();
+	const { data } = useSellerSettings({ pollOnlinePayments: true });
 	const start = useStartOnboarding();
 	const sync = useSyncOnlinePayments();
 	const op = data?.onlinePayments;
