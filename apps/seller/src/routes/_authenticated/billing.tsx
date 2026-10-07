@@ -401,7 +401,7 @@ function BillingPage() {
 									<TableRow key={inv.id}>
 										<TableCell>{formatInvoiceDate(inv.createdAt)}</TableCell>
 										<TableCell>{inv.description ?? "—"}</TableCell>
-										<TableCell>{formatEuro(inv.amountPaidCents)}</TableCell>
+										<TableCell>{formatEuro(inv.totalCents)}</TableCell>
 										<TableCell>
 											<Badge
 												variant={
