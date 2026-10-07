@@ -1,4 +1,5 @@
 import { config } from "@/lib/config";
+import { isBelowOnlineMinimum } from "@/lib/online-charge";
 
 /**
  * Quanti punti usare in un checkout e come dividerli tra i suoi ordini «Paga e
@@ -23,7 +24,7 @@ export function allocateCheckoutPoints(input: {
 
 	let discount = Math.min(balanceCents, total);
 	const residual = total - discount;
-	if (residual > 0 && residual < config.stripeMinChargeCents)
+	if (isBelowOnlineMinimum(residual))
 		discount = Math.max(0, total - config.stripeMinChargeCents);
 
 	const discountCents = grossCents.map(() => 0);

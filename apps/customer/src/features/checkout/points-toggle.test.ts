@@ -3,6 +3,7 @@ import { overwriteGetLocale } from "@/paraglide/runtime";
 import {
 	amountDueOnline,
 	formatPoints,
+	onlineChargeBlocked,
 	pointsToggleLabel,
 } from "./points-toggle";
 
@@ -42,5 +43,31 @@ describe("amountDueOnline", () => {
 		expect(amountDueOnline({ ...preview, withPoints: null }, true)).toBe(
 			"24.80",
 		);
+	});
+});
+
+describe("onlineChargeBlocked", () => {
+	const below = {
+		withoutPoints: { belowMinimum: true },
+		withPoints: { amountDueOnline: "0.00" },
+	};
+	it("spento e sotto soglia: bloccato", () => {
+		expect(onlineChargeBlocked(below, false)).toBe(true);
+	});
+	it("acceso con punti che azzerano: libero", () => {
+		expect(onlineChargeBlocked(below, true)).toBe(false);
+	});
+	it("acceso ma withPoints null (saldo insufficiente): bloccato", () => {
+		expect(onlineChargeBlocked({ ...below, withPoints: null }, true)).toBe(
+			true,
+		);
+	});
+	it("sopra soglia: mai bloccato", () => {
+		expect(
+			onlineChargeBlocked(
+				{ withoutPoints: { belowMinimum: false }, withPoints: null },
+				false,
+			),
+		).toBe(false);
 	});
 });

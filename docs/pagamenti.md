@@ -75,6 +75,13 @@ Dettagli che contano:
 - **Un solo pagamento per checkout.** Se il carrello ha più negozi in «Paga e ritira», il
   cliente paga una volta sola (un PaymentIntent per la somma) e bibs fa un trasferimento
   per ogni negozio (`transfer_group` = id del checkout).
+- **Minimo online 0,50 €.** Stripe in EUR non incassa meno di 0,50 €. La soglia vale per la
+  somma online del checkout (Σ ordini «Paga e ritira» − sconto punti), non per negozio: due
+  negozi da 0,30 € fanno 0,60 € e si pagano. Si paga 0 € (punti che coprono tutto) oppure almeno
+  0,50 €. Tra 0,01 e 0,49 € il riepilogo mostra un avviso, il bottone di conferma è disabilitato
+  e l'API risponde 400 alla conferma; le vie d'uscita sono «Prenota e paga in negozio», aggiungere
+  articoli o, se il saldo basta ad azzerare, attivare i punti. Esempio: un solo prodotto da
+  0,30 € in «Paga e ritira» senza punti → avviso; con 30 punti attivi → 0 €, ordine confermato.
 - **Solo carte** (Apple Pay e Google Pay inclusi): i metodi con conferma differita non
   stanno nella finestra di 30 minuti.
 - **Il trasferimento parte appena il pagamento è confermato**, non al ritiro. Il negozio
@@ -298,10 +305,9 @@ riprova»): l'app mostra un avviso e riporta al carrello, e l'anteprima viene ri
 ## Cosa NON esiste ancora
 
 - Pagamento online per `pay_deliver` (PS3) e per gli ordini `direct`.
-- Ordine «Paga e ritira» con totale sotto 0,50 € senza punti: Stripe lo rifiuta (502).
 - Gestione delle contestazioni (*dispute/chargeback*): si fa a mano dalla Dashboard Stripe.
-- Importo minimo per pagare online o commissione con parte fissa: oggi la commissione è
-  solo percentuale (vedi esempio 3).
+- Importo minimo di bibs per pagare online (oltre al minimo tecnico Stripe di 0,50 €) o
+  commissione con parte fissa: oggi la commissione è solo percentuale (vedi esempio 3).
 - Fattura elettronica (SDI): ci si affida alle ricevute Stripe.
 
 ## Dove sta nel codice
@@ -312,6 +318,7 @@ riprova»): l'app mostra un avviso e riporta al carrello, e l'anteprima viene ri
 | Commissione | `apps/api/src/lib/config.ts`, `apps/api/src/lib/platform-fee.ts` |
 | Checkout (un ordine per negozio, un PaymentIntent) | `apps/api/src/modules/customer/services/checkout.ts` |
 | Ripartizione dei punti tra gli ordini | `apps/api/src/lib/points-allocation.ts` |
+| Minimo online 0,50 € (regola condivisa da punti, anteprima e conferma) | `apps/api/src/lib/online-charge.ts` |
 | Anteprima del checkout | `apps/api/src/modules/customer/services/checkout.ts` (`previewCheckout`) |
 | Creazione ordine, totale, punti, IVA | `apps/api/src/modules/customer/services/orders.ts` |
 | PaymentIntent, trasferimenti, rimborsi, storni | `apps/api/src/modules/billing/services/order-payments.ts` |

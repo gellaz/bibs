@@ -41,7 +41,7 @@ export const checkoutRoutes = new Elysia()
 			detail: {
 				summary: "Anteprima checkout",
 				description:
-					"Gli importi del checkout con e senza punti, senza creare niente. Stessi rifiuti della conferma: 409 se il carrello è cambiato, 400 se una modalità non è offerta.",
+					"Gli importi del checkout con e senza punti, senza creare niente. Stessi rifiuti della conferma: 409 se il carrello è cambiato, 400 se una modalità non è offerta. Sotto il minimo online risponde 200 con `withoutPoints.belowMinimum: true`.",
 				tags: ["Customer - Checkout"],
 			},
 		},
@@ -101,7 +101,7 @@ export const checkoutRoutes = new Elysia()
 			detail: {
 				summary: "Conferma checkout",
 				description:
-					"Crea un ordine per ogni negozio scelto, leggendo le righe dal carrello, in un'unica transazione. Le righe ordinate escono dal carrello; quelle non disponibili restano. 409 se il carrello è cambiato. Con ordini Paga e ritira crea un unico pagamento: la risposta porta `payment.clientSecret`. 502 se il pagamento online non è disponibile. Con `usePoints` gli ordini Paga e ritira possono arrivare a 0 €: in quel caso nascono confermati e `payment` è null.",
+					"Crea un ordine per ogni negozio scelto, leggendo le righe dal carrello, in un'unica transazione. Le righe ordinate escono dal carrello; quelle non disponibili restano. 409 se il carrello è cambiato. Con ordini Paga e ritira crea un unico pagamento: la risposta porta `payment.clientSecret`. 502 se il pagamento online non è disponibile. Con `usePoints` gli ordini Paga e ritira possono arrivare a 0 €: in quel caso nascono confermati e `payment` è null. 400 se l'importo online è tra 0,01 € e il minimo Stripe (0,50 €).",
 				tags: ["Customer - Checkout"],
 			},
 		},

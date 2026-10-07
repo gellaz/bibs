@@ -189,11 +189,19 @@ export const CheckoutSchema = t.Object({
 
 export const CheckoutPreviewSchema = t.Object({
 	balance: t.Number({ minimum: 0, description: "Saldo punti del cliente" }),
+	minAmountOnline: t.String({
+		description:
+			"Minimo incassabile online (limite Stripe in EUR): sotto, solo 0 €",
+	}),
 	payInStore: t.String({
 		description: "Somma degli ordini Prenota e paga in negozio",
 	}),
 	withoutPoints: t.Object({
 		amountDueOnline: t.String({ description: "Da pagare online senza punti" }),
+		belowMinimum: t.Boolean({
+			description:
+				"Importo online tra 0,01 € e minAmountOnline: senza punti la conferma risponde 400",
+		}),
 	}),
 	withPoints: t.Nullable(
 		t.Object(

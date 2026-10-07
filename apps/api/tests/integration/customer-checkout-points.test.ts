@@ -394,8 +394,9 @@ describe("anteprima del checkout", () => {
 		});
 		expect(preview).toEqual({
 			balance: 1000,
+			minAmountOnline: "0.50",
 			payInStore: "4.00",
-			withoutPoints: { amountDueOnline: "27.50" },
+			withoutPoints: { amountDueOnline: "27.50", belowMinimum: false },
 			withPoints: {
 				pointsSpent: 1000,
 				discount: "10.00",

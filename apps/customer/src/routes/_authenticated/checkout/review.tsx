@@ -25,6 +25,7 @@ import {
 import {
 	amountDueOnline,
 	formatPoints,
+	onlineChargeBlocked,
 	pointsToggleLabel,
 } from "@/features/checkout/points-toggle";
 import { checkoutTypeLabel } from "@/features/checkout/store-choice";
@@ -119,6 +120,8 @@ function CheckoutReviewPage() {
 	const payNow = data ? toCents(data.withoutPoints.amountDueOnline) : 0;
 	const payByCard = data ? toCents(amountDueOnline(data, points)) : 0;
 	const payInStore = data ? toCents(data.payInStore) : 0;
+	// Sotto il minimo Stripe la conferma fallirebbe: avviso e bottone spento.
+	const blocked = data ? onlineChargeBlocked(data, points) : false;
 	// La riga per negozio serve solo quando i punti si dividono tra più PR2.
 	const showStoreDiscount =
 		pointsOn && types.filter((t) => t === "pay_pickup").length > 1;
@@ -129,6 +132,7 @@ function CheckoutReviewPage() {
 
 	const confirm = () => {
 		if (!data) return;
+		if (blocked) return;
 		// Mai `true` con l'interruttore nascosto (preview riletta senza punti).
 		setSubmitted({ groups, choice, usePoints: pointsOn, preview: data });
 		createCheckout.mutate(
@@ -297,6 +301,21 @@ function CheckoutReviewPage() {
 							</span>
 						</div>
 					)}
+					{blocked && (
+						<div
+							role="status"
+							className="space-y-1 rounded-lg bg-muted p-3 text-foreground text-sm"
+						>
+							<p>
+								{m.checkout_min_charge_note({
+									min: formatPriceEur(data.minAmountOnline),
+								})}
+							</p>
+							{withPoints && toCents(withPoints.amountDueOnline) === 0 && (
+								<p>{m.checkout_min_charge_points()}</p>
+							)}
+						</div>
+					)}
 					{payInStore > 0 && (
 						<div className="flex items-baseline justify-between">
 							<span className="font-medium text-foreground">
@@ -326,7 +345,10 @@ function CheckoutReviewPage() {
 					className="min-h-11"
 					onClick={confirm}
 					disabled={
-						!data || createCheckout.isPending || createCheckout.isSuccess
+						!data ||
+						blocked ||
+						createCheckout.isPending ||
+						createCheckout.isSuccess
 					}
 				>
 					{confirmLabel(types, data ? payByCard : undefined)}

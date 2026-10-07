@@ -386,6 +386,8 @@
 	"checkout_points_store_discount": "Points",
 	"checkout_pay_by_card": "To pay by card",
 	"checkout_confirm_order": "Confirm order",
+	"checkout_min_charge_note": "Online payments start at {min}. For this order choose “Reserve, pay in store” or add more items.",
+	"checkout_min_charge_points": "Or turn on your points: you pay €0 online.",
 	"checkout_preview_failed": "We couldn't work out the total.",
 	"checkout_done_points_used": "Points used: {points} (−{amount})",
 	"orders_complete_payment": "Complete payment",

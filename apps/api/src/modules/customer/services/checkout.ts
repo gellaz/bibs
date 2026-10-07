@@ -5,9 +5,11 @@ import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
+import { config } from "@/lib/config";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { fromCents, toCents } from "@/lib/money";
+import { isBelowOnlineMinimum } from "@/lib/online-charge";
 import { offeredOrderTypes, sellerChargesEnabledSql } from "@/lib/order-types";
 import { allocateCheckoutPoints } from "@/lib/points-allocation";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
@@ -117,7 +119,8 @@ export async function resolveCheckoutLines(
 /**
  * Prezza ogni negozio e, se il cliente usa i punti, li ripartisce tra i PR2
  * (allocateCheckoutPoints). Solo letture: la conferma inserisce dopo,
- * l'anteprima si ferma qui.
+ * l'anteprima si ferma qui. Restituisce anche il lordo online (somma PR2) e
+ * l'importo online dello scenario (lordo − punti).
  */
 export async function priceCheckout(
 	tx: OrderTx,
@@ -154,12 +157,20 @@ export async function priceCheckout(
 		discountCents[i] = allocation.discountCents[k];
 	});
 
-	return p.resolved.map((r, i) => ({
+	const steps = p.resolved.map((r, i) => ({
 		...r,
 		priced: priced[i],
 		points: points[i],
 		discountCents: discountCents[i],
 	}));
+	const grossOnlineCents = payIdx.reduce((s, i) => s + priced[i].totalCents, 0);
+	return {
+		steps,
+		grossOnlineCents,
+		// Quel che il PaymentIntent unico incasserebbe in questo scenario.
+		amountDueOnlineCents:
+			grossOnlineCents - discountCents.reduce((s, d) => s + d, 0),
+	};
 }
 
 /** Un checkout con i suoi ordini, nella stessa forma della lista ordini. */
@@ -207,6 +218,7 @@ export async function getCheckout(params: {
  * PaymentIntent unico copre la somma dei PR2.
  * Con `usePoints` i punti si ripartiscono tra i PR2 (allocateCheckoutPoints);
  * se coprono tutto, i PR2 nascono confermati senza PaymentIntent.
+ * Importo online tra 0,01 e 0,49 € (minimo Stripe): 400, nessun ordine.
  */
 export async function createCheckout(params: CreateCheckoutParams) {
 	const {
@@ -244,10 +256,18 @@ export async function createCheckout(params: CreateCheckoutParams) {
 				usePoints,
 				resolved,
 			});
+			// Stripe non incassa tra 0,01 e 0,49 €: si rifiuta qui, prima di
+			// inserire gli ordini; il rollback della tx rimuove anche la riga
+			// checkout già inserita e il carrello resta.
+			if (isBelowOnlineMinimum(plan.amountDueOnlineCents))
+				throw new ServiceError(
+					400,
+					`Il pagamento online parte da ${fromCents(config.stripeMinChargeCents).replace(".", ",")} €: scegli «Prenota e paga in negozio» o aggiungi articoli`,
+				);
 
 			let amountDueCents = 0;
 			let hasPay = false;
-			for (const step of plan) {
+			for (const step of plan.steps) {
 				const placed = await insertOrder(tx, step.priced, {
 					customerPoints,
 					pointsToSpend: step.points,
@@ -278,6 +298,11 @@ export async function createCheckout(params: CreateCheckoutParams) {
 						"Il carrello è cambiato: alcune quantità non sono più disponibili",
 					);
 			}
+
+			// Rete di sicurezza: Stripe non deve ricevere un importo diverso da
+			// quello controllato sopra; il throw annulla la tx.
+			if (amountDueCents !== plan.amountDueOnlineCents)
+				throw new ServiceError(500, "Importo del checkout incoerente");
 
 			// Un solo pagamento per tutti i negozi PR2 del checkout. Dentro la tx:
 			// se Stripe fallisce (502) non nasce nessun ordine e il carrello resta.
@@ -368,6 +393,8 @@ export function parseStoresParam(raw: string): CheckoutStoreChoice[] {
  * Gli importi del checkout prima della conferma, con e senza punti, calcolati
  * dalle stesse funzioni di createCheckout (righe, prezzi, ripartizione): la
  * conferma con `usePoints` produce esattamente `withPoints`. Solo letture.
+ * Sotto il minimo Stripe risponde comunque, con `withoutPoints.belowMinimum`;
+ * `withPoints` è per costruzione 0 € o ≥ minimo.
  */
 export async function previewCheckout(p: {
 	customerProfileId: string;
@@ -382,32 +409,35 @@ export async function previewCheckout(p: {
 				stores: p.stores,
 				lock: false,
 			});
-			const plan = await priceCheckout(tx, {
+			const { steps, grossOnlineCents } = await priceCheckout(tx, {
 				customerProfileId: p.customerProfileId,
 				customerPoints: p.customerPoints,
 				usePoints: true,
 				resolved,
 			});
-			const pay = plan.filter((s) => s.priced.type === "pay_pickup");
+			const pay = steps.filter((s) => s.priced.type === "pay_pickup");
 			const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
-			const grossPay = sum(pay.map((s) => s.priced.totalCents));
 			const discount = sum(pay.map((s) => s.discountCents));
 			return {
 				balance: p.customerPoints,
+				minAmountOnline: fromCents(config.stripeMinChargeCents),
 				payInStore: fromCents(
 					sum(
-						plan
+						steps
 							.filter((s) => s.priced.type === "reserve_pickup")
 							.map((s) => s.priced.totalCents),
 					),
 				),
-				withoutPoints: { amountDueOnline: fromCents(grossPay) },
+				withoutPoints: {
+					amountDueOnline: fromCents(grossOnlineCents),
+					belowMinimum: isBelowOnlineMinimum(grossOnlineCents),
+				},
 				withPoints:
 					discount > 0
 						? {
 								pointsSpent: sum(pay.map((s) => s.points)),
 								discount: fromCents(discount),
-								amountDueOnline: fromCents(grossPay - discount),
+								amountDueOnline: fromCents(grossOnlineCents - discount),
 								perStore: pay.map((s) => ({
 									storeId: s.choice.storeId,
 									pointsSpent: s.points,
