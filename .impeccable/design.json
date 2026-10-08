@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 2,
-	"generatedAt": "2026-10-02T15:09:09Z",
+	"generatedAt": "2026-10-08T09:14:19Z",
 	"title": "Design System: bibs",
 	"extensions": {
 		"colorMeta": {
@@ -321,9 +321,9 @@
 			"name": "Bottom Tab Bar (Customer)",
 			"kind": "nav",
 			"refersTo": "nav-bottom",
-			"description": "Mobile-first navigation for the customer app. Saffron underline marks active.",
-			"html": "<nav class=\"ds-nav-bottom\" aria-label=\"Navigazione principale\"><a class=\"ds-nav-bottom__item\" href=\"/\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path d=\"M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-7H9v7H5a1 1 0 0 1-1-1z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></svg>Home</a><a class=\"ds-nav-bottom__item ds-nav-bottom__item--active\" href=\"/cerca\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M16 16l4 4\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></svg>Cerca</a><a class=\"ds-nav-bottom__item\" href=\"/premi\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><path d=\"M12 3l2.7 6.9L22 11l-5.5 5 1.5 7.2L12 19l-6 4.2L7.5 16 2 11l7.3-1.1z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></svg>Premi</a><a class=\"ds-nav-bottom__item\" href=\"/profilo\"><svg viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"4\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M4 21c0-4 4-7 8-7s8 3 8 7\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"/></svg>Profilo</a></nav>",
-			"css": ".ds-nav-bottom { display: grid; grid-template-columns: repeat(4, 1fr); background: oklch(0.985 0.008 80); border-top: 1px solid oklch(0.91 0.012 80); padding: 0.25rem 0 calc(0.25rem + env(safe-area-inset-bottom)); } .ds-nav-bottom__item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.5rem 0.25rem; min-height: 44px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; line-height: 1.2; color: oklch(0.46 0.10 258); text-decoration: none; position: relative; transition: color 180ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-nav-bottom__item:hover { color: oklch(0.34 0.10 258); } .ds-nav-bottom__item--active { color: oklch(0.34 0.10 258); } .ds-nav-bottom__item--active::after { content: \"\"; position: absolute; bottom: 0; left: 25%; right: 25%; height: 2px; border-radius: 2px; background: oklch(0.78 0.14 75); }"
+			"description": "Mobile customer navigation below sm: three text sections on an Ink fill, fixed to the bottom. Full Saffron underline on the top edge marks active.",
+			"html": "<nav class=\"ds-nav-bottom\" aria-label=\"Navigazione principale\"><a class=\"ds-nav-bottom__item\" href=\"/products\">Prodotti</a><a class=\"ds-nav-bottom__item ds-nav-bottom__item--active\" href=\"/stores\" aria-current=\"page\">Negozi</a><a class=\"ds-nav-bottom__item\" href=\"/orders\">Ordini</a></nav>",
+			"css": ".ds-nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: oklch(0.34 0.10 258); } .ds-nav-bottom__item { display: flex; align-items: center; justify-content: center; height: 56px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: oklch(0.985 0.008 80 / 0.7); text-decoration: none; position: relative; transition: color 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-nav-bottom__item:hover, .ds-nav-bottom__item--active { color: oklch(0.985 0.008 80); } .ds-nav-bottom__item::after { content: \"\"; position: absolute; top: 0; left: 1.5rem; right: 1.5rem; height: 2px; border-radius: 9999px; background: oklch(0.78 0.14 75); scale: 0 1; transition: scale 300ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-nav-bottom__item--active::after { scale: 1; } @media (prefers-reduced-motion: reduce) { .ds-nav-bottom__item::after { transition: none; } }"
 		}
 	],
 	"narrative": {

@@ -490,10 +490,28 @@ search resolves with location context (geo gate), never anonymous.
 
 ### Navigation
 
-- **Customer (mobile-first):** bottom tab bar with 4 destinations
-  (home / cerca / premi / profilo). Ink Soft icons at rest, Ink active.
-  Active uses a Saffron underline 2px tall — saffron earned, not
-  decorative, because reaching the section is the user's choice.
+- **Customer:** three sections, text only (Prodotti / Negozi / Ordini).
+  Words, not icons: the labels are short and Italian-first.
+  - *Desktop (`sm` and up):* top app bar on Cream. Identity on the left,
+    immediately followed by the sections; location, bag and account as
+    36px icon buttons on the right. Each section is as tall as the bar.
+  - *Mobile (below `sm`):* the top bar keeps identity, location, bag and
+    account (44px icon buttons); the sections drop into a fixed bottom
+    tab bar filled with Ink, three equal columns, 56px tall. Ink is the
+    only fill that separates from Cream (Warm Paper reads at 1.06:1); on
+    it, inactive labels are Cream at 70%, active is full Cream.
+  - *Active state:* Ink label (Cream on the Ink bar) plus a Saffron
+    underline 2px tall that sits on the bar's own edge (bottom border of
+    the top bar, top edge of the tab bar) — saffron earned, not
+    decorative, because reaching the section is the user's choice.
+    Saffron Deep on Cream to clear 3:1, full Saffron on dark fills. The
+    underline grows from the centre on activation (300ms, ease-out
+    exponential, instant under reduced motion); hovering an inactive
+    section previews half of it at 40%. Weight never changes, so labels
+    never shift. A section stays active across its own tabs and filters
+    (`/orders?tab=…`, `/products?q=…`).
+  - *Location:* an icon button like the bag, not a labelled chip; the
+    chosen origin lives in its accessible name, tooltip and panel.
 - **Seller / Admin (desktop-primary):** left sidebar in Warm Paper,
   Geist label typography, Ink active, Ink Soft inactive. No icons-only
   collapsed mode by default; words matter.
