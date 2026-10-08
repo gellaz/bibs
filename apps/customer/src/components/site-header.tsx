@@ -1,6 +1,5 @@
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { Link } from "@tanstack/react-router";
-import { ReceiptText } from "lucide-react";
 import { CartBadge } from "@/features/cart/cart-badge";
 import { SearchOriginChip } from "@/features/location/search-origin-chip";
 import { m } from "@/paraglide/messages";
@@ -8,20 +7,37 @@ import { PAGE_CONTAINER } from "./page";
 import { UserMenu } from "./user-menu";
 
 /**
- * Top app bar del customer: identità bibs (open hand + wordmark) a sinistra,
- * che funge da link verso la home, il chip dell'origine della ricerca, e il
- * menu account a destra.
+ * Voce attiva: Ink pieno + sottolineatura Saffron di 2px (DESIGN.md §Navigation).
+ * La sottolineatura cresce dal centro quando la sezione si attiva (ease-out
+ * esponenziale, niente con reduced motion); al passaggio del mouse le voci
+ * testuali inattive ne mostrano un accenno (non la borsa: sarebbe un trattino). Saffron Deep sul cream per stare sopra 3:1,
+ * Saffron pieno su fondi scuri. Il peso non cambia, così le voci non si spostano.
+ * Le voci poggiano sul bordo della loro barra: da `sm` sul bordo inferiore
+ * dell'header, sotto `sm` sul bordo superiore della tab bar Ink in basso.
+ */
+const NAV_ITEM_ACTIVE =
+	"after:absolute after:h-0.5 after:scale-x-0 after:rounded-full after:bg-saffron-deep after:transition-[scale,opacity] after:duration-300 after:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:after:transition-none dark:after:bg-saffron sm:self-stretch sm:after:-bottom-px data-[status=active]:text-primary data-[status=active]:after:scale-x-100";
+
+const NAV_LINK = `${NAV_ITEM_ACTIVE} relative flex items-center rounded-md px-3 font-medium text-muted-foreground text-sm outline-none transition-colors after:inset-x-3 after:-bottom-px hover:text-primary not-data-[status=active]:hover:after:scale-x-50 not-data-[status=active]:hover:after:opacity-40 focus-visible:focus-ring max-sm:h-14 max-sm:flex-1 max-sm:justify-center max-sm:rounded-none max-sm:text-cream/70 max-sm:after:top-0 max-sm:after:bottom-auto max-sm:after:inset-x-6 max-sm:after:bg-saffron max-sm:hover:text-cream max-sm:data-[status=active]:text-cream`;
+
+/** Le tab di /products, /stores e /orders vivono nella search: la voce resta attiva su ognuna. */
+const IGNORE_SEARCH = { includeSearch: false };
+
+/**
+ * Top app bar del customer: a sinistra l'identità bibs (open hand + wordmark,
+ * link alla home) seguita dalle sezioni; a destra il chip dell'origine della
+ * ricerca, la borsa e il menu account.
  *
  * Chrome calmo del register brand: cream pieno con un bordo 1px warm-edge in
- * basso (separazione disegnata, non ombra — "Flat-By-Default"). La navigazione
- * primaria mobile resta la bottom tab bar prevista da DESIGN.md; questa barra
- * porta identità e accesso all'account.
+ * basso (separazione disegnata, non ombra — "Flat-By-Default"). Sotto `sm` le
+ * sezioni scendono nella tab bar in basso e qui restano identità, posizione,
+ * borsa e account.
  */
 export function SiteHeader() {
 	return (
 		<header className="sticky top-0 z-40 border-border border-b bg-background">
 			<div
-				className={`${PAGE_CONTAINER} flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2 sm:h-16 sm:flex-nowrap sm:gap-4 sm:py-0`}
+				className={`${PAGE_CONTAINER} flex items-center gap-3 py-2 sm:h-16 sm:gap-4 sm:py-0`}
 			>
 				<Link
 					to="/"
@@ -33,43 +49,41 @@ export function SiteHeader() {
 						bibs
 					</span>
 				</Link>
-				{/* Sotto `sm` il chip scende su una riga sua: nella prima non ci sta
-				    un'etichetta leggibile accanto a identità, navigazione e borsa, e
-				    un tap target da 44px la riempirebbe. Da `sm` torna accanto
-				    all'identità. Una sola istanza, spostata dal wrapping del flex:
-				    due copie aprirebbero due pannelli, perché il contenuto finisce
-				    in un portal e il CSS del wrapper non lo nasconde. */}
-				<div className="max-sm:order-last max-sm:basis-full">
-					<SearchOriginChip />
-				</div>
-				<nav className="ml-auto mr-2 flex items-center gap-1">
+				{/* Sotto `sm` le sezioni diventano una tab bar fissa in basso, a portata
+				    di pollice e sempre visibile allo scorrimento. Una sola istanza:
+				    cambia posto con il CSS, non viene duplicata. */}
+				<nav className="flex items-center gap-1 max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-40 max-sm:gap-0 max-sm:bg-ink sm:ml-2 sm:self-stretch">
 					<Link
 						to="/products"
 						search={{ q: undefined, categoryId: undefined }}
-						className="rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground"
+						activeOptions={IGNORE_SEARCH}
+						className={NAV_LINK}
 					>
 						{m.nav_products()}
 					</Link>
 					<Link
 						to="/stores"
 						search={{ q: undefined, categoryId: undefined }}
-						className="rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground"
+						activeOptions={IGNORE_SEARCH}
+						className={NAV_LINK}
 					>
 						{m.nav_stores()}
 					</Link>
-					{/* Sotto `sm` «Ordini» vive nel menu account: in prima riga non ci
-					    sta accanto a identità, navigazione e borsa (la bottom tab bar
-					    di DESIGN.md non c'è ancora). */}
 					<Link
 						to="/orders"
 						search={{ tab: "reserved", page: 1 }}
-						className="flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground data-[status=active]:text-foreground max-sm:hidden"
+						activeOptions={IGNORE_SEARCH}
+						className={NAV_LINK}
 					>
-						<ReceiptText className="size-4" aria-hidden />
 						{m.nav_orders()}
 					</Link>
-					<CartBadge />
 				</nav>
+				<div className="ml-auto">
+					<SearchOriginChip />
+				</div>
+				<CartBadge
+					className={`${NAV_ITEM_ACTIVE} after:inset-x-2 after:bottom-0`}
+				/>
 				<UserMenu />
 			</div>
 		</header>

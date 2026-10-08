@@ -10,7 +10,7 @@ import { useCart } from "./use-cart";
  * Borsa e non carrello della spesa: il registro del brand è la bottega, non il
  * supermercato (vedi le anti-reference in PRODUCT.md).
  */
-export function CartBadge() {
+export function CartBadge({ className }: { className?: string }) {
 	const { cart } = useCart();
 	const count = cart?.itemCount ?? 0;
 
@@ -18,14 +18,18 @@ export function CartBadge() {
 		<Link
 			to="/cart"
 			aria-label={m.cart_badge_aria({ count })}
-			className="relative rounded-md p-2 text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:focus-ring data-[status=active]:text-foreground"
+			className={`relative flex items-center rounded-md p-2 text-muted-foreground outline-none max-sm:p-3 transition-colors hover:text-foreground focus-visible:focus-ring ${className ?? ""}`}
 		>
-			<ShoppingBag className="size-5" aria-hidden />
-			{count > 0 && (
-				<span className="-top-0.5 -right-0.5 absolute flex min-w-4.5 items-center justify-center rounded-full bg-saffron px-1 font-semibold text-[0.6875rem] text-ink tabular-nums">
-					{count}
-				</span>
-			)}
+			{/* Il contatore si ancora all'icona, non al link: da `sm` il link è alto
+			    quanto la barra. */}
+			<span className="relative">
+				<ShoppingBag className="size-5" aria-hidden />
+				{count > 0 && (
+					<span className="-top-2.5 -right-2.5 absolute flex min-w-4.5 items-center justify-center rounded-full bg-saffron px-1 font-semibold text-[0.6875rem] text-ink tabular-nums">
+						{count}
+					</span>
+				)}
+			</span>
 		</Link>
 	);
 }
