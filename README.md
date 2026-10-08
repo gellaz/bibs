@@ -55,6 +55,7 @@ To exercise Stripe checkout locally you need a few extra one-time steps — foll
 | Know the project rules & conventions (humans and agents) | [AGENTS.md](AGENTS.md) |
 | Understand product & brand decisions | [PRODUCT.md](PRODUCT.md) · [DESIGN.md](DESIGN.md) |
 | Claude Code-specific tooling | [CLAUDE.md](CLAUDE.md) |
+| See which AI tools (plugins, skills, MCP) the repo uses | [docs/ai-tooling.md](docs/ai-tooling.md) |
 
 ## Scripts
 

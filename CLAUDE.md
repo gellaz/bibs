@@ -22,7 +22,9 @@ Claude Code-specific tooling for this repository.
    - **Auto-enabled plugins** from the `claude-plugins-official` marketplace:
      `superpowers` (workflow skills), `commit-commands` (`/commit`, `/commit-push-pr`),
      `frontend-design`, `chrome-devtools-mcp` (debug against `localhost:3001/3002/3003`),
-     `claude-md-management` (`/revise-claude-md`), `stripe` (Stripe dev tools)
+     `claude-md-management` (`/revise-claude-md`), `stripe` (Stripe dev tools),
+     plus `ponytail` (YAGNI / smallest-change mode) from its own marketplace in `extraKnownMarketplaces`.
+     Full inventory with docs links: [docs/ai-tooling.md](docs/ai-tooling.md)
 4. **Prerequisites** for the hooks: `jq` (`brew install jq` if missing).
 
 ## Agent workflow (superpowers)
