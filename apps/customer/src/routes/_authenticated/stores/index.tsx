@@ -47,7 +47,7 @@ const LAYOUT_GRID =
  * decide la larghezza disponibile, non il viewport.
  */
 const RESULTS_GRID =
-	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @4xl:grid-cols-4";
+	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @4xl:grid-cols-4 @6xl:grid-cols-5";
 
 /**
  * Su desktop la mappa riempie la finestra sotto la riga dei risultati, così non

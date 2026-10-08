@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MapPinPlus, Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { Notice } from "@/components/notice";
+import { NARROW_PAGE } from "@/components/page";
 import { AddressCard } from "@/features/addresses/address-card";
 import { AddressFormDialog } from "@/features/addresses/address-form-dialog";
 import { useAddressMutations } from "@/features/addresses/use-address-mutations";
@@ -40,7 +41,7 @@ function AddressesPage() {
 		!isPending && !isError && (!addresses || addresses.length === 0);
 
 	return (
-		<div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+		<div className={`${NARROW_PAGE} py-8 sm:py-10`}>
 			<div className="flex flex-wrap items-end justify-between gap-3">
 				<div className="space-y-1">
 					<h1 className="font-bold font-display text-2xl text-primary tracking-[-0.015em]">

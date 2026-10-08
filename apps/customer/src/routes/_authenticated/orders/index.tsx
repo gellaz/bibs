@@ -6,6 +6,7 @@ import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, ReceiptText, TriangleAlert } from "lucide-react";
 import { Notice } from "@/components/notice";
+import { NARROW_PAGE } from "@/components/page";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
 import {
@@ -43,7 +44,7 @@ function OrdersPage() {
 	const pages = Math.ceil(total / ORDERS_PAGE_SIZE);
 
 	return (
-		<div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+		<div className={`${NARROW_PAGE} space-y-6 py-8`}>
 			<h1 className="font-display font-semibold text-2xl text-foreground">
 				{m.orders_title()}
 			</h1>

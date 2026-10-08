@@ -12,6 +12,7 @@ import {
 import { CreditCard, SearchX } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { NoticePage } from "@/components/notice";
+import { PAGE_CONTAINER } from "@/components/page";
 import { getStripe } from "@/features/checkout/stripe";
 import { ORDERS_KEY, useCheckout } from "@/features/checkout/use-checkout";
 import { m } from "@/paraglide/messages";
@@ -47,7 +48,7 @@ function CheckoutPayPage() {
 
 	if (isPending)
 		return (
-			<div className="mx-auto w-full max-w-lg space-y-4 px-4 py-8 sm:px-6">
+			<div className={`${PAGE_CONTAINER} *:max-w-lg space-y-4 py-8`}>
 				<Skeleton className="h-8 w-40" />
 				<Skeleton className="h-64 w-full" />
 			</div>
@@ -90,7 +91,7 @@ function CheckoutPayPage() {
 	)?.paymentExpiresAt;
 
 	return (
-		<div className="mx-auto w-full max-w-lg space-y-6 px-4 py-8 sm:px-6">
+		<div className={`${PAGE_CONTAINER} *:max-w-lg space-y-6 py-8`}>
 			<h1 className="font-display font-semibold text-2xl text-foreground">
 				{m.checkout_pay_title()}
 			</h1>

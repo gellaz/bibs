@@ -10,6 +10,7 @@ import {
 	XCircle,
 } from "lucide-react";
 import { NoticePage } from "@/components/notice";
+import { NARROW_PAGE } from "@/components/page";
 import { donePageState } from "@/features/checkout/payment-state";
 import { formatPoints } from "@/features/checkout/points-toggle";
 import { useCheckout } from "@/features/checkout/use-checkout";
@@ -33,7 +34,7 @@ function CheckoutDonePage() {
 
 	if (isPending)
 		return (
-			<div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 sm:px-6">
+			<div className={`${NARROW_PAGE} space-y-4 py-8`}>
 				<Skeleton className="h-10 w-72" />
 				<Skeleton className="h-40 w-full" />
 			</div>
@@ -64,7 +65,7 @@ function CheckoutDonePage() {
 	const many = data.orders.length > 1;
 
 	return (
-		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6">
+		<div className={`${NARROW_PAGE} space-y-8 py-8`}>
 			<header className="flex items-start gap-4">
 				<div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-saffron/15">
 					{payment === "awaiting_confirmation" ? (

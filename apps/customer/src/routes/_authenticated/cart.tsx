@@ -5,6 +5,7 @@ import { formatPriceEur } from "@bibs/ui/custom/price";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShoppingBag, TriangleAlert } from "lucide-react";
 import { NoticePage } from "@/components/notice";
+import { NARROW_PAGE } from "@/components/page";
 import { TileImage } from "@/components/tile";
 import { AddToCart } from "@/features/cart/add-to-cart";
 import type { CartGroup, CartLine } from "@/features/cart/use-cart";
@@ -20,7 +21,7 @@ function CartPage() {
 
 	if (isPending)
 		return (
-			<div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 sm:px-6">
+			<div className={`${NARROW_PAGE} space-y-4 py-8`}>
 				<Skeleton className="h-8 w-48" />
 				<Skeleton className="h-28 w-full" />
 				<Skeleton className="h-28 w-full" />
@@ -58,7 +59,7 @@ function CartPage() {
 		);
 
 	return (
-		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6">
+		<div className={`${NARROW_PAGE} space-y-8 py-8`}>
 			<h1 className="font-display font-semibold text-2xl text-foreground">
 				{m.cart_title()}
 			</h1>

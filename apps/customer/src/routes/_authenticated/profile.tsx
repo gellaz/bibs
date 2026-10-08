@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, MapPin } from "lucide-react";
+import { NARROW_PAGE } from "@/components/page";
 import { PersonalInfoForm } from "@/features/profile/personal-info-form";
 import { ProfileIdentity } from "@/features/profile/profile-identity";
 import { m } from "@/paraglide/messages";
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
  */
 function ProfilePage() {
 	return (
-		<div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+		<div className={`${NARROW_PAGE} py-8 sm:py-10`}>
 			<ProfileIdentity />
 			<PersonalInfoForm />
 

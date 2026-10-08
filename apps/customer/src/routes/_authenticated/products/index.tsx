@@ -38,7 +38,7 @@ const LAYOUT_GRID =
 
 /** La griglia vive in una colonna più stretta della pagina: container query, non viewport. */
 const RESULTS_GRID =
-	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @4xl:grid-cols-4";
+	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @4xl:grid-cols-4 @6xl:grid-cols-5";
 
 /** Tutti i parametri sono opzionali: `/products` nudo è una vista valida. */
 interface ProductSearchParams {

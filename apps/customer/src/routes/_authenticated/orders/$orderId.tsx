@@ -17,6 +17,7 @@ import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { NoticePage } from "@/components/notice";
+import { NARROW_PAGE } from "@/components/page";
 import { TileImage } from "@/components/tile";
 import {
 	paidCancelDescription,
@@ -51,7 +52,7 @@ function OrderDetailPage() {
 
 	if (isPending)
 		return (
-			<div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 sm:px-6">
+			<div className={`${NARROW_PAGE} space-y-4 py-8`}>
 				<Skeleton className="h-8 w-56" />
 				<Skeleton className="h-48 w-full" />
 			</div>
@@ -84,7 +85,7 @@ function OrderDetailPage() {
 	const paid = order.type === "pay_pickup";
 
 	return (
-		<div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+		<div className={`${NARROW_PAGE} space-y-6 py-8`}>
 			<header className="space-y-2">
 				<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
 					<h1 className="font-display font-semibold text-2xl text-foreground tabular-nums">
