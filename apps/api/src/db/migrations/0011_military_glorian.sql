@@ -1,2 +1,0 @@
-ALTER TABLE "orders" ADD COLUMN "pickup_code" text;--> statement-breakpoint
-CREATE UNIQUE INDEX "order_open_pickup_code_idx" ON "orders" USING btree ("store_id","pickup_code") WHERE "orders"."pickup_code" IS NOT NULL AND "orders"."status" IN ('pending','confirmed','ready_for_pickup');
