@@ -11,18 +11,10 @@ import {
 	PopoverTrigger,
 } from "@bibs/ui/components/popover";
 import { Separator } from "@bibs/ui/components/separator";
-import { Skeleton } from "@bibs/ui/components/skeleton";
 import { useIsMobile } from "@bibs/ui/hooks/use-mobile";
 import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import {
-	Check,
-	ChevronDown,
-	Globe,
-	LocateFixed,
-	MapPin,
-	Settings2,
-} from "lucide-react";
+import { Check, Globe, LocateFixed, MapPin, Settings2 } from "lucide-react";
 import { m } from "@/paraglide/messages";
 import { originLabel } from "./origin-label";
 import { useSearchOrigin } from "./search-origin";
@@ -41,28 +33,18 @@ export function SearchOriginChip() {
 		useSearchOrigin();
 	const isMobile = useIsMobile();
 
+	// Icon button come la borsa: l'origine scelta resta leggibile nel nome
+	// accessibile e nel tooltip, e per intero nel pannello.
+	const label = `${m.origin_chip_aria()}: ${originLabel(origin, geoStatus)}`;
 	const trigger = (
 		<button
 			type="button"
 			disabled={isBooting}
-			aria-label={m.origin_chip_aria()}
-			className={`inline-flex min-h-11 max-w-[15rem] items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-foreground text-sm transition-colors hover:border-primary/40 hover:bg-muted sm:min-h-9 ${FOCUS_RING}`}
+			aria-label={label}
+			title={isBooting ? undefined : label}
+			className={`flex items-center rounded-md p-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50 max-sm:p-3 ${FOCUS_RING}`}
 		>
-			<MapPin
-				className="size-4 shrink-0 text-saffron-deep dark:text-saffron"
-				aria-hidden
-			/>
-			{isBooting ? (
-				<Skeleton className="h-4 w-24" />
-			) : (
-				<span className="truncate font-medium">
-					{originLabel(origin, geoStatus)}
-				</span>
-			)}
-			<ChevronDown
-				className="size-3.5 shrink-0 text-muted-foreground"
-				aria-hidden
-			/>
+			<MapPin className="size-5" aria-hidden />
 		</button>
 	);
 
@@ -87,7 +69,7 @@ export function SearchOriginChip() {
 	return (
 		<Popover open={pickerOpen} onOpenChange={setPickerOpen}>
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
-			<PopoverContent align="start" className="w-80 gap-0 p-2">
+			<PopoverContent align="end" className="w-80 gap-0 p-2">
 				<p className="px-2 pt-1 pb-2 font-medium text-muted-foreground text-xs">
 					{m.origin_title()}
 				</p>
