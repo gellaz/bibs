@@ -100,17 +100,17 @@ jobs:
           cache-to: type=gha,mode=max
       # A build alone misses what only shows at boot (EACCES on ./logs, a
       # native module that doesn't load): migrate, start the API against the
-      # compose Postgres/MinIO, and require a healthy /ready. Throwaway
+      # compose Postgres/SeaweedFS, and require a healthy /ready. Throwaway
       # credentials, never real secrets.
-      - name: Start Postgres and MinIO
+      - name: Start Postgres and SeaweedFS
         run: |
-          docker compose -p smoke up -d --wait bibs-postgis bibs-minio
+          docker compose -p smoke up -d --wait bibs-postgis bibs-seaweedfs
           cat > smoke.env <<'ENV'
           DATABASE_URL=postgres://pgadmin:P4ssword!@bibs-postgis:5432/bibs-db
           BETTER_AUTH_SECRET=ci-smoke-secret-0123456789abcdef0123
           BETTER_AUTH_URL=http://localhost:3000
-          S3_ENDPOINT=http://bibs-minio:9000
-          S3_ACCESS_KEY=minioadmin
+          S3_ENDPOINT=http://bibs-seaweedfs:9000
+          S3_ACCESS_KEY=seaweedadmin
           S3_SECRET_KEY=P4ssword!
           S3_BUCKET=bibs-ci
           STRIPE_SECRET_KEY=sk_test_ci_smoke

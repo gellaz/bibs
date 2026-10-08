@@ -12,7 +12,7 @@ Stripe local-dev runbook: [docs/stripe-billing.md](../../docs/stripe-billing.md)
 - **Runtime** [Bun](https://bun.sh) · **Framework** [Elysia](https://elysiajs.com)
 - **DB** PostgreSQL 18 + PostGIS 3.6 (Docker) · **ORM** [Drizzle](https://orm.drizzle.team)
 - **Auth** [better-auth](https://www.better-auth.com) (email/password, RBAC admin plugin)
-- **Storage** MinIO via Bun's native S3 client · **Payments** Stripe (subscriptions)
+- **Storage** SeaweedFS (S3-compatible) via Bun's native S3 client · **Payments** Stripe (subscriptions)
 - **Email** Mailpit in dev via `src/lib/email.ts`, templates in `packages/emails`
 - **Docs** OpenAPI auto-generated — Scalar UI at `/openapi`, JSON at `/openapi/json`
 
@@ -23,7 +23,7 @@ From the **monorepo root**:
 ```bash
 bun install
 cp apps/api/.env.example apps/api/.env   # defaults work; set a real BETTER_AUTH_SECRET
-bun run infra:up        # PostGIS + MinIO + Mailpit
+bun run infra:up        # PostGIS + SeaweedFS + Mailpit
 bun run db:migrate
 bun run db:seed
 bun run dev:api         # http://localhost:3000
@@ -41,7 +41,7 @@ list. Highlights:
 |---|---|---|
 | `DATABASE_URL` | yes | pool tuning via optional `DATABASE_POOL_MAX`, `DATABASE_IDLE_TIMEOUT_MS`, `DATABASE_CONNECTION_TIMEOUT_MS` |
 | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` | yes | |
-| `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | yes | MinIO in dev; bucket auto-created at startup |
+| `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | yes | SeaweedFS in dev; bucket auto-created at startup |
 | `STRIPE_SECRET_KEY` | yes | test-mode key is fine; see the [runbook](../../docs/stripe-billing.md) |
 | `STRIPE_WEBHOOK_SECRET` | no | required only to receive webhooks (i.e. to complete a checkout) |
 | `STRIPE_DEV_PRICE_ID` | no | created by `bun run stripe:bootstrap` |
@@ -182,6 +182,6 @@ enabled for cookie auth.
 | Schema out of sync | `bun run db:reset` from the monorepo root (wipes data). |
 | `Missing or invalid env vars` at boot | Copy `.env.example` → `.env`; the error lists what's missing. |
 | `type "geometry" does not exist` | You're not on the project's PostGIS image (`docker/postgis/`). |
-| S3/MinIO errors | Bucket is auto-created at startup; verify the `S3_*` vars match `compose.yml`. |
+| S3 storage errors | Bucket is auto-created at startup; verify the `S3_*` vars match `compose.yml`. |
 | Stripe checkout never completes | See the [runbook troubleshooting](../../docs/stripe-billing.md#troubleshooting). |
 | Typecheck fails after pulling | `bun install` first. |

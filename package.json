@@ -22,7 +22,7 @@
 		"lint": "biome check .",
 		"lint:fix": "biome check --fix .",
 		"format": "biome format --write .",
-		"infra:up": "docker compose up -d",
+		"infra:up": "docker compose up -d --wait",
 		"infra:down": "docker compose down",
 		"infra:reset": "docker compose down -v",
 		"db:generate": "bun run --cwd apps/api db:generate",

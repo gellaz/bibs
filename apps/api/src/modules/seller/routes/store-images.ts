@@ -63,7 +63,7 @@ export const storeImagesRoutes = new Elysia()
 			detail: {
 				summary: "Upload immagini negozio",
 				description:
-					"Carica una o più immagini per un negozio. Le immagini vengono salvate su S3/MinIO.",
+					"Carica una o più immagini per un negozio. Le immagini vengono salvate su S3.",
 				tags: ["Seller - Store Images"],
 			},
 		},
@@ -89,7 +89,7 @@ export const storeImagesRoutes = new Elysia()
 			response: withErrors({ 200: OkMessage }),
 			detail: {
 				summary: "Elimina immagine negozio",
-				description: "Elimina un'immagine dal negozio e dal bucket S3/MinIO.",
+				description: "Elimina un'immagine dal negozio e dal bucket S3.",
 				tags: ["Seller - Store Images"],
 			},
 		},

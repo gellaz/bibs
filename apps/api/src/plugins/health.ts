@@ -39,7 +39,7 @@ export const health = new Elysia({ name: "health" })
 			detail: {
 				summary: "Readiness check",
 				description:
-					"Verifica la connettività a database e S3/MinIO. Restituisce 503 se uno dei servizi non è raggiungibile. Usato come readiness probe (Docker, K8s).",
+					"Verifica la connettività a database e storage S3. Restituisce 503 se uno dei servizi non è raggiungibile. Usato come readiness probe (Docker, K8s).",
 				tags: ["System"],
 			},
 		},

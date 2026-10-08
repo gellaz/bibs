@@ -23,45 +23,44 @@ services:
       retries: 10
       start_period: 5s
 
-  bibs-minio:
-    # MinIO stopped publishing community images: `minio/minio` is gone from
-    # Docker Hub and `quay.io/minio/minio` now denies anonymous pulls. Chainguard
-    # rebuilds upstream MinIO from source (same binary, same `server` CLI,
-    # multi-arch, public). Its free tier only serves `latest`, so pin the digest
-    # and bump it deliberately: `docker pull cgr.dev/chainguard/minio:latest`,
-    # then copy the digest from `docker image inspect`. This one is
-    # RELEASE.2026-09-22T19-25-18Z.
-    image: cgr.dev/chainguard/minio@sha256:bd014394a80898e68c149f2311fdf8d5a2c2f3bb2c33b9327ae6d02b4b065ae1
-    container_name: bibs-minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=P4ssword!
-      - MINIO_DOMAIN=localhost
+  bibs-seaweedfs:
+    # SeaweedFS replaces MinIO, which no longer ships community images. `mini`
+    # runs master, volume, filer, S3 gateway and admin UI in one process — dev
+    # only, production runs the components separately.
+    image: chrislusf/seaweedfs:4.48
+    container_name: bibs-seaweedfs
     command:
-      - server
-      - --console-address=:9001
-      - /data
+      - mini
+      - -dir=/data
+      - -s3.port=9000
+      - -s3.allowedOrigins=*
+      - -s3.port.iceberg=0
+      - -admin.port=9001
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # admin UI
+    environment:
+      # `mini` turns these into the S3 admin identity.
+      - AWS_ACCESS_KEY_ID=seaweedadmin
+      - AWS_SECRET_ACCESS_KEY=P4ssword!
     volumes:
-      - bibs-minio-data:/data
-    # Note: no healthcheck — the MinIO image ships without curl/wget/nc/mc,
-    # so there's no simple in-container probe. `docker compose up --wait` treats
-    # this service as ready once it reaches the "running" state, which lands a
-    # beat before the port is actually bound (~60ms locally). The API's startup
-    # bucket check retries connection failures to cover that window; see
-    # apps/api/src/lib/retry.ts.
+      - bibs-seaweedfs-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9333/cluster/status || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   bibs-mailpit:
-    image: axllent/mailpit:v1.31.2
+    image: axllent/mailpit:v1.31.4
     container_name: bibs-mailpit
     ports:
       - "8025:8025" # web UI + REST API
       - "1025:1025" # SMTP (unused by our HTTP send path, exposed for future tooling)
     environment:
       # Default = auto-deleted temp file; with MP_DATABASE mail survives restarts
-      # and `infra:reset` wipes it together with the DB and MinIO volumes.
+      # and `infra:reset` wipes it together with the DB and SeaweedFS volumes.
       - MP_DATABASE=/data/mailpit.db
     volumes:
       - bibs-mailpit-data:/data
@@ -70,5 +69,5 @@ services:
 
 volumes:
   bibs-postgis-data:
-  bibs-minio-data:
+  bibs-seaweedfs-data:
   bibs-mailpit-data:

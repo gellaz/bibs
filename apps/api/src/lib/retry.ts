@@ -1,12 +1,11 @@
 /**
  * Retry helpers for startup-time connections to local infrastructure.
  *
- * Docker Compose reports a container as ready as soon as it reaches the
- * "running" state. For a service without a healthcheck — MinIO, whose image
- * ships no curl/wget/nc/mc to probe with — that happens a beat before the
- * process actually binds its port (measured locally at ~60ms). A connection
- * fired right after `docker compose up --wait` can lose that race, so the
- * startup checks retry socket failures instead of crashing on the first one.
+ * `bun run infra:up` waits for the compose healthchecks, but nothing stops
+ * the API from booting while the containers are still coming up (a restarted
+ * Docker, a plain `docker compose up -d`). SeaweedFS in particular needs ~2s
+ * to elect its master before the S3 port answers, so the startup checks retry
+ * socket failures instead of crashing on the first one.
  */
 
 /** Socket-level failures meaning "not listening yet", not "request rejected". */

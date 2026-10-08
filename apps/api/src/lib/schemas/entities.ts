@@ -280,7 +280,7 @@ export const StoreImageSchema = t.Object({
 	id: t.String(),
 	storeId: t.String(),
 	url: t.String({ description: "URL pubblico dell'immagine" }),
-	key: t.String({ description: "Chiave S3/MinIO" }),
+	key: t.String({ description: "Chiave S3" }),
 	position: t.Number({ minimum: 0, description: "Posizione di ordinamento" }),
 	createdAt: t.Date(),
 });
@@ -446,7 +446,7 @@ export const ProductImageSchema = t.Object({
 	id: t.String(),
 	productId: t.String(),
 	url: t.String({ description: "URL pubblico dell'immagine" }),
-	key: t.String({ description: "Chiave S3/MinIO" }),
+	key: t.String({ description: "Chiave S3" }),
 	position: t.Number({ minimum: 0, description: "Posizione di ordinamento" }),
 	createdAt: t.Date(),
 });
