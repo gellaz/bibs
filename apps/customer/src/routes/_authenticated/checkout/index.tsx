@@ -4,6 +4,7 @@ import { formatPriceEur } from "@bibs/ui/custom/price";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ShoppingBag } from "lucide-react";
 import { NoticePage } from "@/components/notice";
+import { NARROW_PAGE } from "@/components/page";
 import { useCart } from "@/features/cart/use-cart";
 import { buyableGroups } from "@/features/checkout/buyable";
 import {
@@ -36,7 +37,7 @@ function CheckoutChoicePage() {
 
 	if (isPending)
 		return (
-			<div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-8 sm:px-6">
+			<div className={`${NARROW_PAGE} space-y-4 py-8`}>
 				<Skeleton className="h-8 w-64" />
 				<Skeleton className="h-40 w-full" />
 			</div>
@@ -63,7 +64,7 @@ function CheckoutChoicePage() {
 	);
 
 	return (
-		<div className="mx-auto w-full max-w-3xl space-y-8 px-4 py-8 sm:px-6">
+		<div className={`${NARROW_PAGE} space-y-8 py-8`}>
 			<header className="space-y-1">
 				<h1 className="font-display font-semibold text-2xl text-foreground">
 					{m.checkout_choose_title()}

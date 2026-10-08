@@ -5,6 +5,7 @@ import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronRight, Sparkles, TriangleAlert } from "lucide-react";
 import { Notice } from "@/components/notice";
+import { NARROW_PAGE } from "@/components/page";
 import { type PointRow, toPointRow } from "@/features/points/point-display";
 import {
 	POINTS_PAGE_SIZE,
@@ -34,7 +35,7 @@ function PointsPage() {
 	const pages = Math.ceil(total / POINTS_PAGE_SIZE);
 
 	return (
-		<div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:px-6">
+		<div className={`${NARROW_PAGE} space-y-6 py-8`}>
 			<h1 className="font-display font-semibold text-2xl text-foreground">
 				{m.points_title()}
 			</h1>

@@ -13,8 +13,10 @@ export interface StoreProductCardData extends ProductCardData {
  * `/customer/stores/:id/products`. Paginazione "Carica altri" (infinite query).
  * Nessuna distanza (sei già sul negozio) e nessuna data nel DTO → mappatura
  * diretta sulla forma stabile del tile, senza coercion.
+ *
+ * 20 per pagina: righe piene a 2, 4 e 5 colonne (la griglia del catalogo).
  */
-export function useStoreProducts(storeId: string, limit = 12) {
+export function useStoreProducts(storeId: string, limit = 20) {
 	const query = useInfiniteQuery({
 		queryKey: ["store-products", storeId, limit],
 		staleTime: 60_000,

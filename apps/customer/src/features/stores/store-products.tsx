@@ -13,7 +13,7 @@ import { useStoreProducts } from "./use-store-products";
  * passerebbe comunque a 4 colonne da 146px.
  */
 const CATALOG_GRID =
-	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @3xl:grid-cols-4";
+	"grid grid-cols-2 gap-x-4 gap-y-6 @xl:grid-cols-3 @3xl:grid-cols-4 @6xl:grid-cols-5";
 
 export function StoreProducts({ storeId }: { storeId: string }) {
 	const {
