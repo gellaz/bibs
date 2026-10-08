@@ -20,7 +20,7 @@ function hashHex(id: string): number {
 
 /**
  * Placeholder cover images for stores. Same approach as productImage: picsum
- * URLs in DB, MinIO not touched (extractOurKey filters non-ours on cleanup).
+ * URLs in DB, S3 storage not touched (extractOurKey filters non-ours on cleanup).
  * Idempotent: only stores currently without any image get rows.
  */
 export async function seedStoreImages() {

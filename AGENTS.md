@@ -43,7 +43,7 @@ To refresh strategic or visual context: `$impeccable teach` (PRODUCT) or `$impec
 - `bun run lint` — lint all workspaces (Biome)
 - `bun run lint:fix` — lint and auto-fix (Biome)
 - `bun run format` — format all files (Biome)
-- `bun run infra:up` / `infra:down` / `infra:reset` — manage Docker services (PostGIS + MinIO + Mailpit)
+- `bun run infra:up` / `infra:down` / `infra:reset` — manage Docker services (PostGIS + SeaweedFS + Mailpit)
 - `bun run db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle database commands
 - `bun run db:seed` / `db:reset` — seed test data / full wipe + migrate + seed
 - `bun run dev:emails` — react-email preview server (port 3004)
@@ -75,7 +75,7 @@ GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on ev
 - **Typecheck** — `bun run typecheck` across all workspaces (the `pretypecheck` hook in each frontend compiles Paraglide messages first, so a fresh clone typechecks without running `vite dev`)
 - **API tests (unit + integration)** — `bun run test` (also runs the emails and frontend suites); integration tests spin up Postgres/PostGIS via testcontainers, no GitHub Actions `services:` needed
 - **Build (admin/customer/seller)** — `vite build` per frontend, then fails on an uncommitted `routeTree.gen.ts`
-- **Docker image (api)** — builds `apps/api/Dockerfile`, runs `db:migrate` from the image and boots it against the compose Postgres/MinIO until `/ready` is 200
+- **Docker image (api)** — builds `apps/api/Dockerfile`, runs `db:migrate` from the image and boots it against the compose Postgres/SeaweedFS until `/ready` is 200
 
 Concurrent runs on the same PR cancel each other; runs on `main` all complete. After the first green run, enable GitHub branch protection on `main` and mark the checks as required to gate merges.
 
@@ -306,7 +306,7 @@ bun add -d package-name
 `compose.yml` at the root defines shared dev services:
 
 - **bibs-postgis** — PostgreSQL 18 + PostGIS 3.6 (port 5432)
-- **bibs-minio** — MinIO object storage (ports 9000/9001)
+- **bibs-seaweedfs** — SeaweedFS S3-compatible object storage (S3 API 9000, admin UI 9001)
 - **bibs-mailpit** — Mailpit dev email catcher (SMTP 1025, web UI + API **8025**)
 
 Dev server ports:

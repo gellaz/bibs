@@ -20,20 +20,20 @@ packages/
   emails/      → Transactional email templates (react-email)           :3004 (preview)
 ```
 
-Dev infrastructure (Docker): **PostGIS** :5432 · **MinIO** :9000 (console :9001) ·
+Dev infrastructure (Docker): **PostGIS** :5432 · **SeaweedFS** :9000 (admin UI :9001) ·
 **Mailpit** (email catcher) UI :8025.
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) ≥ 1.4
-- [Docker](https://www.docker.com/) (PostGIS, MinIO, Mailpit)
+- [Docker](https://www.docker.com/) (PostGIS, SeaweedFS, Mailpit)
 
 ## Getting started
 
 ```bash
 bun install                              # dependencies + git hooks (Lefthook)
 cp apps/api/.env.example apps/api/.env   # defaults work; set a real BETTER_AUTH_SECRET
-bun run infra:up                         # PostGIS + MinIO + Mailpit
+bun run infra:up                         # PostGIS + SeaweedFS + Mailpit
 bun run db:migrate                       # apply migrations (wait a moment for PostGIS on first run)
 bun run db:seed                          # test data (incl. dev accounts — see apps/api/README.md)
 bun run dev                              # API + all three apps

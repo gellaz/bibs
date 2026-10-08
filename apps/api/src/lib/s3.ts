@@ -92,7 +92,7 @@ async function provisionBucket() {
 const CHECK_BUCKET_TIMEOUT_MS = 3000;
 
 /**
- * Checks S3/MinIO connectivity by sending a HeadBucket request.
+ * Checks S3 storage connectivity by sending a HeadBucket request.
  * Returns true if the bucket is reachable, false otherwise (timeout included).
  */
 export async function checkBucket(): Promise<boolean> {

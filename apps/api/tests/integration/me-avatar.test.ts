@@ -30,7 +30,7 @@ const s3DeleteMock = mock(async (_key: string) => {});
 
 mock.module("@/lib/s3", () => ({
 	s3: { write: s3WriteMock, delete: s3DeleteMock },
-	publicUrl: (key: string) => `http://minio/test-bucket/${key}`,
+	publicUrl: (key: string) => `http://s3/test-bucket/${key}`,
 }));
 
 // env mock: ci serve S3_ENDPOINT e S3_BUCKET per extractOurKey.
@@ -39,7 +39,7 @@ mock.module("@/lib/s3", () => ({
 // lancia "between tests". Vedi anche i mock dei test stripe-webhook-*.
 mock.module("@/lib/env", () => ({
 	env: {
-		S3_ENDPOINT: "http://minio",
+		S3_ENDPOINT: "http://s3",
 		S3_BUCKET: "test-bucket",
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
 	},
@@ -97,7 +97,7 @@ describe("uploadUserAvatar", () => {
 		expect((data as Buffer).byteLength).toBeGreaterThan(0);
 
 		// La URL ritornata punta al bucket
-		expect(result.url).toBe(`http://minio/test-bucket/${key}`);
+		expect(result.url).toBe(`http://s3/test-bucket/${key}`);
 		expect(result.key).toBe(key);
 
 		// user.image aggiornato in DB
@@ -116,7 +116,7 @@ describe("uploadUserAvatar", () => {
 		const oldKey = `users/${user.id}/old-uuid.jpg`;
 		await db
 			.update(userTable)
-			.set({ image: `http://minio/test-bucket/${oldKey}` })
+			.set({ image: `http://s3/test-bucket/${oldKey}` })
 			.where(eq(userTable.id, user.id));
 
 		await uploadUserAvatar({ userId: user.id, file: makeTestImageFile() });
@@ -169,7 +169,7 @@ describe("deleteUserAvatar", () => {
 		const key = `users/${user.id}/some-uuid.jpg`;
 		await db
 			.update(userTable)
-			.set({ image: `http://minio/test-bucket/${key}` })
+			.set({ image: `http://s3/test-bucket/${key}` })
 			.where(eq(userTable.id, user.id));
 
 		await deleteUserAvatar({ userId: user.id });

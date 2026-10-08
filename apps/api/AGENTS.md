@@ -19,7 +19,7 @@ authentication (email/password, RBAC via admin plugin). An OpenAPI spec is auto-
 - `bun run test:unit` — run unit tests only (`tests/unit/`)
 - `bun run test:integration` — run integration tests only (`tests/integration/`, 180s timeout; builds the test image first)
 - `bun run test:image` — build the `bibs-postgis-test:latest` image the integration tests start (needed once before running a single integration file with `bun test`)
-- `bun run infra:up` — start PostGIS (5432), MinIO (9000/9001) and Mailpit (8025/1025) containers
+- `bun run infra:up` — start PostGIS (5432), SeaweedFS (S3 9000, admin UI 9001) and Mailpit (8025/1025) containers
 - `bun run infra:down` — stop and remove containers
 - `bun run infra:reset` — stop containers and delete volumes (full reset)
 - `bun run db:generate` — generate Drizzle migration files from schema changes
@@ -410,7 +410,7 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     pending/verified/rejected)
   - `store.ts` — stores (address + PostGIS point location with GiST index, website URL, phone numbers)
   - `store-category.ts` — store_categories
-  - `store-image.ts` — store_images (S3/MinIO keys, position ordering)
+  - `store-image.ts` — store_images (S3 keys, position ordering)
   - `category.ts` — product_categories
   - `product.ts` — products (with Italian full-text GIN index; nullable `product_category_id` FK to
       product_categories, `ON DELETE RESTRICT`), store_products (stock per store)
@@ -418,7 +418,7 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   - `employee.ts` — store_employees (status: active/banned/removed)
   - `order.ts` — orders (type, status, points, reservation expiry, idempotency key), order_items
   - `points.ts` — point_transactions (earned/redeemed)
-  - `product-image.ts` — product_images (S3/MinIO keys and public URLs)
+  - `product-image.ts` — product_images (S3 keys and public URLs)
   - `location.ts` — regions, provinces, municipalities (Italian geographic hierarchy with ISTAT codes)
   - `payment-method.ts` — payment_methods (Stripe Connect account per seller: `stripe_account_id` unique,
     `charges_enabled` (= v2 `stripe_transfers` active)/`payouts_enabled`/`details_submitted`, kept in sync by
@@ -429,9 +429,9 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
   preventing the seller from receiving new orders until the admin approves or rejects.
 - Migrations output to `src/db/migrations/` (configured in `drizzle.config.ts`).
 
-### S3/MinIO — `src/lib/s3.ts`
+### S3 storage — `src/lib/s3.ts`
 
-Bun's native S3Client configured for MinIO (local S3-compatible storage). Used for product image upload/delete via
+Bun's native S3Client configured for SeaweedFS (local S3-compatible storage). Used for product image upload/delete via
 `/seller/products/:productId/images` endpoints.
 
 - `ensureBucket()` — creates bucket if it doesn't exist (called at startup)
@@ -680,7 +680,7 @@ Use `logger` from `src/lib/logger.ts` for non-request contexts (cron jobs, start
 `compose.yml` defines local dev services:
 
 - **bibs-postgis** — PostgreSQL 18 + PostGIS 3.6 (custom Dockerfile in `docker/postgis/`)
-- **bibs-minio** — MinIO object storage for product images
+- **bibs-seaweedfs** — SeaweedFS S3-compatible storage for product images
 - **bibs-mailpit** — Mailpit dev email catcher (SMTP 1025, web UI + API 8025)
 
 Environment variables in `.env` (see `.env.example`). Validated at startup by `src/lib/env.ts`.
@@ -690,7 +690,7 @@ Required:
 - `DATABASE_URL` — PostgreSQL connection string
 - `BETTER_AUTH_SECRET` — secret for JWT signing
 - `BETTER_AUTH_URL` — base URL for auth (<http://localhost:3000>)
-- `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` — MinIO configuration
+- `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` — S3 storage configuration (SeaweedFS in dev)
 
 Optional:
 
