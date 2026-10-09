@@ -20,8 +20,8 @@ import { TileSkeleton } from "@/components/tile";
 import { originLabel } from "@/features/location/origin-label";
 import { useSearchOrigin } from "@/features/location/search-origin";
 import { useNearParam } from "@/features/location/use-near-param";
+import { DistanceSection } from "@/features/search/filter-rail/distance-section";
 import { SearchField } from "@/features/search/search-field";
-import { SearchTabs } from "@/features/search/search-tabs";
 import { useSearchTextParam } from "@/features/search/use-search-text-param";
 import type { StoreFilterValue } from "@/features/stores/store-filters";
 import { StoreFilters } from "@/features/stores/store-filters";
@@ -212,9 +212,6 @@ function StoresPage() {
 			isError={facets.isError}
 			onRetry={() => void facets.refetch()}
 			value={filterValue}
-			hasOrigin={coords !== null}
-			originLabel={originLabel(origin, geoStatus)}
-			onChooseOrigin={() => setPickerOpen(true)}
 			onChange={applyFilters}
 		/>
 	);
@@ -388,16 +385,20 @@ function StoresPage() {
 				</p>
 			</section>
 
-			<div className="mt-6">
-				<div className="mb-4">
-					<SearchTabs
-						current="stores"
-						q={q}
-						near={near}
-						radius={radius}
-						openNow={openNow}
-					/>
-				</div>
+			<div className="mt-6 space-y-4">
+				<DistanceSection
+					title={m.store_filter_distance()}
+					needsOriginText={m.store_distance_needs_origin()}
+					anyLabel={m.store_radius_any()}
+					kmLabel={(km) => m.store_radius_km({ km })}
+					hasOrigin={coords !== null}
+					originLabel={originLabel(origin, geoStatus)}
+					onChooseOrigin={() => setPickerOpen(true)}
+					radius={radius}
+					onRadiusChange={(next) =>
+						applyFilters({ ...filterValue, radius: next })
+					}
+				/>
 				<SearchField
 					value={text}
 					onChange={setText}

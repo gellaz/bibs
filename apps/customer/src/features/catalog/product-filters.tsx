@@ -2,7 +2,6 @@ import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Clock, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CategoryTree } from "@/features/search/filter-rail/category-tree";
-import { DistanceSection } from "@/features/search/filter-rail/distance-section";
 import { FacetsError } from "@/features/search/filter-rail/facets-error";
 import {
 	FilterSection,
@@ -32,9 +31,6 @@ interface ProductFiltersProps {
 	isError: boolean;
 	onRetry: () => void;
 	value: ProductFilterValue;
-	hasOrigin: boolean;
-	originLabel: string;
-	onChooseOrigin: () => void;
 	onChange: (next: ProductFilterValue) => void;
 }
 
@@ -101,7 +97,7 @@ function PriceBox({
 }
 
 /**
- * Rail dei filtri prodotti: disponibilità, categoria, prezzo e distanza. Lo
+ * Rail dei filtri prodotti: disponibilità, categoria e prezzo (la distanza sta sopra la ricerca). Lo
  * stesso nodo serve il rail da `lg` e il pannello mobile, quindi non porta
  * larghezza né posizionamento propri.
  */
@@ -114,12 +110,9 @@ export function ProductFilters({
 	isError,
 	onRetry,
 	value,
-	hasOrigin,
-	originLabel,
-	onChooseOrigin,
 	onChange,
 }: ProductFiltersProps) {
-	const { radius, openNow, onSale, minPrice, maxPrice } = value;
+	const { openNow, onSale, minPrice, maxPrice } = value;
 
 	return (
 		<div className="space-y-7">
@@ -201,18 +194,6 @@ export function ProductFilters({
 					{m.product_price_hint()}
 				</p>
 			</FilterSection>
-
-			<DistanceSection
-				title={m.product_filter_distance()}
-				needsOriginText={m.product_distance_needs_origin()}
-				anyLabel={m.product_radius_any()}
-				kmLabel={(km) => m.product_radius_km({ km })}
-				hasOrigin={hasOrigin}
-				originLabel={originLabel}
-				onChooseOrigin={onChooseOrigin}
-				radius={radius}
-				onRadiusChange={(next) => onChange({ ...value, radius: next })}
-			/>
 		</div>
 	);
 }

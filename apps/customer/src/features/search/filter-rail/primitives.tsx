@@ -142,30 +142,3 @@ export function CategorySkeleton() {
 		</div>
 	);
 }
-
-export function RadiusPill({
-	label,
-	active,
-	disabled,
-	onClick,
-}: {
-	label: string;
-	active: boolean;
-	disabled: boolean;
-	onClick: () => void;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			disabled={disabled}
-			className={`inline-flex min-h-11 items-center justify-center rounded-full border px-3 font-medium text-xs transition-colors disabled:cursor-not-allowed lg:min-h-7 lg:px-2.5 ${FOCUS_RING} ${
-				active
-					? "border-primary bg-primary text-primary-foreground"
-					: "border-border text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground disabled:border-dashed"
-			}`}
-		>
-			{label}
-		</button>
-	);
-}

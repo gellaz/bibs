@@ -1,7 +1,6 @@
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Clock } from "lucide-react";
 import { CategoryTree } from "@/features/search/filter-rail/category-tree";
-import { DistanceSection } from "@/features/search/filter-rail/distance-section";
 import { FacetsError } from "@/features/search/filter-rail/facets-error";
 import {
 	FilterSection,
@@ -27,15 +26,11 @@ interface StoreFiltersProps {
 	isError: boolean;
 	onRetry: () => void;
 	value: StoreFilterValue;
-	/** C'è una posizione da cui misurare: GPS o un indirizzo salvato. */
-	hasOrigin: boolean;
-	originLabel: string;
-	onChooseOrigin: () => void;
 	onChange: (next: StoreFilterValue) => void;
 }
 
 /**
- * Rail dei filtri: disponibilità, categoria (macro → categoria) e distanza. Lo
+ * Rail dei filtri: disponibilità e categoria (macro → categoria); la distanza sta sopra la ricerca. Lo
  * stesso nodo serve il rail da `lg` e il pannello mobile, quindi non porta
  * larghezza né posizionamento propri.
  */
@@ -47,9 +42,6 @@ export function StoreFilters({
 	isError,
 	onRetry,
 	value,
-	hasOrigin,
-	originLabel,
-	onChooseOrigin,
 	onChange,
 }: StoreFiltersProps) {
 	const { openNow } = value;
@@ -101,18 +93,6 @@ export function StoreFilters({
 					</FilterSection>
 				</>
 			)}
-
-			<DistanceSection
-				title={m.store_filter_distance()}
-				needsOriginText={m.store_distance_needs_origin()}
-				anyLabel={m.store_radius_any()}
-				kmLabel={(km) => m.store_radius_km({ km })}
-				hasOrigin={hasOrigin}
-				originLabel={originLabel}
-				onChooseOrigin={onChooseOrigin}
-				radius={value.radius}
-				onRadiusChange={(radius) => onChange({ ...value, radius })}
-			/>
 		</div>
 	);
 }
