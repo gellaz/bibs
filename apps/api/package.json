@@ -26,7 +26,7 @@
 		"@elysiajs/openapi": "^1.4.16",
 		"@sinclair/typebox": "catalog:",
 		"better-auth": "catalog:",
-		"drizzle-orm": "^0.45.3",
+		"drizzle-orm": "^0.45.4",
 		"elysia": "catalog:",
 		"logixlysia": "^6.9.4",
 		"pg": "catalog:",

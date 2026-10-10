@@ -37,6 +37,7 @@ Managed with [skills.sh](https://skills.sh) unless noted.
 | `shadcn` | [shadcn/ui](https://ui.shadcn.com/docs/skills) |
 | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices`, `organization-best-practices`, `two-factor-authentication-best-practices`, `create-auth` | [better-auth/skills](https://github.com/better-auth/skills) |
 | `impeccable` (own updater, `npx impeccable`) | [impeccable.style](https://impeccable.style) |
+| `design-taste-frontend` | [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) |
 
 ## MCP servers
 
