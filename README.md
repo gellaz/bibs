@@ -27,6 +27,7 @@ Dev infrastructure (Docker): **PostGIS** :5432 · **SeaweedFS** :9000 (admin UI 
 
 - [Bun](https://bun.sh/) ≥ 1.4
 - [Docker](https://www.docker.com/) (PostGIS, SeaweedFS, Mailpit)
+- [Stripe CLI](docs/stripe-billing.md#stripe-cli) — only to test payments (webhook forwarding)
 
 ## Getting started
 
@@ -41,8 +42,10 @@ bun run dev                              # API + all three apps
 
 Generate the auth secret with `bunx --bun @better-auth/cli secret`.
 
-To exercise Stripe checkout locally you need a few extra one-time steps — follow
-[docs/stripe-billing.md](docs/stripe-billing.md).
+To exercise Stripe payments locally (seller subscriptions, Connect onboarding, customer
+«Paga e ritira») you need a few extra one-time steps — follow
+[docs/stripe-billing.md](docs/stripe-billing.md) — then run `bun run dev:stripe` in a
+second terminal, next to `bun run dev`, to forward Stripe webhooks to the API.
 
 ## Documentation map
 
@@ -64,6 +67,7 @@ To exercise Stripe checkout locally you need a few extra one-time steps — foll
 | `bun run dev` | Start **all** apps concurrently |
 | `bun run dev:api` / `dev:customer` / `dev:seller` / `dev:admin` | Start one app (ports 3000/3001/3002/3003) |
 | `bun run dev:emails` | react-email preview server (port 3004) |
+| `bun run dev:stripe` | Forward Stripe webhooks to the API — needs the [Stripe CLI](docs/stripe-billing.md#stripe-cli) |
 | `bun run typecheck` | TypeScript check across all workspaces |
 | `bun run test` | Email-template tests + API tests (unit + integration) |
 | `bun run lint` / `lint:fix` / `format` | Biome |

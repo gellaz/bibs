@@ -17,6 +17,7 @@
 		"dev:seller": "bun run --filter @bibs/seller dev",
 		"dev:admin": "bun run --filter @bibs/admin dev",
 		"dev:emails": "bun run --filter @bibs/emails dev",
+		"dev:stripe": "concurrently -n stripe,thin -c yellow,gray \"stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect\" \"stripe listen --events 'v2.core.account[configuration.recipient].capability_status_updated,v2.core.account[requirements].updated' --forward-to localhost:3000/webhooks/stripe/thin\"",
 		"test": "bun run --filter @bibs/emails test && bun run --filter @bibs/ui test && bun run --filter @bibs/api test && bun run --filter @bibs/admin test && bun run --filter @bibs/customer test && bun run --filter @bibs/seller test",
 		"typecheck": "bun run --filter '*' typecheck",
 		"lint": "biome check .",
