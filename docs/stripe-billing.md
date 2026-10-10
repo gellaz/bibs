@@ -98,30 +98,49 @@ stays NULL on handler failure so Stripe's retry reprocesses it).
    matters:** if you already seeded the DB before setting this variable, run
    `bun run db:reset` (repo root) again afterwards.
 
-4. **Webhook forwarding** — install the [Stripe CLI](https://stripe.com/docs/stripe-cli)
-   (`brew install stripe/stripe-cli/stripe`), then in a dedicated terminal:
+4. **Webhook forwarding** — install the Stripe CLI and run `bun run dev:stripe`, see
+   [Stripe CLI](#stripe-cli) below.
 
-   ```bash
-   stripe login          # once
-   stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe
-   ```
+### Stripe CLI
 
-   It prints `whsec_…` — put it in `apps/api/.env` and restart the API:
+Stripe can't reach `localhost`, so in dev the [Stripe CLI](https://docs.stripe.com/stripe-cli)
+receives the webhooks and forwards them to the API. Install it once:
 
-   ```env
-   STRIPE_WEBHOOK_SECRET=whsec_…
-   ```
+```bash
+brew install stripe/stripe-cli/stripe   # macOS; Linux/Windows: https://docs.stripe.com/stripe-cli/install
+stripe login                            # opens the browser: pick the test-mode account of the sk_test_… key
+stripe listen --print-secret            # prints whsec_…
+```
 
-   Keep `stripe listen` running whenever you test checkout. Its log is also your best
-   debugging tool: every event and the API's HTTP response code show up there.
-   Note: the `whsec_…` secret is scoped to your `stripe login` session — if you
-   re-authenticate, update `.env` with the newly printed secret and restart the API.
+Put the secret in `apps/api/.env` and restart the API:
+
+```env
+STRIPE_WEBHOOK_SECRET=whsec_…
+```
+
+Then, from the repo root, in a terminal next to `bun run dev`:
+
+```bash
+bun run dev:stripe
+```
+
+It starts two `stripe listen` processes (CLI ≥ 1.53, which wants an explicit event list):
+
+| Listener | Forwards to | Needed for |
+|---|---|---|
+| `stripe` | `/webhooks/stripe` (platform events) and `/webhooks/stripe/connect` (connected accounts) | seller subscriptions and billing, customer «Paga e ritira», Connect onboarding |
+| `thin` | `/webhooks/stripe/thin` (v2 thin events) | the last step of the Connect onboarding — see [Forwarding locale](#forwarding-locale) |
+
+Both sign with the same `whsec_…`, so `STRIPE_WEBHOOK_SECRET` is enough. Keep it running
+whenever you test payments: its log is also your best debugging tool — every event and
+the API's HTTP response code show up there. The secret is scoped to your `stripe login`
+session: if you re-authenticate, update `.env` with the new one and restart the API.
 
 ## Happy path walkthrough
 
 Prereqs: setup above completed, then — from the repo root — DB seeded
 (`bun run db:reset` for a clean slate; **it wipes the local dev volumes**),
-`bun run dev`, `stripe listen` running.
+`bun run dev`, `bun run dev:stripe` running.
 
 1. Log in to the seller app (<http://localhost:3002>) as **`seller@dev.bibs` /
    `password123`** — the dev seller is fully onboarded with 2 active stores, so you
@@ -225,7 +244,7 @@ were never touched, so they come back as they were. If the row is no longer
 canceled and logged for a manual refund. Success/cancel URLs return to `/billing`.
 
 To try it locally: seed or produce a `canceled` store, click «Riattiva», pay with
-`4242…` while `stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe` runs.
+`4242…` while `bun run dev:stripe` runs.
 
 ## Seed-provided states (no Stripe needed)
 
@@ -324,21 +343,12 @@ verifiche richieste): serve per `losses_collector: "application"`, altrimenti
 
 ### Forwarding locale
 
-```bash
-stripe listen --all-snapshot \
-  --forward-to localhost:3000/webhooks/stripe \
-  --forward-connect-to localhost:3000/webhooks/stripe/connect
-```
-
-Dalla CLI 1.53 `stripe listen` vuole l'elenco degli eventi: `--all-snapshot` per
-quelli classici. I thin events non passano da `--forward-connect-to`: serve un
-secondo listener.
-
-```bash
-stripe listen \
-  --events 'v2.core.account[configuration.recipient].capability_status_updated,v2.core.account[requirements].updated' \
-  --forward-to localhost:3000/webhooks/stripe/thin
-```
+`bun run dev:stripe` (vedi [Stripe CLI](#stripe-cli); i comandi esatti sono nel
+`package.json` di root) avvia due listener. Dalla CLI 1.53 `stripe listen` vuole
+l'elenco degli eventi: il primo usa `--all-snapshot` per quelli classici e
+`--forward-connect-to` per i conti collegati. I thin events non passano da
+`--forward-connect-to`, quindi il secondo listener ascolta solo i due tipi v2 e li
+inoltra a `/webhooks/stripe/thin`.
 
 Un solo `whsec_…` per tutte le route in locale (è legato al login della CLI) → basta
 `STRIPE_WEBHOOK_SECRET`. In produzione i thin events arrivano da una event destination
@@ -362,13 +372,13 @@ del task 8).
 
 1. `STRIPE_SECRET_KEY` (API) e `VITE_STRIPE_PUBLISHABLE_KEY` (`apps/customer/.env.local`)
    della stessa modalità test.
-2. `stripe listen --all-snapshot --forward-to localhost:3000/webhooks/stripe --forward-connect-to localhost:3000/webhooks/stripe/connect`
+2. `bun run dev:stripe`
    — i `payment_intent.*` arrivano sulla route piattaforma.
 3. Il negozio deve avere «Paga e ritira» acceso e il conto Connect abilitato (profilo seller →
    Pagamenti online, onboarding di test).
 4. Carte di test: `4242 4242 4242 4242` (ok), `4000 0025 0000 3155` (3DS), `4000 0000 0000 0002`
    (rifiutata). Scadenza futura qualsiasi, CVC qualsiasi.
-5. Senza `stripe listen` la conferma arriva solo quando il cron `expireUnpaidOrders` trova la
+5. Senza `bun run dev:stripe` la conferma arriva solo quando il cron `expireUnpaidOrders` trova la
    finestra scaduta (fino a 30 minuti) e rilegge il PaymentIntent: per provare il flusso normale
    serve il webhook.
 6. I trasferimenti si vedono in Dashboard → Connect → conto → Trasferimenti (`transfer_group` = id del checkout).
@@ -406,10 +416,10 @@ sempre dall'API, mai dall'URL di ritorno di Stripe:
 - **Confermato**: codice di ritiro e link al QR.
 - **Pagamento non completato**: tutti i PR2 annullati senza pagamento (scaduti).
 
-In locale, con `stripe listen`, il webhook arriva di solito prima che la pagina finisca di
+In locale, con `bun run dev:stripe`, il webhook arriva di solito prima che la pagina finisca di
 caricare: «Stiamo confermando» può durare un lampo o non comparire affatto. Per vederlo apposta:
-ferma `stripe listen`, paga con la `4242` (la pagina resta su «Stiamo confermando»), poi riavvia
-`stripe listen` e rimanda l'evento con `stripe events resend <evt_…>` (l'id è nella Dashboard →
+ferma `bun run dev:stripe`, paga con la `4242` (la pagina resta su «Stiamo confermando»), poi riavvia
+`bun run dev:stripe` e rimanda l'evento con `stripe events resend <evt_…>` (l'id è nella Dashboard →
 Developers → Events): l'ordine si conferma e la pagina si aggiorna da sola.
 
 ### In produzione
@@ -447,7 +457,7 @@ Rationale and full design: [billing spec](superpowers/specs/2026-05-26-seller-st
 
 | Symptom | Cause → fix |
 |---|---|
-| Processing page spins forever | Webhook never arrived. Is `stripe listen` running? Is `STRIPE_WEBHOOK_SECRET` the one it printed (it changes per `stripe login`)? Restart the API after editing `.env`. |
+| Processing page spins forever | Webhook never arrived. Is `bun run dev:stripe` running? Is `STRIPE_WEBHOOK_SECRET` the one it printed (it changes per `stripe login`)? Restart the API after editing `.env`. |
 | `400` signature verification failed | Body was re-serialized or the secret is stale. The route reads the **raw** body and uses `constructEventAsync` (Bun's SubtleCrypto has no sync mode) — don't add body-parsing middleware in front of `/webhooks/stripe`. |
 | Checkout creation fails about price | `STRIPE_DEV_PRICE_ID` missing/wrong, or seed ran without it → `pricing_config` has no usable price. Run `stripe:bootstrap`, set the env var, `bun run db:reset`. |
 | Checkout session creation errors (500) | `STRIPE_SECRET_KEY` is wrong — verify it's a test-mode **secret** key (`sk_test_…`), not a publishable (`pk_…`) or live key. |
