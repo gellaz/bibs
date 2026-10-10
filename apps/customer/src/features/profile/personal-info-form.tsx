@@ -20,7 +20,9 @@ export function PersonalInfoForm() {
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
 	const [birthDate, setBirthDate] = useState("");
-	const [touched, setTouched] = useState({ firstName: false, lastName: false });
+	// Errori solo dopo il primo Salva: chi si registra arriva qui senza nome,
+	// e segnalare «obbligatorio» al primo blur punisce chi non ha ancora provato.
+	const [submitted, setSubmitted] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [apiError, setApiError] = useState("");
 
@@ -30,7 +32,7 @@ export function PersonalInfoForm() {
 		setFirstName(user?.firstName ?? "");
 		setLastName(user?.lastName ?? "");
 		setBirthDate(user?.birthDate ?? "");
-		setTouched({ firstName: false, lastName: false });
+		setSubmitted(false);
 	}, [user?.firstName, user?.lastName, user?.birthDate]);
 
 	const isDirty =
@@ -39,17 +41,15 @@ export function PersonalInfoForm() {
 		birthDate !== (user?.birthDate ?? "");
 
 	const firstNameError =
-		touched.firstName && !firstName.trim()
+		submitted && !firstName.trim()
 			? m.profile_first_name_required()
 			: undefined;
 	const lastNameError =
-		touched.lastName && !lastName.trim()
-			? m.profile_last_name_required()
-			: undefined;
+		submitted && !lastName.trim() ? m.profile_last_name_required() : undefined;
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		setTouched({ firstName: true, lastName: true });
+		setSubmitted(true);
 		if (!firstName.trim() || !lastName.trim()) return;
 
 		setApiError("");
@@ -98,7 +98,7 @@ export function PersonalInfoForm() {
 					</p>
 				)}
 
-				<div className="grid gap-5 sm:grid-cols-2">
+				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 					<Field data-invalid={!!firstNameError}>
 						<FieldLabel htmlFor={`${fieldId}-first`} required>
 							{m.profile_first_name()}
@@ -108,7 +108,6 @@ export function PersonalInfoForm() {
 							placeholder={m.profile_first_name_placeholder()}
 							value={firstName}
 							onChange={(e) => setFirstName(e.target.value)}
-							onBlur={() => setTouched((t) => ({ ...t, firstName: true }))}
 							aria-invalid={!!firstNameError}
 							aria-describedby={
 								firstNameError ? `${fieldId}-first-error` : undefined
@@ -130,7 +129,6 @@ export function PersonalInfoForm() {
 							placeholder={m.profile_last_name_placeholder()}
 							value={lastName}
 							onChange={(e) => setLastName(e.target.value)}
-							onBlur={() => setTouched((t) => ({ ...t, lastName: true }))}
 							aria-invalid={!!lastNameError}
 							aria-describedby={
 								lastNameError ? `${fieldId}-last-error` : undefined
@@ -142,22 +140,22 @@ export function PersonalInfoForm() {
 							errors={lastNameError ? [{ message: lastNameError }] : []}
 						/>
 					</Field>
-				</div>
 
-				<Field className="mt-5 sm:max-w-56">
-					<FieldLabel htmlFor={`${fieldId}-birth`}>
-						{m.profile_birth_date()}
-					</FieldLabel>
-					{/* color-scheme: il calendario nativo è cromo del browser e in dark
-					    resterebbe bianco. È l'unico modo per tematizzarlo. */}
-					<Input
-						id={`${fieldId}-birth`}
-						type="date"
-						value={birthDate}
-						onChange={(e) => setBirthDate(e.target.value)}
-						className="h-11 [color-scheme:light] sm:h-9 dark:[color-scheme:dark]"
-					/>
-				</Field>
+					<Field>
+						<FieldLabel htmlFor={`${fieldId}-birth`}>
+							{m.profile_birth_date()}
+						</FieldLabel>
+						{/* color-scheme: il calendario nativo è cromo del browser e in dark
+						    resterebbe bianco. È l'unico modo per tematizzarlo. */}
+						<Input
+							id={`${fieldId}-birth`}
+							type="date"
+							value={birthDate}
+							onChange={(e) => setBirthDate(e.target.value)}
+							className="h-11 [color-scheme:light] sm:h-9 dark:[color-scheme:dark]"
+						/>
+					</Field>
+				</div>
 
 				<div className="mt-6 flex flex-col items-stretch gap-3 border-border border-t pt-5 sm:flex-row sm:items-center sm:justify-end">
 					<span

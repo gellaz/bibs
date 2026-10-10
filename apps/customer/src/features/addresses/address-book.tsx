@@ -1,22 +1,20 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
-import { createFileRoute } from "@tanstack/react-router";
 import { MapPinPlus, Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { Notice } from "@/components/notice";
-import { NARROW_PAGE } from "@/components/page";
-import { AddressCard } from "@/features/addresses/address-card";
-import { AddressFormDialog } from "@/features/addresses/address-form-dialog";
-import { useAddressMutations } from "@/features/addresses/use-address-mutations";
-import type { AddressItem } from "@/features/addresses/use-addresses";
-import { useAddresses } from "@/features/addresses/use-addresses";
 import { m } from "@/paraglide/messages";
+import { AddressCard } from "./address-card";
+import { AddressFormDialog } from "./address-form-dialog";
+import { useAddressMutations } from "./use-address-mutations";
+import type { AddressItem } from "./use-addresses";
+import { useAddresses } from "./use-addresses";
 
-export const Route = createFileRoute("/_authenticated/addresses")({
-	component: AddressesPage,
-});
-
-function AddressesPage() {
+/**
+ * Rubrica indirizzi, sezione del profilo. `id="addresses"` è l'àncora del
+ * «Gestisci indirizzi» nel selettore di origine della ricerca.
+ */
+export function AddressBook() {
 	const { data: addresses, isPending, isError, refetch } = useAddresses();
 	const { remove } = useAddressMutations();
 	const [dialogOpen, setDialogOpen] = useState(false);
@@ -41,27 +39,27 @@ function AddressesPage() {
 		!isPending && !isError && (!addresses || addresses.length === 0);
 
 	return (
-		<div className={`${NARROW_PAGE} py-8 sm:py-10`}>
+		<section id="addresses" className="mt-10 scroll-mt-24 sm:mt-12">
 			<div className="flex flex-wrap items-end justify-between gap-3">
 				<div className="space-y-1">
-					<h1 className="font-bold font-display text-2xl text-primary tracking-[-0.015em]">
+					<h2 className="font-semibold text-foreground text-xl tracking-[-0.005em]">
 						{m.addresses_title()}
-					</h1>
+					</h2>
 					<p className="max-w-prose text-muted-foreground text-sm leading-relaxed">
 						{m.addresses_subtitle()}
 					</p>
 				</div>
 				{!showEmptyState && (
-					<Button className="min-h-11" onClick={openCreate}>
+					<Button className="min-h-11 sm:min-h-9" onClick={openCreate}>
 						<Plus className="size-4" aria-hidden />
 						{m.addresses_add()}
 					</Button>
 				)}
 			</div>
 
-			<div className="mt-8">
+			<div className="mt-4">
 				{isPending ? (
-					<div className="space-y-3" aria-hidden>
+					<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
 						<Skeleton className="h-32 w-full" />
 						<Skeleton className="h-32 w-full" />
 					</div>
@@ -93,7 +91,7 @@ function AddressesPage() {
 						}
 					/>
 				) : (
-					<ul className="space-y-3">
+					<ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 						{(addresses ?? []).map((address) => (
 							<AddressCard
 								key={address.id}
@@ -113,6 +111,6 @@ function AddressesPage() {
 				onOpenChange={setDialogOpen}
 				address={editing}
 			/>
-		</div>
+		</section>
 	);
 }

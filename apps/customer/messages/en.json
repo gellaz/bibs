@@ -226,8 +226,6 @@
 	"addresses_delete_title": "Delete this address?",
 	"addresses_delete_description": "The address disappears from your address book. Orders already placed keep a copy of the delivery address.",
 	"addresses_delete_confirm": "Delete address",
-	"profile_addresses_link": "Your addresses",
-	"profile_addresses_description": "Manage the addresses for search and deliveries.",
 	"origin_chip_aria": "Where you're searching from",
 	"origin_title": "Where you're searching from",
 	"origin_gps": "Current location",

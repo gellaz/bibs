@@ -23,6 +23,9 @@ const WELCOME_POINTS = [250, 120, 45, 10, 1];
 interface CustomerSeedData {
 	email: string;
 	name: string;
+	firstName: string;
+	lastName: string;
+	birthDate: string;
 }
 
 function generateCustomersSeedData(): CustomerSeedData[] {
@@ -31,10 +34,15 @@ function generateCustomersSeedData(): CustomerSeedData[] {
 	for (let i = 0; i < CUSTOMER_COUNT; i++) {
 		const firstName = pick(firstNames, i, 1);
 		const lastName = pick(lastNames, i, 3, 7);
+		// Deterministic birth date: 1960–1999
+		const birthDate = `${1960 + (i % 40)}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`;
 
 		customers.push({
 			email: `customer${i + 1}@test.com`,
 			name: `${firstName} ${lastName}`,
+			firstName,
+			lastName,
+			birthDate,
 		});
 	}
 
@@ -65,7 +73,13 @@ export async function seedCustomers() {
 			});
 			await db
 				.update(user)
-				.set({ role: "customer", emailVerified: true })
+				.set({
+					role: "customer",
+					emailVerified: true,
+					firstName: c.firstName,
+					lastName: c.lastName,
+					birthDate: c.birthDate,
+				})
 				.where(eq(user.id, u.id));
 			created.push({ userId: u.id, email: c.email });
 		} catch (error) {

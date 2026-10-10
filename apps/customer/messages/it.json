@@ -226,8 +226,6 @@
 	"addresses_delete_title": "Eliminare questo indirizzo?",
 	"addresses_delete_description": "L'indirizzo sparisce dalla rubrica. Gli ordini già fatti conservano una copia dell'indirizzo di consegna.",
 	"addresses_delete_confirm": "Elimina indirizzo",
-	"profile_addresses_link": "I tuoi indirizzi",
-	"profile_addresses_description": "Gestisci gli indirizzi per la ricerca e per le consegne.",
 	"origin_chip_aria": "Da dove cerchi",
 	"origin_title": "Da dove cerchi",
 	"origin_gps": "Posizione attuale",
