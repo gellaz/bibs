@@ -202,7 +202,8 @@ function OriginOptions({ onPick }: { onPick: () => void }) {
 
 			<Separator className="my-1" />
 			<Link
-				to="/addresses"
+				to="/profile"
+				hash="addresses"
 				onClick={onPick}
 				className={`flex min-h-11 items-center gap-3 rounded-md px-2 py-2 text-primary text-sm transition-colors hover:bg-muted ${FOCUS_RING}`}
 			>
