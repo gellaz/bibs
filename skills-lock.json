@@ -19,6 +19,12 @@
 			"skillPath": "better-auth/create-auth/SKILL.md",
 			"computedHash": "9a9b498bc144367b8e237233f89def63fb2bd69e8cafe173eaa58fe3a863cdc4"
 		},
+		"design-taste-frontend": {
+			"source": "Leonxlnx/taste-skill",
+			"sourceType": "github",
+			"skillPath": "skills/taste-skill/SKILL.md",
+			"computedHash": "6d838b246d0e35d0b53f4f23f98ba7a1dd561937e64f7d0c7553b0928e376c3e"
+		},
 		"elysiajs": {
 			"source": "elysiajs/skills",
 			"sourceType": "github",

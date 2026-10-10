@@ -57,6 +57,7 @@ Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.cl
 | `organization-best-practices`, `two-factor-authentication-best-practices` | Installed ahead of need — activate only when those Better Auth plugins are enabled |
 | `create-auth` | Better Auth scaffolding — installed ahead of need, the stack is already wired |
 | `impeccable` | Frontend design/UX passes — ships its own native engine, updated by `npx impeccable` (not skills.sh) |
+| `design-taste-frontend` | Anti-slop design direction for landing/marketing pages and redesigns (not dashboards) — DESIGN.md brand tokens still win |
 
 To add more: `bunx skills add <source>` from repo root. To refresh everything: `bun run skills:update`.
 
