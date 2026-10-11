@@ -4,7 +4,6 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from "@bibs/ui/components/breadcrumb";
-import { Separator } from "@bibs/ui/components/separator";
 import {
 	SidebarInset,
 	SidebarProvider,
@@ -65,9 +64,9 @@ function AuthenticatedLayout() {
 		<SidebarProvider>
 			<AppSidebar />
 			<SidebarInset>
-				<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+				<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
 					<SidebarTrigger className="-ml-1" label={m.shell_sidebar_toggle()} />
-					<Separator orientation="vertical" className="mr-2 h-4" />
+					<div aria-hidden className="h-4 w-px bg-border" />
 					<Breadcrumb>
 						<BreadcrumbList>
 							<BreadcrumbItem>
@@ -76,7 +75,9 @@ function AuthenticatedLayout() {
 						</BreadcrumbList>
 					</Breadcrumb>
 				</header>
-				<div className="flex-1 p-4">
+				{/* clip, non hidden: hidden ne fa un contenitore di scroll che
+				    non scorre mai (scorre la finestra) e blocca ogni `sticky`. */}
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip p-4">
 					<Outlet />
 				</div>
 			</SidebarInset>

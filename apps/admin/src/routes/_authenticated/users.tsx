@@ -1,16 +1,10 @@
 import { Badge } from "@bibs/ui/components/badge";
-import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from "@bibs/ui/components/input-group";
-import { DataPagination } from "@bibs/ui/custom/data-pagination";
 import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
+import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
-import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { PageHeader } from "@bibs/ui/custom/page-header";
+import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
-import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDate } from "@bibs/ui/lib/date";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
@@ -18,14 +12,12 @@ import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
-import { SearchIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { PageHeader } from "@/components/page-header";
+import { useMemo } from "react";
 import { UserRoleBadge } from "@/components/user-role-badge";
 import { UserRowActions } from "@/components/user-row-actions";
 import { authClient } from "@/lib/auth-client";
 import {
-	dataPaginationLabels,
+	dataTableFooterLabels,
 	tableColumnsToggleLabels,
 } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
@@ -81,26 +73,7 @@ function UsersPage() {
 	const { data: session } = authClient.useSession();
 	const currentUserId = session?.user?.id;
 
-	// Input controllato; il valore deboundato finisce nell'URL e scatena la
-	// query. Su back/forward il localQ viene riallineato a routeQ.
-	const [localQ, setLocalQ] = useState(routeQ ?? "");
-	const debouncedQ = useDebouncedValue(localQ, 300);
 	const effectiveQ = routeQ ?? "";
-
-	useEffect(() => {
-		setLocalQ(routeQ ?? "");
-	}, [routeQ]);
-
-	useEffect(() => {
-		if (debouncedQ === effectiveQ) return;
-		void navigate({
-			search: (prev) => ({
-				...prev,
-				q: debouncedQ.length > 0 ? debouncedQ : undefined,
-				page: 1,
-			}),
-		});
-	}, [debouncedQ, effectiveQ, navigate]);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["users", page, limit, effectiveQ, sort, order],
@@ -138,7 +111,6 @@ function UsersPage() {
 	);
 
 	const total = data?.total ?? 0;
-	const totalPages = Math.ceil(total / limit);
 
 	const sorting: SortingState = sort
 		? [{ id: sort, desc: order === "desc" }]
@@ -163,11 +135,7 @@ function UsersPage() {
 				accessorKey: "name",
 				enableHiding: false,
 				enableSorting: true,
-				meta: {
-					menuLabel: m.common_name(),
-					headerClassName: "pl-6",
-					cellClassName: "pl-6 font-semibold",
-				},
+				meta: { menuLabel: m.common_name(), cellClassName: "font-semibold" },
 				header: ({ column }) => (
 					<SortableHeader column={column}>{m.common_name()}</SortableHeader>
 				),
@@ -217,8 +185,8 @@ function UsersPage() {
 				id: "actions",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-12 pr-6 text-right",
-					cellClassName: "pr-6 text-right",
+					headerClassName: "w-12 text-right",
+					cellClassName: "text-right",
 				},
 				header: ({ table }) => (
 					<TableColumnsToggle
@@ -247,28 +215,22 @@ function UsersPage() {
 				description={m.users_description()}
 			/>
 
-			<InputGroup className="max-w-md">
-				<InputGroupAddon align="inline-start">
-					<SearchIcon />
-				</InputGroupAddon>
-				<InputGroupInput
-					value={localQ}
-					onChange={(e) => setLocalQ(e.target.value)}
-					placeholder={m.users_search_placeholder()}
-					aria-label={m.users_search_label()}
-				/>
-				{localQ.length > 0 && (
-					<InputGroupAddon align="inline-end">
-						<InputGroupButton
-							size="icon-xs"
-							onClick={() => setLocalQ("")}
-							aria-label={m.common_clear_search()}
-						>
-							<XIcon />
-						</InputGroupButton>
-					</InputGroupAddon>
-				)}
-			</InputGroup>
+			<SearchInput
+				value={effectiveQ}
+				onValueChange={(q) =>
+					void navigate({
+						search: (prev) => ({
+							...prev,
+							q: q.length > 0 ? q : undefined,
+							page: 1,
+						}),
+					})
+				}
+				placeholder={m.users_search_placeholder()}
+				aria-label={m.users_search_label()}
+				clearLabel={m.common_clear_search()}
+				className="max-w-md"
+			/>
 
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
@@ -307,41 +269,28 @@ function UsersPage() {
 				}
 			/>
 
-			{total > 0 && (
-				<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-					<p className="text-muted-foreground text-sm tabular-nums">
-						{(total === 1
-							? m.users_pagination_range_one
-							: m.users_pagination_range)({
-							start: offset + 1,
-							end: Math.min(page * limit, total),
-							total,
-						})}
-					</p>
-					<div className="flex items-center gap-4">
-						<PageSizeSelector
-							label={m.common_rows_per_page()}
-							pageSize={limit}
-							onPageSizeChange={(size) =>
-								void navigate({
-									search: (prev) => ({ ...prev, limit: size, page: 1 }),
-								})
-							}
-						/>
-						<DataPagination
-							labels={dataPaginationLabels()}
-							page={page}
-							totalPages={totalPages}
-							onPageChange={(next, options) =>
-								void navigate({
-									search: (prev) => ({ ...prev, page: next }),
-									replace: options?.replace,
-								})
-							}
-						/>
-					</div>
-				</div>
-			)}
+			<DataTableFooter
+				page={page}
+				pageSize={limit}
+				total={total}
+				rangeLabel={(r) =>
+					(r.total === 1
+						? m.users_pagination_range_one
+						: m.users_pagination_range)(r)
+				}
+				labels={dataTableFooterLabels()}
+				onPageSizeChange={(size) =>
+					void navigate({
+						search: (prev) => ({ ...prev, limit: size, page: 1 }),
+					})
+				}
+				onPageChange={(next, options) =>
+					void navigate({
+						search: (prev) => ({ ...prev, page: next }),
+						replace: options?.replace,
+					})
+				}
+			/>
 		</div>
 	);
 }

@@ -1,34 +1,27 @@
 import { Button } from "@bibs/ui/components/button";
-import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from "@bibs/ui/components/input-group";
-import { DataPagination } from "@bibs/ui/custom/data-pagination";
 import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
+import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
-import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { PageHeader } from "@bibs/ui/custom/page-header";
+import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
-import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDate } from "@bibs/ui/lib/date";
 import { displayName } from "@bibs/ui/lib/display-name";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
-import { CheckCircle2Icon, SearchIcon, XCircleIcon, XIcon } from "lucide-react";
+import { CheckCircle2Icon, XCircleIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
-import { PageHeader } from "@/components/page-header";
 import {
 	SellerModerationDialog,
 	useSellerModeration,
 } from "@/components/seller-moderation-dialog";
 import { api } from "@/lib/api";
 import {
-	dataPaginationLabels,
+	dataTableFooterLabels,
 	tableColumnsToggleLabels,
 } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
@@ -95,7 +88,6 @@ function SellersPage() {
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 	const [search, setSearch] = useState("");
-	const debouncedSearch = useDebouncedValue(search, 300);
 	const [sortBy, setSortBy] = useState<SortByField>("createdAt");
 	const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
@@ -106,11 +98,6 @@ function SellersPage() {
 		setPage(1);
 		setSearch("");
 	}, [status]);
-
-	// La ricerca deboundata riporta sempre alla prima pagina.
-	useEffect(() => {
-		setPage(1);
-	}, [debouncedSearch]);
 
 	const sorting: SortingState = [{ id: sortBy, desc: sortOrder === "desc" }];
 
@@ -138,22 +125,14 @@ function SellersPage() {
 	});
 
 	const { data, isLoading, error } = useQuery({
-		queryKey: [
-			"admin-sellers",
-			status,
-			page,
-			limit,
-			debouncedSearch,
-			sortBy,
-			sortOrder,
-		],
+		queryKey: ["admin-sellers", status, page, limit, search, sortBy, sortOrder],
 		queryFn: async () => {
 			const response = await api().admin.sellers.get({
 				query: {
 					page,
 					limit,
 					...(status ? { status: status as SellerStatus } : {}),
-					...(debouncedSearch ? { search: debouncedSearch } : {}),
+					...(search ? { search } : {}),
 					sortBy,
 					sortOrder,
 				},
@@ -211,8 +190,7 @@ function SellersPage() {
 				enableSorting: true,
 				meta: {
 					menuLabel: m.sellers_column_seller(),
-					headerClassName: "pl-4",
-					cellClassName: "pl-6 font-semibold",
+					cellClassName: "font-semibold",
 				},
 				header: ({ column }) => (
 					<SortableHeader column={column}>
@@ -295,8 +273,8 @@ function SellersPage() {
 				id: "actions",
 				enableHiding: false,
 				meta: {
-					headerClassName: "pr-6 text-right",
-					cellClassName: "pr-6 text-right",
+					headerClassName: "text-right",
+					cellClassName: "text-right",
 				},
 				header: ({ table }) => (
 					<TableColumnsToggle
@@ -349,7 +327,7 @@ function SellersPage() {
 			cols.push({
 				id: "toggle",
 				enableHiding: false,
-				meta: { headerClassName: "w-12 pr-6 text-right" },
+				meta: { headerClassName: "w-12 text-right" },
 				header: ({ table }) => (
 					<TableColumnsToggle
 						table={table}
@@ -378,28 +356,17 @@ function SellersPage() {
 				label={m.sellers_tabs_label()}
 			/>
 
-			<InputGroup className="max-w-md">
-				<InputGroupAddon align="inline-start">
-					<SearchIcon />
-				</InputGroupAddon>
-				<InputGroupInput
-					placeholder={m.sellers_search_placeholder()}
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					aria-label={m.sellers_search_label()}
-				/>
-				{search.length > 0 && (
-					<InputGroupAddon align="inline-end">
-						<InputGroupButton
-							size="icon-xs"
-							onClick={() => setSearch("")}
-							aria-label={m.common_clear_search()}
-						>
-							<XIcon />
-						</InputGroupButton>
-					</InputGroupAddon>
-				)}
-			</InputGroup>
+			<SearchInput
+				value={search}
+				onValueChange={(q) => {
+					setSearch(q);
+					setPage(1);
+				}}
+				placeholder={m.sellers_search_placeholder()}
+				aria-label={m.sellers_search_label()}
+				clearLabel={m.common_clear_search()}
+				className="max-w-md"
+			/>
 
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
@@ -418,14 +385,14 @@ function SellersPage() {
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
 				manualSorting={{ sorting, onSortingChange }}
-				hideHeaderWhenEmpty={!debouncedSearch}
+				hideHeaderWhenEmpty={!search}
 				emptyState={
-					debouncedSearch ? (
+					search ? (
 						<EmptyState
 							variant="no-results"
 							title={m.common_no_results()}
 							description={m.sellers_no_results_description({
-								query: debouncedSearch,
+								query: search,
 							})}
 						/>
 					) : (
@@ -440,43 +407,22 @@ function SellersPage() {
 				}
 			/>
 
-			{data?.pagination &&
-				data.pagination.total > 0 &&
-				(() => {
-					const total = data.pagination.total;
-					const totalPages = Math.ceil(total / limit);
-					const rangeStart = (page - 1) * limit + 1;
-					const rangeEnd = Math.min(page * limit, total);
-					return (
-						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-							<p className="text-muted-foreground text-sm tabular-nums">
-								{(total === 1
-									? m.sellers_pagination_range_one
-									: m.sellers_pagination_range)({
-									start: rangeStart,
-									end: rangeEnd,
-									total,
-								})}
-							</p>
-							<div className="flex items-center gap-4">
-								<PageSizeSelector
-									label={m.common_rows_per_page()}
-									pageSize={limit}
-									onPageSizeChange={(size) => {
-										setLimit(size);
-										setPage(1);
-									}}
-								/>
-								<DataPagination
-									labels={dataPaginationLabels()}
-									page={page}
-									totalPages={totalPages}
-									onPageChange={setPage}
-								/>
-							</div>
-						</div>
-					);
-				})()}
+			<DataTableFooter
+				page={page}
+				pageSize={limit}
+				total={data?.pagination.total ?? 0}
+				rangeLabel={(r) =>
+					(r.total === 1
+						? m.sellers_pagination_range_one
+						: m.sellers_pagination_range)(r)
+				}
+				labels={dataTableFooterLabels()}
+				onPageSizeChange={(size) => {
+					setLimit(size);
+					setPage(1);
+				}}
+				onPageChange={setPage}
+			/>
 
 			<SellerModerationDialog
 				target={moderation.target}
