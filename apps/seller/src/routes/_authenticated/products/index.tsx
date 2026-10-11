@@ -1,20 +1,14 @@
 import { Badge } from "@bibs/ui/components/badge";
 import { Checkbox } from "@bibs/ui/components/checkbox";
-import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from "@bibs/ui/components/input-group";
 import { CopyButton } from "@bibs/ui/custom/copy-button";
 import { CreateButton } from "@bibs/ui/custom/create-button";
-import { DataPagination } from "@bibs/ui/custom/data-pagination";
 import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
+import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
-import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { PageHeader } from "@bibs/ui/custom/page-header";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
+import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
-import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { formatDate } from "@bibs/ui/lib/date";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
@@ -22,8 +16,8 @@ import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
-import { PackageIcon, SearchIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { PackageIcon } from "lucide-react";
+import { useMemo } from "react";
 import { ProductBulkToolbar } from "@/features/products/components/product-bulk-toolbar";
 import { ProductPriceCell } from "@/features/products/components/product-price-cell";
 import { ProductRowActions } from "@/features/products/components/product-row-actions";
@@ -37,7 +31,7 @@ import { useProductSelection } from "@/features/products/hooks/use-product-selec
 import { useActiveStore } from "@/hooks/use-active-store";
 import { api, unwrap } from "@/lib/api";
 import {
-	dataPaginationLabels,
+	dataTableFooterLabels,
 	tableColumnsToggleLabels,
 } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
@@ -161,27 +155,7 @@ function ProductsListPage() {
 	const navigate = useNavigate({ from: "/products/" });
 	const { activeStore } = useActiveStore();
 
-	// Input controlled, ma è il valore *deboundato* che finisce nell'URL e
-	// scatena le query. Quando l'utente naviga (back/forward), il localQ viene
-	// riallineato a routeQ.
-	const [localQ, setLocalQ] = useState(routeQ ?? "");
-	const debouncedQ = useDebouncedValue(localQ, 300);
 	const effectiveRouteQ = routeQ ?? "";
-
-	useEffect(() => {
-		setLocalQ(routeQ ?? "");
-	}, [routeQ]);
-
-	useEffect(() => {
-		if (debouncedQ === effectiveRouteQ) return;
-		void navigate({
-			search: (prev) => ({
-				...prev,
-				q: debouncedQ.length > 0 ? debouncedQ : undefined,
-				page: 1,
-			}),
-		});
-	}, [debouncedQ, effectiveRouteQ, navigate]);
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: [
@@ -588,47 +562,38 @@ function ProductsListPage() {
 
 	return (
 		<div className="flex h-full min-w-0 flex-col gap-4">
-			<div className="flex shrink-0 items-center justify-between">
-				<div>
-					<h1 className="font-display text-2xl font-semibold tracking-tight">
-						{m.products_page_title()}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						{activeStore
-							? m.products_page_subtitle()
-							: m.products_page_subtitle_no_store()}
-					</p>
-				</div>
+			<PageHeader
+				title={m.products_page_title()}
+				description={
+					activeStore
+						? m.products_page_subtitle()
+						: m.products_page_subtitle_no_store()
+				}
+			>
 				<CreateButton asChild>
 					<Link to="/products/new">{m.products_new_cta()}</Link>
 				</CreateButton>
-			</div>
+			</PageHeader>
 
 			{activeStore && (
 				<div className="flex shrink-0 flex-col gap-3">
 					<div className="flex flex-wrap items-center gap-2">
-						<InputGroup className="max-w-md min-w-[240px] flex-1">
-							<InputGroupAddon align="inline-start">
-								<SearchIcon />
-							</InputGroupAddon>
-							<InputGroupInput
-								value={localQ}
-								onChange={(e) => setLocalQ(e.target.value)}
-								placeholder={m.products_search_placeholder()}
-								aria-label={m.products_search_placeholder()}
-							/>
-							{localQ.length > 0 && (
-								<InputGroupAddon align="inline-end">
-									<InputGroupButton
-										size="icon-xs"
-										onClick={() => setLocalQ("")}
-										aria-label={m.products_search_clear()}
-									>
-										<XIcon />
-									</InputGroupButton>
-								</InputGroupAddon>
-							)}
-						</InputGroup>
+						<SearchInput
+							value={effectiveRouteQ}
+							onValueChange={(q) =>
+								void navigate({
+									search: (prev) => ({
+										...prev,
+										q: q.length > 0 ? q : undefined,
+										page: 1,
+									}),
+								})
+							}
+							placeholder={m.products_search_placeholder()}
+							aria-label={m.products_search_placeholder()}
+							clearLabel={m.products_search_clear()}
+							className="max-w-md min-w-[240px] flex-1"
+						/>
 						<ProductsFilterSheet
 							value={{ categoryIds, minPrice, maxPrice }}
 							storeId={activeStore.id}
@@ -708,53 +673,28 @@ function ProductsListPage() {
 				}
 			/>
 
-			{data?.pagination &&
-				data.pagination.total > 0 &&
-				(() => {
-					const total = data.pagination.total;
-					const totalPages = Math.ceil(total / limit);
-					const rangeStart = (page - 1) * limit + 1;
-					const rangeEnd = Math.min(page * limit, total);
-					return (
-						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
-							<p className="text-muted-foreground text-sm tabular-nums">
-								{total === 1
-									? m.products_pagination_range_one({
-											start: rangeStart,
-											end: rangeEnd,
-											total,
-										})
-									: m.products_pagination_range({
-											start: rangeStart,
-											end: rangeEnd,
-											total,
-										})}
-							</p>
-							<div className="flex items-center gap-4">
-								<PageSizeSelector
-									label={m.common_rows_per_page()}
-									pageSize={limit}
-									onPageSizeChange={(size) =>
-										void navigate({
-											search: (prev) => ({ ...prev, limit: size, page: 1 }),
-										})
-									}
-								/>
-								<DataPagination
-									labels={dataPaginationLabels()}
-									page={page}
-									totalPages={totalPages}
-									onPageChange={(next, options) =>
-										void navigate({
-											search: (prev) => ({ ...prev, page: next }),
-											replace: options?.replace,
-										})
-									}
-								/>
-							</div>
-						</div>
-					);
-				})()}
+			<DataTableFooter
+				page={page}
+				pageSize={limit}
+				total={data?.pagination.total ?? 0}
+				rangeLabel={(r) =>
+					(r.total === 1
+						? m.products_pagination_range_one
+						: m.products_pagination_range)(r)
+				}
+				labels={dataTableFooterLabels()}
+				onPageSizeChange={(size) =>
+					void navigate({
+						search: (prev) => ({ ...prev, limit: size, page: 1 }),
+					})
+				}
+				onPageChange={(next, options) =>
+					void navigate({
+						search: (prev) => ({ ...prev, page: next }),
+						replace: options?.replace,
+					})
+				}
+			/>
 		</div>
 	);
 }
