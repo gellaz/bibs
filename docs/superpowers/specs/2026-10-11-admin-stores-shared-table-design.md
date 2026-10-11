@@ -14,12 +14,17 @@
 
 | | Seller | Admin |
 |---|---|---|
-| Layout | `flex h-full flex-col`, tabella `flex-1 min-h-0 overflow-auto`, footer sempre visibile | `space-y-4`: scorre la pagina, footer sotto la piega |
 | Shell | header sticky con blur, contenuto `flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip p-4` | header statico, contenuto `flex-1 p-4` |
+| Padding celle | default `px-3` (orders, products, promotions) | `pl-6`/`pr-6` su prima e ultima colonna; in sellers e CRUD header `pl-4` e celle `pl-6` non allineati |
 | Titolo | `<h1>` inline, `font-display font-semibold tracking-tight` | `PageHeader`, `text-2xl font-bold` |
 | Ordinamento | `SortableHeader` (maiuscoletto) | `CategoryCrudPanel` (5 tab di Configurazioni) usa ancora `SortableHeadButton` |
 | Ricerca | `InputGroup` con icona e «cancella» | `<Input>` nudo nel CRUD e in `billing/subscriptions` |
 | Tabella | sempre `DataTable` | `billing/subscriptions` disegna `<Table>` a mano, con `Spinner` ed `EmptyState` fuori tabella |
+
+**Scorrimento: identico.** Verificato nel browser (seller `/products`, 32 righe, finestra 900 px:
+documento 2042 px). In entrambe le app scorre la finestra: lo `SidebarProvider` è `min-h-svh`,
+quindi `h-full` delle liste seller e `flex-1 min-h-0 overflow-auto` sul `DataTable` non hanno
+effetto. Il kit non cambia lo scorrimento; quelle classi seller restano (inerti, fuori scope).
 
 Duplicazione: il footer di paginazione (~40 righe) è copiato in ~10 pagine; ricerca con debounce
 sincronizzata con l'URL (input + `useDebouncedValue` + due `useEffect`, ~30 righe) in 4.
@@ -96,21 +101,17 @@ attuale con `shrink-0`. Le chiavi `*_pagination_range(_one)` restano per entità
 `dataTableFooterLabels()` si aggiunge a `lib/ui-labels.ts` di admin e seller accanto a
 `dataPaginationLabels()`.
 
-### Convenzione di layout delle liste
-
-Pagina: `flex h-full min-w-0 flex-col gap-4`; figli non-tabella `shrink-0`; `DataTable` con
-`containerClassName="flex-1 min-h-0 min-w-0 overflow-auto"`. È già la forma seller: resta
-classi inline, niente componente. Da verificare nel browser che la tabella scorra davvero al
-suo interno (lo `SidebarInset` è `min-h-svh`, non `h-svh`); se non scorre, si corregge la shell
-**una volta** per entrambe le app.
-
 ### Migrazioni
 
-- **Shell admin** (`routes/_authenticated.tsx`): header e wrapper del contenuto come seller.
-  Breadcrumb admin resta statica.
-- **Admin users, sellers**: `PageHeader`, `SearchInput`, `DataTableFooter`, layout lista.
+- **Shell admin** (`routes/_authenticated.tsx`): header sticky con blur e wrapper del contenuto
+  come seller. Breadcrumb admin resta statica.
+- **Padding**: via gli override `pl-4`/`pl-6`/`pr-6` di prima e ultima colonna (admin users,
+  sellers, CRUD, holidays; seller team): tutte le tabelle col `px-3` di default.
+- **Admin users, sellers**: `PageHeader`, `SearchInput`, `DataTableFooter`.
 - **`CategoryCrudPanel`**: `SortableHeader` + `manualSorting` (stato locale → `SortingState`),
-  `SearchInput`, `DataTableFooter`, `EmptyState` al posto del vuoto fatto a mano, layout lista.
+  `SearchInput`, `DataTableFooter`, `EmptyState` al posto del vuoto fatto a mano (via `emptyIcon`
+  dalle 5 config: l'icona di `EmptyState` è fissata per variante). Il testo del range resta
+  `labels.total(n)`.
 - **`billing/subscriptions`**: passa a `DataTable` (colonne + `TableColumnsToggle`), due
   `SearchInput` a state locale (email venditore, nome negozio), `DataTableFooter`. Oggi interroga
   a ogni tasto: col debounce smette.
@@ -133,8 +134,8 @@ Breadcrumb dinamica admin; tabelle a mano in `csv-import-dialog` (admin), `billi
   «cancella» svuota) e `DataTableFooter` (range `21–40 di 45`, nulla con `total=0`).
 - Seller: diff dell'`outerHTML` prima/dopo sulle 4 liste (senza `data-tsd-source`): deve
   cambiare solo ciò che il kit uniforma, motivato riga per riga.
-- Admin: Chrome DevTools MCP su users, sellers, Configurazioni (una tab), Abbonamenti — footer
-  visibile con 100 righe, ordinamento, ricerca, vuoto, dark mode.
+- Admin: Chrome DevTools MCP su users, sellers, Configurazioni (una tab), Abbonamenti —
+  ordinamento, ricerca, back/forward con ricerca nell'URL, vuoto, dark mode.
 - `bun run typecheck`, `bun run lint`, `bun run test`; smoke manuale di Marco prima della PR.
 
 ## PR 2 — Negozi in admin
@@ -184,11 +185,11 @@ ordinamento; parità `counts[status] === list(status).pagination.total` per ogni
 
 Search params: `page`, `limit`, `q`, `status`, `sort`, `order` (come users/sellers).
 
-- `PageHeader` → `SearchInput` → `TabNav` con conteggi: Tutti · Attivi · Insoluti · Sospesi ·
-  Senza abbonamento · Eliminati.
+- `PageHeader` → `SearchInput` → `TabNav` con conteggi: Tutti · Attivi · Rinnovo fallito ·
+  Sospesi · Senza abbonamento · Eliminati («Rinnovo fallito» come il badge `billing_status_past_due`).
 - Colonne: **Negozio** (link) · **Venditore** (link) · Categoria · Comune (`Bologna (BO)`) ·
   **Abbonamento** (`subscriptionStatusBadge`, «—» se null) · Creato il · toggle colonne.
-  Ordinabili: Negozio, Creato il. In tab Eliminati, colonna «Eliminato il» al posto di «Creato il».
+  Ordinabili: Negozio, Creato il. In tab Eliminati in più la colonna «Eliminato il» (non ordinabile).
 - `EmptyState`: vuoto senza filtri (`hideHeaderWhenEmpty`), «nessun risultato» con ricerca.
 - `DataTableFooter`; `storageKey="admin.stores.columns"`.
 - Messaggi `stores_*` in `apps/admin/messages/{it,en}.json`; `placeholder_stores_description`
