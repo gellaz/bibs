@@ -277,3 +277,41 @@ export const StoreFacetsSchema = t.Object({
 		}),
 	),
 });
+
+export const AdminStoreListItemSchema = t.Object(
+	{
+		id: t.String({ description: "ID del negozio" }),
+		name: t.String({ description: "Nome del negozio" }),
+		sellerProfileId: t.String({
+			description: "ID del profilo venditore titolare",
+		}),
+		businessName: t.Nullable(
+			t.String({ description: "Ragione sociale del venditore" }),
+		),
+		categoryName: t.Nullable(
+			t.String({ description: "Categoria del negozio" }),
+		),
+		municipality: t.Object({
+			name: t.String({ description: "Nome del comune" }),
+			provinceAcronym: t.String({ description: "Sigla della provincia" }),
+		}),
+		subscriptionStatus: t.Nullable(
+			t.Union(
+				[
+					t.Literal("active"),
+					t.Literal("past_due"),
+					t.Literal("canceling"),
+					t.Literal("suspended"),
+					t.Literal("canceled"),
+				],
+				{ description: "Stato dell'abbonamento; null se mai sottoscritto" },
+			),
+		),
+		createdAt: t.Date({ description: "Data di creazione" }),
+		deletedAt: t.Nullable(t.Date({ description: "Data di eliminazione" })),
+	},
+	{
+		description:
+			"Negozio nella lista admin, con venditore, comune e stato dell'abbonamento",
+	},
+);
