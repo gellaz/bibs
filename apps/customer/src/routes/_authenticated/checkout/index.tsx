@@ -2,8 +2,7 @@ import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingBag } from "lucide-react";
-import { NoticePage } from "@/components/notice";
+import { EmptyPanel } from "@/components/empty-panel";
 import { NARROW_PAGE } from "@/components/page";
 import { useCart } from "@/features/cart/use-cart";
 import { buyableGroups } from "@/features/checkout/buyable";
@@ -46,16 +45,20 @@ function CheckoutChoicePage() {
 	const groups = buyableGroups(cart);
 	if (groups.length === 0)
 		return (
-			<NoticePage
-				icon={ShoppingBag}
-				title={m.cart_empty_title()}
-				description={m.cart_empty_description()}
-				action={
-					<Button asChild>
-						<Link to="/cart">{m.checkout_back_to_cart()}</Link>
-					</Button>
-				}
-			/>
+			<div className={`${NARROW_PAGE} space-y-8 py-8`}>
+				<h1 className="font-display font-semibold text-2xl text-foreground">
+					{m.checkout_choose_title()}
+				</h1>
+				<EmptyPanel
+					title={m.cart_empty_title()}
+					description={m.cart_empty_description()}
+					action={
+						<Button asChild className="min-h-11 sm:min-h-9">
+							<Link to="/cart">{m.checkout_back_to_cart()}</Link>
+						</Button>
+					}
+				/>
+			</div>
 		);
 
 	const { choice, complete } = resolveChoice(

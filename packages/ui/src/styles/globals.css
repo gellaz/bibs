@@ -49,6 +49,11 @@
 	--cobalt: oklch(0.55 0.19 256);
 	--cobalt-soft: oklch(0.95 0.05 256);
 	--cobalt-deep: oklch(0.42 0.19 256);
+	/* Quadrato dell'icona di EmptyState: l'accent del register. Cobalt qui
+	   (seller, admin); il customer lo riporta all'Ink nel proprio styles.css.
+	   Segue il dark da solo: punta a token che `.dark` ridefinisce. */
+	--empty-state-icon: var(--cobalt-soft);
+	--empty-state-icon-foreground: var(--cobalt-deep);
 	--brick: oklch(0.55 0.18 25);
 	--olive: oklch(0.62 0.1 135);
 	/* Warning amber — semantic state for caution-grade actions (disable, archive,

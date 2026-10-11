@@ -3,7 +3,8 @@ import { Skeleton } from "@bibs/ui/components/skeleton";
 import { DiscountedPrice } from "@bibs/ui/custom/discounted-price";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ShoppingBag, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
+import { EmptyPanel, exploreActions } from "@/components/empty-panel";
 import { NoticePage } from "@/components/notice";
 import { NARROW_PAGE } from "@/components/page";
 import { TileImage } from "@/components/tile";
@@ -44,18 +45,16 @@ function CartPage() {
 
 	if (!cart || cart.groups.length === 0)
 		return (
-			<NoticePage
-				icon={ShoppingBag}
-				title={m.cart_empty_title()}
-				description={m.cart_empty_description()}
-				action={
-					<Button asChild>
-						<Link to="/stores" search={{ q: undefined, categoryId: undefined }}>
-							{m.cart_empty_cta()}
-						</Link>
-					</Button>
-				}
-			/>
+			<div className={`${NARROW_PAGE} space-y-8 py-8`}>
+				<h1 className="font-display font-semibold text-2xl text-foreground">
+					{m.cart_title()}
+				</h1>
+				<EmptyPanel
+					title={m.cart_empty_title()}
+					description={m.cart_empty_description()}
+					{...exploreActions()}
+				/>
+			</div>
 		);
 
 	return (

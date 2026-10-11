@@ -3,7 +3,8 @@ import { Skeleton } from "@bibs/ui/components/skeleton";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, Sparkles, TriangleAlert } from "lucide-react";
+import { ChevronRight, TriangleAlert } from "lucide-react";
+import { EmptyPanel, exploreActions } from "@/components/empty-panel";
 import { Notice } from "@/components/notice";
 import { NARROW_PAGE } from "@/components/page";
 import { type PointRow, toPointRow } from "@/features/points/point-display";
@@ -78,20 +79,10 @@ function PointsPage() {
 							{m.points_history()}
 						</h2>
 						{rows.length === 0 ? (
-							<Notice
-								icon={Sparkles}
+							<EmptyPanel
 								title={m.points_empty_title()}
 								description={m.points_empty_description()}
-								action={
-									<Button asChild>
-										<Link
-											to="/stores"
-											search={{ q: undefined, categoryId: undefined }}
-										>
-											{m.cart_empty_cta()}
-										</Link>
-									</Button>
-								}
+								{...exploreActions()}
 							/>
 						) : (
 							// L'hover della riga segue gli angoli della lista senza

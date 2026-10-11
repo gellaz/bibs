@@ -4,9 +4,10 @@ import { formatPriceEur } from "@bibs/ui/custom/price";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, ReceiptText, TriangleAlert } from "lucide-react";
+import { ChevronRight, TriangleAlert } from "lucide-react";
+import { EmptyPanel, exploreActions } from "@/components/empty-panel";
 import { Notice } from "@/components/notice";
-import { NARROW_PAGE } from "@/components/page";
+import { PAGE_CONTAINER } from "@/components/page";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
 import {
@@ -26,6 +27,9 @@ export const Route = createFileRoute("/_authenticated/orders/")({
 });
 
 const TAB_TYPE = { reserved: "reserve_pickup", paid: "pay_pickup" } as const;
+// Sotto `lg` una card per riga; poi due (tre da `2xl`), così la riga dei dati
+// (numero · data · articoli · totale) non va mai a capo.
+const LIST_GRID = "grid gap-3 lg:grid-cols-2 2xl:grid-cols-3";
 const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
 const DATE_FMT: Intl.DateTimeFormatOptions = {
 	day: "numeric",
@@ -44,10 +48,13 @@ function OrdersPage() {
 	const pages = Math.ceil(total / ORDERS_PAGE_SIZE);
 
 	return (
-		<div className={`${NARROW_PAGE} space-y-6 py-8`}>
-			<h1 className="font-display font-semibold text-2xl text-foreground">
-				{m.orders_title()}
-			</h1>
+		<div className={`${PAGE_CONTAINER} space-y-6 py-8 sm:py-10`}>
+			<section className="space-y-1">
+				<h1 className="font-bold font-display text-2xl text-primary tracking-[-0.015em]">
+					{m.orders_title()}
+				</h1>
+				<p className="text-muted-foreground text-sm">{m.orders_subtitle()}</p>
+			</section>
 
 			<nav
 				className="flex gap-1 border-border border-b"
@@ -72,7 +79,7 @@ function OrdersPage() {
 			</nav>
 
 			{isPending ? (
-				<div className="space-y-3">
+				<div className={LIST_GRID}>
 					<Skeleton className="h-24 w-full" />
 					<Skeleton className="h-24 w-full" />
 				</div>
@@ -88,27 +95,17 @@ function OrdersPage() {
 					}
 				/>
 			) : orders.length === 0 ? (
-				<Notice
-					icon={ReceiptText}
+				<EmptyPanel
 					title={
 						tab === "reserved"
 							? m.orders_empty_reserved()
 							: m.orders_empty_paid()
 					}
 					description={m.orders_empty_description()}
-					action={
-						<Button asChild>
-							<Link
-								to="/stores"
-								search={{ q: undefined, categoryId: undefined }}
-							>
-								{m.cart_empty_cta()}
-							</Link>
-						</Button>
-					}
+					{...exploreActions()}
 				/>
 			) : (
-				<ul className="space-y-3">
+				<ul className={LIST_GRID}>
 					{orders.map((o) => {
 						const open =
 							o.type === "reserve_pickup" &&
@@ -120,11 +117,11 @@ function OrdersPage() {
 								<Link
 									to="/orders/$orderId"
 									params={{ orderId: o.id }}
-									className="flex items-center gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/50"
+									className="flex h-full items-center gap-3 rounded-xl border border-border p-4 transition-colors hover:bg-muted/50"
 								>
 									<span className="min-w-0 flex-1 space-y-1">
 										<span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-											<span className="font-display font-semibold text-foreground">
+											<span className="font-medium text-[0.9375rem] text-foreground leading-snug">
 												{o.store.name}
 											</span>
 											<OrderStatusBadge status={o.status} />

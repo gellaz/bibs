@@ -11,8 +11,8 @@ interface NoticeProps {
 }
 
 /**
- * Stato vuoto/errore on-brand (tono caldo + ink), senza l'accent cobalt del
- * register riservato a seller/admin.
+ * Stato di errore o di risorsa non trovata, on-brand (tono caldo + ink). I vuoti
+ * passano da `EmptyPanel`, lo stesso EmptyState del seller.
  */
 export function Notice({
 	icon: Icon,
