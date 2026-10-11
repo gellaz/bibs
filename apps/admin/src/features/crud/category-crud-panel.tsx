@@ -16,32 +16,31 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
-import { Input } from "@bibs/ui/components/input";
 import { toast } from "@bibs/ui/components/sonner";
-import { DataPagination } from "@bibs/ui/custom/data-pagination";
-import { DataTable } from "@bibs/ui/custom/data-table";
-import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
-import type { SortOrder } from "@bibs/ui/custom/sortable-table-head";
-import { SortableHeadButton } from "@bibs/ui/custom/sortable-table-head";
+import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
+import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
-import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { unwrap as unwrapResponse } from "@bibs/ui/lib/api-client";
 import { formatDate } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PencilIcon, SearchIcon, Trash2Icon, UploadIcon } from "lucide-react";
+import type { SortingState } from "@tanstack/react-table";
+import { PencilIcon, Trash2Icon, UploadIcon } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import {
 	CsvImportDialog,
 	type CsvImportResult,
 } from "@/features/csv-import/components/csv-import-dialog";
 import {
-	dataPaginationLabels,
+	dataTableFooterLabels,
 	tableColumnsToggleLabels,
 } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
 type SortByField = "name" | "createdAt";
+type SortOrder = "asc" | "desc";
 
 const EMPTY: never[] = [];
 
@@ -98,7 +97,6 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 	// Funzioni e non costanti: i testi vanno letti a ogni render, nella lingua
 	// corrente (anche in SSR).
 	extraColumns?: () => DataTableColumnDef<TEntity>[];
-	emptyIcon: ReactNode;
 
 	renderForm: (p: CrudFormProps<TForm>) => ReactNode;
 	editDefaults: (e: TEntity) => TForm;
@@ -141,7 +139,6 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 	const [page, setPage] = useState(1);
 	const [limit, setLimit] = useState(20);
 	const [search, setSearch] = useState("");
-	const debouncedSearch = useDebouncedValue(search, 300);
 	const [sortBy, setSortBy] = useState<SortByField>("name");
 	const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 	const [filterValues, setFilterValues] = useState<Record<string, string>>({});
@@ -150,11 +147,16 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 	const [importOpen, setImportOpen] = useState(false);
 	const [selected, setSelected] = useState<TEntity | null>(null);
 
-	const handleSort = (field: SortByField) => {
-		if (sortBy === field) {
-			setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+	const sorting: SortingState = [{ id: sortBy, desc: sortOrder === "desc" }];
+
+	const onSortingChange = (next: SortingState) => {
+		const head = next[0];
+		if (head) {
+			setSortBy(head.id as SortByField);
+			setSortOrder(head.desc ? "desc" : "asc");
 		} else {
-			setSortBy(field);
+			// Il terzo clic toglie l'ordinamento: torna al default (nome A→Z).
+			setSortBy("name");
 			setSortOrder("asc");
 		}
 		setPage(1);
@@ -176,7 +178,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			config.queryKeyBase,
 			page,
 			limit,
-			debouncedSearch,
+			search,
 			sortBy,
 			sortOrder,
 			activeFilters,
@@ -186,7 +188,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				config.list({
 					page,
 					limit,
-					...(debouncedSearch ? { search: debouncedSearch } : {}),
+					...(search ? { search } : {}),
 					sortBy,
 					sortOrder,
 					...activeFilters,
@@ -267,37 +269,27 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 	const columns = useMemo<DataTableColumnDef<TEntity>[]>(() => {
 		const nameCol: DataTableColumnDef<TEntity> = {
 			id: "name",
+			accessorFn: (row) => row.name,
 			enableHiding: false,
-			meta: {
-				menuLabel: m.common_name(),
-				headerClassName: "pl-4",
-				cellClassName: "pl-6 font-semibold",
-			},
-			header: () => (
-				<SortableHeadButton
-					active={sortBy === "name"}
-					sortOrder={sortOrder}
-					onSort={() => handleSort("name")}
-				>
-					{m.common_name()}
-				</SortableHeadButton>
+			enableSorting: true,
+			meta: { menuLabel: m.common_name(), cellClassName: "font-semibold" },
+			header: ({ column }) => (
+				<SortableHeader column={column}>{m.common_name()}</SortableHeader>
 			),
 			cell: ({ row }) => row.original.name,
 		};
 		const createdAtCol: DataTableColumnDef<TEntity> = {
 			id: "createdAt",
+			accessorFn: (row) => row.createdAt,
+			enableSorting: true,
 			meta: {
 				menuLabel: m.crud_column_created_at_menu(),
 				cellClassName: "text-muted-foreground text-sm",
 			},
-			header: () => (
-				<SortableHeadButton
-					active={sortBy === "createdAt"}
-					sortOrder={sortOrder}
-					onSort={() => handleSort("createdAt")}
-				>
+			header: ({ column }) => (
+				<SortableHeader column={column}>
 					{m.crud_column_created_at()}
-				</SortableHeadButton>
+				</SortableHeader>
 			),
 			cell: ({ row }) => formatDate(row.original.createdAt, { long: true }),
 		};
@@ -305,8 +297,8 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			id: "actions",
 			enableHiding: false,
 			meta: {
-				headerClassName: "pr-6 text-right",
-				cellClassName: "pr-6 text-right",
+				headerClassName: "text-right",
+				cellClassName: "text-right",
 			},
 			header: ({ table }) => (
 				<TableColumnsToggle
@@ -348,9 +340,10 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			createdAtCol,
 			actionsCol,
 		];
-	}, [sortBy, sortOrder, config]);
+	}, [config]);
 
 	const rows = data?.data ?? EMPTY;
+	const isFiltered = search.length > 0 || Object.keys(activeFilters).length > 0;
 
 	return (
 		<div className="space-y-4">
@@ -365,18 +358,17 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			)}
 
 			<div className="flex items-center gap-2">
-				<div className="relative flex-1">
-					<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-					<Input
-						placeholder={labels.searchPlaceholder}
-						value={search}
-						onChange={(e) => {
-							setSearch(e.target.value);
-							setPage(1);
-						}}
-						className="pl-9"
-					/>
-				</div>
+				<SearchInput
+					value={search}
+					onValueChange={(q) => {
+						setSearch(q);
+						setPage(1);
+					}}
+					placeholder={labels.searchPlaceholder}
+					aria-label={labels.searchPlaceholder}
+					clearLabel={m.common_clear_search()}
+					className="flex-1"
+				/>
 				{config.toolbarFilter?.({ values: filterValues, set: setFilterValue })}
 				{config.csvImport && (
 					<Button variant="outline" onClick={() => setImportOpen(true)}>
@@ -392,44 +384,32 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				storageKey={config.storageKey}
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				manualSorting={{ sorting, onSortingChange }}
+				hideHeaderWhenEmpty={!isFiltered}
 				emptyState={
-					<div className="flex flex-col items-center gap-2">
-						{config.emptyIcon}
-						<div>
-							<p className="text-muted-foreground font-medium">
-								{labels.empty.title}
-							</p>
-							<p className="text-muted-foreground/60 text-sm">
-								{labels.empty.subtitle}
-							</p>
-						</div>
-					</div>
+					isFiltered ? (
+						<EmptyState variant="no-results" title={m.common_no_results()} />
+					) : (
+						<EmptyState
+							title={labels.empty.title}
+							description={labels.empty.subtitle}
+						/>
+					)
 				}
 			/>
 
-			{data?.pagination && data.pagination.total > 0 && (
-				<div className="flex items-center justify-between">
-					<div className="text-muted-foreground text-sm">
-						{labels.total(data.pagination.total)}
-					</div>
-					<div className="flex items-center gap-4">
-						<PageSizeSelector
-							label={m.common_rows_per_page()}
-							pageSize={limit}
-							onPageSizeChange={(size) => {
-								setLimit(size);
-								setPage(1);
-							}}
-						/>
-						<DataPagination
-							labels={dataPaginationLabels()}
-							page={page}
-							totalPages={Math.ceil(data.pagination.total / limit)}
-							onPageChange={setPage}
-						/>
-					</div>
-				</div>
-			)}
+			<DataTableFooter
+				page={page}
+				pageSize={limit}
+				total={data?.pagination.total ?? 0}
+				rangeLabel={(r) => labels.total(r.total)}
+				labels={dataTableFooterLabels()}
+				onPageSizeChange={(size) => {
+					setLimit(size);
+					setPage(1);
+				}}
+				onPageChange={setPage}
+			/>
 
 			<Dialog open={createOpen} onOpenChange={onCreateOpenChange}>
 				<DialogContent>

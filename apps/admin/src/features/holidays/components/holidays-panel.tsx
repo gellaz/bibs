@@ -187,8 +187,8 @@ export function HolidaysPanel({
 				header: m.common_name(),
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-[30%] pl-4",
-					cellClassName: "pl-6 font-semibold",
+					headerClassName: "w-[30%]",
+					cellClassName: "font-semibold",
 				},
 				cell: ({ row }) => row.original.name,
 			},
@@ -223,8 +223,8 @@ export function HolidaysPanel({
 				id: "actions",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-[20%] pr-6 text-right",
-					cellClassName: "pr-6 text-right",
+					headerClassName: "w-[20%] text-right",
+					cellClassName: "text-right",
 				},
 				header: "",
 				cell: ({ row }) => (

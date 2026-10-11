@@ -1,4 +1,3 @@
-import { LayersIcon } from "lucide-react";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import { StoreMacroCategoryForm } from "@/features/store-macro-categories/components/store-macro-category-form";
 import type { StoreMacroCategoryFormData } from "@/features/store-macro-categories/schemas/store-macro-category";
@@ -37,8 +36,6 @@ export const storeMacroCategoriesConfig: CategoryCrudConfig<
 			.patch({ name: form.name }),
 	remove: (id) =>
 		api().admin["store-macro-categories"]({ macroCategoryId: id }).delete(),
-
-	emptyIcon: <LayersIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <StoreMacroCategoryForm {...p} />,
 	editDefaults: (e) => ({ name: e.name }),
