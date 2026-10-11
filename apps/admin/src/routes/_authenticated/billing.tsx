@@ -1,11 +1,11 @@
 import { Tabs, TabsList, TabsTrigger } from "@bibs/ui/components/tabs";
+import { PageHeader } from "@bibs/ui/custom/page-header";
 import {
 	createFileRoute,
 	Link,
 	Outlet,
 	useLocation,
 } from "@tanstack/react-router";
-import { PageHeader } from "@/components/page-header";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing")({

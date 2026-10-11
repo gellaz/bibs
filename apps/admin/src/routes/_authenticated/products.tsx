@@ -1,6 +1,6 @@
+import { PageHeader } from "@bibs/ui/custom/page-header";
 import { createFileRoute } from "@tanstack/react-router";
 import { PackageIcon } from "lucide-react";
-import { PageHeader } from "@/components/page-header";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products")({

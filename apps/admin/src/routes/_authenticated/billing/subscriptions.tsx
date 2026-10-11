@@ -1,27 +1,23 @@
 import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
-import { Input } from "@bibs/ui/components/input";
-import { Spinner } from "@bibs/ui/components/spinner";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@bibs/ui/components/table";
-import { DataPagination } from "@bibs/ui/custom/data-pagination";
+import { DataTable } from "@bibs/ui/custom/data-table";
+import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
-import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { SearchInput } from "@bibs/ui/custom/search-input";
+import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
+import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
 import { api } from "@/lib/api";
-import { dataPaginationLabels } from "@/lib/ui-labels";
+import {
+	dataTableFooterLabels,
+	tableColumnsToggleLabels,
+} from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing/subscriptions")({
@@ -37,6 +33,8 @@ function formatDate(d: Date | string): string {
 }
 
 function SubscriptionsPage() {
+	"use no memo";
+
 	const [sellerEmail, setSellerEmail] = useState("");
 	const [storeName, setStoreName] = useState("");
 	const [page, setPage] = useState(1);
@@ -59,128 +57,161 @@ function SubscriptionsPage() {
 	});
 
 	const total = data?.pagination.total ?? 0;
-	const totalPages = Math.max(1, Math.ceil(total / limit));
-	const offset = (page - 1) * limit;
 	const rows = data?.data ?? [];
 	const isFiltered = sellerEmail.length > 0 || storeName.length > 0;
 
+	type Row = (typeof rows)[number];
+
+	const columns: DataTableColumnDef<Row>[] = [
+		{
+			id: "seller",
+			header: m.billing_subs_col_seller(),
+			enableHiding: false,
+			cell: ({ row }) => row.original.sellerEmail,
+		},
+		{
+			id: "store",
+			header: m.billing_subs_col_store(),
+			meta: {
+				menuLabel: m.billing_subs_col_store(),
+				cellClassName: "font-semibold",
+			},
+			cell: ({ row }) => row.original.storeName,
+		},
+		{
+			id: "status",
+			header: m.common_status(),
+			meta: { menuLabel: m.common_status() },
+			cell: ({ row }) => {
+				const badge = subscriptionStatusBadge(row.original.status);
+				return <Badge variant={badge.variant}>{badge.label}</Badge>;
+			},
+		},
+		{
+			id: "fee",
+			header: m.billing_subs_col_fee(),
+			meta: {
+				menuLabel: m.billing_subs_col_fee(),
+				cellClassName: "tabular-nums",
+			},
+			cell: ({ row }) => formatPriceEur(row.original.feeAmountCents / 100),
+		},
+		{
+			id: "renewal",
+			header: m.billing_subs_col_renewal(),
+			meta: {
+				menuLabel: m.billing_subs_col_renewal(),
+				cellClassName: "text-muted-foreground text-sm",
+			},
+			cell: ({ row }) => formatDate(row.original.currentPeriodEnd),
+		},
+		{
+			id: "created",
+			header: m.billing_subs_col_created(),
+			meta: {
+				menuLabel: m.billing_subs_col_created(),
+				cellClassName: "text-muted-foreground text-sm",
+			},
+			cell: ({ row }) => formatDate(row.original.createdAt),
+		},
+		{
+			id: "toggle",
+			enableHiding: false,
+			meta: { headerClassName: "w-12 text-right" },
+			header: ({ table }) => (
+				<TableColumnsToggle
+					table={table}
+					labels={tableColumnsToggleLabels()}
+					align="end"
+				/>
+			),
+			cell: () => null,
+		},
+	];
+
+	const setFilter = (set: (v: string) => void) => (v: string) => {
+		set(v);
+		setPage(1);
+	};
+
 	return (
 		<div className="space-y-4">
-			<div className="flex gap-2">
-				<Input
-					placeholder={m.billing_subs_search_email()}
+			<div className="flex flex-wrap gap-2">
+				<SearchInput
 					value={sellerEmail}
-					onChange={(e) => {
-						setSellerEmail(e.target.value);
-						setPage(1);
-					}}
+					onValueChange={setFilter(setSellerEmail)}
+					placeholder={m.billing_subs_search_email()}
+					aria-label={m.billing_subs_search_email()}
+					clearLabel={m.common_clear_search()}
+					className="max-w-xs"
 				/>
-				<Input
-					placeholder={m.billing_subs_search_store()}
+				<SearchInput
 					value={storeName}
-					onChange={(e) => {
-						setStoreName(e.target.value);
-						setPage(1);
-					}}
+					onValueChange={setFilter(setStoreName)}
+					placeholder={m.billing_subs_search_store()}
+					aria-label={m.billing_subs_search_store()}
+					clearLabel={m.common_clear_search()}
+					className="max-w-xs"
 				/>
 			</div>
-			{isLoading ? (
-				<Spinner />
-			) : error ? (
+
+			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 rounded-lg border p-4">
 					<p className="text-sm">
 						{m.common_load_error_with_message({ message: error.message })}
 					</p>
 				</div>
-			) : rows.length === 0 ? (
-				isFiltered ? (
-					<EmptyState
-						variant="no-results"
-						title={m.common_no_results()}
-						description={m.billing_subs_no_results_description()}
-						action={
-							<Button
-								variant="outline"
-								onClick={() => {
-									setSellerEmail("");
-									setStoreName("");
-									setPage(1);
-								}}
-							>
-								{m.common_clear_search()}
-							</Button>
-						}
-					/>
-				) : (
-					<EmptyState
-						title={m.billing_subs_empty_title()}
-						description={m.billing_subs_empty_description()}
-					/>
-				)
-			) : (
-				<>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{m.billing_subs_col_seller()}</TableHead>
-								<TableHead>{m.billing_subs_col_store()}</TableHead>
-								<TableHead>{m.common_status()}</TableHead>
-								<TableHead>{m.billing_subs_col_fee()}</TableHead>
-								<TableHead>{m.billing_subs_col_renewal()}</TableHead>
-								<TableHead>{m.billing_subs_col_created()}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows.map((r) => {
-								const badge = subscriptionStatusBadge(r.status);
-								return (
-									<TableRow key={r.id}>
-										<TableCell>{r.sellerEmail}</TableCell>
-										<TableCell>{r.storeName}</TableCell>
-										<TableCell>
-											<Badge variant={badge.variant}>{badge.label}</Badge>
-										</TableCell>
-										<TableCell>
-											{formatPriceEur(r.feeAmountCents / 100)}
-										</TableCell>
-										<TableCell>{formatDate(r.currentPeriodEnd)}</TableCell>
-										<TableCell>{formatDate(r.createdAt)}</TableCell>
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
-					{total > 0 && (
-						<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
-							<p className="text-muted-foreground text-sm tabular-nums">
-								{(total === 1
-									? m.billing_subs_range_one
-									: m.billing_subs_range)({
-									start: offset + 1,
-									end: Math.min(page * limit, total),
-									total,
-								})}
-							</p>
-							<div className="flex items-center gap-4">
-								<PageSizeSelector
-									label={m.common_rows_per_page()}
-									pageSize={limit}
-									onPageSizeChange={(size) => {
-										setLimit(size);
+			)}
+
+			<DataTable
+				data={rows}
+				columns={columns}
+				storageKey="admin.billing.subscriptions.columns"
+				getRowId={(row) => row.id}
+				isLoading={isLoading}
+				hideHeaderWhenEmpty={!isFiltered}
+				emptyState={
+					isFiltered ? (
+						<EmptyState
+							variant="no-results"
+							title={m.common_no_results()}
+							description={m.billing_subs_no_results_description()}
+							action={
+								<Button
+									variant="outline"
+									onClick={() => {
+										setSellerEmail("");
+										setStoreName("");
 										setPage(1);
 									}}
-								/>
-								<DataPagination
-									labels={dataPaginationLabels()}
-									page={page}
-									totalPages={totalPages}
-									onPageChange={setPage}
-								/>
-							</div>
-						</div>
-					)}
-				</>
-			)}
+								>
+									{m.common_clear_search()}
+								</Button>
+							}
+						/>
+					) : (
+						<EmptyState
+							title={m.billing_subs_empty_title()}
+							description={m.billing_subs_empty_description()}
+						/>
+					)
+				}
+			/>
+
+			<DataTableFooter
+				page={page}
+				pageSize={limit}
+				total={total}
+				rangeLabel={(r) =>
+					(r.total === 1 ? m.billing_subs_range_one : m.billing_subs_range)(r)
+				}
+				labels={dataTableFooterLabels()}
+				onPageSizeChange={(size) => {
+					setLimit(size);
+					setPage(1);
+				}}
+				onPageChange={setPage}
+			/>
 		</div>
 	);
 }
