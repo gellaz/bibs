@@ -5,7 +5,6 @@ import {
 import { unwrap } from "@bibs/ui/lib/api-client";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
-import { TagsIcon } from "lucide-react";
 import { CategoryCharacteristicsButton } from "@/features/category-characteristics/components/category-characteristics-button";
 import type {
 	CategoryCrudConfig,
@@ -137,7 +136,6 @@ export const productCategoriesConfig: CategoryCrudConfig<
 		api().admin["product-categories"]({ productCategoryId: id }).delete(),
 
 	extraColumns: () => [macroColumn(), characteristicsColumn()],
-	emptyIcon: <TagsIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ConnectedProductCategoryForm {...p} />,
 	editDefaults: (e) => ({ name: e.name, macroCategoryId: e.macroCategoryId }),

@@ -4,7 +4,6 @@ import {
 } from "@bibs/ui/components/native-select";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
-import { ListChecksIcon } from "lucide-react";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import type { CsvImportResult } from "@/features/csv-import/components/csv-import-dialog";
 import { api } from "@/lib/api";
@@ -147,7 +146,6 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 			.delete({ confirmAffected: entity.valueCount }),
 
 	extraColumns,
-	emptyIcon: <ListChecksIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ProductCharacteristicForm {...p} />,
 	editDefaults: (e) => ({

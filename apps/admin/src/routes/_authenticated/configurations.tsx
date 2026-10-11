@@ -1,9 +1,9 @@
 import { CreateButton } from "@bibs/ui/custom/create-button";
+import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { PageHeader } from "@/components/page-header";
 import { CategoryCrudPanel } from "@/features/crud/category-crud-panel";
 import { HolidaysPanel } from "@/features/holidays/components/holidays-panel";
 import { productCategoriesConfig } from "@/features/product-categories/product-categories.config";

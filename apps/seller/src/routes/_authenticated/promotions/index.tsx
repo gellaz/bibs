@@ -8,10 +8,10 @@ import {
 } from "@bibs/ui/components/dropdown-menu";
 import { toast } from "@bibs/ui/components/sonner";
 import { CreateButton } from "@bibs/ui/custom/create-button";
-import { DataPagination } from "@bibs/ui/custom/data-pagination";
 import { DataTable } from "@bibs/ui/custom/data-table";
+import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
-import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
@@ -30,7 +30,7 @@ import {
 	usePauseDiscount,
 } from "@/features/promotions/hooks/use-discounts";
 import {
-	dataPaginationLabels,
+	dataTableFooterLabels,
 	tableColumnsToggleLabels,
 } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
@@ -262,19 +262,14 @@ function PromotionsListPage() {
 
 	return (
 		<div className="flex h-full min-w-0 flex-col gap-4">
-			<div className="flex shrink-0 items-center justify-between">
-				<div>
-					<h1 className="font-display text-2xl font-semibold tracking-tight">
-						{m.promotions_page_title()}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						{m.promotions_page_subtitle()}
-					</p>
-				</div>
+			<PageHeader
+				title={m.promotions_page_title()}
+				description={m.promotions_page_subtitle()}
+			>
 				<CreateButton asChild>
 					<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
 				</CreateButton>
-			</div>
+			</PageHeader>
 
 			<div className="shrink-0">
 				<PromotionStateTabs value={state} onChange={goToTab} />
@@ -315,53 +310,28 @@ function PromotionsListPage() {
 				}
 			/>
 
-			{data?.pagination &&
-				data.pagination.total > 0 &&
-				(() => {
-					const total = data.pagination.total;
-					const totalPages = Math.ceil(total / limit);
-					const rangeStart = (page - 1) * limit + 1;
-					const rangeEnd = Math.min(page * limit, total);
-					return (
-						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
-							<p className="text-muted-foreground text-sm tabular-nums">
-								{total === 1
-									? m.promotions_pagination_range_one({
-											start: rangeStart,
-											end: rangeEnd,
-											total,
-										})
-									: m.promotions_pagination_range({
-											start: rangeStart,
-											end: rangeEnd,
-											total,
-										})}
-							</p>
-							<div className="flex items-center gap-4">
-								<PageSizeSelector
-									label={m.common_rows_per_page()}
-									pageSize={limit}
-									onPageSizeChange={(size) =>
-										void navigate({
-											search: (prev) => ({ ...prev, limit: size, page: 1 }),
-										})
-									}
-								/>
-								<DataPagination
-									labels={dataPaginationLabels()}
-									page={page}
-									totalPages={totalPages}
-									onPageChange={(next, options) =>
-										void navigate({
-											search: (prev) => ({ ...prev, page: next }),
-											replace: options?.replace,
-										})
-									}
-								/>
-							</div>
-						</div>
-					);
-				})()}
+			<DataTableFooter
+				page={page}
+				pageSize={limit}
+				total={data?.pagination.total ?? 0}
+				rangeLabel={(r) =>
+					(r.total === 1
+						? m.promotions_pagination_range_one
+						: m.promotions_pagination_range)(r)
+				}
+				labels={dataTableFooterLabels()}
+				onPageSizeChange={(size) =>
+					void navigate({
+						search: (prev) => ({ ...prev, limit: size, page: 1 }),
+					})
+				}
+				onPageChange={(next, options) =>
+					void navigate({
+						search: (prev) => ({ ...prev, page: next }),
+						replace: options?.replace,
+					})
+				}
+			/>
 		</div>
 	);
 }

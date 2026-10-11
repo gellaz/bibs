@@ -8,12 +8,11 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
-import { Input } from "@bibs/ui/components/input";
 import { Switch } from "@bibs/ui/components/switch";
 import { DataTable } from "@bibs/ui/custom/data-table";
+import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TabNav } from "@bibs/ui/custom/tab-nav";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
-import { SearchIcon } from "lucide-react";
 import { useState } from "react";
 import {
 	type CharacteristicDataType,
@@ -82,7 +81,6 @@ export function CategoryCharacteristicsPanel({
 		{
 			id: "name",
 			header: m.characteristics_column_name(),
-			meta: { cellClassName: "pl-4", headerClassName: "pl-4" },
 			cell: ({ row }) => (
 				<div className="flex flex-col">
 					<span className="font-medium">{row.original.name}</span>
@@ -114,7 +112,7 @@ export function CategoryCharacteristicsPanel({
 		{
 			id: "required",
 			header: m.characteristics_column_required(),
-			meta: { cellClassName: "w-28 pr-4", headerClassName: "pr-4" },
+			meta: { cellClassName: "w-28" },
 			cell: ({ row }) => (
 				<Switch
 					checked={row.original.required}
@@ -156,15 +154,13 @@ export function CategoryCharacteristicsPanel({
 				label={m.characteristics_tabs_label()}
 			/>
 
-			<div className="relative">
-				<SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-				<Input
-					placeholder={m.characteristics_search()}
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="pl-9"
-				/>
-			</div>
+			<SearchInput
+				value={search}
+				onValueChange={setSearch}
+				placeholder={m.characteristics_search()}
+				aria-label={m.characteristics_search()}
+				clearLabel={m.common_clear_search()}
+			/>
 
 			<div className="min-h-0 flex-1 overflow-y-auto">
 				<DataTable

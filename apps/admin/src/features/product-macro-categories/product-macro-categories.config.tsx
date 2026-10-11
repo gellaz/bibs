@@ -1,5 +1,4 @@
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
-import { LayersIcon } from "lucide-react";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import { ProductMacroCategoryForm } from "@/features/product-macro-categories/components/product-macro-category-form";
 import type { ProductMacroCategoryFormData } from "@/features/product-macro-categories/schemas/product-macro-category";
@@ -54,7 +53,6 @@ export const productMacroCategoriesConfig: CategoryCrudConfig<
 		api().admin["product-macro-categories"]({ macroCategoryId: id }).delete(),
 
 	extraColumns: () => [vatColumn()],
-	emptyIcon: <LayersIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ProductMacroCategoryForm {...p} />,
 	editDefaults: (e) => ({ name: e.name, suggestedVatRate: e.suggestedVatRate }),

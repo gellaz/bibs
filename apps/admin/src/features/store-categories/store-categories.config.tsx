@@ -4,7 +4,6 @@ import {
 } from "@bibs/ui/components/native-select";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
-import { StoreIcon } from "lucide-react";
 import type {
 	CategoryCrudConfig,
 	CrudFormProps,
@@ -127,7 +126,6 @@ export const storeCategoriesConfig: CategoryCrudConfig<
 	remove: (id) => api().admin["store-categories"]({ categoryId: id }).delete(),
 
 	extraColumns: () => [macroColumn()],
-	emptyIcon: <StoreIcon className="text-muted-foreground/40 size-8" />,
 
 	renderForm: (p) => <ConnectedStoreCategoryForm {...p} />,
 	editDefaults: (e) => ({ name: e.name, macroCategoryId: e.macroCategoryId }),

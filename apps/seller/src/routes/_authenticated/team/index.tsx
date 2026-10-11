@@ -32,10 +32,10 @@ import {
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
-import { DataPagination } from "@bibs/ui/custom/data-pagination";
 import { DataTable } from "@bibs/ui/custom/data-table";
+import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
-import { PageSizeSelector } from "@bibs/ui/custom/page-size-selector";
+import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { formatDate } from "@bibs/ui/lib/date";
@@ -65,7 +65,7 @@ import { useStores } from "@/hooks/use-stores";
 import { api, unwrap } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import {
-	dataPaginationLabels,
+	dataTableFooterLabels,
 	tableColumnsToggleLabels,
 } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
@@ -553,10 +553,6 @@ function TeamPage() {
 		[invitationsData],
 	);
 
-	const totalPages = data?.pagination
-		? Math.ceil(data.pagination.total / limit)
-		: 0;
-
 	const owner = data?.owner ?? null;
 
 	const rows = useMemo<TeamRow[]>(() => {
@@ -600,8 +596,7 @@ function TeamPage() {
 				header: m.team_col_user(),
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-[30%] pl-6",
-					cellClassName: "pl-6",
+					headerClassName: "w-[30%]",
 				},
 				cell: ({ row }) => {
 					const r = row.original;
@@ -737,8 +732,8 @@ function TeamPage() {
 			id: "actions",
 			enableHiding: false,
 			meta: {
-				headerClassName: "w-[12%] pr-6 text-right",
-				cellClassName: "pr-6 text-right",
+				headerClassName: "w-[12%] text-right",
+				cellClassName: "text-right",
 			},
 			header: ({ table }) => (
 				<TableColumnsToggle
@@ -792,17 +787,12 @@ function TeamPage() {
 
 	return (
 		<div className="flex h-full min-w-0 flex-col gap-6">
-			<div className="flex shrink-0 items-center justify-between">
-				<div>
-					<h1 className="font-display text-2xl font-semibold tracking-tight">
-						{m.team_title()}
-					</h1>
-					<p className="text-muted-foreground text-sm">
-						{isOwner ? m.team_subtitle() : m.team_subtitle_readonly()}
-					</p>
-				</div>
+			<PageHeader
+				title={m.team_title()}
+				description={isOwner ? m.team_subtitle() : m.team_subtitle_readonly()}
+			>
 				{isOwner && <InviteEmployeeDialog />}
-			</div>
+			</PageHeader>
 
 			{error && (
 				<div className="bg-destructive/10 text-destructive border-destructive/20 shrink-0 rounded-lg border p-4">
@@ -849,53 +839,28 @@ function TeamPage() {
 				}
 			/>
 
-			{/* Stesso piede di /products. Range e totale contano solo i
-			    dipendenti: titolare e inviti stanno fuori dalla paginazione.
-			    Anche con `page` oltre l'ultima: DataPagination la riporta dentro. */}
-			{data?.pagination &&
-				(data.pagination.total > 0 || page > 1) &&
-				(() => {
-					const total = data.pagination.total;
-					const rangeStart = Math.min((page - 1) * limit + 1, total);
-					const rangeEnd = Math.min(page * limit, total);
-					return (
-						<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
-							<p className="text-muted-foreground text-sm tabular-nums">
-								{total === 1
-									? m.team_pagination_range_one({
-											start: rangeStart,
-											end: rangeEnd,
-											total,
-										})
-									: m.team_pagination_range({
-											start: rangeStart,
-											end: rangeEnd,
-											total,
-										})}
-							</p>
-							<div className="flex items-center gap-4">
-								<PageSizeSelector
-									label={m.common_rows_per_page()}
-									pageSize={limit}
-									onPageSizeChange={(size) =>
-										void navigate({ search: { page: 1, limit: size } })
-									}
-								/>
-								<DataPagination
-									labels={dataPaginationLabels()}
-									page={page}
-									totalPages={totalPages}
-									onPageChange={(p, options) =>
-										void navigate({
-											search: { page: p, limit },
-											replace: options?.replace,
-										})
-									}
-								/>
-							</div>
-						</div>
-					);
-				})()}
+			{/* Range e totale contano solo i dipendenti: titolare e inviti stanno
+			    fuori dalla paginazione. */}
+			<DataTableFooter
+				page={page}
+				pageSize={limit}
+				total={data?.pagination.total ?? 0}
+				rangeLabel={(r) =>
+					(r.total === 1
+						? m.team_pagination_range_one
+						: m.team_pagination_range)(r)
+				}
+				labels={dataTableFooterLabels()}
+				onPageSizeChange={(size) =>
+					void navigate({ search: { page: 1, limit: size } })
+				}
+				onPageChange={(next, options) =>
+					void navigate({
+						search: { page: next, limit },
+						replace: options?.replace,
+					})
+				}
+			/>
 		</div>
 	);
 }
