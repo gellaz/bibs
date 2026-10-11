@@ -1,4 +1,5 @@
 import type { DataPaginationLabels } from "@bibs/ui/custom/data-pagination";
+import type { DataTableFooterLabels } from "@bibs/ui/custom/data-table-footer";
 import type { TableColumnsToggleLabels } from "@bibs/ui/custom/table-columns-toggle";
 import { m } from "@/paraglide/messages";
 
@@ -10,6 +11,13 @@ export function dataPaginationLabels(): DataPaginationLabels {
 		previous: m.common_pagination_previous(),
 		next: m.common_pagination_next(),
 		page: (page) => m.common_pagination_page({ page }),
+	};
+}
+
+export function dataTableFooterLabels(): DataTableFooterLabels {
+	return {
+		rowsPerPage: m.common_rows_per_page(),
+		pagination: dataPaginationLabels(),
 	};
 }
 
