@@ -14,6 +14,7 @@ import { sellerChangesRoutes } from "./routes/seller-changes";
 import { sellersRoutes } from "./routes/sellers";
 import { storeCategoriesWriteRoutes } from "./routes/store-categories";
 import { storeMacroCategoriesWriteRoutes } from "./routes/store-macro-categories";
+import { storesRoutes } from "./routes/stores";
 
 export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.use(betterAuth)
@@ -45,6 +46,7 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				.use(productCharacteristicsRoutes)
 				.use(characteristicImportsRoutes)
 				.use(sellersRoutes)
+				.use(storesRoutes)
 				.use(sellerChangesRoutes)
 				.use(adminBillingRoutes),
 	);

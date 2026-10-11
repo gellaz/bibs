@@ -251,3 +251,50 @@ export const ProductDetailQuery = t.Object({
 		}),
 	),
 });
+
+/** Tab della lista negozi admin. `all` = negozi vivi; `deleted` = eliminati. */
+export const adminStoreStatuses = [
+	"all",
+	"active",
+	"past_due",
+	"suspended",
+	"none",
+	"deleted",
+] as const;
+export type AdminStoreStatus = (typeof adminStoreStatuses)[number];
+
+/**
+ * Pagination + tab/search/sort for the admin store list.
+ */
+export const StoreListQuery = t.Object({
+	...PaginationQuery.properties,
+	status: t.Optional(
+		t.Union(
+			adminStoreStatuses.map((s) => t.Literal(s)),
+			{
+				default: "all",
+				description:
+					"Tab: all (negozi vivi), active (abbonamento attivo o in cancellazione), past_due, suspended, none (senza abbonamento o cancellato), deleted (eliminati)",
+			},
+		),
+	),
+	search: t.Optional(
+		t.String({
+			maxLength: 100,
+			description:
+				"Ricerca testuale su nome negozio, ragione sociale del venditore o comune",
+		}),
+	),
+	sortBy: t.Optional(
+		t.Union([t.Literal("name"), t.Literal("createdAt")], {
+			default: "createdAt",
+			description: "Campo di ordinamento",
+		}),
+	),
+	sortOrder: t.Optional(
+		t.Union([t.Literal("asc"), t.Literal("desc")], {
+			default: "desc",
+			description: "Direzione di ordinamento",
+		}),
+	),
+});
