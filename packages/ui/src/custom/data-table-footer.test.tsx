@@ -42,8 +42,10 @@ describe("DataTableFooter", () => {
 		expect(html(1, 0)).toBe("");
 	});
 
-	it("nessun risultato oltre pagina 1: il piede resta per riportare la pagina dentro", () => {
-		expect(html(4, 0)).not.toBe("");
+	// Mentre la pagina successiva carica il totale è ancora 0: niente
+	// «0–0 di 0» al posto del piede.
+	it("totale 0 oltre pagina 1 (pagina in caricamento): niente piede", () => {
+		expect(html(4, 0)).toBe("");
 	});
 
 	it("passa le label a selettore e paginazione", () => {

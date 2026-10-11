@@ -32,8 +32,9 @@ export function DataTableFooter({
 	rangeLabel,
 	labels,
 }: DataTableFooterProps) {
-	// Con `page` oltre l'ultima resta visibile: DataPagination la riporta dentro.
-	if (total === 0 && page <= 1) return null;
+	// A 0 non c'è nulla da mostrare né da correggere: DataPagination riporta
+	// dentro una pagina fuori range solo quando il totale è arrivato.
+	if (total === 0) return null;
 
 	const totalPages = Math.ceil(total / pageSize);
 	const current = clampPage(page, totalPages);
