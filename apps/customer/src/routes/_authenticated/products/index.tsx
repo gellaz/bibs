@@ -7,8 +7,9 @@ import {
 	SheetTrigger,
 } from "@bibs/ui/components/sheet";
 import { createFileRoute } from "@tanstack/react-router";
-import { Compass, RotateCw, SlidersHorizontal } from "lucide-react";
+import { RotateCw, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
+import { EmptyPanel } from "@/components/empty-panel";
 import { Notice } from "@/components/notice";
 import { PAGE_CONTAINER } from "@/components/page";
 import { TileSkeleton } from "@/components/tile";
@@ -226,8 +227,8 @@ function ProductsPage() {
 			}
 		/>
 	) : products.length === 0 ? (
-		<Notice
-			icon={Compass}
+		<EmptyPanel
+			variant={hasQuery ? "no-results" : "empty"}
 			title={
 				hasQuery ? m.product_no_results_title() : m.product_explore_title()
 			}

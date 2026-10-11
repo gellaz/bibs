@@ -1,5 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
-import { Compass, LocateFixed, MapPin, RotateCw } from "lucide-react";
+import { LocateFixed, MapPin, RotateCw } from "lucide-react";
+import { EmptyPanel } from "@/components/empty-panel";
 import { Notice } from "@/components/notice";
 import { GRID, TileSkeleton } from "@/components/tile";
 import { ProductTile } from "@/features/catalog/product-tile";
@@ -73,8 +74,7 @@ export function NearbyProducts() {
 						}
 					/>
 				) : products.length === 0 ? (
-					<Notice
-						icon={Compass}
+					<EmptyPanel
 						title={m.discovery_empty_title()}
 						description={m.discovery_empty_description()}
 					/>

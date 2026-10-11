@@ -11,7 +11,7 @@ export const PAGE_CONTAINER =
 	"mx-auto w-full max-w-7xl px-4 sm:px-6 2xl:max-w-[110rem] 2xl:px-10";
 
 /**
- * Pagine-form e di account (ordini, profilo, carrello, checkout): la larghezza
+ * Pagine-form (carrello, checkout, punti, dettaglio ordine): la larghezza
  * la decide la riga di lettura, non lo schermo. La colonna resta stretta ma
  * parte dal bordo sinistro del container, sotto il logo, invece di galleggiare
  * al centro di una top bar più larga.

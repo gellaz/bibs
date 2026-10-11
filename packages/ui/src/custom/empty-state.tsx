@@ -41,7 +41,7 @@ export function EmptyState({
 		>
 			<div
 				aria-hidden
-				className="flex size-14 items-center justify-center rounded-xl bg-cobalt-soft text-cobalt-deep"
+				className="flex size-14 items-center justify-center rounded-xl bg-(--empty-state-icon) text-(--empty-state-icon-foreground)"
 			>
 				<Icon className="size-6" />
 			</div>

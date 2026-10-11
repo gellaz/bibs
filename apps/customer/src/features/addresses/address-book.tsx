@@ -1,7 +1,8 @@
 import { Button } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
-import { MapPinPlus, Plus, TriangleAlert } from "lucide-react";
+import { Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { EmptyPanel } from "@/components/empty-panel";
 import { Notice } from "@/components/notice";
 import { m } from "@/paraglide/messages";
 import { AddressCard } from "./address-card";
@@ -79,8 +80,7 @@ export function AddressBook() {
 						}
 					/>
 				) : showEmptyState ? (
-					<Notice
-						icon={MapPinPlus}
+					<EmptyPanel
 						title={m.addresses_empty_title()}
 						description={m.addresses_empty_description()}
 						action={

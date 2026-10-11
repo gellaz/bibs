@@ -7,13 +7,9 @@ import {
 	SheetTrigger,
 } from "@bibs/ui/components/sheet";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Compass,
-	Map as MapIcon,
-	RotateCw,
-	SlidersHorizontal,
-} from "lucide-react";
+import { RotateCw, SlidersHorizontal } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
+import { EmptyPanel } from "@/components/empty-panel";
 import { Notice } from "@/components/notice";
 import { PAGE_CONTAINER } from "@/components/page";
 import { TileSkeleton } from "@/components/tile";
@@ -245,8 +241,8 @@ function StoresPage() {
 			}
 		/>
 	) : stores.length === 0 ? (
-		<Notice
-			icon={Compass}
+		<EmptyPanel
+			variant={hasQuery ? "no-results" : "empty"}
 			title={hasQuery ? m.store_no_results_title() : m.store_explore_title()}
 			description={
 				hasQuery
@@ -306,8 +302,7 @@ function StoresPage() {
 			}
 		/>
 	) : mapAllUnmapped ? (
-		<Notice
-			icon={MapIcon}
+		<EmptyPanel
 			title={m.store_map_all_unmapped_title()}
 			description={m.store_map_all_unmapped_description()}
 			action={
@@ -321,8 +316,8 @@ function StoresPage() {
 			}
 		/>
 	) : mapEmpty ? (
-		<Notice
-			icon={MapIcon}
+		<EmptyPanel
+			variant={hasQuery ? "no-results" : "empty"}
 			title={hasQuery ? m.store_no_results_title() : m.store_explore_title()}
 			description={
 				hasQuery
