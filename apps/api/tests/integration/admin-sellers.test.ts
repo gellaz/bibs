@@ -337,11 +337,21 @@ describe("approveChange", () => {
 	for (const [changeType, changeData] of [
 		["vat", { vatNumber: 123 }],
 		["document", { documentNumber: "x" }],
+		// Richiesta salvata prima di documentType: non si applica.
+		[
+			"document",
+			{
+				documentNumber: "CA12345AB",
+				documentExpiry: "2030-01-01",
+				documentIssuedMunicipalityId: "m-1",
+			},
+		],
 		// Chiave dell'immagine senza URL (o viceversa): documento a metà.
 		[
 			"document",
 			{
-				documentNumber: "CA12345",
+				documentType: "identity_card",
+				documentNumber: "CA12345AB",
 				documentExpiry: "2030-01-01",
 				documentIssuedMunicipalityId: "m-1",
 				documentImageKey: "documents/x/y",
@@ -399,7 +409,8 @@ describe("approveChange", () => {
 			sellerProfileId: seller.profile.id,
 			changeType: "document",
 			changeData: {
-				documentNumber: "CA12345",
+				documentType: "passport",
+				documentNumber: "YA1234567",
 				documentExpiry: "2030-01-01",
 				documentIssuedMunicipalityId: municipality.id,
 			},
@@ -412,7 +423,8 @@ describe("approveChange", () => {
 			.select()
 			.from(sellerProfile)
 			.where(eq(sellerProfile.id, seller.profile.id));
-		expect(profile.documentNumber).toBe("CA12345");
+		expect(profile.documentNumber).toBe("YA1234567");
+		expect(profile.documentType).toBe("passport");
 	});
 
 	it("applies VAT side effects once and flips the change to approved", async () => {

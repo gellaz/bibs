@@ -6,6 +6,7 @@ import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
+import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
@@ -97,6 +98,7 @@ export async function updatePersonalInfo(params: PersonalInfoParams) {
 
 interface DocumentParams {
 	userId: string;
+	documentType: IdentityDocumentType;
 	documentNumber: string;
 	documentExpiry: string;
 	documentIssuedMunicipalityId: string;

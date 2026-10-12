@@ -9,6 +9,7 @@ import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
 } from "@/lib/municipality";
+import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import {
 	getDefaultPaymentMethod,
 	toOnlinePayments,
@@ -134,6 +135,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 				residenceMunicipality: null,
 				residenceAddress: null,
 				residenceZipCode: null,
+				documentType: null,
 				documentNumber: null,
 				documentExpiry: null,
 				documentIssuedMunicipalityId: null,
@@ -328,6 +330,7 @@ export async function requestVatChange(params: VatChangeParams) {
 
 interface DocumentChangeParams {
 	sellerProfileId: string;
+	documentType: IdentityDocumentType;
 	documentNumber: string;
 	documentExpiry: string;
 	documentIssuedMunicipalityId: string;

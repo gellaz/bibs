@@ -518,6 +518,7 @@ export async function approveChange(changeId: string, adminUserId: string) {
 			await tx
 				.update(sellerProfile)
 				.set({
+					documentType: doc.documentType,
 					documentNumber: doc.documentNumber,
 					documentExpiry: doc.documentExpiry,
 					documentIssuedMunicipalityId: doc.documentIssuedMunicipalityId,

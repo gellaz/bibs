@@ -40,6 +40,7 @@ const SCHEMA_ERRORS: Record<string, () => string> = {
 		m.validation_schema_residence_municipality,
 	"L'indirizzo di residenza è obbligatorio":
 		m.validation_schema_residence_address,
+	"Seleziona il tipo di documento": m.validation_schema_document_type,
 	"Il numero del documento deve avere tra 5 e 20 caratteri":
 		m.validation_schema_document_number,
 	"Il comune di emissione è obbligatorio":

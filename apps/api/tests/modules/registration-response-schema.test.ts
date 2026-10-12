@@ -55,6 +55,7 @@ const rawSellerProfile = {
 	residenceMunicipalityId: null,
 	residenceAddress: null,
 	residenceZipCode: null,
+	documentType: null,
 	documentNumber: null,
 	documentExpiry: null,
 	documentIssuedMunicipalityId: null,

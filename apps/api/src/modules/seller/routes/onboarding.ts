@@ -71,6 +71,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			const pino = getLogger(store);
 			const data = await updateDocument({
 				userId: user.id,
+				documentType: body.documentType,
 				documentNumber: body.documentNumber,
 				documentExpiry: body.documentExpiry,
 				documentIssuedMunicipalityId: body.documentIssuedMunicipalityId,
@@ -89,7 +90,7 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 				...DocumentBody.properties,
 				documentImage: t.File({
 					type: "image",
-					description: "Foto della carta d'identità",
+					description: "Foto del documento d'identità",
 				}),
 			}),
 			response: withErrors({ 200: okRes(SellerProfileSchema) }),

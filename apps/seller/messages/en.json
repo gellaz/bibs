@@ -999,6 +999,7 @@
 	"validation_schema_residence_address": "Residential address is required",
 	"validation_schema_document_number": "Document number must be between 5 and 20 characters",
 	"validation_schema_document_municipality": "Issuing municipality is required",
+	"validation_schema_document_type": "Select the document type",
 	"validation_schema_business_name": "Business name is required",
 	"validation_schema_vat_number": "VAT number must be 11 digits",
 	"validation_schema_legal_form": "Legal form is required"

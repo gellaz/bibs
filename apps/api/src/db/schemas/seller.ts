@@ -9,6 +9,7 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { IDENTITY_DOCUMENT_TYPES } from "../../lib/schemas/forms/identity-document";
 import { user } from "./auth";
 import { storeEmployee } from "./employee";
 import { employeeInvitation } from "./employee-invitation";
@@ -58,6 +59,7 @@ export const sellerProfile = pgTable(
 		residenceZipCode: text("residence_zip_code"),
 
 		// ── Documento identità ────────────────────
+		documentType: text("document_type", { enum: IDENTITY_DOCUMENT_TYPES }),
 		documentNumber: text("document_number"),
 		documentExpiry: date("document_expiry", { mode: "string" }),
 		documentIssuedMunicipalityId: text(
@@ -88,6 +90,10 @@ export const sellerProfile = pgTable(
 		check(
 			"seller_profile_onboarding_status_valid",
 			sql`${table.onboardingStatus} IN ('pending_email','pending_personal','pending_document','pending_company','pending_review','active','rejected')`,
+		),
+		check(
+			"seller_profile_document_type_valid",
+			sql`${table.documentType} IN ('identity_card','driving_license','passport')`,
 		),
 	],
 );

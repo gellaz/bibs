@@ -221,6 +221,16 @@ export const SellerProfileSchema = t.Object({
 	residenceMunicipality: t.Nullable(MunicipalityCompactSchema),
 	residenceAddress: t.Nullable(t.String()),
 	residenceZipCode: t.Nullable(t.String()),
+	documentType: t.Nullable(
+		t.Union(
+			[
+				t.Literal("identity_card"),
+				t.Literal("driving_license"),
+				t.Literal("passport"),
+			],
+			{ description: "Tipo di documento d'identità" },
+		),
+	),
 	documentNumber: t.Nullable(t.String()),
 	documentExpiry: t.Nullable(
 		t.String({ description: "Scadenza documento (YYYY-MM-DD)" }),

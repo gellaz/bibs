@@ -999,6 +999,7 @@
 	"validation_schema_residence_address": "L'indirizzo di residenza è obbligatorio",
 	"validation_schema_document_number": "Il numero del documento deve avere tra 5 e 20 caratteri",
 	"validation_schema_document_municipality": "Il comune di emissione è obbligatorio",
+	"validation_schema_document_type": "Seleziona il tipo di documento",
 	"validation_schema_business_name": "La ragione sociale è obbligatoria",
 	"validation_schema_vat_number": "La partita IVA deve essere di 11 cifre",
 	"validation_schema_legal_form": "La forma giuridica è obbligatoria"

@@ -70,6 +70,7 @@ async function seedSellerWithEmployee() {
 			birthDate: "1980-01-01",
 			residenceAddress: "Via Segreta 42",
 			residenceZipCode: "00100",
+			documentType: "identity_card",
 			documentNumber: "CA12345AB",
 			documentExpiry: "2030-01-01",
 			documentImageUrl: "https://example.com/doc.jpg",
@@ -116,6 +117,7 @@ describe("getSellerSettings — owner vs employee PII exposure", () => {
 		});
 
 		expect(result.profile.documentNumber).toBe("CA12345AB");
+		expect(result.profile.documentType).toBe("identity_card");
 		expect(result.profile.documentImageUrl).toBe("https://example.com/doc.jpg");
 		expect(result.profile.birthDate).toBe("1980-01-01");
 		expect(result.profile.firstName).toBe("Mario");
@@ -142,6 +144,7 @@ describe("getSellerSettings — owner vs employee PII exposure", () => {
 
 		// Owner identity-document PII must not leak to employees.
 		expect(result.profile.documentNumber).toBeNull();
+		expect(result.profile.documentType).toBeNull();
 		expect(result.profile.documentImageUrl).toBeNull();
 		expect(result.profile.documentExpiry).toBeNull();
 		expect(result.profile.birthDate).toBeNull();
