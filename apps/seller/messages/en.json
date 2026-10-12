@@ -924,6 +924,8 @@
 	"auth_login_submit": "Sign in",
 	"auth_login_submitting": "Signing in...",
 	"auth_login_unverified": "You need to verify your email before signing in.",
+	"auth_login_email_verified": "Email confirmed! Sign in to continue your registration: we'll ask for your personal details, an ID document and your company details.",
+	"auth_login_verify_link_invalid": "This link is no longer valid. Sign in to request a new verification email.",
 	"auth_login_no_account": "Don't have an account? {link}",
 	"auth_have_account": "Already have an account? {link}",
 	"auth_resend_verification": "Resend verification email",

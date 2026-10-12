@@ -51,8 +51,9 @@ export function decideExistingUser(
 }
 
 function callbackURLForRole(role: "seller" | "customer"): string {
+	// verified=1: il login seller spiega che la registrazione continua.
 	return role === "seller"
-		? `${env.SELLER_APP_URL}/login`
+		? `${env.SELLER_APP_URL}/login?verified=1`
 		: `${env.CUSTOMER_APP_URL}/login`;
 }
 

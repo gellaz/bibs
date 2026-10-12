@@ -924,6 +924,8 @@
 	"auth_login_submit": "Accedi",
 	"auth_login_submitting": "Accesso in corso...",
 	"auth_login_unverified": "Devi verificare la tua email prima di accedere.",
+	"auth_login_email_verified": "Email confermata! Accedi per continuare la registrazione: ti chiederemo dati anagrafici, documento e dati dell'azienda.",
+	"auth_login_verify_link_invalid": "Il link non è più valido. Accedi e chiedi una nuova email di verifica.",
 	"auth_login_no_account": "Non hai un account? {link}",
 	"auth_have_account": "Hai già un account? {link}",
 	"auth_resend_verification": "Reinvia email di verifica",
