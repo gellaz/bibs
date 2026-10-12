@@ -621,7 +621,7 @@
 	"store_archived_title": "Archived stores",
 	"store_archived_description": "Deleted stores. Products, hours and images stay saved: you can reactivate a store with a new subscription.",
 	"store_archived_card_title": "Archive",
-	"store_archived_empty": "No archived stores.",
+	"store_archived_empty": "No archived stores",
 	"store_archived_created": "Created",
 	"store_archived_archived": "Archived",
 	"store_archived_reason": "Reason",

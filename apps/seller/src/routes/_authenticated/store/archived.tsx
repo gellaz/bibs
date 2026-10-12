@@ -16,6 +16,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@bibs/ui/components/table";
+import { EmptyState } from "@bibs/ui/custom/empty-state";
+import { PageHeader } from "@bibs/ui/custom/page-header";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -89,78 +91,77 @@ function ArchivedPage() {
 	});
 
 	return (
-		<div className="space-y-4">
-			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">
-					{m.store_archived_title()}
-				</h1>
-				<p className="text-muted-foreground text-sm">
-					{m.store_archived_description()}
-				</p>
-			</div>
-			<Card>
-				<CardHeader>
-					<CardTitle>{m.store_archived_card_title()}</CardTitle>
-				</CardHeader>
-				<CardContent>
-					{isLoading ? (
-						<Spinner />
-					) : !data || data.data.length === 0 ? (
-						<p className="text-muted-foreground text-sm">
-							{m.store_archived_empty()}
-						</p>
-					) : (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{m.common_name()}</TableHead>
-									<TableHead>{m.store_address()}</TableHead>
-									<TableHead>{m.store_archived_created()}</TableHead>
-									<TableHead>{m.store_archived_archived()}</TableHead>
-									<TableHead>{m.store_archived_reason()}</TableHead>
-									<TableHead className="w-28" />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{data.data.map((r) => (
-									<TableRow key={r.id}>
-										<TableCell>{r.name}</TableCell>
-										<TableCell>
-											{r.addressLine1}, {r.municipality.name}
-										</TableCell>
-										<TableCell>{formatDate(r.createdAt)}</TableCell>
-										<TableCell>
-											{r.deletedAt ? formatDate(r.deletedAt) : "—"}
-										</TableCell>
-										<TableCell>
-											<Badge variant="outline">
-												{r.cancelReason ? reasonLabel(r.cancelReason) : "—"}
-											</Badge>
-										</TableCell>
-										<TableCell className="text-right">
-											{r.subscriptionStatus === "canceled" && (
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() => reactivateMutation.mutate(r.id)}
-													disabled={reactivateMutation.isPending}
-												>
-													{reactivateMutation.isPending &&
-													reactivateMutation.variables === r.id ? (
-														<Spinner />
-													) : (
-														m.store_archived_reactivate()
-													)}
-												</Button>
-											)}
-										</TableCell>
+		<div className="flex h-full min-w-0 flex-col gap-4">
+			<PageHeader
+				title={m.store_archived_title()}
+				description={m.store_archived_description()}
+			/>
+			{!isLoading && !data?.data.length ? (
+				// Stesso contenitore del vuoto di DataTable (hideHeaderWhenEmpty).
+				<div className="bg-card flex flex-1 items-center justify-center rounded-lg border shadow-sm">
+					<EmptyState title={m.store_archived_empty()} />
+				</div>
+			) : (
+				<Card>
+					<CardHeader>
+						<CardTitle>{m.store_archived_card_title()}</CardTitle>
+					</CardHeader>
+					<CardContent>
+						{isLoading || !data ? (
+							<Spinner />
+						) : (
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>{m.common_name()}</TableHead>
+										<TableHead>{m.store_address()}</TableHead>
+										<TableHead>{m.store_archived_created()}</TableHead>
+										<TableHead>{m.store_archived_archived()}</TableHead>
+										<TableHead>{m.store_archived_reason()}</TableHead>
+										<TableHead className="w-28" />
 									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					)}
-				</CardContent>
-			</Card>
+								</TableHeader>
+								<TableBody>
+									{data.data.map((r) => (
+										<TableRow key={r.id}>
+											<TableCell>{r.name}</TableCell>
+											<TableCell>
+												{r.addressLine1}, {r.municipality.name}
+											</TableCell>
+											<TableCell>{formatDate(r.createdAt)}</TableCell>
+											<TableCell>
+												{r.deletedAt ? formatDate(r.deletedAt) : "—"}
+											</TableCell>
+											<TableCell>
+												<Badge variant="outline">
+													{r.cancelReason ? reasonLabel(r.cancelReason) : "—"}
+												</Badge>
+											</TableCell>
+											<TableCell className="text-right">
+												{r.subscriptionStatus === "canceled" && (
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() => reactivateMutation.mutate(r.id)}
+														disabled={reactivateMutation.isPending}
+													>
+														{reactivateMutation.isPending &&
+														reactivateMutation.variables === r.id ? (
+															<Spinner />
+														) : (
+															m.store_archived_reactivate()
+														)}
+													</Button>
+												)}
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
+						)}
+					</CardContent>
+				</Card>
+			)}
 		</div>
 	);
 }

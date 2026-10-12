@@ -17,6 +17,8 @@ import { UserAvatar } from "@bibs/ui/custom/user-avatar";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
+	ArchiveIcon,
+	CreditCardIcon,
 	LogOutIcon,
 	MoreHorizontalIcon,
 	UserIcon,
@@ -95,12 +97,26 @@ export function NavUser() {
 								</Link>
 							</DropdownMenuItem>
 							{isOwner && (
-								<DropdownMenuItem asChild>
-									<Link to="/team" search={{ page: 1, limit: 20 }}>
-										<UsersIcon />
-										<span>{m.shell_user_team()}</span>
-									</Link>
-								</DropdownMenuItem>
+								<>
+									<DropdownMenuItem asChild>
+										<Link to="/team" search={{ page: 1, limit: 20 }}>
+											<UsersIcon />
+											<span>{m.shell_user_team()}</span>
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<Link to="/billing">
+											<CreditCardIcon />
+											<span>{m.shell_nav_billing()}</span>
+										</Link>
+									</DropdownMenuItem>
+									<DropdownMenuItem asChild>
+										<Link to="/store/archived">
+											<ArchiveIcon />
+											<span>{m.shell_nav_archive()}</span>
+										</Link>
+									</DropdownMenuItem>
+								</>
 							)}
 						</DropdownMenuGroup>
 
@@ -117,6 +133,7 @@ export function NavUser() {
 						<DropdownMenuSeparator />
 
 						<DropdownMenuItem
+							variant="destructive"
 							onClick={() => {
 								void authClient
 									.signOut()

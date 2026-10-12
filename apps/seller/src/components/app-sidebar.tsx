@@ -13,9 +13,7 @@ import {
 } from "@bibs/ui/components/sidebar";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
-	ArchiveIcon,
 	BoxesIcon,
-	CreditCardIcon,
 	HomeIcon,
 	ReceiptIcon,
 	ScanLineIcon,
@@ -67,26 +65,12 @@ const navItems = [
 		icon: SettingsIcon,
 		match: (p: string) => p === "/store" || p.startsWith("/store/edit"),
 	},
-	{
-		title: m.shell_nav_archive,
-		to: "/store/archived" as const,
-		icon: ArchiveIcon,
-		match: (p: string) => p.startsWith("/store/archived"),
-		ownerOnly: true,
-	},
-	{
-		title: m.shell_nav_billing,
-		to: "/billing" as const,
-		icon: CreditCardIcon,
-		match: (p: string) => p.startsWith("/billing"),
-		ownerOnly: true,
-	},
 ];
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const isOwner = useIsOwner();
-	// Owner-only destinations (billing) are hidden from employees, mirroring the
+	// Owner-only destinations (promotions) are hidden from employees, mirroring the
 	// requireOwner guard the API enforces on those endpoints.
 	const visibleItems = navItems.filter(
 		(item) => isOwner || !("ownerOnly" in item),

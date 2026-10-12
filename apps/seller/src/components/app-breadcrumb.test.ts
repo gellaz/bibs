@@ -47,7 +47,7 @@ describe("buildCrumbs", () => {
 		).toEqual([
 			"Archivio",
 			"Chiusure",
-			"Billing",
+			"Fatturazione",
 			"Pagamento",
 			"Pagamenti",
 			"Ritorno",
