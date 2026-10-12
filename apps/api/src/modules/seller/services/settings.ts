@@ -15,6 +15,7 @@ import {
 	toOnlinePayments,
 } from "@/modules/billing/services/connect-account";
 import { getEmployeeAssignedStoreIds } from "./access";
+import { checkDocument } from "./document-check";
 import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
@@ -347,6 +348,7 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertActive(profile.onboardingStatus);
 	await assertNoPendingChange(sellerProfileId, "document");
+	const documentNumber = checkDocument(data);
 
 	// Upload new document image to S3 if provided
 	const { publicUrl, s3 } = await import("@/lib/s3");
@@ -364,7 +366,7 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 			.values({
 				sellerProfileId,
 				changeType: "document",
-				changeData: { ...data, ...imageData },
+				changeData: { ...data, documentNumber, ...imageData },
 			})
 			.returning();
 		return change;

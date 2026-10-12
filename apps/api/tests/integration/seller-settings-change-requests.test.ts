@@ -22,12 +22,24 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+mock.module("@/lib/s3", () => ({
+	s3: { write: mock(async () => {}), delete: mock(async () => {}) },
+	publicUrl: (key: string) => `https://cdn.test/${key}`,
+}));
+
 import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
-import { requestVatChange } from "@/modules/seller/services/settings";
+import {
+	requestDocumentChange,
+	requestVatChange,
+} from "@/modules/seller/services/settings";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestOrganization, createTestSeller } from "../helpers/fixtures";
+import {
+	createTestMunicipality,
+	createTestOrganization,
+	createTestSeller,
+} from "../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -91,5 +103,44 @@ describe("requestVatChange", () => {
 				vatNumber: "IT00000000003",
 			}),
 		).rejects.toMatchObject({ status: 409 });
+	});
+});
+
+describe("requestDocumentChange", () => {
+	it("salva il tipo e il numero normalizzato", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const municipality = await createTestMunicipality(db);
+
+		const change = await requestDocumentChange({
+			sellerProfileId: seller.profile.id,
+			documentType: "identity_card",
+			documentNumber: "ca 12345 ab",
+			documentExpiry: "2099-12-31",
+			documentIssuedMunicipalityId: municipality.id,
+		});
+
+		expect(change.changeData).toMatchObject({
+			documentType: "identity_card",
+			documentNumber: "CA12345AB",
+		});
+	});
+
+	it("rifiuta con 422 un documento scaduto e non salva la richiesta", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const municipality = await createTestMunicipality(db);
+
+		await expect(
+			requestDocumentChange({
+				sellerProfileId: seller.profile.id,
+				documentType: "identity_card",
+				documentNumber: "CA12345AB",
+				documentExpiry: "2020-01-01",
+				documentIssuedMunicipalityId: municipality.id,
+			}),
+		).rejects.toMatchObject({ status: 422 });
+
+		expect(await db.select().from(sellerProfileChange)).toEqual([]);
 	});
 });
