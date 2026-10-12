@@ -86,18 +86,28 @@ Un modulo puro in `apps/api/src/lib/schemas/forms/identity-document.ts`, riespor
 `forms/index.ts` (cioè da `@bibs/api/schemas`, già importato dal form seller):
 
 ```ts
-export const DOCUMENT_TYPES = ["identity_card", "driving_license", "passport"] as const;
-export type DocumentType = (typeof DOCUMENT_TYPES)[number];
+export const IDENTITY_DOCUMENT_TYPES = ["identity_card", "driving_license", "passport"] as const;
+// Non `DocumentType`: è già un'interfaccia globale del DOM.
+export type IdentityDocumentType = (typeof IDENTITY_DOCUMENT_TYPES)[number];
 
-/** Maiuscolo, senza spazi: «ca 12345 ab» → «CA12345AB». */
+/** Esempio per tipo: placeholder dell'input e messaggio d'errore. */
+export const DOCUMENT_NUMBER_EXAMPLES: Record<IdentityDocumentType, string>;
+
+/** Maiuscolo, solo lettere e cifre: «ca 12345-ab» → «CA12345AB». */
 export function normalizeDocumentNumber(value: string): string;
 
-/** Messaggio d'errore in italiano, o null se il numero è valido per il tipo. */
-export function documentNumberError(type: DocumentType, normalized: string): string | null;
+/** true se il numero (già normalizzato) ha un formato ammesso per il tipo. */
+export function isValidDocumentNumber(type: IdentityDocumentType, normalized: string): boolean;
 
-/** true se la scadenza (AAAA-MM-GG) è prima di `today` (AAAA-MM-GG, Europe/Rome). */
+/** true se la scadenza (AAAA-MM-GG) è prima di `today` (AAAA-MM-GG). */
 export function isDocumentExpired(expiry: string, today: string): boolean;
+
+/** Data di oggi a Roma, AAAA-MM-GG. */
+export function todayInRome(now?: Date): string;
 ```
+
+Il modulo restituisce booleani, non messaggi: l'API scrive i suoi in italiano (sono i 422), il
+seller usa i messaggi paraglide, quindi anche in inglese.
 
 Formati (sul numero normalizzato):
 
@@ -112,13 +122,12 @@ Formati (sul numero normalizzato):
   generazione. L'admin vede comunque la foto.
 - I formati vengono da fonti secondarie: commento `ponytail:` sopra i pattern («fonti non
   ufficiali; se un documento vero viene rifiutato, allarga il pattern»).
-- Messaggi: «Numero di carta d'identità non valido (es. CA12345AB)», «Numero di patente non
-  valido (es. U1T86I309C)», «Numero di passaporto non valido (es. YA1234567)»,
-  «Il documento è scaduto».
+- Messaggi: «Numero del documento non valido per il tipo scelto (es. CA12345AB)» (esempio del
+  tipo scelto), «Il documento è scaduto».
 - Scadenza: valido se `expiry >= today`; scade oggi = ancora valido. Confronto tra stringhe
   `AAAA-MM-GG`.
-- «Oggi» lato API: data Europe/Rome con `Intl.DateTimeFormat`, come `nowInRome` in
-  `lib/holidays/open-status.ts`; lato seller: la data locale del browser (il server ricontrolla).
+- «Oggi» = `todayInRome()` (`Intl.DateTimeFormat` con `timeZone: "Europe/Rome"`), lo stesso su
+  API e seller: vicino alla mezzanotte il form e il server non danno risposte diverse.
 
 **Dove si applicano.**
 - **API** — in `updateDocument` (`seller/services/onboarding.ts`) e nella richiesta di cambio
@@ -129,7 +138,8 @@ Formati (sul numero normalizzato):
   `setError` sul campo (`documentNumber` o `documentExpiry`), così compare sotto l'input come gli
   errori di schema. Il resolver TypeBox resta com'è.
 - L'approvazione admin di un cambio documento ricontrolla solo lo schema (come oggi): numero e
-  scadenza sono stati controllati alla richiesta.
+  scadenza sono stati controllati alla richiesta. `approveChange`
+  (`admin/services/sellers.ts`) applica i campi uno per uno: aggiungere `documentType`.
 
 ### 4. Form documento (seller)
 
