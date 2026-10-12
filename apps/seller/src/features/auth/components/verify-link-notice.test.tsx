@@ -30,6 +30,15 @@ describe("VerifyLinkNotice", () => {
 		expect(out).not.toContain("Email confermata");
 	});
 
+	// Il token scade dopo un'ora anche per chi ha già confermato l'email e
+	// riapre il link: il banner non deve dare per scontato che serva un reinvio.
+	it("con un errore non dà per scontato che l'email sia ancora da confermare", () => {
+		overwriteGetLocale(() => "it");
+		expect(text(<VerifyLinkNotice error="TOKEN_EXPIRED" />)).toContain(
+			"non è ancora confermata",
+		);
+	});
+
 	it("senza parametri non mostra niente", () => {
 		expect(renderToStaticMarkup(<VerifyLinkNotice />)).toBe("");
 	});
