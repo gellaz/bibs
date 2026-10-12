@@ -22,6 +22,12 @@ export const Route = createFileRoute("/_authenticated/sellers/$sellerId")({
 	component: SellerDetailPage,
 });
 
+const DOCUMENT_TYPE_LABEL = {
+	identity_card: m.sellers_document_type_identity_card,
+	driving_license: m.sellers_document_type_driving_license,
+	passport: m.sellers_document_type_passport,
+} as const;
+
 function SellerDetailPage() {
 	const { sellerId } = Route.useParams();
 	const moderation = useSellerModeration({
@@ -175,6 +181,14 @@ function SellerDetailPage() {
 						</Section>
 
 						<Section title={m.sellers_section_document()}>
+							<Field
+								label={m.sellers_document_type()}
+								value={
+									seller.documentType
+										? DOCUMENT_TYPE_LABEL[seller.documentType]()
+										: null
+								}
+							/>
 							<Field
 								label={m.sellers_document_number()}
 								value={seller.documentNumber}
