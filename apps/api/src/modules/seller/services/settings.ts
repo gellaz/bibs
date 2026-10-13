@@ -9,11 +9,13 @@ import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
 } from "@/lib/municipality";
+import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import {
 	getDefaultPaymentMethod,
 	toOnlinePayments,
 } from "@/modules/billing/services/connect-account";
 import { getEmployeeAssignedStoreIds } from "./access";
+import { checkDocument } from "./document-check";
 import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
@@ -134,6 +136,7 @@ export async function getSellerSettings(params: GetSellerSettingsParams) {
 				residenceMunicipality: null,
 				residenceAddress: null,
 				residenceZipCode: null,
+				documentType: null,
 				documentNumber: null,
 				documentExpiry: null,
 				documentIssuedMunicipalityId: null,
@@ -328,6 +331,7 @@ export async function requestVatChange(params: VatChangeParams) {
 
 interface DocumentChangeParams {
 	sellerProfileId: string;
+	documentType: IdentityDocumentType;
 	documentNumber: string;
 	documentExpiry: string;
 	documentIssuedMunicipalityId: string;
@@ -344,6 +348,7 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertActive(profile.onboardingStatus);
 	await assertNoPendingChange(sellerProfileId, "document");
+	const documentNumber = checkDocument(data);
 
 	// Upload new document image to S3 if provided
 	const { publicUrl, s3 } = await import("@/lib/s3");
@@ -361,7 +366,7 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 			.values({
 				sellerProfileId,
 				changeType: "document",
-				changeData: { ...data, ...imageData },
+				changeData: { ...data, documentNumber, ...imageData },
 			})
 			.returning();
 		return change;

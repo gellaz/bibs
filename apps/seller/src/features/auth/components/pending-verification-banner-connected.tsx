@@ -35,7 +35,7 @@ export function PendingVerificationBannerConnected({
 			// better-auth non lancia: un 429 o un 500 arrivano in `error`.
 			const { error } = await authClient.sendVerificationEmail({
 				email,
-				callbackURL: `${window.location.origin}/login`,
+				callbackURL: `${window.location.origin}/login?verified=1`,
 			});
 			if (error) {
 				toast.error(m.auth_generic_error());

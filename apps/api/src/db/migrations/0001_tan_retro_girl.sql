@@ -1,0 +1,2 @@
+ALTER TABLE "seller_profiles" ADD COLUMN "document_type" text;--> statement-breakpoint
+ALTER TABLE "seller_profiles" ADD CONSTRAINT "seller_profile_document_type_valid" CHECK ("seller_profiles"."document_type" IN ('identity_card','driving_license','passport'));

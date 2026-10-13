@@ -1,3 +1,5 @@
+import type { DocumentBody } from "@bibs/api/schemas";
+import type { Static } from "@sinclair/typebox";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
@@ -69,12 +71,7 @@ export function useUpdatePersonalInfo() {
  */
 export function useUpdateDocument() {
 	return useOnboardingMutation(
-		async (params: {
-			documentNumber: string;
-			documentExpiry: string;
-			documentIssuedMunicipalityId: string;
-			documentImage: File;
-		}) => {
+		async (params: Static<typeof DocumentBody> & { documentImage: File }) => {
 			const response = await api().seller.onboarding.document.patch(params);
 			return unwrap(response, m.onboarding_document_save_error());
 		},

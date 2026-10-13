@@ -62,10 +62,22 @@ export const PersonalInfoBody = Type.Object({
 // in the route definition since File is a server-only concept.
 
 export const DocumentBody = Type.Object({
+	// Literal espliciti: un Union da `.map()` diventa `never` nei tipi di Eden.
+	documentType: Type.Union(
+		[
+			Type.Literal("identity_card"),
+			Type.Literal("driving_license"),
+			Type.Literal("passport"),
+		],
+		{
+			description: "Tipo di documento d'identità",
+			error: "Seleziona il tipo di documento",
+		},
+	),
 	documentNumber: Type.String({
 		minLength: 5,
 		maxLength: 20,
-		description: "Numero carta d'identità",
+		description: "Numero del documento d'identità",
 		error: "Il numero del documento deve avere tra 5 e 20 caratteri",
 	}),
 	documentExpiry: Type.String({

@@ -161,6 +161,7 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 			const pino = getLogger(store);
 			const data = await requestDocumentChange({
 				sellerProfileId: sp.id,
+				documentType: ctx.body.documentType,
 				documentNumber: ctx.body.documentNumber,
 				documentExpiry: ctx.body.documentExpiry,
 				documentIssuedMunicipalityId: ctx.body.documentIssuedMunicipalityId,
@@ -180,7 +181,7 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 				documentImage: t.Optional(
 					t.File({
 						type: "image",
-						description: "Nuova foto della carta d'identità",
+						description: "Nuova foto del documento d'identità",
 					}),
 				),
 			}),

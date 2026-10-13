@@ -6,6 +6,8 @@ import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
+import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
+import { checkDocument } from "./document-check";
 import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
@@ -97,6 +99,7 @@ export async function updatePersonalInfo(params: PersonalInfoParams) {
 
 interface DocumentParams {
 	userId: string;
+	documentType: IdentityDocumentType;
 	documentNumber: string;
 	documentExpiry: string;
 	documentIssuedMunicipalityId: string;
@@ -112,6 +115,7 @@ export async function updateDocument(params: DocumentParams) {
 
 	if (!profile) throw new ServiceError(404, "Profilo venditore non trovato");
 	assertStatus(profile.onboardingStatus, "pending_document");
+	const documentNumber = checkDocument(data);
 
 	// Upload document image to S3
 	const key = `documents/${profile.id}/${crypto.randomUUID()}`;
@@ -122,6 +126,7 @@ export async function updateDocument(params: DocumentParams) {
 		.update(sellerProfile)
 		.set({
 			...data,
+			documentNumber,
 			documentImageKey: key,
 			documentImageUrl: url,
 			onboardingStatus: "pending_company",

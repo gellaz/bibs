@@ -77,6 +77,7 @@ export async function seedDevSeller() {
 			residenceMunicipalityId: milanoId,
 			residenceAddress: "Via Dev 1",
 			residenceZipCode: "20121",
+			documentType: "identity_card",
 			documentNumber: "AX0000001",
 			documentExpiry: "2030-12-31",
 			documentIssuedMunicipalityId: milanoId,

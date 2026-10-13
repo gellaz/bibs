@@ -7,6 +7,7 @@ import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { auth } from "@/lib/auth";
+import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import {
 	type AnyMunicipalityHandle,
 	BOLOGNA_BLOCK_START,
@@ -118,6 +119,7 @@ export interface SellerSeedData {
 		residenceMunicipalityHandle: AnyMunicipalityHandle | null;
 		residenceAddress: string | null;
 		residenceZipCode: string | null;
+		documentType: IdentityDocumentType | null;
 		documentNumber: string | null;
 		documentExpiry: string | null;
 		documentIssuedMunicipalityHandle: AnyMunicipalityHandle | null;
@@ -253,6 +255,12 @@ function generateSellersSeedData(): SellerSeedData[] {
 					residenceMunicipalityHandle: hasPersonal ? residenceHandle : null,
 					residenceAddress: hasPersonal ? `${street}, ${streetNum}` : null,
 					residenceZipCode: hasPersonal ? residenceZip : null,
+					// «AX» + 7 cifre è valido sia come carta d'identità sia come passaporto.
+					documentType: hasDocument
+						? idx % 2 === 0
+							? "identity_card"
+							: "passport"
+						: null,
 					documentNumber: hasDocument
 						? `AX${String(idx + 1).padStart(7, "0")}`
 						: null,
@@ -363,6 +371,7 @@ export async function seedSellers() {
 					: null,
 				residenceAddress: data.profileFields.residenceAddress,
 				residenceZipCode: data.profileFields.residenceZipCode,
+				documentType: data.profileFields.documentType,
 				documentNumber: data.profileFields.documentNumber,
 				documentExpiry: data.profileFields.documentExpiry,
 				documentIssuedMunicipalityId: data.profileFields

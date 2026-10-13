@@ -1,4 +1,13 @@
-import { DocumentBody } from "@bibs/api/schemas";
+import {
+	DOCUMENT_NUMBER_EXAMPLES,
+	DocumentBody,
+	IDENTITY_DOCUMENT_TYPES,
+	type IdentityDocumentType,
+	isDocumentExpired,
+	isValidDocumentNumber,
+	normalizeDocumentNumber,
+	todayInRome,
+} from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Dropzone,
@@ -12,12 +21,16 @@ import {
 	FieldLabel,
 } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
+import {
+	NativeSelect,
+	NativeSelectOption,
+} from "@bibs/ui/components/native-select";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { UploadIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import {
@@ -31,6 +44,12 @@ import { m } from "@/paraglide/messages";
 
 type DocumentFormData = Static<typeof DocumentBody>;
 const compiledSchema = TypeCompiler.Compile(DocumentBody);
+
+const DOCUMENT_TYPE_LABEL: Record<IdentityDocumentType, () => string> = {
+	identity_card: m.onboarding_document_type_identity_card,
+	driving_license: m.onboarding_document_type_driving_license,
+	passport: m.onboarding_document_type_passport,
+};
 
 export const Route = createFileRoute("/_authenticated/onboarding/document")({
 	loader: ({ context }) =>
@@ -50,27 +69,56 @@ function DocumentPage() {
 	const [apiError, setApiError] = useState("");
 	const [documentImage, setDocumentImage] = useState<File | null>(null);
 	const [fileError, setFileError] = useState("");
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+	// L'URL nasce e muore nell'effetto: con StrictMode un URL creato in render
+	// verrebbe revocato mentre è ancora a schermo.
+	useEffect(() => {
+		if (!documentImage) {
+			setPreviewUrl(null);
+			return;
+		}
+		const url = URL.createObjectURL(documentImage);
+		setPreviewUrl(url);
+		return () => URL.revokeObjectURL(url);
+	}, [documentImage]);
 
 	const {
 		register,
 		handleSubmit,
 		control,
+		setError,
+		watch,
 		formState: { errors, isSubmitting },
 	} = useForm<DocumentFormData>({
 		resolver: typeboxResolver(compiledSchema),
 	});
+	const documentType = watch("documentType");
 
 	const onSubmit: SubmitHandler<DocumentFormData> = async (data) => {
 		setApiError("");
+		// Gli stessi controlli dell'API, qui per avere l'errore sotto il campo.
+		const documentNumber = normalizeDocumentNumber(data.documentNumber);
+		let invalid = false;
+		if (!isValidDocumentNumber(data.documentType, documentNumber)) {
+			setError("documentNumber", {
+				message: m.onboarding_document_number_invalid({
+					example: DOCUMENT_NUMBER_EXAMPLES[data.documentType],
+				}),
+			});
+			invalid = true;
+		}
+		if (isDocumentExpired(data.documentExpiry, todayInRome())) {
+			setError("documentExpiry", { message: m.onboarding_document_expired() });
+			invalid = true;
+		}
 		if (!documentImage) {
 			setFileError(m.onboarding_document_photo_required());
-			return;
+			invalid = true;
 		}
+		if (invalid || !documentImage) return;
 		try {
-			await mutation.mutateAsync({
-				...data,
-				documentImage,
-			});
+			await mutation.mutateAsync({ ...data, documentNumber, documentImage });
 			void navigate({ to: "/onboarding/company" });
 		} catch (err) {
 			setApiError(
@@ -94,14 +142,38 @@ function DocumentPage() {
 					</div>
 				)}
 
+				<Field data-invalid={!!errors.documentType}>
+					<FieldLabel htmlFor="documentType">
+						{m.onboarding_document_type()}
+					</FieldLabel>
+					<NativeSelect
+						id="documentType"
+						className="w-full"
+						autoFocus
+						{...register("documentType")}
+					>
+						<NativeSelectOption value="">
+							{m.onboarding_document_type_placeholder()}
+						</NativeSelectOption>
+						{IDENTITY_DOCUMENT_TYPES.map((type) => (
+							<NativeSelectOption key={type} value={type}>
+								{DOCUMENT_TYPE_LABEL[type]()}
+							</NativeSelectOption>
+						))}
+					</NativeSelect>
+					<FieldError errors={[errors.documentType]} />
+				</Field>
+
 				<Field data-invalid={!!errors.documentNumber}>
 					<FieldLabel htmlFor="documentNumber">
 						{m.onboarding_document_number()}
 					</FieldLabel>
 					<Input
 						id="documentNumber"
-						placeholder="CA12345AB"
-						autoFocus
+						placeholder={
+							DOCUMENT_NUMBER_EXAMPLES[documentType] ??
+							DOCUMENT_NUMBER_EXAMPLES.identity_card
+						}
 						{...register("documentNumber")}
 					/>
 					<FieldError errors={[errors.documentNumber]} />
@@ -114,6 +186,7 @@ function DocumentPage() {
 					<Input
 						id="documentExpiry"
 						type="date"
+						min={todayInRome()}
 						{...register("documentExpiry")}
 					/>
 					<FieldError errors={[errors.documentExpiry]} />
@@ -159,9 +232,17 @@ function DocumentPage() {
 					>
 						<DropzoneContent>
 							<div className="flex flex-col items-center justify-center">
-								<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
-									<UploadIcon className="size-4" />
-								</div>
+								{previewUrl ? (
+									<img
+										src={previewUrl}
+										alt={m.onboarding_document_photo_preview_alt()}
+										className="max-h-48 w-auto rounded-md object-contain"
+									/>
+								) : (
+									<div className="flex size-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+										<UploadIcon className="size-4" />
+									</div>
+								)}
 								<p className="my-2 text-sm font-medium">
 									{m.onboarding_document_photo_uploaded()}
 								</p>

@@ -55,7 +55,8 @@ const COMPANY = {
 };
 
 const DOCUMENT = {
-	documentNumber: "CA12345",
+	documentType: "identity_card",
+	documentNumber: "CA12345AB",
 	documentExpiry: "2030-01-01",
 	documentIssuedMunicipalityId: "some-municipality",
 };

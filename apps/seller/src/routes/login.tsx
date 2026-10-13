@@ -8,19 +8,29 @@ import {
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { LoginForm } from "@/features/auth/components/login-form";
+import { VerifyLinkNotice } from "@/features/auth/components/verify-link-notice";
 import type { LoginFormData } from "@/features/auth/schemas/login";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-error";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
+const searchSchema = z.object({
+	// Dal link di verifica email (vedi VerifyLinkNotice).
+	verified: z.coerce.boolean().optional().catch(undefined),
+	error: z.string().optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/login")({
+	validateSearch: searchSchema,
 	component: LoginPage,
 });
 
 function LoginPage() {
 	const navigate = useNavigate();
+	const { verified, error: linkError } = Route.useSearch();
 	const [error, setError] = useState("");
 	const [emailNotVerified, setEmailNotVerified] = useState("");
 
@@ -73,6 +83,7 @@ function LoginPage() {
 					<CardDescription>{m.auth_login_description()}</CardDescription>
 				</CardHeader>
 				<CardContent>
+					<VerifyLinkNotice verified={verified} error={linkError} />
 					{emailNotVerified && (
 						<div className="mb-4 rounded-md bg-saffron/15 dark:bg-saffron/10 px-3 py-2 text-sm text-saffron-deep dark:text-saffron">
 							<p>{m.auth_login_unverified()}</p>
