@@ -24,7 +24,7 @@
 		"input-otp": "^1.5.0",
 		"lucide-react": "catalog:",
 		"next-themes": "^0.4.6",
-		"radix-ui": "^1.7.0",
+		"radix-ui": "^1.8.1",
 		"react-day-picker": "^9.14.0",
 		"react-dropzone": "^15.0.0",
 		"react-easy-crop": "catalog:",
@@ -37,8 +37,8 @@
 		"zod": "catalog:"
 	},
 	"peerDependencies": {
-		"react": "^19.3.0",
-		"react-dom": "^19.3.0"
+		"react": "^19.3.1",
+		"react-dom": "^19.3.1"
 	},
 	"devDependencies": {
 		"@tailwindcss/postcss": "catalog:",
