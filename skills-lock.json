@@ -23,7 +23,7 @@
 			"source": "Leonxlnx/taste-skill",
 			"sourceType": "github",
 			"skillPath": "skills/taste-skill/SKILL.md",
-			"computedHash": "6d838b246d0e35d0b53f4f23f98ba7a1dd561937e64f7d0c7553b0928e376c3e"
+			"computedHash": "18f81679d2b0247ce9da298b03ed8e47ecd3c206f2951d70eefb1b65d3219345"
 		},
 		"elysiajs": {
 			"source": "elysiajs/skills",
@@ -47,7 +47,7 @@
 			"source": "shadcn/ui",
 			"sourceType": "github",
 			"skillPath": "skills/shadcn/SKILL.md",
-			"computedHash": "da388f632cd83783c02967446e21941c9ee8291ccb43ba74c23f7d4e9b7c298c"
+			"computedHash": "b864a958765563321f485a96f4d59c0bb6539f4286ab6d8b8b66895b7ebd302d"
 		},
 		"tanstack-integration-best-practices": {
 			"source": "deckardger/tanstack-agent-skills",
