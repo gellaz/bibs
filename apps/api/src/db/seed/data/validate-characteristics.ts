@@ -13,7 +13,7 @@
  */
 
 const DATA_DIR = import.meta.dir;
-const EXPECTED_MATRIX_ROWS = 1773;
+const EXPECTED_MATRIX_ROWS = 1932;
 const DATA_TYPES = ["text", "number", "boolean", "enum"] as const;
 
 type DataType = (typeof DATA_TYPES)[number];

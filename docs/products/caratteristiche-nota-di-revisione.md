@@ -3,8 +3,8 @@
 **Data:** 2026-09-23
 **Fonte:** foglio `Mapping` (1952 righe `macro, sotto, caratteristica, Sì`) e foglio
 `Dizionario` (200 caratteristiche distinte), da `Categorie_caratteristiche.xlsx`.
-**Prodotto:** `apps/api/src/db/seed/data/product_characteristics.csv` (207 voci) e
-`apps/api/src/db/seed/data/product_category_characteristics.csv` (1773 righe).
+**Prodotto:** `apps/api/src/db/seed/data/product_characteristics.csv` (224 voci) e
+`apps/api/src/db/seed/data/product_category_characteristics.csv` (1932 righe).
 
 Questo documento **non elenca le caratteristiche** — quelle stanno nei due CSV.
 Contiene soltanto le decisioni che ho preso io e su cui si può non essere d'accordo.
@@ -130,12 +130,12 @@ interessate.
 ## 2. Liste di valori inventate
 
 **Tutte le liste enum sono inventate**: il foglio non contiene un solo valore
-ammesso. Sono 69 voci `enum` su 207. Le riporto qui solo dove la granularità è
+ammesso. Sono 77 voci `enum` su 224. Le riporto qui solo dove la granularità è
 opinabile; le restanti sono nomenclature standard che non lasciano margine
 (`Grado IP`, `Attacco lampadina`, `Classe energetica`, `Formato carta`,
 `Indice di velocità`, `Tipologia sensore`, `Layout` tastiera, e simili).
 
-### 2.1 `Colore` — 17 famiglie, su tutte e 179 le sotto-categorie
+### 2.1 `Colore` — 17 famiglie, su tutte e 190 le sotto-categorie
 
 `Nero|Bianco|Grigio|Argento|Oro|Beige|Marrone|Rosso|Rosa|Arancione|Giallo|Verde|Blu|Azzurro|Viola|Multicolore|Trasparente`
 
@@ -155,7 +155,7 @@ costruzioni non ha risposta.
 *Se la risposta è no:* portare `Colore` a `text` è una riga del dizionario, e
 costa il filtro colore su tutto il catalogo. La via di mezzo — `Colore` enum
 per la famiglia più un campo libero per la sfumatura — richiede una voce in più
-nel dizionario e una riga di matrice per ogni sotto-categoria, cioè 179 righe.
+nel dizionario e una riga di matrice per ogni sotto-categoria, cioè 190 righe.
 
 ### 2.2 `Materiale` — lasciata `text`, vedi §3
 
@@ -187,7 +187,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
 - **`Tonalità`** (3, make-up) — **contraddice l'indicazione ricevuta**, che la
   dava fra gli esempi di enum. Le tonalità dei cosmetici sono nomi di marca
   («Rossetto Rouge Allure 176»), a centinaia per prodotto: nessuna lista chiusa le
-  copre. Per di più `Colore` c'è già su tutti i 179, ed è lì che vive la famiglia
+  copre. Per di più `Colore` c'è già su tutti i 190, ed è lì che vive la famiglia
   cromatica — `Tonalità` è il nome commerciale della sfumatura, che è prosa.
   *Se va riportata a enum:* servono le famiglie `Nude|Rosa|Rosso|Bordeaux|Corallo|Pesca|Marrone|Beige|Bronzo|Oro|Argento|Nero`,
   accettando che duplichino `Colore`.
@@ -219,7 +219,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
 Tutti e quattro finiscono a `text`. Il motivo è lo stesso: la caratteristica
 attraversa domini che non hanno un vocabolario comune.
 
-### 3.1 `Materiale` — su tutte e 179 le sotto-categorie
+### 3.1 `Materiale` — su tutte e 190 le sotto-categorie
 
 Una lista chiusa dovrebbe contenere insieme `Cotone`, `Acciaio inox`, `Carta`,
 `Ceramica`, `Silicone`, `Vetro`, `Legno`, `Poliestere`, `Pelle`, `Alluminio`,
@@ -259,8 +259,8 @@ per i mouse, marche di macchina del caffè per le cialde. È intrinsecamente una
 lista di nomi di terze parti, che nessuna tassonomia nostra può chiudere.
 
 **Nota comune ai tre generici.** `Tipologia`, `Uso previsto` e `Compatibilità`
-insieme occupano 201 delle 1773 righe di matrice (l'11%) e sono il solo contenuto
-specifico di 60 sotto-categorie su 179. Sono il punto debole della fonte, non
+insieme occupano 201 delle 1932 righe di matrice (il 10%) e sono il solo contenuto
+specifico di 60 sotto-categorie su 190. Sono il punto debole della fonte, non
 della classificazione: vedi §4.1.
 
 ## 4. Applicabilità sospette
@@ -341,7 +341,7 @@ Dove c'era più di un'unità plausibile.
 
 | Voce | Unità scelta | Il dubbio |
 |---|---|---|
-| `Peso` (179) | **`g`** | Grammi vanno bene per alimentari, cosmetica e cartoleria, cioè per la maggior parte delle sotto-categorie. Su un divano diventano `45000`, che nessuno scrive e nessuno legge. L'alternativa `kg` ribalta il problema: 200 g di pasta diventano `0,2`. Non esiste un'unità giusta per un campo che sta su tutte e 179 le sotto-categorie; ho tenuto quella prescritta. *Se va cambiata:* una riga del dizionario. La vera soluzione sarebbe sdoppiare `Peso` in `Peso` (g, consumo) e `Peso spedizione` (kg), ma è una decisione di prodotto. |
+| `Peso` (190) | **`g`** | Grammi vanno bene per alimentari, cosmetica e cartoleria, cioè per la maggior parte delle sotto-categorie. Su un divano diventano `45000`, che nessuno scrive e nessuno legge. L'alternativa `kg` ribalta il problema: 200 g di pasta diventano `0,2`. Non esiste un'unità giusta per un campo che sta su tutte e 190 le sotto-categorie; ho tenuto quella prescritta. *Se va cambiata:* una riga del dizionario. La vera soluzione sarebbe sdoppiare `Peso` in `Peso` (g, consumo) e `Peso spedizione` (kg), ma è una decisione di prodotto. |
 | `Peso massimo`, `Peso prodotto`, `Peso massimo supportato`, `Portata massima` | `kg` | Qui il dominio è stretto (passeggini, bici, scrivanie) e i chili sono l'unità che si legge sulle etichette. Coesistono con `Peso` in grammi sulla stessa scheda: **la disomogeneità è visibile** e potrebbe confondere. |
 | `Larghezza`, `Altezza`, `Profondità`, `Altezza tacco` | `cm` | Millimetri sarebbero più precisi per il tacco, ma nessuno vende scarpe con un tacco da `85 mm`. |
 | `Lunghezza focale`, `Diametro filtro`, `Larghezza pneumatico` | `mm` | Qui è il contrario: sono nomenclature tecniche che esistono solo in millimetri (`50 mm`, `205`). |
@@ -354,9 +354,21 @@ Dove c'era più di un'unità plausibile.
 | `Luminosità` | `cd/m²` | Le schede tecniche usano anche «nit», che è la stessa cosa. `cd/m²` è la forma ufficiale. |
 | `Rapporto d'aspetto` (pneumatici) | `%` | È un rapporto adimensionale espresso in percentuale (`55` sta per 55%). |
 
-Le otto voci `number` **senza unità** sono conteggi, e sono tutte e sole:
+Le dieci voci `number` **senza unità** sono conteggi, e sono tutte e sole:
 `Numero porte`, `Numero tasti`, `Numero giocatori`, `Numero pezzi`,
-`Numero velocità`, `Numero ripiani/cassetti`, `Numero bruciatori`, `Velocità`.
+`Numero velocità`, `Numero ripiani/cassetti`, `Numero bruciatori`, `Velocità`, `Annata`, `Porzioni`.
+
+## 5 bis. Voci aggiunte dopo la revisione
+
+Le 11 sotto-categorie alimentari per tipo di negozio (`Pane e prodotti da forno`,
+`Carne`, `Salumi`, `Pesce`, `Formaggi e latticini`, `Vino`, `Birra`, `Liquori e
+distillati`, `Gelati`, `Piatti pronti`, `Olio e condimenti`) portano le 12
+caratteristiche universali e alimentari di `Pasta` più 30 specifiche, con 17 voci
+nuove nel dizionario (`Tipo di carne`, `Denominazione`, `Gradazione alcolica`,
+`Stagionatura`, `Porzioni`...); come sopra, gli enum sono liste nostre e le unità
+stanno solo sui `number`. `Macchine caffè` è stata corretta come da §4: via il blocco
+alimentare, dentro `Potenza`, `Larghezza`, `Altezza`, `Profondità` (già nel
+dizionario). Restano da decidere `Pressione` e `Capacità serbatoio`.
 
 ## 6. Come rileggere questi file
 
@@ -366,10 +378,10 @@ bun run apps/api/src/db/seed/data/validate-characteristics.ts
 
 Verifica nomi unici, coerenza di tipo/unità/opzioni, che ogni caratteristica
 della matrice esista nel dizionario e ogni coppia `(macro, sotto)` esista in
-`product_categories.csv`, le 1773 righe, `required` sempre `false`, l'assenza di
+`product_categories.csv`, le 1932 righe, `required` sempre `false`, l'assenza di
 `Marca`, e stampa i due istogrammi. Non tocca il database.
 
-Stato attuale: 207 voci — 69 `enum` (33,3%), 59 `number` (28,5%), 53 `text`
-(25,6%), 26 `boolean` (12,6%); 1773 righe di matrice, mediana 9 caratteristiche
+Stato attuale: 224 voci — 77 `enum` (34,4%), 63 `number` (28,1%), 58 `text`
+(25,9%), 26 `boolean` (11,6%); 1932 righe di matrice, mediana 10 caratteristiche
 per sotto-categoria, minimo 8 (69 sotto-categorie), massimo 20
 (`Custodie smartphone`, vedi §4.3).

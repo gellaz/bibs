@@ -206,3 +206,20 @@ Superficie cottura,number,cm²,
 Numero bruciatori,number,,
 Materiale griglia,enum,,Ghisa|Acciaio inox|Acciaio smaltato|Cromata
 Termometro,boolean,,
+Tipo di farina,text,,
+Tipo di carne,enum,,Bovino|Suino|Pollame|Agnello|Equino|Selvaggina
+Taglio,text,,
+Fresco o surgelato,enum,,Fresco|Surgelato|Decongelato
+Stagionatura,number,mesi,
+Denominazione,enum,,DOC|DOCG|IGT|DOP|IGP|STG|Nessuna
+Specie ittica,text,,
+Pescato o allevato,enum,,Pescato|Allevato
+Latte,enum,,Vaccino|Ovino|Caprino|Bufalino|Misto
+Tipo di vino,enum,,Rosso|Bianco|Rosato|Spumante|Passito
+Vitigno,text,,
+Annata,number,,
+Gradazione alcolica,number,% vol,
+Tipo di birra,enum,,Lager|Pils|IPA|Weiss|Stout|Ambrata
+Tipo di distillato,enum,,Grappa|Amaro|Limoncello|Gin|Whisky|Rum|Vodka|Brandy
+Gusto,text,,
+Porzioni,number,,
