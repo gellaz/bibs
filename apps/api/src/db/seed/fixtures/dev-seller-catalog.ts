@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, like } from "drizzle-orm";
+import { and, asc, eq, gt, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
@@ -14,6 +14,7 @@ import { storeCategory } from "@/db/schemas/store-category";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
+import { SEED_RESERVATION_DAYS, seedCustomerEmails } from "./utils";
 
 const DEV_EMAIL = "seller@dev.bibs";
 const MAIN_STORE = "Bottega Dev";
@@ -519,13 +520,13 @@ async function seedDevOrders(storeId: string, sellerProfileId: string) {
 		.orderBy(asc(product.ean));
 	const buyable = items.slice(0, 8);
 
+	const emails = seedCustomerEmails(DEV_ORDER_ENDS.length);
 	const customers = await db
-		.select({ id: customerProfile.id })
+		.select({ id: customerProfile.id, email: user.email })
 		.from(customerProfile)
 		.innerJoin(user, eq(user.id, customerProfile.userId))
-		.where(like(user.email, "customer%@test.com"))
-		.orderBy(asc(user.email))
-		.limit(DEV_ORDER_ENDS.length);
+		.where(inArray(user.email, emails));
+	customers.sort((a, b) => emails.indexOf(a.email) - emails.indexOf(b.email));
 	if (customers.length === 0 || buyable.length < 3) return 0;
 
 	for (const [i, end] of DEV_ORDER_ENDS.entries()) {
@@ -561,6 +562,18 @@ async function seedDevOrders(storeId: string, sellerProfileId: string) {
 			await expireReservations();
 		}
 	}
+	await db
+		.update(order)
+		.set({
+			reservationExpiresAt: new Date(Date.now() + SEED_RESERVATION_DAYS * DAY),
+		})
+		.where(
+			and(
+				eq(order.storeId, storeId),
+				eq(order.type, "reserve_pickup"),
+				inArray(order.status, ["confirmed", "ready_for_pickup"]),
+			),
+		);
 	return DEV_ORDER_ENDS.length;
 }
 

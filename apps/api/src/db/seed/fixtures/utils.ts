@@ -14,6 +14,14 @@ export function pick<T>(
 	return arr[(idx * stride + offset) % arr.length];
 }
 
+/** Giorni di validità delle prenotazioni seedate: la demo non scade in 48 h. */
+export const SEED_RESERVATION_DAYS = 30;
+
+/** customer1@test.com … customer<n>@test.com, nell'ordine in cui li crea il seed. */
+export function seedCustomerEmails(n: number): string[] {
+	return Array.from({ length: n }, (_, i) => `customer${i + 1}@test.com`);
+}
+
 // ── Italian first names ───────────────────────────────────
 
 export const firstNames = [

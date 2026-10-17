@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, like } from "drizzle-orm";
+import { and, asc, eq, gt, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
@@ -7,32 +7,32 @@ import { product, storeProduct } from "@/db/schemas/product";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
-import { cancelUnpaidOrder } from "@/lib/jobs/expire-unpaid-orders";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
+import { SEED_RESERVATION_DAYS, seedCustomerEmails } from "./utils";
 
 const SELLER_EMAIL = "seller1@test.com";
 
 type Plan = {
-	type: "reserve_pickup" | "pay_pickup";
 	end: "confirmed" | "ready_for_pickup" | "completed" | "cancelled" | "expired";
 };
 
-// 12 ordini: la lista seller ha tutte le tab popolate e i due tipi.
+// 12 ordini: la lista seller ha tutte le tab popolate. Solo prenotazioni: il
+// pay_pickup richiede un PaymentIntent vero, che il seed non ha.
 const PLANS: Plan[] = [
-	{ type: "reserve_pickup", end: "confirmed" },
-	{ type: "reserve_pickup", end: "confirmed" },
-	{ type: "pay_pickup", end: "confirmed" },
-	{ type: "reserve_pickup", end: "ready_for_pickup" },
-	{ type: "pay_pickup", end: "ready_for_pickup" },
-	{ type: "pay_pickup", end: "ready_for_pickup" },
-	{ type: "reserve_pickup", end: "completed" },
-	{ type: "pay_pickup", end: "completed" },
-	{ type: "reserve_pickup", end: "cancelled" },
-	{ type: "pay_pickup", end: "cancelled" },
-	{ type: "reserve_pickup", end: "expired" },
-	{ type: "reserve_pickup", end: "confirmed" },
+	{ end: "confirmed" },
+	{ end: "confirmed" },
+	{ end: "confirmed" },
+	{ end: "ready_for_pickup" },
+	{ end: "ready_for_pickup" },
+	{ end: "ready_for_pickup" },
+	{ end: "completed" },
+	{ end: "completed" },
+	{ end: "cancelled" },
+	{ end: "cancelled" },
+	{ end: "expired" },
+	{ end: "confirmed" },
 ];
 
 export async function seedOrders() {
@@ -76,13 +76,13 @@ export async function seedOrders() {
 		return;
 	}
 
+	const emails = seedCustomerEmails(PLANS.length);
 	const customers = await db
-		.select({ id: customerProfile.id })
+		.select({ id: customerProfile.id, email: user.email })
 		.from(customerProfile)
 		.innerJoin(user, eq(user.id, customerProfile.userId))
-		.where(like(user.email, "customer%@test.com"))
-		.orderBy(asc(user.email))
-		.limit(PLANS.length);
+		.where(inArray(user.email, emails));
+	customers.sort((a, b) => emails.indexOf(a.email) - emails.indexOf(b.email));
 
 	console.log(`  🧾 Seeding ${PLANS.length} orders for ${SELLER_EMAIL}...`);
 
@@ -98,26 +98,10 @@ export async function seedOrders() {
 		const created = await createOrder({
 			customerProfileId,
 			customerPoints: 0,
-			type: plan.type,
+			type: "reserve_pickup",
 			storeId: target.storeId,
 			items,
 		});
-
-		// pay_pickup nasce in attesa di pagamento. Il seed non ha un PaymentIntent
-		// vero: l'annullato è un PR2 scaduto senza pagamento (nessun rimborso),
-		// gli altri si considerano pagati e passano a confirmed come farebbe il
-		// webhook. Non si possono annullare dal seller (nessun pagamento da
-		// rimborsare): per provare il rimborso si passa dal checkout.
-		if (plan.type === "pay_pickup") {
-			if (plan.end === "cancelled") {
-				await cancelUnpaidOrder(created.id);
-				continue;
-			}
-			await db
-				.update(order)
-				.set({ status: "confirmed" })
-				.where(eq(order.id, created.id));
-		}
 
 		const storeIds = [target.storeId];
 		if (plan.end === "ready_for_pickup" || plan.end === "completed")
@@ -144,4 +128,21 @@ export async function seedOrders() {
 			await expireReservations();
 		}
 	}
+
+	// Dopo il loop, così nessuna transizione ricalcola la scadenza. Le scadute
+	// volute restano com'erano.
+	await db
+		.update(order)
+		.set({
+			reservationExpiresAt: new Date(
+				Date.now() + SEED_RESERVATION_DAYS * 86_400_000,
+			),
+		})
+		.where(
+			and(
+				eq(order.storeId, target.storeId),
+				eq(order.type, "reserve_pickup"),
+				inArray(order.status, ["confirmed", "ready_for_pickup"]),
+			),
+		);
 }
