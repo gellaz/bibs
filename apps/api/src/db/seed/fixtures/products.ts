@@ -9,14 +9,11 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import type { BrandsBySellerProfileId } from "./brands";
 import {
-	genEan13,
-	pick,
-	prefixForSeller,
-	prefixToMacro,
-	productAdjectives,
-	productDescriptions,
-	productNouns,
-} from "./utils";
+	ALCOHOLIC_SUBS,
+	catalogByPrefix,
+	descriptionsByMacro,
+} from "./catalog";
+import { genEan13, pick, prefixForSeller } from "./utils";
 
 // ── Price ranges per macro (in €, integer; numeric stored with .toFixed(2)) ─
 
@@ -95,26 +92,21 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 		);
 	}
 
-	// ── Load macro + sub categories grouped by macro name ─
+	// ── Sub-categories by (macro, sub): names repeat across macros ─
 	const subRows = await db
 		.select({
-			subId: productCategory.id,
-			macroId: productCategory.macroCategoryId,
-			subName: productCategory.name,
-			macroName: productMacroCategory.name,
+			id: productCategory.id,
+			sub: productCategory.name,
+			macro: productMacroCategory.name,
+			vatRate: productMacroCategory.suggestedVatRate,
 		})
 		.from(productCategory)
 		.innerJoin(
 			productMacroCategory,
 			eq(productMacroCategory.id, productCategory.macroCategoryId),
-		);
-
-	const subsByMacro = new Map<string, Array<{ id: string; name: string }>>();
-	for (const r of subRows) {
-		const arr = subsByMacro.get(r.macroName) ?? [];
-		arr.push({ id: r.subId, name: r.subName });
-		subsByMacro.set(r.macroName, arr);
-	}
+		)
+		.orderBy(asc(productMacroCategory.name), asc(productCategory.name));
+	const subByPair = new Map(subRows.map((r) => [`${r.macro}|${r.sub}`, r]));
 
 	// ── Load all stores per seller ────────────────────────
 	const sellerProfileIds = sellerRows.map((s) => s.sellerProfileId);
@@ -151,33 +143,29 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 		const idx = Number.parseInt(m[1], 10) - 1;
 
 		const prefix = prefixForSeller(idx);
-		const macro = prefixToMacro[prefix];
-		if (!macro) {
+		const entries = catalogByPrefix[prefix];
+		if (!entries) {
 			throw new Error(
-				`seedProducts: no macro mapped for businessPrefix '${prefix}' (seller idx ${idx})`,
+				`seedProducts: no catalog for businessPrefix '${prefix}' (seller idx ${idx})`,
 			);
 		}
-		const nouns = productNouns[macro];
-		if (!nouns || nouns.length === 0) {
-			throw new Error(`seedProducts: no productNouns for macro '${macro}'`);
-		}
-
-		const range = priceRangeByMacro[macro] ?? DEFAULT_PRICE_RANGE;
-		const productCount = 30 + (rank % 21); // 30..50
 		const sellerBrands = brandsBySeller.get(s.sellerProfileId) ?? [];
 
-		for (let i = 0; i < productCount; i++) {
-			const adj = pick(productAdjectives, i, 3, 2);
-			const noun = pick(nouns, i, 1);
-			const name = `${noun} ${adj}`;
-			const description = `${pick(productDescriptions, i, 1, 5)} ${pick(productDescriptions, i, 7, 2)}`;
+		entries.forEach((entry, i) => {
+			const sub = subByPair.get(`${entry.macro}|${entry.sub}`);
+			if (!sub) {
+				throw new Error(
+					`seedProducts: sub-category '${entry.macro} / ${entry.sub}' not found — run seedBase first`,
+				);
+			}
+			const range = priceRangeByMacro[entry.macro] ?? DEFAULT_PRICE_RANGE;
 			const ean = genEan13(globalIdx);
 			const priceNum = range.min + (i % (range.spread + 1));
 
+			// Solo marchi della stessa macro: niente vino con un marchio di elettronica.
+			const brands = sellerBrands.filter((b) => b.macro === entry.macro);
 			const brandId =
-				sellerBrands.length > 0 && i % 10 !== 9
-					? sellerBrands[i % sellerBrands.length].id
-					: null;
+				brands.length > 0 && i % 10 !== 9 ? brands[i % brands.length].id : null;
 
 			const status: "active" | "disabled" | "trashed" = (() => {
 				const m100 = globalIdx % 100;
@@ -188,23 +176,22 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 
 			productRows.push({
 				sellerProfileId: s.sellerProfileId,
-				name,
-				description,
+				name: entry.name,
+				description: pick(descriptionsByMacro[entry.macro], i),
 				ean,
 				brandId,
 				price: priceNum.toFixed(2),
+				// Default del form seller per macro, ma gli alcolici restano al 22%.
+				vatRate: ALCOHOLIC_SUBS.has(entry.sub) ? "22" : sub.vatRate,
 				status,
-				productCategoryId: (() => {
-					const subs = subsByMacro.get(macro);
-					return subs && subs.length > 0 ? subs[i % subs.length].id : null;
-				})(),
-				_macro: macro,
+				productCategoryId: sub.id,
+				_macro: entry.macro,
 				_sellerRank: rank,
 				_idxInSeller: i,
 			});
 
 			globalIdx++;
-		}
+		});
 	});
 
 	console.log(
@@ -266,8 +253,13 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 			? stores
 			: [stores[p.idxInSeller % stores.length]];
 
+		// Un prodotto su venti esaurito e uno sotto soglia: la home seller li
+		// segnala. Gli ordini pescano stock > 5, quindi non li toccano.
+		const slot = p.idxInSeller % 20;
 		targetStores.forEach((storeId, storeIdx) => {
-			const stock = 5 + ((p.idxInSeller + storeIdx) % 50);
+			let stock = 5 + ((p.idxInSeller + storeIdx) % 50);
+			if (slot === 0) stock = 0;
+			if (slot === 1) stock = 2;
 			storeProductRows.push({ productId: p.id, storeId, stock });
 		});
 	}
