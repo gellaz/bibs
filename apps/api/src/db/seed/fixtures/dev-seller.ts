@@ -78,9 +78,11 @@ export async function seedDevSeller() {
 			residenceAddress: "Via Dev 1",
 			residenceZipCode: "20121",
 			documentType: "identity_card",
-			documentNumber: "AX0000001",
+			documentNumber: "CA12345AB",
 			documentExpiry: "2030-12-31",
 			documentIssuedMunicipalityId: milanoId,
+			documentImageKey: "picsum-doc-dev",
+			documentImageUrl: "https://picsum.photos/seed/doc-dev/800/500",
 		})
 		.returning({ id: sellerProfile.id });
 
