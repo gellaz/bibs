@@ -45,7 +45,7 @@ To refresh strategic or visual context: `$impeccable teach` (PRODUCT) or `$impec
 - `bun run format` — format all files (Biome)
 - `bun run infra:up` / `infra:down` / `infra:reset` — manage Docker services (PostGIS + SeaweedFS + Mailpit)
 - `bun run db:generate` / `db:migrate` / `db:push` / `db:studio` — Drizzle database commands
-- `bun run db:seed` / `db:reset` — seed test data / full wipe + migrate + seed
+- `bun run db:seed` / `db:reset` — seed test data / full wipe + migrate + seed (both accept `-- --only=admin|customer|seller`)
 - `bun run dev:emails` — react-email preview server (port 3004)
 - `bun run skills:update` — refresh checked-in agent skills
 

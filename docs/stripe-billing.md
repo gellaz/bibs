@@ -263,6 +263,26 @@ configuring Stripe at all:
 if they drift. Seeded rows carry fake `sub_seed_…` Stripe ids; portal/invoice calls against them will
 404 on Stripe — expected.)
 
+## Starting clean («Ripartire puliti»)
+
+To wipe the Stripe test account **and** the local DB together, do these three steps in
+this order:
+
+1. **Delete the Stripe test data.** Dashboard (test mode): *Developers → Overview →
+   Test data → Review test data → Delete test data*. On recent dashboards "Developers"
+   opens the Workbench panel (keyboard shortcut `~`). This removes customers,
+   subscriptions, Connect accounts, products and prices, plus the dev Price from the
+   one-time setup. Source: `stripe docs /testing-use-cases`, section "Delete test data".
+2. **Recreate the dev Price.** Run `bun run --cwd apps/api stripe:bootstrap` and put the
+   printed id in `apps/api/.env` as `STRIPE_DEV_PRICE_ID`.
+3. **Reset the DB.** From the repo root, `bun run db:reset -- --only=customer` (or no
+   `--only` for the full seed).
+
+Why this order: the seed copies `STRIPE_DEV_PRICE_ID` into `pricing_config`. If the DB is
+reset before the new Price exists, the seed skips `pricing_config` (or points at a Price
+Stripe no longer has), and checkout fails until you reset again. Resetting the DB without
+step 1 leaves orphan Stripe objects pointing at users that no longer exist.
+
 ## Automated tests
 
 Integration tests cover checkout-session creation and every webhook handler with the

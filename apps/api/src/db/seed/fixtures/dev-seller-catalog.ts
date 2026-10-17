@@ -481,10 +481,8 @@ export async function seedDevSellerCatalog() {
 		);
 	}
 
-	const orderCount = await seedDevOrders(mainId, sellerProfileId);
-
 	console.log(
-		`  ✓ Catalogo dev: ${productIds.length} prodotti, ${inventory.length} righe di inventario, ${promos.length} promozioni, ${orderCount} ordini`,
+		`  ✓ Catalogo dev: ${productIds.length} prodotti, ${inventory.length} righe di inventario, ${promos.length} promozioni`,
 	);
 }
 
@@ -505,7 +503,6 @@ const DEV_ORDER_ENDS: OrderEnd[] = [
 	"expired",
 ];
 
-// Gira solo alla prima semina del catalogo (seedDevSellerCatalog è idempotente).
 async function seedDevOrders(storeId: string, sellerProfileId: string) {
 	const items = await db
 		.select({ id: storeProduct.id })
@@ -565,4 +562,33 @@ async function seedDevOrders(storeId: string, sellerProfileId: string) {
 		}
 	}
 	return DEV_ORDER_ENDS.length;
+}
+
+/**
+ * Ordini del venditore di sviluppo. Separati dal catalogo perché servono i
+ * customer: girano solo nel seed completo, dopo seedOrders. Salta se il
+ * negozio ha già ordini.
+ */
+export async function seedDevSellerOrders() {
+	const [row] = await db
+		.select({ sellerProfileId: sellerProfile.id, storeId: store.id })
+		.from(sellerProfile)
+		.innerJoin(user, eq(user.id, sellerProfile.userId))
+		.innerJoin(store, eq(store.sellerProfileId, sellerProfile.id))
+		.where(and(eq(user.email, DEV_EMAIL), eq(store.name, MAIN_STORE)))
+		.limit(1);
+	if (!row) return 0;
+
+	const existing = await db.query.order.findFirst({
+		where: eq(order.storeId, row.storeId),
+		columns: { id: true },
+	});
+	if (existing) {
+		console.log("  ⏭ Ordini dev già presenti, skipping");
+		return 0;
+	}
+
+	const count = await seedDevOrders(row.storeId, row.sellerProfileId);
+	console.log(`  ✓ Ordini dev: ${count}`);
+	return count;
 }
