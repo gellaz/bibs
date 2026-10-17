@@ -158,7 +158,9 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 					`seedProducts: sub-category '${entry.macro} / ${entry.sub}' not found — run seedBase first`,
 				);
 			}
-			const range = priceRangeByMacro[entry.macro] ?? DEFAULT_PRICE_RANGE;
+			const range = entry.price
+				? { min: entry.price[0], spread: entry.price[1] - entry.price[0] }
+				: (priceRangeByMacro[entry.macro] ?? DEFAULT_PRICE_RANGE);
 			const ean = genEan13(globalIdx);
 			const priceNum = range.min + (i % (range.spread + 1));
 

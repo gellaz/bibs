@@ -80,9 +80,19 @@ describe("catalogo del seed per tipo di negozio", () => {
 
 	it("un nome ripetuto tra pool ha ovunque la stessa voce", () => {
 		const shape = (e: CatalogEntry) =>
-			JSON.stringify([e.macro, e.sub, e.skip ?? []]);
+			JSON.stringify([e.macro, e.sub, e.skip ?? [], e.price ?? null]);
 		for (const e of allEntries) {
 			expect(shape(catalogEntryByName(e.name)!)).toBe(shape(e));
+		}
+	});
+
+	it("le fasce di prezzo per voce sono 0 < min < max", () => {
+		const priced = allEntries.filter((e) => e.price);
+		expect(priced.length).toBeGreaterThan(0);
+		for (const { price } of priced) {
+			const [min, max] = price!;
+			expect(min).toBeGreaterThan(0);
+			expect(max).toBeGreaterThan(min);
 		}
 	});
 
