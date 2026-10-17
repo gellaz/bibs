@@ -12,6 +12,7 @@ import {
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import type { CustomClosure } from "@/lib/holidays";
+import { logger } from "@/lib/logger";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
@@ -280,18 +281,25 @@ async function finalizeGoneSubscription(
 	sub: Awaited<ReturnType<typeof loadOwnedSubscription>>,
 ): Promise<CancelResult> {
 	const now = new Date();
-	await db
-		.update(storeSubscription)
-		.set({
-			status: "canceled",
-			canceledAt: now,
-			cancelReason: "seller_canceled",
-		})
-		.where(eq(storeSubscription.id, sub.id));
-	await db
-		.update(storeTable)
-		.set({ deletedAt: now })
-		.where(and(eq(storeTable.id, sub.storeId), isNull(storeTable.deletedAt)));
+	// resource_missing arriva anche con chiave/modalità Stripe sbagliate: lascia traccia.
+	logger.warn(
+		{ stripeSubscriptionId: sub.stripeSubscriptionId, storeId: sub.storeId },
+		"Subscription missing on Stripe; seller cancel finalized locally",
+	);
+	await db.transaction(async (tx) => {
+		await tx
+			.update(storeSubscription)
+			.set({
+				status: "canceled",
+				canceledAt: now,
+				cancelReason: "seller_canceled",
+			})
+			.where(eq(storeSubscription.id, sub.id));
+		await tx
+			.update(storeTable)
+			.set({ deletedAt: now })
+			.where(and(eq(storeTable.id, sub.storeId), isNull(storeTable.deletedAt)));
+	});
 	return { status: "canceled", effectiveAt: now };
 }
 
