@@ -124,7 +124,7 @@ describe("catalogo del seed per tipo di negozio", () => {
 		]);
 	});
 
-	it("il tagliere salta le caratteristiche elettriche", () => {
+	it("il tagliere salta le caratteristiche elettriche e il legno del nome", () => {
 		expect(
 			catalogByPrefix.Casalinghi.find(
 				(e) => e.name === "Tagliere in legno d'ulivo",
@@ -133,7 +133,14 @@ describe("catalogo del seed per tipo di negozio", () => {
 			name: "Tagliere in legno d'ulivo",
 			macro: "Casa e cucina",
 			sub: "Utensili cucina",
-			skip: ["Potenza", "Alimentazione", "Tensione batteria", "Velocità"],
+			skip: [
+				"Potenza",
+				"Alimentazione",
+				"Tensione batteria",
+				"Velocità",
+				"Materiale",
+				"Colore",
+			],
 		});
 	});
 });

@@ -10,7 +10,10 @@ export interface CatalogEntry {
 	name: string;
 	macro: string;
 	sub: string;
-	/** Caratteristiche della sotto-categoria che per questo oggetto non hanno senso. */
+	/**
+	 * Caratteristiche della sotto-categoria che il seed non valorizza: per
+	 * questo oggetto non hanno senso, o il nome ne dichiara già il valore.
+	 */
 	skip?: readonly string[];
 	/** Fascia di prezzo in euro interi, quando quella della macro non è plausibile. */
 	price?: readonly [min: number, max: number];
@@ -70,26 +73,67 @@ const TELAIO_BICI = [
 	"Sospensioni",
 	"Peso massimo supportato",
 ];
-const ATTREZZO_BELLEZZA = ["Formato", "Ingredienti principali"];
+const ATTREZZO_BELLEZZA = [
+	"Formato",
+	"Ingredienti principali",
+	"Beneficio/Funzione",
+];
 const NON_GIOCO_DA_TAVOLO = ["Numero giocatori", "Durata partita"];
 const NON_MONTATO = ["Posizione montaggio"];
+/** Su misura: la taglia standard non c'entra. */
+const SU_MISURA = ["Taglia abbigliamento"];
+/** Cravatte, sciarpe, foulard: niente taglia né vestibilità. */
+const ACCESSORIO_TESSILE = ["Taglia abbigliamento", "Vestibilità"];
+
+// Caratteristiche che il nome dichiara già.
+const MATERIALE = ["Materiale"];
+/** Legno, metallo, terracotta: il materiale fissa anche il colore. */
+const MATERIALE_COLORE = ["Materiale", "Colore"];
+/** Abbigliamento e pelletteria «in pelle», «in seta». */
+const TESSUTO = ["Materiale", "Composizione"];
+/** Lana, cashmere, tweed, lino: il tessuto dice anche la stagione. */
+const TESSUTO_STAGIONE = ["Materiale", "Composizione", "Stagione"];
+/** Oro, argento, perle: materiale e colore del gioiello. */
+const METALLO = ["Materiale", "Composizione", "Colore"];
+const VINO = ["Tipo di vino", "Vitigno", "Denominazione"];
+const BIRRA = ["Tipo di birra"];
+const DISTILLATO = ["Tipo di distillato"];
+const CARNE = ["Tipo di carne", "Taglio"];
+const SALUME = ["Tipo di carne"];
+const FORMAGGIO = ["Latte"];
+const PESCE = ["Specie ittica"];
+/** Spumanti e frizzanti: gradazione bassa e niente annata. */
+const BOLLICINE = ["Gradazione alcolica", "Annata"];
+const GUSTO = ["Gusto"];
+/** Pizze, fritti e panini: una porzione per pezzo. */
+const PEZZO_SINGOLO = ["Porzioni"];
+const FORMATO = ["Formato"];
 
 /** Un nome, o `[nome, min, max]` per chi esce dalla fascia di prezzo della macro. */
-type Voce = string | readonly [name: string, min: number, max: number];
+type Prezzata = string | readonly [name: string, min: number, max: number];
+type Voce = Prezzata | { voce: Prezzata; skip: readonly string[] };
+
+/** Una voce il cui nome dichiara già queste caratteristiche. */
+function dichiara(voce: Prezzata, ...skip: string[]): Voce {
+	return { voce, skip };
+}
 
 /** Più voci della stessa sotto-categoria. */
 function voci(
 	macro: string,
 	sub: string,
 	names: readonly Voce[],
-	skip?: readonly string[],
+	skip: readonly string[] = [],
 ): CatalogEntry[] {
 	return names.map((v) => {
+		const [voce, own] =
+			typeof v !== "string" && "voce" in v ? [v.voce, v.skip] : [v, []];
 		const entry: CatalogEntry =
-			typeof v === "string"
-				? { name: v, macro, sub }
-				: { name: v[0], macro, sub, price: [v[1], v[2]] };
-		return skip ? { ...entry, skip } : entry;
+			typeof voce === "string"
+				? { name: voce, macro, sub }
+				: { name: voce[0], macro, sub, price: [voce[1], voce[2]] };
+		const all = [...skip, ...own];
+		return all.length > 0 ? { ...entry, skip: all } : entry;
 	});
 }
 
@@ -112,18 +156,37 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Olio extravergine d'oliva 1 l",
 			["Aceto di vino rosso 500 ml", 1, 3],
 		]),
-		...voci(FOOD, "Formaggi e latticini", [
-			"Parmigiano Reggiano DOP 24 mesi",
-			"Pecorino romano DOP",
-		]),
+		...voci(
+			FOOD,
+			"Formaggi e latticini",
+			[
+				dichiara(
+					"Parmigiano Reggiano DOP 24 mesi",
+					"Stagionatura",
+					"Denominazione",
+				),
+				dichiara("Pecorino romano DOP", "Denominazione"),
+			],
+			FORMAGGIO,
+		),
 		...voci(
 			FOOD,
 			"Formaggi e latticini",
 			[["Mozzarella fior di latte 250 g", 2, 4]],
-			NON_STAGIONATO,
+			[...FORMAGGIO, ...NON_STAGIONATO],
 		),
-		...voci(FOOD, "Salumi", ["Prosciutto di Parma DOP"]),
-		...voci(FOOD, "Salumi", ["Mortadella Bologna IGP"], NON_STAGIONATO),
+		...voci(
+			FOOD,
+			"Salumi",
+			[dichiara("Prosciutto di Parma DOP", "Denominazione")],
+			SALUME,
+		),
+		...voci(
+			FOOD,
+			"Salumi",
+			[dichiara("Mortadella Bologna IGP", "Denominazione")],
+			[...SALUME, ...NON_STAGIONATO],
+		),
 		...voci(FOOD, "Snack", [
 			["Taralli all'olio 250 g", 2, 4],
 			["Grissini torinesi 250 g", 2, 4],
@@ -143,15 +206,20 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		...voci(FOOD, "Senza glutine", [
 			["Fusilli di mais e riso senza glutine 400 g", 2, 4],
 		]),
-		...voci(FOOD, "Vino", [["Lambrusco di Sorbara DOC 75 cl", 6, 12]]),
+		...voci(
+			FOOD,
+			"Vino",
+			[dichiara(["Lambrusco di Sorbara DOC 75 cl", 6, 12], ...BOLLICINE)],
+			VINO,
+		),
 	],
 	Panificio: [
 		...voci(FOOD, "Pane e prodotti da forno", [
 			"Pane casereccio 1 kg",
 			"Pane toscano sciapo",
-			"Pane di semola rimacinata",
-			"Pane integrale ai cereali",
-			"Pagnotta di segale",
+			dichiara("Pane di semola rimacinata", "Tipo di farina"),
+			dichiara("Pane integrale ai cereali", "Tipo di farina"),
+			dichiara("Pagnotta di segale", "Tipo di farina"),
 			["Ciabatta", 1, 3],
 			["Michette (4 pezzi)", 2, 3],
 			["Pane al latte (6 pezzi)", 2, 4],
@@ -161,7 +229,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Grissini stirati a mano", 3, 6],
 			["Tigelle (6 pezzi)", 3, 5],
 			["Piadina romagnola (4 pezzi)", 3, 6],
-			["Friselle integrali 500 g", 2, 4],
+			dichiara(["Friselle integrali 500 g", 2, 4], "Tipo di farina"),
 			["Crackers al rosmarino", 2, 4],
 		]),
 		...voci(FOOD, "Dolci", [
@@ -198,37 +266,54 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Tiramisù",
 			["Cornetto alla crema", 1, 3],
 		]),
-		...voci(FOOD, "Gelati", [
-			"Semifreddo al torroncino",
-			"Torta gelato al cioccolato",
-		]),
+		...voci(
+			FOOD,
+			"Gelati",
+			["Semifreddo al torroncino", "Torta gelato al cioccolato"],
+			GUSTO,
+		),
 	],
 	Macelleria: [
-		...voci(FOOD, "Carne", [
-			["Bistecca alla fiorentina", 25, 45],
-			["Filetto di manzo", 20, 40],
-			["Lombata di vitello", 15, 28],
-			"Fesa di tacchino a fette",
-			"Petto di pollo 500 g",
-			"Cosce di pollo 1 kg",
-			"Salsiccia di maiale 500 g",
-			"Macinato di manzo 500 g",
-			"Spezzatino di vitello 500 g",
-			"Arista di maiale",
-			"Costine di maiale",
-			"Agnello a pezzi",
-			"Ossobuco di vitello",
-			"Scaloppine di vitello",
-			["Hamburger di scottona (2 pezzi)", 4, 7],
-			"Coniglio intero",
-		]),
-		...voci(FOOD, "Salumi", [
-			"Prosciutto di Parma DOP",
-			"Salame Felino IGP",
-			"Pancetta arrotolata",
-			"Coppa piacentina DOP",
-		]),
-		...voci(FOOD, "Salumi", ["Mortadella Bologna IGP"], NON_STAGIONATO),
+		...voci(
+			FOOD,
+			"Carne",
+			[
+				["Bistecca alla fiorentina", 25, 45],
+				["Filetto di manzo", 20, 40],
+				["Lombata di vitello", 15, 28],
+				"Fesa di tacchino a fette",
+				"Petto di pollo 500 g",
+				"Cosce di pollo 1 kg",
+				"Salsiccia di maiale 500 g",
+				"Macinato di manzo 500 g",
+				"Spezzatino di vitello 500 g",
+				"Arista di maiale",
+				"Costine di maiale",
+				"Agnello a pezzi",
+				"Ossobuco di vitello",
+				"Scaloppine di vitello",
+				["Hamburger di scottona (2 pezzi)", 4, 7],
+				"Coniglio intero",
+			],
+			CARNE,
+		),
+		...voci(
+			FOOD,
+			"Salumi",
+			[
+				dichiara("Prosciutto di Parma DOP", "Denominazione"),
+				dichiara("Salame Felino IGP", "Denominazione"),
+				"Pancetta arrotolata",
+				dichiara("Coppa piacentina DOP", "Denominazione"),
+			],
+			SALUME,
+		),
+		...voci(
+			FOOD,
+			"Salumi",
+			[dichiara("Mortadella Bologna IGP", "Denominazione")],
+			[...SALUME, ...NON_STAGIONATO],
+		),
 		...voci(FOOD, "Piatti pronti", [
 			"Involtini di vitello",
 			"Spiedini misti di carne",
@@ -236,39 +321,60 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 	],
 	Enoteca: [
-		...voci(FOOD, "Vino", [
-			["Barolo DOCG 75 cl", 35, 70],
-			["Barbaresco DOCG 75 cl", 30, 60],
-			["Brunello di Montalcino DOCG 75 cl", 40, 80],
-			["Amarone della Valpolicella DOCG 75 cl", 35, 70],
-			["Chianti Classico DOCG 75 cl", 12, 25],
-			["Primitivo di Manduria DOC 75 cl", 9, 18],
-			"Nero d'Avola Sicilia DOC 75 cl",
-			["Franciacorta Brut DOCG 75 cl", 20, 40],
-			"Prosecco Superiore di Valdobbiadene DOCG 75 cl",
-			["Lambrusco di Sorbara DOC 75 cl", 6, 12],
-			"Verdicchio dei Castelli di Jesi DOC 75 cl",
-			"Vermentino di Gallura DOCG 75 cl",
-			"Gewürztraminer Alto Adige DOC 75 cl",
-			"Montepulciano d'Abruzzo DOC 75 cl",
-			"Moscato d'Asti DOCG 75 cl",
-			["Sagrantino di Montefalco DOCG 75 cl", 20, 40],
-		]),
-		...voci(FOOD, "Birra", [
-			["Birra artigianale chiara 33 cl", 3, 6],
-			["Birra artigianale ambrata 33 cl", 3, 6],
-			["Birra artigianale IPA 33 cl", 3, 6],
-		]),
-		...voci(FOOD, "Liquori e distillati", [
-			"Grappa barricata 70 cl",
-			"Limoncello 50 cl",
-			"Amaro alle erbe 70 cl",
-			"Nocino di Modena 50 cl",
-			"Vermouth rosso di Torino 75 cl",
-		]),
+		...voci(
+			FOOD,
+			"Vino",
+			[
+				["Barolo DOCG 75 cl", 35, 70],
+				["Barbaresco DOCG 75 cl", 30, 60],
+				["Brunello di Montalcino DOCG 75 cl", 40, 80],
+				["Amarone della Valpolicella DOCG 75 cl", 35, 70],
+				["Chianti Classico DOCG 75 cl", 12, 25],
+				["Primitivo di Manduria DOC 75 cl", 9, 18],
+				"Nero d'Avola Sicilia DOC 75 cl",
+				dichiara(["Franciacorta Brut DOCG 75 cl", 20, 40], ...BOLLICINE),
+				dichiara(
+					"Prosecco Superiore di Valdobbiadene DOCG 75 cl",
+					...BOLLICINE,
+				),
+				dichiara(["Lambrusco di Sorbara DOC 75 cl", 6, 12], ...BOLLICINE),
+				"Verdicchio dei Castelli di Jesi DOC 75 cl",
+				"Vermentino di Gallura DOCG 75 cl",
+				"Gewürztraminer Alto Adige DOC 75 cl",
+				"Montepulciano d'Abruzzo DOC 75 cl",
+				dichiara("Moscato d'Asti DOCG 75 cl", ...BOLLICINE),
+				["Sagrantino di Montefalco DOCG 75 cl", 20, 40],
+			],
+			VINO,
+		),
+		...voci(
+			FOOD,
+			"Birra",
+			[
+				["Birra artigianale chiara 33 cl", 3, 6],
+				["Birra artigianale ambrata 33 cl", 3, 6],
+				["Birra artigianale IPA 33 cl", 3, 6],
+			],
+			BIRRA,
+		),
+		...voci(
+			FOOD,
+			"Liquori e distillati",
+			[
+				dichiara("Grappa barricata 70 cl", "Gradazione alcolica"),
+				dichiara("Limoncello 50 cl", "Gradazione alcolica"),
+				"Amaro alle erbe 70 cl",
+				"Nocino di Modena 50 cl",
+				dichiara("Vermouth rosso di Torino 75 cl", "Gradazione alcolica"),
+			],
+			DISTILLATO,
+		),
 		...voci(FOOD, "Olio e condimenti", [
-			"Olio extravergine toscano IGP 500 ml",
-			["Aceto balsamico tradizionale di Modena DOP 100 ml", 40, 80],
+			dichiara("Olio extravergine toscano IGP 500 ml", "Denominazione"),
+			dichiara(
+				["Aceto balsamico tradizionale di Modena DOP 100 ml", 40, 80],
+				"Denominazione",
+			),
 		]),
 	],
 	Ristorante: [
@@ -290,11 +396,16 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Tagliatelle all'uovo 250 g", 3, 5],
 			["Ravioli di ricotta e spinaci 250 g", 4, 7],
 		]),
-		...voci(FOOD, "Vino", [
-			["Vino rosso della casa 75 cl", 6, 12],
-			["Vino bianco della casa 75 cl", 6, 12],
-			["Chianti Classico DOCG 75 cl", 12, 25],
-		]),
+		...voci(
+			FOOD,
+			"Vino",
+			[
+				["Vino rosso della casa 75 cl", 6, 12],
+				["Vino bianco della casa 75 cl", 6, 12],
+				["Chianti Classico DOCG 75 cl", 12, 25],
+			],
+			VINO,
+		),
 		...voci(FOOD, "Dolci", [
 			"Tiramisù",
 			["Panna cotta ai frutti di bosco", 4, 7],
@@ -322,11 +433,19 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Passatelli freschi 400 g", 5, 8],
 			"Tortelloni di ricotta 500 g",
 		]),
-		...voci(FOOD, "Vino", [
-			"Lambrusco Grasparossa di Castelvetro DOC 75 cl",
-			"Sangiovese di Romagna DOC 75 cl",
-			"Pignoletto frizzante DOC 75 cl",
-		]),
+		...voci(
+			FOOD,
+			"Vino",
+			[
+				dichiara(
+					"Lambrusco Grasparossa di Castelvetro DOC 75 cl",
+					...BOLLICINE,
+				),
+				"Sangiovese di Romagna DOC 75 cl",
+				dichiara("Pignoletto frizzante DOC 75 cl", ...BOLLICINE),
+			],
+			VINO,
+		),
 		...voci(FOOD, "Dolci", [
 			"Zuppa inglese",
 			"Torta di riso",
@@ -334,71 +453,122 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 		...voci(FOOD, "Conserve", [["Ragù bolognese in vasetto 300 g", 5, 8]]),
 		...voci(FOOD, "Olio e condimenti", [
-			["Aceto balsamico di Modena IGP 250 ml", 4, 9],
+			dichiara(["Aceto balsamico di Modena IGP 250 ml", 4, 9], "Denominazione"),
 		]),
 	],
 	Boutique: [
 		...voci(MODA, "Abbigliamento donna", [
-			["Abito lungo in seta", 120, 300],
-			["Blazer in lana da donna", 90, 220],
+			dichiara(["Abito lungo in seta", 120, 300], ...TESSUTO),
+			dichiara(
+				["Blazer in lana da donna", 90, 220],
+				...TESSUTO_STAGIONE,
+				"Genere",
+			),
 			"Gonna plissettata",
-			["Maglione in cashmere da donna", 120, 280],
-			"Camicetta in viscosa",
-			["Cappotto doppiopetto da donna", 180, 400],
-			"Foulard in seta",
+			dichiara(
+				["Maglione in cashmere da donna", 120, 280],
+				...TESSUTO_STAGIONE,
+				"Genere",
+			),
+			dichiara("Camicetta in viscosa", ...TESSUTO),
+			dichiara(
+				["Cappotto doppiopetto da donna", 180, 400],
+				"Genere",
+				"Stagione",
+			),
+			dichiara("Foulard in seta", ...ACCESSORIO_TESSILE, ...TESSUTO),
 		]),
 		...voci(MODA, "Abbigliamento uomo", [
-			"Camicia in lino da uomo",
-			"Pantaloni chino in cotone",
-			["Giacca in velluto a coste", 90, 200],
-			"Maglione girocollo in lana merino",
-			["Trench impermeabile da uomo", 150, 350],
-			"Sciarpa in lana",
+			dichiara("Camicia in lino da uomo", ...TESSUTO_STAGIONE, "Genere"),
+			dichiara("Pantaloni chino in cotone", ...TESSUTO),
+			dichiara(["Giacca in velluto a coste", 90, 200], ...TESSUTO_STAGIONE),
+			dichiara("Maglione girocollo in lana merino", ...TESSUTO_STAGIONE),
+			dichiara(["Trench impermeabile da uomo", 150, 350], "Genere", "Stagione"),
+			dichiara("Sciarpa in lana", ...ACCESSORIO_TESSILE, ...TESSUTO_STAGIONE),
 		]),
 		...voci(MODA, "Scarpe donna", [
-			["Décolleté in pelle", 80, 200],
-			["Stivaletti in camoscio", 90, 200],
+			// La décolleté si infila: niente chiusura.
+			dichiara(
+				["Décolleté in pelle", 80, 200],
+				"Materiale",
+				"Materiale tomaia",
+				"Tipo chiusura",
+			),
+			dichiara(
+				["Stivaletti in camoscio", 90, 200],
+				"Materiale",
+				"Materiale tomaia",
+			),
 		]),
 		...voci(MODA, "Scarpe uomo", [
-			["Mocassini in pelle", 80, 180],
-			["Stringate in pelle", 90, 220],
+			// Il mocassino si infila, la stringata si allaccia.
+			dichiara(
+				["Mocassini in pelle", 80, 180],
+				"Materiale",
+				"Materiale tomaia",
+				"Tipo chiusura",
+			),
+			dichiara(
+				["Stringate in pelle", 90, 220],
+				"Materiale",
+				"Materiale tomaia",
+				"Tipo chiusura",
+			),
 		]),
-		...voci(MODA, "Sneakers", [["Sneakers in pelle bianche", 70, 160]]),
+		...voci(MODA, "Sneakers", [
+			dichiara(
+				["Sneakers in pelle bianche", 70, 160],
+				"Materiale",
+				"Materiale tomaia",
+				"Colore",
+			),
+		]),
 		...voci(MODA, "Borse", [
-			["Borsa a tracolla in pelle", 80, 250],
-			"Pochette da sera",
+			dichiara(["Borsa a tracolla in pelle", 80, 250], ...TESSUTO),
+			dichiara("Pochette da sera", "Taglia bagagli"),
 		]),
-		...voci(MODA, "Cappelli", ["Cappello in feltro"]),
-		...voci(MODA, "Cinture", ["Cintura in pelle intrecciata"]),
+		...voci(MODA, "Cappelli", [
+			dichiara("Cappello in feltro", ...TESSUTO_STAGIONE),
+		]),
+		...voci(MODA, "Cinture", [
+			dichiara("Cintura in pelle intrecciata", ...TESSUTO),
+		]),
 	],
 	Gioielleria: [
 		...voci(MODA, "Gioielli", [
-			["Anello solitario in oro bianco", 400, 1500],
-			["Fede nuziale in oro giallo", 150, 400],
-			["Collana di perle", 150, 500],
-			["Orecchini a cerchio in oro", 80, 250],
-			["Orecchini pendenti in argento", 30, 80],
-			["Bracciale tennis in argento", 60, 150],
-			["Ciondolo a cuore in oro rosa", 80, 200],
-			["Catenina in oro giallo", 100, 300],
-			["Anello con zaffiro", 300, 1200],
-			["Bracciale rigido in argento", 40, 100],
-			"Spilla in argento",
-			"Gemelli da polso in argento",
-			"Orecchini con perla",
-			"Collana con pendente in argento",
+			dichiara(["Anello solitario in oro bianco", 400, 1500], ...METALLO),
+			dichiara(["Fede nuziale in oro giallo", 150, 400], ...METALLO),
+			dichiara(["Collana di perle", 150, 500], ...METALLO),
+			dichiara(["Orecchini a cerchio in oro", 80, 250], ...METALLO),
+			dichiara(["Orecchini pendenti in argento", 30, 80], ...METALLO),
+			dichiara(["Bracciale tennis in argento", 60, 150], ...METALLO),
+			dichiara(["Ciondolo a cuore in oro rosa", 80, 200], ...METALLO),
+			dichiara(["Catenina in oro giallo", 100, 300], ...METALLO),
+			dichiara(["Anello con zaffiro", 300, 1200], "Colore"),
+			dichiara(["Bracciale rigido in argento", 40, 100], ...METALLO),
+			dichiara("Spilla in argento", ...METALLO),
+			dichiara("Gemelli da polso in argento", ...METALLO, "Genere"),
+			dichiara("Orecchini con perla", "Colore"),
+			dichiara("Collana con pendente in argento", ...METALLO),
 		]),
 		...voci(
 			MODA,
 			"Orologi",
 			[
-				["Orologio automatico in acciaio", 250, 900],
-				["Orologio da donna con cinturino in pelle", 80, 300],
-				["Cronografo in acciaio", 200, 800],
+				dichiara(["Orologio automatico in acciaio", 250, 900], "Materiale"),
+				dichiara(
+					["Orologio da donna con cinturino in pelle", 80, 300],
+					"Materiale",
+				),
+				dichiara(["Cronografo in acciaio", 200, 800], "Materiale"),
 				["Orologio da taschino", 80, 300],
-				["Orologio da immersione", 200, 800],
+				dichiara(["Orologio da immersione", 200, 800], "Resistenza acqua"),
 				["Orologio al quarzo da uomo", 80, 250],
-				["Orologio solo tempo con cassa in oro", 1500, 5000],
+				dichiara(
+					["Orologio solo tempo con cassa in oro", 1500, 5000],
+					"Materiale",
+					"Colore",
+				),
 				["Orologio gioiello da donna", 300, 1500],
 			],
 			OROLOGIO_CLASSICO,
@@ -451,39 +621,69 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Miele di acacia bio 500 g",
 			["Gomasio bio 100 g", 3, 5],
 		]),
-		...voci(BELLEZZA, "Integratori", [
-			"Propoli in gocce 30 ml",
-			"Pappa reale fresca 10 g",
-			"Echinacea in compresse",
-			"Magnesio e potassio in bustine",
-			"Valeriana in capsule",
-			"Spirulina in compresse",
-		]),
-		...voci(BELLEZZA, "Vitamine", ["Vitamina C da acerola in compresse"]),
+		// Nome = principio attivo e forma (gocce, compresse, bustine).
+		...voci(
+			BELLEZZA,
+			"Integratori",
+			[
+				"Propoli in gocce 30 ml",
+				"Pappa reale fresca 10 g",
+				"Echinacea in compresse",
+				"Magnesio e potassio in bustine",
+				"Valeriana in capsule",
+				"Spirulina in compresse",
+			],
+			[...FORMATO, "Ingredienti principali"],
+		),
+		...voci(
+			BELLEZZA,
+			"Vitamine",
+			["Vitamina C da acerola in compresse"],
+			[...FORMATO, "Ingredienti principali"],
+		),
 		...voci(BELLEZZA, "Creme viso", [
-			"Crema viso all'aloe vera 50 ml",
-			"Crema alla calendula 50 ml",
-			"Burro di karité puro 100 ml",
+			dichiara(
+				"Crema viso all'aloe vera 50 ml",
+				...FORMATO,
+				"Ingredienti principali",
+			),
+			dichiara(
+				"Crema alla calendula 50 ml",
+				...FORMATO,
+				"Ingredienti principali",
+			),
+			dichiara(
+				"Burro di karité puro 100 ml",
+				...FORMATO,
+				"Ingredienti principali",
+			),
 		]),
-		...voci(BELLEZZA, "Shampoo", [["Shampoo all'ortica 250 ml", 6, 10]]),
-		...voci(BELLEZZA, "Balsamo", [["Balsamo all'olio di argan 200 ml", 7, 12]]),
+		...voci(BELLEZZA, "Shampoo", [
+			dichiara(["Shampoo all'ortica 250 ml", 6, 10], "Ingredienti principali"),
+		]),
+		...voci(BELLEZZA, "Balsamo", [
+			dichiara(
+				["Balsamo all'olio di argan 200 ml", 7, 12],
+				"Ingredienti principali",
+			),
+		]),
 	],
 	Fiorista: [
 		...voci(GIARDINO, "Fiori", [
-			["Mazzo di rose rosse (12 steli)", 25, 45],
+			dichiara(["Mazzo di rose rosse (12 steli)", 25, 45], "Colore"),
 			["Bouquet di tulipani", 15, 30],
-			["Mazzo di girasoli", 12, 25],
+			dichiara(["Mazzo di girasoli", 12, 25], "Colore"),
 			["Bouquet di peonie", 25, 45],
-			"Mazzo di margherite",
-			"Ranuncoli misti",
-			"Gerbere colorate",
-			"Lilium bianchi",
-			"Calle bianche",
-			"Bouquet di fiori di campo",
+			dichiara("Mazzo di margherite", "Colore"),
+			dichiara("Ranuncoli misti", "Colore"),
+			dichiara("Gerbere colorate", "Colore"),
+			dichiara("Lilium bianchi", "Colore"),
+			dichiara("Calle bianche", "Colore"),
+			dichiara("Bouquet di fiori di campo", "Colore"),
 			["Bouquet da sposa", 80, 200],
-			"Mazzo di lavanda essiccata",
+			dichiara("Mazzo di lavanda essiccata", "Colore"),
 			["Composizione floreale in cesto", 35, 70],
-			["Mazzo di mimosa", 5, 10],
+			dichiara(["Mazzo di mimosa", 5, 10], "Colore"),
 			["Rosa singola con nastro", 3, 6],
 		]),
 		...voci(GIARDINO, "Piante", [
@@ -493,10 +693,12 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Sansevieria",
 			["Stella di Natale", 6, 15],
 		]),
-		...voci(CASA, "Decorazioni casa", [
-			"Vaso in vetro soffiato",
-			"Ghirlanda di fiori secchi",
-		]),
+		...voci(
+			CASA,
+			"Decorazioni casa",
+			["Vaso in vetro soffiato", "Ghirlanda di fiori secchi"],
+			MATERIALE,
+		),
 	],
 	Ferramenta: [
 		...voci(FAI_DA_TE, "Trapani", [
@@ -513,12 +715,17 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Sega a mano per legno",
 			"Seghetto per metalli",
 		]),
-		...voci(FAI_DA_TE, "Vernici", [
-			"Smalto all'acqua bianco lucido 750 ml",
-			"Impregnante per legno noce 2,5 l",
-			["Idropittura traspirante bianca 14 l", 30, 70],
-			"Antiruggine grigio 750 ml",
-		]),
+		...voci(
+			FAI_DA_TE,
+			"Vernici",
+			[
+				"Smalto all'acqua bianco lucido 750 ml",
+				"Impregnante per legno noce 2,5 l",
+				["Idropittura traspirante bianca 14 l", 30, 70],
+				"Antiruggine grigio 750 ml",
+			],
+			["Colore"],
+		),
 		...voci(FAI_DA_TE, "Pennelli", [
 			["Pennello piatto per smalti 50 mm", 4, 9],
 			["Pennellessa per pareti 100 mm", 6, 12],
@@ -531,41 +738,48 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Cemento grigio 25 kg", 6, 12],
 		]),
 		...voci(FAI_DA_TE, "Ferramenta", [
-			["Viti per legno assortite", 5, 10],
-			["Tasselli in nylon (100 pezzi)", 4, 8],
-			["Set di chiavi a brugola", 8, 15],
+			// Minuteria in metallo e nylon: niente colore di fantasia.
+			dichiara(["Viti per legno assortite", 5, 10], "Colore"),
+			dichiara(["Tasselli in nylon (100 pezzi)", 4, 8], ...MATERIALE_COLORE),
+			dichiara(["Set di chiavi a brugola", 8, 15], "Colore"),
 			["Martello da carpentiere", 12, 25],
 			["Metro a nastro 5 m", 5, 12],
-			["Lucchetto in ottone", 8, 18],
+			dichiara(["Lucchetto in ottone", 8, 18], ...MATERIALE_COLORE),
 		]),
 		...voci(FAI_DA_TE, "Sicurezza lavoro", [
-			["Guanti da lavoro in nitrile", 3, 8],
+			dichiara(["Guanti da lavoro in nitrile", 3, 8], ...MATERIALE),
 			["Occhiali protettivi", 4, 10],
 			["Scarpe antinfortunistiche", 40, 90],
 		]),
 	],
 	Ceramiche: [
 		...voci(CASA, "Decorazioni casa", [
-			["Vaso in ceramica di Deruta", 40, 120],
+			dichiara(["Vaso in ceramica di Deruta", 40, 120], ...MATERIALE),
 			["Piatto decorativo da parete", 25, 70],
-			["Testa di moro in ceramica", 60, 200],
+			dichiara(["Testa di moro in ceramica", 60, 200], ...MATERIALE),
 			"Ciotola decorativa smaltata",
-			["Centrotavola in ceramica", 30, 80],
-			["Portaombrelli in ceramica", 50, 120],
-			"Lanterna in ceramica traforata",
-			"Formella in ceramica dipinta a mano",
-			["Pigna in ceramica di Caltagirone", 30, 90],
-			"Portafrutta in ceramica",
+			dichiara(["Centrotavola in ceramica", 30, 80], ...MATERIALE),
+			dichiara(["Portaombrelli in ceramica", 50, 120], ...MATERIALE),
+			dichiara("Lanterna in ceramica traforata", ...MATERIALE),
+			dichiara("Formella in ceramica dipinta a mano", ...MATERIALE),
+			dichiara(["Pigna in ceramica di Caltagirone", 30, 90], ...MATERIALE),
+			dichiara("Portafrutta in ceramica", ...MATERIALE),
 		]),
-		...voci(CASA, "Lampade", [
-			["Lampada da tavolo in ceramica", 50, 140],
-			["Lampada da comodino in ceramica", 40, 100],
-		]),
-		...voci(CASA, "Pentole", [
-			"Tegame in terracotta",
-			"Fagioliera in terracotta",
-			"Pentola in coccio",
-		]),
+		...voci(
+			CASA,
+			"Lampade",
+			[
+				["Lampada da tavolo in ceramica", 50, 140],
+				["Lampada da comodino in ceramica", 40, 100],
+			],
+			MATERIALE,
+		),
+		...voci(
+			CASA,
+			"Pentole",
+			["Tegame in terracotta", "Fagioliera in terracotta", "Pentola in coccio"],
+			MATERIALE_COLORE,
+		),
 		...voci(
 			CASA,
 			"Utensili cucina",
@@ -577,62 +791,81 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 				["Tazza da colazione in ceramica", 8, 16],
 				"Brocca in ceramica",
 			],
-			NON_ELETTRICO,
+			[...NON_ELETTRICO, ...MATERIALE],
 		),
-		...voci(CASA, "Candele", [["Candela in vasetto di ceramica", 12, 25]]),
+		...voci(
+			CASA,
+			"Candele",
+			[["Candela in vasetto di ceramica", 12, 25]],
+			MATERIALE,
+		),
 	],
 	Pelletteria: [
 		...voci(MODA, "Borse", [
-			["Borsa a mano in pelle", 120, 350],
-			["Borsa shopper in pelle", 100, 280],
-			["Borsa a tracolla in pelle", 80, 250],
-			["Borsa a spalla in pelle martellata", 120, 320],
-			["Borsa secchiello in pelle", 100, 260],
-			["Bauletto in pelle", 120, 300],
-			["Borsello da uomo in pelle", 50, 130],
-			["Portadocumenti in pelle", 90, 220],
-			["Cartella da lavoro in pelle", 120, 300],
-			"Marsupio in pelle",
+			dichiara(["Borsa a mano in pelle", 120, 350], ...TESSUTO),
+			dichiara(["Borsa shopper in pelle", 100, 280], ...TESSUTO),
+			dichiara(["Borsa a tracolla in pelle", 80, 250], ...TESSUTO),
+			dichiara(["Borsa a spalla in pelle martellata", 120, 320], ...TESSUTO),
+			dichiara(["Borsa secchiello in pelle", 100, 260], ...TESSUTO),
+			dichiara(["Bauletto in pelle", 120, 300], ...TESSUTO),
+			dichiara(["Borsello da uomo in pelle", 50, 130], ...TESSUTO, "Genere"),
+			dichiara(["Portadocumenti in pelle", 90, 220], ...TESSUTO),
+			dichiara(["Cartella da lavoro in pelle", 120, 300], ...TESSUTO),
+			dichiara("Marsupio in pelle", ...TESSUTO),
 		]),
 		...voci(MODA, "Zaini", [
-			["Zaino in pelle", 120, 300],
-			["Zaino porta PC in pelle", 130, 320],
-			["Zainetto in pelle da donna", 90, 220],
+			dichiara(["Zaino in pelle", 120, 300], ...TESSUTO),
+			dichiara(["Zaino porta PC in pelle", 130, 320], ...TESSUTO),
+			dichiara(
+				["Zainetto in pelle da donna", 90, 220],
+				...TESSUTO,
+				"Genere",
+				"Taglia bagagli",
+			),
 		]),
 		...voci(MODA, "Valigie", [
-			["Borsone da viaggio in pelle", 150, 400],
-			["Trolley da cabina", 80, 220],
-			"Beauty case in pelle",
-			["Valigia rigida grande", 120, 350],
+			dichiara(
+				["Borsone da viaggio in pelle", 150, 400],
+				...TESSUTO,
+				"Taglia bagagli",
+			),
+			dichiara(["Trolley da cabina", 80, 220], "Taglia bagagli"),
+			dichiara("Beauty case in pelle", ...TESSUTO, "Taglia bagagli"),
+			dichiara(["Valigia rigida grande", 120, 350], "Taglia bagagli"),
 		]),
 		...voci(MODA, "Cinture", [
-			"Cintura in pelle intrecciata",
-			"Cintura in cuoio con fibbia in ottone",
-			"Cintura reversibile in pelle",
+			dichiara("Cintura in pelle intrecciata", ...TESSUTO),
+			dichiara("Cintura in cuoio con fibbia in ottone", ...TESSUTO),
+			dichiara("Cintura reversibile in pelle", ...TESSUTO),
 		]),
 	],
 	Gelateria: [
-		...voci(FOOD, "Gelati", [
-			["Gelato al pistacchio 500 g", 11, 16],
-			["Gelato alla nocciola 500 g", 10, 15],
-			["Gelato alla stracciatella 500 g", 9, 14],
-			["Gelato al fior di latte 500 g", 9, 14],
-			["Gelato al cioccolato fondente 500 g", 9, 14],
-			["Gelato alla crema 500 g", 9, 14],
-			"Gelato al caffè 500 g",
-			"Gelato alla fragola 500 g",
-			"Gelato allo yogurt 500 g",
-			"Gelato all'amarena 500 g",
-			"Sorbetto al limone 500 g",
-			"Sorbetto al mandarino 500 g",
-			["Gelato misto 1 kg", 16, 24],
-			"Cassata gelato",
-			"Semifreddo al torroncino",
-			"Torta gelato al cioccolato",
-			["Tartufo gelato al cioccolato", 3, 6],
-			["Granita al limone", 2, 4],
-			["Ghiaccioli alla frutta (4 pezzi)", 3, 6],
-		]),
+		...voci(
+			FOOD,
+			"Gelati",
+			[
+				["Gelato al pistacchio 500 g", 11, 16],
+				["Gelato alla nocciola 500 g", 10, 15],
+				["Gelato alla stracciatella 500 g", 9, 14],
+				["Gelato al fior di latte 500 g", 9, 14],
+				["Gelato al cioccolato fondente 500 g", 9, 14],
+				["Gelato alla crema 500 g", 9, 14],
+				"Gelato al caffè 500 g",
+				"Gelato alla fragola 500 g",
+				"Gelato allo yogurt 500 g",
+				"Gelato all'amarena 500 g",
+				"Sorbetto al limone 500 g",
+				"Sorbetto al mandarino 500 g",
+				["Gelato misto 1 kg", 16, 24],
+				"Semifreddo al torroncino",
+				"Torta gelato al cioccolato",
+				["Tartufo gelato al cioccolato", 3, 6],
+				["Granita al limone", 2, 4],
+				["Ghiaccioli alla frutta (4 pezzi)", 3, 6],
+			],
+			GUSTO,
+		),
+		...voci(FOOD, "Gelati", ["Cassata gelato"]),
 		...voci(FOOD, "Dolci", [
 			["Coni in cialda (12 pezzi)", 3, 6],
 			["Brioche col tuppo (4 pezzi)", 4, 7],
@@ -640,29 +873,37 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 	],
 	Pizzeria: [
-		...voci(FOOD, "Piatti pronti", [
-			["Pizza margherita", 5, 8],
-			["Pizza marinara", 4, 7],
-			["Pizza diavola", 6, 9],
-			["Pizza capricciosa", 7, 10],
-			["Pizza quattro formaggi", 7, 10],
-			"Pizza prosciutto e funghi",
-			"Pizza quattro stagioni",
-			"Pizza bufalina",
-			"Pizza ortolana",
-			["Pizza napoli", 6, 9],
-			["Calzone al forno", 7, 10],
-			["Supplì al telefono", 2, 3],
-			["Arancino al ragù", 2, 4],
-			["Crocchè di patate", 1, 3],
-			["Frittatina di pasta", 2, 4],
-			["Olive all'ascolana", 4, 7],
-			["Panzerotto fritto", 2, 4],
-		]),
+		...voci(
+			FOOD,
+			"Piatti pronti",
+			[
+				["Pizza margherita", 5, 8],
+				["Pizza marinara", 4, 7],
+				["Pizza diavola", 6, 9],
+				["Pizza capricciosa", 7, 10],
+				["Pizza quattro formaggi", 7, 10],
+				"Pizza prosciutto e funghi",
+				"Pizza quattro stagioni",
+				"Pizza bufalina",
+				"Pizza ortolana",
+				["Pizza napoli", 6, 9],
+				["Calzone al forno", 7, 10],
+				["Supplì al telefono", 2, 3],
+				["Arancino al ragù", 2, 4],
+				["Crocchè di patate", 1, 3],
+				["Frittatina di pasta", 2, 4],
+				["Olive all'ascolana", 4, 7],
+				["Panzerotto fritto", 2, 4],
+			],
+			PEZZO_SINGOLO,
+		),
 		...voci(FOOD, "Dolci", ["Tiramisù", ["Babà napoletano", 3, 6]]),
-		...voci(FOOD, "Vino", [
-			["Gragnano della Penisola Sorrentina DOC 75 cl", 8, 13],
-		]),
+		...voci(
+			FOOD,
+			"Vino",
+			[["Gragnano della Penisola Sorrentina DOC 75 cl", 8, 13]],
+			VINO,
+		),
 		...voci(FOOD, "Olio e condimenti", [
 			["Olio piccante al peperoncino 250 ml", 4, 8],
 		]),
@@ -688,12 +929,17 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Pici freschi 500 g", 4, 7],
 			["Pappardelle all'uovo 250 g", 3, 6],
 		]),
-		...voci(FOOD, "Vino", [
-			["Chianti Classico DOCG 75 cl", 12, 25],
-			["Rosso di Montalcino DOC 75 cl", 18, 30],
-			["Vino Nobile di Montepulciano DOCG 75 cl", 15, 28],
-			"Vernaccia di San Gimignano DOCG 75 cl",
-		]),
+		...voci(
+			FOOD,
+			"Vino",
+			[
+				["Chianti Classico DOCG 75 cl", 12, 25],
+				["Rosso di Montalcino DOC 75 cl", 18, 30],
+				["Vino Nobile di Montepulciano DOCG 75 cl", 15, 28],
+				"Vernaccia di San Gimignano DOCG 75 cl",
+			],
+			VINO,
+		),
 		...voci(FOOD, "Dolci", [
 			["Cantucci alle mandorle 250 g", 4, 7],
 			"Castagnaccio",
@@ -701,7 +947,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 		...voci(FOOD, "Conserve", [["Sugo di cinghiale in vasetto 300 g", 5, 9]]),
 		...voci(FOOD, "Olio e condimenti", [
-			"Olio extravergine toscano IGP 500 ml",
+			dichiara("Olio extravergine toscano IGP 500 ml", "Denominazione"),
 		]),
 	],
 	Caffetteria: [
@@ -709,7 +955,10 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Caffè in grani miscela arabica 1 kg", 14, 25],
 			["Caffè macinato per moka 250 g", 3, 6],
 			"Caffè decaffeinato macinato 250 g",
-			["Cialde di caffè in carta (50 pezzi)", 9, 15],
+			dichiara(
+				["Cialde di caffè in carta (50 pezzi)", 9, 15],
+				"Formato/Peso netto",
+			),
 			"Caffè d'orzo solubile 120 g",
 			"Caffè al ginseng solubile 200 g",
 		]),
@@ -726,11 +975,16 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Pasticcini mignon 500 g",
 			["Cantucci alle mandorle 250 g", 4, 7],
 		]),
-		...voci(FOOD, "Piatti pronti", [
-			["Toast prosciutto e formaggio", 3, 5],
-			["Tramezzino tonno e carciofi", 2, 4],
-			["Piadina crudo e squacquerone", 5, 8],
-		]),
+		...voci(
+			FOOD,
+			"Piatti pronti",
+			[
+				["Toast prosciutto e formaggio", 3, 5],
+				["Tramezzino tonno e carciofi", 2, 4],
+				["Piadina crudo e squacquerone", 5, 8],
+			],
+			PEZZO_SINGOLO,
+		),
 		...voci(FOOD, "Bevande analcoliche", [
 			["Tè freddo alla pesca 50 cl", 2, 4],
 		]),
@@ -741,50 +995,101 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 	],
 	Sartoria: [
 		...voci(MODA, "Abbigliamento uomo", [
-			["Abito sartoriale su misura", 800, 2500],
-			["Camicia su misura in popeline", 90, 200],
-			["Giacca in tweed su misura", 500, 1200],
-			["Giacca in lino su misura", 450, 1100],
-			["Pantaloni in flanella su misura", 200, 450],
-			["Gilet in lana", 80, 180],
-			["Cappotto in cammello su misura", 900, 2500],
-			["Smoking su misura", 1000, 2800],
+			dichiara(["Abito sartoriale su misura", 800, 2500], ...SU_MISURA),
+			dichiara(
+				["Camicia su misura in popeline", 90, 200],
+				...SU_MISURA,
+				...TESSUTO,
+			),
+			dichiara(
+				["Giacca in tweed su misura", 500, 1200],
+				...SU_MISURA,
+				...TESSUTO_STAGIONE,
+			),
+			dichiara(
+				["Giacca in lino su misura", 450, 1100],
+				...SU_MISURA,
+				...TESSUTO_STAGIONE,
+			),
+			dichiara(
+				["Pantaloni in flanella su misura", 200, 450],
+				...SU_MISURA,
+				...TESSUTO_STAGIONE,
+			),
+			dichiara(["Gilet in lana", 80, 180], ...TESSUTO_STAGIONE),
+			dichiara(
+				["Cappotto in cammello su misura", 900, 2500],
+				...SU_MISURA,
+				...TESSUTO_STAGIONE,
+			),
+			dichiara(["Smoking su misura", 1000, 2800], ...SU_MISURA),
 			["Tight da cerimonia", 900, 2400],
-			["Cravatta in seta", 50, 120],
-			["Papillon in seta", 40, 90],
-			"Pochette da taschino in seta",
+			dichiara(
+				["Cravatta in seta", 50, 120],
+				...ACCESSORIO_TESSILE,
+				...TESSUTO,
+			),
+			dichiara(["Papillon in seta", 40, 90], ...ACCESSORIO_TESSILE, ...TESSUTO),
+			dichiara(
+				"Pochette da taschino in seta",
+				...ACCESSORIO_TESSILE,
+				...TESSUTO,
+			),
 		]),
 		...voci(MODA, "Abbigliamento donna", [
-			["Tailleur su misura", 700, 1800],
-			["Abito da cerimonia su misura", 800, 2200],
-			["Gonna a tubino su misura", 180, 400],
-			["Camicia da donna su misura", 90, 200],
-			["Pantaloni palazzo su misura", 200, 450],
-			["Cappotto da donna su misura", 900, 2400],
-			["Mantella in lana su misura", 400, 1000],
+			dichiara(["Tailleur su misura", 700, 1800], ...SU_MISURA),
+			dichiara(["Abito da cerimonia su misura", 800, 2200], ...SU_MISURA),
+			// Il tubino è aderente, il palazzo è largo.
+			dichiara(
+				["Gonna a tubino su misura", 180, 400],
+				...SU_MISURA,
+				"Vestibilità",
+			),
+			dichiara(["Camicia da donna su misura", 90, 200], ...SU_MISURA, "Genere"),
+			dichiara(
+				["Pantaloni palazzo su misura", 200, 450],
+				...SU_MISURA,
+				"Vestibilità",
+			),
+			dichiara(
+				["Cappotto da donna su misura", 900, 2400],
+				...SU_MISURA,
+				"Genere",
+				"Stagione",
+			),
+			dichiara(
+				["Mantella in lana su misura", 400, 1000],
+				...SU_MISURA,
+				...TESSUTO_STAGIONE,
+			),
 		]),
-		...voci(MODA, "Cappelli", ["Coppola in tweed"]),
+		...voci(MODA, "Cappelli", [
+			dichiara("Coppola in tweed", ...TESSUTO_STAGIONE),
+		]),
 	],
 	Ottica: [
 		...voci(MODA, "Occhiali da sole", [
 			["Occhiali da sole polarizzati", 90, 200],
 			["Occhiali da sole aviator", 80, 190],
-			["Occhiali da sole rotondi in acetato", 80, 180],
+			dichiara(["Occhiali da sole rotondi in acetato", 80, 180], ...TESSUTO),
 			["Occhiali da sole cat-eye", 80, 180],
 			["Occhiali da sole sportivi avvolgenti", 70, 160],
-			"Occhiali da sole da bambino",
+			dichiara("Occhiali da sole da bambino", "Genere"),
 			["Occhiali da sole pieghevoli", 80, 170],
 			["Occhiali da sole con lenti specchiate", 80, 180],
-			["Occhiali da sole in titanio", 150, 320],
-			["Occhiali da sole oversize", 80, 190],
+			dichiara(["Occhiali da sole in titanio", 150, 320], ...TESSUTO),
+			dichiara(["Occhiali da sole oversize", 80, 190], "Vestibilità"),
 			["Occhiali da sole squadrati", 80, 180],
 			["Occhiali da sole fotocromatici", 120, 260],
 			["Occhiali da sole con lenti sfumate", 80, 180],
-			["Occhiali da sole in legno", 90, 200],
+			dichiara(["Occhiali da sole in legno", 90, 200], ...TESSUTO, "Colore"),
 			["Occhiali da sole a mascherina", 90, 200],
 			"Clip da sole per occhiali da vista",
 			["Occhiali da sole da guida", 90, 200],
-			["Occhiali da sole con montatura trasparente", 80, 180],
+			dichiara(
+				["Occhiali da sole con montatura trasparente", 80, 180],
+				"Colore",
+			),
 		]),
 		...voci(SPORT, "Sport invernali", [
 			["Maschera da sci con lente fotocromatica", 50, 140],
@@ -804,43 +1109,63 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Eau de toilette agrumata 100 ml", 40, 70],
 			["Eau de parfum legnosa 100 ml", 60, 110],
 			["Acqua di colonia classica 200 ml", 20, 40],
-			"Dopobarba profumato 100 ml",
+			dichiara("Dopobarba profumato 100 ml", ...FORMATO),
 		]),
-		...voci(BELLEZZA, "Make-up viso", [
-			"Fondotinta fluido",
-			"Cipria compatta",
-			"Correttore liquido",
-			"Blush in polvere",
-		]),
-		...voci(BELLEZZA, "Make-up occhi", [
-			"Mascara volumizzante",
-			["Matita occhi nera", 6, 12],
-			"Palette di ombretti",
-			"Eyeliner liquido",
-		]),
-		...voci(BELLEZZA, "Make-up labbra", [
-			"Rossetto matte",
-			"Gloss labbra",
-			["Matita labbra", 6, 12],
-		]),
-		...voci(BELLEZZA, "Creme viso", [
-			"Crema viso idratante 50 ml",
-			"Crema antirughe notte 50 ml",
-		]),
-		...voci(BELLEZZA, "Sieri", [
-			"Siero alla vitamina C 30 ml",
-			"Siero all'acido ialuronico 30 ml",
-		]),
+		// Il nome del trucco dice la forma: fluido, compatta, matita, stick.
+		...voci(
+			BELLEZZA,
+			"Make-up viso",
+			[
+				"Fondotinta fluido",
+				"Cipria compatta",
+				"Correttore liquido",
+				dichiara("Blush in polvere", "Tonalità"),
+			],
+			FORMATO,
+		),
+		...voci(
+			BELLEZZA,
+			"Make-up occhi",
+			[
+				dichiara("Mascara volumizzante", "Effetto"),
+				dichiara(["Matita occhi nera", 6, 12], "Colore", "Tonalità"),
+				"Palette di ombretti",
+				"Eyeliner liquido",
+			],
+			FORMATO,
+		),
+		...voci(
+			BELLEZZA,
+			"Make-up labbra",
+			[
+				dichiara("Rossetto matte", "Finish"),
+				dichiara("Gloss labbra", "Finish"),
+				["Matita labbra", 6, 12],
+			],
+			FORMATO,
+		),
+		...voci(
+			BELLEZZA,
+			"Creme viso",
+			["Crema viso idratante 50 ml", "Crema antirughe notte 50 ml"],
+			[...FORMATO, "Beneficio/Funzione"],
+		),
+		...voci(
+			BELLEZZA,
+			"Sieri",
+			["Siero alla vitamina C 30 ml", "Siero all'acido ialuronico 30 ml"],
+			[...FORMATO, "Ingredienti principali"],
+		),
 	],
 	Cartoleria: [
 		...voci(UFFICIO, "Penne", [
 			["Penna stilografica", 20, 80],
-			["Penne a sfera blu (10 pezzi)", 3, 7],
+			dichiara(["Penne a sfera blu (10 pezzi)", 3, 7], "Colore"),
 			["Penna gel cancellabile", 1, 3],
-			["Evidenziatori (4 colori)", 3, 7],
+			dichiara(["Evidenziatori (4 colori)", 3, 7], "Colore"),
 		]),
 		...voci(UFFICIO, "Matite", [
-			["Matite in grafite HB (12 pezzi)", 3, 7],
+			dichiara(["Matite in grafite HB (12 pezzi)", 3, 7], ...MATERIALE),
 			"Portamine 0,5 mm",
 			["Temperamatite con serbatoio", 2, 5],
 		]),
@@ -895,15 +1220,15 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 		...voci(GIARDINO, "Attrezzi giardino", [
 			"Forbici da potatura",
-			"Rastrello in acciaio",
-			"Vanga con manico in legno",
+			dichiara("Rastrello in acciaio", ...MATERIALE_COLORE),
+			dichiara("Vanga con manico in legno", ...MATERIALE),
 			["Guanti da giardinaggio", 5, 12],
 			["Tagliasiepi elettrico", 60, 150],
 		]),
 		...voci(GIARDINO, "Irrigazione", [
 			"Tubo da giardino 25 m",
 			"Irrigatore oscillante",
-			"Annaffiatoio in metallo 10 l",
+			dichiara("Annaffiatoio in metallo 10 l", ...MATERIALE),
 			"Programmatore per irrigazione",
 		]),
 	],
@@ -924,54 +1249,79 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Tortellini di Bologna 500 g", 14, 22],
 			"Tortelloni di ricotta 500 g",
 		]),
-		...voci(FOOD, "Salumi", [
-			"Prosciutto di Parma DOP",
-			"Culatello di Zibello DOP",
-			"Salame Felino IGP",
-		]),
-		...voci(FOOD, "Salumi", ["Mortadella Bologna IGP"], NON_STAGIONATO),
-		...voci(FOOD, "Formaggi e latticini", [
-			"Parmigiano Reggiano DOP 24 mesi",
-			"Gorgonzola dolce DOP",
-		]),
+		...voci(
+			FOOD,
+			"Salumi",
+			[
+				dichiara("Prosciutto di Parma DOP", "Denominazione"),
+				dichiara("Culatello di Zibello DOP", "Denominazione"),
+				dichiara("Salame Felino IGP", "Denominazione"),
+			],
+			SALUME,
+		),
+		...voci(
+			FOOD,
+			"Salumi",
+			[dichiara("Mortadella Bologna IGP", "Denominazione")],
+			[...SALUME, ...NON_STAGIONATO],
+		),
 		...voci(
 			FOOD,
 			"Formaggi e latticini",
 			[
-				["Squacquerone di Romagna DOP", 3, 6],
+				dichiara(
+					"Parmigiano Reggiano DOP 24 mesi",
+					"Stagionatura",
+					"Denominazione",
+				),
+				// Dolce = giovane, pochi mesi.
+				dichiara("Gorgonzola dolce DOP", "Stagionatura", "Denominazione"),
+			],
+			FORMAGGIO,
+		),
+		...voci(
+			FOOD,
+			"Formaggi e latticini",
+			[
+				dichiara(["Squacquerone di Romagna DOP", 3, 6], "Denominazione"),
 				["Ricotta di pecora", 3, 6],
 			],
-			NON_STAGIONATO,
+			[...FORMAGGIO, ...NON_STAGIONATO],
 		),
 		...voci(FOOD, "Conserve", [
 			["Carciofini sott'olio 280 g", 4, 7],
 			"Funghi porcini secchi 50 g",
 		]),
 		...voci(FOOD, "Olio e condimenti", [
-			["Aceto balsamico di Modena IGP 250 ml", 4, 9],
+			dichiara(["Aceto balsamico di Modena IGP 250 ml", 4, 9], "Denominazione"),
 		]),
 	],
 
 	// ── Blocco bolognese (`bolognaPrefixes`) ──────────────
 	Pescheria: [
-		...voci(FOOD, "Pesce", [
-			["Orata", 10, 18],
-			["Branzino", 12, 20],
-			["Salmone in tranci", 12, 22],
-			["Gamberi rossi", 25, 45],
-			["Calamari", 12, 20],
-			["Cozze 1 kg", 3, 6],
-			"Vongole veraci 500 g",
-			["Seppie", 10, 16],
-			["Polpo", 14, 22],
-			["Pesce spada in tranci", 18, 28],
-			["Alici fresche", 5, 9],
-			["Sogliola", 18, 28],
-			"Merluzzo in filetti",
-			"Baccalà ammollato",
-			["Tonno rosso in tranci", 25, 40],
-			["Scampi", 25, 45],
-		]),
+		...voci(
+			FOOD,
+			"Pesce",
+			[
+				["Orata", 10, 18],
+				["Branzino", 12, 20],
+				["Salmone in tranci", 12, 22],
+				["Gamberi rossi", 25, 45],
+				["Calamari", 12, 20],
+				["Cozze 1 kg", 3, 6],
+				"Vongole veraci 500 g",
+				["Seppie", 10, 16],
+				["Polpo", 14, 22],
+				["Pesce spada in tranci", 18, 28],
+				["Alici fresche", 5, 9],
+				["Sogliola", 18, 28],
+				"Merluzzo in filetti",
+				"Baccalà ammollato",
+				["Tonno rosso in tranci", 25, 40],
+				["Scampi", 25, 45],
+			],
+			PESCE,
+		),
 		...voci(FOOD, "Piatti pronti", [
 			["Insalata di mare", 12, 20],
 			"Frittura di paranza",
@@ -994,64 +1344,100 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Arachidi tostate salate 200 g", 2, 4],
 			["Taralli all'olio 250 g", 2, 4],
 		]),
-		...voci(FOOD, "Birra", [
-			["Birra lager in bottiglia 66 cl", 1, 3],
-			["Birra artigianale chiara 33 cl", 3, 6],
-			["Birra rossa doppio malto 33 cl", 2, 4],
-			["Birra weiss 50 cl", 2, 4],
-		]),
-		...voci(FOOD, "Vino", [
-			"Pignoletto frizzante DOC 75 cl",
-			"Prosecco DOC extra dry 75 cl",
-		]),
-		...voci(FOOD, "Liquori e distillati", [
-			"Amaro alle erbe 70 cl",
-			"Limoncello 50 cl",
-			"Bitter rosso per aperitivo 70 cl",
-			"Grappa bianca 70 cl",
-		]),
+		...voci(
+			FOOD,
+			"Birra",
+			[
+				["Birra lager in bottiglia 66 cl", 1, 3],
+				["Birra artigianale chiara 33 cl", 3, 6],
+				["Birra rossa doppio malto 33 cl", 2, 4],
+				["Birra weiss 50 cl", 2, 4],
+			],
+			BIRRA,
+		),
+		...voci(
+			FOOD,
+			"Vino",
+			[
+				dichiara("Pignoletto frizzante DOC 75 cl", ...BOLLICINE),
+				dichiara("Prosecco DOC extra dry 75 cl", ...BOLLICINE),
+			],
+			VINO,
+		),
+		// Grappa, limoncello e bitter hanno gradazioni loro (grappa ≥ 37,5%).
+		...voci(
+			FOOD,
+			"Liquori e distillati",
+			[
+				"Amaro alle erbe 70 cl",
+				dichiara("Limoncello 50 cl", "Gradazione alcolica"),
+				dichiara("Bitter rosso per aperitivo 70 cl", "Gradazione alcolica"),
+				dichiara("Grappa bianca 70 cl", "Gradazione alcolica"),
+			],
+			DISTILLATO,
+		),
 		...voci(FOOD, "Bevande analcoliche", [
 			["Chinotto 33 cl", 1, 3],
 			["Acqua tonica 20 cl", 1, 2],
 			["Tè freddo alla pesca 50 cl", 2, 4],
 		]),
-		...voci(FOOD, "Piatti pronti", [
-			["Piadina crudo e squacquerone", 5, 8],
-			["Toast prosciutto e formaggio", 3, 5],
-			["Tramezzino tonno e carciofi", 2, 4],
-		]),
+		...voci(
+			FOOD,
+			"Piatti pronti",
+			[
+				["Piadina crudo e squacquerone", 5, 8],
+				["Toast prosciutto e formaggio", 3, 5],
+				["Tramezzino tonno e carciofi", 2, 4],
+			],
+			PEZZO_SINGOLO,
+		),
 		...voci(FOOD, "Dolci", [["Cornetto alla crema", 1, 3]]),
 	],
 	Parrucchiere: [
 		...voci(BELLEZZA, "Shampoo", [
-			"Shampoo nutriente per capelli secchi 250 ml",
-			"Shampoo antiforfora 250 ml",
-			"Shampoo per capelli colorati 250 ml",
+			dichiara(
+				"Shampoo nutriente per capelli secchi 250 ml",
+				"Tipo pelle/capelli",
+				"Beneficio/Funzione",
+			),
+			dichiara("Shampoo antiforfora 250 ml", "Beneficio/Funzione"),
+			dichiara("Shampoo per capelli colorati 250 ml", "Tipo pelle/capelli"),
 			"Shampoo delicato per uso frequente 250 ml",
-			"Shampoo ristrutturante 1 l",
-			"Shampoo secco 200 ml",
+			dichiara("Shampoo ristrutturante 1 l", "Beneficio/Funzione"),
+			// Si spruzza sui capelli asciutti, senz'acqua.
+			dichiara("Shampoo secco 200 ml", ...FORMATO, "Modalità d'uso"),
 		]),
 		...voci(BELLEZZA, "Balsamo", [
-			"Balsamo districante 200 ml",
-			"Maschera per capelli alla cheratina 250 ml",
-			"Balsamo senza risciacquo 150 ml",
-			"Balsamo per capelli ricci 200 ml",
+			dichiara("Balsamo districante 200 ml", "Beneficio/Funzione"),
+			dichiara(
+				"Maschera per capelli alla cheratina 250 ml",
+				...FORMATO,
+				"Ingredienti principali",
+			),
+			dichiara("Balsamo senza risciacquo 150 ml", "Modalità d'uso"),
+			dichiara("Balsamo per capelli ricci 200 ml", "Tipo pelle/capelli"),
 		]),
-		...voci(BELLEZZA, "Styling capelli", [
-			"Lacca a tenuta forte 400 ml",
-			"Mousse volumizzante 200 ml",
-			"Cera opaca 100 ml",
-			"Spray termoprotettore 150 ml",
-			"Gel fissante 150 ml",
-			"Olio per punte secche 50 ml",
-			"Crema per ricci 150 ml",
-		]),
+		// Lacca, mousse, cera, gel: il nome è già il formato.
+		...voci(
+			BELLEZZA,
+			"Styling capelli",
+			[
+				"Lacca a tenuta forte 400 ml",
+				dichiara("Mousse volumizzante 200 ml", "Beneficio/Funzione"),
+				"Cera opaca 100 ml",
+				dichiara("Spray termoprotettore 150 ml", "Beneficio/Funzione"),
+				"Gel fissante 150 ml",
+				dichiara("Olio per punte secche 50 ml", "Tipo pelle/capelli"),
+				dichiara("Crema per ricci 150 ml", "Tipo pelle/capelli"),
+			],
+			FORMATO,
+		),
 		...voci(
 			BELLEZZA,
 			"Styling capelli",
 			[
 				["Asciugacapelli professionale 2000 W", 60, 150],
-				["Piastra per capelli in ceramica", 40, 120],
+				dichiara(["Piastra per capelli in ceramica", 40, 120], ...MATERIALE),
 				["Ferro arricciacapelli", 30, 80],
 			],
 			ATTREZZO_BELLEZZA,
@@ -1059,19 +1445,36 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 	],
 	Barbiere: [
 		...voci(BELLEZZA, "Shampoo", [
-			"Shampoo da uomo rinforzante 250 ml",
-			"Shampoo per barba 150 ml",
-		]),
-		...voci(BELLEZZA, "Styling capelli", [
-			"Cera opaca 100 ml",
-			"Gel fissante 150 ml",
-			"Pomata lucida per capelli 100 ml",
-			"Tonico per capelli 200 ml",
+			dichiara("Shampoo da uomo rinforzante 250 ml", "Beneficio/Funzione"),
+			// La barba non è un tipo di capello.
+			dichiara(
+				"Shampoo per barba 150 ml",
+				"Tipo pelle/capelli",
+				"Modalità d'uso",
+			),
 		]),
 		...voci(
 			BELLEZZA,
 			"Styling capelli",
-			["Pettine in corno", "Spazzola per barba in setola"],
+			[
+				"Cera opaca 100 ml",
+				"Gel fissante 150 ml",
+				"Pomata lucida per capelli 100 ml",
+				"Tonico per capelli 200 ml",
+			],
+			FORMATO,
+		),
+		...voci(
+			BELLEZZA,
+			"Styling capelli",
+			[
+				dichiara("Pettine in corno", ...MATERIALE),
+				dichiara(
+					"Spazzola per barba in setola",
+					...MATERIALE,
+					"Tipo pelle/capelli",
+				),
+			],
 			ATTREZZO_BELLEZZA,
 		),
 		...voci(
@@ -1087,10 +1490,14 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		),
 		...voci(BELLEZZA, "Creme viso", [
 			"Balsamo dopobarba 100 ml",
-			"Olio da barba 30 ml",
-			"Crema da barba 150 ml",
+			dichiara("Olio da barba 30 ml", ...FORMATO),
+			dichiara("Crema da barba 150 ml", ...FORMATO),
 			"Balsamo per barba 50 ml",
-			"Crema idratante viso da uomo 50 ml",
+			dichiara(
+				"Crema idratante viso da uomo 50 ml",
+				...FORMATO,
+				"Beneficio/Funzione",
+			),
 		]),
 		...voci(BELLEZZA, "Profumi uomo", [
 			["Eau de toilette agrumata 100 ml", 40, 70],
@@ -1120,24 +1527,41 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		...voci(LIBRI, "DVD", [["Film d'animazione in DVD", 7, 15]]),
 		...voci(HOBBY, "Modellismo", [
 			"Kit di montaggio robot in scala 1:144",
-			"Miniature fantasy da dipingere",
+			dichiara("Miniature fantasy da dipingere", "Colore"),
 			"Modellino di astronave da montare",
 		]),
 		...voci(HOBBY, "Colori", ["Colori acrilici per miniature (set)"]),
 	],
 	Biciclette: [
 		...voci(SPORT, "Biciclette", [
-			["City bike da donna 28 pollici", 250, 600],
-			["City bike da uomo 28 pollici", 250, 600],
-			["Mountain bike front 29 pollici", 400, 1200],
-			["Bici da corsa in alluminio", 700, 1800],
-			["Bici gravel", 800, 2000],
+			dichiara(["City bike da donna 28 pollici", 250, 600], "Diametro ruote"),
+			dichiara(["City bike da uomo 28 pollici", 250, 600], "Diametro ruote"),
+			dichiara(
+				["Mountain bike front 29 pollici", 400, 1200],
+				"Diametro ruote",
+				"Sospensioni",
+			),
+			// Corsa e gravel: telaio rigido.
+			dichiara(
+				["Bici da corsa in alluminio", 700, 1800],
+				"Materiale",
+				"Materiale telaio",
+				"Sospensioni",
+			),
+			dichiara(["Bici gravel", 800, 2000], "Sospensioni"),
 			["Bici da trekking", 500, 1200],
-			["Bici pieghevole 20 pollici", 300, 800],
+			// Taglia unica.
+			dichiara(
+				["Bici pieghevole 20 pollici", 300, 800],
+				"Diametro ruote",
+				"Misura telaio",
+			),
 			["Bici elettrica da città", 1200, 3000],
-			["Bicicletta da bambino 16 pollici", 120, 300],
-			["Bici senza pedali", 40, 120],
+			// Misure da adulto: non valgono per le bici dei bambini.
+			dichiara(["Bicicletta da bambino 16 pollici", 120, 300], ...TELAIO_BICI),
+			dichiara(["Bici senza pedali", 40, 120], ...TELAIO_BICI),
 		]),
+		// Misure del telaio e portata da bici: sugli accessori non valgono.
 		...voci(
 			SPORT,
 			"Accessori bici",
@@ -1145,29 +1569,18 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 				["Casco da bici", 30, 120],
 				"Luci LED per bici (coppia)",
 				"Lucchetto ad arco",
-				["Campanello in ottone", 5, 15],
+				dichiara(["Campanello in ottone", 5, 15], ...MATERIALE_COLORE),
 				"Pompa da pavimento con manometro",
 				["Borraccia da bici 750 ml", 5, 15],
-				"Sella in gel",
+				dichiara("Sella in gel", ...MATERIALE),
 				["Cavalletto laterale", 10, 25],
 				"Parafanghi (coppia)",
-			],
-			TELAIO_BICI,
-		),
-		...voci(
-			SPORT,
-			"Accessori bici",
-			[["Camera d'aria 700x28c", 5, 12], "Copertone da città 700x35c"],
-			TELAIO_BICI.filter((c) => c !== "Diametro ruote"),
-		),
-		...voci(
-			SPORT,
-			"Accessori bici",
-			[
+				dichiara(["Camera d'aria 700x28c", 5, 12], "Colore"),
+				dichiara("Copertone da città 700x35c", "Colore"),
 				"Portapacchi posteriore",
 				["Seggiolino posteriore per bambini", 50, 130],
 			],
-			TELAIO_BICI.filter((c) => c !== "Peso massimo supportato"),
+			TELAIO_BICI,
 		),
 	],
 	"Articoli sportivi": [
@@ -1185,7 +1598,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 		...voci(SPORT, "Yoga", [
 			"Tappetino yoga antiscivolo",
-			["Blocco yoga in sughero", 8, 18],
+			dichiara(["Blocco yoga in sughero", 8, 18], ...MATERIALE_COLORE),
 			["Cinghia per yoga", 6, 15],
 		]),
 		...voci(SPORT, "Pilates", ["Palla da pilates 65 cm", "Anello pilates"]),
@@ -1202,7 +1615,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 		...voci(SPORT, "Sport acquatici", [
 			["Occhialini da nuoto", 8, 25],
-			["Cuffia in silicone", 5, 15],
+			dichiara(["Cuffia in silicone", 5, 15], ...MATERIALE),
 		]),
 		...voci(SPORT, "Sport invernali", [
 			["Maschera da sci con lente fotocromatica", 50, 140],
@@ -1215,8 +1628,8 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			INFANZIA,
 			"Giocattoli educativi",
 			[
-				"Puzzle in legno 24 pezzi",
-				"Abaco in legno",
+				dichiara("Puzzle in legno 24 pezzi", ...MATERIALE),
+				dichiara("Abaco in legno", ...MATERIALE),
 				["Kit del piccolo chimico", 20, 40],
 				["Telescopio per bambini", 30, 70],
 				["Lavagna magnetica", 15, 35],
@@ -1238,12 +1651,12 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		...voci(INFANZIA, "Costruzioni", [
 			["Mattoncini da costruzione 500 pezzi", 20, 45],
 			["Costruzioni magnetiche", 25, 60],
-			["Trenino in legno con binari", 25, 60],
-			"Costruzioni in legno",
+			dichiara(["Trenino in legno con binari", 25, 60], ...MATERIALE),
+			dichiara("Costruzioni in legno", ...MATERIALE),
 		]),
 		...voci(HOBBY, "Modellismo", [
 			"Modellino d'auto da montare in scala 1:24",
-			"Aeromodello in balsa",
+			dichiara("Aeromodello in balsa", ...MATERIALE_COLORE),
 		]),
 		...voci(HOBBY, "Kit fai da te", [
 			"Kit braccialetti con perline",
@@ -1253,27 +1666,74 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 	],
 	Elettronica: [
 		...voci(ELETTRONICA, "Smartphone", [
-			["Smartphone Android 128 GB", 150, 400],
+			dichiara(
+				["Smartphone Android 128 GB", 150, 400],
+				"Sistema operativo",
+				"Memoria interna",
+			),
 		]),
-		...voci(ELETTRONICA, "Tablet", [["Tablet 10 pollici 64 GB", 150, 350]]),
+		...voci(ELETTRONICA, "Tablet", [
+			dichiara(
+				["Tablet 10 pollici 64 GB", 150, 350],
+				"Dimensione display",
+				"Memoria interna",
+			),
+		]),
 		...voci(ELETTRONICA, "Laptop", [
-			["Notebook 15,6 pollici 512 GB", 450, 1000],
+			dichiara(
+				["Notebook 15,6 pollici 512 GB", 450, 1000],
+				"Dimensione display",
+				"Memoria/Storage",
+			),
 		]),
-		...voci(ELETTRONICA, "Monitor", [["Monitor 27 pollici QHD", 200, 400]]),
-		...voci(ELETTRONICA, "Mouse", ["Mouse wireless ergonomico"]),
+		...voci(ELETTRONICA, "Monitor", [
+			// QHD = 2560 × 1440, 16:9.
+			dichiara(
+				["Monitor 27 pollici QHD", 200, 400],
+				"Dimensione display",
+				"Risoluzione",
+				"Formato schermo",
+			),
+		]),
+		...voci(ELETTRONICA, "Mouse", [
+			dichiara("Mouse wireless ergonomico", "Connessione", "Wireless"),
+		]),
 		...voci(ELETTRONICA, "Tastiere", [
-			["Tastiera meccanica retroilluminata", 50, 130],
+			dichiara(
+				["Tastiera meccanica retroilluminata", 50, 130],
+				"Tipo tasti/switch",
+				"Retroilluminazione",
+			),
 		]),
-		...voci(ELETTRONICA, "Webcam", [["Webcam Full HD con microfono", 30, 80]]),
+		...voci(ELETTRONICA, "Webcam", [
+			dichiara(
+				["Webcam Full HD con microfono", 30, 80],
+				"Risoluzione video",
+				"Microfono integrato",
+			),
+		]),
 		...voci(ELETTRONICA, "Cuffie", [
-			["Cuffie wireless con cancellazione del rumore", 100, 300],
-			["Cuffie da gaming con microfono", 40, 120],
+			dichiara(
+				["Cuffie wireless con cancellazione del rumore", 100, 300],
+				"Connessione",
+				"Cancellazione rumore",
+			),
+			dichiara(["Cuffie da gaming con microfono", 40, 120], "Microfono"),
 		]),
-		...voci(ELETTRONICA, "Auricolari", [["Auricolari true wireless", 40, 150]]),
+		...voci(ELETTRONICA, "Auricolari", [
+			dichiara(["Auricolari true wireless", 40, 150], "Connessione"),
+		]),
 		...voci(ELETTRONICA, "Speaker Bluetooth", [
-			["Speaker Bluetooth impermeabile", 40, 120],
+			dichiara(["Speaker Bluetooth impermeabile", 40, 120], "Connessione"),
 		]),
-		...voci(ELETTRONICA, "Smart TV", [["Smart TV 55 pollici 4K", 400, 900]]),
+		...voci(ELETTRONICA, "Smart TV", [
+			dichiara(
+				["Smart TV 55 pollici 4K", 400, 900],
+				"Dimensione schermo",
+				"Risoluzione",
+				"Smart TV",
+			),
+		]),
 		...voci(ELETTRONICA, "Console", [["Console portatile", 200, 400]]),
 		...voci(
 			ELETTRONICA,
@@ -1282,7 +1742,14 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 				["Videogioco di corse automobilistiche", 30, 70],
 				["Videogioco d'avventura", 30, 70],
 			],
-			["Alimentazione", "Potenza"],
+			[
+				"Alimentazione",
+				"Potenza",
+				"Modello",
+				"Colore",
+				"Materiale",
+				"Connettività",
+			],
 		),
 		...voci(
 			ELETTRONICA,
@@ -1290,13 +1757,29 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			[["Controller wireless per console", 40, 75]],
 			["Potenza"],
 		),
-		...voci(ELETTRONICA, "Smartwatch", [["Smartwatch con GPS", 150, 400]]),
-		...voci(ELETTRONICA, "Fitness tracker", [
-			["Braccialetto fitness con cardiofrequenzimetro", 30, 80],
+		...voci(ELETTRONICA, "Smartwatch", [
+			dichiara(["Smartwatch con GPS", 150, 400], "GPS"),
 		]),
-		...voci(ELETTRONICA, "eReader", [["eReader 6 pollici", 100, 200]]),
-		...voci(ELETTRONICA, "Power bank", ["Power bank 20.000 mAh"]),
-		...voci(ELETTRONICA, "Caricabatterie", ["Caricatore USB-C 65 W"]),
+		...voci(ELETTRONICA, "Fitness tracker", [
+			dichiara(
+				["Braccialetto fitness con cardiofrequenzimetro", 30, 80],
+				"Sensori",
+			),
+		]),
+		...voci(ELETTRONICA, "eReader", [
+			dichiara(["eReader 6 pollici", 100, 200], "Dimensione display"),
+		]),
+		...voci(ELETTRONICA, "Power bank", [
+			dichiara("Power bank 20.000 mAh", "Capacità batteria"),
+		]),
+		...voci(ELETTRONICA, "Caricabatterie", [
+			dichiara(
+				"Caricatore USB-C 65 W",
+				"Potenza",
+				"Tipo connettore",
+				"Ricarica rapida",
+			),
+		]),
 		...voci(ELETTRONICA, "Domotica", [
 			["Lampadina smart Wi-Fi E27", 8, 20],
 			["Presa smart Wi-Fi", 10, 25],
@@ -1311,70 +1794,121 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 	],
 	Telefonia: [
 		...voci(ELETTRONICA, "Smartphone", [
-			["Smartphone Android 128 GB", 150, 400],
-			["Smartphone Android 256 GB", 250, 600],
-			["Smartphone compatto 5G 128 GB", 200, 500],
-			["Smartphone rinforzato 64 GB", 150, 350],
+			dichiara(
+				["Smartphone Android 128 GB", 150, 400],
+				"Sistema operativo",
+				"Memoria interna",
+			),
+			dichiara(
+				["Smartphone Android 256 GB", 250, 600],
+				"Sistema operativo",
+				"Memoria interna",
+			),
+			dichiara(
+				["Smartphone compatto 5G 128 GB", 200, 500],
+				"5G",
+				"Memoria interna",
+			),
+			dichiara(["Smartphone rinforzato 64 GB", 150, 350], "Memoria interna"),
 		]),
 		...voci(
 			ELETTRONICA,
 			"Custodie smartphone",
 			[
-				"Custodia in silicone",
-				"Custodia a libro in ecopelle",
-				"Cover trasparente antiurto",
+				dichiara("Custodia in silicone", ...MATERIALE),
+				dichiara("Custodia a libro in ecopelle", ...MATERIALE),
+				dichiara("Cover trasparente antiurto", "Colore", "Protezione"),
 			],
 			CUSTODIA,
 		),
 		...voci(
 			ELETTRONICA,
 			"Custodie smartphone",
-			["Pellicola protettiva in vetro temperato"],
+			[dichiara("Pellicola protettiva in vetro temperato", ...MATERIALE)],
 			[...CUSTODIA, "Tipo chiusura"],
 		),
 		...voci(ELETTRONICA, "Caricabatterie", [
-			"Caricatore USB-C 65 W",
-			"Caricatore USB-C 20 W",
-			"Caricatore wireless 15 W",
-			"Caricatore da auto con doppia USB",
+			// USB-C con i watt nel nome: ricarica rapida (Power Delivery).
+			dichiara(
+				"Caricatore USB-C 65 W",
+				"Potenza",
+				"Tipo connettore",
+				"Ricarica rapida",
+			),
+			dichiara(
+				"Caricatore USB-C 20 W",
+				"Potenza",
+				"Tipo connettore",
+				"Ricarica rapida",
+			),
+			dichiara("Caricatore wireless 15 W", "Potenza", "Numero porte"),
+			// Presa accendisigari a 12 V, due uscite USB-A.
+			dichiara(
+				"Caricatore da auto con doppia USB",
+				"Tensione ingresso",
+				"Numero porte",
+				"Tipo connettore",
+			),
 		]),
 		...voci(ELETTRONICA, "Power bank", [
-			"Power bank 20.000 mAh",
-			"Power bank magnetico 5.000 mAh",
+			dichiara("Power bank 20.000 mAh", "Capacità batteria"),
+			dichiara("Power bank magnetico 5.000 mAh", "Capacità batteria"),
 		]),
 		...voci(ELETTRONICA, "Auricolari", [
-			["Auricolari true wireless", 40, 150],
+			dichiara(["Auricolari true wireless", 40, 150], "Connessione"),
 			"Auricolari sportivi con archetto",
 		]),
-		...voci(ELETTRONICA, "Cuffie", ["Cuffie Bluetooth pieghevoli"]),
+		...voci(ELETTRONICA, "Cuffie", [
+			dichiara("Cuffie Bluetooth pieghevoli", "Connessione"),
+		]),
 		...voci(ELETTRONICA, "Smartwatch", [
-			["Smartwatch con GPS", 150, 400],
+			dichiara(["Smartwatch con GPS", 150, 400], "GPS"),
 			["Smartwatch con chiamate Bluetooth", 60, 200],
 		]),
 		...voci(ELETTRONICA, "Tablet", [
-			["Tablet 10 pollici 64 GB", 150, 350],
-			["Tablet 8 pollici 32 GB", 100, 200],
+			dichiara(
+				["Tablet 10 pollici 64 GB", 150, 350],
+				"Dimensione display",
+				"Memoria interna",
+			),
+			dichiara(
+				["Tablet 8 pollici 32 GB", 100, 200],
+				"Dimensione display",
+				"Memoria interna",
+			),
 		]),
 		...voci(ELETTRONICA, "Fitness tracker", [
-			["Braccialetto fitness con cardiofrequenzimetro", 30, 80],
+			dichiara(
+				["Braccialetto fitness con cardiofrequenzimetro", 30, 80],
+				"Sensori",
+			),
 		]),
 	],
 	Copisteria: [
 		...voci(UFFICIO, "Cartucce", [
-			["Cartuccia d'inchiostro nero compatibile", 8, 20],
-			["Cartucce a colori (confezione da 3)", 15, 35],
-			["Toner nero per stampante laser", 25, 70],
+			dichiara(["Cartuccia d'inchiostro nero compatibile", 8, 20], "Colore"),
+			dichiara(["Cartucce a colori (confezione da 3)", 15, 35], "Colore"),
+			dichiara(["Toner nero per stampante laser", 25, 70], "Colore"),
 			["Kit di ricarica inchiostro", 10, 20],
 		]),
 		...voci(UFFICIO, "Stampanti", [
-			["Stampante multifunzione a getto d'inchiostro", 60, 180],
-			["Stampante laser monocromatica", 90, 220],
+			// Multifunzione = con scanner.
+			dichiara(
+				["Stampante multifunzione a getto d'inchiostro", 60, 180],
+				"Tecnologia di stampa",
+				"Scanner integrato",
+			),
+			dichiara(
+				["Stampante laser monocromatica", 90, 220],
+				"Tecnologia di stampa",
+				"Colore/Monocromatica",
+			),
 		]),
 		...voci(UFFICIO, "Organizer", [
 			["Raccoglitore ad anelli", 3, 7],
 			["Cartellina con elastico", 2, 4],
 			["Portalistini 40 buste", 3, 7],
-			["Buste trasparenti forate (100 pezzi)", 4, 9],
+			dichiara(["Buste trasparenti forate (100 pezzi)", 4, 9], "Colore"),
 			"Copertine per rilegatura (100 pezzi)",
 			"Etichette adesive A4 (100 fogli)",
 		]),
@@ -1383,32 +1917,54 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Quaderno A4 a righe", 2, 4],
 		]),
 		...voci(UFFICIO, "Penne", [
-			["Penne a sfera blu (10 pezzi)", 3, 7],
-			["Evidenziatori (4 colori)", 3, 7],
-			["Marcatore indelebile nero", 1, 4],
-			["Penna roller nera", 2, 5],
+			dichiara(["Penne a sfera blu (10 pezzi)", 3, 7], "Colore"),
+			dichiara(["Evidenziatori (4 colori)", 3, 7], "Colore"),
+			dichiara(["Marcatore indelebile nero", 1, 4], "Colore"),
+			dichiara(["Penna roller nera", 2, 5], "Colore"),
 		]),
 		...voci(UFFICIO, "Agende", ["Agenda settimanale con copertina rigida"]),
-		...voci(UFFICIO, "Matite", [["Matite in grafite HB (12 pezzi)", 3, 7]]),
+		...voci(UFFICIO, "Matite", [
+			dichiara(["Matite in grafite HB (12 pezzi)", 3, 7], ...MATERIALE),
+		]),
 	],
 	"Pet shop": [
-		...voci(ANIMALI, "Cibo cani", [
-			["Crocchette per cani adulti 3 kg", 12, 25],
-			["Crocchette per cuccioli 1,5 kg", 9, 18],
-			["Bocconcini per cani al manzo 400 g", 1, 3],
-		]),
-		...voci(ANIMALI, "Cibo gatti", [
-			["Crocchette per gatti sterilizzati 1,5 kg", 9, 18],
-			["Bocconcini per gatti al salmone 85 g", 1, 2],
-			["Paté per gatti al pollo 100 g", 1, 3],
-		]),
+		...voci(
+			ANIMALI,
+			"Cibo cani",
+			[
+				dichiara(["Crocchette per cani adulti 3 kg", 12, 25], "Età animale"),
+				dichiara(["Crocchette per cuccioli 1,5 kg", 9, 18], "Età animale"),
+				dichiara(
+					["Bocconcini per cani al manzo 400 g", 1, 3],
+					"Gusto/Proteina",
+				),
+			],
+			["Specie"],
+		),
+		...voci(
+			ANIMALI,
+			"Cibo gatti",
+			[
+				dichiara(
+					["Crocchette per gatti sterilizzati 1,5 kg", 9, 18],
+					"Esigenza specifica",
+					"Età animale",
+				),
+				dichiara(
+					["Bocconcini per gatti al salmone 85 g", 1, 2],
+					"Gusto/Proteina",
+				),
+				dichiara(["Paté per gatti al pollo 100 g", 1, 3], "Gusto/Proteina"),
+			],
+			["Specie"],
+		),
 		...voci(ANIMALI, "Snack animali", [
 			"Snack dentali per cani",
 			"Biscotti per cani 500 g",
 			["Snack cremosi per gatti", 2, 5],
 		]),
 		...voci(ANIMALI, "Cucce", [
-			["Cuccia in tessuto imbottita", 20, 50],
+			dichiara(["Cuccia in tessuto imbottita", 20, 50], ...MATERIALE),
 			["Cuscino per cani lavabile", 15, 40],
 			["Casetta per gatti", 20, 50],
 		]),
@@ -1417,17 +1973,17 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Borsa trasportino per cani piccoli", 20, 45],
 		]),
 		...voci(ANIMALI, "Guinzagli", [
-			["Guinzaglio in nylon", 6, 14],
+			dichiara(["Guinzaglio in nylon", 6, 14], ...MATERIALE),
 			["Guinzaglio allungabile 5 m", 12, 28],
 		]),
 		...voci(ANIMALI, "Collari", [
-			"Collare in pelle per cani",
+			dichiara("Collare in pelle per cani", ...MATERIALE),
 			["Collare per gatti con campanello", 4, 10],
 			"Pettorina regolabile",
 		]),
 		...voci(ANIMALI, "Giochi animali", [
 			["Tiragraffi a colonna", 25, 80],
-			["Pallina per cani in gomma", 2, 6],
+			dichiara(["Pallina per cani in gomma", 2, 6], ...MATERIALE),
 			["Canna con piume per gatti", 3, 8],
 		]),
 		...voci(ANIMALI, "Prodotti igiene", [
@@ -1438,35 +1994,66 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 	],
 	Parafarmacia: [
+		...voci(
+			BELLEZZA,
+			"Integratori",
+			[
+				"Fermenti lattici in flaconcini",
+				"Magnesio e potassio in bustine",
+				"Omega 3 in perle",
+				["Collagene in polvere", 20, 35],
+			],
+			[...FORMATO, "Ingredienti principali"],
+		),
 		...voci(BELLEZZA, "Integratori", [
-			"Fermenti lattici in flaconcini",
-			"Magnesio e potassio in bustine",
-			"Integratore di ferro",
-			"Omega 3 in perle",
-			["Collagene in polvere", 20, 35],
+			dichiara("Integratore di ferro", "Ingredienti principali"),
 		]),
-		...voci(BELLEZZA, "Vitamine", [
-			"Vitamina D3 in gocce",
-			"Multivitaminico in compresse",
-			"Vitamina C effervescente",
-		]),
-		...voci(BELLEZZA, "Creme viso", [
-			"Crema solare viso SPF 50",
-			"Crema idratante per pelli sensibili 50 ml",
-			"Crema riparatrice per pelli secche 50 ml",
-		]),
+		...voci(
+			BELLEZZA,
+			"Vitamine",
+			[
+				"Vitamina D3 in gocce",
+				"Multivitaminico in compresse",
+				"Vitamina C effervescente",
+			],
+			[...FORMATO, "Ingredienti principali"],
+		),
+		...voci(
+			BELLEZZA,
+			"Creme viso",
+			[
+				"Crema solare viso SPF 50",
+				dichiara(
+					"Crema idratante per pelli sensibili 50 ml",
+					"Beneficio/Funzione",
+					"Tipo pelle/capelli",
+				),
+				dichiara(
+					"Crema riparatrice per pelli secche 50 ml",
+					"Beneficio/Funzione",
+					"Tipo pelle/capelli",
+				),
+			],
+			FORMATO,
+		),
 		...voci(BELLEZZA, "Shampoo", ["Shampoo dermatologico delicato 200 ml"]),
 		...voci(INFANZIA, "Prodotti allattamento", [
 			"Biberon anticolica 260 ml",
 			"Tiralatte manuale",
-			["Ciuccio in silicone 0–6 mesi", 4, 9],
+			dichiara(["Ciuccio in silicone 0–6 mesi", 4, 9], ...MATERIALE),
 			["Coppette assorbilatte (30 pezzi)", 5, 9],
 		]),
-		...voci(INFANZIA, "Pannolini", [
-			"Pannolini taglia 3 (30 pezzi)",
-			"Pannolini taglia 4 (28 pezzi)",
-			"Mutandine assorbenti taglia 5 (20 pezzi)",
-		]),
+		// Taglia, fascia di peso e pezzi stanno tutti nel nome.
+		...voci(
+			INFANZIA,
+			"Pannolini",
+			[
+				"Pannolini taglia 3 (30 pezzi)",
+				"Pannolini taglia 4 (28 pezzi)",
+				"Mutandine assorbenti taglia 5 (20 pezzi)",
+			],
+			["Taglia pannolini", "Peso bambino", "Numero pezzi"],
+		),
 		...voci(FOOD, "Senza glutine", [
 			["Biscotti senza glutine 250 g", 3, 5],
 			["Pane in cassetta senza glutine 300 g", 3, 5],
@@ -1475,61 +2062,71 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 	],
 	Merceria: [
 		...voci(HOBBY, "Cucito", [
-			"Filo per cucire in cotone (set di 10)",
-			"Bottoni in madreperla",
-			"Aghi da cucito assortiti",
+			dichiara("Filo per cucire in cotone (set di 10)", ...MATERIALE_COLORE),
+			dichiara("Bottoni in madreperla", ...MATERIALE_COLORE),
+			dichiara("Aghi da cucito assortiti", "Colore"),
 			["Forbici da sarta", 12, 35],
 			["Metro da sarta", 2, 5],
 			"Puntaspilli",
 			["Cerniera lampo 20 cm", 1, 3],
-			["Nastro di raso", 2, 5],
-			["Ditale in metallo", 2, 5],
+			dichiara(["Nastro di raso", 2, 5], ...MATERIALE),
+			dichiara(["Ditale in metallo", 2, 5], ...MATERIALE),
 			["Gessetto da sarto", 1, 3],
 			["Spilli con capocchia (100 pezzi)", 2, 5],
 			["Toppe termoadesive", 2, 6],
 		]),
 		...voci(HOBBY, "Maglia", [
-			"Gomitolo di lana merino 50 g",
-			"Gomitolo di mohair 25 g",
-			"Filato di cotone 100 g",
-			"Ferri da maglia in bambù",
-			["Uncinetto in alluminio", 3, 7],
+			dichiara("Gomitolo di lana merino 50 g", ...MATERIALE),
+			dichiara("Gomitolo di mohair 25 g", ...MATERIALE),
+			dichiara("Filato di cotone 100 g", ...MATERIALE),
+			dichiara("Ferri da maglia in bambù", ...MATERIALE_COLORE),
+			dichiara(["Uncinetto in alluminio", 3, 7], ...MATERIALE),
 		]),
 		...voci(MODA, "Intimo", [
-			["Collant velati 20 denari", 4, 12],
-			["Calze di cotone (3 paia)", 6, 14],
-			["Calzettoni in lana", 8, 16],
-			["Canottiera in lana e seta", 20, 40],
-			["Slip in cotone (3 pezzi)", 10, 22],
+			dichiara(["Collant velati 20 denari", 4, 12], "Genere"),
+			dichiara(["Calze di cotone (3 paia)", 6, 14], ...TESSUTO),
+			dichiara(["Calzettoni in lana", 8, 16], ...TESSUTO_STAGIONE),
+			dichiara(["Canottiera in lana e seta", 20, 40], ...TESSUTO_STAGIONE),
+			dichiara(["Slip in cotone (3 pezzi)", 10, 22], ...TESSUTO),
 		]),
 	],
 	Casalinghi: [
+		// La misura nel nome è il diametro.
 		...voci(CASA, "Pentole", [
 			["Pentola a pressione 6 l", 50, 120],
-			"Casseruola in acciaio inox 20 cm",
+			dichiara(
+				"Casseruola in acciaio inox 20 cm",
+				...MATERIALE_COLORE,
+				"Larghezza",
+				"Profondità",
+			),
 			"Pentola per pasta 5 l",
-			"Tegame in alluminio 28 cm",
+			dichiara(
+				"Tegame in alluminio 28 cm",
+				...MATERIALE,
+				"Larghezza",
+				"Profondità",
+			),
 		]),
 		...voci(CASA, "Padelle", [
-			"Padella antiaderente 28 cm",
-			"Wok in acciaio al carbonio",
-			"Bistecchiera in ghisa",
-			"Padella per crêpes 24 cm",
+			dichiara("Padella antiaderente 28 cm", "Larghezza", "Profondità"),
+			dichiara("Wok in acciaio al carbonio", ...MATERIALE_COLORE),
+			dichiara("Bistecchiera in ghisa", ...MATERIALE_COLORE),
+			dichiara("Padella per crêpes 24 cm", "Larghezza", "Profondità"),
 		]),
 		...voci(
 			CASA,
 			"Utensili cucina",
 			[
-				"Tagliere in legno d'ulivo",
+				dichiara("Tagliere in legno d'ulivo", ...MATERIALE_COLORE),
 				["Set di coltelli da cucina", 40, 150],
-				["Mestolo in acciaio", 5, 12],
+				dichiara(["Mestolo in acciaio", 5, 12], ...MATERIALE_COLORE),
 				["Grattugia a quattro facce", 8, 18],
-				["Scolapasta in acciaio inox", 10, 20],
+				dichiara(["Scolapasta in acciaio inox", 10, 20], ...MATERIALE_COLORE),
 				["Spremiagrumi manuale", 5, 15],
-				"Caffettiera moka 3 tazze",
 				["Apriscatole", 4, 12],
-				["Frusta in acciaio", 4, 10],
-				["Mattarello in legno", 6, 15],
+				dichiara(["Frusta in acciaio", 4, 10], ...MATERIALE_COLORE),
+				dichiara(["Mattarello in legno", 6, 15], ...MATERIALE_COLORE),
 			],
 			NON_ELETTRICO,
 		),
@@ -1541,6 +2138,15 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 		...voci(CASA, "Macchine caffè", [
 			["Macchina per espresso con lancia vapore", 120, 350],
+			// Si mette sul fornello; «3 tazze» è già la sua misura.
+			dichiara(
+				"Moka 3 tazze",
+				"Potenza",
+				"Peso",
+				"Larghezza",
+				"Altezza",
+				"Profondità",
+			),
 		]),
 	],
 	"Ricambi auto": [
@@ -1550,7 +2156,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			[
 				["Olio motore 5W-30 sintetico 4 l", 30, 55],
 				["Olio motore 10W-40 semisintetico 4 l", 22, 40],
-				"Olio motore per moto 10W-40 1 l",
+				dichiara("Olio motore per moto 10W-40 1 l", "Compatibilità veicolo"),
 			],
 			NON_MONTATO,
 		),
@@ -1564,8 +2170,11 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			NON_MONTATO,
 		),
 		...voci(AUTO, "Ricambi meccanici", [
-			["Pastiglie freno anteriori", 25, 60],
-			["Dischi freno anteriori (coppia)", 50, 120],
+			dichiara(["Pastiglie freno anteriori", 25, 60], "Posizione montaggio"),
+			dichiara(
+				["Dischi freno anteriori (coppia)", 50, 120],
+				"Posizione montaggio",
+			),
 			"Filtro dell'aria",
 			"Filtro dell'olio",
 			"Filtro abitacolo",
@@ -1574,20 +2183,32 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Lampadina alogena H7", 5, 15],
 		]),
 		...voci(AUTO, "Accessori interni auto", [
-			"Tappetini in gomma (set)",
-			"Coprisedili universali",
+			dichiara("Tappetini in gomma (set)", ...MATERIALE),
+			dichiara("Coprisedili universali", "Compatibilità veicolo"),
 			"Supporto smartphone da auto",
 			"Organizer per bagagliaio",
 		]),
 		...voci(AUTO, "Accessori esterni auto", [
 			"Spazzole tergicristallo 55 cm",
 			"Telo copriauto",
-			["Barre portatutto", 60, 150],
+			// Si montano sul tetto.
+			dichiara(["Barre portatutto", 60, 150], "Posizione montaggio"),
 		]),
-		...voci(AUTO, "Pneumatici", [
-			["Pneumatico estivo 205/55 R16", 60, 130],
-			["Pneumatico invernale 195/65 R15", 60, 130],
-		]),
+		// Misura e stagione stanno nel nome.
+		...voci(
+			AUTO,
+			"Pneumatici",
+			[
+				["Pneumatico estivo 205/55 R16", 60, 130],
+				["Pneumatico invernale 195/65 R15", 60, 130],
+			],
+			[
+				"Larghezza pneumatico",
+				"Rapporto d'aspetto",
+				"Diametro cerchio",
+				"Stagione pneumatici",
+			],
+		),
 		...voci(
 			AUTO,
 			"Caschi moto",
@@ -1598,7 +2219,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Compatibilità veicolo", "Anno compatibilità", "Posizione montaggio"],
 		),
 		...voci(AUTO, "Accessori moto", [
-			["Bauletto per moto 32 l", 40, 120],
+			dichiara(["Bauletto per moto 32 l", 40, 120], "Posizione montaggio"),
 			"Coprisella per moto",
 		]),
 	],
