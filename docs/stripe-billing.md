@@ -268,11 +268,14 @@ cancel/reactivate hit `resource_missing` on Stripe — expected.)
 To wipe the Stripe test account **and** the local DB together, do these three steps in
 this order:
 
-1. **Delete the Stripe test data.** Dashboard (test mode): *Developers → Overview →
-   Test data → Review test data → Delete test data*. On recent dashboards "Developers"
-   opens the Workbench panel (keyboard shortcut `~`). This removes customers,
-   subscriptions, Connect accounts, products and prices, plus the dev Price from the
-   one-time setup. Source: `stripe docs /testing-use-cases`, section "Delete test data".
+1. **Delete the Stripe test data.** In the test-mode dashboard, expand the **Developers**
+   bar («Sviluppatori» in the Italian UI) that is always visible at the bottom of the page:
+   it opens the Workbench panel (keyboard shortcut `~`, URL `…/test/workbench/overview`).
+   In its **Overview** tab: *Test data → Review test data → Delete test data*. This is
+   irreversible and removes customers, subscriptions, Connect accounts, products and
+   prices, plus the dev Price from the one-time setup. Stripe's guide
+   (`stripe docs /testing-use-cases`, "Delete test data") still says *Developers →
+   Overview* without mentioning the bottom bar.
 2. **Recreate the dev Price.** Run `bun run --cwd apps/api stripe:bootstrap` and put the
    printed id in `apps/api/.env` as `STRIPE_DEV_PRICE_ID`.
 3. **Reset the DB.** From the repo root, `bun run db:reset -- --only=customer` (or no
