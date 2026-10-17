@@ -11,7 +11,7 @@ export function PageHeader({
 	children?: ReactNode;
 }) {
 	return (
-		<div className="flex shrink-0 items-center justify-between">
+		<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3">
 			<div>
 				<h1 className="font-display text-2xl font-semibold tracking-tight">
 					{title}
