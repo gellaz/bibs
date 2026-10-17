@@ -55,7 +55,7 @@ function buildPlans(now: number): Plan[] {
 				softDeleteStore: false,
 			}),
 		),
-		// 1 × suspended — invisible to customers, recoverable via portal
+		// 1 × suspended — invisible to customers; ids Stripe finti: annulla chiude in locale, riattiva risponde 409
 		{
 			status: "suspended",
 			currentPeriodEnd: new Date(now - 5 * 86400000),

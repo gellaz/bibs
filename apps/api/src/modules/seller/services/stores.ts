@@ -270,6 +270,31 @@ async function loadOwnedSubscription(params: SubParams) {
 	return sub;
 }
 
+// Stripe non conosce più l'abbonamento (es. id finti del seed): come in
+// jobs/auto-cancel-suspended-stores.ts, la prova che è sparito basta a chiudere in locale.
+function isStripeResourceMissing(err: unknown): boolean {
+	return (err as { code?: string }).code === "resource_missing";
+}
+
+async function finalizeGoneSubscription(
+	sub: Awaited<ReturnType<typeof loadOwnedSubscription>>,
+): Promise<CancelResult> {
+	const now = new Date();
+	await db
+		.update(storeSubscription)
+		.set({
+			status: "canceled",
+			canceledAt: now,
+			cancelReason: "seller_canceled",
+		})
+		.where(eq(storeSubscription.id, sub.id));
+	await db
+		.update(storeTable)
+		.set({ deletedAt: now })
+		.where(and(eq(storeTable.id, sub.storeId), isNull(storeTable.deletedAt)));
+	return { status: "canceled", effectiveAt: now };
+}
+
 export async function cancelStoreSubscription(
 	params: SubParams,
 ): Promise<CancelResult> {
@@ -287,9 +312,14 @@ export async function cancelStoreSubscription(
 			// mutation. If Stripe throws, the DB write below never runs, so the
 			// row never ends up flagged 'seller_canceled' while the subscription
 			// is still live in Stripe (mirrors reactivateStoreSubscription).
-			await stripe.subscriptions.update(sub.stripeSubscriptionId, {
-				cancel_at_period_end: true,
-			});
+			try {
+				await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+					cancel_at_period_end: true,
+				});
+			} catch (err) {
+				if (isStripeResourceMissing(err)) return finalizeGoneSubscription(sub);
+				throw err;
+			}
 			// Lo stato lo porterebbe anche customer.subscription.updated, ma il FE
 			// rilegge subito: scriviamo ora quello che mapStripeStatus ne
 			// ricaverà (past_due vince su cancel_at_period_end).
@@ -317,6 +347,7 @@ export async function cancelStoreSubscription(
 			try {
 				await stripe.subscriptions.cancel(sub.stripeSubscriptionId);
 			} catch (err) {
+				if (isStripeResourceMissing(err)) return finalizeGoneSubscription(sub);
 				await db
 					.update(storeSubscription)
 					.set({ cancelReason: sub.cancelReason })
@@ -345,9 +376,19 @@ export async function reactivateStoreSubscription(
 	if (sub.status !== "canceling" && !sub.cancelAtPeriodEnd) {
 		throw new ServiceError(409, "Negozio non in cancellazione");
 	}
-	await stripe.subscriptions.update(sub.stripeSubscriptionId, {
-		cancel_at_period_end: false,
-	});
+	try {
+		await stripe.subscriptions.update(sub.stripeSubscriptionId, {
+			cancel_at_period_end: false,
+		});
+	} catch (err) {
+		if (isStripeResourceMissing(err)) {
+			throw new ServiceError(
+				409,
+				"L'abbonamento di questo negozio non esiste più: crea un nuovo negozio",
+			);
+		}
+		throw err;
+	}
 	// Come in cancelStoreSubscription: non aspettiamo il webhook.
 	await db
 		.update(storeSubscription)
