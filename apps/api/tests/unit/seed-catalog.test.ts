@@ -7,7 +7,9 @@ import {
 	type CatalogEntry,
 	catalogByPrefix,
 	catalogEntryByName,
-	descriptionsByMacro,
+	descriptionsByGroup,
+	descriptionsFor,
+	HOUSE_MADE_PREFIXES,
 } from "@/db/seed/fixtures/catalog";
 import { bolognaPrefixes, businessPrefixes } from "@/db/seed/fixtures/utils";
 import { parseCsv } from "@/lib/utils/csv";
@@ -105,15 +107,28 @@ describe("catalogo del seed per tipo di negozio", () => {
 		}
 	});
 
-	it("ogni macro usata ha marchi e descrizioni; marchi unici tra macro", () => {
+	it("ogni macro usata ha marchi; marchi unici tra macro", () => {
 		const macros = new Set(allEntries.map((e) => e.macro));
 		for (const macro of macros) {
 			// 8, non 6: un seller monomacro ne riceve fino a 8 distinti dallo stesso pool.
 			expect(brandPoolByMacro[macro]?.length ?? 0).toBeGreaterThanOrEqual(8);
-			expect(descriptionsByMacro[macro]?.length ?? 0).toBeGreaterThanOrEqual(4);
 		}
 		const brands = Object.values(brandPoolByMacro).flat();
 		expect(new Set(brands).size).toBe(brands.length);
+	});
+
+	it("ogni voce ha almeno 4 descrizioni del suo gruppo", () => {
+		for (const e of allEntries) {
+			expect(descriptionsFor(e).length).toBeGreaterThanOrEqual(4);
+		}
+		for (const texts of Object.values(descriptionsByGroup)) {
+			expect(texts.length).toBeGreaterThanOrEqual(4);
+		}
+	});
+
+	it("i tipi che producono da sé sono tipi di negozio veri", () => {
+		for (const prefix of HOUSE_MADE_PREFIXES)
+			expect(prefixes).toContain(prefix);
 	});
 
 	it("gli alcolici sono vino, birra e distillati", () => {

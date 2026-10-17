@@ -8,11 +8,7 @@ import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import type { BrandsBySellerProfileId } from "./brands";
-import {
-	ALCOHOLIC_SUBS,
-	catalogByPrefix,
-	descriptionsByMacro,
-} from "./catalog";
+import { ALCOHOLIC_SUBS, catalogByPrefix, descriptionsFor } from "./catalog";
 import { genEan13, pick, prefixForSeller } from "./utils";
 
 // ── Price ranges per macro (in €, integer; numeric stored with .toFixed(2)) ─
@@ -179,7 +175,7 @@ export async function seedProducts(brandsBySeller: BrandsBySellerProfileId) {
 			productRows.push({
 				sellerProfileId: s.sellerProfileId,
 				name: entry.name,
-				description: pick(descriptionsByMacro[entry.macro], i),
+				description: pick(descriptionsFor(entry), i),
 				ean,
 				brandId,
 				price: priceNum.toFixed(2),

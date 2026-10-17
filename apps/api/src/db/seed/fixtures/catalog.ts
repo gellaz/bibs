@@ -223,9 +223,9 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Ciabatta", 1, 3],
 			["Michette (4 pezzi)", 2, 3],
 			["Pane al latte (6 pezzi)", 2, 4],
-			"Focaccia genovese",
-			"Focaccia alle olive",
-			"Schiacciata all'olio",
+			["Focaccia genovese", 3, 6],
+			["Focaccia alle olive", 3, 6],
+			["Schiacciata all'olio", 3, 6],
 			["Grissini stirati a mano", 3, 6],
 			["Tigelle (6 pezzi)", 3, 5],
 			["Piadina romagnola (4 pezzi)", 3, 6],
@@ -233,9 +233,9 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Crackers al rosmarino", 2, 4],
 		]),
 		...voci(FOOD, "Dolci", [
-			"Crostata di albicocche",
-			"Torta di mele",
-			"Ciambellone",
+			["Crostata di albicocche", 12, 18],
+			["Torta di mele", 12, 18],
+			["Ciambellone", 8, 14],
 			["Cornetto alla crema", 1, 3],
 			["Brutti ma buoni 200 g", 4, 7],
 			["Frollini al burro 350 g", 2, 4],
@@ -252,7 +252,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Pastiera napoletana", 18, 28],
 			["Torta della nonna", 15, 25],
 			["Profiteroles al cioccolato", 14, 22],
-			"Zuppa inglese",
+			["Zuppa inglese", 15, 24],
 			["Torta diplomatica", 16, 26],
 			["Torta Sacher", 18, 28],
 			["Cantucci alle mandorle 250 g", 4, 7],
@@ -263,7 +263,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Torta Paradiso",
 			["Panettone artigianale 1 kg", 22, 35],
 			["Colomba artigianale 1 kg", 20, 32],
-			"Tiramisù",
+			["Tiramisù", 18, 28],
 			["Cornetto alla crema", 1, 3],
 		]),
 		...voci(
@@ -315,8 +315,8 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			[...SALUME, ...NON_STAGIONATO],
 		),
 		...voci(FOOD, "Piatti pronti", [
-			"Involtini di vitello",
-			"Spiedini misti di carne",
+			["Involtini di vitello", 8, 14],
+			["Spiedini misti di carne", 8, 14],
 			["Cotolette impanate (4 pezzi)", 6, 10],
 		]),
 	],
@@ -341,8 +341,8 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 				"Verdicchio dei Castelli di Jesi DOC 75 cl",
 				"Vermentino di Gallura DOCG 75 cl",
 				"Gewürztraminer Alto Adige DOC 75 cl",
-				"Montepulciano d'Abruzzo DOC 75 cl",
-				dichiara("Moscato d'Asti DOCG 75 cl", ...BOLLICINE),
+				["Montepulciano d'Abruzzo DOC 75 cl", 7, 12],
+				dichiara(["Moscato d'Asti DOCG 75 cl", 8, 14], ...BOLLICINE),
 				["Sagrantino di Montefalco DOCG 75 cl", 20, 40],
 			],
 			VINO,
@@ -362,15 +362,21 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			"Liquori e distillati",
 			[
 				dichiara("Grappa barricata 70 cl", "Gradazione alcolica"),
-				dichiara("Limoncello 50 cl", "Gradazione alcolica"),
-				"Amaro alle erbe 70 cl",
+				dichiara(["Limoncello 50 cl", 10, 16], "Gradazione alcolica"),
+				["Amaro alle erbe 70 cl", 12, 20],
 				"Nocino di Modena 50 cl",
-				dichiara("Vermouth rosso di Torino 75 cl", "Gradazione alcolica"),
+				dichiara(
+					["Vermouth rosso di Torino 75 cl", 12, 20],
+					"Gradazione alcolica",
+				),
 			],
 			DISTILLATO,
 		),
 		...voci(FOOD, "Olio e condimenti", [
-			dichiara("Olio extravergine toscano IGP 500 ml", "Denominazione"),
+			dichiara(
+				["Olio extravergine toscano IGP 500 ml", 9, 14],
+				"Denominazione",
+			),
 			dichiara(
 				["Aceto balsamico tradizionale di Modena DOP 100 ml", 40, 80],
 				"Denominazione",
@@ -407,12 +413,15 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			VINO,
 		),
 		...voci(FOOD, "Dolci", [
-			"Tiramisù",
+			// La porzione del ristorante, non la torta della pasticceria.
+			["Tiramisù (porzione)", 4, 7],
 			["Panna cotta ai frutti di bosco", 4, 7],
 			["Torta della nonna", 15, 25],
 		]),
 		...voci(FOOD, "Conserve", [["Sugo al pomodoro e basilico 300 g", 3, 6]]),
-		...voci(FOOD, "Olio e condimenti", ["Olio extravergine della casa 500 ml"]),
+		...voci(FOOD, "Olio e condimenti", [
+			["Olio extravergine della casa 500 ml", 6, 10],
+		]),
 	],
 	Trattoria: [
 		...voci(FOOD, "Piatti pronti", [
@@ -431,24 +440,24 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Tortellini fatti a mano 500 g", 14, 22],
 			["Tagliatelle all'uovo 500 g", 5, 8],
 			["Passatelli freschi 400 g", 5, 8],
-			"Tortelloni di ricotta 500 g",
+			["Tortelloni di ricotta 500 g", 7, 11],
 		]),
 		...voci(
 			FOOD,
 			"Vino",
 			[
 				dichiara(
-					"Lambrusco Grasparossa di Castelvetro DOC 75 cl",
+					["Lambrusco Grasparossa di Castelvetro DOC 75 cl", 6, 12],
 					...BOLLICINE,
 				),
-				"Sangiovese di Romagna DOC 75 cl",
-				dichiara("Pignoletto frizzante DOC 75 cl", ...BOLLICINE),
+				["Sangiovese di Romagna DOC 75 cl", 7, 12],
+				dichiara(["Pignoletto frizzante DOC 75 cl", 7, 12], ...BOLLICINE),
 			],
 			VINO,
 		),
 		...voci(FOOD, "Dolci", [
-			"Zuppa inglese",
-			"Torta di riso",
+			["Zuppa inglese (porzione)", 4, 6],
+			["Torta di riso", 12, 18],
 			["Raviole bolognesi (6 pezzi)", 4, 7],
 		]),
 		...voci(FOOD, "Conserve", [["Ragù bolognese in vasetto 300 g", 5, 8]]),
@@ -482,7 +491,10 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			dichiara("Camicia in lino da uomo", ...TESSUTO_STAGIONE, "Genere"),
 			dichiara("Pantaloni chino in cotone", ...TESSUTO),
 			dichiara(["Giacca in velluto a coste", 90, 200], ...TESSUTO_STAGIONE),
-			dichiara("Maglione girocollo in lana merino", ...TESSUTO_STAGIONE),
+			dichiara(
+				["Maglione girocollo in lana merino", 60, 120],
+				...TESSUTO_STAGIONE,
+			),
 			dichiara(["Trench impermeabile da uomo", 150, 350], "Genere", "Stagione"),
 			dichiara("Sciarpa in lana", ...ACCESSORIO_TESSILE, ...TESSUTO_STAGIONE),
 		]),
@@ -886,7 +898,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 				"Pizza quattro stagioni",
 				"Pizza bufalina",
 				"Pizza ortolana",
-				["Pizza napoli", 6, 9],
+				["Pizza napoletana", 6, 9],
 				["Calzone al forno", 7, 10],
 				["Supplì al telefono", 2, 3],
 				["Arancino al ragù", 2, 4],
@@ -897,7 +909,10 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			],
 			PEZZO_SINGOLO,
 		),
-		...voci(FOOD, "Dolci", ["Tiramisù", ["Babà napoletano", 3, 6]]),
+		...voci(FOOD, "Dolci", [
+			["Tiramisù (porzione)", 4, 7],
+			["Babà napoletano", 3, 6],
+		]),
 		...voci(
 			FOOD,
 			"Vino",
@@ -936,18 +951,21 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 				["Chianti Classico DOCG 75 cl", 12, 25],
 				["Rosso di Montalcino DOC 75 cl", 18, 30],
 				["Vino Nobile di Montepulciano DOCG 75 cl", 15, 28],
-				"Vernaccia di San Gimignano DOCG 75 cl",
+				["Vernaccia di San Gimignano DOCG 75 cl", 8, 13],
 			],
 			VINO,
 		),
 		...voci(FOOD, "Dolci", [
 			["Cantucci alle mandorle 250 g", 4, 7],
-			"Castagnaccio",
-			"Schiacciata alla fiorentina",
+			["Castagnaccio", 10, 15],
+			["Schiacciata alla fiorentina", 12, 18],
 		]),
 		...voci(FOOD, "Conserve", [["Sugo di cinghiale in vasetto 300 g", 5, 9]]),
 		...voci(FOOD, "Olio e condimenti", [
-			dichiara("Olio extravergine toscano IGP 500 ml", "Denominazione"),
+			dichiara(
+				["Olio extravergine toscano IGP 500 ml", 9, 14],
+				"Denominazione",
+			),
 		]),
 	],
 	Caffetteria: [
@@ -972,7 +990,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Cornetto integrale al miele", 1, 3],
 			["Bombolone alla crema", 1, 3],
 			["Muffin al cioccolato", 2, 4],
-			"Pasticcini mignon 500 g",
+			["Pasticcini mignon 500 g", 8, 12],
 			["Cantucci alle mandorle 250 g", 4, 7],
 		]),
 		...voci(
@@ -1191,9 +1209,9 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Zaino trolley per la scuola", 50, 110],
 		]),
 		...voci(HOBBY, "Colori", [
-			"Pastelli colorati (24 pezzi)",
+			["Pastelli colorati (24 pezzi)", 6, 12],
 			["Pennarelli lavabili (12 pezzi)", 4, 9],
-			"Acquerelli in pastiglie (12 colori)",
+			["Acquerelli in pastiglie (12 colori)", 8, 15],
 		]),
 	],
 	Vivaio: [
@@ -1247,7 +1265,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		]),
 		...voci(FOOD, "Pasta", [
 			["Tortellini di Bologna 500 g", 14, 22],
-			"Tortelloni di ricotta 500 g",
+			["Tortelloni di ricotta 500 g", 7, 11],
 		]),
 		...voci(
 			FOOD,
@@ -1290,7 +1308,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 		),
 		...voci(FOOD, "Conserve", [
 			["Carciofini sott'olio 280 g", 4, 7],
-			"Funghi porcini secchi 50 g",
+			["Funghi porcini secchi 50 g", 5, 9],
 		]),
 		...voci(FOOD, "Olio e condimenti", [
 			dichiara(["Aceto balsamico di Modena IGP 250 ml", 4, 9], "Denominazione"),
@@ -1359,7 +1377,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			FOOD,
 			"Vino",
 			[
-				dichiara("Pignoletto frizzante DOC 75 cl", ...BOLLICINE),
+				dichiara(["Pignoletto frizzante DOC 75 cl", 7, 12], ...BOLLICINE),
 				dichiara("Prosecco DOC extra dry 75 cl", ...BOLLICINE),
 			],
 			VINO,
@@ -1369,8 +1387,8 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			FOOD,
 			"Liquori e distillati",
 			[
-				"Amaro alle erbe 70 cl",
-				dichiara("Limoncello 50 cl", "Gradazione alcolica"),
+				["Amaro alle erbe 70 cl", 12, 20],
+				dichiara(["Limoncello 50 cl", 10, 16], "Gradazione alcolica"),
 				dichiara("Bitter rosso per aperitivo 70 cl", "Gradazione alcolica"),
 				dichiara("Grappa bianca 70 cl", "Gradazione alcolica"),
 			],
@@ -2048,9 +2066,9 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			INFANZIA,
 			"Pannolini",
 			[
-				"Pannolini taglia 3 (30 pezzi)",
-				"Pannolini taglia 4 (28 pezzi)",
-				"Mutandine assorbenti taglia 5 (20 pezzi)",
+				["Pannolini taglia 3 (30 pezzi)", 9, 14],
+				["Pannolini taglia 4 (28 pezzi)", 9, 14],
+				["Mutandine assorbenti taglia 5 (20 pezzi)", 9, 14],
 			],
 			["Taglia pannolini", "Peso bambino", "Numero pezzi"],
 		),
@@ -2076,10 +2094,10 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Toppe termoadesive", 2, 6],
 		]),
 		...voci(HOBBY, "Maglia", [
-			dichiara("Gomitolo di lana merino 50 g", ...MATERIALE),
-			dichiara("Gomitolo di mohair 25 g", ...MATERIALE),
-			dichiara("Filato di cotone 100 g", ...MATERIALE),
-			dichiara("Ferri da maglia in bambù", ...MATERIALE_COLORE),
+			dichiara(["Gomitolo di lana merino 50 g", 5, 9], ...MATERIALE),
+			dichiara(["Gomitolo di mohair 25 g", 6, 10], ...MATERIALE),
+			dichiara(["Filato di cotone 100 g", 4, 8], ...MATERIALE),
+			dichiara(["Ferri da maglia in bambù", 6, 12], ...MATERIALE_COLORE),
 			dichiara(["Uncinetto in alluminio", 3, 7], ...MATERIALE),
 		]),
 		...voci(MODA, "Intimo", [
@@ -2140,7 +2158,7 @@ export const catalogByPrefix: Record<string, readonly CatalogEntry[]> = {
 			["Macchina per espresso con lancia vapore", 120, 350],
 			// Si mette sul fornello; «3 tazze» è già la sua misura.
 			dichiara(
-				"Moka 3 tazze",
+				["Moka 3 tazze", 20, 35],
 				"Potenza",
 				"Peso",
 				"Larghezza",
@@ -2255,7 +2273,7 @@ export const brandPoolByMacro: Record<string, readonly string[]> = {
 		"Casa Sereni",
 		"Tavola Lieta",
 		"Officina Domestica",
-		"Ca' Bianca",
+		"Dimora Lieve",
 		"Bottega Liberty",
 	],
 	[FAI_DA_TE]: [
@@ -2310,7 +2328,7 @@ export const brandPoolByMacro: Record<string, readonly string[]> = {
 	],
 	[SPORT]: [
 		"Vetta Sport",
-		"Dolomia",
+		"Crinale",
 		"Scatto",
 		"Traguardo",
 		"Altura",
@@ -2370,17 +2388,71 @@ export const brandPoolByMacro: Record<string, readonly string[]> = {
 	],
 };
 
-/** Descrizioni generiche per macro: devono stare bene su ogni voce della macro. */
-export const descriptionsByMacro: Record<string, readonly string[]> = {
+/** Sotto-categorie con descrizioni proprie: per loro la macro è troppo larga. */
+const DESCRIPTION_GROUP: Record<string, string> = {
+	"Piatti pronti": "cucina",
+	"Pane e prodotti da forno": "cucina",
+	Dolci: "cucina",
+	Pasta: "cucina",
+	Carne: "freschi",
+	Pesce: "freschi",
+	Salumi: "salumeria",
+	"Formaggi e latticini": "salumeria",
+	Vino: "alcolici",
+	Birra: "alcolici",
+	"Liquori e distillati": "alcolici",
+	Gelati: "gelati",
+	Fiori: "fiori",
+};
+
+/** Descrizioni per gruppo o macro: devono stare bene su ogni voce del gruppo. */
+export const descriptionsByGroup: Record<string, readonly string[]> = {
+	// Piatti pronti, pizze, pane e dolci, pasta: dal banco o dalla dispensa.
+	cucina: [
+		"Ricetta della tradizione italiana, con ingredienti semplici e genuini.",
+		"Materie prime selezionate e lavorazione curata, per un sapore autentico.",
+		"Da portare in tavola per un pranzo in famiglia o una cena tra amici.",
+		"Il gusto di una volta, come lo preparavano le nostre nonne.",
+	],
+	freschi: [
+		"Fresco ogni giorno, da filiera controllata e tracciabile.",
+		"Al banco lo prepariamo come preferisci, pronto da cucinare.",
+		"Scelto ogni mattina dai nostri fornitori di fiducia.",
+		"Chiedi al banco il consiglio per la cottura migliore.",
+	],
+	salumeria: [
+		"Dai migliori caseifici e salumifici italiani.",
+		"Perfetto per un tagliere da condividere o per una merenda.",
+		"Da conservare in frigorifero e gustare a temperatura ambiente.",
+		"Sapore pieno e lavorazione tradizionale.",
+	],
+	alcolici: [
+		"Selezionato tra produttori che conosciamo di persona.",
+		"Da servire alla giusta temperatura per apprezzarne profumi e aromi.",
+		"Da gustare a tavola o a fine pasto, con moderazione.",
+		"Un'idea regalo sempre apprezzata.",
+	],
+	gelati: [
+		"Preparato ogni giorno nel nostro laboratorio.",
+		"Da conservare in freezer e gustare entro pochi giorni.",
+		"Fresco e goloso, perfetto per l'estate e non solo.",
+		"Ideale come dessert o per una pausa golosa.",
+	],
+	fiori: [
+		"Composto a mano dal nostro fiorista.",
+		"Il pensiero giusto per ogni occasione.",
+		"Te lo consegniamo con i consigli per farlo durare più a lungo.",
+		"Scelto con cura tra i migliori coltivatori.",
+	],
+	// Dispensa: riso, conserve, olio, caffè, tè, bevande, bio, senza glutine.
 	[FOOD]: [
 		"Selezionato da piccoli produttori italiani, con filiera corta e tracciabile.",
-		"Lavorazione tradizionale che rispetta i tempi e la stagionalità delle materie prime.",
 		"Sapore autentico e ingredienti semplici, come vuole la tradizione.",
-		"Da portare in tavola per un pranzo in famiglia o una cena tra amici.",
-		"Scelto assaggio dopo assaggio dal nostro banco, per offrirti solo il meglio.",
+		"Scelto dal nostro negozio per qualità e gusto.",
+		"Ideale per la spesa di tutti i giorni.",
 	],
 	[MODA]: [
-		"Taglio curato e materiali scelti per durare più di una stagione.",
+		"Materiali scelti e finiture curate, fatto per durare.",
 		"Rifinito a mano nei dettagli, si abbina con facilità.",
 		"Linee essenziali e uno stile che non passa di moda.",
 		"Realizzato in Italia da laboratori artigiani di fiducia.",
@@ -2394,15 +2466,15 @@ export const descriptionsByMacro: Record<string, readonly string[]> = {
 		"Un'idea regalo apprezzata da chi ama prendersi cura della casa.",
 	],
 	[FAI_DA_TE]: [
-		"Robusto e affidabile, adatto sia all'hobbista sia al professionista.",
+		"Affidabile, adatto sia all'hobbista sia al professionista.",
 		"Progettato per lavori precisi e duraturi, in casa e in cantiere.",
-		"Ergonomico e facile da usare, anche nei lavori più lunghi.",
+		"Facile da usare, anche nei lavori più lunghi.",
 		"Qualità professionale a un prezzo accessibile.",
 		"Conforme alle normative europee di sicurezza.",
 	],
 	[BELLEZZA]: [
-		"Pensato per la cura quotidiana, con risultati visibili nel tempo.",
-		"Prodotto in Italia, non testato sugli animali.",
+		"Pensato per la cura quotidiana di sé.",
+		"Prodotto in Italia con ingredienti e materiali selezionati.",
 		"Scelto dai professionisti del settore per qualità e affidabilità.",
 		"Un piccolo gesto di benessere da concedersi ogni giorno.",
 		"Il nostro personale ti consiglia la scelta più adatta alle tue esigenze.",
@@ -2412,14 +2484,14 @@ export const descriptionsByMacro: Record<string, readonly string[]> = {
 		"Scelto dal nostro staff tra le novità e i grandi classici.",
 		"Per appassionati e curiosi, da tenere sempre a portata di mano.",
 		"Un titolo che non può mancare nella tua collezione.",
-		"Ideale da regalare a chi ama le belle storie.",
+		"Un regalo pensato per chi ama scoprire cose nuove.",
 	],
 	[UFFICIO]: [
 		"Materiali di qualità per lo studio e il lavoro di ogni giorno.",
-		"Pratico e resistente, pensato per durare tutto l'anno.",
+		"Pratico e affidabile, per l'uso di tutti i giorni.",
 		"Ideale per la scuola, l'ufficio e lo studio a casa.",
-		"Design semplice e funzionale, per tenere tutto in ordine.",
-		"Un classico della cancelleria, scelto da studenti e professionisti.",
+		"Design semplice e funzionale.",
+		"Scelto da studenti e professionisti.",
 	],
 	[GIARDINO]: [
 		"Selezionato per dare soddisfazione stagione dopo stagione.",
@@ -2429,8 +2501,8 @@ export const descriptionsByMacro: Record<string, readonly string[]> = {
 		"Un'idea regalo sempre gradita per chi ama prendersi cura del verde.",
 	],
 	[SPORT]: [
-		"Pensato per allenarsi con comfort e sicurezza.",
-		"Leggero e resistente, adatto a principianti ed esperti.",
+		"Pensato per muoversi con comfort e sicurezza.",
+		"Resistente e affidabile, adatto a principianti ed esperti.",
 		"Scelto dai nostri esperti per prestazioni affidabili.",
 		"Per vivere lo sport e il tempo libero senza pensieri.",
 		"Materiali tecnici di qualità, costruito per durare.",
@@ -2443,8 +2515,8 @@ export const descriptionsByMacro: Record<string, readonly string[]> = {
 		"Consigliato da genitori ed educatori.",
 	],
 	[ELETTRONICA]: [
-		"Tecnologia affidabile e facile da configurare.",
-		"Due anni di garanzia e assistenza in negozio.",
+		"Tecnologia affidabile e senza complicazioni.",
+		"Assistenza in negozio prima e dopo l'acquisto.",
 		"Design curato, pensato per l'uso di tutti i giorni.",
 		"Ottimo rapporto qualità prezzo, scelto dai nostri tecnici.",
 		"Facile da usare fin dal primo giorno.",
@@ -2471,6 +2543,25 @@ export const descriptionsByMacro: Record<string, readonly string[]> = {
 		"Ottimo rapporto qualità prezzo.",
 	],
 };
+
+/** Le descrizioni adatte a una voce di catalogo. */
+export function descriptionsFor(
+	entry: Pick<CatalogEntry, "macro" | "sub">,
+): readonly string[] {
+	return descriptionsByGroup[DESCRIPTION_GROUP[entry.sub] ?? entry.macro];
+}
+
+/** Tipi di negozio che producono da sé: nessun marchio di terzi sui loro prodotti. */
+export const HOUSE_MADE_PREFIXES: ReadonlySet<string> = new Set([
+	"Pizzeria",
+	"Ristorante",
+	"Trattoria",
+	"Osteria",
+	"Gelateria",
+	"Pasticceria",
+	"Panificio",
+	"Sartoria",
+]);
 
 /** Gli alcolici restano al 22% anche dentro «Alimentari e bevande» (10%). */
 export const ALCOHOLIC_SUBS: ReadonlySet<string> = new Set([

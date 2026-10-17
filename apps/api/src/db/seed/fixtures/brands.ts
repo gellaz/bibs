@@ -3,7 +3,11 @@ import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
 import { sellerProfile } from "@/db/schemas/seller";
-import { brandPoolByMacro, catalogByPrefix } from "./catalog";
+import {
+	brandPoolByMacro,
+	catalogByPrefix,
+	HOUSE_MADE_PREFIXES,
+} from "./catalog";
 import { prefixForSeller } from "./utils";
 
 /** Seller active rank → list of brand rows assigned to that seller. */
@@ -88,6 +92,9 @@ export async function seedBrands(): Promise<BrandsBySellerProfileId> {
 		const m = s.email.match(/^seller(\d+)@test\.com$/);
 		if (!m) return;
 		const prefix = prefixForSeller(Number.parseInt(m[1], 10) - 1);
+		// Pizza, gelato e abito su misura sono loro: niente marchi, e i loro
+		// prodotti restano senza (seedProducts usa solo i marchi del seller).
+		if (HOUSE_MADE_PREFIXES.has(prefix)) return;
 		const macros = [...new Set(catalogByPrefix[prefix].map((e) => e.macro))];
 		for (const name of pickBrandsForSeller(rank, macros)) {
 			rowsToInsert.push({ sellerProfileId: s.sellerProfileId, name });
