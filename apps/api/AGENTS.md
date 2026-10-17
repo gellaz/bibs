@@ -316,20 +316,33 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
 - `src/db/index.ts` — exports a singleton Drizzle client backed by an explicit `pg.Pool`. Pool sizing is env-driven
   (`DATABASE_POOL_MAX`, `DATABASE_IDLE_TIMEOUT_MS`, `DATABASE_CONNECTION_TIMEOUT_MS`; defaults 20/30s/5s).
 - `src/db/seed/` — split between idempotent reference data and dev/staging fixtures (run via `bun run db:seed`):
-  - `index.ts` — top-level `seed()` composes `seedBase()` then `seedFixtures()`
+  - `index.ts` — top-level `seed(only?)` composes `seedBase()` then `seedFixtures(seedGroups(only))`
+  - `groups.ts` — `bun run db:seed -- --only=<admin|customer|seller>` seeds one group; without the flag, everything.
+    Base data, `pricing_config` and the admins always run. `customer` and `seller` are independent, and **orders
+    exist only in the full seed** (they need both customers and sellers)
   - `base/` — idempotent reference data, no auth dependency, safe in any environment:
     - `index.ts` — `seedBase()` runs locations + categories in order
     - `locations.ts` — `seedLocations()` for regions, provinces, municipalities (skip-if-present)
     - `categories.ts` — `seedStoreCategories()`, `seedProductCategories()` (skip-if-present)
     - `fetch-locations.ts` — standalone script to refresh the location JSON from GitHub
     - `regions.json`, `provinces.json`, `municipalities.json` — generated and committed
-  - `fixtures/` — test users for dev/staging only, depend on `better-auth`'s `signUpEmail`. Order matters: admins
-    → customers → sellers → extra-stores → billing → store-images → store-profiles → team → brands → products →
-    discounts. Each step is idempotent via canary check:
+  - `fixtures/` — test users for dev/staging only, depend on `better-auth`'s `signUpEmail`. Order matters: pricing
+    config → admins → customers → [dev-seller → sellers → extra-stores → billing → store-images → store-profiles →
+    team → brands → products → dev-seller catalog → characteristic values → discounts] → orders (the bracketed steps
+    only with the `seller` group, orders only in the full seed). Each step is idempotent via canary check:
     - `index.ts` — `seedFixtures()` orchestrator
     - `admins.ts` — `seedAdmins()` (3 admin users)
-    - `customers.ts` — `seedCustomers()` (~300 customers)
+    - `customers.ts` — `seedCustomers()` (~300 customers, `customer1..300@test.com`) plus the address book:
+      customers 1–5 have two Bologna addresses («Casa» default, «Lavoro») in different districts, every other
+      customer whose index is a multiple of 10 has one default «Casa» in a showcase municipality
     - `sellers.ts` — `seedSellers()` (~190 sellers; the first 95 are `active` → `seller1..seller95@test.com`).
+      Sign-up dates follow the index: `sellerSignupDaysAgo(idx) = 400 − 2·idx`, so stores and subscriptions are
+      created oldest-first in index order. The organization row is created only from `pending_review` onwards
+      (registration doesn't create one); sellers before `pending_document` (`pending_email`, `pending_personal`) are still named after the
+      email local part, and only `pending_email` is unverified; from `pending_company` on there is a document type
+      (varied by `documentFor(idx)`) and a placeholder document photo (`pending_document` sellers have neither). Three active sellers exist for the missing-data states (`utils.ts`):
+      seller11 has a store **without location**, seller14 a store **without photos**, seller18 a store
+      **without subscription**.
       Two blocks, deliberately kept apart so one can grow without moving the other: idx 0–49 are the *national*
       sellers (a store in one of the ten showcase municipalities — in practice Bologna or Genova, since
       `pickHandle(idx, 5, 3)` alternates between those two), idx 50–54 are active **without** a store (the
@@ -369,14 +382,34 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
       `pending-invite-1..8@test.com` (token `inv-test-<n>`, `expiresAt` 2099-12-31). Distribution:
       - 7 single-store sellers × 2 emp + 7 × 1 emp (idx `[2,5,9,12,16,19,23,26,30,33,37,40,44,47]`)
       - 4 multi-store × 4 emp (idx `[0,14,28,42]`) + 4 × 2 emp (idx `[7,21,35,49]`)
-    - `brands.ts` — `seedBrands()` picks 4–8 brands per active seller from a shared pool of 20 realistic Italian
-      brand names (rows are scoped per seller — schema has unique `(sellerProfileId, lower(name))`). Returns
-      `Map<sellerProfileId, brand[]>` consumed by `seedProducts`
-    - `products.ts` — `seedProducts()` generates 30–50 products per active seller (~3400 total) deterministically:
-      EAN-13 sequential from `8000000000000`, price range per macro-category, brand assigned 90% of the time, status
-      90/5/5 active/disabled/trashed. Sets `productCategoryId` on the product row (nullable FK, one sub-category
-      per product), plus `storeProduct` inventory (70% of products in all of the seller's stores, 30% in one),
-      and `productImage` placeholders pointing at picsum.photos
+    - `catalog.ts` — the product catalogue, one list per shop type: `catalogByPrefix` has 41 `businessPrefix`
+      entries of 20–28 products each (name, macro, sub-category, optional `price` range overriding the macro
+      default, optional `skip` = characteristics that don't apply or that the name already states). Also
+      `brandPoolByMacro` (invented brands, unique across macros), `HOUSE_MADE_PREFIXES` (Pizzeria, Ristorante,
+      Trattoria, Osteria, Gelateria, Pasticceria, Panificio, Sartoria: no brands), `descriptionsFor()` (descriptions by sub-category group) and `ALCOHOLIC_SUBS`
+    - `brands.ts` — `seedBrands()` picks 4–8 brands per active seller (rotating over the macros it sells, from
+      `brandPoolByMacro`; none for house-made shop types). Rows are scoped per seller — schema has unique
+      `(sellerProfileId, lower(name))`. Returns `Map<sellerProfileId, brand[]>` consumed by `seedProducts`
+    - `products.ts` — `seedProducts()` creates one product per catalog entry of the seller's shop type
+      (~2170 total, deterministic): EAN-13 sequential from `8000000000000`, price from the entry's `price` or the
+      macro range, a brand of the **same macro** 90% of the time, status 90/5/5 active/disabled/trashed, VAT from
+      `product_macro_categories.suggested_vat_rate` except alcohol (22%). Sets `productCategoryId` (one
+      sub-category per product), `storeProduct` inventory (70% of products in all of the seller's stores, 30% in
+      one; one product in twenty at stock 0 and one at 2, so the low-stock alerts have data) and `productImage`
+      placeholders pointing at picsum.photos
+    - `characteristic-values.ts` — `seedCharacteristicValues()` fills `product_characteristic_values`, after
+      products. Values only where the seed has a pool that fits the sub-category (sub-categories with only
+      generic characteristics may get none); `skippedCharacteristics(macro, sub, name)` leaves out what the entry's
+      `skip`, the food rule (no model/colour/…) or a quantity already in the name rules out
+    - `dev-seller-catalog.ts` — hand-written catalogue, promotions and orders of `seller@dev.bibs` (`seedDevSeller`
+      creates the seller with 2 stores); its orders run in the full seed only
+    - `orders.ts` — `seedOrders()` creates 12 `reserve_pickup` orders on the first public store of
+      `seller1@test.com` through the real services, for customers `customer1..12` picked by explicit email (the dev
+      seller's orders use `customer1..6`), ending in confirmed / ready / completed / cancelled / expired. No
+      pay-and-pickup: it needs a real PaymentIntent. Open reservations expire 30 days after seeding
+      (`SEED_RESERVATION_DAYS`)
+    - `billing-subscriptions.ts` — one subscription per live store (except the store of `seller18@test.com`, left without one on purpose); the mixed states (past_due, canceling,
+      suspended, canceled) go to the **newest** stores, so seller1's first store stays public for the orders
     - `discounts.ts` — `seedDiscounts()` fills `discounts` + `discount_products`: 0–3 promotions per active
       seller (two thirds of national sellers have at least one, four fifths of the Bologna block), 3–12 products
       each. `KIND_CYCLE` mixes the states on purpose — ~65% active and running, plus scheduled (`startsAt` in the
@@ -385,8 +418,8 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
       construction, which is what exercises the `ORDER BY percent DESC` in `getBestActiveDiscount()` ("the
       highest discount wins"). Without this fixture the customer's **In offerta** filter shows 0 and disables
       itself, and the seller's promo column stays empty — two shipped features that were never seen working
-    - `utils.ts` — shared fixture data (Italian names, cities, streets, brand pool, product nouns/adjectives,
-      `prefixToMacro` map, `genEan13`) and `pick()` helper. Also the geography and business-type pools:
+    - `utils.ts` — shared fixture data (Italian names, cities, streets, `genEan13`), `pick()`, `daysAgo()` and
+      the date/e-mail helpers above. Also the geography and business-type pools:
       `SEED_MUNICIPALITIES` (10 showcase comuni) and `BOLOGNA_BELT` (11 comuni of the first belt, with real
       ISTAT codes, coordinates and CAPs), `BOLOGNA_DISTRICTS` (14 anchors inside Bologna),
       `PHONE_PREFIX_BY_ISTAT`, and `businessPrefixes` (25, national) / `bolognaPrefixes` (16, Bologna block)

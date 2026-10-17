@@ -256,12 +256,35 @@ configuring Stripe at all:
 | `active` | most stores | the normal case |
 | `past_due` | 3 | renewal-failed banner + dunning copy |
 | `canceling` | 2 | "deactivates on <date>" + undo |
-| `suspended` | 1 | blocking banner, recoverable via portal |
+| `suspended` | 1 | blocking banner (on the fake seed subscription, cancel closes the store locally and reactivate answers 409) |
 | `canceled` | 1 | archived store (soft-deleted) |
 
 (Counts mirror `apps/api/src/db/seed/fixtures/billing-subscriptions.ts` — check there
-if they drift. Seeded rows carry fake `sub_seed_…` Stripe ids; portal/invoice calls against them will
-404 on Stripe — expected.)
+if they drift. Seeded rows carry fake `sub_seed_…` Stripe ids; the portal answers 404 because seed sellers have no Stripe customer, and
+cancel/reactivate hit `resource_missing` on Stripe — expected.)
+
+## Starting clean («Ripartire puliti»)
+
+To wipe the Stripe test account **and** the local DB together, do these three steps in
+this order:
+
+1. **Delete the Stripe test data.** In the test-mode dashboard, expand the **Developers**
+   bar («Sviluppatori» in the Italian UI) that is always visible at the bottom of the page:
+   it opens the Workbench panel (keyboard shortcut `~`, URL `…/test/workbench/overview`).
+   In its **Overview** tab: *Test data → Review test data → Delete test data*. This is
+   irreversible and removes customers, subscriptions, Connect accounts, products and
+   prices, plus the dev Price from the one-time setup. Stripe's guide
+   (`stripe docs /testing-use-cases`, "Delete test data") still says *Developers →
+   Overview* without mentioning the bottom bar.
+2. **Recreate the dev Price.** Run `bun run --cwd apps/api stripe:bootstrap` and put the
+   printed id in `apps/api/.env` as `STRIPE_DEV_PRICE_ID`.
+3. **Reset the DB.** From the repo root, `bun run db:reset -- --only=customer` (or no
+   `--only` for the full seed).
+
+Why this order: the seed copies `STRIPE_DEV_PRICE_ID` into `pricing_config`. If the DB is
+reset before the new Price exists, the seed skips `pricing_config` (or points at a Price
+Stripe no longer has), and checkout fails until you reset again. Resetting the DB without
+step 1 leaves orphan Stripe objects pointing at users that no longer exist.
 
 ## Automated tests
 

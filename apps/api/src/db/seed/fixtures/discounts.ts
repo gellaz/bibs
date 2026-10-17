@@ -185,9 +185,13 @@ function chunked<T>(arr: T[], size = CHUNK): T[][] {
 
 export async function seedDiscounts() {
 	// ── Canary ────────────────────────────────────────────
+	// Solo i seller generati: gli sconti del seller dev non la fanno scattare.
 	const [{ value: existing }] = await db
 		.select({ value: count() })
-		.from(discount);
+		.from(discount)
+		.innerJoin(sellerProfile, eq(sellerProfile.id, discount.sellerProfileId))
+		.innerJoin(user, eq(user.id, sellerProfile.userId))
+		.where(like(user.email, "seller%@test.com"));
 	if (existing > 0) {
 		console.log("  ⏭ Discounts already seeded, skipping");
 		return;

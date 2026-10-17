@@ -14,6 +14,7 @@ import {
 	PHONE_PREFIX_BY_ISTAT,
 	pick,
 	prefixForSeller,
+	STORE_WITHOUT_IMAGES_SELLER,
 } from "./utils";
 
 /**
@@ -708,7 +709,10 @@ export async function seedStoreProfiles() {
 			count: 0,
 			maxPosition: -1,
 		};
-		const target = Math.min(PHOTO_TARGET[tier], config.maxImagesPerStore);
+		const target =
+			row.email === STORE_WITHOUT_IMAGES_SELLER
+				? 0
+				: Math.min(PHOTO_TARGET[tier], config.maxImagesPerStore);
 		for (let i = state.count; i < target; i++) {
 			const position = state.maxPosition + 1 + (i - state.count);
 			newImages.push({

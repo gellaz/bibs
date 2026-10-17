@@ -1,7 +1,10 @@
-import { isNull } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { db } from "@/db";
+import { user } from "@/db/schemas/auth";
+import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeImage } from "@/db/schemas/store-image";
+import { STORE_WITHOUT_IMAGES_SELLER } from "./utils";
 
 const CHUNK = 500;
 
@@ -27,7 +30,11 @@ export async function seedStoreImages() {
 	const stores = await db
 		.select({ id: store.id })
 		.from(store)
-		.where(isNull(store.deletedAt));
+		.innerJoin(sellerProfile, eq(sellerProfile.id, store.sellerProfileId))
+		.innerJoin(user, eq(user.id, sellerProfile.userId))
+		.where(
+			and(isNull(store.deletedAt), ne(user.email, STORE_WITHOUT_IMAGES_SELLER)),
+		);
 
 	const withImages = await db
 		.selectDistinct({ storeId: storeImage.storeId })

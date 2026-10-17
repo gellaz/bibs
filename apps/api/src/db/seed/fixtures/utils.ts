@@ -14,6 +14,29 @@ export function pick<T>(
 	return arr[(idx * stride + offset) % arr.length];
 }
 
+/** Giorni di validità delle prenotazioni seedate: la demo non scade in 48 h. */
+export const SEED_RESERVATION_DAYS = 30;
+
+/** `days` giorni fa, a partire da adesso. */
+export function daysAgo(days: number): Date {
+	return new Date(Date.now() - days * 86400000);
+}
+
+/** Iscrizione del seller `idx`: i più vecchi per primi, uno ogni due giorni. */
+export function sellerSignupDaysAgo(idx: number): number {
+	return 400 - 2 * idx;
+}
+
+/** Stati del negozio mai visti nel seed: un seller per ciascuno. */
+export const STORE_WITHOUT_LOCATION_SELLER = "seller11@test.com";
+export const STORE_WITHOUT_IMAGES_SELLER = "seller14@test.com";
+export const STORE_WITHOUT_SUBSCRIPTION_SELLER = "seller18@test.com";
+
+/** customer1@test.com … customer<n>@test.com, nell'ordine in cui li crea il seed. */
+export function seedCustomerEmails(n: number): string[] {
+	return Array.from({ length: n }, (_, i) => `customer${i + 1}@test.com`);
+}
+
 // ── Italian first names ───────────────────────────────────
 
 export const firstNames = [
@@ -212,270 +235,6 @@ export const SEED_MUNICIPALITY_COORDS: Record<
 	genova: { lat: 44.4056, lng: 8.9463, zip: "16121" },
 	venezia: { lat: 45.4408, lng: 12.3155, zip: "30121" },
 };
-
-// ── Brand pool ────────────────────────────────────────────
-
-export const brandPool = [
-	"Barilla",
-	"Lavazza",
-	"Ferrari",
-	"Armani",
-	"Luxottica",
-	"Pirelli",
-	"Campari",
-	"Illy",
-	"Ferrero",
-	"Loro Piana",
-	"Diesel",
-	"Geox",
-	"Calzedonia",
-	"Slow Food",
-	"Eataly",
-	"Esselunga",
-	"Mutti",
-	"San Pellegrino",
-	"Aperol",
-	"Galbani",
-] as const;
-
-// ── businessPrefix → product macro-category (CSV exact names) ─
-
-/**
- * Maps each `businessPrefix` from `sellers.ts` to the macro-category it sells.
- * Macro names must match exactly the values loaded by `seedProductCategories()`
- * from `product_categories.csv`.
- */
-export const prefixToMacro: Record<string, string> = {
-	Alimentari: "Alimentari e bevande",
-	Panificio: "Alimentari e bevande",
-	Pasticceria: "Alimentari e bevande",
-	Macelleria: "Alimentari e bevande",
-	Enoteca: "Alimentari e bevande",
-	Gastronomia: "Alimentari e bevande",
-	Caffetteria: "Alimentari e bevande",
-	Gelateria: "Alimentari e bevande",
-	Ristorante: "Alimentari e bevande",
-	Trattoria: "Alimentari e bevande",
-	Pizzeria: "Alimentari e bevande",
-	Osteria: "Alimentari e bevande",
-	Boutique: "Abbigliamento",
-	Pelletteria: "Abbigliamento",
-	Sartoria: "Abbigliamento",
-	Gioielleria: "Abbigliamento",
-	Ottica: "Abbigliamento",
-	Ferramenta: "Fai da te e industria",
-	Ceramiche: "Casa e cucina",
-	Profumeria: "Bellezza e cura personale",
-	Erboristeria: "Bellezza e cura personale",
-	Libreria: "Libri e media",
-	Cartoleria: "Ufficio e scuola",
-	Fiorista: "Giardino e outdoor",
-	Vivaio: "Giardino e outdoor",
-	// Blocco bolognese (`bolognaPrefixes`).
-	Pescheria: "Alimentari e bevande",
-	Bar: "Alimentari e bevande",
-	Parrucchiere: "Bellezza e cura personale",
-	Barbiere: "Bellezza e cura personale",
-	Parafarmacia: "Bellezza e cura personale",
-	Fumetteria: "Libri e media",
-	Biciclette: "Sport e tempo libero",
-	"Articoli sportivi": "Sport e tempo libero",
-	Giocattoli: "Infanzia",
-	Elettronica: "Elettronica",
-	Telefonia: "Elettronica",
-	Copisteria: "Ufficio e scuola",
-	"Pet shop": "Animali domestici",
-	Merceria: "Hobby e creatività",
-	Casalinghi: "Casa e cucina",
-	"Ricambi auto": "Auto e moto",
-};
-
-// ── Product noun pools per macro ──────────────────────────
-
-export const productNouns: Record<string, readonly string[]> = {
-	"Alimentari e bevande": [
-		"Pasta di grano duro",
-		"Olio extravergine",
-		"Caffè in grani",
-		"Riso Carnaroli",
-		"Pomodori pelati",
-		"Vino rosso",
-		"Biscotti",
-		"Miele millefiori",
-		"Formaggio stagionato",
-		"Cioccolato fondente",
-		"Tisana",
-		"Spaghetti",
-	],
-	Abbigliamento: [
-		"Camicia",
-		"Sciarpa in lana",
-		"Borsa in pelle",
-		"Cintura",
-		"Cappello",
-		"Occhiali da sole",
-		"Cravatta",
-		"Foulard",
-		"Guanti",
-		"Portafoglio",
-	],
-	"Casa e cucina": [
-		"Tazza in ceramica",
-		"Set di piatti",
-		"Vassoio decorato",
-		"Vaso",
-		"Lampada da tavolo",
-		"Tovaglia",
-		"Centro tavola",
-		"Posate in acciaio",
-	],
-	"Fai da te e industria": [
-		"Trapano",
-		"Cacciavite",
-		"Set chiavi",
-		"Pinza",
-		"Sega manuale",
-		"Martello",
-		"Vernice",
-		"Pennello",
-	],
-	"Bellezza e cura personale": [
-		"Crema viso",
-		"Olio essenziale",
-		"Sapone naturale",
-		"Balsamo capelli",
-		"Profumo",
-		"Tisana erboristica",
-		"Maschera viso",
-		"Shampoo bio",
-	],
-	"Libri e media": [
-		"Romanzo",
-		"Saggio",
-		"Manuale di cucina",
-		"Libro illustrato",
-		"Biografia",
-		"Poesie",
-		"Guida turistica",
-	],
-	"Ufficio e scuola": [
-		"Quaderno",
-		"Penna stilografica",
-		"Agenda",
-		"Set di matite",
-		"Astuccio",
-		"Risma di carta",
-		"Cartelletta",
-	],
-	"Giardino e outdoor": [
-		"Bouquet di fiori",
-		"Pianta da interno",
-		"Vaso in terracotta",
-		"Pacchetto semi",
-		"Bonsai",
-		"Composizione floreale",
-	],
-	"Sport e tempo libero": [
-		"Scarpe da running",
-		"Camera d'aria",
-		"Casco da bici",
-		"Borraccia termica",
-		"Tappetino yoga",
-		"Pallone da calcio",
-		"Guanti da ciclismo",
-		"Zaino da trekking",
-		"Corda per saltare",
-		"Racchetta da tennis",
-	],
-	Infanzia: [
-		"Puzzle in legno",
-		"Set di costruzioni",
-		"Peluche",
-		"Gioco da tavolo",
-		"Trenino",
-		"Bambola",
-		"Libro tattile",
-		"Macchinina",
-		"Pista biglie",
-		"Cubo sensoriale",
-	],
-	Elettronica: [
-		"Cuffie wireless",
-		"Cavo USB-C",
-		"Powerbank",
-		"Caricatore rapido",
-		"Mouse ottico",
-		"Tastiera meccanica",
-		"Altoparlante bluetooth",
-		"Pellicola protettiva",
-		"Hub multiporta",
-		"Adattatore HDMI",
-	],
-	"Animali domestici": [
-		"Crocchette per cani",
-		"Cuccia in tessuto",
-		"Guinzaglio",
-		"Tiragraffi",
-		"Lettiera vegetale",
-		"Gioco per gatti",
-		"Ciotola in acciaio",
-		"Spazzola per pelo",
-		"Trasportino",
-		"Mangime per uccelli",
-	],
-	"Hobby e creatività": [
-		"Gomitolo di lana",
-		"Set di aghi",
-		"Nastro di raso",
-		"Bottoni assortiti",
-		"Telaio da ricamo",
-		"Filato di cotone",
-		"Forbici da sarta",
-		"Cerniera lampo",
-		"Kit maglia",
-		"Metro da sarta",
-	],
-	"Auto e moto": [
-		"Filtro dell'aria",
-		"Spazzole tergicristallo",
-		"Olio motore",
-		"Pastiglie freno",
-		"Lampadina alogena",
-		"Batteria per auto",
-		"Tappetini in gomma",
-		"Catena di distribuzione",
-		"Liquido refrigerante",
-		"Kit di riparazione",
-	],
-};
-
-export const productAdjectives = [
-	"artigianale",
-	"premium",
-	"classico",
-	"italiano",
-	"biologico",
-	"delicato",
-	"moderno",
-	"selezionato",
-	"esclusivo",
-	"naturale",
-] as const;
-
-export const productDescriptions = [
-	"Prodotto selezionato dai nostri artigiani con materie prime di alta qualità.",
-	"Realizzato secondo la tradizione italiana, perfetto per ogni occasione.",
-	"Un classico intramontabile, scelto da generazioni di clienti soddisfatti.",
-	"Cura dei dettagli e qualità superiore in ogni singolo pezzo.",
-	"Dal nostro territorio direttamente al tuo carrello: filiera corta garantita.",
-	"Lavorazione artigianale che preserva l'autenticità dei sapori e dei profumi.",
-	"Ideale per chi cerca il meglio senza compromessi sulla qualità.",
-	"Selezionato con cura per offrire un'esperienza unica ai nostri clienti.",
-	"Prodotto di alta gamma realizzato con tecniche tradizionali.",
-	"Risultato di anni di esperienza e passione per l'eccellenza.",
-	"Materie prime di prima scelta per un risultato finale impeccabile.",
-	"Confezione studiata per preservare la freschezza e la qualità nel tempo.",
-];
 
 /**
  * Generates a deterministic 13-digit EAN starting from 8000000000000.

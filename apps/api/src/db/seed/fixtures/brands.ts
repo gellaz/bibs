@@ -3,27 +3,36 @@ import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
 import { sellerProfile } from "@/db/schemas/seller";
-import { brandPool } from "./utils";
+import {
+	brandPoolByMacro,
+	catalogByPrefix,
+	HOUSE_MADE_PREFIXES,
+} from "./catalog";
+import { prefixForSeller } from "./utils";
 
 /** Seller active rank → list of brand rows assigned to that seller. */
 export type BrandsBySellerProfileId = Map<
 	string,
-	Array<{ id: string; name: string }>
+	Array<{ id: string; name: string; macro: string }>
 >;
 
+// I marchi sono unici tra le macro (test del catalogo): dal nome si risale alla macro.
+const macroByBrand = new Map(
+	Object.entries(brandPoolByMacro).flatMap(([macro, names]) =>
+		names.map((name) => [name, macro] as const),
+	),
+);
+
 /**
- * Picks a deterministic, distinct subset of brands for a given seller rank.
- * Loops with bumped offsets until the Set contains `count` distinct names.
+ * 4–8 marchi distinti per seller, a turno tra le macro che vende: così ogni
+ * macro del suo catalogo ha almeno un marchio. Deterministico per rank.
  */
-function pickBrandsForSeller(rank: number, count: number): readonly string[] {
-	const out = new Set<string>();
-	let offset = 0;
-	while (out.size < count && offset < brandPool.length * 2) {
-		const idx = (rank * 3 + offset) % brandPool.length;
-		out.add(brandPool[idx]);
-		offset++;
-	}
-	return Array.from(out);
+function pickBrandsForSeller(rank: number, macros: readonly string[]) {
+	const count = 4 + (rank % 5); // 4..8
+	return Array.from({ length: count }, (_, k) => {
+		const pool = brandPoolByMacro[macros[k % macros.length]];
+		return pool[(rank * 3 + Math.floor(k / macros.length)) % pool.length];
+	});
 }
 
 export async function seedBrands(): Promise<BrandsBySellerProfileId> {
@@ -52,13 +61,9 @@ export async function seedBrands(): Promise<BrandsBySellerProfileId> {
 		return map;
 	}
 
-	// ── Canary: first active seller already has 'Barilla'? ──
-	const firstSellerProfileId = sellerRows[0].sellerProfileId;
+	// ── Canary: first active seller already has brands? ──
 	const canary = await db.query.brand.findFirst({
-		where: and(
-			eq(brand.sellerProfileId, firstSellerProfileId),
-			eq(brand.name, "Barilla"),
-		),
+		where: eq(brand.sellerProfileId, sellerRows[0].sellerProfileId),
 	});
 	if (canary) {
 		console.log("  ⏭ Brands already seeded, fetching existing for products");
@@ -75,11 +80,7 @@ export async function seedBrands(): Promise<BrandsBySellerProfileId> {
 					sellerRows.map((s) => s.sellerProfileId),
 				),
 			);
-		for (const b of existing) {
-			const arr = map.get(b.sellerProfileId) ?? [];
-			arr.push({ id: b.id, name: b.name });
-			map.set(b.sellerProfileId, arr);
-		}
+		addToMap(map, existing);
 		return map;
 	}
 
@@ -87,9 +88,15 @@ export async function seedBrands(): Promise<BrandsBySellerProfileId> {
 	const rowsToInsert: Array<{ sellerProfileId: string; name: string }> = [];
 
 	sellerRows.forEach((s, rank) => {
-		const count = 4 + (rank % 5); // 4..8
-		const names = pickBrandsForSeller(rank, count);
-		for (const name of names) {
+		// Come in `seedProducts`: l'idx originale del seller sta nell'email.
+		const m = s.email.match(/^seller(\d+)@test\.com$/);
+		if (!m) return;
+		const prefix = prefixForSeller(Number.parseInt(m[1], 10) - 1);
+		// Pizza, gelato e abito su misura sono loro: niente marchi, e i loro
+		// prodotti restano senza (seedProducts usa solo i marchi del seller).
+		if (HOUSE_MADE_PREFIXES.has(prefix)) return;
+		const macros = [...new Set(catalogByPrefix[prefix].map((e) => e.macro))];
+		for (const name of pickBrandsForSeller(rank, macros)) {
 			rowsToInsert.push({ sellerProfileId: s.sellerProfileId, name });
 		}
 	});
@@ -104,12 +111,19 @@ export async function seedBrands(): Promise<BrandsBySellerProfileId> {
 		name: brand.name,
 	});
 
-	for (const b of inserted) {
-		const arr = map.get(b.sellerProfileId) ?? [];
-		arr.push({ id: b.id, name: b.name });
-		map.set(b.sellerProfileId, arr);
-	}
+	addToMap(map, inserted);
 
 	console.log(`  ✓ ${inserted.length} brands seeded`);
 	return map;
+}
+
+function addToMap(
+	map: BrandsBySellerProfileId,
+	rows: Array<{ id: string; name: string; sellerProfileId: string }>,
+) {
+	for (const b of rows) {
+		const arr = map.get(b.sellerProfileId) ?? [];
+		arr.push({ id: b.id, name: b.name, macro: macroByBrand.get(b.name) ?? "" });
+		map.set(b.sellerProfileId, arr);
+	}
 }

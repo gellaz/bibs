@@ -1,10 +1,22 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
+import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
 import { pointTransaction } from "@/db/schemas/points";
 import { auth } from "@/lib/auth";
-import { firstNames, lastNames, pick } from "./utils";
+import {
+	BOLOGNA_DISTRICTS,
+	firstNames,
+	getSeedMunicipalityIds,
+	jitter,
+	lastNames,
+	pick,
+	SEED_MUNICIPALITIES,
+	SEED_MUNICIPALITY_COORDS,
+	type SeedMunicipalityHandle,
+	streets,
+} from "./utils";
 
 // ── Configuration ────────────────────────────────────────
 
@@ -47,6 +59,70 @@ function generateCustomersSeedData(): CustomerSeedData[] {
 	}
 
 	return customers;
+}
+
+// ── Rubrica indirizzi ───────────────────────────────────
+
+/** customer1…5: «Casa» e «Lavoro» a Bologna, in quartieri diversi. */
+const BOLOGNA_ADDRESS_CUSTOMERS = 5;
+/** Un indirizzo predefinito ogni N customer, nei comuni vetrina. */
+const SHOWCASE_ADDRESS_EVERY = 10;
+const showcaseHandles = Object.keys(
+	SEED_MUNICIPALITIES,
+) as SeedMunicipalityHandle[];
+
+async function seedAddresses(
+	profiles: { id: string; userId: string }[],
+	created: { userId: string; email: string }[],
+) {
+	const profileIdByUser = new Map(profiles.map((p) => [p.userId, p.id]));
+	const municipalityIds = await getSeedMunicipalityIds();
+	const rows: (typeof customerAddress.$inferInsert)[] = [];
+
+	for (const { userId, email } of created) {
+		const customerProfileId = profileIdByUser.get(userId);
+		const n = Number(email.match(/\d+/)?.[0]);
+		if (!customerProfileId) continue;
+
+		if (n <= BOLOGNA_ADDRESS_CUSTOMERS) {
+			const home = BOLOGNA_DISTRICTS[(n * 3) % BOLOGNA_DISTRICTS.length];
+			const work = BOLOGNA_DISTRICTS[(n * 3 + 7) % BOLOGNA_DISTRICTS.length];
+			for (const [k, place, label] of [
+				[0, home, "Casa"],
+				[1, work, "Lavoro"],
+			] as const) {
+				rows.push({
+					customerProfileId,
+					label,
+					addressLine1: `${pick(streets, n, 5, k * 3)} ${10 + n * 4 + k * 11}`,
+					municipalityId: municipalityIds.bologna,
+					zipCode: place.zip,
+					location: {
+						x: place.lng + jitter(n, k, 0.002),
+						y: place.lat + jitter(n, k + 5, 0.002),
+					},
+					isDefault: k === 0,
+				});
+			}
+		} else if (n % SHOWCASE_ADDRESS_EVERY === 0) {
+			const handle = pick(showcaseHandles, n / SHOWCASE_ADDRESS_EVERY);
+			const { lat, lng, zip } = SEED_MUNICIPALITY_COORDS[handle];
+			rows.push({
+				customerProfileId,
+				label: "Casa",
+				addressLine1: `${pick(streets, n, 3)} ${5 + (n % 60)}`,
+				municipalityId: municipalityIds[handle],
+				zipCode: zip,
+				location: {
+					x: lng + jitter(n, 1, 0.01),
+					y: lat + jitter(n, 2, 0.01),
+				},
+				isDefault: true,
+			});
+		}
+	}
+
+	await db.insert(customerAddress).values(rows);
 }
 
 // ── Seeding function ────────────────────────────────────
@@ -106,6 +182,7 @@ export async function seedCustomers() {
 		)
 		.returning({
 			id: customerProfile.id,
+			userId: customerProfile.userId,
 			points: customerProfile.points,
 		});
 
@@ -120,6 +197,8 @@ export async function seedCustomers() {
 			})),
 		);
 	}
+
+	await seedAddresses(profiles, created);
 
 	console.log(
 		`  ✓ ${created.length} customers seeded (${withPoints.length} with points)`,

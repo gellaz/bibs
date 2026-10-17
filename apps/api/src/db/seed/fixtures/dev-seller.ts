@@ -7,7 +7,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { auth } from "@/lib/auth";
-import { getSeedMunicipalityIds } from "./utils";
+import { daysAgo, getSeedMunicipalityIds } from "./utils";
 
 const DEV_EMAIL = "seller@dev.bibs";
 const DEV_PASSWORD = "password123";
@@ -55,6 +55,7 @@ export async function seedDevSeller() {
 			firstName: "Dev",
 			lastName: "Seller",
 			birthDate: "1985-06-15",
+			createdAt: daysAgo(420),
 		})
 		.where(eq(user.id, u.id));
 
@@ -67,6 +68,7 @@ export async function seedDevSeller() {
 		.insert(sellerProfile)
 		.values({
 			userId: u.id,
+			createdAt: daysAgo(420),
 			onboardingStatus: "active",
 			firstName: "Dev",
 			lastName: "Seller",
@@ -78,9 +80,11 @@ export async function seedDevSeller() {
 			residenceAddress: "Via Dev 1",
 			residenceZipCode: "20121",
 			documentType: "identity_card",
-			documentNumber: "AX0000001",
+			documentNumber: "CA12345AB",
 			documentExpiry: "2030-12-31",
 			documentIssuedMunicipalityId: milanoId,
+			documentImageKey: "picsum-doc-dev",
+			documentImageUrl: "https://picsum.photos/seed/doc-dev/800/500",
 		})
 		.returning({ id: sellerProfile.id });
 
@@ -102,6 +106,7 @@ export async function seedDevSeller() {
 		.values([
 			{
 				sellerProfileId: profile.id,
+				createdAt: daysAgo(410),
 				name: "Bottega Dev",
 				description: "Negozio principale per smoke test",
 				addressLine1: "Via Dev 1",
@@ -111,6 +116,7 @@ export async function seedDevSeller() {
 			},
 			{
 				sellerProfileId: profile.id,
+				createdAt: daysAgo(380),
 				name: "Bottega Dev Centro",
 				description: "Secondo punto vendita per testare multi-store",
 				addressLine1: "Via Dev 42",
@@ -119,7 +125,7 @@ export async function seedDevSeller() {
 				location: { x: 9.19014, y: 45.46426 },
 			},
 		])
-		.returning({ id: store.id });
+		.returning({ id: store.id, createdAt: store.createdAt });
 
 	// Phase 5: two active subscriptions (only if pricing is available)
 	if (activePricing) {
@@ -127,6 +133,7 @@ export async function seedDevSeller() {
 		await db.insert(storeSubscription).values(
 			insertedStores.map((s, idx) => ({
 				storeId: s.id,
+				createdAt: s.createdAt,
 				stripeSubscriptionId: `sub_seed_dev_${s.id.slice(0, 12)}_${idx}`,
 				stripeCustomerId,
 				stripePriceId: activePricing.stripePriceId,

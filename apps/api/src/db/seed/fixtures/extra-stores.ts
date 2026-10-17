@@ -6,6 +6,7 @@ import { store } from "@/db/schemas/store";
 import {
 	type AnyMunicipalityHandle,
 	bolognaAreaPlacement,
+	daysAgo,
 	getAllMunicipalityIds,
 	insegnaFor,
 	lastNames,
@@ -14,6 +15,7 @@ import {
 	prefixForSeller,
 	SEED_MUNICIPALITIES,
 	type SeedMunicipalityHandle,
+	sellerSignupDaysAgo,
 	streets,
 } from "./utils";
 
@@ -201,13 +203,14 @@ export async function seedExtraStores() {
 		const sellerProfileId = byEmail.get(emailFor(idx));
 		if (!sellerProfileId) continue;
 
-		for (const e of extras) {
+		for (const [n, e] of extras.entries()) {
 			if (existingByPair.has(`${sellerProfileId}::${e.name}`)) {
 				alreadyPresent++;
 				continue;
 			}
 			extraStoreRows.push({
 				sellerProfileId,
+				createdAt: daysAgo(sellerSignupDaysAgo(idx) - 30 - 20 * n),
 				name: e.name,
 				description:
 					"Punto vendita aggiuntivo dello stesso titolare, con la stessa cura e qualità.",

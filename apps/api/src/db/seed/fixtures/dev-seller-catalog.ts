@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, inArray, like } from "drizzle-orm";
+import { and, asc, eq, gt, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { brand } from "@/db/schemas/brand";
@@ -12,8 +12,10 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
+import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
+import { SEED_RESERVATION_DAYS, seedCustomerEmails } from "./utils";
 
 const DEV_EMAIL = "seller@dev.bibs";
 const MAIN_STORE = "Bottega Dev";
@@ -104,7 +106,7 @@ const CATALOG: DevProduct[] = [
 	{
 		name: "Olio extravergine d'oliva 750 ml",
 		description: "Spremitura a freddo, raccolta dell'anno.",
-		category: "Conserve",
+		category: "Olio e condimenti",
 		price: "12.90",
 		vat: "4",
 		main: 15,
@@ -481,10 +483,8 @@ export async function seedDevSellerCatalog() {
 		);
 	}
 
-	const orderCount = await seedDevOrders(mainId, sellerProfileId);
-
 	console.log(
-		`  ✓ Catalogo dev: ${productIds.length} prodotti, ${inventory.length} righe di inventario, ${promos.length} promozioni, ${orderCount} ordini`,
+		`  ✓ Catalogo dev: ${productIds.length} prodotti, ${inventory.length} righe di inventario, ${promos.length} promozioni`,
 	);
 }
 
@@ -505,7 +505,6 @@ const DEV_ORDER_ENDS: OrderEnd[] = [
 	"expired",
 ];
 
-// Gira solo alla prima semina del catalogo (seedDevSellerCatalog è idempotente).
 async function seedDevOrders(storeId: string, sellerProfileId: string) {
 	const items = await db
 		.select({ id: storeProduct.id })
@@ -522,13 +521,13 @@ async function seedDevOrders(storeId: string, sellerProfileId: string) {
 		.orderBy(asc(product.ean));
 	const buyable = items.slice(0, 8);
 
+	const emails = seedCustomerEmails(DEV_ORDER_ENDS.length);
 	const customers = await db
-		.select({ id: customerProfile.id })
+		.select({ id: customerProfile.id, email: user.email })
 		.from(customerProfile)
 		.innerJoin(user, eq(user.id, customerProfile.userId))
-		.where(like(user.email, "customer%@test.com"))
-		.orderBy(asc(user.email))
-		.limit(DEV_ORDER_ENDS.length);
+		.where(inArray(user.email, emails));
+	customers.sort((a, b) => emails.indexOf(a.email) - emails.indexOf(b.email));
 	if (customers.length === 0 || buyable.length < 3) return 0;
 
 	for (const [i, end] of DEV_ORDER_ENDS.entries()) {
@@ -564,5 +563,57 @@ async function seedDevOrders(storeId: string, sellerProfileId: string) {
 			await expireReservations();
 		}
 	}
+	await db
+		.update(order)
+		.set({
+			reservationExpiresAt: new Date(Date.now() + SEED_RESERVATION_DAYS * DAY),
+		})
+		.where(
+			and(
+				eq(order.storeId, storeId),
+				eq(order.type, "reserve_pickup"),
+				inArray(order.status, ["confirmed", "ready_for_pickup"]),
+			),
+		);
 	return DEV_ORDER_ENDS.length;
+}
+
+/**
+ * Ordini del venditore di sviluppo. Separati dal catalogo perché servono i
+ * customer: girano solo nel seed completo, dopo seedOrders. Salta se il
+ * negozio ha già ordini.
+ */
+export async function seedDevSellerOrders() {
+	const [row] = await db
+		.select({ sellerProfileId: sellerProfile.id, storeId: store.id })
+		.from(sellerProfile)
+		.innerJoin(user, eq(user.id, sellerProfile.userId))
+		.innerJoin(store, eq(store.sellerProfileId, sellerProfile.id))
+		// Solo se vendibile: senza STRIPE_DEV_PRICE_ID il negozio non ha abbonamento
+		// e createOrder risponderebbe 404.
+		.where(
+			and(
+				eq(user.email, DEV_EMAIL),
+				eq(store.name, MAIN_STORE),
+				publiclyVisibleStore(),
+			),
+		)
+		.limit(1);
+	if (!row) {
+		console.warn(`  ⚠️ ${MAIN_STORE} non vendibile: nessun ordine dev seedato`);
+		return 0;
+	}
+
+	const existing = await db.query.order.findFirst({
+		where: eq(order.storeId, row.storeId),
+		columns: { id: true },
+	});
+	if (existing) {
+		console.log("  ⏭ Ordini dev già presenti, skipping");
+		return 0;
+	}
+
+	const count = await seedDevOrders(row.storeId, row.sellerProfileId);
+	console.log(`  ✓ Ordini dev: ${count}`);
+	return count;
 }

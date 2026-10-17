@@ -12,6 +12,7 @@ import {
 	type AnyMunicipalityHandle,
 	BOLOGNA_BLOCK_START,
 	bolognaAreaPlacement,
+	daysAgo,
 	firstNames,
 	getAllMunicipalityIds,
 	insegnaFor,
@@ -23,6 +24,8 @@ import {
 	SEED_MUNICIPALITIES,
 	SEED_MUNICIPALITY_COORDS,
 	type SeedMunicipalityHandle,
+	STORE_WITHOUT_LOCATION_SELLER,
+	sellerSignupDaysAgo,
 	streets,
 } from "./utils";
 
@@ -106,9 +109,8 @@ function pickHandle(
 export interface SellerSeedData {
 	email: string;
 	name: string;
+	emailVerified: boolean;
 	onboardingStatus: OnboardingStatus;
-	vatNumber: string;
-	vatStatus: VatStatus;
 	profileFields: {
 		firstName: string | null;
 		lastName: string | null;
@@ -123,14 +125,18 @@ export interface SellerSeedData {
 		documentNumber: string | null;
 		documentExpiry: string | null;
 		documentIssuedMunicipalityHandle: AnyMunicipalityHandle | null;
+		documentImage: { key: string; url: string } | null;
 	};
+	// Solo da pending_review in poi: prima la registrazione non crea l'azienda.
 	org: {
+		vatNumber: string;
+		vatStatus: VatStatus;
 		businessName: string;
 		legalForm: string;
 		addressLine1: string;
 		municipalityHandle: AnyMunicipalityHandle;
 		zipCode: string;
-	};
+	} | null;
 	store: {
 		name: string;
 		description: string;
@@ -174,9 +180,31 @@ function hasStoreFor(idx: number): boolean {
 	return idx < ACTIVE_WITH_STORE_COUNT || idx >= BOLOGNA_BLOCK_START;
 }
 
+/** Tipi e formati variati, numeri sempre unici per idx. */
+function documentFor(idx: number): {
+	type: IdentityDocumentType;
+	number: string;
+} {
+	const n7 = (n: number) => String(n).padStart(7, "0");
+	switch (idx % 6) {
+		case 3:
+			return { type: "identity_card", number: `AX${n7(idx + 1)}` };
+		case 4:
+			return { type: "driving_license", number: `U1${n7(idx)}Z` };
+		case 5:
+			return { type: "passport", number: `YA${n7(idx + 1)}` };
+		default:
+			// CIE elettronica
+			return {
+				type: "identity_card",
+				number: `CA${String(idx).padStart(5, "0")}AB`,
+			};
+	}
+}
+
 // ── Generator ─────────────────────────────────────────────
 
-function generateSellersSeedData(): SellerSeedData[] {
+export function generateSellersSeedData(): SellerSeedData[] {
 	const sellers: SellerSeedData[] = [];
 	let idx = 0;
 
@@ -229,6 +257,8 @@ function generateSellersSeedData(): SellerSeedData[] {
 
 			const hasPersonal = stage >= 2;
 			const hasDocument = stage >= 3;
+			const hasOrg = stage >= 4;
+			const doc = documentFor(idx);
 			const hasStore = config.status === "active" && hasStoreFor(idx);
 
 			const insegna = insegnaFor(businessPrefix);
@@ -241,10 +271,11 @@ function generateSellersSeedData(): SellerSeedData[] {
 
 			sellers.push({
 				email: `seller${idx + 1}@test.com`,
-				name: `${firstName} ${lastName}`,
+				// Come la registrazione: finché non ha compilato i dati personali il
+				// nome è la parte locale dell'email.
+				name: stage < 2 ? `seller${idx + 1}` : `${firstName} ${lastName}`,
+				emailVerified: config.status !== "pending_email",
 				onboardingStatus: config.status,
-				vatNumber,
-				vatStatus: config.vatStatus,
 				profileFields: {
 					firstName: hasPersonal ? firstName : null,
 					lastName: hasPersonal ? lastName : null,
@@ -255,27 +286,30 @@ function generateSellersSeedData(): SellerSeedData[] {
 					residenceMunicipalityHandle: hasPersonal ? residenceHandle : null,
 					residenceAddress: hasPersonal ? `${street}, ${streetNum}` : null,
 					residenceZipCode: hasPersonal ? residenceZip : null,
-					// «AX» + 7 cifre è valido sia come carta d'identità sia come passaporto.
-					documentType: hasDocument
-						? idx % 2 === 0
-							? "identity_card"
-							: "passport"
-						: null,
-					documentNumber: hasDocument
-						? `AX${String(idx + 1).padStart(7, "0")}`
-						: null,
+					documentType: hasDocument ? doc.type : null,
+					documentNumber: hasDocument ? doc.number : null,
 					documentExpiry: hasDocument ? documentExpiry : null,
 					documentIssuedMunicipalityHandle: hasDocument
 						? residenceHandle
 						: null,
+					documentImage: hasDocument
+						? {
+								key: `picsum-doc-${idx}`,
+								url: `https://picsum.photos/seed/doc-${idx}/800/500`,
+							}
+						: null,
 				},
-				org: {
-					businessName,
-					legalForm,
-					addressLine1: `${orgStreet}, ${(idx % 200) + 1}`,
-					municipalityHandle: orgHandle,
-					zipCode: orgZip,
-				},
+				org: hasOrg
+					? {
+							vatNumber,
+							vatStatus: config.vatStatus,
+							businessName,
+							legalForm,
+							addressLine1: `${orgStreet}, ${(idx % 200) + 1}`,
+							municipalityHandle: orgHandle,
+							zipCode: orgZip,
+						}
+					: null,
 				store: hasStore
 					? {
 							name: isBologna
@@ -321,7 +355,8 @@ export async function seedSellers() {
 	const municipalityIds = await getAllMunicipalityIds();
 
 	// Phase 1: Create users via auth (sequential — password hashing)
-	const created: Array<{ userId: string; data: SellerSeedData }> = [];
+	const created: Array<{ userId: string; idx: number; data: SellerSeedData }> =
+		[];
 	for (let i = 0; i < sellersData.length; i++) {
 		const s = sellersData[i];
 		try {
@@ -337,9 +372,14 @@ export async function seedSellers() {
 				: {};
 			await db
 				.update(user)
-				.set({ role: "seller", emailVerified: true, ...personal })
+				.set({
+					role: "seller",
+					emailVerified: s.emailVerified,
+					createdAt: daysAgo(sellerSignupDaysAgo(i)),
+					...personal,
+				})
 				.where(eq(user.id, u.id));
-			created.push({ userId: u.id, data: s });
+			created.push({ userId: u.id, idx: i, data: s });
 		} catch (error) {
 			console.error(`     ✗ Failed: ${s.email}`, error);
 		}
@@ -357,8 +397,9 @@ export async function seedSellers() {
 	const profiles = await db
 		.insert(sellerProfile)
 		.values(
-			created.map(({ userId, data }) => ({
+			created.map(({ userId, idx, data }) => ({
 				userId,
+				createdAt: daysAgo(sellerSignupDaysAgo(idx)),
 				onboardingStatus: data.onboardingStatus,
 				firstName: data.profileFields.firstName,
 				lastName: data.profileFields.lastName,
@@ -378,36 +419,47 @@ export async function seedSellers() {
 					.documentIssuedMunicipalityHandle
 					? municipalityIds[data.profileFields.documentIssuedMunicipalityHandle]
 					: null,
+				documentImageKey: data.profileFields.documentImage?.key ?? null,
+				documentImageUrl: data.profileFields.documentImage?.url ?? null,
 			})),
 		)
 		.returning({ id: sellerProfile.id });
 
-	// Phase 3: Batch insert organizations
-	await db.insert(organization).values(
-		created.map(({ data }, i) => ({
-			sellerProfileId: profiles[i].id,
-			businessName: data.org.businessName,
-			vatNumber: data.vatNumber,
-			legalForm: data.org.legalForm,
-			addressLine1: data.org.addressLine1,
-			municipalityId: municipalityIds[data.org.municipalityHandle],
-			zipCode: data.org.zipCode,
-			vatStatus: data.vatStatus,
-		})),
+	// Phase 3: Batch insert organizations (solo da pending_review in poi)
+	const orgEntries = created.flatMap(({ data }, i) =>
+		data.org
+			? [
+					{
+						sellerProfileId: profiles[i].id,
+						businessName: data.org.businessName,
+						vatNumber: data.org.vatNumber,
+						legalForm: data.org.legalForm,
+						addressLine1: data.org.addressLine1,
+						municipalityId: municipalityIds[data.org.municipalityHandle],
+						zipCode: data.org.zipCode,
+						vatStatus: data.org.vatStatus,
+					},
+				]
+			: [],
 	);
+	if (orgEntries.length > 0) await db.insert(organization).values(orgEntries);
 
 	// Phase 4: Batch insert stores (for active sellers — store creation is post-activation)
 	const storeEntries = created
-		.map(({ data }, i) =>
+		.map(({ idx, data }, i) =>
 			data.store
 				? {
+						createdAt: daysAgo(sellerSignupDaysAgo(idx) - 7),
 						sellerProfileId: profiles[i].id,
 						name: data.store.name,
 						description: data.store.description,
 						addressLine1: data.store.addressLine1,
 						municipalityId: municipalityIds[data.store.municipalityHandle],
 						zipCode: data.store.zipCode,
-						location: { x: data.store.lng, y: data.store.lat },
+						location:
+							data.email === STORE_WITHOUT_LOCATION_SELLER
+								? null
+								: { x: data.store.lng, y: data.store.lat },
 					}
 				: null,
 		)

@@ -3,8 +3,8 @@
 **Data:** 2026-09-23
 **Fonte:** foglio `Mapping` (1952 righe `macro, sotto, caratteristica, Sì`) e foglio
 `Dizionario` (200 caratteristiche distinte), da `Categorie_caratteristiche.xlsx`.
-**Prodotto:** `apps/api/src/db/seed/data/product_characteristics.csv` (207 voci) e
-`apps/api/src/db/seed/data/product_category_characteristics.csv` (1773 righe).
+**Prodotto:** `apps/api/src/db/seed/data/product_characteristics.csv` (224 voci) e
+`apps/api/src/db/seed/data/product_category_characteristics.csv` (1932 righe).
 
 Questo documento **non elenca le caratteristiche** — quelle stanno nei due CSV.
 Contiene soltanto le decisioni che ho preso io e su cui si può non essere d'accordo.
@@ -123,19 +123,19 @@ interessate.
 | `Sistema operativo` (11) | Telefoni, laptop, TV e orologi: la domanda è sempre «quale OS». Lista unione di 14 valori più `Altro`. |
 | `Alimentazione` (15) | 14 elettroniche più `Barbecue`. La domanda è sempre «da cosa è alimentato», e l'unione è **sensata in entrambe le direzioni**: i barbecue elettrici esistono davvero. Lista: `Rete elettrica\|Batteria integrata\|Pile sostituibili\|USB\|Gas\|Carbonella\|Pellet\|Legna`. È il contrario del caso `Stagione`, dove l'unione produceva risposte impossibili. |
 | `Tipo pelle/capelli` (14) | Le due liste sono disgiunte, ma prefissare i valori (`Pelle secca`, `Capelli secchi`) le rende leggibili in un'unica tendina senza ambiguità. |
-| `Potenza` (16) | Dal frullatore al barbecue: sempre watt. Vedi §5 per il problema dei kW. |
+| `Potenza` (17) | Dal frullatore al barbecue: sempre watt. Vedi §5 per il problema dei kW. |
 | `Formato carta` / `Formato massimo` | Stessa lista (`A4\|A3\|…`), due voci distinte nel foglio: le ho tenute separate per fedeltà alla fonte. Sono unificabili senza perdere nulla. |
 | `Tipo pelle` (3, make-up) / `Tipo pelle/capelli` (14) | Quasi-duplicati nel foglio. Nessuna sotto-categoria ha entrambe, quindi si potrebbero fondere. Le ho lasciate separate perché la fonte le distingue. |
 
 ## 2. Liste di valori inventate
 
 **Tutte le liste enum sono inventate**: il foglio non contiene un solo valore
-ammesso. Sono 69 voci `enum` su 207. Le riporto qui solo dove la granularità è
+ammesso. Sono 77 voci `enum` su 224. Le riporto qui solo dove la granularità è
 opinabile; le restanti sono nomenclature standard che non lasciano margine
 (`Grado IP`, `Attacco lampadina`, `Classe energetica`, `Formato carta`,
 `Indice di velocità`, `Tipologia sensore`, `Layout` tastiera, e simili).
 
-### 2.1 `Colore` — 17 famiglie, su tutte e 179 le sotto-categorie
+### 2.1 `Colore` — 17 famiglie, su tutte e 190 le sotto-categorie
 
 `Nero|Bianco|Grigio|Argento|Oro|Beige|Marrone|Rosso|Rosa|Arancione|Giallo|Verde|Blu|Azzurro|Viola|Multicolore|Trasparente`
 
@@ -155,7 +155,7 @@ costruzioni non ha risposta.
 *Se la risposta è no:* portare `Colore` a `text` è una riga del dizionario, e
 costa il filtro colore su tutto il catalogo. La via di mezzo — `Colore` enum
 per la famiglia più un campo libero per la sfumatura — richiede una voce in più
-nel dizionario e una riga di matrice per ogni sotto-categoria, cioè 179 righe.
+nel dizionario e una riga di matrice per ogni sotto-categoria, cioè 190 righe.
 
 ### 2.2 `Materiale` — lasciata `text`, vedi §3
 
@@ -187,7 +187,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
 - **`Tonalità`** (3, make-up) — **contraddice l'indicazione ricevuta**, che la
   dava fra gli esempi di enum. Le tonalità dei cosmetici sono nomi di marca
   («Rossetto Rouge Allure 176»), a centinaia per prodotto: nessuna lista chiusa le
-  copre. Per di più `Colore` c'è già su tutti i 179, ed è lì che vive la famiglia
+  copre. Per di più `Colore` c'è già su tutti i 190, ed è lì che vive la famiglia
   cromatica — `Tonalità` è il nome commerciale della sfumatura, che è prosa.
   *Se va riportata a enum:* servono le famiglie `Nude|Rosa|Rosso|Bordeaux|Corallo|Pesca|Marrone|Beige|Bronzo|Oro|Argento|Nero`,
   accettando che duplichino `Colore`.
@@ -200,7 +200,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
   centimetri per gli sci, litri per gli zaini.
 - **`Taglia accessori`** (4) — stesso problema: centimetri per le cinture,
   circonferenza per i cappelli, diametro per gli anelli, calibro per gli occhiali.
-- **`Allergeni`** (4) — qui la lista chiusa *esiste* (i 14 allergeni
+- **`Allergeni`** (14) — qui la lista chiusa *esiste* (i 14 allergeni
   dell'allegato II del reg. UE 1169/2011) ma un prodotto ne contiene più d'uno, e
   il modello dati assegna un valore solo per caratteristica. Un enum
   costringerebbe a dichiararne uno e tacere gli altri: su un allergene questo non
@@ -210,7 +210,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
   **`Indice di carico`** (1), **`Omologazione`** (9),
   **`Compatibilità veicolo`** (9), **`Anno compatibilità`** (9) — codici,
   intervalli o nomenclature che cambiano per marca.
-- **`Formato/Peso netto`** (6), **`Diametro/Capacità`** (1),
+- **`Formato/Peso netto`** (16), **`Diametro/Capacità`** (1),
   **`Peso bambino`** (1) — nomi composti nella fonte, che chiedono due cose
   insieme o un intervallo (`4-9 kg`). Un numero con un'unità sola mentirebbe.
 
@@ -219,7 +219,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
 Tutti e quattro finiscono a `text`. Il motivo è lo stesso: la caratteristica
 attraversa domini che non hanno un vocabolario comune.
 
-### 3.1 `Materiale` — su tutte e 179 le sotto-categorie
+### 3.1 `Materiale` — su tutte e 190 le sotto-categorie
 
 Una lista chiusa dovrebbe contenere insieme `Cotone`, `Acciaio inox`, `Carta`,
 `Ceramica`, `Silicone`, `Vetro`, `Legno`, `Poliestere`, `Pelle`, `Alluminio`,
@@ -259,14 +259,14 @@ per i mouse, marche di macchina del caffè per le cialde. È intrinsecamente una
 lista di nomi di terze parti, che nessuna tassonomia nostra può chiudere.
 
 **Nota comune ai tre generici.** `Tipologia`, `Uso previsto` e `Compatibilità`
-insieme occupano 201 delle 1773 righe di matrice (l'11%) e sono il solo contenuto
-specifico di 60 sotto-categorie su 179. Sono il punto debole della fonte, non
+insieme occupano 201 delle 1932 righe di matrice (il 10%) e sono il solo contenuto
+specifico di 60 sotto-categorie su 190. Sono il punto debole della fonte, non
 della classificazione: vedi §4.1.
 
 ## 4. Applicabilità sospette
 
 Righe che il foglio marca `Sì` e che sembrano prive di senso. **Non le ho
-corrette nei CSV**: sono elencate perché la decisione è di Marco. Tutte si
+corrette nei CSV**, tranne `Macchine caffè` (corretta, vedi §5 bis): le altre sono elencate perché la decisione è di Marco. Tutte si
 correggono togliendo righe da `product_category_characteristics.csv`, mai dal
 dizionario.
 
@@ -288,9 +288,10 @@ Cinque universali (`Modello`, `Colore`, `Materiale`, `Dimensioni`, `Peso`) più
 
 Tre buchi che valgono più degli altri:
 
-- **`Alimentari e bevande`**: otto sotto-categorie alimentari su undici **non hanno
-  `Allergeni`, né `Ingredienti`, né `Scadenza/TMC`**. Le hanno solo `Pasta`, `Riso`
-  e `Caffè`. Un barattolo di conserva venduto senza allergeni è un problema di
+- **`Alimentari e bevande`**: otto sotto-categorie alimentari su 22 **non hanno
+  `Allergeni`, né `Ingredienti`, né `Scadenza/TMC`** (`Conserve`, `Snack`, `Dolci`,
+  `Bevande analcoliche`, `Succhi`, `Tè`, `Prodotti bio`, `Senza glutine`); le altre
+  14 le hanno, comprese le 11 aggiunte dopo la revisione (§5 bis). Un barattolo di conserva venduto senza allergeni è un problema di
   conformità, non di completezza della scheda.
 - **`Infanzia / Seggiolini auto`**: niente `Omologazione` (ECE R129/i-Size), niente
   `Peso bambino`, niente `Età consigliata`. È l'unico prodotto del catalogo il cui
@@ -318,7 +319,7 @@ Questi sembrano errori di copia-incolla nel foglio, non scelte:
 | Sotto-categoria | Ha ricevuto | Perché non torna |
 |---|---|---|
 | `Elettronica / Custodie smartphone` | **tutto** il blocco Smartphone: `Sistema operativo`, `RAM`, `Memoria interna`, `Dimensione display`, `Risoluzione display`, `Fotocamera`, `5G`, `Dual SIM`, `Capacità batteria` | È la sotto-categoria con **20 caratteristiche, il massimo di tutto il catalogo**, e sono le caratteristiche del telefono, non della custodia. Le uniche pertinenti sono `Compatibilità`, `Dimensione compatibile`, `Tipo chiusura`, `Protezione`. |
-| `Casa e cucina / Macchine caffè` | il blocco alimentare: `Formato/Peso netto`, `Ingredienti`, `Allergeni`, `Valori nutrizionali`, `Paese di origine`, `Conservazione`, `Scadenza/TMC` | Una macchina da caffè non ha allergeni né scadenza. Le manca invece tutto il blocco elettrodomestico (`Potenza`, `Pressione`, `Capacità serbatoio`). |
+| `Casa e cucina / Macchine caffè` | il blocco alimentare: `Formato/Peso netto`, `Ingredienti`, `Allergeni`, `Valori nutrizionali`, `Paese di origine`, `Conservazione`, `Scadenza/TMC` | **Corretta (§5 bis).** Una macchina da caffè non ha allergeni né scadenza. Le manca invece tutto il blocco elettrodomestico (`Potenza`, `Pressione`, `Capacità serbatoio`). |
 | `Hobby e creatività / Tele pittura` | il blocco vernici: `Finitura`, `Resa`, `Volume`, `Superficie applicabile`, `Tempo asciugatura` | Sono le caratteristiche della pittura, non della tela. Una tela non ha resa in m² né tempo di asciugatura. |
 | `Sport e tempo libero / Accessori bici` | tutto il blocco bicicletta: `Misura telaio`, `Materiale telaio`, `Diametro ruote`, `Numero velocità`, `Tipo freni`, `Sospensioni`, `Peso massimo supportato` | Un campanello non ha un telaio. |
 | `Abbigliamento / Orologi` | il blocco smartwatch: `Sistema operativo`, `GPS`, `Sensori`, `Compatibilità smartphone`, `Autonomia` | Giusto per uno smartwatch, vuoto per un orologio meccanico. È anche la ragione per cui `Sistema operativo` risulta sotto Abbigliamento. |
@@ -341,12 +342,12 @@ Dove c'era più di un'unità plausibile.
 
 | Voce | Unità scelta | Il dubbio |
 |---|---|---|
-| `Peso` (179) | **`g`** | Grammi vanno bene per alimentari, cosmetica e cartoleria, cioè per la maggior parte delle sotto-categorie. Su un divano diventano `45000`, che nessuno scrive e nessuno legge. L'alternativa `kg` ribalta il problema: 200 g di pasta diventano `0,2`. Non esiste un'unità giusta per un campo che sta su tutte e 179 le sotto-categorie; ho tenuto quella prescritta. *Se va cambiata:* una riga del dizionario. La vera soluzione sarebbe sdoppiare `Peso` in `Peso` (g, consumo) e `Peso spedizione` (kg), ma è una decisione di prodotto. |
+| `Peso` (190) | **`g`** | Grammi vanno bene per alimentari, cosmetica e cartoleria, cioè per la maggior parte delle sotto-categorie. Su un divano diventano `45000`, che nessuno scrive e nessuno legge. L'alternativa `kg` ribalta il problema: 200 g di pasta diventano `0,2`. Non esiste un'unità giusta per un campo che sta su tutte e 190 le sotto-categorie; ho tenuto quella prescritta. *Se va cambiata:* una riga del dizionario. La vera soluzione sarebbe sdoppiare `Peso` in `Peso` (g, consumo) e `Peso spedizione` (kg), ma è una decisione di prodotto. |
 | `Peso massimo`, `Peso prodotto`, `Peso massimo supportato`, `Portata massima` | `kg` | Qui il dominio è stretto (passeggini, bici, scrivanie) e i chili sono l'unità che si legge sulle etichette. Coesistono con `Peso` in grammi sulla stessa scheda: **la disomogeneità è visibile** e potrebbe confondere. |
 | `Larghezza`, `Altezza`, `Profondità`, `Altezza tacco` | `cm` | Millimetri sarebbero più precisi per il tacco, ma nessuno vende scarpe con un tacco da `85 mm`. |
 | `Lunghezza focale`, `Diametro filtro`, `Larghezza pneumatico` | `mm` | Qui è il contrario: sono nomenclature tecniche che esistono solo in millimetri (`50 mm`, `205`). |
 | `Memoria/Storage` (2, laptop) | `GB` | I tagli veri arrivano a `1 TB`, che qui va scritto `1024`. L'alternativa (testo libero) perde il filtro «almeno 512 GB». |
-| `Potenza` (16) | `W` | Corretto su elettrodomestici e altoparlanti. Su `Giardino e outdoor / Barbecue` la potenza dei bruciatori si dichiara in **kW**: `9 kW` diventa `9000`. |
+| `Potenza` (17) | `W` | Corretto su elettrodomestici e altoparlanti. Su `Giardino e outdoor / Barbecue` la potenza dei bruciatori si dichiara in **kW**: `9 kW` diventa `9000`. |
 | `Garanzia` (10) | `mesi` | Anni sarebbero più naturali a dirsi («due anni di garanzia») ma non reggono i 18 o i 30 mesi. |
 | `Superficie cottura` | `cm²` | La misura commerciale dei barbecue è spesso `cm × cm`. Un numero solo perde la forma della griglia. |
 | `Campo visivo` | `gradi` | Scritto per esteso invece del simbolo `°`, per non affidare un dato a un carattere che si perde nei copia-incolla. |
@@ -354,9 +355,21 @@ Dove c'era più di un'unità plausibile.
 | `Luminosità` | `cd/m²` | Le schede tecniche usano anche «nit», che è la stessa cosa. `cd/m²` è la forma ufficiale. |
 | `Rapporto d'aspetto` (pneumatici) | `%` | È un rapporto adimensionale espresso in percentuale (`55` sta per 55%). |
 
-Le otto voci `number` **senza unità** sono conteggi, e sono tutte e sole:
+Le dieci voci `number` **senza unità** sono conteggi, e sono tutte e sole:
 `Numero porte`, `Numero tasti`, `Numero giocatori`, `Numero pezzi`,
-`Numero velocità`, `Numero ripiani/cassetti`, `Numero bruciatori`, `Velocità`.
+`Numero velocità`, `Numero ripiani/cassetti`, `Numero bruciatori`, `Velocità`, `Annata`, `Porzioni`.
+
+## 5 bis. Voci aggiunte dopo la revisione
+
+Le 11 sotto-categorie alimentari per tipo di negozio (`Pane e prodotti da forno`,
+`Carne`, `Salumi`, `Pesce`, `Formaggi e latticini`, `Vino`, `Birra`, `Liquori e
+distillati`, `Gelati`, `Piatti pronti`, `Olio e condimenti`) portano le 12
+caratteristiche universali e alimentari di `Pasta` più 30 specifiche, con 17 voci
+nuove nel dizionario (`Tipo di carne`, `Denominazione`, `Gradazione alcolica`,
+`Stagionatura`, `Porzioni`...); come sopra, gli enum sono liste nostre e le unità
+stanno solo sui `number`. `Macchine caffè` è stata corretta come da §4: via il blocco
+alimentare, dentro `Potenza`, `Larghezza`, `Altezza`, `Profondità` (già nel
+dizionario). Restano da decidere `Pressione` e `Capacità serbatoio`.
 
 ## 6. Come rileggere questi file
 
@@ -366,10 +379,10 @@ bun run apps/api/src/db/seed/data/validate-characteristics.ts
 
 Verifica nomi unici, coerenza di tipo/unità/opzioni, che ogni caratteristica
 della matrice esista nel dizionario e ogni coppia `(macro, sotto)` esista in
-`product_categories.csv`, le 1773 righe, `required` sempre `false`, l'assenza di
+`product_categories.csv`, le 1932 righe, `required` sempre `false`, l'assenza di
 `Marca`, e stampa i due istogrammi. Non tocca il database.
 
-Stato attuale: 207 voci — 69 `enum` (33,3%), 59 `number` (28,5%), 53 `text`
-(25,6%), 26 `boolean` (12,6%); 1773 righe di matrice, mediana 9 caratteristiche
+Stato attuale: 224 voci — 77 `enum` (34,4%), 63 `number` (28,1%), 58 `text`
+(25,9%), 26 `boolean` (11,6%); 1932 righe di matrice, mediana 10 caratteristiche
 per sotto-categoria, minimo 8 (69 sotto-categorie), massimo 20
 (`Custodie smartphone`, vedi §4.3).

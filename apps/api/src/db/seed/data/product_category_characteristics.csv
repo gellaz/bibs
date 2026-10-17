@@ -712,13 +712,10 @@ Casa e cucina,Macchine caffè,Colore,false
 Casa e cucina,Macchine caffè,Materiale,false
 Casa e cucina,Macchine caffè,Dimensioni,false
 Casa e cucina,Macchine caffè,Peso,false
-Casa e cucina,Macchine caffè,Formato/Peso netto,false
-Casa e cucina,Macchine caffè,Ingredienti,false
-Casa e cucina,Macchine caffè,Allergeni,false
-Casa e cucina,Macchine caffè,Valori nutrizionali,false
-Casa e cucina,Macchine caffè,Paese di origine,false
-Casa e cucina,Macchine caffè,Conservazione,false
-Casa e cucina,Macchine caffè,Scadenza/TMC,false
+Casa e cucina,Macchine caffè,Potenza,false
+Casa e cucina,Macchine caffè,Larghezza,false
+Casa e cucina,Macchine caffè,Altezza,false
+Casa e cucina,Macchine caffè,Profondità,false
 Casa e cucina,Frigoriferi,Modello,false
 Casa e cucina,Frigoriferi,Colore,false
 Casa e cucina,Frigoriferi,Materiale,false
@@ -1564,6 +1561,168 @@ Alimentari e bevande,Senza glutine,Peso,false
 Alimentari e bevande,Senza glutine,Tipologia,false
 Alimentari e bevande,Senza glutine,Uso previsto,false
 Alimentari e bevande,Senza glutine,Compatibilità,false
+Alimentari e bevande,Pane e prodotti da forno,Modello,false
+Alimentari e bevande,Pane e prodotti da forno,Colore,false
+Alimentari e bevande,Pane e prodotti da forno,Materiale,false
+Alimentari e bevande,Pane e prodotti da forno,Dimensioni,false
+Alimentari e bevande,Pane e prodotti da forno,Peso,false
+Alimentari e bevande,Pane e prodotti da forno,Formato/Peso netto,false
+Alimentari e bevande,Pane e prodotti da forno,Ingredienti,false
+Alimentari e bevande,Pane e prodotti da forno,Allergeni,false
+Alimentari e bevande,Pane e prodotti da forno,Valori nutrizionali,false
+Alimentari e bevande,Pane e prodotti da forno,Paese di origine,false
+Alimentari e bevande,Pane e prodotti da forno,Conservazione,false
+Alimentari e bevande,Pane e prodotti da forno,Scadenza/TMC,false
+Alimentari e bevande,Pane e prodotti da forno,Tipo di farina,false
+Alimentari e bevande,Carne,Modello,false
+Alimentari e bevande,Carne,Colore,false
+Alimentari e bevande,Carne,Materiale,false
+Alimentari e bevande,Carne,Dimensioni,false
+Alimentari e bevande,Carne,Peso,false
+Alimentari e bevande,Carne,Formato/Peso netto,false
+Alimentari e bevande,Carne,Ingredienti,false
+Alimentari e bevande,Carne,Allergeni,false
+Alimentari e bevande,Carne,Valori nutrizionali,false
+Alimentari e bevande,Carne,Paese di origine,false
+Alimentari e bevande,Carne,Conservazione,false
+Alimentari e bevande,Carne,Scadenza/TMC,false
+Alimentari e bevande,Carne,Tipo di carne,false
+Alimentari e bevande,Carne,Taglio,false
+Alimentari e bevande,Carne,Fresco o surgelato,false
+Alimentari e bevande,Salumi,Modello,false
+Alimentari e bevande,Salumi,Colore,false
+Alimentari e bevande,Salumi,Materiale,false
+Alimentari e bevande,Salumi,Dimensioni,false
+Alimentari e bevande,Salumi,Peso,false
+Alimentari e bevande,Salumi,Formato/Peso netto,false
+Alimentari e bevande,Salumi,Ingredienti,false
+Alimentari e bevande,Salumi,Allergeni,false
+Alimentari e bevande,Salumi,Valori nutrizionali,false
+Alimentari e bevande,Salumi,Paese di origine,false
+Alimentari e bevande,Salumi,Conservazione,false
+Alimentari e bevande,Salumi,Scadenza/TMC,false
+Alimentari e bevande,Salumi,Tipo di carne,false
+Alimentari e bevande,Salumi,Stagionatura,false
+Alimentari e bevande,Salumi,Denominazione,false
+Alimentari e bevande,Pesce,Modello,false
+Alimentari e bevande,Pesce,Colore,false
+Alimentari e bevande,Pesce,Materiale,false
+Alimentari e bevande,Pesce,Dimensioni,false
+Alimentari e bevande,Pesce,Peso,false
+Alimentari e bevande,Pesce,Formato/Peso netto,false
+Alimentari e bevande,Pesce,Ingredienti,false
+Alimentari e bevande,Pesce,Allergeni,false
+Alimentari e bevande,Pesce,Valori nutrizionali,false
+Alimentari e bevande,Pesce,Paese di origine,false
+Alimentari e bevande,Pesce,Conservazione,false
+Alimentari e bevande,Pesce,Scadenza/TMC,false
+Alimentari e bevande,Pesce,Specie ittica,false
+Alimentari e bevande,Pesce,Pescato o allevato,false
+Alimentari e bevande,Pesce,Fresco o surgelato,false
+Alimentari e bevande,Formaggi e latticini,Modello,false
+Alimentari e bevande,Formaggi e latticini,Colore,false
+Alimentari e bevande,Formaggi e latticini,Materiale,false
+Alimentari e bevande,Formaggi e latticini,Dimensioni,false
+Alimentari e bevande,Formaggi e latticini,Peso,false
+Alimentari e bevande,Formaggi e latticini,Formato/Peso netto,false
+Alimentari e bevande,Formaggi e latticini,Ingredienti,false
+Alimentari e bevande,Formaggi e latticini,Allergeni,false
+Alimentari e bevande,Formaggi e latticini,Valori nutrizionali,false
+Alimentari e bevande,Formaggi e latticini,Paese di origine,false
+Alimentari e bevande,Formaggi e latticini,Conservazione,false
+Alimentari e bevande,Formaggi e latticini,Scadenza/TMC,false
+Alimentari e bevande,Formaggi e latticini,Latte,false
+Alimentari e bevande,Formaggi e latticini,Stagionatura,false
+Alimentari e bevande,Formaggi e latticini,Denominazione,false
+Alimentari e bevande,Vino,Modello,false
+Alimentari e bevande,Vino,Colore,false
+Alimentari e bevande,Vino,Materiale,false
+Alimentari e bevande,Vino,Dimensioni,false
+Alimentari e bevande,Vino,Peso,false
+Alimentari e bevande,Vino,Formato/Peso netto,false
+Alimentari e bevande,Vino,Ingredienti,false
+Alimentari e bevande,Vino,Allergeni,false
+Alimentari e bevande,Vino,Valori nutrizionali,false
+Alimentari e bevande,Vino,Paese di origine,false
+Alimentari e bevande,Vino,Conservazione,false
+Alimentari e bevande,Vino,Scadenza/TMC,false
+Alimentari e bevande,Vino,Tipo di vino,false
+Alimentari e bevande,Vino,Vitigno,false
+Alimentari e bevande,Vino,Annata,false
+Alimentari e bevande,Vino,Gradazione alcolica,false
+Alimentari e bevande,Vino,Denominazione,false
+Alimentari e bevande,Vino,Capacità netta,false
+Alimentari e bevande,Birra,Modello,false
+Alimentari e bevande,Birra,Colore,false
+Alimentari e bevande,Birra,Materiale,false
+Alimentari e bevande,Birra,Dimensioni,false
+Alimentari e bevande,Birra,Peso,false
+Alimentari e bevande,Birra,Formato/Peso netto,false
+Alimentari e bevande,Birra,Ingredienti,false
+Alimentari e bevande,Birra,Allergeni,false
+Alimentari e bevande,Birra,Valori nutrizionali,false
+Alimentari e bevande,Birra,Paese di origine,false
+Alimentari e bevande,Birra,Conservazione,false
+Alimentari e bevande,Birra,Scadenza/TMC,false
+Alimentari e bevande,Birra,Tipo di birra,false
+Alimentari e bevande,Birra,Gradazione alcolica,false
+Alimentari e bevande,Birra,Capacità netta,false
+Alimentari e bevande,Liquori e distillati,Modello,false
+Alimentari e bevande,Liquori e distillati,Colore,false
+Alimentari e bevande,Liquori e distillati,Materiale,false
+Alimentari e bevande,Liquori e distillati,Dimensioni,false
+Alimentari e bevande,Liquori e distillati,Peso,false
+Alimentari e bevande,Liquori e distillati,Formato/Peso netto,false
+Alimentari e bevande,Liquori e distillati,Ingredienti,false
+Alimentari e bevande,Liquori e distillati,Allergeni,false
+Alimentari e bevande,Liquori e distillati,Valori nutrizionali,false
+Alimentari e bevande,Liquori e distillati,Paese di origine,false
+Alimentari e bevande,Liquori e distillati,Conservazione,false
+Alimentari e bevande,Liquori e distillati,Scadenza/TMC,false
+Alimentari e bevande,Liquori e distillati,Tipo di distillato,false
+Alimentari e bevande,Liquori e distillati,Gradazione alcolica,false
+Alimentari e bevande,Liquori e distillati,Capacità netta,false
+Alimentari e bevande,Gelati,Modello,false
+Alimentari e bevande,Gelati,Colore,false
+Alimentari e bevande,Gelati,Materiale,false
+Alimentari e bevande,Gelati,Dimensioni,false
+Alimentari e bevande,Gelati,Peso,false
+Alimentari e bevande,Gelati,Formato/Peso netto,false
+Alimentari e bevande,Gelati,Ingredienti,false
+Alimentari e bevande,Gelati,Allergeni,false
+Alimentari e bevande,Gelati,Valori nutrizionali,false
+Alimentari e bevande,Gelati,Paese di origine,false
+Alimentari e bevande,Gelati,Conservazione,false
+Alimentari e bevande,Gelati,Scadenza/TMC,false
+Alimentari e bevande,Gelati,Gusto,false
+Alimentari e bevande,Piatti pronti,Modello,false
+Alimentari e bevande,Piatti pronti,Colore,false
+Alimentari e bevande,Piatti pronti,Materiale,false
+Alimentari e bevande,Piatti pronti,Dimensioni,false
+Alimentari e bevande,Piatti pronti,Peso,false
+Alimentari e bevande,Piatti pronti,Formato/Peso netto,false
+Alimentari e bevande,Piatti pronti,Ingredienti,false
+Alimentari e bevande,Piatti pronti,Allergeni,false
+Alimentari e bevande,Piatti pronti,Valori nutrizionali,false
+Alimentari e bevande,Piatti pronti,Paese di origine,false
+Alimentari e bevande,Piatti pronti,Conservazione,false
+Alimentari e bevande,Piatti pronti,Scadenza/TMC,false
+Alimentari e bevande,Piatti pronti,Porzioni,false
+Alimentari e bevande,Piatti pronti,Fresco o surgelato,false
+Alimentari e bevande,Olio e condimenti,Modello,false
+Alimentari e bevande,Olio e condimenti,Colore,false
+Alimentari e bevande,Olio e condimenti,Materiale,false
+Alimentari e bevande,Olio e condimenti,Dimensioni,false
+Alimentari e bevande,Olio e condimenti,Peso,false
+Alimentari e bevande,Olio e condimenti,Formato/Peso netto,false
+Alimentari e bevande,Olio e condimenti,Ingredienti,false
+Alimentari e bevande,Olio e condimenti,Allergeni,false
+Alimentari e bevande,Olio e condimenti,Valori nutrizionali,false
+Alimentari e bevande,Olio e condimenti,Paese di origine,false
+Alimentari e bevande,Olio e condimenti,Conservazione,false
+Alimentari e bevande,Olio e condimenti,Scadenza/TMC,false
+Alimentari e bevande,Olio e condimenti,Denominazione,false
+Alimentari e bevande,Olio e condimenti,Capacità netta,false
 Ufficio e scuola,Penne,Modello,false
 Ufficio e scuola,Penne,Colore,false
 Ufficio e scuola,Penne,Materiale,false

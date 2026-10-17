@@ -31,6 +31,7 @@ mock.module("@/lib/stripe", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import { store as storeTable } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
 import {
@@ -233,5 +234,66 @@ describe("reactivateStoreSubscription", () => {
 		await expect(
 			reactivateStoreSubscription({ sellerProfileId, storeId }),
 		).rejects.toBeInstanceOf(ServiceError);
+	});
+});
+
+// Abbonamenti del seed: id Stripe finti, Stripe risponde resource_missing.
+describe("abbonamento sparito da Stripe", () => {
+	const missing = () =>
+		Object.assign(new Error("No such subscription"), {
+			code: "resource_missing",
+		});
+
+	async function expectClosedLocally(storeId: string, subId: string) {
+		const [r] = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, subId));
+		expect(r.status).toBe("canceled");
+		expect(r.canceledAt).not.toBeNull();
+		expect(r.cancelReason).toBe("seller_canceled");
+		const [st] = await getTestDb()
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, storeId));
+		expect(st.deletedAt).not.toBeNull();
+	}
+
+	it.each(["active", "past_due"] as const)(
+		"%s → Stripe resource_missing → chiuso in locale",
+		async (status) => {
+			const { sellerProfileId, storeId, sub } = await seedSub(status);
+			subUpdate.mockRejectedValueOnce(missing());
+			const result = await cancelStoreSubscription({
+				sellerProfileId,
+				storeId,
+			});
+			expect(result.status).toBe("canceled");
+			await expectClosedLocally(storeId, sub.id);
+		},
+	);
+
+	it("suspended → Stripe resource_missing → chiuso in locale, cancelReason resta seller_canceled", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("suspended");
+		subCancel.mockRejectedValueOnce(missing());
+		const result = await cancelStoreSubscription({ sellerProfileId, storeId });
+		expect(result.status).toBe("canceled");
+		await expectClosedLocally(storeId, sub.id);
+	});
+
+	it("reactivate canceling → Stripe resource_missing → 409, riga invariata", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("canceling");
+		subUpdate.mockRejectedValueOnce(missing());
+		const err = await reactivateStoreSubscription({
+			sellerProfileId,
+			storeId,
+		}).catch((e) => e);
+		expect(err).toBeInstanceOf(ServiceError);
+		expect(err.status).toBe(409);
+		const [r] = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, sub.id));
+		expect(r).toMatchObject({ cancelAtPeriodEnd: true, status: "canceling" });
 	});
 });
