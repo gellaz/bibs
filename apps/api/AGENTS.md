@@ -338,9 +338,9 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     - `sellers.ts` — `seedSellers()` (~190 sellers; the first 95 are `active` → `seller1..seller95@test.com`).
       Sign-up dates follow the index: `sellerSignupDaysAgo(idx) = 400 − 2·idx`, so stores and subscriptions are
       created oldest-first in index order. The organization row is created only from `pending_review` onwards
-      (registration doesn't create one); `pending_email` sellers are unverified and still named after the email
-      local part; from `pending_document` on there is a document type (varied by `documentFor(idx)`) and a
-      placeholder document photo. Three active sellers exist for the missing-data states (`utils.ts`):
+      (registration doesn't create one); sellers before `pending_document` (`pending_email`, `pending_personal`) are still named after the
+      email local part, and only `pending_email` is unverified; from `pending_company` on there is a document type
+      (varied by `documentFor(idx)`) and a placeholder document photo (`pending_document` sellers have neither). Three active sellers exist for the missing-data states (`utils.ts`):
       seller11 has a store **without location**, seller14 a store **without photos**, seller18 a store
       **without subscription**.
       Two blocks, deliberately kept apart so one can grow without moving the other: idx 0–49 are the *national*
@@ -385,8 +385,8 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
     - `catalog.ts` — the product catalogue, one list per shop type: `catalogByPrefix` has 41 `businessPrefix`
       entries of 20–28 products each (name, macro, sub-category, optional `price` range overriding the macro
       default, optional `skip` = characteristics that don't apply or that the name already states). Also
-      `brandPoolByMacro` (invented brands, unique across macros), `HOUSE_MADE_PREFIXES` (pizza, gelato, tailor-made
-      clothes: no brands), `descriptionsFor()` (descriptions by sub-category group) and `ALCOHOLIC_SUBS`
+      `brandPoolByMacro` (invented brands, unique across macros), `HOUSE_MADE_PREFIXES` (Pizzeria, Ristorante,
+      Trattoria, Osteria, Gelateria, Pasticceria, Panificio, Sartoria: no brands), `descriptionsFor()` (descriptions by sub-category group) and `ALCOHOLIC_SUBS`
     - `brands.ts` — `seedBrands()` picks 4–8 brands per active seller (rotating over the macros it sells, from
       `brandPoolByMacro`; none for house-made shop types). Rows are scoped per seller — schema has unique
       `(sellerProfileId, lower(name))`. Returns `Map<sellerProfileId, brand[]>` consumed by `seedProducts`
