@@ -17,6 +17,21 @@ export function pick<T>(
 /** Giorni di validità delle prenotazioni seedate: la demo non scade in 48 h. */
 export const SEED_RESERVATION_DAYS = 30;
 
+/** `days` giorni fa, a partire da adesso. */
+export function daysAgo(days: number): Date {
+	return new Date(Date.now() - days * 86400000);
+}
+
+/** Iscrizione del seller `idx`: i più vecchi per primi, uno ogni due giorni. */
+export function sellerSignupDaysAgo(idx: number): number {
+	return 400 - 2 * idx;
+}
+
+/** Stati del negozio mai visti nel seed: un seller per ciascuno. */
+export const STORE_WITHOUT_LOCATION_SELLER = "seller11@test.com";
+export const STORE_WITHOUT_IMAGES_SELLER = "seller14@test.com";
+export const STORE_WITHOUT_SUBSCRIPTION_SELLER = "seller18@test.com";
+
 /** customer1@test.com … customer<n>@test.com, nell'ordine in cui li crea il seed. */
 export function seedCustomerEmails(n: number): string[] {
 	return Array.from({ length: n }, (_, i) => `customer${i + 1}@test.com`);

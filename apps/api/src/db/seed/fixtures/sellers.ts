@@ -12,6 +12,7 @@ import {
 	type AnyMunicipalityHandle,
 	BOLOGNA_BLOCK_START,
 	bolognaAreaPlacement,
+	daysAgo,
 	firstNames,
 	getAllMunicipalityIds,
 	insegnaFor,
@@ -23,6 +24,8 @@ import {
 	SEED_MUNICIPALITIES,
 	SEED_MUNICIPALITY_COORDS,
 	type SeedMunicipalityHandle,
+	STORE_WITHOUT_LOCATION_SELLER,
+	sellerSignupDaysAgo,
 	streets,
 } from "./utils";
 
@@ -352,7 +355,8 @@ export async function seedSellers() {
 	const municipalityIds = await getAllMunicipalityIds();
 
 	// Phase 1: Create users via auth (sequential — password hashing)
-	const created: Array<{ userId: string; data: SellerSeedData }> = [];
+	const created: Array<{ userId: string; idx: number; data: SellerSeedData }> =
+		[];
 	for (let i = 0; i < sellersData.length; i++) {
 		const s = sellersData[i];
 		try {
@@ -368,9 +372,14 @@ export async function seedSellers() {
 				: {};
 			await db
 				.update(user)
-				.set({ role: "seller", emailVerified: s.emailVerified, ...personal })
+				.set({
+					role: "seller",
+					emailVerified: s.emailVerified,
+					createdAt: daysAgo(sellerSignupDaysAgo(i)),
+					...personal,
+				})
 				.where(eq(user.id, u.id));
-			created.push({ userId: u.id, data: s });
+			created.push({ userId: u.id, idx: i, data: s });
 		} catch (error) {
 			console.error(`     ✗ Failed: ${s.email}`, error);
 		}
@@ -388,8 +397,9 @@ export async function seedSellers() {
 	const profiles = await db
 		.insert(sellerProfile)
 		.values(
-			created.map(({ userId, data }) => ({
+			created.map(({ userId, idx, data }) => ({
 				userId,
+				createdAt: daysAgo(sellerSignupDaysAgo(idx)),
 				onboardingStatus: data.onboardingStatus,
 				firstName: data.profileFields.firstName,
 				lastName: data.profileFields.lastName,
@@ -436,16 +446,20 @@ export async function seedSellers() {
 
 	// Phase 4: Batch insert stores (for active sellers — store creation is post-activation)
 	const storeEntries = created
-		.map(({ data }, i) =>
+		.map(({ idx, data }, i) =>
 			data.store
 				? {
+						createdAt: daysAgo(sellerSignupDaysAgo(idx) - 7),
 						sellerProfileId: profiles[i].id,
 						name: data.store.name,
 						description: data.store.description,
 						addressLine1: data.store.addressLine1,
 						municipalityId: municipalityIds[data.store.municipalityHandle],
 						zipCode: data.store.zipCode,
-						location: { x: data.store.lng, y: data.store.lat },
+						location:
+							data.email === STORE_WITHOUT_LOCATION_SELLER
+								? null
+								: { x: data.store.lng, y: data.store.lat },
 					}
 				: null,
 		)

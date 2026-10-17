@@ -1,5 +1,6 @@
-import { eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import { db } from "@/db";
+import { user } from "@/db/schemas/auth";
 import { pricingConfig } from "@/db/schemas/pricing-config";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
@@ -7,6 +8,7 @@ import {
 	type StoreSubscriptionStatus,
 	storeSubscription,
 } from "@/db/schemas/store-subscription";
+import { STORE_WITHOUT_SUBSCRIPTION_SELLER } from "./utils";
 
 /**
  * Seed store_subscriptions for every existing live store owned by an active
@@ -94,11 +96,21 @@ export async function seedBillingSubscriptions() {
 		.select({
 			id: store.id,
 			sellerProfileId: store.sellerProfileId,
+			createdAt: store.createdAt,
 			stripeCustomerId: sellerProfile.stripeCustomerId,
 		})
 		.from(store)
 		.innerJoin(sellerProfile, eq(store.sellerProfileId, sellerProfile.id))
-		.where(isNull(store.deletedAt));
+		.innerJoin(user, eq(user.id, sellerProfile.userId))
+		.where(
+			and(
+				isNull(store.deletedAt),
+				ne(user.email, STORE_WITHOUT_SUBSCRIPTION_SELLER),
+			),
+		)
+		// Gli stati misti vanno ai negozi più recenti: il primo di seller1 deve
+		// restare pubblico (gli ordini seedati dipendono da lui).
+		.orderBy(desc(store.createdAt), asc(store.id));
 
 	if (stores.length === 0) {
 		console.log("  ⏭ No live stores to seed subscriptions for");
@@ -144,6 +156,7 @@ export async function seedBillingSubscriptions() {
 			s.stripeCustomerId ?? `cus_seed_orphan_${s.id.slice(0, 8)}`;
 		return {
 			storeId: s.id,
+			createdAt: s.createdAt,
 			stripeSubscriptionId: `sub_seed_${s.id.slice(0, 16)}`,
 			stripeCustomerId: customerId,
 			stripePriceId: activePricing.stripePriceId,
