@@ -12,6 +12,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { expireReservations } from "@/lib/jobs/expire-reservations";
+import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
 import { SEED_RESERVATION_DAYS, seedCustomerEmails } from "./utils";
@@ -105,7 +106,7 @@ const CATALOG: DevProduct[] = [
 	{
 		name: "Olio extravergine d'oliva 750 ml",
 		description: "Spremitura a freddo, raccolta dell'anno.",
-		category: "Conserve",
+		category: "Olio e condimenti",
 		price: "12.90",
 		vat: "4",
 		main: 15,
@@ -588,9 +589,20 @@ export async function seedDevSellerOrders() {
 		.from(sellerProfile)
 		.innerJoin(user, eq(user.id, sellerProfile.userId))
 		.innerJoin(store, eq(store.sellerProfileId, sellerProfile.id))
-		.where(and(eq(user.email, DEV_EMAIL), eq(store.name, MAIN_STORE)))
+		// Solo se vendibile: senza STRIPE_DEV_PRICE_ID il negozio non ha abbonamento
+		// e createOrder risponderebbe 404.
+		.where(
+			and(
+				eq(user.email, DEV_EMAIL),
+				eq(store.name, MAIN_STORE),
+				publiclyVisibleStore(),
+			),
+		)
 		.limit(1);
-	if (!row) return 0;
+	if (!row) {
+		console.warn(`  ⚠️ ${MAIN_STORE} non vendibile: nessun ordine dev seedato`);
+		return 0;
+	}
 
 	const existing = await db.query.order.findFirst({
 		where: eq(order.storeId, row.storeId),

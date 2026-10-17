@@ -905,7 +905,7 @@ const CONTEXT_POOLS: Record<string, Record<string, readonly string[]>> = {
 	"Caschi moto": { Omologazione: ["ECE 22.06"] },
 };
 
-function allowedValues(
+export function allowedValues(
 	name: string,
 	macro: string,
 	sub: string,
