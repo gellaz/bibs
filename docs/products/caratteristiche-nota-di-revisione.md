@@ -123,7 +123,7 @@ interessate.
 | `Sistema operativo` (11) | Telefoni, laptop, TV e orologi: la domanda è sempre «quale OS». Lista unione di 14 valori più `Altro`. |
 | `Alimentazione` (15) | 14 elettroniche più `Barbecue`. La domanda è sempre «da cosa è alimentato», e l'unione è **sensata in entrambe le direzioni**: i barbecue elettrici esistono davvero. Lista: `Rete elettrica\|Batteria integrata\|Pile sostituibili\|USB\|Gas\|Carbonella\|Pellet\|Legna`. È il contrario del caso `Stagione`, dove l'unione produceva risposte impossibili. |
 | `Tipo pelle/capelli` (14) | Le due liste sono disgiunte, ma prefissare i valori (`Pelle secca`, `Capelli secchi`) le rende leggibili in un'unica tendina senza ambiguità. |
-| `Potenza` (16) | Dal frullatore al barbecue: sempre watt. Vedi §5 per il problema dei kW. |
+| `Potenza` (17) | Dal frullatore al barbecue: sempre watt. Vedi §5 per il problema dei kW. |
 | `Formato carta` / `Formato massimo` | Stessa lista (`A4\|A3\|…`), due voci distinte nel foglio: le ho tenute separate per fedeltà alla fonte. Sono unificabili senza perdere nulla. |
 | `Tipo pelle` (3, make-up) / `Tipo pelle/capelli` (14) | Quasi-duplicati nel foglio. Nessuna sotto-categoria ha entrambe, quindi si potrebbero fondere. Le ho lasciate separate perché la fonte le distingue. |
 
@@ -200,7 +200,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
   centimetri per gli sci, litri per gli zaini.
 - **`Taglia accessori`** (4) — stesso problema: centimetri per le cinture,
   circonferenza per i cappelli, diametro per gli anelli, calibro per gli occhiali.
-- **`Allergeni`** (4) — qui la lista chiusa *esiste* (i 14 allergeni
+- **`Allergeni`** (14) — qui la lista chiusa *esiste* (i 14 allergeni
   dell'allegato II del reg. UE 1169/2011) ma un prodotto ne contiene più d'uno, e
   il modello dati assegna un valore solo per caratteristica. Un enum
   costringerebbe a dichiararne uno e tacere gli altri: su un allergene questo non
@@ -210,7 +210,7 @@ scrivere una lista che un negoziante riconoscerebbe come completa:
   **`Indice di carico`** (1), **`Omologazione`** (9),
   **`Compatibilità veicolo`** (9), **`Anno compatibilità`** (9) — codici,
   intervalli o nomenclature che cambiano per marca.
-- **`Formato/Peso netto`** (6), **`Diametro/Capacità`** (1),
+- **`Formato/Peso netto`** (16), **`Diametro/Capacità`** (1),
   **`Peso bambino`** (1) — nomi composti nella fonte, che chiedono due cose
   insieme o un intervallo (`4-9 kg`). Un numero con un'unità sola mentirebbe.
 
@@ -266,7 +266,7 @@ della classificazione: vedi §4.1.
 ## 4. Applicabilità sospette
 
 Righe che il foglio marca `Sì` e che sembrano prive di senso. **Non le ho
-corrette nei CSV**: sono elencate perché la decisione è di Marco. Tutte si
+corrette nei CSV**, tranne `Macchine caffè` (corretta, vedi §5 bis): le altre sono elencate perché la decisione è di Marco. Tutte si
 correggono togliendo righe da `product_category_characteristics.csv`, mai dal
 dizionario.
 
@@ -288,9 +288,10 @@ Cinque universali (`Modello`, `Colore`, `Materiale`, `Dimensioni`, `Peso`) più
 
 Tre buchi che valgono più degli altri:
 
-- **`Alimentari e bevande`**: otto sotto-categorie alimentari su undici **non hanno
-  `Allergeni`, né `Ingredienti`, né `Scadenza/TMC`**. Le hanno solo `Pasta`, `Riso`
-  e `Caffè`. Un barattolo di conserva venduto senza allergeni è un problema di
+- **`Alimentari e bevande`**: otto sotto-categorie alimentari su 22 **non hanno
+  `Allergeni`, né `Ingredienti`, né `Scadenza/TMC`** (`Conserve`, `Snack`, `Dolci`,
+  `Bevande analcoliche`, `Succhi`, `Tè`, `Prodotti bio`, `Senza glutine`); le altre
+  14 le hanno, comprese le 11 aggiunte dopo la revisione (§5 bis). Un barattolo di conserva venduto senza allergeni è un problema di
   conformità, non di completezza della scheda.
 - **`Infanzia / Seggiolini auto`**: niente `Omologazione` (ECE R129/i-Size), niente
   `Peso bambino`, niente `Età consigliata`. È l'unico prodotto del catalogo il cui
@@ -318,7 +319,7 @@ Questi sembrano errori di copia-incolla nel foglio, non scelte:
 | Sotto-categoria | Ha ricevuto | Perché non torna |
 |---|---|---|
 | `Elettronica / Custodie smartphone` | **tutto** il blocco Smartphone: `Sistema operativo`, `RAM`, `Memoria interna`, `Dimensione display`, `Risoluzione display`, `Fotocamera`, `5G`, `Dual SIM`, `Capacità batteria` | È la sotto-categoria con **20 caratteristiche, il massimo di tutto il catalogo**, e sono le caratteristiche del telefono, non della custodia. Le uniche pertinenti sono `Compatibilità`, `Dimensione compatibile`, `Tipo chiusura`, `Protezione`. |
-| `Casa e cucina / Macchine caffè` | il blocco alimentare: `Formato/Peso netto`, `Ingredienti`, `Allergeni`, `Valori nutrizionali`, `Paese di origine`, `Conservazione`, `Scadenza/TMC` | Una macchina da caffè non ha allergeni né scadenza. Le manca invece tutto il blocco elettrodomestico (`Potenza`, `Pressione`, `Capacità serbatoio`). |
+| `Casa e cucina / Macchine caffè` | il blocco alimentare: `Formato/Peso netto`, `Ingredienti`, `Allergeni`, `Valori nutrizionali`, `Paese di origine`, `Conservazione`, `Scadenza/TMC` | **Corretta (§5 bis).** Una macchina da caffè non ha allergeni né scadenza. Le manca invece tutto il blocco elettrodomestico (`Potenza`, `Pressione`, `Capacità serbatoio`). |
 | `Hobby e creatività / Tele pittura` | il blocco vernici: `Finitura`, `Resa`, `Volume`, `Superficie applicabile`, `Tempo asciugatura` | Sono le caratteristiche della pittura, non della tela. Una tela non ha resa in m² né tempo di asciugatura. |
 | `Sport e tempo libero / Accessori bici` | tutto il blocco bicicletta: `Misura telaio`, `Materiale telaio`, `Diametro ruote`, `Numero velocità`, `Tipo freni`, `Sospensioni`, `Peso massimo supportato` | Un campanello non ha un telaio. |
 | `Abbigliamento / Orologi` | il blocco smartwatch: `Sistema operativo`, `GPS`, `Sensori`, `Compatibilità smartphone`, `Autonomia` | Giusto per uno smartwatch, vuoto per un orologio meccanico. È anche la ragione per cui `Sistema operativo` risulta sotto Abbigliamento. |
@@ -346,7 +347,7 @@ Dove c'era più di un'unità plausibile.
 | `Larghezza`, `Altezza`, `Profondità`, `Altezza tacco` | `cm` | Millimetri sarebbero più precisi per il tacco, ma nessuno vende scarpe con un tacco da `85 mm`. |
 | `Lunghezza focale`, `Diametro filtro`, `Larghezza pneumatico` | `mm` | Qui è il contrario: sono nomenclature tecniche che esistono solo in millimetri (`50 mm`, `205`). |
 | `Memoria/Storage` (2, laptop) | `GB` | I tagli veri arrivano a `1 TB`, che qui va scritto `1024`. L'alternativa (testo libero) perde il filtro «almeno 512 GB». |
-| `Potenza` (16) | `W` | Corretto su elettrodomestici e altoparlanti. Su `Giardino e outdoor / Barbecue` la potenza dei bruciatori si dichiara in **kW**: `9 kW` diventa `9000`. |
+| `Potenza` (17) | `W` | Corretto su elettrodomestici e altoparlanti. Su `Giardino e outdoor / Barbecue` la potenza dei bruciatori si dichiara in **kW**: `9 kW` diventa `9000`. |
 | `Garanzia` (10) | `mesi` | Anni sarebbero più naturali a dirsi («due anni di garanzia») ma non reggono i 18 o i 30 mesi. |
 | `Superficie cottura` | `cm²` | La misura commerciale dei barbecue è spesso `cm × cm`. Un numero solo perde la forma della griglia. |
 | `Campo visivo` | `gradi` | Scritto per esteso invece del simbolo `°`, per non affidare un dato a un carattere che si perde nei copia-incolla. |

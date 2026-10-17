@@ -256,12 +256,12 @@ configuring Stripe at all:
 | `active` | most stores | the normal case |
 | `past_due` | 3 | renewal-failed banner + dunning copy |
 | `canceling` | 2 | "deactivates on <date>" + undo |
-| `suspended` | 1 | blocking banner, recoverable via portal |
+| `suspended` | 1 | blocking banner (on the fake seed subscription, cancel closes the store locally and reactivate answers 409) |
 | `canceled` | 1 | archived store (soft-deleted) |
 
 (Counts mirror `apps/api/src/db/seed/fixtures/billing-subscriptions.ts` — check there
-if they drift. Seeded rows carry fake `sub_seed_…` Stripe ids; portal/invoice calls against them will
-404 on Stripe — expected.)
+if they drift. Seeded rows carry fake `sub_seed_…` Stripe ids; the portal answers 404 because seed sellers have no Stripe customer, and
+cancel/reactivate hit `resource_missing` on Stripe — expected.)
 
 ## Starting clean («Ripartire puliti»)
 

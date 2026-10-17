@@ -408,7 +408,7 @@ All list endpoints accept `page` and `limit` query parameters for pagination (de
       seller's orders use `customer1..6`), ending in confirmed / ready / completed / cancelled / expired. No
       pay-and-pickup: it needs a real PaymentIntent. Open reservations expire 30 days after seeding
       (`SEED_RESERVATION_DAYS`)
-    - `billing-subscriptions.ts` — one subscription per live store; the mixed states (past_due, canceling,
+    - `billing-subscriptions.ts` — one subscription per live store (except the store of `seller18@test.com`, left without one on purpose); the mixed states (past_due, canceling,
       suspended, canceled) go to the **newest** stores, so seller1's first store stays public for the orders
     - `discounts.ts` — `seedDiscounts()` fills `discounts` + `discount_products`: 0–3 promotions per active
       seller (two thirds of national sellers have at least one, four fifths of the Bologna block), 3–12 products
