@@ -4,6 +4,9 @@ import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 const DISCOUNTS_KEY = ["discounts"] as const;
+// Prezzo e colonna promo della lista prodotti dipendono dalle promozioni: ogni
+// mutation che cambia una promo o i suoi prodotti invalida anche questa.
+const PRODUCTS_KEY = ["products"] as const;
 
 interface ListParams {
 	page: number;
@@ -47,6 +50,7 @@ export function usePauseDiscount() {
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
+			void qc.invalidateQueries({ queryKey: PRODUCTS_KEY });
 		},
 	});
 }
@@ -60,6 +64,7 @@ export function useArchiveDiscount() {
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
+			void qc.invalidateQueries({ queryKey: PRODUCTS_KEY });
 		},
 	});
 }
@@ -78,6 +83,7 @@ export function useUpdateDiscount(discountId: string) {
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
+			void qc.invalidateQueries({ queryKey: PRODUCTS_KEY });
 		},
 	});
 }
@@ -98,6 +104,7 @@ export function useRemoveDiscountProducts(discountId: string) {
 			void qc.invalidateQueries({
 				queryKey: [...DISCOUNTS_KEY, "detail", discountId],
 			});
+			void qc.invalidateQueries({ queryKey: PRODUCTS_KEY });
 		},
 	});
 }
@@ -133,6 +140,7 @@ export function useApplyPromotionToProducts() {
 			void qc.invalidateQueries({
 				queryKey: [...DISCOUNTS_KEY, "products", vars.discountId],
 			});
+			void qc.invalidateQueries({ queryKey: PRODUCTS_KEY });
 		},
 	});
 }
