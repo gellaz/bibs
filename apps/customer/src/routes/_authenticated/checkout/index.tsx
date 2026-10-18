@@ -12,6 +12,7 @@ import {
 	serializeChoice,
 } from "@/features/checkout/checkout-choice";
 import { StoreChoice } from "@/features/checkout/store-choice";
+import { useReservationDeadlines } from "@/features/checkout/use-checkout";
 import { useCustomerPoints } from "@/features/points/use-points";
 import { m } from "@/paraglide/messages";
 
@@ -33,6 +34,11 @@ function CheckoutChoicePage() {
 	const navigate = useNavigate({ from: Route.fullPath });
 	const { cart, isPending } = useCart();
 	const points = useCustomerPoints(1);
+	const reservations = useReservationDeadlines(
+		buyableGroups(cart)
+			.filter((g) => g.store.orderTypes.includes("reserve_pickup"))
+			.map((g) => g.store.id),
+	);
 
 	if (isPending)
 		return (
@@ -101,6 +107,7 @@ function CheckoutChoicePage() {
 							options={group.store.orderTypes}
 							value={choice[group.store.id]}
 							pointsBalance={points.data?.balance}
+							reservation={reservations.data?.get(group.store.id)}
 							onChange={(type) =>
 								void navigate({
 									search: {

@@ -29,12 +29,18 @@ import {
 	onlineChargeBlocked,
 	pointsToggleLabel,
 } from "@/features/checkout/points-toggle";
+import {
+	type ReservationInfo,
+	reserveNoteKind,
+} from "@/features/checkout/reservation-copy";
 import { checkoutTypeLabel } from "@/features/checkout/store-choice";
 import {
 	CheckoutError,
 	useCheckoutPreview,
 	useCreateCheckout,
+	useReservationDeadlines,
 } from "@/features/checkout/use-checkout";
+import { formatPickupDate } from "@/features/orders/order-display";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/checkout/review")({
@@ -44,7 +50,6 @@ export const Route = createFileRoute("/_authenticated/checkout/review")({
 	}),
 });
 
-const RESERVATION_HOURS = 48;
 const toCents = (v: string) => Math.round(Number(v) * 100);
 
 type Preview = NonNullable<ReturnType<typeof useCheckoutPreview>["data"]>;
@@ -77,6 +82,13 @@ function CheckoutReviewPage() {
 	const preview = useCheckoutPreview(
 		resolved.choice,
 		!submitted && resolved.complete,
+	);
+	const reserveGroups = (submitted?.groups ?? live).filter(
+		(g) =>
+			(submitted?.choice ?? resolved.choice)[g.store.id] === "reserve_pickup",
+	);
+	const reservations = useReservationDeadlines(
+		reserveGroups.map((g) => g.store.id),
 	);
 
 	// 409/400: il carrello o la scelta non reggono più, come alla conferma.
@@ -340,9 +352,10 @@ function CheckoutReviewPage() {
 						</div>
 					)}
 					{payInStore > 0 && (
-						<p className="rounded-lg bg-muted p-3 text-foreground text-sm">
-							{m.checkout_reserve_note({ hours: RESERVATION_HOURS })}
-						</p>
+						<ReserveDeadlines
+							groups={reserveGroups}
+							reservations={reservations.data}
+						/>
 					)}
 				</div>
 			)}
@@ -367,6 +380,47 @@ function CheckoutReviewPage() {
 					{confirmLabel(types, data ? payByCard : undefined)}
 				</Button>
 			</div>
+		</div>
+	);
+}
+
+/** Riquadro «Se confermi adesso, ritira entro»: una riga per negozio prenotato. */
+function ReserveDeadlines({
+	groups,
+	reservations,
+}: {
+	groups: { store: { id: string; name: string } }[];
+	reservations?: Map<string, ReservationInfo>;
+}) {
+	const rows = groups.flatMap((g) => {
+		const r = reservations?.get(g.store.id);
+		return r ? [{ id: g.store.id, name: g.store.name, r }] : [];
+	});
+	const kind = reserveNoteKind(rows.map((row) => row.r.clock));
+	return (
+		<div className="space-y-2 rounded-lg bg-muted p-3 text-foreground text-sm">
+			{rows.length > 0 && (
+				<>
+					<p className="font-medium">{m.checkout_reserve_deadlines_title()}</p>
+					<ul className="space-y-1">
+						{rows.map(({ id, name, r }) => (
+							<li key={id} className="flex justify-between gap-3">
+								<span className="min-w-0">{name}</span>
+								<span className="shrink-0 font-medium tabular-nums">
+									{formatPickupDate(r.expiresAt)}
+								</span>
+							</li>
+						))}
+					</ul>
+				</>
+			)}
+			<p className="text-muted-foreground">
+				{rows.length === 0 || kind === "calendar"
+					? m.checkout_reserve_note_calendar()
+					: kind === "mixed"
+						? m.checkout_reserve_note_mixed()
+						: m.checkout_reserve_note_opening()}
+			</p>
 		</div>
 	);
 }

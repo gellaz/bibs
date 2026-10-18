@@ -17,6 +17,7 @@ import { useCheckout } from "@/features/checkout/use-checkout";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { formatPickupCode } from "@/features/orders/pickup-code";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
+import { StoreClosedNote } from "@/features/orders/store-closed-note";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/checkout/$checkoutId/")({
@@ -169,7 +170,16 @@ function CheckoutDonePage() {
 						</ul>
 						<div className="flex flex-wrap items-baseline justify-between gap-x-3 border-border border-t pt-3">
 							{o.type === "reserve_pickup" && o.reservationExpiresAt ? (
-								<PickupCountdown expiresAt={o.reservationExpiresAt} />
+								<div className="space-y-1">
+									<PickupCountdown expiresAt={o.reservationExpiresAt} />
+									{(o.status === "confirmed" ||
+										o.status === "ready_for_pickup") && (
+										<StoreClosedNote
+											expiresAt={o.reservationExpiresAt}
+											openStatus={o.store.openStatus}
+										/>
+									)}
+								</div>
 							) : (
 								<span />
 							)}

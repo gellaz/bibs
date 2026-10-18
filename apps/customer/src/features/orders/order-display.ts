@@ -31,6 +31,11 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
 	minute: "2-digit",
 };
 
+/** Data e ora di una scadenza di ritiro: «mer 21 ott, 17:00». */
+export function formatPickupDate(expiresAt: Date | string): string {
+	return new Date(expiresAt).toLocaleString(intlLocale(), DATE_FMT);
+}
+
 /**
  * Scadenza del ritiro: data e ora, più il tempo residuo arrotondato. Il
  * conto alla rovescia vivo lo aggiunge PickupCountdown con formatCountdown.
@@ -41,7 +46,7 @@ export function pickupDeadline(
 ): { expired: boolean; date: string; left: string } {
 	const at = new Date(expiresAt);
 	const ms = at.getTime() - now;
-	const date = at.toLocaleString(intlLocale(), DATE_FMT);
+	const date = formatPickupDate(at);
 	if (ms <= 0) return { expired: true, date, left: m.orders_pickup_expired() };
 	const minutes = Math.ceil(ms / 60_000);
 	const time =

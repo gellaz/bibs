@@ -27,6 +27,7 @@ import { canCustomerCancel } from "@/features/orders/order-display";
 import { OrderStatusBadge } from "@/features/orders/order-status-badge";
 import { PickupCountdown } from "@/features/orders/pickup-countdown";
 import { PickupQr } from "@/features/orders/pickup-qr";
+import { StoreClosedNote } from "@/features/orders/store-closed-note";
 import { useCancelOrder, useCustomerOrder } from "@/features/orders/use-orders";
 import { formatSignedPoints } from "@/features/points/point-display";
 import { m } from "@/paraglide/messages";
@@ -98,6 +99,12 @@ function OrderDetailPage() {
 				</p>
 				{open && order.reservationExpiresAt && (
 					<PickupCountdown expiresAt={order.reservationExpiresAt} />
+				)}
+				{open && order.reservationExpiresAt && (
+					<StoreClosedNote
+						expiresAt={order.reservationExpiresAt}
+						openStatus={order.store.openStatus}
+					/>
 				)}
 			</header>
 

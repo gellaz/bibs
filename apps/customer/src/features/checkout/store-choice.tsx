@@ -1,20 +1,41 @@
 import { RadioGroup, RadioGroupItem } from "@bibs/ui/components/radio-group";
+import { formatPickupDate } from "@/features/orders/order-display";
 import { m } from "@/paraglide/messages";
 import type { CheckoutType } from "./checkout-choice";
 import { formatPoints } from "./points-toggle";
+import type { ReservationInfo } from "./reservation-copy";
 
 const LABEL: Record<CheckoutType, () => string> = {
 	reserve_pickup: m.checkout_type_reserve_pickup,
 	pay_pickup: m.checkout_type_pay_pickup,
 };
 
-const RESERVATION_HOURS = 48;
+/** «24 ore di apertura» / «1 ora»: mai «di apertura» per un negozio senza orari. */
+export function reserveDuration(r: ReservationInfo) {
+	if (r.clock === "opening")
+		return r.hours === 1
+			? m.reserve_duration_opening_one()
+			: m.reserve_duration_opening({ hours: r.hours });
+	return r.hours === 1
+		? m.reserve_duration_calendar_one()
+		: m.reserve_duration_calendar({ hours: r.hours });
+}
 
-const HINT: Record<CheckoutType, () => string> = {
-	reserve_pickup: () =>
-		m.checkout_type_reserve_pickup_hint({ hours: RESERVATION_HOURS }),
-	pay_pickup: m.checkout_type_pay_pickup_hint,
-};
+/** Spiegazione di «Prenota e paga in negozio» con la scadenza se confermi adesso. */
+function ReserveHint({ reservation }: { reservation?: ReservationInfo }) {
+	if (!reservation) return m.checkout_type_reserve_pickup_hint_short();
+	return (
+		<>
+			{m.checkout_type_reserve_pickup_hint_deadline({
+				duration: reserveDuration(reservation),
+			})}{" "}
+			<strong className="font-medium text-foreground">
+				{formatPickupDate(reservation.expiresAt)}
+			</strong>
+			.
+		</>
+	);
+}
 
 export function checkoutTypeLabel(type: CheckoutType) {
 	return LABEL[type]();
@@ -28,6 +49,7 @@ export function StoreChoice({
 	value,
 	onChange,
 	pointsBalance,
+	reservation,
 }: {
 	storeId: string;
 	options: CheckoutType[];
@@ -35,6 +57,8 @@ export function StoreChoice({
 	onChange: (v: CheckoutType) => void;
 	/** Saldo punti del cliente: se c'è, la spiegazione di `pay_pickup` lo ricorda. */
 	pointsBalance?: number;
+	/** Scadenza se confermi adesso; assente finché non arriva dall'API. */
+	reservation?: ReservationInfo;
 }) {
 	return (
 		<RadioGroup
@@ -56,7 +80,11 @@ export function StoreChoice({
 								{LABEL[type]()}
 							</span>
 							<span className="block text-muted-foreground text-sm">
-								{HINT[type]()}
+								{type === "reserve_pickup" ? (
+									<ReserveHint reservation={reservation} />
+								) : (
+									m.checkout_type_pay_pickup_hint()
+								)}
 								{type === "pay_pickup" && pointsBalance
 									? ` ${m.checkout_type_pay_pickup_points_hint({ points: formatPoints(pointsBalance) })}`
 									: null}

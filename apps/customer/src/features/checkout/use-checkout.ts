@@ -11,6 +11,7 @@ import {
 	serializeChoice,
 } from "./checkout-choice";
 import { paymentState } from "./payment-state";
+import type { ReservationInfo } from "./reservation-copy";
 
 /** Errore di conferma con lo status HTTP (assente se la rete non ha risposto). */
 export class CheckoutError extends Error {
@@ -34,6 +35,26 @@ function errorMessage(res: { data: unknown; error: unknown }) {
 
 export const ORDERS_KEY = ["customer", "orders"] as const;
 export const CHECKOUT_PREVIEW_KEY = ["customer", "checkout-preview"] as const;
+
+/** Scadenze «se confermi adesso» delle prenotazioni, per negozio. */
+export function useReservationDeadlines(storeIds: string[]) {
+	const ids = [...storeIds].sort();
+	return useQuery({
+		queryKey: ["customer", "reservation-deadlines", ids],
+		enabled: ids.length > 0,
+		queryFn: async () => {
+			const { data } = unwrap(
+				await api().customer.checkout["reservation-deadlines"].get({
+					query: { storeIds: ids.join(",") },
+				}),
+				m.error_generic(),
+			);
+			return new Map<string, ReservationInfo>(
+				data.map(({ storeId, ...info }) => [storeId, info]),
+			);
+		},
+	});
+}
 
 /** Importi del riepilogo dall'API, con e senza punti: l'interruttore non fa chiamate. */
 export function useCheckoutPreview(choice: CheckoutChoice, enabled: boolean) {
