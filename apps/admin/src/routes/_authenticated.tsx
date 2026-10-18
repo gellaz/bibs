@@ -1,10 +1,4 @@
 import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from "@bibs/ui/components/breadcrumb";
-import {
 	SidebarInset,
 	SidebarProvider,
 	SidebarTrigger,
@@ -12,6 +6,7 @@ import {
 import { Spinner } from "@bibs/ui/components/spinner";
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { AppSidebar } from "@/components/app-sidebar";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
@@ -67,13 +62,7 @@ function AuthenticatedLayout() {
 				<header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur">
 					<SidebarTrigger className="-ml-1" label={m.shell_sidebar_toggle()} />
 					<div aria-hidden className="h-4 w-px bg-border" />
-					<Breadcrumb>
-						<BreadcrumbList>
-							<BreadcrumbItem>
-								<BreadcrumbPage>bibs Admin</BreadcrumbPage>
-							</BreadcrumbItem>
-						</BreadcrumbList>
-					</Breadcrumb>
+					<AppBreadcrumb />
 				</header>
 				{/* clip, non hidden: hidden ne fa un contenitore di scroll che
 				    non scorre mai (scorre la finestra) e blocca ogni `sticky`. */}
