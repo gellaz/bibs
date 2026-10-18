@@ -1,10 +1,10 @@
 import { addDaysYMD, dowFromYMD } from "./dates";
 import type { OpeningHoursDay, OpenStatus } from "./types";
 
-const MAX_LOOKAHEAD_DAYS = 60;
+export const MAX_LOOKAHEAD_DAYS = 60;
 
 /** Current Europe/Rome calendar date + minutes-since-midnight. */
-function nowInRome(now: Date): { date: string; minutes: number } {
+export function nowInRome(now: Date): { date: string; minutes: number } {
 	const parts = new Intl.DateTimeFormat("en-GB", {
 		timeZone: "Europe/Rome",
 		year: "numeric",
@@ -21,19 +21,26 @@ function nowInRome(now: Date): { date: string; minutes: number } {
 	return { date, minutes };
 }
 
-const toMinutes = (hhmm: string): number => {
+export const toMinutes = (hhmm: string): number => {
 	const [h, m] = hhmm.split(":").map(Number);
 	return h * 60 + m;
 };
 
 /** Slots for a weekday, sorted by opening time. */
-function slotsFor(
+export function slotsFor(
 	openingHours: OpeningHoursDay[] | null,
 	dow: number,
 ): Array<{ open: string; close: string }> {
 	const day = openingHours?.find((d) => d.dayOfWeek === dow);
 	if (!day) return [];
 	return [...day.slots].sort((a, b) => toMinutes(a.open) - toMinutes(b.open));
+}
+
+/** Il negozio ha dichiarato almeno una fascia: `[]` e `slots: []` valgono quanto `null`. */
+export function hasDeclaredHours(
+	openingHours: OpeningHoursDay[] | null,
+): boolean {
+	return !!openingHours?.some((d) => d.slots.length > 0);
 }
 
 export function getOpenStatus(input: {
@@ -52,7 +59,7 @@ export function getOpenStatus(input: {
 	// `apps/customer/src/features/stores/format-opening-hours.ts`: badge e
 	// rail stanno sulla stessa schermata, quindi un drift tra i due predicati
 	// si vedrebbe come un'autocontraddizione a schermo.
-	if (!openingHours?.some((d) => d.slots.length > 0)) {
+	if (!hasDeclaredHours(openingHours)) {
 		return { isOpen: false, status: "unknown" };
 	}
 
