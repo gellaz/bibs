@@ -164,7 +164,15 @@ export const CustomerOrderWithRelationsSchema = t.Object({
 	...OrderSchema.properties,
 	items: t.Array(OrderItemWithProduct),
 	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
-	store: t.Omit(StoreSchema, ["location"]),
+	store: t.Object({
+		...t.Omit(StoreSchema, ["location"]).properties,
+		openStatus: t.Optional(
+			t.Nullable(OpenStatusSchema, {
+				description:
+					"Stato di apertura adesso: nel dettaglio ordine e nel checkout, non nella lista",
+			}),
+		),
+	}),
 	shippingAddress: t.Nullable(CustomerAddressSchema),
 });
 

@@ -38,11 +38,12 @@ import { productImage } from "@/db/schemas/product-image";
 import { store as storeTable } from "@/db/schemas/store";
 import type { StoreSubscriptionStatus } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
-import { reservationDeadline } from "@/lib/holidays";
+import { addDaysYMD, reservationDeadline } from "@/lib/holidays";
 import {
 	assignPickupCode,
 	cancelOrder,
 	createOrder,
+	getCustomerOrder,
 } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
 import { truncateAll } from "../helpers/cleanup";
@@ -748,5 +749,56 @@ describe("createOrder — sellable only", () => {
 		const created = await order2(f);
 		// pay_pickup nasce in attesa di pagamento
 		expect(created.status).toBe("pending");
+	});
+});
+
+describe("getCustomerOrder — stato del negozio", () => {
+	const romeToday = () =>
+		new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(
+			new Date(),
+		);
+
+	async function orderAt(params: Parameters<typeof createTestStore>[2]) {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id, params);
+		await createTestStoreSubscription(db, s.id);
+		const prod = await createTestProduct(db, seller.profile.id, {
+			price: "10.00",
+		});
+		const sp = await createTestStoreProduct(db, s.id, prod.id, { stock: 10 });
+		const customer = await createTestCustomer(db);
+		const placed = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: "reserve_pickup",
+			storeId: s.id,
+			items: [{ storeProductId: sp.id, quantity: 1 }],
+		});
+		return getCustomerOrder({
+			orderId: placed.id,
+			customerProfileId: customer.profile.id,
+		});
+	}
+
+	it("negozio chiuso oggi: closed_holiday con la riapertura", async () => {
+		const today = romeToday();
+		const result = await orderAt({
+			openingHours: Array.from({ length: 7 }, (_, i) => ({
+				dayOfWeek: i,
+				slots: [{ open: "08:00", close: "20:00" }],
+			})),
+			closures: [{ startDate: today, endDate: addDaysYMD(today, 1) }],
+		});
+		expect(result.store.openStatus?.status).toBe("closed_holiday");
+		expect(result.store.openStatus?.opensAt).toEqual({
+			date: addDaysYMD(today, 2),
+			time: "08:00",
+		});
+	});
+
+	it("negozio senza orari: unknown", async () => {
+		const result = await orderAt({});
+		expect(result.store.openStatus?.status).toBe("unknown");
 	});
 });

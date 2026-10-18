@@ -12,6 +12,10 @@ import { fromCents, toCents } from "@/lib/money";
 import { isBelowOnlineMinimum } from "@/lib/online-charge";
 import { offeredOrderTypes, sellerChargesEnabledSql } from "@/lib/order-types";
 import { allocateCheckoutPoints } from "@/lib/points-allocation";
+import {
+	resolveOpenStatuses,
+	resolveReservationDeadlines,
+} from "@/lib/store-open-status";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import {
 	createCheckoutPaymentIntent,
@@ -200,13 +204,41 @@ export async function getCheckout(params: {
 		awaitingPayment && found.stripePaymentIntentId
 			? await payableClientSecret(found.stripePaymentIntentId)
 			: null;
+	const stores = [...new Map(data.map((o) => [o.store.id, o.store])).values()];
+	const openStatuses = await resolveOpenStatuses(stores, new Date());
 	return {
 		id: found.id,
 		createdAt: found.createdAt,
 		amountDueOnline: found.amountDueOnline,
 		payment: clientSecret ? { clientSecret } : null,
-		orders: data,
+		orders: data.map((o) => ({
+			...o,
+			store: { ...o.store, openStatus: openStatuses.get(o.store.id) ?? null },
+		})),
 	};
+}
+
+/**
+ * Scadenza che avrebbe adesso una prenotazione in ciascun negozio visibile,
+ * con le sue ore di ritiro: è l'anteprima «se confermi adesso» del checkout,
+ * calcolata come alla conferma. Gli id sconosciuti o nascosti sono omessi.
+ */
+export async function reservationDeadlinesForStores(
+	storeIds: string[],
+	now = new Date(),
+) {
+	if (storeIds.length === 0) return [];
+	const rows = await db
+		.select({
+			id: store.id,
+			openingHours: store.openingHours,
+			closures: store.closures,
+			reservationHours: store.reservationHours,
+		})
+		.from(store)
+		.where(and(inArray(store.id, storeIds), publiclyVisibleStore()));
+	const deadlines = await resolveReservationDeadlines(rows, now);
+	return rows.map((r) => ({ storeId: r.id, ...deadlines.get(r.id)! }));
 }
 
 /**

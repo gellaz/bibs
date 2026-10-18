@@ -19,7 +19,10 @@ import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { generatePickupCode } from "@/lib/pickup-code";
 import { platformFeeCents } from "@/lib/platform-fee";
-import { resolveReservationDeadlines } from "@/lib/store-open-status";
+import {
+	resolveOpenStatuses,
+	resolveReservationDeadlines,
+} from "@/lib/store-open-status";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
 import { refundOrderPayment } from "@/modules/billing/services/order-payments";
@@ -144,10 +147,12 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 
 	if (!found) throw new ServiceError(404, "Ordine non trovato");
 	const { store, shippingAddress, ...foundRest } = found;
+	const openStatuses = await resolveOpenStatuses([store], new Date());
 	return {
 		...foundRest,
 		store: {
 			...store,
+			openStatus: openStatuses.get(store.id) ?? null,
 			municipality: {
 				id: store.municipality.id,
 				name: store.municipality.name,
