@@ -115,7 +115,8 @@ function SellerDetailPage() {
 						)}
 					</div>
 				</div>
-				<div className="flex items-center gap-2">
+				{/* Va a capo: email lunga + badge con «n/6» non stanno in 390 px. */}
+				<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
 					<span className="text-muted-foreground text-sm">
 						{seller.user.email}
 					</span>
