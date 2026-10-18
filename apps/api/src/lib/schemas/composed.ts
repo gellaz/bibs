@@ -36,6 +36,10 @@ export const StoreWithPhonesSchema = t.Object({
 		description:
 			"Soglia di scorta bassa del negozio (0 = avviso spento). Solo lato venditore",
 	}),
+	reservationHours: t.Integer({
+		description:
+			"Ore di apertura entro cui ritirare una prenotazione. Solo lato venditore",
+	}),
 	phoneNumbers: t.Array(StorePhoneNumberSchema),
 	category: t.Nullable(StoreCategorySchema),
 	images: t.Array(StoreImageSchema),

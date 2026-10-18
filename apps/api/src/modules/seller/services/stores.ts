@@ -158,6 +158,7 @@ interface UpdateStoreParams {
 	categoryId?: string | null;
 	openingHours?: OpeningHours | null;
 	lowStockThreshold?: number;
+	reservationHours?: number;
 	websiteUrl?: string | null;
 	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
 }

@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+import { config } from "@/lib/config";
 import { getLogger } from "@/lib/logger";
 import { PaginationQuery } from "@/lib/pagination";
 import { ok, okPage } from "@/lib/responses";
@@ -7,6 +8,7 @@ import {
 	MunicipalityCompactSchema,
 	okPageRes,
 	okRes,
+	ReservationDeadlineSchema,
 	StoreOrderTypesSchema,
 	StoreWithPhonesSchema,
 	withConflictErrors,
@@ -17,6 +19,7 @@ import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
 import { requireOwner, withSeller } from "../context";
 import {
 	getStoreOrderTypes,
+	previewReservationDeadline,
 	updateStoreOrderTypes,
 } from "../services/order-types";
 import {
@@ -140,6 +143,14 @@ export const storesRoutes = new Elysia()
 					t.Nullable(t.String({ description: "ID categoria negozio" })),
 				),
 				openingHours: t.Optional(t.Nullable(OpeningHoursSchema)),
+				reservationHours: t.Optional(
+					t.Integer({
+						minimum: config.reservationHours.min,
+						maximum: config.reservationHours.max,
+						description:
+							"Ore di apertura entro cui il cliente ritira una prenotazione (Prenota e paga in negozio)",
+					}),
+				),
 				lowStockThreshold: t.Optional(
 					t.Integer({
 						minimum: 0,
@@ -187,6 +198,39 @@ export const storesRoutes = new Elysia()
 				summary: "Aggiorna negozio",
 				description:
 					"Aggiorna i dati di un negozio esistente. Solo il proprietario può modificare negozi.",
+				tags: ["Seller - Stores"],
+			},
+		},
+	)
+	.get(
+		"/stores/:storeId/reservation-preview",
+		async (ctx) => {
+			const { sellerProfile: sp, isOwner, params, query } = withSeller(ctx);
+			requireOwner(isOwner);
+			return ok(
+				await previewReservationDeadline({
+					sellerProfileId: sp.id,
+					storeId: params.storeId,
+					hours: query.hours,
+				}),
+			);
+		},
+		{
+			params: t.Object({
+				storeId: t.String({ description: "ID del negozio" }),
+			}),
+			query: t.Object({
+				hours: t.Integer({
+					minimum: config.reservationHours.min,
+					maximum: config.reservationHours.max,
+					description: "Ore di apertura da provare, anche non ancora salvate",
+				}),
+			}),
+			response: withErrors({ 200: okRes(ReservationDeadlineSchema) }),
+			detail: {
+				summary: "Anteprima della scadenza di una prenotazione",
+				description:
+					"Scadenza che avrebbe una prenotazione fatta adesso con queste ore, contate sulle ore di apertura del negozio (calendario se il negozio non ha orari). Non salva nulla. Solo il titolare.",
 				tags: ["Seller - Stores"],
 			},
 		},

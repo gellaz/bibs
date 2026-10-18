@@ -7,6 +7,7 @@ import {
 	type StoreOrderType,
 	storeOrderTypes,
 } from "@/lib/order-types";
+import { resolveReservationDeadlines } from "@/lib/store-open-status";
 import { getDefaultPaymentMethod } from "@/modules/billing/services/connect-account";
 
 interface StoreRef {
@@ -21,7 +22,7 @@ async function ownStore({ sellerProfileId, storeId }: StoreRef) {
 			eq(store.sellerProfileId, sellerProfileId),
 			isNull(store.deletedAt),
 		),
-		columns: { id: true, orderTypes: true },
+		columns: { id: true, orderTypes: true, openingHours: true, closures: true },
 	});
 	if (!found) throw new ServiceError(404, "Negozio non trovato");
 	return found;
@@ -69,4 +70,16 @@ export async function updateStoreOrderTypes(
 
 	await db.update(store).set({ orderTypes: next }).where(eq(store.id, s.id));
 	return view(next, chargesEnabled);
+}
+
+/** Scadenza che avrebbe adesso una prenotazione con `hours` ore, senza salvarle. */
+export async function previewReservationDeadline(
+	ref: StoreRef & { hours: number },
+) {
+	const s = await ownStore(ref);
+	const deadlines = await resolveReservationDeadlines(
+		[{ ...s, reservationHours: ref.hours }],
+		new Date(),
+	);
+	return deadlines.get(s.id)!;
 }
