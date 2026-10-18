@@ -82,9 +82,5 @@ export const productMacroCategoriesConfig: CategoryCrudConfig<
 			updateOk: m.categories_product_macro_updated(),
 			deleteOk: m.categories_product_macro_deleted(),
 		},
-		rowAria: {
-			edit: m.categories_macro_edit_aria(),
-			delete: m.categories_macro_delete_aria(),
-		},
 	}),
 };

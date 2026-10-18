@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type CheckboxState = "checked" | "indeterminate" | "unchecked";
 
-export interface UseProductSelectionResult {
+export interface UseRowSelectionResult {
 	selected: Set<string>;
 	isSelected: (id: string) => boolean;
 	toggleOne: (id: string) => void;
@@ -11,18 +11,19 @@ export interface UseProductSelectionResult {
 	headerCheckboxState: CheckboxState;
 }
 
-interface UseProductSelectionParams {
+interface UseRowSelectionParams {
 	currentPageIds: string[];
 	/** Reset selection when this value changes (e.g. statusFilter). */
 	resetKey: string;
 }
 
-export function useProductSelection({
+export function useRowSelection({
 	currentPageIds,
 	resetKey,
-}: UseProductSelectionParams): UseProductSelectionResult {
+}: UseRowSelectionParams): UseRowSelectionResult {
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: resetKey è il trigger, non un valore letto.
 	useEffect(() => {
 		setSelected(new Set());
 	}, [resetKey]);

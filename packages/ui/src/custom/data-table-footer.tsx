@@ -46,7 +46,8 @@ export function DataTableFooter({
 			<p className="text-muted-foreground text-sm tabular-nums">
 				{rangeLabel({ start, end, total })}
 			</p>
-			<div className="flex items-center gap-4">
+			{/* flex-wrap: a 390 px selettore e paginazione non stanno su una riga. */}
+			<div className="flex flex-wrap items-center gap-x-4 gap-y-3">
 				<PageSizeSelector
 					label={labels.rowsPerPage}
 					pageSize={pageSize}

@@ -204,14 +204,20 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 				? m.characteristics_delete_with_values_one({ name, count })
 				: m.characteristics_delete_with_values({ name, count });
 		},
+		bulkDeleteDescription: (es) => {
+			const values = es.reduce((sum, e) => sum + e.valueCount, 0);
+			if (values === 0)
+				return m.crud_bulk_delete_description({ count: es.length });
+			return (
+				values === 1
+					? m.characteristics_bulk_delete_with_values_one
+					: m.characteristics_bulk_delete_with_values
+			)({ count: es.length, values });
+		},
 		toasts: {
 			createOk: m.characteristics_create_ok(),
 			updateOk: m.characteristics_update_ok(),
 			deleteOk: m.characteristics_delete_ok(),
-		},
-		rowAria: {
-			edit: m.characteristics_edit_aria(),
-			delete: m.characteristics_delete_aria(),
 		},
 	}),
 };

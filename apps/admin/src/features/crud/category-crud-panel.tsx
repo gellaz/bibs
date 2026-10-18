@@ -16,23 +16,34 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
+import {
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+} from "@bibs/ui/components/dropdown-menu";
 import { toast } from "@bibs/ui/components/sonner";
 import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
 import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
 import { unwrap as unwrapResponse } from "@bibs/ui/lib/api-client";
 import { formatDate } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SortingState } from "@tanstack/react-table";
 import { PencilIcon, Trash2Icon, UploadIcon } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
+import {
+	BulkToolbar,
+	RowActionsMenu,
+	selectColumn,
+} from "@/components/bulk-selection";
 import {
 	CsvImportDialog,
 	type CsvImportResult,
 } from "@/features/csv-import/components/csv-import-dialog";
+import { runBulk, toastBulkResult } from "@/lib/bulk";
 import {
 	dataTableFooterLabels,
 	tableColumnsToggleLabels,
@@ -117,8 +128,9 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 		createDialog: { title: string; description: string };
 		editDialog: { title: string; description: string };
 		deleteDescription: (name: string, entity: TEntity) => ReactNode;
+		// Da due voci in su; senza, un testo generico.
+		bulkDeleteDescription?: (entities: TEntity[]) => ReactNode;
 		toasts: { createOk: string; updateOk: string; deleteOk: string };
-		rowAria: { edit: string; delete: string };
 	};
 }
 
@@ -144,6 +156,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 	const [filterValues, setFilterValues] = useState<Record<string, string>>({});
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 	const [importOpen, setImportOpen] = useState(false);
 	const [selected, setSelected] = useState<TEntity | null>(null);
 
@@ -196,6 +209,25 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				m.crud_load_error(),
 			),
 	});
+
+	const rows = data?.data ?? EMPTY;
+	// La selezione vale per la pagina in vista: cambiando pagina, ricerca,
+	// filtri o ordinamento si riparte. Così ogni voce selezionata è una riga a
+	// schermo, con i dati (es. i valori da confermare) per eliminarla.
+	const selection = useRowSelection({
+		currentPageIds: rows.map((r) => r.id),
+		resetKey: JSON.stringify([
+			page,
+			limit,
+			search,
+			sortBy,
+			sortOrder,
+			activeFilters,
+		]),
+	});
+	const selectedRows = rows.filter((r) => selection.isSelected(r.id));
+	const selectionRef = useRef(selection);
+	selectionRef.current = selection;
 
 	const invalidateAll = () => {
 		void queryClient.invalidateQueries({ queryKey: [config.queryKeyBase] });
@@ -251,6 +283,25 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 		},
 	});
 
+	const bulkDeleteMutation = useMutation({
+		mutationFn: (entities: TEntity[]) =>
+			runBulk(entities, (e) =>
+				unwrap(config.remove(e.id, e), m.common_delete_error()),
+			),
+		onSuccess: (result) => {
+			invalidateAll();
+			setBulkDeleteOpen(false);
+			selection.clear();
+			toastBulkResult(result, {
+				done: (n) =>
+					n === 1
+						? config.labels().toasts.deleteOk
+						: m.crud_bulk_delete_ok({ count: n }),
+				error: m.common_delete_error(),
+			});
+		},
+	});
+
 	// Dialogs are opened with the row captured at click time (`selected`), but
 	// a 409 refetches the list: re-deriving `current` from the fresh data on
 	// every render is what makes the retry send the real, up-to-date count
@@ -297,44 +348,49 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 			id: "actions",
 			enableHiding: false,
 			meta: {
-				headerClassName: "text-right",
-				cellClassName: "text-right",
+				// px-2: il pulsante icona (32 px) entra giusto nei 48 px di w-12.
+				headerClassName: "w-12 px-2",
+				cellClassName: "w-12 px-2",
+				sticky: "right",
 			},
 			header: ({ table }) => (
-				<TableColumnsToggle
-					table={table}
-					labels={tableColumnsToggleLabels()}
-					align="end"
-				/>
+				<div className="flex justify-center">
+					<TableColumnsToggle
+						table={table}
+						labels={tableColumnsToggleLabels()}
+						align="end"
+					/>
+				</div>
 			),
 			cell: ({ row }) => (
-				<div className="flex items-center justify-end gap-1">
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onClick={() => {
+				<RowActionsMenu name={row.original.name}>
+					<DropdownMenuItem
+						className="whitespace-nowrap"
+						onSelect={() => {
 							setSelected(row.original);
 							setEditOpen(true);
 						}}
-						aria-label={config.labels().rowAria.edit}
 					>
-						<PencilIcon className="size-4" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onClick={() => {
+						<PencilIcon />
+						{m.common_edit()}
+					</DropdownMenuItem>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem
+						variant="destructive"
+						className="whitespace-nowrap"
+						onSelect={() => {
 							setSelected(row.original);
 							setDeleteOpen(true);
 						}}
-						aria-label={config.labels().rowAria.delete}
 					>
-						<Trash2Icon className="size-4" />
-					</Button>
-				</div>
+						<Trash2Icon />
+						{m.common_delete()}
+					</DropdownMenuItem>
+				</RowActionsMenu>
 			),
 		};
 		return [
+			selectColumn<TEntity>(() => selectionRef.current),
 			nameCol,
 			...(config.extraColumns?.() ?? []),
 			createdAtCol,
@@ -342,7 +398,6 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 		];
 	}, [config]);
 
-	const rows = data?.data ?? EMPTY;
 	const isFiltered = search.length > 0 || Object.keys(activeFilters).length > 0;
 
 	return (
@@ -357,7 +412,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				</div>
 			)}
 
-			<div className="flex items-center gap-2">
+			<div className="flex flex-wrap items-center gap-2">
 				<SearchInput
 					value={search}
 					onValueChange={(q) => {
@@ -367,7 +422,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					placeholder={labels.searchPlaceholder}
 					aria-label={labels.searchPlaceholder}
 					clearLabel={m.common_clear_search()}
-					className="flex-1"
+					className="min-w-60 flex-1"
 				/>
 				{config.toolbarFilter?.({ values: filterValues, set: setFilterValue })}
 				{config.csvImport && (
@@ -378,12 +433,24 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				)}
 			</div>
 
+			<BulkToolbar count={selectedRows.length} onClear={selection.clear}>
+				<Button
+					size="sm"
+					variant="destructive"
+					onClick={() => setBulkDeleteOpen(true)}
+				>
+					<Trash2Icon className="size-4" />
+					{m.common_delete()}
+				</Button>
+			</BulkToolbar>
+
 			<DataTable
 				data={rows}
 				columns={columns}
 				storageKey={config.storageKey}
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				isRowSelected={(row) => selection.isSelected(row.original.id)}
 				manualSorting={{ sorting, onSortingChange }}
 				hideHeaderWhenEmpty={!isFiltered}
 				emptyState={
@@ -493,6 +560,43 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 							disabled={deleteMutation.isPending}
 						>
 							{deleteMutation.isPending
+								? m.common_deleting()
+								: m.common_delete()}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{m.common_confirm_delete_title()}
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							{selectedRows.length === 1
+								? labels.deleteDescription(
+										selectedRows[0].name,
+										selectedRows[0],
+									)
+								: (labels.bulkDeleteDescription?.(selectedRows) ??
+									m.crud_bulk_delete_description({
+										count: selectedRows.length,
+									}))}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>{m.common_cancel()}</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={(e) => {
+								// Resta aperto finché le chiamate non finiscono.
+								e.preventDefault();
+								bulkDeleteMutation.mutate(selectedRows);
+							}}
+							disabled={bulkDeleteMutation.isPending}
+						>
+							{bulkDeleteMutation.isPending
 								? m.common_deleting()
 								: m.common_delete()}
 						</AlertDialogAction>
