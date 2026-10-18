@@ -16,6 +16,9 @@ function text(node: React.ReactElement) {
 		.trim();
 }
 
+const tone = (node: React.ReactElement) =>
+	renderToStaticMarkup(node).match(/data-tone="([a-z]+)"/)?.[1];
+
 const STATUSES = ["active", "pending", "banned", "removed"] as const;
 
 describe("MembershipStatusBadge", () => {
@@ -35,6 +38,13 @@ describe("MembershipStatusBadge", () => {
 
 	it("shows an unknown status as it is", () => {
 		expect(text(<MembershipStatusBadge status="archived" />)).toBe("archived");
+		expect(tone(<MembershipStatusBadge status="archived" />)).toBe("closed");
+	});
+
+	it("colora ogni stato col suo tono", () => {
+		expect(
+			STATUSES.map((s) => tone(<MembershipStatusBadge status={s} />)),
+		).toEqual(["success", "waiting", "destructive", "closed"]);
 	});
 });
 

@@ -1,3 +1,13 @@
+import type { StatusTone } from "@bibs/ui/custom/status-badge";
+import {
+	CircleCheckIcon,
+	CircleHelpIcon,
+	CircleMinusIcon,
+	CircleXIcon,
+	FileTextIcon,
+	type LucideIcon,
+	ReceiptIcon,
+} from "lucide-react";
 import { m } from "@/paraglide/messages";
 
 /**
@@ -22,4 +32,25 @@ export function invoiceStatusLabel(status: string | null): string {
 		default:
 			return status;
 	}
+}
+
+const INVOICE_BADGE: Record<string, { tone: StatusTone; icon: LucideIcon }> = {
+	open: { tone: "action", icon: ReceiptIcon },
+	paid: { tone: "success", icon: CircleCheckIcon },
+	draft: { tone: "waiting", icon: FileTextIcon },
+	void: { tone: "closed", icon: CircleMinusIcon },
+	uncollectible: { tone: "destructive", icon: CircleXIcon },
+};
+
+/** Etichetta, tono e icona di una fattura per chi la paga; sconosciuta o assente = chiusa. */
+export function invoiceStatusBadge(status: string | null): {
+	label: string;
+	tone: StatusTone;
+	icon: LucideIcon;
+} {
+	const badge = (status && INVOICE_BADGE[status]) || {
+		tone: "closed" as const,
+		icon: CircleHelpIcon,
+	};
+	return { label: invoiceStatusLabel(status), ...badge };
 }

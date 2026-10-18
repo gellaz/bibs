@@ -1,4 +1,3 @@
-import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -9,6 +8,14 @@ import {
 } from "@bibs/ui/components/card";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { StatusBadge, type StatusTone } from "@bibs/ui/custom/status-badge";
+import {
+	CircleCheckIcon,
+	ListTodoIcon,
+	type LucideIcon,
+	PlugIcon,
+	SearchCheckIcon,
+} from "lucide-react";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
 import { m } from "@/paraglide/messages";
 import {
@@ -21,11 +28,15 @@ type OnlinePaymentsStatus = "none" | "incomplete" | "in_review" | "enabled";
 // Paraglide genera funzioni per chiave; l'accesso con template literal
 // (`m[`payments_status_${status}`]`) non tipizza su un index dinamico, quindi
 // si usa una mappa esplicita chiusa sulla union letterale dello stato.
-const STATUS_VARIANT: Record<OnlinePaymentsStatus, "secondary" | "outline"> = {
-	none: "secondary",
-	incomplete: "secondary",
-	in_review: "outline",
-	enabled: "outline",
+// Toni per il venditore: attivare e completare toccano a lui, la verifica a Stripe.
+const STATUS_BADGE: Record<
+	OnlinePaymentsStatus,
+	{ tone: StatusTone; icon: LucideIcon }
+> = {
+	none: { tone: "action", icon: PlugIcon },
+	incomplete: { tone: "action", icon: ListTodoIcon },
+	in_review: { tone: "waiting", icon: SearchCheckIcon },
+	enabled: { tone: "success", icon: CircleCheckIcon },
 };
 
 const STATUS_LABEL: Record<OnlinePaymentsStatus, () => string> = {
@@ -59,16 +70,12 @@ export function OnlinePaymentsCard() {
 			<CardHeader>
 				<div className="flex items-center justify-between gap-3">
 					<CardTitle>{m.payments_title()}</CardTitle>
-					<Badge
-						variant={STATUS_VARIANT[op.status]}
-						className={
-							op.status === "enabled"
-								? "border-olive/30 bg-olive/10 text-olive dark:bg-olive/20"
-								: undefined
-						}
+					<StatusBadge
+						tone={STATUS_BADGE[op.status].tone}
+						icon={STATUS_BADGE[op.status].icon}
 					>
 						{STATUS_LABEL[op.status]()}
-					</Badge>
+					</StatusBadge>
 				</div>
 				<CardDescription>{m.payments_description()}</CardDescription>
 			</CardHeader>

@@ -1,4 +1,3 @@
-import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -24,6 +23,7 @@ import {
 	TableRow,
 } from "@bibs/ui/components/table";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -31,7 +31,8 @@ import { Download, MoreVerticalIcon } from "lucide-react";
 import { useEffect } from "react";
 import { SectionHeader } from "@/components/section-header";
 import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
-import { invoiceStatusLabel } from "@/features/billing/invoice-status";
+import { invoiceStatusBadge } from "@/features/billing/invoice-status";
+import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { api, unwrap } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
@@ -49,27 +50,6 @@ export const Route = createFileRoute("/_authenticated/billing")({
 			? { reactivation: search.reactivation }
 			: {},
 });
-
-type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
-
-// Funzione e non costante: le etichette vanno lette a ogni render, dopo un
-// cambio di lingua.
-function statusBadge(
-	status: string,
-): { label: string; variant: BadgeVariant } | undefined {
-	switch (status) {
-		case "active":
-			return { label: m.billing_status_active(), variant: "default" };
-		case "past_due":
-			return { label: m.billing_status_past_due(), variant: "destructive" };
-		case "canceling":
-			return { label: m.billing_status_canceling(), variant: "outline" };
-		case "suspended":
-			return { label: m.billing_status_suspended(), variant: "destructive" };
-		default:
-			return undefined;
-	}
-}
 
 function formatEuro(cents: number): string {
 	return formatPriceEur(cents / 100);
@@ -285,10 +265,7 @@ function BillingPage() {
 							</TableHeader>
 							<TableBody>
 								{subs.map((s) => {
-									const badge = statusBadge(s.status) ?? {
-										label: s.status,
-										variant: "outline" as const,
-									};
+									const badge = subscriptionStatusBadge(s.status);
 									const periodLabel =
 										s.status === "suspended"
 											? m.billing_period_expired({
@@ -303,7 +280,9 @@ function BillingPage() {
 										<TableRow key={s.storeId}>
 											<TableCell>{s.storeName}</TableCell>
 											<TableCell>
-												<Badge variant={badge.variant}>{badge.label}</Badge>
+												<StatusBadge tone={badge.tone} icon={badge.icon}>
+													{badge.label}
+												</StatusBadge>
 											</TableCell>
 											<TableCell>
 												{m.billing_per_month({
@@ -397,34 +376,33 @@ function BillingPage() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{invoicesPage.data.map((inv) => (
-									<TableRow key={inv.id}>
-										<TableCell>{formatInvoiceDate(inv.createdAt)}</TableCell>
-										<TableCell>{inv.description ?? "—"}</TableCell>
-										<TableCell>{formatEuro(inv.totalCents)}</TableCell>
-										<TableCell>
-											<Badge
-												variant={
-													inv.status === "paid" ? "default" : "destructive"
-												}
-											>
-												{invoiceStatusLabel(inv.status)}
-											</Badge>
-										</TableCell>
-										<TableCell>
-											{inv.invoicePdfUrl && (
-												<a
-													href={inv.invoicePdfUrl}
-													target="_blank"
-													rel="noopener noreferrer"
-													aria-label={m.billing_invoice_download()}
-												>
-													<Download className="h-4 w-4" />
-												</a>
-											)}
-										</TableCell>
-									</TableRow>
-								))}
+								{invoicesPage.data.map((inv) => {
+									const invoice = invoiceStatusBadge(inv.status);
+									return (
+										<TableRow key={inv.id}>
+											<TableCell>{formatInvoiceDate(inv.createdAt)}</TableCell>
+											<TableCell>{inv.description ?? "—"}</TableCell>
+											<TableCell>{formatEuro(inv.totalCents)}</TableCell>
+											<TableCell>
+												<StatusBadge tone={invoice.tone} icon={invoice.icon}>
+													{invoice.label}
+												</StatusBadge>
+											</TableCell>
+											<TableCell>
+												{inv.invoicePdfUrl && (
+													<a
+														href={inv.invoicePdfUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														aria-label={m.billing_invoice_download()}
+													>
+														<Download className="h-4 w-4" />
+													</a>
+												)}
+											</TableCell>
+										</TableRow>
+									);
+								})}
 							</TableBody>
 						</Table>
 					)}

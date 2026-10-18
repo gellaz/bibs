@@ -1,0 +1,51 @@
+import type { StatusTone } from "@bibs/ui/custom/status-badge";
+import {
+	BanIcon,
+	CalendarClockIcon,
+	CircleAlertIcon,
+	CircleCheckIcon,
+	CircleHelpIcon,
+	type LucideIcon,
+} from "lucide-react";
+import { m } from "@/paraglide/messages";
+
+/**
+ * Etichetta, tono e icona dello stato di un abbonamento, letti a ogni chiamata
+ * (dopo un cambio di lingua). Toni per chi paga: in cancellazione è ancora
+ * attivo fino a fine periodo, quindi «attesa». Uno stato sconosciuto resta
+ * grezzo.
+ */
+export function subscriptionStatusBadge(status: string): {
+	label: string;
+	tone: StatusTone;
+	icon: LucideIcon;
+} {
+	switch (status) {
+		case "active":
+			return {
+				label: m.billing_status_active(),
+				tone: "success",
+				icon: CircleCheckIcon,
+			};
+		case "past_due":
+			return {
+				label: m.billing_status_past_due(),
+				tone: "destructive",
+				icon: CircleAlertIcon,
+			};
+		case "canceling":
+			return {
+				label: m.billing_status_canceling(),
+				tone: "waiting",
+				icon: CalendarClockIcon,
+			};
+		case "suspended":
+			return {
+				label: m.billing_status_suspended(),
+				tone: "destructive",
+				icon: BanIcon,
+			};
+		default:
+			return { label: status, tone: "closed", icon: CircleHelpIcon };
+	}
+}

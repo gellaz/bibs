@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
-import { invoiceStatusLabel } from "./invoice-status";
+import { invoiceStatusBadge, invoiceStatusLabel } from "./invoice-status";
 
 const originalGetLocale = getLocale;
 
@@ -37,5 +37,25 @@ describe("invoiceStatusLabel", () => {
 		overwriteGetLocale(() => "it");
 		expect(invoiceStatusLabel("weird_status")).toBe("weird_status");
 		expect(invoiceStatusLabel(null)).toBe("—");
+	});
+});
+
+describe("invoiceStatusBadge", () => {
+	it("dà a ogni fattura il tono per chi la paga", () => {
+		const tones = ["open", "paid", "draft", "void", "uncollectible"].map(
+			(s) => invoiceStatusBadge(s).tone,
+		);
+		expect(tones).toEqual([
+			"action",
+			"success",
+			"waiting",
+			"closed",
+			"destructive",
+		]);
+	});
+
+	it("senza stato mostra il trattino, chiuso", () => {
+		const { label, tone } = invoiceStatusBadge(null);
+		expect({ label, tone }).toEqual({ label: "—", tone: "closed" });
 	});
 });
