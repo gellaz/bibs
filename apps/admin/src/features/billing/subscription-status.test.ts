@@ -17,14 +17,19 @@ const STATUSES = [
 ] as const;
 
 describe("subscriptionStatusBadge", () => {
-	it("etichetta i cinque stati in italiano, con la variante del seller", () => {
+	it("etichetta i cinque stati in italiano, col tono per l'admin", () => {
 		overwriteGetLocale(() => "it");
-		expect(STATUSES.map(subscriptionStatusBadge)).toEqual([
-			{ label: "Attivo", variant: "default" },
-			{ label: "Rinnovo fallito", variant: "destructive" },
-			{ label: "In cancellazione", variant: "outline" },
-			{ label: "Sospeso", variant: "destructive" },
-			{ label: "Cancellato", variant: "secondary" },
+		expect(
+			STATUSES.map((s) => {
+				const { label, tone } = subscriptionStatusBadge(s);
+				return { label, tone };
+			}),
+		).toEqual([
+			{ label: "Attivo", tone: "success" },
+			{ label: "Rinnovo fallito", tone: "destructive" },
+			{ label: "In cancellazione", tone: "closed" },
+			{ label: "Sospeso", tone: "destructive" },
+			{ label: "Cancellato", tone: "closed" },
 		]);
 	});
 
@@ -41,9 +46,7 @@ describe("subscriptionStatusBadge", () => {
 
 	it("uno stato sconosciuto resta grezzo", () => {
 		overwriteGetLocale(() => "it");
-		expect(subscriptionStatusBadge("pending")).toEqual({
-			label: "pending",
-			variant: "outline",
-		});
+		const { label, tone } = subscriptionStatusBadge("pending");
+		expect({ label, tone }).toEqual({ label: "pending", tone: "closed" });
 	});
 });

@@ -74,4 +74,35 @@ describe("TabNav", () => {
 			expect(tab.getAttribute("aria-controls")).toBe("lista");
 		}
 	});
+
+	it("colora i contatori coi toni di stato", () => {
+		render(
+			<TabNav
+				tabs={[
+					{
+						value: "review",
+						label: "In revisione",
+						count: 3,
+						badgeColor: "action",
+					},
+					{
+						value: "rejected",
+						label: "Rifiutati",
+						count: 4,
+						badgeColor: "destructive",
+					},
+				]}
+				activeTab="review"
+				onTabChange={() => {}}
+				label="Stato"
+				panelId="lista"
+			/>,
+		);
+		const review = screen.getByText("3");
+		expect(review.classList.contains("text-action")).toBe(true);
+		expect(review.classList.contains("bg-action/12")).toBe(true);
+		expect(screen.getByText("4").classList.contains("bg-destructive/12")).toBe(
+			true,
+		);
+	});
 });

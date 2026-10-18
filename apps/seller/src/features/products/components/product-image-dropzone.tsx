@@ -301,7 +301,7 @@ function SortableImageItem({
 			<button
 				type="button"
 				onClick={onDelete}
-				className="absolute -top-1.5 -right-1.5 hidden size-5 items-center justify-center rounded-full bg-destructive text-white shadow-sm ring-2 ring-background group-hover:flex"
+				className="absolute -top-1.5 -right-1.5 hidden size-5 items-center justify-center rounded-full bg-destructive text-background shadow-sm ring-2 ring-background group-hover:flex"
 			>
 				<XIcon className="size-3" />
 			</button>

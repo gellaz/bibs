@@ -1,5 +1,15 @@
-import { Badge } from "@bibs/ui/components/badge";
-import { cn } from "@bibs/ui/lib/utils";
+import { StatusBadge, type StatusTone } from "@bibs/ui/custom/status-badge";
+import {
+	Building2Icon,
+	CircleCheckIcon,
+	CircleHelpIcon,
+	CircleXIcon,
+	IdCardIcon,
+	type LucideIcon,
+	MailIcon,
+	SearchCheckIcon,
+	UserRoundIcon,
+} from "lucide-react";
 import { m } from "@/paraglide/messages";
 
 type OnboardingStatus =
@@ -7,59 +17,58 @@ type OnboardingStatus =
 	| "pending_personal"
 	| "pending_document"
 	| "pending_company"
-	| "pending_store"
-	| "pending_payment"
 	| "pending_review"
 	| "active"
 	| "rejected";
 
+// Passi del flusso fino ad «Attivo»: il passo si mostra solo finché è in corso.
+const TOTAL_STEPS = 6;
+
+// Per l'admin: il venditore che deve completare i suoi dati è «attesa», la
+// revisione tocca all'admin.
 const statusConfig: Record<
 	OnboardingStatus,
-	{
-		label: () => string;
-		variant: "secondary" | "destructive" | "outline";
-		className?: string;
-	}
+	{ label: () => string; tone: StatusTone; icon: LucideIcon; step?: number }
 > = {
 	pending_email: {
 		label: m.sellers_status_pending_email,
-		variant: "secondary",
+		tone: "waiting",
+		icon: MailIcon,
+		step: 1,
 	},
 	pending_personal: {
 		label: m.sellers_status_pending_personal,
-		variant: "secondary",
+		tone: "waiting",
+		icon: UserRoundIcon,
+		step: 2,
 	},
 	pending_document: {
 		label: m.sellers_status_pending_document,
-		variant: "secondary",
+		tone: "waiting",
+		icon: IdCardIcon,
+		step: 3,
 	},
 	pending_company: {
 		label: m.sellers_status_pending_company,
-		variant: "secondary",
-	},
-	pending_store: {
-		label: m.sellers_status_pending_store,
-		variant: "secondary",
-	},
-	pending_payment: {
-		label: m.sellers_status_pending_payment,
-		variant: "secondary",
+		tone: "waiting",
+		icon: Building2Icon,
+		step: 4,
 	},
 	pending_review: {
 		label: m.sellers_status_pending_review,
-		variant: "outline",
-		className:
-			"border-saffron/30 bg-saffron/10 text-saffron-deep dark:text-saffron dark:bg-saffron/20",
+		tone: "action",
+		icon: SearchCheckIcon,
+		step: 5,
 	},
 	active: {
 		label: m.sellers_status_active,
-		variant: "outline",
-		className:
-			"border-olive/30 bg-olive/10 text-olive dark:text-olive dark:bg-olive/20",
+		tone: "success",
+		icon: CircleCheckIcon,
 	},
 	rejected: {
 		label: m.sellers_status_rejected,
-		variant: "destructive",
+		tone: "destructive",
+		icon: CircleXIcon,
 	},
 };
 
@@ -74,15 +83,31 @@ export function OnboardingStatusBadge({
 
 	if (!config) {
 		return (
-			<Badge variant="outline" className={className}>
+			<StatusBadge tone="closed" icon={CircleHelpIcon} className={className}>
 				{status}
-			</Badge>
+			</StatusBadge>
 		);
 	}
 
 	return (
-		<Badge variant={config.variant} className={cn(config.className, className)}>
+		<StatusBadge
+			tone={config.tone}
+			icon={config.icon}
+			className={className}
+			step={
+				config.step
+					? {
+							current: config.step,
+							total: TOTAL_STEPS,
+							label: m.sellers_onboarding_step({
+								current: config.step,
+								total: TOTAL_STEPS,
+							}),
+						}
+					: undefined
+			}
+		>
 			{config.label()}
-		</Badge>
+		</StatusBadge>
 	);
 }

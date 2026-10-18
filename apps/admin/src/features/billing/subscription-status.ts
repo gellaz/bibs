@@ -1,28 +1,57 @@
+import type { StatusTone } from "@bibs/ui/custom/status-badge";
+import {
+	BanIcon,
+	CalendarClockIcon,
+	CircleAlertIcon,
+	CircleCheckIcon,
+	CircleHelpIcon,
+	CircleMinusIcon,
+	type LucideIcon,
+} from "lucide-react";
 import { m } from "@/paraglide/messages";
 
-type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
-
 /**
- * Etichetta e variante del badge per lo stato di un abbonamento, lette a ogni
- * chiamata (dopo un cambio di lingua). Stesse etichette e varianti del seller;
- * uno stato sconosciuto si mostra grezzo.
+ * Etichetta, tono e icona del badge per lo stato di un abbonamento, letti a
+ * ogni chiamata (dopo un cambio di lingua). Toni per l'admin: un abbonamento
+ * in cancellazione è già chiuso. Uno stato sconosciuto si mostra grezzo.
  */
 export function subscriptionStatusBadge(status: string): {
 	label: string;
-	variant: BadgeVariant;
+	tone: StatusTone;
+	icon: LucideIcon;
 } {
 	switch (status) {
 		case "active":
-			return { label: m.billing_status_active(), variant: "default" };
+			return {
+				label: m.billing_status_active(),
+				tone: "success",
+				icon: CircleCheckIcon,
+			};
 		case "past_due":
-			return { label: m.billing_status_past_due(), variant: "destructive" };
+			return {
+				label: m.billing_status_past_due(),
+				tone: "destructive",
+				icon: CircleAlertIcon,
+			};
 		case "canceling":
-			return { label: m.billing_status_canceling(), variant: "outline" };
+			return {
+				label: m.billing_status_canceling(),
+				tone: "closed",
+				icon: CalendarClockIcon,
+			};
 		case "suspended":
-			return { label: m.billing_status_suspended(), variant: "destructive" };
+			return {
+				label: m.billing_status_suspended(),
+				tone: "destructive",
+				icon: BanIcon,
+			};
 		case "canceled":
-			return { label: m.billing_status_canceled(), variant: "secondary" };
+			return {
+				label: m.billing_status_canceled(),
+				tone: "closed",
+				icon: CircleMinusIcon,
+			};
 		default:
-			return { label: status, variant: "outline" };
+			return { label: status, tone: "closed", icon: CircleHelpIcon };
 	}
 }

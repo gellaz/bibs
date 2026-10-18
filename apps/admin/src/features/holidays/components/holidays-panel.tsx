@@ -32,6 +32,7 @@ import {
 } from "@bibs/ui/components/native-select";
 import { toast } from "@bibs/ui/components/sonner";
 import { DataTable } from "@bibs/ui/custom/data-table";
+import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { toYMD } from "@bibs/ui/lib/date";
@@ -39,6 +40,8 @@ import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	CalendarDaysIcon,
+	CircleCheckIcon,
+	CircleMinusIcon,
 	EyeIcon,
 	EyeOffIcon,
 	PencilIcon,
@@ -272,19 +275,16 @@ export function HolidaysPanel({
 				id: "status",
 				header: m.holidays_column_status(),
 				meta: { headerClassName: "w-[20%]" },
-				cell: ({ row }) => (
-					<span
-						className={
-							row.original.isActive
-								? "text-emerald-600 text-sm font-medium"
-								: "text-muted-foreground text-sm"
-						}
-					>
-						{row.original.isActive
-							? m.holidays_status_active()
-							: m.holidays_status_inactive()}
-					</span>
-				),
+				cell: ({ row }) =>
+					row.original.isActive ? (
+						<StatusBadge tone="success" icon={CircleCheckIcon}>
+							{m.holidays_status_active()}
+						</StatusBadge>
+					) : (
+						<StatusBadge tone="closed" icon={CircleMinusIcon}>
+							{m.holidays_status_inactive()}
+						</StatusBadge>
+					),
 			},
 			{
 				id: "actions",

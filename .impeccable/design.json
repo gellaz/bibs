@@ -104,6 +104,21 @@
 				"displayName": "Olive",
 				"canonical": "oklch(0.62 0.10 135)"
 			},
+			"olive-deep": {
+				"role": "tertiary",
+				"displayName": "Olive Deep",
+				"canonical": "oklch(0.47 0.10 135)"
+			},
+			"brick-deep": {
+				"role": "tertiary",
+				"displayName": "Brick Deep",
+				"canonical": "oklch(0.51 0.18 25)"
+			},
+			"petrol": {
+				"role": "tertiary",
+				"displayName": "Petrolio",
+				"canonical": "oklch(0.45 0.08 205)"
+			},
 			"cobalt": {
 				"role": "secondary",
 				"displayName": "Cobalt",
@@ -132,7 +147,7 @@
 			"warning": {
 				"role": "tertiary",
 				"displayName": "Warning Amber",
-				"canonical": "oklch(0.62 0.14 60)",
+				"canonical": "oklch(0.50 0.12 58)",
 				"tonalRamp": [
 					"oklch(0.22 0.05 60)",
 					"oklch(0.32 0.08 60)",
@@ -324,6 +339,14 @@
 			"description": "Mobile customer navigation below sm: three text sections on an Ink fill, fixed to the bottom. Full Saffron underline on the top edge marks active.",
 			"html": "<nav class=\"ds-nav-bottom\" aria-label=\"Navigazione principale\"><a class=\"ds-nav-bottom__item\" href=\"/products\">Prodotti</a><a class=\"ds-nav-bottom__item ds-nav-bottom__item--active\" href=\"/stores\" aria-current=\"page\">Negozi</a><a class=\"ds-nav-bottom__item\" href=\"/orders\">Ordini</a></nav>",
 			"css": ".ds-nav-bottom { display: grid; grid-template-columns: repeat(3, 1fr); background: oklch(0.34 0.10 258); } .ds-nav-bottom__item { display: flex; align-items: center; justify-content: center; height: 56px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: oklch(0.985 0.008 80 / 0.7); text-decoration: none; position: relative; transition: color 150ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-nav-bottom__item:hover, .ds-nav-bottom__item--active { color: oklch(0.985 0.008 80); } .ds-nav-bottom__item::after { content: \"\"; position: absolute; top: 0; left: 1.5rem; right: 1.5rem; height: 2px; border-radius: 9999px; background: oklch(0.78 0.14 75); scale: 0 1; transition: scale 300ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-nav-bottom__item--active::after { scale: 1; } @media (prefers-reduced-motion: reduce) { .ds-nav-bottom__item::after { transition: none; } }"
+		},
+		{
+			"name": "Status Badge",
+			"kind": "chip",
+			"refersTo": "status-action",
+			"description": "Stato di un'entità nelle tre app. Tono deciso da chi guarda: action (tocca a te), waiting (attesa di altri), success, closed (senza fondo), destructive. Fondo al 12% del tono, bordo al 40%, icona dello stato.",
+			"html": "<span class=\"ds-status ds-status-action\"><svg aria-hidden=\"true\" width=\"14\" height=\"14\"></svg>Da preparare</span>",
+			"css": ".ds-status { display: inline-flex; align-items: center; gap: 0.25rem; height: 1.5rem; padding: 0 0.625rem 0 0.375rem; border: 1px solid; border-radius: 9999px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; white-space: nowrap; } .ds-status-action { color: oklch(0.42 0.19 256); background: color-mix(in oklab, oklch(0.42 0.19 256) 12%, transparent); border-color: color-mix(in oklab, oklch(0.42 0.19 256) 40%, transparent); }"
 		}
 	],
 	"narrative": {

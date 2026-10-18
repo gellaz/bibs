@@ -1,4 +1,11 @@
-import { cn } from "@bibs/ui/lib/utils";
+import { StatusBadge, type StatusTone } from "@bibs/ui/custom/status-badge";
+import {
+	CalendarClockIcon,
+	CirclePauseIcon,
+	CirclePlayIcon,
+	FlagIcon,
+	type LucideIcon,
+} from "lucide-react";
 import { m } from "@/paraglide/messages";
 
 export type DiscountStatus = "active" | "paused" | "archived";
@@ -28,15 +35,14 @@ const STATE_LABELS: Record<OperationalState, () => string> = {
 	concluded: m.promotions_state_concluded,
 };
 
-const STATE_CLASSES: Record<OperationalState, string> = {
-	running:
-		"bg-emerald-50 text-emerald-700 ring-emerald-300/50 dark:bg-emerald-500/15 dark:text-emerald-400 dark:ring-emerald-500/30",
-	scheduled:
-		"bg-muted text-foreground/70 ring-foreground/10 dark:ring-foreground/20",
-	paused:
-		"bg-amber-50 text-amber-700 ring-amber-300/50 dark:bg-amber-500/15 dark:text-amber-400 dark:ring-amber-500/30",
-	concluded:
-		"bg-muted text-muted-foreground ring-foreground/10 dark:ring-foreground/20",
+const STATE_BADGE: Record<
+	OperationalState,
+	{ tone: StatusTone; icon: LucideIcon }
+> = {
+	running: { tone: "success", icon: CirclePlayIcon },
+	scheduled: { tone: "waiting", icon: CalendarClockIcon },
+	paused: { tone: "closed", icon: CirclePauseIcon },
+	concluded: { tone: "closed", icon: FlagIcon },
 };
 
 interface Props {
@@ -53,16 +59,10 @@ export function PromotionStateBadge({
 	className,
 }: Props) {
 	const state = operationalState({ status, startsAt, endsAt });
+	const { tone, icon } = STATE_BADGE[state];
 	return (
-		<span
-			className={cn(
-				"inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset",
-				STATE_CLASSES[state],
-				className,
-			)}
-		>
-			<span aria-hidden className="size-1.5 rounded-full bg-current" />
+		<StatusBadge tone={tone} icon={icon} className={className}>
 			{STATE_LABELS[state]()}
-		</span>
+		</StatusBadge>
 	);
 }

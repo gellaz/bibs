@@ -1,10 +1,10 @@
-import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import { DataTable } from "@bibs/ui/custom/data-table";
 import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { SearchInput } from "@bibs/ui/custom/search-input";
+import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
@@ -84,7 +84,11 @@ function SubscriptionsPage() {
 			meta: { menuLabel: m.common_status() },
 			cell: ({ row }) => {
 				const badge = subscriptionStatusBadge(row.original.status);
-				return <Badge variant={badge.variant}>{badge.label}</Badge>;
+				return (
+					<StatusBadge tone={badge.tone} icon={badge.icon}>
+						{badge.label}
+					</StatusBadge>
+				);
 			},
 		},
 		{

@@ -1,20 +1,28 @@
-import { cn } from "@bibs/ui/lib/utils";
+import { StatusBadge, type StatusTone } from "@bibs/ui/custom/status-badge";
+import {
+	CircleCheckIcon,
+	CircleXIcon,
+	CreditCardIcon,
+	type LucideIcon,
+	PackageCheckIcon,
+	PackageIcon,
+	ShoppingBagIcon,
+	TimerOffIcon,
+	TruckIcon,
+} from "lucide-react";
 import { CUSTOMER_ORDER_STATUS, type OrderStatus } from "./order-display";
 
-// «Pronto per il ritiro» è il momento in cui il cliente deve muoversi: pallino
-// saffron (segnale), testo Ink per il contrasto. Il resto resta quieto.
-const CLASSES: Record<OrderStatus, { pill: string; dot: string }> = {
-	pending: { pill: "bg-muted text-foreground", dot: "bg-muted-foreground" },
-	confirmed: { pill: "bg-muted text-foreground", dot: "bg-muted-foreground" },
-	ready_for_pickup: {
-		pill: "bg-saffron/15 text-foreground",
-		dot: "bg-saffron",
-	},
-	shipped: { pill: "bg-muted text-foreground", dot: "bg-muted-foreground" },
-	delivered: { pill: "bg-muted text-muted-foreground", dot: "bg-current" },
-	completed: { pill: "bg-muted text-muted-foreground", dot: "bg-current" },
-	cancelled: { pill: "bg-muted text-destructive", dot: "bg-current" },
-	expired: { pill: "bg-muted text-destructive", dot: "bg-current" },
+// Toni per chi compra: pagare e andare a ritirare toccano a lui, il resto lo
+// fa il negozio.
+const BADGE: Record<OrderStatus, { tone: StatusTone; icon: LucideIcon }> = {
+	pending: { tone: "action", icon: CreditCardIcon },
+	confirmed: { tone: "waiting", icon: PackageIcon },
+	ready_for_pickup: { tone: "action", icon: ShoppingBagIcon },
+	shipped: { tone: "waiting", icon: TruckIcon },
+	delivered: { tone: "closed", icon: PackageCheckIcon },
+	completed: { tone: "closed", icon: CircleCheckIcon },
+	cancelled: { tone: "destructive", icon: CircleXIcon },
+	expired: { tone: "destructive", icon: TimerOffIcon },
 };
 
 export function OrderStatusBadge({
@@ -24,17 +32,10 @@ export function OrderStatusBadge({
 	status: OrderStatus;
 	className?: string;
 }) {
-	const c = CLASSES[status];
+	const { tone, icon } = BADGE[status];
 	return (
-		<span
-			className={cn(
-				"inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 font-medium text-xs",
-				c.pill,
-				className,
-			)}
-		>
-			<span aria-hidden className={cn("size-1.5 rounded-full", c.dot)} />
+		<StatusBadge tone={tone} icon={icon} className={className}>
 			{CUSTOMER_ORDER_STATUS[status]()}
-		</span>
+		</StatusBadge>
 	);
 }
