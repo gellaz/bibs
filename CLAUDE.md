@@ -59,6 +59,11 @@ Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.cl
 | `impeccable` | Frontend design/UX passes — ships its own native engine, updated by `npx impeccable` (not skills.sh) |
 | `design-taste-frontend` | Anti-slop design direction for landing/marketing pages and redesigns (not dashboards) — DESIGN.md brand tokens still win |
 | `emil-design-eng` | Emil Kowalski's UI polish rules — animation decisions (easing, duration, origin, reduced motion), press feedback, motion review checklist |
+| `animate`, `animation-performance`, `animation-vocabulary`, `apple-design` | Same source: build a single animation, fix dropped frames, name a motion effect, Apple-style gestures/springs |
+| `improve-animations`, `find-animation-opportunities` | Read-only motion audits: prioritized fix plans / where motion would earn its place |
+| `mobile-native`, `break-ui` | Web app that feels native on a phone (customer app) / stress-test a screen with worst-case data |
+| `ask-sonner` | Sonner guide — but in bibs import `toast` from `@bibs/ui/components/sonner`, never from `sonner` directly |
+| `review-animations`, `pick-ui-library`, `prototype` | Manual only (`/name`): strict motion review / curated library picks (check existing deps first) / UI variants behind a picker |
 
 To add more: `bunx skills add <source>` from repo root. To refresh everything: `bun run skills:update`.
 
