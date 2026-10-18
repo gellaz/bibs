@@ -247,6 +247,10 @@ function StoreSettingsPage() {
 							<OrderTypesSection
 								key={activeStore.id}
 								storeId={activeStore.id}
+								reservationHours={store.reservationHours}
+								hasOpeningHours={
+									store.openingHours?.some((d) => d.slots.length > 0) ?? false
+								}
 							/>
 							<LowStockThresholdSection
 								key={`low-stock-${activeStore.id}`}

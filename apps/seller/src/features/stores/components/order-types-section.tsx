@@ -7,16 +7,25 @@ import type { ReactNode } from "react";
 import { FormSection } from "@/components/form-section";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
+import { ReservationHoursField } from "./reservation-hours-field";
 
 type OrderType = "reserve_pickup" | "pay_pickup";
 
 /**
  * «Tipologie d'acquisto» del negozio: switch immediati per reserve_pickup /
- * pay_pickup. pay_pickup richiede chargesEnabled per essere acceso (Task 5);
+ * pay_pickup; con reserve_pickup attivo, anche il tempo per ritirare. pay_pickup richiede chargesEnabled per essere acceso (Task 5);
  * offeredOrderTypes riflette cosa vede davvero il cliente: PR2 solo con il
  * conto abilitato.
  */
-export function OrderTypesSection({ storeId }: { storeId: string }) {
+export function OrderTypesSection({
+	storeId,
+	reservationHours,
+	hasOpeningHours,
+}: {
+	storeId: string;
+	reservationHours: number;
+	hasOpeningHours: boolean;
+}) {
 	const qc = useQueryClient();
 	const key = ["store", storeId, "order-types"];
 	const { data } = useQuery({
@@ -81,6 +90,15 @@ export function OrderTypesSection({ storeId }: { storeId: string }) {
 					}
 					onChange={(checked) => toggle("reserve_pickup", checked)}
 				/>
+				{on("reserve_pickup") && (
+					<div className="space-y-3 border-l-2 border-warm-line pl-3">
+						<ReservationHoursField
+							storeId={storeId}
+							value={reservationHours}
+							hasOpeningHours={hasOpeningHours}
+						/>
+					</div>
+				)}
 				<Row
 					id="order-type-pay"
 					label={m.orders_type_pay_pickup()}
