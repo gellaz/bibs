@@ -380,6 +380,8 @@
 	"shell_access_denied_title": "Accesso negato",
 	"shell_access_denied_body": "Solo gli amministratori possono accedere a questa area.",
 	"shell_sign_out_other_account": "Esci e accedi con un altro account",
+	"shell_crumb_profile": "Profilo",
+	"shell_crumb_detail": "Dettaglio",
 	"dashboard_orders_today": "Ordini oggi",
 	"dashboard_no_orders": "Nessun ordine",
 	"dashboard_active_sellers": "Venditori attivi",

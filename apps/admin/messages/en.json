@@ -380,6 +380,8 @@
 	"shell_access_denied_title": "Access denied",
 	"shell_access_denied_body": "Only administrators can access this area.",
 	"shell_sign_out_other_account": "Sign out and use another account",
+	"shell_crumb_profile": "Profile",
+	"shell_crumb_detail": "Details",
 	"dashboard_orders_today": "Orders today",
 	"dashboard_no_orders": "No orders",
 	"dashboard_active_sellers": "Active sellers",
