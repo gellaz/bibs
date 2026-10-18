@@ -28,13 +28,38 @@ describe("OnboardingStatusBadge", () => {
 	it("unisce la classe dello stato con quella passata", () => {
 		overwriteGetLocale(() => "it");
 		render(<OnboardingStatusBadge status="active" className="ml-2" />);
-		const badge = screen.getByText("Attivo");
-		expect(badge.className).toContain("text-olive");
-		expect(badge.className).toContain("ml-2");
+		const badge = screen
+			.getByText("Attivo")
+			.closest<HTMLElement>("[data-tone]");
+		expect(badge?.dataset.tone).toBe("success");
+		expect(badge?.className).toContain("ml-2");
+	});
+
+	it("mostra il passo negli stati in corso", () => {
+		overwriteGetLocale(() => "it");
+		render(<OnboardingStatusBadge status="pending_document" />);
+		expect(screen.getByText("3/6")).toBeDefined();
+		expect(screen.getByText("Passo 3 di 6").classList.contains("sr-only")).toBe(
+			true,
+		);
+	});
+
+	it("gli stati finali non mostrano il passo", () => {
+		overwriteGetLocale(() => "it");
+		const { container } = render(
+			<>
+				<OnboardingStatusBadge status="active" />
+				<OnboardingStatusBadge status="rejected" />
+			</>,
+		);
+		expect(container.textContent).not.toContain("/6");
 	});
 
 	it("uno stato sconosciuto mostra il valore grezzo invece di sparire", () => {
 		render(<OnboardingStatusBadge status="pending_tax" />);
-		expect(screen.getByText("pending_tax")).toBeDefined();
+		const badge = screen
+			.getByText("pending_tax")
+			.closest<HTMLElement>("[data-tone]");
+		expect(badge?.dataset.tone).toBe("closed");
 	});
 });

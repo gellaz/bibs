@@ -1,9 +1,9 @@
-import { Badge } from "@bibs/ui/components/badge";
 import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
 import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageHeader } from "@bibs/ui/custom/page-header";
 import { SearchInput } from "@bibs/ui/custom/search-input";
+import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { formatDate } from "@bibs/ui/lib/date";
 import { displayName } from "@bibs/ui/lib/display-name";
@@ -12,6 +12,7 @@ import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
+import { BanIcon } from "lucide-react";
 import { useMemo } from "react";
 import { UserRoleBadge } from "@/components/user-role-badge";
 import { UserRowActions } from "@/components/user-row-actions";
@@ -143,7 +144,9 @@ function UsersPage() {
 					<span className="flex items-center gap-2">
 						{displayName(row.original)}
 						{row.original.banned ? (
-							<Badge variant="destructive">{m.users_banned()}</Badge>
+							<StatusBadge tone="destructive" icon={BanIcon}>
+								{m.users_banned()}
+							</StatusBadge>
 						) : null}
 					</span>
 				),

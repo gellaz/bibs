@@ -1,9 +1,9 @@
-import { Badge } from "@bibs/ui/components/badge";
 import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
 import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageHeader } from "@bibs/ui/custom/page-header";
 import { SearchInput } from "@bibs/ui/custom/search-input";
+import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { formatDate } from "@bibs/ui/lib/date";
@@ -218,7 +218,11 @@ function StoresPage() {
 			cell: ({ row }) => {
 				if (!row.original.subscriptionStatus) return dash;
 				const badge = subscriptionStatusBadge(row.original.subscriptionStatus);
-				return <Badge variant={badge.variant}>{badge.label}</Badge>;
+				return (
+					<StatusBadge tone={badge.tone} icon={badge.icon}>
+						{badge.label}
+					</StatusBadge>
+				);
 			},
 		},
 		{
