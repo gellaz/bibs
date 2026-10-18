@@ -11,7 +11,7 @@ import { productImage } from "@/db/schemas/product-image";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
-import { expireReservations } from "@/lib/jobs/expire-reservations";
+import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
@@ -560,7 +560,8 @@ async function seedDevOrders(storeId: string, sellerProfileId: string) {
 				.update(order)
 				.set({ reservationExpiresAt: new Date(Date.now() - 60_000) })
 				.where(eq(order.id, created.id));
-			await expireReservations();
+			// Diretto, non il cron: il cron aspetta i 15 minuti di tolleranza.
+			await expireSingleReservation(created.id);
 		}
 	}
 	await db
