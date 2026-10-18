@@ -9,6 +9,7 @@ import { PageHeader } from "@bibs/ui/custom/page-header";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
 import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
 import { formatDate } from "@bibs/ui/lib/date";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
@@ -27,7 +28,6 @@ import {
 } from "@/features/products/components/product-status-tabs";
 import { ProductsFilterSheet } from "@/features/products/components/products-filter-sheet";
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
-import { useProductSelection } from "@/features/products/hooks/use-product-selection";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { api, unwrap } from "@/lib/api";
 import {
@@ -213,7 +213,7 @@ function ProductsListPage() {
 	const rows = useMemo<Product[]>(() => data?.data ?? [], [data]);
 
 	const currentPageIds = useMemo(() => rows.map((p) => p.id), [rows]);
-	const selection = useProductSelection({
+	const selection = useRowSelection({
 		currentPageIds,
 		resetKey: `${activeStore?.id ?? ""}|${statusFilter}|${effectiveRouteQ}`,
 	});

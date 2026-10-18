@@ -182,9 +182,5 @@ export const productCategoriesConfig: CategoryCrudConfig<
 			updateOk: m.categories_product_updated(),
 			deleteOk: m.categories_product_deleted(),
 		},
-		rowAria: {
-			edit: m.categories_product_edit_aria(),
-			delete: m.categories_product_delete_aria(),
-		},
 	}),
 };

@@ -20,6 +20,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@bibs/ui/components/dialog";
+import {
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+} from "@bibs/ui/components/dropdown-menu";
 import { Field, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import {
@@ -28,14 +32,27 @@ import {
 } from "@bibs/ui/components/native-select";
 import { toast } from "@bibs/ui/components/sonner";
 import { DataTable } from "@bibs/ui/custom/data-table";
+import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
 import { unwrap } from "@bibs/ui/lib/api-client";
 import { toYMD } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDaysIcon, PencilIcon, Trash2Icon } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+	CalendarDaysIcon,
+	EyeIcon,
+	EyeOffIcon,
+	PencilIcon,
+	Trash2Icon,
+} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import {
+	BulkToolbar,
+	RowActionsMenu,
+	selectColumn,
+} from "@/components/bulk-selection";
 import { HolidayForm } from "@/features/holidays/components/holiday-form";
 import { api } from "@/lib/api";
+import { runBulk, toastBulkResult } from "@/lib/bulk";
 import { m } from "@/paraglide/messages";
 
 interface HolidayDefinition {
@@ -93,6 +110,7 @@ export function HolidaysPanel({
 	const queryClient = useQueryClient();
 	const [editOpen, setEditOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 	const [selected, setSelected] = useState<HolidayDefinition | null>(null);
 	const [editName, setEditName] = useState("");
 	const [previewYear, setPreviewYear] = useState(YEARS[0]);
@@ -179,9 +197,58 @@ export function HolidaysPanel({
 		() => (data?.data as HolidayDefinition[]) ?? [],
 		[data],
 	);
+	// Una sola pagina con tutte le festività: niente da azzerare.
+	const selection = useRowSelection({
+		currentPageIds: rows.map((r) => r.id),
+		resetKey: "",
+	});
+	const selectedRows = rows.filter((r) => selection.isSelected(r.id));
+	const selectionRef = useRef(selection);
+	selectionRef.current = selection;
+
+	const bulkMutation = useMutation({
+		mutationFn: ({
+			action,
+			items,
+		}: {
+			action: "activate" | "deactivate" | "delete";
+			items: HolidayDefinition[];
+		}) =>
+			runBulk(items, async (h) => {
+				const holiday = api().admin["holiday-definitions"]({ holidayId: h.id });
+				if (action === "delete")
+					return unwrap(await holiday.delete(), m.common_delete_error());
+				return unwrap(
+					await holiday.patch({ isActive: action === "activate" }),
+					m.common_update_error(),
+				);
+			}),
+		onSuccess: (result, { action }) => {
+			invalidate();
+			setBulkDeleteOpen(false);
+			selection.clear();
+			toastBulkResult(result, {
+				done: (n) =>
+					action === "delete"
+						? n === 1
+							? m.holidays_delete_ok()
+							: m.holidays_bulk_delete_ok({ count: n })
+						: n === 1
+							? m.holidays_update_ok()
+							: (action === "activate"
+									? m.holidays_bulk_activate_ok
+									: m.holidays_bulk_deactivate_ok)({ count: n }),
+				error:
+					action === "delete"
+						? m.common_delete_error()
+						: m.common_update_error(),
+			});
+		},
+	});
 
 	const columns = useMemo<DataTableColumnDef<HolidayDefinition>[]>(
 		() => [
+			selectColumn<HolidayDefinition>(() => selectionRef.current),
 			{
 				id: "name",
 				header: m.common_name(),
@@ -223,51 +290,65 @@ export function HolidaysPanel({
 				id: "actions",
 				enableHiding: false,
 				meta: {
-					headerClassName: "w-[20%] text-right",
-					cellClassName: "text-right",
+					// px-2: il pulsante icona (32 px) entra giusto nei 48 px di w-12.
+					headerClassName: "w-12 px-2",
+					cellClassName: "w-12 px-2",
+					sticky: "right",
 				},
 				header: "",
-				cell: ({ row }) => (
-					<div className="flex items-center justify-end gap-1">
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() =>
-								updateMutation.mutate({
-									id: row.original.id,
-									isActive: !row.original.isActive,
-								})
-							}
-						>
-							{row.original.isActive
-								? m.holidays_deactivate()
-								: m.holidays_activate()}
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							aria-label={m.holidays_rename_aria()}
-							onClick={() => {
-								setSelected(row.original);
-								setEditName(row.original.name);
-								setEditOpen(true);
-							}}
-						>
-							<PencilIcon className="size-4" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="icon-sm"
-							aria-label={m.holidays_delete_aria()}
-							onClick={() => {
-								setSelected(row.original);
-								setDeleteOpen(true);
-							}}
-						>
-							<Trash2Icon className="size-4" />
-						</Button>
-					</div>
-				),
+				cell: ({ row }) => {
+					const h = row.original;
+					return (
+						<RowActionsMenu name={h.name}>
+							<DropdownMenuItem
+								className="whitespace-nowrap"
+								onSelect={() => {
+									setSelected(h);
+									setEditName(h.name);
+									setEditOpen(true);
+								}}
+							>
+								<PencilIcon />
+								{m.holidays_rename()}
+							</DropdownMenuItem>
+							{!h.isActive && (
+								<DropdownMenuItem
+									className="whitespace-nowrap"
+									onSelect={() =>
+										updateMutation.mutate({ id: h.id, isActive: true })
+									}
+								>
+									<EyeIcon />
+									{m.holidays_activate()}
+								</DropdownMenuItem>
+							)}
+							<DropdownMenuSeparator />
+							{h.isActive && (
+								<DropdownMenuItem
+									variant="warning"
+									className="whitespace-nowrap"
+									onSelect={() =>
+										updateMutation.mutate({ id: h.id, isActive: false })
+									}
+								>
+									<EyeOffIcon />
+									{m.holidays_deactivate()}
+								</DropdownMenuItem>
+							)}
+							<DropdownMenuItem
+								variant="destructive"
+								className="whitespace-nowrap"
+								onSelect={() => {
+									setSelected(h);
+									setDeleteOpen(true);
+								}}
+							>
+								<Trash2Icon />
+								{m.common_delete()}
+							</DropdownMenuItem>
+						</RowActionsMenu>
+					);
+				},
 			},
 		],
 		[],
@@ -285,12 +366,47 @@ export function HolidaysPanel({
 				</div>
 			)}
 
+			<BulkToolbar count={selectedRows.length} onClear={selection.clear}>
+				<Button
+					size="sm"
+					variant="success"
+					disabled={bulkMutation.isPending}
+					onClick={() =>
+						bulkMutation.mutate({ action: "activate", items: selectedRows })
+					}
+				>
+					<EyeIcon className="size-4" />
+					{m.holidays_activate()}
+				</Button>
+				<Button
+					size="sm"
+					variant="warning"
+					disabled={bulkMutation.isPending}
+					onClick={() =>
+						bulkMutation.mutate({ action: "deactivate", items: selectedRows })
+					}
+				>
+					<EyeOffIcon className="size-4" />
+					{m.holidays_deactivate()}
+				</Button>
+				<Button
+					size="sm"
+					variant="destructive"
+					disabled={bulkMutation.isPending}
+					onClick={() => setBulkDeleteOpen(true)}
+				>
+					<Trash2Icon className="size-4" />
+					{m.common_delete()}
+				</Button>
+			</BulkToolbar>
+
 			<DataTable
 				data={rows}
 				columns={columns}
 				storageKey="admin.holidays.columns"
 				getRowId={(row) => row.id}
 				isLoading={isLoading}
+				isRowSelected={(row) => selection.isSelected(row.original.id)}
 				emptyState={
 					<div className="flex flex-col items-center gap-2">
 						<CalendarDaysIcon className="text-muted-foreground/40 size-8" />
@@ -444,6 +560,37 @@ export function HolidaysPanel({
 							{deleteMutation.isPending
 								? m.common_deleting()
 								: m.common_delete()}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{m.common_confirm_delete_title()}
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							{selectedRows.length === 1
+								? m.holidays_delete_description({ name: selectedRows[0].name })
+								: m.holidays_bulk_delete_description({
+										count: selectedRows.length,
+									})}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>{m.common_cancel()}</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							disabled={bulkMutation.isPending}
+							onClick={(e) => {
+								// Resta aperto finché le chiamate non finiscono.
+								e.preventDefault();
+								bulkMutation.mutate({ action: "delete", items: selectedRows });
+							}}
+						>
+							{bulkMutation.isPending ? m.common_deleting() : m.common_delete()}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
