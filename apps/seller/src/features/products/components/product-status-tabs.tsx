@@ -36,7 +36,7 @@ export function ProductStatusTabs({ storeId, value, onChange }: Props) {
 			value: "disabled",
 			label: m.products_tab_disabled(),
 			count: counts.disabled,
-			badgeColor: "warning",
+			badgeColor: "closed",
 		},
 		{
 			value: "trashed",

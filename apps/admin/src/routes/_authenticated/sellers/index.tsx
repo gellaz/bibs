@@ -35,7 +35,7 @@ const STATUS_TABS = [
 	{
 		value: "pending_review",
 		label: m.sellers_tab_pending_review,
-		badgeColor: "warning",
+		badgeColor: "action",
 	},
 	{ value: "active", label: m.sellers_tab_active, badgeColor: "success" },
 	{

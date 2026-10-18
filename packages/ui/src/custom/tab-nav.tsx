@@ -1,37 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { StatusTone } from "~/custom/status-badge";
 import { cn } from "~/lib/utils";
 
-/**
- * Semantic keys (`success`/`warning`/`destructive`) route through DESIGN.md
- * tokens and should be the default for status badges. Raw Tailwind keys
- * (`amber`/`red`/...) remain as escape hatches for one-off needs that don't
- * belong to a semantic role.
- */
-const BADGE_COLORS: Record<string, string> = {
+// Stessi toni dello StatusBadge (DESIGN.md §5): il contatore di una tab ha il
+// colore dello stato che conta.
+const BADGE_COLORS: Record<"default" | StatusTone, string> = {
 	default:
 		"bg-foreground/8 text-foreground/60 ring-1 ring-inset ring-foreground/10",
-	success:
-		"bg-success/10 text-success ring-1 ring-inset ring-success/30 dark:bg-success/15 dark:ring-success/40",
-	warning:
-		"bg-warning/10 text-warning ring-1 ring-inset ring-warning/30 dark:bg-warning/15 dark:ring-warning/40",
+	action: "bg-action/12 text-action ring-1 ring-inset ring-action/40",
+	waiting: "bg-waiting/12 text-waiting ring-1 ring-inset ring-waiting/40",
+	success: "bg-success/12 text-success ring-1 ring-inset ring-success/40",
+	closed: "text-muted-foreground ring-1 ring-inset ring-border",
 	destructive:
-		"bg-destructive/10 text-destructive ring-1 ring-inset ring-destructive/30 dark:bg-destructive/15 dark:ring-destructive/40",
-	amber:
-		"bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-300/50 dark:bg-amber-500/15 dark:text-amber-400 dark:ring-amber-500/30",
-	emerald:
-		"bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-300/50 dark:bg-emerald-500/15 dark:text-emerald-400 dark:ring-emerald-500/30",
-	red: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-300/50 dark:bg-red-500/15 dark:text-red-400 dark:ring-red-500/30",
-	cobalt:
-		"bg-cobalt-soft text-cobalt-deep ring-1 ring-inset ring-cobalt/30 dark:text-cobalt dark:ring-cobalt/40",
+		"bg-destructive/12 text-destructive ring-1 ring-inset ring-destructive/40",
 };
 
 export interface TabNavItem {
 	value: string;
 	label: string;
 	count?: number | null;
-	badgeColor?: string;
+	badgeColor?: "default" | StatusTone;
 }
 
 interface TabNavProps {

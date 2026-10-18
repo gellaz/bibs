@@ -40,7 +40,11 @@ const TABS: {
 }[] = [
 	{ value: "all", label: m.stores_tab_all, badgeColor: "default" },
 	{ value: "active", label: m.stores_tab_active, badgeColor: "success" },
-	{ value: "past_due", label: m.stores_tab_past_due, badgeColor: "warning" },
+	{
+		value: "past_due",
+		label: m.stores_tab_past_due,
+		badgeColor: "destructive",
+	},
 	{
 		value: "suspended",
 		label: m.stores_tab_suspended,
