@@ -18,7 +18,10 @@ colors:
   cobalt-deep: "oklch(0.42 0.19 256)"
   brick: "oklch(0.55 0.18 25)"
   olive: "oklch(0.62 0.10 135)"
-  warning: "oklch(0.62 0.14 60)"
+  olive-deep: "oklch(0.47 0.10 135)"
+  brick-deep: "oklch(0.51 0.18 25)"
+  petrol: "oklch(0.45 0.08 205)"
+  warning: "oklch(0.50 0.12 58)"
   ink-on-saffron: "oklch(0.22 0.014 80)"
   ink-on-cobalt: "oklch(0.985 0.008 80)"
   ink-on-brick: "oklch(0.985 0.008 80)"
@@ -130,6 +133,31 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.pill}"
     padding: "0.25rem 0.625rem"
+  status-action:
+    textColor: "{colors.cobalt-deep}"
+    typography: "{typography.label}"
+    rounded: "{rounded.pill}"
+    padding: "0 0.625rem 0 0.375rem"
+  status-waiting:
+    textColor: "{colors.petrol}"
+    typography: "{typography.label}"
+    rounded: "{rounded.pill}"
+    padding: "0 0.625rem 0 0.375rem"
+  status-success:
+    textColor: "{colors.olive-deep}"
+    typography: "{typography.label}"
+    rounded: "{rounded.pill}"
+    padding: "0 0.625rem 0 0.375rem"
+  status-closed:
+    textColor: "{colors.warm-shadow}"
+    typography: "{typography.label}"
+    rounded: "{rounded.pill}"
+    padding: "0 0.625rem 0 0.375rem"
+  status-destructive:
+    textColor: "{colors.brick-deep}"
+    typography: "{typography.label}"
+    rounded: "{rounded.pill}"
+    padding: "0 0.625rem 0 0.375rem"
 ---
 
 # Design System: bibs
@@ -234,7 +262,9 @@ chrome.
 
 ### Accent (product register): Cobalt
 
-Reserved for seller and admin surfaces. Operational accent: selection,
+Reserved for seller and admin surfaces (one exception: the `action` tone of
+the Status Badge, below, which is state and appears in all three apps).
+Operational accent: selection,
 accent fills on chips and badges, primary action
 emphasis where ink alone is too quiet. Aligned to Tailwind's `blue-*`
 family so existing seller usage (`bg-blue-50 text-blue-700`, etc.)
@@ -254,9 +284,16 @@ migrates token-by-token without a visual jump.
   as the cream, not a pure alert red.
 - **Olive** (`oklch(0.62 0.10 135)`): success and km-0 affirmative
   signals (delivery confirmed, order placed, "consegna a 0.4 km"). A
-  vegetable green, not a SaaS lime. The `success` semantic token is an
-  alias of olive (with a lifted dark-mode value for legibility on dusk).
-- **Warning** (`oklch(0.62 0.14 60)` light, `oklch(0.78 0.14 60)` dark):
+  vegetable green, not a SaaS lime. The `success` semantic token points to
+  **Olive Deep** (`oklch(0.47 0.10 135)`) in light, so it reads at AA as
+  text on its own 12% tint (5.0:1); dark keeps a lifted olive.
+- **Brick Deep** (`oklch(0.51 0.18 25)`): what the `destructive` token
+  points to in light, for the same reason (4.7:1 on its tint); dark uses
+  `oklch(0.70 0.15 25)`.
+- **Petrolio** (`oklch(0.45 0.08 205)` light, `oklch(0.80 0.07 200)`
+  dark): the `waiting` token, "aspetti qualcun altro" in status badges. A
+  muted blue-green, far from cobalt (action), olive (success) and saffron.
+- **Warning** (`oklch(0.50 0.12 58)` light, `oklch(0.78 0.14 60)` dark):
   caution-grade actions that change state without destroying data
   (disable a product, archive, soft-pause). Hue 60 puts it between brick
   (25, destructive) and saffron (75, brand reward); the role is state,
@@ -279,7 +316,15 @@ action. Ink stays the voice; cobalt is the state.
 **The Cross-Register Ban.** Saffron must not appear on seller/admin
 chrome. Cobalt must not appear on customer brand surfaces. Each register
 keeps its accent; mixing them collapses the distinction the system is
-built on.
+built on. *Exception:* the Status Badge tones are state, not register, and
+are the same in all three apps (like warning): cobalt reaches the customer
+only as the `action` tone of a status badge.
+
+**The Semantic Token Rule.** Components use semantic tokens (`success`,
+`destructive`, `warning`, `action`, `waiting`, `primary`,
+`muted-foreground`…), never palette names (`olive`, `brick`, `petrol`,
+`cobalt`). The palette lives in `globals.css`, where it defines the
+semantic tokens; a color changes in one place.
 
 **The One Ring.** Focus is Ink on every focusable element in all three
 apps: Ink in light mode, Ink Night in dark (token `--ring`). Not the dark
@@ -464,7 +509,7 @@ card; the card itself disappears.
 
 ### Chips and Pills
 
-Chips carry presence. The system has four meaningful kinds:
+Chips carry presence. The system has five meaningful kinds:
 
 - **Saffron Reward Pill** (`badge-saffron`, customer only): Saffron
   background, Dusk text, ALL CAPS label, rounded `pill`. Used for "+5
@@ -481,6 +526,24 @@ Chips carry presence. The system has four meaningful kinds:
   product table, "in evidenza" flags. Common on data-dense surfaces;
   no upper-bound rule like saffron — but it never replaces an icon when
   shape would do.
+- **Status Badge** (`StatusBadge` in `@bibs/ui`, all three apps): pill
+  24px tall, tinted at 12% of the tone, 1px border at 40%, a 14px icon
+  and a label in the tone. The icon belongs to the *state* (package = to
+  prepare, truck = shipped), not to the tone. The tone is decided by **who
+  is looking**: the same order is `action` for the seller who must prepare
+  it and `waiting` for the customer.
+
+  | Tone | Meaning | Token |
+  |---|---|---|
+  | `action` | tocca a te | `action` (Cobalt Deep) |
+  | `waiting` | aspetti qualcun altro | `waiting` (Petrolio) |
+  | `success` | pronto / attivo | `success` (Olive Deep) |
+  | `closed` | chiuso | `muted-foreground` + `border`, no fill |
+  | `destructive` | fallito | `destructive` (Brick Deep) |
+
+  Warning is not a status tone (it stays on caution buttons). Only the
+  seller onboarding shows a step count ("3/6") next to the badge, while
+  in progress.
 
 ### Inputs / Search
 
@@ -564,7 +627,8 @@ twice on the same surface. The thread reads as one voice across pages.
 ### Don't
 
 - **Don't** mix the two accents across registers. Saffron on a seller
-  chip, or cobalt on a customer reward pill, is a system error.
+  chip, or cobalt on a customer reward pill, is a system error. (Status
+  badge tones are state, not accent: see the Cross-Register Ban.)
 - **Don't** reintroduce cyan-sky as primary. The brand voice is navy
   Ink; cobalt belongs to the product register's accent role, not to the
   primary action.
