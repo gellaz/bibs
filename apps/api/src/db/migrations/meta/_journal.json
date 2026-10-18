@@ -15,6 +15,13 @@
       "when": 1791846571922,
       "tag": "0001_tan_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792339365567,
+      "tag": "0002_gigantic_ultimates",
+      "breakpoints": true
     }
   ]
 }

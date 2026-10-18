@@ -1,0 +1,2 @@
+ALTER TABLE "stores" ADD COLUMN "reservation_hours" integer DEFAULT 24 NOT NULL;--> statement-breakpoint
+ALTER TABLE "stores" ADD CONSTRAINT "store_reservation_hours_range" CHECK ("stores"."reservation_hours" BETWEEN 1 AND 72);

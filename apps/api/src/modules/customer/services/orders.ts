@@ -19,6 +19,7 @@ import { assertTransition } from "@/lib/order-state-machine";
 import { parsePagination } from "@/lib/pagination";
 import { generatePickupCode } from "@/lib/pickup-code";
 import { platformFeeCents } from "@/lib/platform-fee";
+import { resolveReservationDeadlines } from "@/lib/store-open-status";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
 import { refundOrderPayment } from "@/modules/billing/services/order-payments";
@@ -415,6 +416,22 @@ export async function priceOrder(
 	};
 }
 
+/** Scadenza di una prenotazione fatta adesso, sulle ore di ritiro del negozio. */
+async function reservationExpiry(tx: OrderTx, storeId: string) {
+	const s = await tx.query.store.findFirst({
+		where: eq(storeTable.id, storeId),
+		columns: {
+			id: true,
+			openingHours: true,
+			closures: true,
+			reservationHours: true,
+		},
+	});
+	if (!s) throw new ServiceError(404, "Negozio non trovato");
+	const deadlines = await resolveReservationDeadlines([s], new Date());
+	return deadlines.get(s.id)!.expiresAt;
+}
+
 /**
  * Seconda metà di placeOrder: sconto punti, castelletto, insert di ordine e
  * righe, scalo di stock e punti (CAS). I punti valgono solo su pay_pickup.
@@ -494,9 +511,7 @@ export async function insertOrder(
 	);
 
 	const reservationExpiresAt =
-		type === "reserve_pickup"
-			? new Date(Date.now() + config.reservationHours * 60 * 60 * 1000)
-			: null;
+		type === "reserve_pickup" ? await reservationExpiry(tx, storeId) : null;
 
 	const pickupCode = PICKUP_TYPES.includes(type)
 		? await assignPickupCode(tx, storeId)

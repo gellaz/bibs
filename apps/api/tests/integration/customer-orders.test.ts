@@ -38,6 +38,7 @@ import { productImage } from "@/db/schemas/product-image";
 import { store as storeTable } from "@/db/schemas/store";
 import type { StoreSubscriptionStatus } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
+import { reservationDeadline } from "@/lib/holidays";
 import {
 	assignPickupCode,
 	cancelOrder,
@@ -236,7 +237,7 @@ describe("createOrder — pay_pickup", () => {
 });
 
 describe("createOrder — reserve_pickup", () => {
-	it("sets reservationExpiresAt 48h in the future", async () => {
+	it("store without hours: reservation expires 24 calendar hours later", async () => {
 		const { store, storeProduct: sp, customer } = await seedBasicFixtures();
 
 		const before = Date.now();
@@ -250,9 +251,50 @@ describe("createOrder — reserve_pickup", () => {
 
 		expect(result.reservationExpiresAt).not.toBeNull();
 		const expiresAt = result.reservationExpiresAt!.getTime();
-		// Should be ~48h from now (allow ±5s)
-		expect(expiresAt - before).toBeGreaterThan(48 * 3600 * 1000 - 5000);
-		expect(expiresAt - before).toBeLessThan(48 * 3600 * 1000 + 5000);
+		// Default 24 ore, sul calendario perché il negozio non ha orari (±5s)
+		expect(expiresAt - before).toBeGreaterThan(24 * 3600 * 1000 - 5000);
+		expect(expiresAt - before).toBeLessThan(24 * 3600 * 1000 + 5000);
+	});
+
+	it("store with hours: reservation expires after the store's opening hours", async () => {
+		const db = getTestDb();
+		const openingHours = Array.from({ length: 7 }, (_, i) => ({
+			dayOfWeek: i,
+			slots: [{ open: "08:00", close: "20:00" }],
+		}));
+		const seller = await createTestSeller(db);
+		const s = await createTestStore(db, seller.profile.id, {
+			openingHours,
+			reservationHours: 3,
+		});
+		await createTestStoreSubscription(db, s.id);
+		const prod = await createTestProduct(db, seller.profile.id, {
+			price: "10.00",
+		});
+		const sp = await createTestStoreProduct(db, s.id, prod.id, { stock: 10 });
+		const customer = await createTestCustomer(db);
+		// Il DB di test non ha festività: bastano gli orari.
+		const deadline = (from: Date) =>
+			reservationDeadline({
+				openingHours,
+				closedDates: new Set(),
+				from,
+				hours: 3,
+			}).expiresAt.getTime();
+
+		const before = new Date();
+		const result = await createOrder({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			type: "reserve_pickup",
+			storeId: s.id,
+			items: [{ storeProductId: sp.id, quantity: 1 }],
+		});
+		const after = new Date();
+
+		const expiresAt = result.reservationExpiresAt!.getTime();
+		expect(expiresAt).toBeGreaterThanOrEqual(deadline(before));
+		expect(expiresAt).toBeLessThanOrEqual(deadline(after));
 	});
 });
 

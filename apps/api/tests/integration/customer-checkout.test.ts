@@ -31,6 +31,7 @@ import { order } from "@/db/schemas/order";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
+import { reservationDeadline } from "@/lib/holidays";
 import { checkoutRoutes } from "@/modules/customer/routes/checkout";
 import {
 	createCheckout,
@@ -367,5 +368,50 @@ describe("POST /checkout", () => {
 			}),
 		);
 		expect(res.status).toBe(422);
+	});
+});
+
+describe("createCheckout — scadenza della prenotazione", () => {
+	it("conta le ore di ritiro del negozio sulle sue ore di apertura", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const openingHours = Array.from({ length: 7 }, (_, i) => ({
+			dayOfWeek: i,
+			slots: [{ open: "08:00", close: "20:00" }],
+		}));
+		const store = await createTestStore(db, seller.profile.id, {
+			openingHours,
+			reservationHours: 2,
+		});
+		await createTestStoreSubscription(db, store.id);
+		const product = await createTestProduct(db, seller.profile.id, {
+			price: "10.00",
+		});
+		const sp = await createTestStoreProduct(db, store.id, product.id, {
+			stock: 5,
+		});
+		await createTestCartItem(db, customer.profile.id, sp.id, { quantity: 1 });
+		// Il DB di test non ha festività: bastano gli orari.
+		const deadline = (from: Date) =>
+			reservationDeadline({
+				openingHours,
+				closedDates: new Set(),
+				from,
+				hours: 2,
+			}).expiresAt.getTime();
+
+		const before = new Date();
+		const result = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			idempotencyKey: crypto.randomUUID(),
+			stores: [{ storeId: store.id, type: "reserve_pickup" }],
+		});
+		const after = new Date();
+
+		const expiresAt = result.orders[0].reservationExpiresAt!.getTime();
+		expect(expiresAt).toBeGreaterThanOrEqual(deadline(before));
+		expect(expiresAt).toBeLessThanOrEqual(deadline(after));
 	});
 });

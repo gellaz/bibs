@@ -8,11 +8,13 @@ import type {
 	HolidayDef,
 	OpeningHoursDay,
 	OpenStatus,
+	ReservationClock,
 } from "@/lib/holidays";
 import {
 	addDaysYMD,
 	dowFromYMD,
 	getOpenStatus,
+	reservationDeadline,
 	resolveOccurrences,
 	resolveStoreClosedDates,
 	ymdToYear,
@@ -44,14 +46,14 @@ interface StoreOpenStatusInput {
 }
 
 /**
- * Computes the current open-status for a batch of stores (one DB round-trip for
- * holiday definitions + opt-outs, then pure in-memory resolution per store).
- * "Now" is evaluated in Europe/Rome. Returns a map keyed by store id.
+ * Date di chiusura (festività senza opt-out + chiusure personalizzate) di un
+ * lotto di negozi, da oggi a Roma a +60 giorni: una query per definizioni e
+ * opt-out, poi risoluzione in memoria. Mappa per id del negozio.
  */
-export async function resolveOpenStatuses(
-	stores: StoreOpenStatusInput[],
+export async function loadClosedDates(
+	stores: Array<{ id: string; closures: CustomClosure[] | null }>,
 	now: Date,
-): Promise<Map<string, OpenStatus>> {
+): Promise<Map<string, Set<string>>> {
 	const today = new Intl.DateTimeFormat("en-CA", {
 		timeZone: "Europe/Rome",
 	}).format(now);
@@ -82,20 +84,73 @@ export async function resolveOpenStatuses(
 		optOutsByStore.set(row.storeId, list);
 	}
 
-	const result = new Map<string, OpenStatus>();
+	const result = new Map<string, Set<string>>();
 	for (const s of stores) {
-		const closedDates = resolveStoreClosedDates(
-			{
-				activeDefs: activeDefs as HolidayDef[],
-				optOutIds: optOutsByStore.get(s.id) ?? [],
-				customClosures: s.closures ?? [],
-			},
-			{ from: today, to: windowEnd },
-		);
 		result.set(
 			s.id,
-			getOpenStatus({ openingHours: s.openingHours ?? null, closedDates, now }),
+			resolveStoreClosedDates(
+				{
+					activeDefs: activeDefs as HolidayDef[],
+					optOutIds: optOutsByStore.get(s.id) ?? [],
+					customClosures: s.closures ?? [],
+				},
+				{ from: today, to: windowEnd },
+			),
 		);
+	}
+	return result;
+}
+
+/**
+ * Computes the current open-status for a batch of stores (one DB round-trip for
+ * holiday definitions + opt-outs, then pure in-memory resolution per store).
+ * "Now" is evaluated in Europe/Rome. Returns a map keyed by store id.
+ */
+export async function resolveOpenStatuses(
+	stores: StoreOpenStatusInput[],
+	now: Date,
+): Promise<Map<string, OpenStatus>> {
+	const closed = await loadClosedDates(stores, now);
+	const result = new Map<string, OpenStatus>();
+	for (const s of stores) {
+		result.set(
+			s.id,
+			getOpenStatus({
+				openingHours: s.openingHours ?? null,
+				closedDates: closed.get(s.id) ?? new Set(),
+				now,
+			}),
+		);
+	}
+	return result;
+}
+
+/**
+ * Scadenza che avrebbe adesso una prenotazione in ciascun negozio, contata
+ * sulle sue ore di apertura (vedi reservationDeadline). Stesso lotto di
+ * resolveOpenStatuses: una query per festività e opt-out.
+ */
+export async function resolveReservationDeadlines(
+	stores: Array<StoreOpenStatusInput & { reservationHours: number }>,
+	now: Date,
+): Promise<
+	Map<string, { hours: number; expiresAt: Date; clock: ReservationClock }>
+> {
+	const closed = await loadClosedDates(stores, now);
+	const result = new Map<
+		string,
+		{ hours: number; expiresAt: Date; clock: ReservationClock }
+	>();
+	for (const s of stores) {
+		result.set(s.id, {
+			hours: s.reservationHours,
+			...reservationDeadline({
+				openingHours: s.openingHours ?? null,
+				closedDates: closed.get(s.id) ?? new Set(),
+				from: now,
+				hours: s.reservationHours,
+			}),
+		});
 	}
 	return result;
 }
