@@ -1,7 +1,6 @@
 import { CreateButton } from "@bibs/ui/custom/create-button";
 import { PageHeader } from "@bibs/ui/custom/page-header";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeftIcon } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { configurationSections } from "@/features/configurations/sections";
 import { m } from "@/paraglide/messages";
@@ -21,13 +20,6 @@ function ConfigurationSectionPage() {
 
 	return (
 		<div className="space-y-4">
-			<Link
-				to="/configurations"
-				className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
-			>
-				<ArrowLeftIcon aria-hidden className="size-4" />
-				{m.configurations_title()}
-			</Link>
 			{section ? (
 				<>
 					<PageHeader

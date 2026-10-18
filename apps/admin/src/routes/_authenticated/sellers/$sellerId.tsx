@@ -3,13 +3,8 @@ import { Spinner } from "@bibs/ui/components/spinner";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	ArrowLeftIcon,
-	CheckCircle2Icon,
-	ExternalLinkIcon,
-	XCircleIcon,
-} from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { CheckCircle2Icon, ExternalLinkIcon, XCircleIcon } from "lucide-react";
 import { OnboardingStatusBadge } from "@/components/onboarding-status-badge";
 import {
 	SellerModerationDialog,
@@ -59,20 +54,10 @@ function SellerDetailPage() {
 
 	if (error || !seller) {
 		return (
-			<div className="space-y-4">
-				<Link
-					to="/sellers"
-					search={{ status: undefined }}
-					className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
-				>
-					<ArrowLeftIcon className="size-4" />
-					{m.sellers_back_to_list()}
-				</Link>
-				<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
-					<p className="text-sm">
-						{(error as Error)?.message || m.sellers_not_found()}
-					</p>
-				</div>
+			<div className="bg-destructive/10 text-destructive rounded-lg border border-destructive/20 p-4">
+				<p className="text-sm">
+					{(error as Error)?.message || m.sellers_not_found()}
+				</p>
 			</div>
 		);
 	}
@@ -84,13 +69,6 @@ function SellerDetailPage() {
 			{/* Header */}
 			<div className="space-y-2">
 				<div className="flex items-center gap-2">
-					<Link
-						to="/sellers"
-						search={{ status: undefined }}
-						className="text-muted-foreground hover:text-foreground -ml-1 inline-flex items-center gap-1 text-sm"
-					>
-						<ArrowLeftIcon className="size-4" />
-					</Link>
 					<h1 className="text-lg font-semibold">
 						{seller.firstName && seller.lastName
 							? `${seller.firstName} ${seller.lastName}`

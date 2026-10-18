@@ -12,6 +12,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
+import { Badge } from "@bibs/ui/components/badge";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Dialog,
@@ -272,18 +273,22 @@ export function HolidaysPanel({
 				id: "status",
 				header: m.holidays_column_status(),
 				meta: { headerClassName: "w-[20%]" },
+				// Colore solo nel pallino: olive come testo sta sotto AA in chiaro (3,2:1).
 				cell: ({ row }) => (
-					<span
+					<Badge
+						variant="outline"
 						className={
-							row.original.isActive
-								? "text-emerald-600 text-sm font-medium"
-								: "text-muted-foreground text-sm"
+							row.original.isActive ? undefined : "text-muted-foreground"
 						}
 					>
+						<span
+							aria-hidden
+							className={`size-1.5 shrink-0 rounded-full ${row.original.isActive ? "bg-success" : "bg-muted-foreground"}`}
+						/>
 						{row.original.isActive
 							? m.holidays_status_active()
 							: m.holidays_status_inactive()}
-					</span>
+					</Badge>
 				),
 			},
 			{
