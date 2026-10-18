@@ -3,7 +3,10 @@ import { db } from "@/db";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order, orderStatuses } from "@/db/schemas/order";
 import { ServiceError } from "@/lib/errors";
-import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
+import {
+	expireSingleReservation,
+	reservationGraceCutoff,
+} from "@/lib/jobs/expire-reservations";
 import { toCents } from "@/lib/money";
 import {
 	municipalityCompactWith,
@@ -69,7 +72,7 @@ export async function transitionOrder(
 		if (
 			existing.type === "reserve_pickup" &&
 			existing.reservationExpiresAt &&
-			existing.reservationExpiresAt < new Date()
+			existing.reservationExpiresAt < reservationGraceCutoff()
 		) {
 			await expireSingleReservation(orderId);
 			throw new ServiceError(400, "La prenotazione è scaduta");

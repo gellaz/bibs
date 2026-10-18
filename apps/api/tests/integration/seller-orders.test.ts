@@ -31,7 +31,10 @@ import { customerProfile } from "@/db/schemas/customer";
 import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
-import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
+import {
+	expireReservations,
+	expireSingleReservation,
+} from "@/lib/jobs/expire-reservations";
 import {
 	cancelSellerOrder,
 	completePickupByCode,
@@ -115,7 +118,8 @@ describe("transitionOrder — reserve_pickup expiry", () => {
 			sp,
 			order: ord,
 		} = await seedReservePickupOrder(db, {
-			reservationExpiresAt: new Date(Date.now() - 60_000),
+			// Oltre i 15 minuti di tolleranza.
+			reservationExpiresAt: new Date(Date.now() - 16 * 60_000),
 			customerPoints: 100,
 		});
 
@@ -152,6 +156,54 @@ describe("transitionOrder — reserve_pickup expiry", () => {
 		});
 		expect(txns.filter((t) => t.type === "earned")).toHaveLength(0);
 		expect(txns.filter((t) => t.type === "refunded")).toHaveLength(1);
+	});
+
+	for (const minutes of [1, 14]) {
+		it(`completa ${minutes} min dopo la scadenza (tolleranza)`, async () => {
+			const db = getTestDb();
+			const {
+				seller,
+				store,
+				order: ord,
+			} = await seedReservePickupOrder(db, {
+				reservationExpiresAt: new Date(Date.now() - minutes * 60_000),
+				customerPoints: 0,
+			});
+
+			const updated = await transitionOrder(
+				ord.id,
+				seller.profile.id,
+				"completed",
+				[store.id],
+			);
+			expect(updated.status).toBe("completed");
+		});
+	}
+
+	it("il cron lascia una prenotazione scaduta da 14 minuti", async () => {
+		const db = getTestDb();
+		const { order: ord } = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() - 14 * 60_000),
+		});
+
+		expect(await expireReservations()).toBe(0);
+		const fresh = await db.query.order.findFirst({
+			where: eq(order.id, ord.id),
+		});
+		expect(fresh?.status).toBe("confirmed");
+	});
+
+	it("il cron fa scadere una prenotazione scaduta da 16 minuti", async () => {
+		const db = getTestDb();
+		const { order: ord } = await seedReservePickupOrder(db, {
+			reservationExpiresAt: new Date(Date.now() - 16 * 60_000),
+		});
+
+		expect(await expireReservations()).toBe(1);
+		const fresh = await db.query.order.findFirst({
+			where: eq(order.id, ord.id),
+		});
+		expect(fresh?.status).toBe("expired");
 	});
 
 	it("completa normalmente una prenotazione non scaduta", async () => {
@@ -527,7 +579,7 @@ describe("ritiro con codice", () => {
 			sp,
 			order: ord,
 		} = await seedReservePickupOrder(db, {
-			reservationExpiresAt: new Date(Date.now() - 60_000),
+			reservationExpiresAt: new Date(Date.now() - 16 * 60_000),
 			pickupCode: "K7XM4P",
 		});
 		await expect(
