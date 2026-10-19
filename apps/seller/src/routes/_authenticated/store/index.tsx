@@ -251,7 +251,7 @@ function StoreSettingsPage() {
 	);
 
 	return (
-		<div className="mx-auto w-full max-w-7xl space-y-8">
+		<div className="w-full space-y-8">
 			<EntityFormHeader
 				icon={StoreIcon}
 				title={name || store.name}

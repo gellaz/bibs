@@ -21,6 +21,8 @@ abilita se cambiano solo le foto) mentre quelle tolte spariscono subito, chiusur
    salvate» + Salva, appiccicata in basso quando c'è qualcosa da salvare). Niente salvataggi
    immediati dentro le schede, tranne l'eliminazione di una foto già caricata (resta com'è oggi).
 3. **Le schede visitate restano montate** (nascoste): cambiare scheda non butta le modifiche.
+   La pagina usa tutta la larghezza disponibile (niente `max-w-7xl` centrato), come gli elenchi
+   Ordini e Prodotti: sugli schermi desktop larghi non restano fasce vuote ai lati.
 4. **Profilo negozio**, a tutta larghezza come le altre schede (scelta di Marco dopo la prima
    prova: la colonna da 768 px lasciava un vuoto a destra): Vetrina in cima, poi Identità,
    Indirizzo, Contatti, con i campi corti affiancati (`FormSection grid`: Nome | Descrizione,
