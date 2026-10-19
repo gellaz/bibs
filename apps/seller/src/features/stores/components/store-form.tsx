@@ -205,7 +205,8 @@ export function StoreForm({
 		() => validateOpeningHours(openingHours),
 		[openingHours],
 	);
-	const hoursInvalid = Object.keys(hoursErrors).length > 0;
+	// Con hideHours gli orari non sono qui: non possono bloccare il Salva.
+	const hoursInvalid = !hideHours && Object.keys(hoursErrors).length > 0;
 
 	// Re-baseline dopo un save riuscito: i valori correnti diventano i nuovi
 	// default (isDirty→false) e lo snapshot orari viene riallineato, così il
