@@ -1,16 +1,9 @@
-import { Button } from "@bibs/ui/components/button";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import { toast } from "@bibs/ui/components/sonner";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
-import {
-	keepPreviousData,
-	useMutation,
-	useQuery,
-	useQueryClient,
-} from "@tanstack/react-query";
-import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import {
@@ -31,22 +24,23 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
 
 /**
  * «Tempo per ritirare» di «Prenota e paga in negozio»: ore di apertura entro
- * cui il cliente ritira. L'esempio di scadenza lo calcola l'API col valore non
- * ancora salvato, con la stessa funzione della conferma dell'ordine; la chiave
- * sotto ["store", storeId] lo rinfresca quando si salvano gli orari.
+ * cui il cliente ritira. Controllato: lo salva la scheda Vendita. L'esempio di
+ * scadenza lo calcola l'API col valore non ancora salvato, con la stessa
+ * funzione della conferma dell'ordine; la chiave sotto ["store", storeId] lo
+ * rinfresca quando si salvano gli orari.
  */
 export function ReservationHoursField({
 	storeId,
 	value,
+	onChange,
 	hasOpeningHours,
 }: {
 	storeId: string;
-	value: number;
+	value: string;
+	onChange: (value: string) => void;
 	hasOpeningHours: boolean;
 }) {
-	const qc = useQueryClient();
-	const [draft, setDraft] = useState(String(value));
-	const parsed = parseReservationHours(draft);
+	const parsed = parseReservationHours(value);
 	const invalid = parsed === null;
 	const hours = useDebouncedValue(parsed, 300);
 
@@ -64,30 +58,9 @@ export function ReservationHoursField({
 			).data,
 	});
 
-	const save = useMutation({
-		mutationFn: async (reservationHours: number) =>
-			unwrap(
-				await api().seller.stores({ storeId }).patch({ reservationHours }),
-				m.store_reservation_hours_error(),
-			).data,
-		onSuccess: (store) => {
-			setDraft(String(store.reservationHours));
-			void qc.invalidateQueries({ queryKey: ["stores"] });
-			void qc.invalidateQueries({ queryKey: ["store", storeId] });
-			toast.success(m.store_reservation_hours_saved());
-		},
-		onError: (error: Error) => toast.error(error.message),
-	});
-
 	return (
 		<>
-			<form
-				className="space-y-1.5"
-				onSubmit={(e) => {
-					e.preventDefault();
-					if (parsed !== null) save.mutate(parsed);
-				}}
-			>
+			<div className="space-y-1.5">
 				<Label htmlFor="reservation-hours">
 					{m.store_reservation_hours_label()}
 				</Label>
@@ -99,8 +72,8 @@ export function ReservationHoursField({
 						min={RESERVATION_HOURS_MIN}
 						max={RESERVATION_HOURS_MAX}
 						step={1}
-						value={draft}
-						onChange={(e) => setDraft(e.target.value)}
+						value={value}
+						onChange={(e) => onChange(e.target.value)}
 						aria-invalid={invalid}
 						aria-describedby={invalid ? "reservation-hours-error" : undefined}
 						className="w-20"
@@ -114,20 +87,13 @@ export function ReservationHoursField({
 								? m.store_reservation_hours_unit_calendar_one()
 								: m.store_reservation_hours_unit_calendar()}
 					</span>
-					<Button
-						type="submit"
-						variant="outline"
-						disabled={invalid || parsed === value || save.isPending}
-					>
-						{m.store_reservation_hours_save()}
-					</Button>
 				</div>
 				{invalid && (
 					<p id="reservation-hours-error" className="text-xs text-destructive">
 						{m.store_reservation_hours_invalid()}
 					</p>
 				)}
-			</form>
+			</div>
 			<p className="text-xs leading-relaxed text-muted-foreground">
 				{hasOpeningHours
 					? m.store_reservation_hours_help()
@@ -149,12 +115,13 @@ export function ReservationHoursField({
 			) : (
 				<p className="rounded-md bg-muted p-2.5 text-xs leading-relaxed text-foreground">
 					{m.store_reservation_hours_no_hours()}{" "}
-					<a
-						href="#store-opening-hours"
+					<Link
+						to="/store"
+						search={{ sezione: "orari" }}
 						className="font-medium underline underline-offset-4"
 					>
 						{m.store_reservation_hours_add_hours()}
-					</a>
+					</Link>
 				</p>
 			)}
 			<p className="text-xs text-muted-foreground">

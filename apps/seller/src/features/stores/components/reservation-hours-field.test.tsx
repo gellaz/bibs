@@ -1,8 +1,24 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+	afterAll,
+	afterEach,
+	beforeAll,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
 import { ReservationHoursField } from "./reservation-hours-field";
+
+// Il link «Aggiungi gli orari» vuole il router: qui basta un'ancora.
+vi.mock("@tanstack/react-router", () => ({
+	Link: ({ children }: { children: ReactNode }) => (
+		<a href="/store">{children}</a>
+	),
+}));
 
 const originalGetLocale = getLocale;
 
@@ -21,7 +37,8 @@ function render(
 		<QueryClientProvider client={client}>
 			<ReservationHoursField
 				storeId="s1"
-				value={value}
+				value={String(value)}
+				onChange={() => {}}
 				hasOpeningHours={hasOpeningHours}
 			/>
 		</QueryClientProvider>,
@@ -49,6 +66,12 @@ describe("ReservationHoursField", () => {
 			expect(unit(value, hasHours, locale)).toBe(expected);
 		},
 	);
+});
+
+describe("campo controllato", () => {
+	it("niente Salva suo: salva la scheda", () => {
+		expect(render(24, true, "it")).not.toContain("<button");
+	});
 });
 
 describe("esempio di scadenza", () => {

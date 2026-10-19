@@ -12,6 +12,8 @@ export interface EntityFormHeaderProps {
 	subtitle?: string;
 	badge?: ReactNode;
 	menu?: ReactNode;
+	/** false toglie la riga sotto: serve quando sotto c'è già una TabNav. */
+	bordered?: boolean;
 }
 
 export function EntityFormHeader({
@@ -22,12 +24,13 @@ export function EntityFormHeader({
 	subtitle,
 	badge,
 	menu,
+	bordered = true,
 }: EntityFormHeaderProps) {
 	const Icon = icon ?? (mode === "create" ? CreateIcon : PencilIcon);
 	const hasTitle = title != null && title.trim() !== "";
 
 	return (
-		<header className="border-b pb-6">
+		<header className={bordered ? "border-b pb-6" : undefined}>
 			<div className="flex items-start justify-between gap-4">
 				<div className="flex min-w-0 items-start gap-4">
 					<div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-cobalt-soft text-cobalt-deep">

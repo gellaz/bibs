@@ -31,12 +31,11 @@ describe("buildCrumbs", () => {
 		expect(labelFor("sconosciuto")).toBe("sconosciuto");
 	});
 
-	it("etichetta archivio, chiusure, billing, pagamenti e attese", () => {
+	it("etichetta archivio, billing, pagamenti e attese", () => {
 		overwriteGetLocale(() => "it");
 		expect(
 			[
 				"archived",
-				"closures",
 				"billing",
 				"payment",
 				"payments",
@@ -46,7 +45,6 @@ describe("buildCrumbs", () => {
 			].map(labelFor),
 		).toEqual([
 			"Archivio",
-			"Chiusure",
 			"Fatturazione",
 			"Pagamento",
 			"Pagamenti",
@@ -72,10 +70,6 @@ describe("buildCrumbs", () => {
 			"New",
 		]);
 		expect(labelFor("00000000-0000-4000-8000-000000000000")).toBe("Details");
-		expect(buildCrumbs("/store/closures").map((c) => c.label)).toEqual([
-			"Store",
-			"Closures",
-		]);
 		expect(buildCrumbs("/payments/refresh").map((c) => c.label)).toEqual([
 			"Payments",
 			"Refresh",

@@ -1,33 +1,40 @@
-import { Button } from "@bibs/ui/components/button";
-import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
-import { intlLocale } from "@bibs/ui/lib/intl-locale";
-import { cn } from "@bibs/ui/lib/utils";
+import { TabNav } from "@bibs/ui/custom/tab-nav";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { StoreIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { EntityFormHeader } from "@/components/entity-form-header";
 import { FormSection } from "@/components/form-section";
-import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import {
 	type ExistingImage,
 	ProductImageDropzone,
 } from "@/features/products/components/product-image-dropzone";
-import { LowStockThresholdSection } from "@/features/stores/components/low-stock-threshold-section";
-import { OrderTypesSection } from "@/features/stores/components/order-types-section";
+import { HoursClosuresPanel } from "@/features/stores/components/hours-closures-panel";
+import { SalesSettingsPanel } from "@/features/stores/components/sales-settings-panel";
 import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
+import { saveStoreProfile } from "@/features/stores/lib/save-store-profile";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
+export type StoreSection = "profilo" | "orari" | "vendita";
+const SECTIONS: StoreSection[] = ["profilo", "orari", "vendita"];
+
 export const Route = createFileRoute("/_authenticated/store/")({
+	// Scheda aperta: assente = Profilo negozio.
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { sezione?: StoreSection } =>
+		SECTIONS.includes(search.sezione as StoreSection)
+			? { sezione: search.sezione as StoreSection }
+			: {},
 	loader: ({ context }) =>
 		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	component: StoreSettingsPage,
@@ -35,16 +42,26 @@ export const Route = createFileRoute("/_authenticated/store/")({
 
 const MAX_STORE_IMAGES = 8;
 
-const formatPeriodEnd = (date: Date | string) =>
-	new Intl.DateTimeFormat(intlLocale(), {
-		day: "numeric",
-		month: "long",
-		year: "numeric",
-	}).format(new Date(date));
+// Colonne flex fino alla SaveBar: il Salva sta in fondo anche a pagina corta.
+// `hidden` vince comunque su `flex` (display: none !important del preflight).
+const PANEL = "flex flex-1 flex-col";
 
 function StoreSettingsPage() {
-	const { activeStore, activeSubscription } = useActiveStore();
+	const { activeStore } = useActiveStore();
 	const isOwner = useIsOwner();
+	const { sezione } = Route.useSearch();
+	const navigate = Route.useNavigate();
+	const tabs = [
+		{ value: "profilo", label: m.store_tab_profile() },
+		{ value: "orari", label: m.store_tab_hours() },
+		// Vendita è del titolare: l'API risponde 403 al dipendente.
+		...(isOwner ? [{ value: "vendita", label: m.store_tab_sales() }] : []),
+	];
+	const active: StoreSection = tabs.some((t) => t.value === sezione)
+		? (sezione as StoreSection)
+		: "profilo";
+	const [visited, setVisited] = useState(() => new Set([active]));
+	if (!visited.has(active)) setVisited(new Set(visited).add(active));
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
@@ -110,18 +127,28 @@ function StoreSettingsPage() {
 	const updateMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
 			if (!storeId) throw new Error(m.store_no_active());
-			const response = await api().seller.stores({ storeId }).patch(formData);
-			const data = unwrap(response, m.store_update_error());
-			if (newFiles.length > 0) {
-				const imgResponse = await api()
-					.seller.stores({ storeId })
-					.images.post({ files: newFiles });
-				if (imgResponse.error) {
-					toast.warning(m.store_update_images_warning());
-				}
-				setNewFiles([]);
-			}
-			return data;
+			const { store, uploaded } = await saveStoreProfile({
+				save: async () =>
+					unwrap(
+						await api().seller.stores({ storeId }).patch(formData),
+						m.store_update_error(),
+					),
+				upload: async (files) => {
+					const r = await api()
+						.seller.stores({ storeId })
+						.images.post({ files });
+					return r.error ? null : r.data.data;
+				},
+				files: newFiles,
+			});
+			// Le foto caricate passano tra le esistenti: senza, sparirebbero dalla
+			// vetrina fino al prossimo cambio di negozio.
+			setExistingImages((prev) => [
+				...prev,
+				...uploaded.map((img) => ({ id: img.id, url: img.url })),
+			]);
+			setNewFiles([]);
+			return store;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });
@@ -190,16 +217,45 @@ function StoreSettingsPage() {
 			onNameChange={handleNameChange}
 			readOnly={!isOwner}
 			lastSavedAt={lastSavedAt}
+			hideHours
+			extraDirty={newFiles.length > 0}
+			leading={
+				isOwner && (
+					<FormSection
+						title={m.store_showcase_title()}
+						description={m.store_showcase_description({
+							max: MAX_STORE_IMAGES,
+						})}
+					>
+						<ProductImageDropzone
+							files={newFiles}
+							onDrop={(accepted) =>
+								setNewFiles((prev) => [
+									...prev,
+									...accepted.slice(
+										0,
+										MAX_STORE_IMAGES - existingImages.length - prev.length,
+									),
+								])
+							}
+							onRemoveFile={(index) =>
+								setNewFiles((prev) => prev.filter((_, i) => i !== index))
+							}
+							onReorderFiles={setNewFiles}
+							existingImages={existingImages}
+							onDeleteExisting={(imageId) =>
+								deleteImageMutation.mutate(imageId)
+							}
+							maxFiles={MAX_STORE_IMAGES}
+						/>
+					</FormSection>
+				)
+			}
 		/>
 	);
 
 	return (
-		<div
-			className={cn(
-				"mx-auto w-full space-y-10",
-				isOwner ? "max-w-7xl" : "max-w-3xl",
-			)}
-		>
+		<div className="flex w-full flex-1 flex-col gap-8">
 			<EntityFormHeader
 				icon={StoreIcon}
 				title={name || store.name}
@@ -209,140 +265,60 @@ function StoreSettingsPage() {
 						? m.store_settings_subtitle()
 						: m.store_settings_subtitle_readonly()
 				}
+				bordered={false}
 			/>
 
-			{isOwner ? (
-				<div className="@container">
-					<div className="grid gap-x-10 gap-y-8 @2xl:grid-cols-[minmax(0,1fr)_18rem]">
-						<div className="min-w-0">{storeForm}</div>
-						<div className="space-y-8">
-							<FormSection
-								title={m.store_showcase_title()}
-								description={m.store_showcase_description({
-									max: MAX_STORE_IMAGES,
-								})}
-							>
-								<ProductImageDropzone
-									files={newFiles}
-									onDrop={(accepted) =>
-										setNewFiles((prev) => [
-											...prev,
-											...accepted.slice(
-												0,
-												MAX_STORE_IMAGES - existingImages.length - prev.length,
-											),
-										])
-									}
-									onRemoveFile={(index) =>
-										setNewFiles((prev) => prev.filter((_, i) => i !== index))
-									}
-									onReorderFiles={setNewFiles}
-									existingImages={existingImages}
-									onDeleteExisting={(imageId) =>
-										deleteImageMutation.mutate(imageId)
-									}
-									maxFiles={MAX_STORE_IMAGES}
-								/>
-							</FormSection>
-							<OrderTypesSection
-								key={activeStore.id}
-								storeId={activeStore.id}
-								reservationHours={store.reservationHours}
-								hasOpeningHours={
-									store.openingHours?.some((d) => d.slots.length > 0) ?? false
-								}
-							/>
-							<LowStockThresholdSection
-								key={`low-stock-${activeStore.id}`}
-								storeId={activeStore.id}
-								value={store.lowStockThreshold}
-							/>
-						</div>
+			<div className="overflow-x-auto">
+				<TabNav
+					label={m.store_tabs_label()}
+					panelId="store-settings-panel"
+					tabs={tabs}
+					activeTab={active}
+					onTabChange={(next) =>
+						void navigate({
+							search: (s) => ({ ...s, sezione: next as StoreSection }),
+							replace: true,
+						})
+					}
+				/>
+			</div>
+
+			{/* Le schede già aperte restano montate (solo nascoste): cambiare
+			    scheda non butta le modifiche non salvate. */}
+			<div
+				id="store-settings-panel"
+				role="tabpanel"
+				className="flex flex-1 flex-col"
+			>
+				{visited.has("profilo") && (
+					<div hidden={active !== "profilo"} className={PANEL}>
+						{storeForm}
 					</div>
-				</div>
-			) : (
-				storeForm
-			)}
-
-			{isOwner && (
-				<Link
-					to="/store/closures"
-					className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
-				>
-					{m.store_closures_link()} →
-				</Link>
-			)}
-
-			{isOwner &&
-				activeStore &&
-				activeSubscription &&
-				activeSubscription.status !== "canceled" && (
-					<>
-						<Separator />
-						<FormSection
-							title={m.store_danger_title()}
-							description={m.store_danger_description()}
-							tone="destructive"
-						>
-							{/* past_due resta past_due anche con la cancellazione
-							    programmata: conta cancelAtPeriodEnd. */}
-							{activeSubscription.status === "canceling" ||
-							activeSubscription.cancelAtPeriodEnd ? (
-								<div className="rounded-lg border border-border p-4">
-									<h3 className="text-sm font-semibold text-foreground">
-										{m.store_delete_scheduled_title()}
-									</h3>
-									<p className="mt-1 text-sm text-muted-foreground">
-										{m.store_delete_scheduled({
-											date: formatPeriodEnd(
-												activeSubscription.currentPeriodEnd,
-											),
-										})}
-									</p>
-									<Link
-										to="/billing"
-										className="mt-3 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
-									>
-										{m.store_delete_scheduled_undo()} →
-									</Link>
-								</div>
-							) : (
-								<div className="rounded-lg border border-destructive/30 p-4">
-									<h3 className="text-sm font-semibold text-destructive">
-										{m.store_delete_title()}
-									</h3>
-									<p className="mt-1 text-sm text-muted-foreground">
-										{activeSubscription.status === "suspended"
-											? m.store_delete_suspended()
-											: activeSubscription.status === "past_due"
-												? m.store_delete_past_due({
-														date: formatPeriodEnd(
-															activeSubscription.currentPeriodEnd,
-														),
-													})
-												: m.store_delete_active()}
-									</p>
-									<CancelStoreDialog
-										storeId={activeStore.id}
-										storeName={activeStore.name}
-										status={
-											activeSubscription.status as
-												| "active"
-												| "past_due"
-												| "suspended"
-										}
-										currentPeriodEnd={activeSubscription.currentPeriodEnd}
-										trigger={
-											<Button variant="destructive" className="mt-3">
-												{m.store_delete_title()}
-											</Button>
-										}
-									/>
-								</div>
-							)}
-						</FormSection>
-					</>
 				)}
+				{visited.has("orari") && (
+					<div hidden={active !== "orari"} className={PANEL}>
+						<HoursClosuresPanel
+							key={activeStore.id}
+							storeId={activeStore.id}
+							openingHours={(store.openingHours as never) ?? []}
+							readOnly={!isOwner}
+						/>
+					</div>
+				)}
+				{isOwner && visited.has("vendita") && (
+					<div hidden={active !== "vendita"} className={PANEL}>
+						<SalesSettingsPanel
+							key={activeStore.id}
+							storeId={activeStore.id}
+							reservationHours={store.reservationHours}
+							lowStockThreshold={store.lowStockThreshold}
+							hasOpeningHours={
+								store.openingHours?.some((d) => d.slots.length > 0) ?? false
+							}
+						/>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }

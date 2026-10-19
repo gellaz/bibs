@@ -22,7 +22,6 @@ import {
 	type Urgency,
 } from "@/features/dashboard/dashboard-actions";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { useIsOwner } from "@/hooks/use-is-owner";
 import { useStores } from "@/hooks/use-stores";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
@@ -65,7 +64,6 @@ function useSellerDashboard(storeId: string | undefined) {
 
 function Dashboard() {
 	const { activeStore, stores, isLoading } = useActiveStore();
-	const isOwner = useIsOwner();
 	const { data: storesList } = useStores();
 	const activeStoreRow = storesList?.find((s) => s.id === activeStore?.id);
 	const dashboard = useSellerDashboard(activeStore?.id);
@@ -78,7 +76,6 @@ function Dashboard() {
 		dashboard: dashboard.data?.actions ?? null,
 		locationMissing: !!activeStoreRow && !activeStoreRow.location,
 		openStatus: activeStoreRow?.openStatus ?? null,
-		isOwner,
 		now,
 	});
 
@@ -242,6 +239,7 @@ function ActionsList({
 							<li key={a.id}>
 								<Link
 									to={a.href}
+									search={a.search}
 									className={cn(
 										"group flex items-center gap-4 px-5 py-4 transition-colors",
 										"hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:focus-ring",

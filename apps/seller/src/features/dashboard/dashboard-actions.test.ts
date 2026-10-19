@@ -52,26 +52,24 @@ describe("hoursAction", () => {
 		expect(hoursAction({ isOpen: true, status: "open" })).toBeNull();
 	});
 
-	it("orari mai impostati → medium, verso /store", () => {
+	it("orari mai impostati → medium", () => {
 		const a = hoursAction({ isOpen: false, status: "unknown" });
 		expect(a?.id).toBe("hours-missing");
 		expect(a?.urgency).toBe("medium");
-		expect(a?.href).toBe("/store");
 		expect(a?.title).toBe("Orari non ancora impostati");
 	});
 
-	it("festività → medium, verso le chiusure", () => {
+	it("festività → medium", () => {
 		const a = hoursAction({ isOpen: false, status: "closed_holiday" });
 		expect(a?.urgency).toBe("medium");
-		expect(a?.href).toBe("/store/closures");
 		expect(a?.title).toBe("Oggi il negozio è chiuso");
 	});
 
-	it("dipendente → scheda negozio, le chiusure sono del titolare", () => {
-		for (const status of ["closed_holiday", "closed"] as const) {
-			expect(hoursAction({ isOpen: false, status }, false)?.href).toBe(
-				"/store",
-			);
+	it("ogni avviso sugli orari porta alla scheda «Orari e chiusure»", () => {
+		for (const status of ["unknown", "closed_holiday", "closed"] as const) {
+			const a = hoursAction({ isOpen: false, status });
+			expect(a?.href).toBe("/store");
+			expect(a?.search).toEqual({ sezione: "orari" });
 		}
 	});
 

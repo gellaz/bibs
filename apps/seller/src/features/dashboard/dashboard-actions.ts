@@ -12,12 +12,7 @@ export type ActionKind =
 	| "promo"
 	| "hours";
 
-export type ActionHref =
-	| "/store"
-	| "/store/closures"
-	| "/orders"
-	| "/products"
-	| "/promotions";
+export type ActionHref = "/store" | "/orders" | "/products" | "/promotions";
 
 export interface ActionItem {
 	id: string;
@@ -26,6 +21,8 @@ export interface ActionItem {
 	title: string;
 	subtitle: string;
 	href: ActionHref;
+	/** Scheda delle impostazioni negozio da aprire. */
+	search?: { sezione: "orari" };
 }
 
 /** Stato di apertura come lo restituisce l'API (`openStatus` di /seller/stores). */
@@ -69,12 +66,11 @@ export function sortByUrgency<T extends { urgency: Urgency }>(items: T[]): T[] {
  */
 export function hoursAction(
 	openStatus: OpenStatusLike | null | undefined,
-	isOwner = true,
 ): ActionItem | null {
 	if (!openStatus) return null;
-	// Le chiusure sono solo del titolare (l'API risponde 403 al dipendente):
-	// il dipendente va alla scheda negozio, in sola lettura.
-	const closuresHref = isOwner ? "/store/closures" : "/store";
+	// Titolare e dipendente vanno alla scheda orari (il dipendente in sola
+	// lettura, senza le chiusure che sono del titolare).
+	const link = { href: "/store", search: { sezione: "orari" } } as const;
 
 	if (openStatus.status === "unknown") {
 		return {
@@ -83,7 +79,7 @@ export function hoursAction(
 			urgency: "medium",
 			title: m.dashboard_hours_missing_title(),
 			subtitle: m.dashboard_hours_missing_subtitle(),
-			href: "/store",
+			...link,
 		};
 	}
 
@@ -96,7 +92,7 @@ export function hoursAction(
 			urgency: "medium",
 			title: m.dashboard_hours_holiday_title(),
 			subtitle: m.dashboard_hours_holiday_subtitle(),
-			href: closuresHref,
+			...link,
 		};
 	}
 
@@ -111,7 +107,7 @@ export function hoursAction(
 					time: openStatus.opensAt.time,
 				})
 			: m.dashboard_hours_no_reopening(),
-		href: closuresHref,
+		...link,
 	};
 }
 
@@ -232,8 +228,6 @@ export interface BuildActionsInput {
 	/** true solo se il negozio è caricato e non ha coordinate. */
 	locationMissing: boolean;
 	openStatus: OpenStatusLike | null | undefined;
-	/** Il dipendente non gestisce le chiusure. Default: titolare. */
-	isOwner?: boolean;
 	now: Date;
 }
 
@@ -260,7 +254,7 @@ export function buildDashboardActions(input: BuildActionsInput): ActionItem[] {
 		d ? outOfStockAction(d.outOfStock) : null,
 		d ? lowStockAction(d.lowStock) : null,
 		d ? promoAction(d.expiringPromotions, now) : null,
-		hoursAction(input.openStatus, input.isOwner),
+		hoursAction(input.openStatus),
 	];
 	return sortByUrgency(items.filter((a): a is ActionItem => a !== null));
 }

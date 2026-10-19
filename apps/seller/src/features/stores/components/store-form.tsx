@@ -7,14 +7,20 @@ import { Separator } from "@bibs/ui/components/separator";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import { cn } from "@bibs/ui/lib/utils";
 import type { Static } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { typeboxResolver } from "@/lib/typebox-resolver";
 import "@/lib/typebox-formats";
 import { useQueryClient } from "@tanstack/react-query";
 import { LocateFixed, MapPinOff, PlusIcon, Trash2Icon } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import {
+	lazy,
+	type ReactNode,
+	Suspense,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import {
 	Controller,
 	type SubmitHandler,
@@ -22,6 +28,7 @@ import {
 	useForm,
 } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
+import { SaveBar } from "@/components/save-bar";
 import {
 	municipalityComboboxLabels,
 	useMunicipalities,
@@ -51,7 +58,7 @@ const compiledSchema = TypeCompiler.Compile(CreateStoreBody);
  * sorted and slot keys normalized so toggling a day on/off or differing key
  * order can't produce a false "dirty" reading.
  */
-function serializeOpeningHours(hours: DaySchedule[]): string {
+export function serializeOpeningHours(hours: DaySchedule[]): string {
 	return JSON.stringify(
 		[...hours]
 			.sort((a, b) => a.dayOfWeek - b.dayOfWeek)
@@ -73,6 +80,12 @@ interface StoreFormProps {
 	onNameChange?: (name: string) => void;
 	readOnly?: boolean;
 	lastSavedAt?: number;
+	/** Niente sezione orari e niente orari nel payload (li salva un altro pannello). */
+	hideHours?: boolean;
+	/** Sezione resa in testa al form, dentro lo stesso salvataggio (es. la vetrina). */
+	leading?: ReactNode;
+	/** Modifiche fuori dal form che devono abilitare il Salva (es. foto da caricare). */
+	extraDirty?: boolean;
 }
 
 export function StoreForm({
@@ -85,6 +98,9 @@ export function StoreForm({
 	onNameChange,
 	readOnly = false,
 	lastSavedAt,
+	hideHours = false,
+	leading,
+	extraDirty = false,
 }: StoreFormProps) {
 	// openingHours is kept outside react-hook-form, so RHF's isDirty does not
 	// react to changes here. Snapshot the value at mount and diff against it so
@@ -182,14 +198,15 @@ export function StoreForm({
 	const openingHoursDirty =
 		serializeOpeningHours(openingHours) !==
 		serializeOpeningHours(initialOpeningHours);
-	const hasChanges = isDirty || openingHoursDirty;
+	const hasChanges = isDirty || openingHoursDirty || extraDirty;
 	const hasDeclaredHours = openingHours.some((d) => d.slots.length > 0);
 
 	const hoursErrors = useMemo(
 		() => validateOpeningHours(openingHours),
 		[openingHours],
 	);
-	const hoursInvalid = Object.keys(hoursErrors).length > 0;
+	// Con hideHours gli orari non sono qui: non possono bloccare il Salva.
+	const hoursInvalid = !hideHours && Object.keys(hoursErrors).length > 0;
 
 	// Re-baseline dopo un save riuscito: i valori correnti diventano i nuovi
 	// default (isDirty→false) e lo snapshot orari viene riallineato, così il
@@ -228,8 +245,13 @@ export function StoreForm({
 			// sito non arriverebbe mai al server — stessa classe di bug degli orari.
 			websiteUrl: data.websiteUrl || null,
 			// [] (tutti i giorni chiusi) deve viaggiare come null: Eden non
-			// serializza undefined e il PATCH non vedrebbe mai il clear.
-			openingHours: openingHours.length > 0 ? openingHours : null,
+			// serializza undefined e il PATCH non vedrebbe mai il clear. Con
+			// hideHours gli orari li salva un altro pannello: qui non viaggiano.
+			openingHours: hideHours
+				? undefined
+				: openingHours.length > 0
+					? openingHours
+					: null,
 			phoneNumbers:
 				data.phoneNumbers && data.phoneNumbers.length > 0
 					? data.phoneNumbers.map((p, idx) => ({
@@ -243,10 +265,20 @@ export function StoreForm({
 	};
 
 	return (
-		<form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10">
+		<form
+			onSubmit={handleSubmit(onFormSubmit)}
+			className="flex flex-1 flex-col gap-10"
+		>
+			{leading && (
+				<>
+					{leading}
+					<Separator />
+				</>
+			)}
 			<FormSection
 				title={m.store_form_identity_title()}
 				description={m.store_form_identity_description()}
+				grid
 			>
 				<Field data-invalid={!!errors.name}>
 					<FieldLabel htmlFor="store-name" required>
@@ -281,13 +313,19 @@ export function StoreForm({
 			<FormSection
 				title={m.store_address()}
 				description={m.store_form_address_description()}
+				grid
 			>
 				{!readOnly && (
-					<StoreAddressSearch onSelect={applySuggestion} disabled={isPending} />
+					<div className="col-span-full">
+						<StoreAddressSearch
+							onSelect={applySuggestion}
+							disabled={isPending}
+						/>
+					</div>
 				)}
 
 				{location ? (
-					<div className="space-y-1.5">
+					<div className="col-span-full space-y-1.5">
 						{hydrated ? (
 							<Suspense fallback={<Skeleton className="h-56 w-full" />}>
 								<LazyStoreMapPreview
@@ -308,7 +346,7 @@ export function StoreForm({
 				) : (
 					<div
 						data-invalid={!!errors.location || undefined}
-						className="flex flex-col gap-3 rounded-md border border-border bg-muted px-3 py-3 text-sm data-invalid:border-destructive/50 data-invalid:bg-destructive/5 sm:flex-row sm:items-center sm:justify-between"
+						className="col-span-full flex flex-col gap-3 rounded-md border border-border bg-muted px-3 py-3 text-sm data-invalid:border-destructive/50 data-invalid:bg-destructive/5 sm:flex-row sm:items-center sm:justify-between"
 					>
 						<div className="flex items-start gap-2">
 							<MapPinOff
@@ -406,31 +444,36 @@ export function StoreForm({
 				</div>
 			</FormSection>
 
-			<Separator />
+			{!hideHours && (
+				<>
+					<Separator />
 
-			<FormSection
-				id="store-opening-hours"
-				title={m.store_hours_title()}
-				description={m.store_form_hours_description()}
-			>
-				{!hasDeclaredHours && (
-					<p className="mb-4 rounded-md border border-border bg-muted px-3 py-2 text-muted-foreground text-sm">
-						{m.store_form_hours_missing()}
-					</p>
-				)}
-				<OpeningHoursEditor
-					value={openingHours}
-					onChange={setOpeningHours}
-					readOnly={readOnly}
-					dayErrors={hoursErrors}
-				/>
-			</FormSection>
+					<FormSection
+						id="store-opening-hours"
+						title={m.store_hours_title()}
+						description={m.store_form_hours_description()}
+					>
+						{!hasDeclaredHours && (
+							<p className="mb-4 rounded-md border border-border bg-muted px-3 py-2 text-muted-foreground text-sm">
+								{m.store_form_hours_missing()}
+							</p>
+						)}
+						<OpeningHoursEditor
+							value={openingHours}
+							onChange={setOpeningHours}
+							readOnly={readOnly}
+							dayErrors={hoursErrors}
+						/>
+					</FormSection>
+				</>
+			)}
 
 			<Separator />
 
 			<FormSection
 				title={m.store_form_contacts_title()}
 				description={m.store_form_contacts_description()}
+				grid
 			>
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
@@ -512,39 +555,14 @@ export function StoreForm({
 			</FormSection>
 
 			{!readOnly && (
-				<>
-					<Separator />
-					{/* Il form è lungo (orari, telefoni, indirizzo): con modifiche in
-					    sospeso il salvataggio resta in vista in fondo allo schermo.
-					    Senza modifiche torna al suo posto, a fine form. */}
-					<div
-						className={cn(
-							"flex items-center justify-end gap-3",
-							hasChanges &&
-								"sticky bottom-0 z-10 -mx-4 border-border border-t bg-background px-4 py-3",
-						)}
-					>
-						{hasChanges && (
-							<p
-								className="mr-auto text-muted-foreground text-sm"
-								role="status"
-							>
-								{m.store_form_unsaved()}
-							</p>
-						)}
-						{onCancel && (
-							<Button type="button" variant="outline" onClick={onCancel}>
-								{m.common_cancel()}
-							</Button>
-						)}
-						<Button
-							type="submit"
-							disabled={isPending || !hasChanges || hoursInvalid}
-						>
-							{isPending ? pendingLabel : submitLabel}
-						</Button>
-					</div>
-				</>
+				<SaveBar
+					dirty={hasChanges}
+					pending={isPending}
+					disabled={hoursInvalid}
+					submitLabel={submitLabel}
+					pendingLabel={pendingLabel}
+					onCancel={onCancel}
+				/>
 			)}
 		</form>
 	);
