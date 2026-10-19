@@ -3,8 +3,10 @@ export const config = {
 	pointsPerEuro: 1,
 	/** Points needed for 1€ discount */
 	pointsPerEuroDiscount: 100,
-	/** Hours before a reserve_pickup reservation expires */
-	reservationHours: 48,
+	/** Ore di apertura entro cui ritirare una prenotazione reserve_pickup, scelte dal negozio */
+	reservationHours: { min: 1, max: 72, default: 24 },
+	/** Minuti dopo la scadenza in cui il seller può ancora completare il ritiro */
+	reservationGraceMinutes: 15,
 	/** Minuti entro cui pagare un ordine pay_* prima che si annulli da solo */
 	paymentWindowMinutes: 30,
 	/** Commissione bibs sui pagamenti online (PR2), in percentuale del totale */

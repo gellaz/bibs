@@ -409,6 +409,7 @@ export function StoreForm({
 			<Separator />
 
 			<FormSection
+				id="store-opening-hours"
 				title={m.store_hours_title()}
 				description={m.store_form_hours_description()}
 			>

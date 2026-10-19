@@ -10,6 +10,7 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { config } from "@/lib/config";
 import { type StoreOrderType, storeOrderTypes } from "@/lib/order-types";
 import { municipality } from "./location";
 import { storeProduct } from "./product";
@@ -63,6 +64,10 @@ export const store = pgTable(
 		// Sotto questa soglia (esclusa) un prodotto attivo del negozio conta come
 		// «scorta bassa» nella home seller; 0 spegne l'avviso.
 		lowStockThreshold: integer("low_stock_threshold").notNull().default(5),
+		// Ore di apertura entro cui ritirare una prenotazione (reserve_pickup).
+		reservationHours: integer("reservation_hours")
+			.notNull()
+			.default(config.reservationHours.default),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
@@ -85,6 +90,10 @@ export const store = pgTable(
 		check(
 			"store_low_stock_threshold_non_negative",
 			sql`${t.lowStockThreshold} >= 0`,
+		),
+		check(
+			"store_reservation_hours_range",
+			sql`${t.reservationHours} BETWEEN ${sql.raw(String(config.reservationHours.min))} AND ${sql.raw(String(config.reservationHours.max))}`,
 		),
 		check(
 			"store_order_types_valid",

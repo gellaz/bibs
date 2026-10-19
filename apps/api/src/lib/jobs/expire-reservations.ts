@@ -1,6 +1,7 @@
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { order } from "@/db/schemas/order";
+import { config } from "@/lib/config";
 import { refundStockAndPoints } from "@/lib/order-helpers";
 
 /**
@@ -52,6 +53,15 @@ export async function expireSingleReservation(
 }
 
 /**
+ * Le prenotazioni scadute prima di questo istante non si possono più ritirare.
+ * Contando le ore di apertura molte scadono all'ora di chiusura: i 15 minuti
+ * di tolleranza salvano il cliente servito alle 19:01 di una scadenza alle 19:00.
+ */
+export function reservationGraceCutoff(now = new Date()): Date {
+	return new Date(now.getTime() - config.reservationGraceMinutes * 60_000);
+}
+
+/**
  * Bulk safety-net: expires all reserve_pickup orders whose reservation
  * window has passed. Called by the cron job to catch any orders that
  * were missed by the per-order setTimeout timers (e.g. after a restart).
@@ -59,13 +69,13 @@ export async function expireSingleReservation(
  * Returns the number of orders expired.
  */
 export async function expireReservations(): Promise<number> {
-	const now = new Date();
+	const cutoff = reservationGraceCutoff();
 
 	const expiredOrders = await db.query.order.findMany({
 		where: and(
 			eq(order.type, "reserve_pickup"),
 			inArray(order.status, ["confirmed", "ready_for_pickup"]),
-			lt(order.reservationExpiresAt, now),
+			lt(order.reservationExpiresAt, cutoff),
 		),
 		columns: { id: true },
 	});

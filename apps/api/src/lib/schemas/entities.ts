@@ -1347,6 +1347,19 @@ const StoreOrderTypeLiteral = t.Union([
 	t.Literal("reserve_pickup"),
 	t.Literal("pay_pickup"),
 ]);
+export const ReservationDeadlineSchema = t.Object({
+	hours: t.Integer({
+		description: "Ore entro cui ritirare una prenotazione nel negozio",
+	}),
+	expiresAt: t.Date({
+		description: "Scadenza di una prenotazione fatta adesso",
+	}),
+	clock: t.Union([t.Literal("opening"), t.Literal("calendar")], {
+		description:
+			"opening = contate le ore di apertura; calendar = negozio senza orari, ore di calendario",
+	}),
+});
+
 export const StoreOrderTypesSchema = t.Object({
 	orderTypes: t.Array(StoreOrderTypeLiteral, {
 		description: "Tipologie configurate dal negozio",

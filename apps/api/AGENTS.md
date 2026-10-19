@@ -109,7 +109,8 @@ Email sending via **Resend** in production, Mailpit in development:
 
 ### Config & Errors — `src/lib/config.ts`, `src/lib/errors.ts`, `src/lib/responses.ts`
 
-`config.ts` centralises business constants: `pointsPerEuro` (1), `pointsPerEuroDiscount` (100), `reservationHours` (48),
+`config.ts` centralises business constants: `pointsPerEuro` (1), `pointsPerEuroDiscount` (100), `reservationHours`
+(`{ min: 1, max: 72, default: 24 }`, limits of the per-store `stores.reservation_hours`), `reservationGraceMinutes` (15),
 `maxImagesPerProduct` (10), `maxProductsPerImport` (500), `shippingCost` (€5.00), and pagination defaults (20/100). `errors.ts` exports
 `ServiceError`, a typed error class with `ErrorStatus` (a strict union of valid HTTP status codes: 400, 401, 403, 404,
 409, 422, 500, 503) and derived `ErrorCode` strings. `responses.ts` provides runtime response helpers (`ok()`,
@@ -156,10 +157,17 @@ transaction. Used by cancellation, expiry, and pickup-expired flows to avoid cod
 
 ### Reservation Expiry — `src/lib/jobs/expire-reservations.ts`
 
-`reserve_pickup` orders expire after 48 hours. The cron job in `src/plugins/cron.ts` runs `expireReservations()` every
-minute (`Patterns.EVERY_MINUTE`) and is the single source of truth — no in-memory timers, no per-order scheduling.
-Worst-case latency from the configured expiry to the status flip is ~60 s, negligible against a 48 h reservation
-window.
+Each store picks how long a `reserve_pickup` reservation lasts: `stores.reservation_hours` (1–72, default 24) **opening
+hours**. `insertOrder` computes the deadline once, at confirmation, with the pure `reservationDeadline()`
+(`src/lib/holidays/reservation-deadline.ts`) fed by `resolveReservationDeadlines()` (`src/lib/store-open-status.ts`):
+it walks the store's slots in Europe/Rome time, skipping closures and holidays (opt-outs respected). A store without
+declared hours, or with no opening within 60 days, falls back to calendar hours. The deadline is stored in
+`orders.reservation_expires_at` and never recomputed.
+
+The cron job in `src/plugins/cron.ts` runs `expireReservations()` every minute (`Patterns.EVERY_MINUTE`) and is the
+single source of truth — no in-memory timers, no per-order scheduling. Both the cron and the seller completion guard
+allow `config.reservationGraceMinutes` (15) past the deadline (`reservationGraceCutoff()`): many deadlines fall exactly
+at closing time, and a customer served at 19:01 must not lose a 19:00 reservation. Customers always see the real deadline.
 
 On expiry, the order status is set to `expired`, stock and points are refunded via the shared `refundStockAndPoints()`
 helper. `expireSingleReservation(orderId)` is also exported for one-off use; both paths transactionally re-check the

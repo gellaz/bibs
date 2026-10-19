@@ -16,6 +16,8 @@ interface FormSectionProps {
 	 * placed in a narrow column (e.g. a sidebar) stays single-column on its own.
 	 */
 	grid?: boolean;
+	/** Ancora per i link interni alla pagina (es. «Aggiungi gli orari»). */
+	id?: string;
 	className?: string;
 }
 
@@ -31,10 +33,11 @@ export function FormSection({
 	children,
 	tone = "default",
 	grid = false,
+	id,
 	className,
 }: FormSectionProps) {
 	return (
-		<section className={cn("@container", className)}>
+		<section id={id} className={cn("@container", className)}>
 			<header className="mb-5 border-b border-warm-line pb-2.5">
 				<h2
 					className={cn(

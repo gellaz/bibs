@@ -5,6 +5,7 @@ import {
 	CheckoutPreviewSchema,
 	CheckoutSchema,
 	okRes,
+	ReservationDeadlineSchema,
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
@@ -14,9 +15,44 @@ import {
 	getCheckout,
 	parseStoresParam,
 	previewCheckout,
+	reservationDeadlinesForStores,
 } from "../services/checkout";
 
 export const checkoutRoutes = new Elysia()
+	.get(
+		"/checkout/reservation-deadlines",
+		async (ctx) => {
+			withCustomer(ctx);
+			const ids = [
+				...new Set(ctx.query.storeIds.split(",").filter(Boolean)),
+			].slice(0, 50);
+			return ok(await reservationDeadlinesForStores(ids));
+		},
+		{
+			query: t.Object({
+				storeIds: t.String({
+					maxLength: 2000,
+					description: "ID dei negozi separati da virgola (al massimo 50)",
+				}),
+			}),
+			response: withErrors({
+				200: okRes(
+					t.Array(
+						t.Object({
+							storeId: t.String(),
+							...ReservationDeadlineSchema.properties,
+						}),
+					),
+				),
+			}),
+			detail: {
+				summary: "Scadenze delle prenotazioni",
+				description:
+					"Per ogni negozio visibile: ore di ritiro, scadenza che avrebbe una prenotazione «Prenota e paga in negozio» confermata adesso e tipo di conteggio (ore di apertura, o calendario se il negozio non ha orari). I negozi sconosciuti o non visibili sono omessi.",
+				tags: ["Customer - Checkout"],
+			},
+		},
+	)
 	.get(
 		"/checkout/preview",
 		async (ctx) => {

@@ -31,6 +31,7 @@ import { order } from "@/db/schemas/order";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
+import { reservationDeadline } from "@/lib/holidays";
 import { checkoutRoutes } from "@/modules/customer/routes/checkout";
 import {
 	createCheckout,
@@ -367,5 +368,139 @@ describe("POST /checkout", () => {
 			}),
 		);
 		expect(res.status).toBe(422);
+	});
+});
+
+describe("createCheckout — scadenza della prenotazione", () => {
+	it("conta le ore di ritiro del negozio sulle sue ore di apertura", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const openingHours = Array.from({ length: 7 }, (_, i) => ({
+			dayOfWeek: i,
+			slots: [{ open: "08:00", close: "20:00" }],
+		}));
+		const store = await createTestStore(db, seller.profile.id, {
+			openingHours,
+			reservationHours: 2,
+		});
+		await createTestStoreSubscription(db, store.id);
+		const product = await createTestProduct(db, seller.profile.id, {
+			price: "10.00",
+		});
+		const sp = await createTestStoreProduct(db, store.id, product.id, {
+			stock: 5,
+		});
+		await createTestCartItem(db, customer.profile.id, sp.id, { quantity: 1 });
+		// Il DB di test non ha festività: bastano gli orari.
+		const deadline = (from: Date) =>
+			reservationDeadline({
+				openingHours,
+				closedDates: new Set(),
+				from,
+				hours: 2,
+			}).expiresAt.getTime();
+
+		const before = new Date();
+		const result = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			idempotencyKey: crypto.randomUUID(),
+			stores: [{ storeId: store.id, type: "reserve_pickup" }],
+		});
+		const after = new Date();
+
+		const expiresAt = result.orders[0].reservationExpiresAt!.getTime();
+		expect(expiresAt).toBeGreaterThanOrEqual(deadline(before));
+		expect(expiresAt).toBeLessThanOrEqual(deadline(after));
+	});
+});
+
+describe("GET /checkout/reservation-deadlines", () => {
+	const get = (customerUserId: string, storeIds: string[]) =>
+		app.handle(
+			new Request(
+				`http://localhost/checkout/reservation-deadlines?storeIds=${storeIds.join(",")}`,
+				{ headers: { "x-test-user": customerUserId } },
+			),
+		);
+
+	it("ore, scadenza e tipo di conteggio per negozio", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const openingHours = Array.from({ length: 7 }, (_, i) => ({
+			dayOfWeek: i,
+			slots: [{ open: "08:00", close: "20:00" }],
+		}));
+		const withHours = await createTestStore(db, seller.profile.id, {
+			openingHours,
+			reservationHours: 2,
+		});
+		await createTestStoreSubscription(db, withHours.id);
+		const { store: noHours } = await sellable(seller.profile.id, "Senza orari");
+		const deadline = (from: Date) =>
+			reservationDeadline({
+				openingHours,
+				closedDates: new Set(),
+				from,
+				hours: 2,
+			}).expiresAt.getTime();
+
+		const before = new Date();
+		const res = await get(customer.user.id, [withHours.id, noHours.id]);
+		const after = new Date();
+
+		expect(res.status).toBe(200);
+		const { data } = await res.json();
+		const byId = new Map(
+			data.map((d: { storeId: string }) => [d.storeId, d] as const),
+		);
+		const a = byId.get(withHours.id) as any;
+		expect(a.hours).toBe(2);
+		expect(a.clock).toBe("opening");
+		const expiresAt = new Date(a.expiresAt).getTime();
+		expect(expiresAt).toBeGreaterThanOrEqual(deadline(before));
+		expect(expiresAt).toBeLessThanOrEqual(deadline(after));
+		const b = byId.get(noHours.id) as any;
+		expect(b.hours).toBe(24);
+		expect(b.clock).toBe("calendar");
+	});
+
+	it("omette i negozi non visibili", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const { store } = await sellable(seller.profile.id, "Chiuso");
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, store.id));
+
+		const res = await get(customer.user.id, [store.id]);
+		expect(res.status).toBe(200);
+		expect((await res.json()).data).toEqual([]);
+	});
+});
+
+describe("getCheckout — stato del negozio", () => {
+	it("ogni ordine porta store.openStatus", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const a = await sellable(seller.profile.id, "Negozio A");
+		await createTestCartItem(db, customer.profile.id, a.sp.id, { quantity: 1 });
+		const created = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			idempotencyKey: crypto.randomUUID(),
+			stores: [{ storeId: a.store.id, type: "reserve_pickup" }],
+		});
+
+		const result = await getCheckout({
+			checkoutId: created.id,
+			customerProfileId: customer.profile.id,
+		});
+		expect(result.orders[0].store.openStatus?.status).toBe("unknown");
 	});
 });

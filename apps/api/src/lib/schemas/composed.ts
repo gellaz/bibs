@@ -36,6 +36,10 @@ export const StoreWithPhonesSchema = t.Object({
 		description:
 			"Soglia di scorta bassa del negozio (0 = avviso spento). Solo lato venditore",
 	}),
+	reservationHours: t.Integer({
+		description:
+			"Ore di apertura entro cui ritirare una prenotazione. Solo lato venditore",
+	}),
 	phoneNumbers: t.Array(StorePhoneNumberSchema),
 	category: t.Nullable(StoreCategorySchema),
 	images: t.Array(StoreImageSchema),
@@ -160,7 +164,15 @@ export const CustomerOrderWithRelationsSchema = t.Object({
 	...OrderSchema.properties,
 	items: t.Array(OrderItemWithProduct),
 	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
-	store: t.Omit(StoreSchema, ["location"]),
+	store: t.Object({
+		...t.Omit(StoreSchema, ["location"]).properties,
+		openStatus: t.Optional(
+			t.Nullable(OpenStatusSchema, {
+				description:
+					"Stato di apertura adesso: nel dettaglio ordine e nel checkout, non nella lista",
+			}),
+		),
+	}),
 	shippingAddress: t.Nullable(CustomerAddressSchema),
 });
 

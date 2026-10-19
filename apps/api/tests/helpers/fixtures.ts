@@ -220,6 +220,7 @@ export async function createTestStore(
 		}>;
 		closures?: Array<{ startDate: string; endDate?: string; note?: string }>;
 		orderTypes?: ("reserve_pickup" | "pay_pickup")[];
+		reservationHours?: number;
 	} = {},
 ) {
 	const lng = params.lng ?? 12.4964; // Rome
@@ -241,6 +242,9 @@ export async function createTestStore(
 			openingHours: params.openingHours,
 			closures: params.closures,
 			...(params.orderTypes ? { orderTypes: params.orderTypes } : {}),
+			...(params.reservationHours
+				? { reservationHours: params.reservationHours }
+				: {}),
 			// Raw SQL needed for PostGIS geometry column
 			location: params.noLocation
 				? null

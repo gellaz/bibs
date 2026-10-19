@@ -43,11 +43,17 @@ unica su cosa vede il cliente è `offeredOrderTypes` in
 ```text
 cliente fa il checkout ──► ordine «confirmed», stock scalato, codice di ritiro
                                │
-           entro 48 h          ▼
+      entro le ore del negozio ▼
 seller: «pronto» ──► cliente ritira e paga alla cassa ──► seller: «completato»
                                                             └► punti accreditati
-           oltre 48 h senza ritiro ──► cron: «expired», stock e punti restituiti
+      scadenza + 15 min senza ritiro ──► cron: «expired», stock e punti restituiti
 ```
+
+Il tempo per ritirare lo sceglie il titolare per ogni negozio: da 1 a 72 ore, 24 di default
+(`stores.reservation_hours`). Contano solo le ore di apertura (orari, chiusure, festività): la
+scadenza si calcola alla conferma con `reservationDeadline` e non cambia più. Per un negozio senza
+orari il tempo scorre sul calendario. Per 15 minuti dopo la scadenza il seller può ancora completare
+il ritiro; il cliente vede sempre la scadenza vera.
 
 Nessun euro passa da bibs o da Stripe: bibs guadagna solo l'abbonamento del negozio.
 
@@ -322,7 +328,7 @@ riprova»): l'app mostra un avviso e riporta al carrello, e l'anteprima viene ri
 | Anteprima del checkout | `apps/api/src/modules/customer/services/checkout.ts` (`previewCheckout`) |
 | Creazione ordine, totale, punti, IVA | `apps/api/src/modules/customer/services/orders.ts` |
 | PaymentIntent, trasferimenti, rimborsi, storni | `apps/api/src/modules/billing/services/order-payments.ts` |
-| Scadenze (30 min pagamento, 48 h prenotazione) | `apps/api/src/lib/jobs/expire-unpaid-orders.ts`, `expire-reservations.ts` |
+| Scadenze (30 min pagamento, prenotazione sulle ore del negozio + 15 min) | `apps/api/src/lib/jobs/expire-unpaid-orders.ts`, `expire-reservations.ts` |
 | Ritentativo dei trasferimenti ai negozi | `apps/api/src/lib/jobs/retry-store-transfers.ts` |
 | Stati e transizioni d'ordine | `apps/api/src/lib/order-state-machine.ts` |
 | Conto Connect del seller | `apps/api/src/modules/billing/services/connect-account.ts`, `apps/api/src/lib/connect-status.ts` |
