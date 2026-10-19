@@ -32,6 +32,16 @@ describe("SaveBar", () => {
 		}
 	});
 
+	it("a riposo come la barra laterale, azzurra «tocca a te» con modifiche", () => {
+		expect(render()).toContain("bg-sidebar");
+		const dirty = render({ dirty: true });
+		// Opaca: la barra è fissata e il contenuto le scorre sotto.
+		expect(dirty).toContain("var(--action)_12%,var(--background)");
+		expect(dirty).not.toContain("bg-action/12");
+		expect(dirty).toContain("border-action/40");
+		expect(dirty).not.toContain("bg-sidebar");
+	});
+
 	it("senza modifiche: niente avviso e Salva disabilitato", () => {
 		const html = render();
 		expect(html).not.toContain("Modifiche non salvate");

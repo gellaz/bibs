@@ -19,7 +19,9 @@ abilita se cambiano solo le foto) mentre quelle tolte spariscono subito, chiusur
    «Vendita».
 2. **Un Salva per scheda**, stessa barra in tutte, **sempre visibile**: appiccicata in fondo allo
    schermo mentre la pagina scorre, a fine pagina poggia sul fondo; se la pagina è corta sta
-   comunque in fondo allo schermo. «Modifiche non salvate» compare quando c'è da salvare. Niente salvataggi
+   comunque in fondo allo schermo. A riposo ha il fondo della barra laterale (Warm Paper); con
+   modifiche in sospeso prende il tono «tocca a te» dei badge di stato (`action` al 12%, opaco, bordo
+   al 40%) e mostra «Modifiche non salvate». Niente salvataggi
    immediati dentro le schede, tranne l'eliminazione di una foto già caricata (resta com'è oggi).
 3. **Le schede visitate restano montate** (nascoste): cambiare scheda non butta le modifiche.
    La pagina usa tutta la larghezza disponibile (niente `max-w-7xl` centrato), come gli elenchi
