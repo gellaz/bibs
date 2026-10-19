@@ -21,7 +21,8 @@ colors:
   olive-deep: "oklch(0.47 0.10 135)"
   brick-deep: "oklch(0.51 0.18 25)"
   petrol: "oklch(0.45 0.08 205)"
-  warning: "oklch(0.50 0.12 58)"
+  warning: "oklch(0.92 0.14 100)"
+  warning-foreground: "oklch(0.22 0.014 80)"
   ink-on-saffron: "oklch(0.22 0.014 80)"
   ink-on-cobalt: "oklch(0.985 0.008 80)"
   ink-on-brick: "oklch(0.985 0.008 80)"
@@ -293,12 +294,15 @@ migrates token-by-token without a visual jump.
 - **Petrolio** (`oklch(0.45 0.08 205)` light, `oklch(0.80 0.07 200)`
   dark): the `waiting` token, "aspetti qualcun altro" in status badges. A
   muted blue-green, far from cobalt (action), olive (success) and saffron.
-- **Warning** (`oklch(0.50 0.12 58)` light, `oklch(0.78 0.14 60)` dark):
-  caution-grade actions that change state without destroying data
-  (disable a product, archive, soft-pause). Hue 60 puts it between brick
-  (25, destructive) and saffron (75, brand reward); the role is state,
-  not brand, so warning is allowed on every register while saffron stays
-  reserved to customer.
+- **Warning** — giallo Segnale (`oklch(0.92 0.14 100)` light,
+  `oklch(0.37 0.08 95)` dark), a **fill** colour: text and icons on it use
+  `warning-foreground` (Dusk light, Cream dark), never `text-warning`.
+  Two jobs: caution-grade actions that change state without destroying
+  data (disable a product, archive, soft-pause) and to-do banners ("c'è da
+  fare qualcosa, non è un errore", e.g. online payments not activated).
+  Hue 95–100 sits past saffron (75, brand reward) and must stay clearly
+  distinct from it; the role is state, not brand, so warning is allowed on
+  every register while saffron stays reserved to customer.
 
 ### Named Rules
 
@@ -541,7 +545,7 @@ Chips carry presence. The system has five meaningful kinds:
   | `closed` | chiuso | `muted-foreground` + `border`, no fill |
   | `destructive` | fallito | `destructive` (Brick Deep) |
 
-  Warning is not a status tone (it stays on caution buttons). Only the
+  Warning is not a status tone (it stays on caution buttons and to-do banners). Only the
   seller onboarding shows a step count ("3/6") next to the badge, while
   in progress.
 

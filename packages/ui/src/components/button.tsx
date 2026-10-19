@@ -18,13 +18,13 @@ const buttonVariants = cva(
 					"hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground",
 				destructive:
 					"bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30",
-				// success/warning seguono lo stesso pattern soft di destructive,
-				// sui token semantici di DESIGN.md (olive/warning), in pari con i
-				// badge di TabNav. Niente palette Tailwind dirette.
+				// success segue lo stesso pattern soft di destructive, sul token
+				// semantico di DESIGN.md (olive), in pari con i badge di TabNav.
+				// Warning è un giallo da fondo: pieno, col suo foreground.
 				success:
 					"bg-success/10 hover:bg-success/20 focus-visible:ring-success/20 dark:focus-visible:ring-success/40 dark:bg-success/20 text-success focus-visible:border-success/40 dark:hover:bg-success/30",
 				warning:
-					"bg-warning/10 hover:bg-warning/20 focus-visible:ring-warning/20 dark:focus-visible:ring-warning/40 dark:bg-warning/20 text-warning focus-visible:border-warning/40 dark:hover:bg-warning/30",
+					"bg-warning text-warning-foreground hover:bg-warning/80 focus-visible:border-warning-foreground/40 focus-visible:ring-warning-foreground/20",
 				link: "text-primary underline-offset-4 hover:underline",
 			},
 			size: {
