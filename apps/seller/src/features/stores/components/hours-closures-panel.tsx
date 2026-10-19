@@ -1,4 +1,3 @@
-import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { toYMD } from "@bibs/ui/lib/date";
@@ -144,7 +143,12 @@ export function HoursClosuresPanel({
 	});
 
 	return (
-		<div className={cn("@container", readOnly && "max-w-3xl")}>
+		<div
+			className={cn(
+				"@container flex flex-1 flex-col gap-10",
+				readOnly && "max-w-3xl",
+			)}
+		>
 			<div className="grid gap-x-10 gap-y-12 @5xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
 				<FormSection
 					title={m.store_hours_week_title()}
@@ -190,17 +194,14 @@ export function HoursClosuresPanel({
 			</div>
 
 			{!readOnly && (
-				<div className="mt-10 space-y-10">
-					<Separator />
-					<SaveBar
-						dirty={hoursDirty || closuresDirty}
-						pending={save.isPending}
-						disabled={hoursInvalid || pendingInvalid}
-						submitLabel={m.store_settings_save()}
-						pendingLabel={m.store_settings_saving()}
-						onSave={() => save.mutate()}
-					/>
-				</div>
+				<SaveBar
+					dirty={hoursDirty || closuresDirty}
+					pending={save.isPending}
+					disabled={hoursInvalid || pendingInvalid}
+					submitLabel={m.store_settings_save()}
+					pendingLabel={m.store_settings_saving()}
+					onSave={() => save.mutate()}
+				/>
 			)}
 		</div>
 	);

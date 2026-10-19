@@ -23,17 +23,24 @@ function render(props: Partial<Parameters<typeof SaveBar>[0]> = {}) {
 }
 
 describe("SaveBar", () => {
-	it("senza modifiche: niente avviso, Salva disabilitato, non appiccicata", () => {
+	it("sempre in fondo: appiccicata mentre si scorre, spinta in basso se la pagina è corta", () => {
+		for (const dirty of [false, true]) {
+			const html = render({ dirty });
+			expect(html).toContain("sticky");
+			expect(html).toContain("bottom-0");
+			expect(html).toContain("mt-auto");
+		}
+	});
+
+	it("senza modifiche: niente avviso e Salva disabilitato", () => {
 		const html = render();
 		expect(html).not.toContain("Modifiche non salvate");
-		expect(html).not.toContain("sticky");
 		expect(html).toMatch(/<button[^>]* disabled=""/);
 	});
 
-	it("con modifiche: avviso e barra appiccicata in fondo", () => {
+	it("con modifiche: avviso e Salva attivo", () => {
 		const html = render({ dirty: true });
 		expect(html).toContain("Modifiche non salvate");
-		expect(html).toContain("sticky");
 		expect(html).not.toMatch(/<button[^>]* disabled=""/);
 	});
 

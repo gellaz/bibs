@@ -1,4 +1,3 @@
-import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -109,7 +108,7 @@ export function SalesSettingsPanel({
 	});
 
 	return (
-		<div className="@container space-y-12">
+		<div className="@container flex flex-1 flex-col gap-12">
 			{/* Come Orari e chiusure: affiancati sugli schermi larghi. */}
 			<div className="grid gap-x-10 gap-y-12 @5xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
 				{data ? (
@@ -135,17 +134,14 @@ export function SalesSettingsPanel({
 					onChange={setLowStockDraft}
 				/>
 			</div>
-			<div className="space-y-10">
-				<Separator />
-				<SaveBar
-					dirty={typesDirty || reservationDirty || lowStockDirty}
-					pending={save.isPending}
-					disabled={invalid}
-					submitLabel={m.store_settings_save()}
-					pendingLabel={m.store_settings_saving()}
-					onSave={() => save.mutate()}
-				/>
-			</div>
+			<SaveBar
+				dirty={typesDirty || reservationDirty || lowStockDirty}
+				pending={save.isPending}
+				disabled={invalid}
+				submitLabel={m.store_settings_save()}
+				pendingLabel={m.store_settings_saving()}
+				onSave={() => save.mutate()}
+			/>
 		</div>
 	);
 }

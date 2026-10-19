@@ -1,5 +1,4 @@
 import { Button } from "@bibs/ui/components/button";
-import { cn } from "@bibs/ui/lib/utils";
 import { m } from "@/paraglide/messages";
 
 interface SaveBarProps {
@@ -15,8 +14,10 @@ interface SaveBarProps {
 }
 
 /**
- * Il Salva delle impostazioni del back-office: con modifiche in sospeso resta
- * in vista in fondo allo schermo; senza, torna al suo posto, a fine sezione.
+ * Il Salva delle impostazioni del back-office, sempre in vista: appiccicato in
+ * fondo allo schermo mentre si scorre, al suo posto a fine pagina. Va messo come
+ * ultimo figlio di una colonna flex che riempie l'altezza: `mt-auto` lo spinge in
+ * fondo anche quando la pagina è corta.
  */
 export function SaveBar({
 	dirty,
@@ -28,13 +29,9 @@ export function SaveBar({
 	onCancel,
 }: SaveBarProps) {
 	return (
-		<div
-			className={cn(
-				"flex items-center justify-end gap-3",
-				dirty &&
-					"sticky bottom-0 z-10 -mx-4 border-border border-t bg-background px-4 py-3",
-			)}
-		>
+		// -mx-4/-mb-4 annullano il padding del contenitore della pagina: la barra
+		// arriva ai bordi e, a fine pagina, poggia sul fondo.
+		<div className="sticky bottom-0 z-10 -mx-4 mt-auto -mb-4 flex items-center justify-end gap-3 border-border border-t bg-background px-4 py-3">
 			{dirty && (
 				<p className="mr-auto text-muted-foreground text-sm" role="status">
 					{m.store_form_unsaved()}

@@ -42,6 +42,10 @@ export const Route = createFileRoute("/_authenticated/store/")({
 
 const MAX_STORE_IMAGES = 8;
 
+// Colonne flex fino alla SaveBar: il Salva sta in fondo anche a pagina corta.
+// `hidden` vince comunque su `flex` (display: none !important del preflight).
+const PANEL = "flex flex-1 flex-col";
+
 function StoreSettingsPage() {
 	const { activeStore } = useActiveStore();
 	const isOwner = useIsOwner();
@@ -251,7 +255,7 @@ function StoreSettingsPage() {
 	);
 
 	return (
-		<div className="w-full space-y-8">
+		<div className="flex w-full flex-1 flex-col gap-8">
 			<EntityFormHeader
 				icon={StoreIcon}
 				title={name || store.name}
@@ -281,12 +285,18 @@ function StoreSettingsPage() {
 
 			{/* Le schede già aperte restano montate (solo nascoste): cambiare
 			    scheda non butta le modifiche non salvate. */}
-			<div id="store-settings-panel" role="tabpanel">
+			<div
+				id="store-settings-panel"
+				role="tabpanel"
+				className="flex flex-1 flex-col"
+			>
 				{visited.has("profilo") && (
-					<div hidden={active !== "profilo"}>{storeForm}</div>
+					<div hidden={active !== "profilo"} className={PANEL}>
+						{storeForm}
+					</div>
 				)}
 				{visited.has("orari") && (
-					<div hidden={active !== "orari"}>
+					<div hidden={active !== "orari"} className={PANEL}>
 						<HoursClosuresPanel
 							key={activeStore.id}
 							storeId={activeStore.id}
@@ -296,7 +306,7 @@ function StoreSettingsPage() {
 					</div>
 				)}
 				{isOwner && visited.has("vendita") && (
-					<div hidden={active !== "vendita"}>
+					<div hidden={active !== "vendita"} className={PANEL}>
 						<SalesSettingsPanel
 							key={activeStore.id}
 							storeId={activeStore.id}

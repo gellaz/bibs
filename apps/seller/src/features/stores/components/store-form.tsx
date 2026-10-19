@@ -265,7 +265,10 @@ export function StoreForm({
 	};
 
 	return (
-		<form onSubmit={handleSubmit(onFormSubmit)} className="space-y-10">
+		<form
+			onSubmit={handleSubmit(onFormSubmit)}
+			className="flex flex-1 flex-col gap-10"
+		>
 			{leading && (
 				<>
 					{leading}
@@ -552,17 +555,14 @@ export function StoreForm({
 			</FormSection>
 
 			{!readOnly && (
-				<>
-					<Separator />
-					<SaveBar
-						dirty={hasChanges}
-						pending={isPending}
-						disabled={hoursInvalid}
-						submitLabel={submitLabel}
-						pendingLabel={pendingLabel}
-						onCancel={onCancel}
-					/>
-				</>
+				<SaveBar
+					dirty={hasChanges}
+					pending={isPending}
+					disabled={hoursInvalid}
+					submitLabel={submitLabel}
+					pendingLabel={pendingLabel}
+					onCancel={onCancel}
+				/>
 			)}
 		</form>
 	);
