@@ -1,20 +1,17 @@
-import { Button } from "@bibs/ui/components/button";
-import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
-import { intlLocale } from "@bibs/ui/lib/intl-locale";
-import { cn } from "@bibs/ui/lib/utils";
+import { TabNav } from "@bibs/ui/custom/tab-nav";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { StoreIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { EntityFormHeader } from "@/components/entity-form-header";
 import { FormSection } from "@/components/form-section";
-import { CancelStoreDialog } from "@/features/billing/components/cancel-store-dialog";
 import {
 	type ExistingImage,
 	ProductImageDropzone,
 } from "@/features/products/components/product-image-dropzone";
+import { HoursClosuresPanel } from "@/features/stores/components/hours-closures-panel";
 import { SalesSettingsPanel } from "@/features/stores/components/sales-settings-panel";
 import {
 	StoreForm,
@@ -44,16 +41,22 @@ export const Route = createFileRoute("/_authenticated/store/")({
 
 const MAX_STORE_IMAGES = 8;
 
-const formatPeriodEnd = (date: Date | string) =>
-	new Intl.DateTimeFormat(intlLocale(), {
-		day: "numeric",
-		month: "long",
-		year: "numeric",
-	}).format(new Date(date));
-
 function StoreSettingsPage() {
-	const { activeStore, activeSubscription } = useActiveStore();
+	const { activeStore } = useActiveStore();
 	const isOwner = useIsOwner();
+	const { sezione } = Route.useSearch();
+	const navigate = Route.useNavigate();
+	const tabs = [
+		{ value: "profilo", label: m.store_tab_profile() },
+		{ value: "orari", label: m.store_tab_hours() },
+		// Vendita è del titolare: l'API risponde 403 al dipendente.
+		...(isOwner ? [{ value: "vendita", label: m.store_tab_sales() }] : []),
+	];
+	const active: StoreSection = tabs.some((t) => t.value === sezione)
+		? (sezione as StoreSection)
+		: "profilo";
+	const [visited, setVisited] = useState(() => new Set([active]));
+	if (!visited.has(active)) setVisited(new Set(visited).add(active));
 	const queryClient = useQueryClient();
 	const [name, setName] = useState("");
 	const handleNameChange = useCallback((value: string) => setName(value), []);
@@ -127,6 +130,14 @@ function StoreSettingsPage() {
 					.images.post({ files: newFiles });
 				if (imgResponse.error) {
 					toast.warning(m.store_update_images_warning());
+				} else {
+					// Le foto caricate passano tra le esistenti: senza, sparirebbero
+					// dalla vetrina fino al prossimo cambio di negozio.
+					const uploaded = imgResponse.data.data;
+					setExistingImages((prev) => [
+						...prev,
+						...uploaded.map((img) => ({ id: img.id, url: img.url })),
+					]);
 				}
 				setNewFiles([]);
 			}
@@ -199,16 +210,45 @@ function StoreSettingsPage() {
 			onNameChange={handleNameChange}
 			readOnly={!isOwner}
 			lastSavedAt={lastSavedAt}
+			hideHours
+			extraDirty={newFiles.length > 0}
+			leading={
+				isOwner && (
+					<FormSection
+						title={m.store_showcase_title()}
+						description={m.store_showcase_description({
+							max: MAX_STORE_IMAGES,
+						})}
+					>
+						<ProductImageDropzone
+							files={newFiles}
+							onDrop={(accepted) =>
+								setNewFiles((prev) => [
+									...prev,
+									...accepted.slice(
+										0,
+										MAX_STORE_IMAGES - existingImages.length - prev.length,
+									),
+								])
+							}
+							onRemoveFile={(index) =>
+								setNewFiles((prev) => prev.filter((_, i) => i !== index))
+							}
+							onReorderFiles={setNewFiles}
+							existingImages={existingImages}
+							onDeleteExisting={(imageId) =>
+								deleteImageMutation.mutate(imageId)
+							}
+							maxFiles={MAX_STORE_IMAGES}
+						/>
+					</FormSection>
+				)
+			}
 		/>
 	);
 
 	return (
-		<div
-			className={cn(
-				"mx-auto w-full space-y-10",
-				isOwner ? "max-w-7xl" : "max-w-3xl",
-			)}
-		>
+		<div className="mx-auto w-full max-w-7xl space-y-8">
 			<EntityFormHeader
 				icon={StoreIcon}
 				title={name || store.name}
@@ -218,127 +258,56 @@ function StoreSettingsPage() {
 						? m.store_settings_subtitle()
 						: m.store_settings_subtitle_readonly()
 				}
+				bordered={false}
 			/>
 
-			{isOwner ? (
-				<div className="@container">
-					<div className="grid gap-x-10 gap-y-8 @2xl:grid-cols-[minmax(0,1fr)_18rem]">
-						<div className="min-w-0">{storeForm}</div>
-						<div className="space-y-8">
-							<FormSection
-								title={m.store_showcase_title()}
-								description={m.store_showcase_description({
-									max: MAX_STORE_IMAGES,
-								})}
-							>
-								<ProductImageDropzone
-									files={newFiles}
-									onDrop={(accepted) =>
-										setNewFiles((prev) => [
-											...prev,
-											...accepted.slice(
-												0,
-												MAX_STORE_IMAGES - existingImages.length - prev.length,
-											),
-										])
-									}
-									onRemoveFile={(index) =>
-										setNewFiles((prev) => prev.filter((_, i) => i !== index))
-									}
-									onReorderFiles={setNewFiles}
-									existingImages={existingImages}
-									onDeleteExisting={(imageId) =>
-										deleteImageMutation.mutate(imageId)
-									}
-									maxFiles={MAX_STORE_IMAGES}
-								/>
-							</FormSection>
-							<SalesSettingsPanel
-								key={activeStore.id}
-								storeId={activeStore.id}
-								reservationHours={store.reservationHours}
-								lowStockThreshold={store.lowStockThreshold}
-								hasOpeningHours={
-									store.openingHours?.some((d) => d.slots.length > 0) ?? false
-								}
-							/>
-						</div>
-					</div>
-				</div>
-			) : (
-				storeForm
-			)}
+			<div className="overflow-x-auto">
+				<TabNav
+					label={m.store_tabs_label()}
+					panelId="store-settings-panel"
+					tabs={tabs}
+					activeTab={active}
+					onTabChange={(next) =>
+						void navigate({
+							search: (s) => ({ ...s, sezione: next as StoreSection }),
+							replace: true,
+						})
+					}
+				/>
+			</div>
 
-			{isOwner &&
-				activeStore &&
-				activeSubscription &&
-				activeSubscription.status !== "canceled" && (
-					<>
-						<Separator />
-						<FormSection
-							title={m.store_danger_title()}
-							description={m.store_danger_description()}
-							tone="destructive"
-						>
-							{/* past_due resta past_due anche con la cancellazione
-							    programmata: conta cancelAtPeriodEnd. */}
-							{activeSubscription.status === "canceling" ||
-							activeSubscription.cancelAtPeriodEnd ? (
-								<div className="rounded-lg border border-border p-4">
-									<h3 className="text-sm font-semibold text-foreground">
-										{m.store_delete_scheduled_title()}
-									</h3>
-									<p className="mt-1 text-sm text-muted-foreground">
-										{m.store_delete_scheduled({
-											date: formatPeriodEnd(
-												activeSubscription.currentPeriodEnd,
-											),
-										})}
-									</p>
-									<Link
-										to="/billing"
-										className="mt-3 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
-									>
-										{m.store_delete_scheduled_undo()} →
-									</Link>
-								</div>
-							) : (
-								<div className="rounded-lg border border-destructive/30 p-4">
-									<h3 className="text-sm font-semibold text-destructive">
-										{m.store_delete_title()}
-									</h3>
-									<p className="mt-1 text-sm text-muted-foreground">
-										{activeSubscription.status === "suspended"
-											? m.store_delete_suspended()
-											: activeSubscription.status === "past_due"
-												? m.store_delete_past_due({
-														date: formatPeriodEnd(
-															activeSubscription.currentPeriodEnd,
-														),
-													})
-												: m.store_delete_active()}
-									</p>
-									<CancelStoreDialog
-										storeId={activeStore.id}
-										storeName={activeStore.name}
-										status={
-											activeSubscription.status as
-												| "active"
-												| "past_due"
-												| "suspended"
-										}
-										currentPeriodEnd={activeSubscription.currentPeriodEnd}
-										trigger={
-											<Button variant="destructive" className="mt-3">
-												{m.store_delete_title()}
-											</Button>
-										}
-									/>
-								</div>
-							)}
-						</FormSection>
-					</>
+			{/* Le schede già aperte restano montate (solo nascoste): cambiare
+			    scheda non butta le modifiche non salvate. */}
+			<div id="store-settings-panel" role="tabpanel">
+				{visited.has("profilo") && (
+					<div hidden={active !== "profilo"} className="max-w-3xl">
+						{storeForm}
+					</div>
 				)}
+				{visited.has("orari") && (
+					<div hidden={active !== "orari"}>
+						<HoursClosuresPanel
+							key={activeStore.id}
+							storeId={activeStore.id}
+							openingHours={(store.openingHours as never) ?? []}
+							readOnly={!isOwner}
+						/>
+					</div>
+				)}
+				{isOwner && visited.has("vendita") && (
+					<div hidden={active !== "vendita"}>
+						<SalesSettingsPanel
+							key={activeStore.id}
+							storeId={activeStore.id}
+							reservationHours={store.reservationHours}
+							lowStockThreshold={store.lowStockThreshold}
+							hasOpeningHours={
+								store.openingHours?.some((d) => d.slots.length > 0) ?? false
+							}
+						/>
+					</div>
+				)}
+			</div>
 		</div>
 	);
 }
