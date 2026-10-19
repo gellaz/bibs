@@ -38,6 +38,8 @@ function render() {
 				],
 			}}
 			onChange={() => {}}
+			pending={null}
+			onPendingChange={() => {}}
 		/>,
 	);
 }

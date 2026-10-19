@@ -13,6 +13,8 @@ import {
 	type ClosuresDraft,
 	type CustomClosure,
 	type HolidayRow,
+	type PendingClosure,
+	pendingToClosure,
 	romeToday,
 	serializeClosures,
 	splitCustomClosures,
@@ -92,9 +94,14 @@ export function HoursClosuresPanel({
 	if (closuresQuery.data && !closures) {
 		setClosures(toClosuresState(closuresQuery.data));
 	}
+	const [pending, setPending] = useState<PendingClosure | null>(null);
+	const pendingClosure = pendingToClosure(pending);
+	// Al prima di Dal nel modulo aperto: non si salva finché non si corregge.
+	const pendingInvalid = !!pending?.start && !pendingClosure;
 	const closuresDirty =
 		!!closures &&
-		serializeClosures(closures.draft) !== serializeClosures(closures.saved);
+		(pendingClosure !== null ||
+			serializeClosures(closures.draft) !== serializeClosures(closures.saved));
 
 	// In sequenza, e ogni parte riuscita diventa la nuova base: se le chiusure
 	// falliscono dopo gli orari, resta da salvare solo ciò che non è passato.
@@ -118,11 +125,13 @@ export function HoursClosuresPanel({
 							customClosures: [
 								...closures.past,
 								...closures.draft.customClosures,
+								...(pendingClosure ? [pendingClosure] : []),
 							],
 						}),
 					m.store_closures_error(),
 				).data as { holidays: HolidayRow[]; customClosures: CustomClosure[] };
 				setClosures(toClosuresState(next));
+				setPending(null);
 			}
 		},
 		onSuccess: () => toast.success(m.store_hours_closures_saved()),
@@ -172,6 +181,8 @@ export function HoursClosuresPanel({
 								holidays={closures.holidays}
 								value={closures.draft}
 								onChange={(draft) => setClosures({ ...closures, draft })}
+								pending={pending}
+								onPendingChange={setPending}
 							/>
 						)}
 					</FormSection>
@@ -184,7 +195,7 @@ export function HoursClosuresPanel({
 					<SaveBar
 						dirty={hoursDirty || closuresDirty}
 						pending={save.isPending}
-						disabled={hoursInvalid}
+						disabled={hoursInvalid || pendingInvalid}
 						submitLabel={m.store_settings_save()}
 						pendingLabel={m.store_settings_saving()}
 						onSave={() => save.mutate()}

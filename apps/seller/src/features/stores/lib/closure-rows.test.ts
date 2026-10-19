@@ -3,6 +3,7 @@ import {
 	closureDays,
 	closureRows,
 	type HolidayRow,
+	pendingToClosure,
 	serializeClosures,
 	splitCustomClosures,
 } from "./closure-rows";
@@ -106,5 +107,32 @@ describe("serializeClosures", () => {
 			],
 		});
 		expect(a).toBe(b);
+	});
+});
+
+describe("pendingToClosure", () => {
+	it("una chiusura scritta ma non aggiunta vale se ha Dal", () => {
+		expect(
+			pendingToClosure({
+				start: "2027-02-10",
+				end: "2027-02-12",
+				note: " Ferie ",
+			}),
+		).toEqual({
+			startDate: "2027-02-10",
+			endDate: "2027-02-12",
+			note: "Ferie",
+		});
+		expect(
+			pendingToClosure({ start: "2027-02-10", end: "2027-02-10", note: "" }),
+		).toEqual({ startDate: "2027-02-10" });
+	});
+
+	it("senza Dal, o con Al prima di Dal, non è una chiusura", () => {
+		expect(pendingToClosure(null)).toBeNull();
+		expect(pendingToClosure({ start: "", end: "", note: "Ferie" })).toBeNull();
+		expect(
+			pendingToClosure({ start: "2027-02-10", end: "2027-02-01", note: "" }),
+		).toBeNull();
 	});
 });

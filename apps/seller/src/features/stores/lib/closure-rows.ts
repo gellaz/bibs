@@ -115,3 +115,29 @@ export function serializeClosures(draft: ClosuresDraft): string {
 			),
 	});
 }
+
+/** La chiusura scritta nel modulo «Aggiungi chiusura», non ancora aggiunta. */
+export interface PendingClosure {
+	start: string;
+	end: string;
+	note: string;
+}
+
+/**
+ * Bozza → chiusura, o null se non lo è ancora (senza Dal, o Al prima di Dal).
+ * Il Salva del pannello la include: chi la scrive e salva senza «Aggiungi» non
+ * la perde.
+ */
+export function pendingToClosure(
+	pending: PendingClosure | null,
+): CustomClosure | null {
+	if (!pending?.start || (pending.end && pending.end < pending.start)) {
+		return null;
+	}
+	return {
+		startDate: pending.start,
+		endDate:
+			pending.end && pending.end !== pending.start ? pending.end : undefined,
+		note: pending.note.trim() || undefined,
+	};
+}

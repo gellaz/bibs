@@ -5,13 +5,14 @@ import { ToggleGroup, ToggleGroupItem } from "@bibs/ui/components/toggle-group";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
 import { PlusIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
 import { m } from "@/paraglide/messages";
 import {
 	type ClosuresDraft,
 	closureDays,
 	closureRows,
 	type HolidayRow,
+	type PendingClosure,
+	pendingToClosure,
 	romeToday,
 } from "../lib/closure-rows";
 
@@ -34,30 +35,25 @@ export function ClosuresList({
 	holidays,
 	value,
 	onChange,
+	pending,
+	onPendingChange,
 }: {
 	holidays: HolidayRow[];
 	value: ClosuresDraft;
 	onChange: (next: ClosuresDraft) => void;
+	/** Il modulo «Aggiungi chiusura» aperto (null = chiuso): lo tiene il pannello, che lo salva anche senza «Aggiungi». */
+	pending: PendingClosure | null;
+	onPendingChange: (next: PendingClosure | null) => void;
 }) {
-	const [adding, setAdding] = useState(false);
-	const [draft, setDraft] = useState(EMPTY_DRAFT);
+	const draft = pending ?? EMPTY_DRAFT;
+	const setDraft = onPendingChange;
+	const closure = pendingToClosure(pending);
 	const rangeInvalid = !!draft.end && draft.end < draft.start;
 
 	const add = () => {
-		onChange({
-			...value,
-			customClosures: [
-				...value.customClosures,
-				{
-					startDate: draft.start,
-					endDate:
-						draft.end && draft.end !== draft.start ? draft.end : undefined,
-					note: draft.note.trim() || undefined,
-				},
-			],
-		});
-		setDraft(EMPTY_DRAFT);
-		setAdding(false);
+		if (!closure) return;
+		onChange({ ...value, customClosures: [...value.customClosures, closure] });
+		onPendingChange(null);
 	};
 
 	const setHolidayClosed = (definitionId: string, closed: boolean) =>
@@ -70,7 +66,7 @@ export function ClosuresList({
 
 	return (
 		<div className="space-y-3">
-			{adding ? (
+			{pending ? (
 				<div className="space-y-3 rounded-lg border border-border bg-card p-3">
 					<div className="grid grid-cols-2 gap-3">
 						<div className="space-y-1.5">
@@ -106,19 +102,11 @@ export function ClosuresList({
 							type="button"
 							variant="ghost"
 							size="sm"
-							onClick={() => {
-								setDraft(EMPTY_DRAFT);
-								setAdding(false);
-							}}
+							onClick={() => onPendingChange(null)}
 						>
 							{m.common_cancel()}
 						</Button>
-						<Button
-							type="button"
-							size="sm"
-							disabled={!draft.start || rangeInvalid}
-							onClick={add}
-						>
+						<Button type="button" size="sm" disabled={!closure} onClick={add}>
 							{m.common_add()}
 						</Button>
 					</div>
@@ -128,7 +116,7 @@ export function ClosuresList({
 					type="button"
 					variant="outline"
 					size="sm"
-					onClick={() => setAdding(true)}
+					onClick={() => onPendingChange(EMPTY_DRAFT)}
 				>
 					<PlusIcon />
 					{m.store_closures_add()}
