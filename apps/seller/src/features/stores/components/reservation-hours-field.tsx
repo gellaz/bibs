@@ -4,7 +4,12 @@ import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
@@ -20,6 +25,8 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
 	month: "short",
 	hour: "2-digit",
 	minute: "2-digit",
+	// Gli orari del negozio sono a Roma: lo è anche la scadenza d'esempio.
+	timeZone: "Europe/Rome",
 };
 
 /**
@@ -46,6 +53,8 @@ export function ReservationHoursField({
 	const preview = useQuery({
 		queryKey: ["store", storeId, "reservation-preview", hours],
 		enabled: hours !== null && hasOpeningHours,
+		// Tiene l'esempio precedente mentre arriva il nuovo: il riquadro non sparisce.
+		placeholderData: keepPreviousData,
 		queryFn: async () =>
 			unwrap(
 				await api()
@@ -98,8 +107,12 @@ export function ReservationHoursField({
 					/>
 					<span className="text-sm text-muted-foreground">
 						{hasOpeningHours
-							? m.store_reservation_hours_unit()
-							: m.store_reservation_hours_unit_calendar()}
+							? parsed === 1
+								? m.store_reservation_hours_unit_one()
+								: m.store_reservation_hours_unit()
+							: parsed === 1
+								? m.store_reservation_hours_unit_calendar_one()
+								: m.store_reservation_hours_unit_calendar()}
 					</span>
 					<Button
 						type="submit"

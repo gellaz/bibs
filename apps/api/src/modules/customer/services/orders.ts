@@ -433,7 +433,7 @@ async function reservationExpiry(tx: OrderTx, storeId: string) {
 		},
 	});
 	if (!s) throw new ServiceError(404, "Negozio non trovato");
-	const deadlines = await resolveReservationDeadlines([s], new Date());
+	const deadlines = await resolveReservationDeadlines([s], new Date(), tx);
 	return deadlines.get(s.id)!.expiresAt;
 }
 

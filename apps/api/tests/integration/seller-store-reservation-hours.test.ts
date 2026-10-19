@@ -23,9 +23,11 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
+import { holidayDefinition } from "@/db/schemas/holiday-definition";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { reservationDeadline } from "@/lib/holidays";
+import { resolveReservationDeadlines } from "@/lib/store-open-status";
 import { storesRoutes } from "@/modules/seller/routes/stores";
 import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
@@ -82,13 +84,18 @@ async function setup(withHours = true) {
 	return { sellerProfileId: seller.profile.id, storeId: store.id };
 }
 
-const patch = (s: { sellerProfileId: string; storeId: string }, body: object) =>
+const patch = (
+	s: { sellerProfileId: string; storeId: string },
+	body: object,
+	owner = true,
+) =>
 	app.handle(
 		new Request(`http://localhost/stores/${s.storeId}`, {
 			method: "PATCH",
 			headers: {
 				"content-type": "application/json",
 				"x-seller": s.sellerProfileId,
+				"x-owner": owner ? "1" : "0",
 			},
 			body: JSON.stringify(body),
 		}),
@@ -143,6 +150,13 @@ describe("ore di ritiro del negozio", () => {
 			expect(await savedHours(s.storeId)).toBe(24);
 		});
 	}
+
+	it("PATCH da dipendente → 403, valore invariato", async () => {
+		const s = await setup();
+		const res = await patch(s, { reservationHours: 48 }, false);
+		expect(res.status).toBe(403);
+		expect(await savedHours(s.storeId)).toBe(24);
+	});
 });
 
 describe("anteprima della scadenza", () => {
@@ -187,5 +201,31 @@ describe("anteprima della scadenza", () => {
 		const s = await setup();
 		const res = await preview(s, "0");
 		expect(res.status).toBe(422);
+	});
+});
+
+describe("scadenza dentro una transazione", () => {
+	it("legge festività e opt-out con la tx passata", async () => {
+		// Mercoledì 21 ottobre 2026, 10:00 a Roma.
+		const now = new Date("2026-10-21T10:00:00+02:00");
+		const s = {
+			id: crypto.randomUUID(),
+			openingHours,
+			closures: null,
+			reservationHours: 1,
+		};
+		await getTestDb().transaction(async (tx) => {
+			// Non ancora committata: la vede solo chi legge con la tx.
+			await tx.insert(holidayDefinition).values({
+				name: "Chiusura di prova",
+				type: "one_off",
+				oneOffDate: "2026-10-21",
+			});
+			const deadlines = await resolveReservationDeadlines([s], now, tx);
+			// Oggi festivo: si riparte giovedì alle 8, scade alle 9.
+			expect(deadlines.get(s.id)?.expiresAt).toEqual(
+				new Date("2026-10-22T09:00:00+02:00"),
+			);
+		});
 	});
 });

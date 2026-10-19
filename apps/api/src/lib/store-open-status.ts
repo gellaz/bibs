@@ -39,6 +39,8 @@ function romeNow(now: Date): { date: string; time: string } {
 	};
 }
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 interface StoreOpenStatusInput {
 	id: string;
 	openingHours: OpeningHoursDay[] | null;
@@ -48,11 +50,13 @@ interface StoreOpenStatusInput {
 /**
  * Date di chiusura (festività senza opt-out + chiusure personalizzate) di un
  * lotto di negozi, da oggi a Roma a +60 giorni: una query per definizioni e
- * opt-out, poi risoluzione in memoria. Mappa per id del negozio.
+ * opt-out, poi risoluzione in memoria. Mappa per id del negozio. Dentro una
+ * transazione passa la tx: col `db` globale prenderebbe un'altra connessione.
  */
 export async function loadClosedDates(
 	stores: Array<{ id: string; closures: CustomClosure[] | null }>,
 	now: Date,
+	executor: typeof db | Tx = db,
 ): Promise<Map<string, Set<string>>> {
 	const today = new Intl.DateTimeFormat("en-CA", {
 		timeZone: "Europe/Rome",
@@ -61,11 +65,11 @@ export async function loadClosedDates(
 	const storeIds = stores.map((s) => s.id);
 
 	const [activeDefs, optOutRows] = await Promise.all([
-		db.query.holidayDefinition.findMany({
+		executor.query.holidayDefinition.findMany({
 			where: eq(holidayDefinition.isActive, true),
 		}),
 		storeIds.length > 0
-			? db
+			? executor
 					.select({
 						storeId: storeHolidayOptout.storeId,
 						holidayDefinitionId: storeHolidayOptout.holidayDefinitionId,
@@ -133,10 +137,11 @@ export async function resolveOpenStatuses(
 export async function resolveReservationDeadlines(
 	stores: Array<StoreOpenStatusInput & { reservationHours: number }>,
 	now: Date,
+	executor: typeof db | Tx = db,
 ): Promise<
 	Map<string, { hours: number; expiresAt: Date; clock: ReservationClock }>
 > {
-	const closed = await loadClosedDates(stores, now);
+	const closed = await loadClosedDates(stores, now, executor);
 	const result = new Map<
 		string,
 		{ hours: number; expiresAt: Date; clock: ReservationClock }
