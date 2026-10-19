@@ -212,7 +212,7 @@ export function OpeningHoursEditor({
 													<button
 														type="button"
 														onClick={() => removeSlot(dayOfWeek, slotIndex)}
-														className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+														className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50"
 														title={m.store_hours_remove_slot()}
 														aria-label={m.store_hours_remove_slot()}
 													>
@@ -230,7 +230,7 @@ export function OpeningHoursEditor({
 									<button
 										type="button"
 										onClick={() => addSlot(dayOfWeek)}
-										className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors shrink-0 self-start @xl:self-auto"
+										className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors shrink-0 self-start @xl:self-auto disabled:opacity-50"
 									>
 										<PlusCircleIcon className="size-3.5" />
 										{m.store_hours_add_slot()}
