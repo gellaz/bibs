@@ -21,8 +21,11 @@ abilita se cambiano solo le foto) mentre quelle tolte spariscono subito, chiusur
    salvate» + Salva, appiccicata in basso quando c'è qualcosa da salvare). Niente salvataggi
    immediati dentro le schede, tranne l'eliminazione di una foto già caricata (resta com'è oggi).
 3. **Le schede visitate restano montate** (nascoste): cambiare scheda non butta le modifiche.
-4. **Profilo negozio**, una colonna (`max-w-3xl`): Vetrina in cima, poi Identità, Indirizzo,
-   Contatti. Aggiungere solo foto abilita il Salva.
+4. **Profilo negozio**, a tutta larghezza come le altre schede (scelta di Marco dopo la prima
+   prova: la colonna da 768 px lasciava un vuoto a destra): Vetrina in cima, poi Identità,
+   Indirizzo, Contatti, con i campi corti affiancati (`FormSection grid`: Nome | Descrizione,
+   Indirizzo | riga 2, Comune+CAP, Telefoni | Sito); ricerca e mappa a tutta riga. Aggiungere
+   solo foto abilita il Salva.
 5. **Orari e chiusure**, affiancati da `@5xl` (7fr / 5fr), in colonna sotto:
    - orari settimanali (l'editor di oggi);
    - **una sola lista di chiusure in ordine di data**, festività e chiusure del negozio insieme,
@@ -31,8 +34,8 @@ abilita se cambiano solo le foto) mentre quelle tolte spariscono subito, chiusur
    - Le chiusure del negozio già finite non si mostrano e si rimandano intatte al salvataggio.
    - Un Salva per orari + chiusure (due chiamate: PATCH negozio, PUT chiusure).
    - `/store/closures` sparisce; i link della home portano a `/store?sezione=orari`.
-6. **Vendita**, una colonna (`max-w-3xl`): Tipologie d'acquisto (con «Tempo per ritirare» annidato
-   e lo stato dei pagamenti online), Scorta bassa. Un Salva (PATCH order-types + PATCH negozio).
+6. **Vendita**, affiancate da `@5xl` come Orari e chiusure (7fr / 5fr): Tipologie d'acquisto (con
+   «Tempo per ritirare» annidato e lo stato dei pagamenti online) | Scorta bassa. Un Salva (PATCH order-types + PATCH negozio).
 7. **Zona di pericolo** fuori dalle impostazioni negozio: la cancellazione resta in Abbonamento
    (`/billing`, menu di ogni negozio), che già la offre.
 8. **Dipendente** (sola lettura): schede Profilo negozio e Orari e chiusure (solo orari, le chiusure

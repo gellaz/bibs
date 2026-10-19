@@ -109,29 +109,32 @@ export function SalesSettingsPanel({
 	});
 
 	return (
-		<div className="max-w-3xl space-y-12">
-			{data ? (
-				<OrderTypesSection
-					value={types}
-					onChange={setTypesDraft}
-					chargesEnabled={data.chargesEnabled}
-					disabled={save.isPending}
-					reservationField={
-						<ReservationHoursField
-							storeId={storeId}
-							value={reservationDraft}
-							onChange={setReservationDraft}
-							hasOpeningHours={hasOpeningHours}
-						/>
-					}
+		<div className="@container space-y-12">
+			{/* Come Orari e chiusure: affiancati sugli schermi larghi. */}
+			<div className="grid gap-x-10 gap-y-12 @5xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+				{data ? (
+					<OrderTypesSection
+						value={types}
+						onChange={setTypesDraft}
+						chargesEnabled={data.chargesEnabled}
+						disabled={save.isPending}
+						reservationField={
+							<ReservationHoursField
+								storeId={storeId}
+								value={reservationDraft}
+								onChange={setReservationDraft}
+								hasOpeningHours={hasOpeningHours}
+							/>
+						}
+					/>
+				) : (
+					<FormSection title={m.store_order_types_title()}>{null}</FormSection>
+				)}
+				<LowStockThresholdSection
+					value={lowStockDraft}
+					onChange={setLowStockDraft}
 				/>
-			) : (
-				<FormSection title={m.store_order_types_title()}>{null}</FormSection>
-			)}
-			<LowStockThresholdSection
-				value={lowStockDraft}
-				onChange={setLowStockDraft}
-			/>
+			</div>
 			<div className="space-y-10">
 				<Separator />
 				<SaveBar

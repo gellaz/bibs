@@ -275,6 +275,7 @@ export function StoreForm({
 			<FormSection
 				title={m.store_form_identity_title()}
 				description={m.store_form_identity_description()}
+				grid
 			>
 				<Field data-invalid={!!errors.name}>
 					<FieldLabel htmlFor="store-name" required>
@@ -309,13 +310,19 @@ export function StoreForm({
 			<FormSection
 				title={m.store_address()}
 				description={m.store_form_address_description()}
+				grid
 			>
 				{!readOnly && (
-					<StoreAddressSearch onSelect={applySuggestion} disabled={isPending} />
+					<div className="col-span-full">
+						<StoreAddressSearch
+							onSelect={applySuggestion}
+							disabled={isPending}
+						/>
+					</div>
 				)}
 
 				{location ? (
-					<div className="space-y-1.5">
+					<div className="col-span-full space-y-1.5">
 						{hydrated ? (
 							<Suspense fallback={<Skeleton className="h-56 w-full" />}>
 								<LazyStoreMapPreview
@@ -336,7 +343,7 @@ export function StoreForm({
 				) : (
 					<div
 						data-invalid={!!errors.location || undefined}
-						className="flex flex-col gap-3 rounded-md border border-border bg-muted px-3 py-3 text-sm data-invalid:border-destructive/50 data-invalid:bg-destructive/5 sm:flex-row sm:items-center sm:justify-between"
+						className="col-span-full flex flex-col gap-3 rounded-md border border-border bg-muted px-3 py-3 text-sm data-invalid:border-destructive/50 data-invalid:bg-destructive/5 sm:flex-row sm:items-center sm:justify-between"
 					>
 						<div className="flex items-start gap-2">
 							<MapPinOff
@@ -463,6 +470,7 @@ export function StoreForm({
 			<FormSection
 				title={m.store_form_contacts_title()}
 				description={m.store_form_contacts_description()}
+				grid
 			>
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">

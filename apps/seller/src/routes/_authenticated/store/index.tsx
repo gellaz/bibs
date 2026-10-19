@@ -283,9 +283,7 @@ function StoreSettingsPage() {
 			    scheda non butta le modifiche non salvate. */}
 			<div id="store-settings-panel" role="tabpanel">
 				{visited.has("profilo") && (
-					<div hidden={active !== "profilo"} className="max-w-3xl">
-						{storeForm}
-					</div>
+					<div hidden={active !== "profilo"}>{storeForm}</div>
 				)}
 				{visited.has("orari") && (
 					<div hidden={active !== "orari"}>
