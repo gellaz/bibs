@@ -134,7 +134,7 @@ export function TabNav({
 								onKeyDown={onKeyDown}
 								onClick={() => onTabChange(tab.value)}
 								className={cn(
-									"group relative inline-flex items-center gap-2 rounded-t-md px-4 py-2.5 text-sm whitespace-nowrap transition-all duration-150 focus-visible:focus-ring",
+									"group relative inline-flex items-center gap-2 rounded-t-md px-2.5 py-2.5 text-sm sm:px-4 whitespace-nowrap transition-all duration-150 focus-visible:focus-ring",
 									isActive
 										? "font-semibold text-primary"
 										: "font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground",
