@@ -64,4 +64,19 @@ describe("ClosuresList", () => {
 		expect(html.indexOf("Festa 6")).toBeLessThan(html.indexOf("Ferie"));
 		expect(html.indexOf("Festa 0")).toBeLessThan(html.indexOf("Festa 1"));
 	});
+
+	it("la nota si ferma a 200 caratteri, come l'API", () => {
+		overwriteGetLocale(() => "it");
+		const html = renderToStaticMarkup(
+			<ClosuresList
+				holidays={[]}
+				value={{ optOutIds: [], customClosures: [] }}
+				onChange={() => {}}
+				pending={{ start: "", end: "", note: "" }}
+				onPendingChange={() => {}}
+			/>,
+		);
+		const note = html.match(/<input[^>]*placeholder="Nota[^>]*>/)?.[0];
+		expect(note).toMatch(/maxLength="200"/i);
+	});
 });

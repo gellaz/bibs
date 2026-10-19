@@ -94,6 +94,8 @@ export function ClosuresList({
 					<Input
 						aria-label={m.store_closures_note_ph()}
 						placeholder={m.store_closures_note_ph()}
+						// Come CustomClosureSchema.note: oltre, il 422 fa fallire tutto il Salva.
+						maxLength={200}
 						value={draft.note}
 						onChange={(e) => setDraft({ ...draft, note: e.target.value })}
 					/>
