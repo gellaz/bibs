@@ -41,7 +41,6 @@ import { Route as AuthenticatedPromotionsDiscountIdRouteImport } from './routes/
 import { Route as AuthenticatedPromotionsNewRouteImport } from './routes/_authenticated/promotions/new'
 import { Route as AuthenticatedStoreIndexRouteImport } from './routes/_authenticated/store/index'
 import { Route as AuthenticatedStoreArchivedRouteImport } from './routes/_authenticated/store/archived'
-import { Route as AuthenticatedStoreClosuresRouteImport } from './routes/_authenticated/store/closures'
 import { Route as AuthenticatedStoreNewRouteImport } from './routes/_authenticated/store/new'
 import { Route as AuthenticatedTeamIndexRouteImport } from './routes/_authenticated/team/index'
 import { Route as AuthenticatedStoreNewProcessingRouteImport } from './routes/_authenticated/store/new_.processing'
@@ -220,12 +219,6 @@ const AuthenticatedStoreArchivedRoute =
     path: '/archived',
     getParentRoute: () => AuthenticatedStoreRoute,
   } as any)
-const AuthenticatedStoreClosuresRoute =
-  AuthenticatedStoreClosuresRouteImport.update({
-    id: '/closures',
-    path: '/closures',
-    getParentRoute: () => AuthenticatedStoreRoute,
-  } as any)
 const AuthenticatedStoreNewRoute = AuthenticatedStoreNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -271,7 +264,6 @@ export interface FileRoutesByFullPath {
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/store/archived': typeof AuthenticatedStoreArchivedRoute
-  '/store/closures': typeof AuthenticatedStoreClosuresRoute
   '/store/new': typeof AuthenticatedStoreNewRoute
   '/orders/': typeof AuthenticatedOrdersIndexRoute
   '/products/': typeof AuthenticatedProductsIndexRoute
@@ -303,7 +295,6 @@ export interface FileRoutesByTo {
   '/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/store/archived': typeof AuthenticatedStoreArchivedRoute
-  '/store/closures': typeof AuthenticatedStoreClosuresRoute
   '/store/new': typeof AuthenticatedStoreNewRoute
   '/orders': typeof AuthenticatedOrdersIndexRoute
   '/products': typeof AuthenticatedProductsIndexRoute
@@ -342,7 +333,6 @@ export interface FileRoutesById {
   '/_authenticated/promotions/$discountId': typeof AuthenticatedPromotionsDiscountIdRoute
   '/_authenticated/promotions/new': typeof AuthenticatedPromotionsNewRoute
   '/_authenticated/store/archived': typeof AuthenticatedStoreArchivedRoute
-  '/_authenticated/store/closures': typeof AuthenticatedStoreClosuresRoute
   '/_authenticated/store/new': typeof AuthenticatedStoreNewRoute
   '/_authenticated/orders/': typeof AuthenticatedOrdersIndexRoute
   '/_authenticated/products/': typeof AuthenticatedProductsIndexRoute
@@ -381,7 +371,6 @@ export interface FileRouteTypes {
     | '/promotions/$discountId'
     | '/promotions/new'
     | '/store/archived'
-    | '/store/closures'
     | '/store/new'
     | '/orders/'
     | '/products/'
@@ -413,7 +402,6 @@ export interface FileRouteTypes {
     | '/promotions/$discountId'
     | '/promotions/new'
     | '/store/archived'
-    | '/store/closures'
     | '/store/new'
     | '/orders'
     | '/products'
@@ -451,7 +439,6 @@ export interface FileRouteTypes {
     | '/_authenticated/promotions/$discountId'
     | '/_authenticated/promotions/new'
     | '/_authenticated/store/archived'
-    | '/_authenticated/store/closures'
     | '/_authenticated/store/new'
     | '/_authenticated/orders/'
     | '/_authenticated/products/'
@@ -697,13 +684,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoreArchivedRouteImport
       parentRoute: typeof AuthenticatedStoreRoute
     }
-    '/_authenticated/store/closures': {
-      id: '/_authenticated/store/closures'
-      path: '/closures'
-      fullPath: '/store/closures'
-      preLoaderRoute: typeof AuthenticatedStoreClosuresRouteImport
-      parentRoute: typeof AuthenticatedStoreRoute
-    }
     '/_authenticated/store/new': {
       id: '/_authenticated/store/new'
       path: '/new'
@@ -779,7 +759,6 @@ const AuthenticatedPromotionsRouteWithChildren =
 
 interface AuthenticatedStoreRouteChildren {
   AuthenticatedStoreArchivedRoute: typeof AuthenticatedStoreArchivedRoute
-  AuthenticatedStoreClosuresRoute: typeof AuthenticatedStoreClosuresRoute
   AuthenticatedStoreNewRoute: typeof AuthenticatedStoreNewRoute
   AuthenticatedStoreIndexRoute: typeof AuthenticatedStoreIndexRoute
   AuthenticatedStoreNewProcessingRoute: typeof AuthenticatedStoreNewProcessingRoute
@@ -787,7 +766,6 @@ interface AuthenticatedStoreRouteChildren {
 
 const AuthenticatedStoreRouteChildren: AuthenticatedStoreRouteChildren = {
   AuthenticatedStoreArchivedRoute: AuthenticatedStoreArchivedRoute,
-  AuthenticatedStoreClosuresRoute: AuthenticatedStoreClosuresRoute,
   AuthenticatedStoreNewRoute: AuthenticatedStoreNewRoute,
   AuthenticatedStoreIndexRoute: AuthenticatedStoreIndexRoute,
   AuthenticatedStoreNewProcessingRoute: AuthenticatedStoreNewProcessingRoute,

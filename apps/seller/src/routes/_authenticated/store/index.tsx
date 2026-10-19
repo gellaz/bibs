@@ -264,15 +264,6 @@ function StoreSettingsPage() {
 				storeForm
 			)}
 
-			{isOwner && (
-				<Link
-					to="/store/closures"
-					className="inline-flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:underline"
-				>
-					{m.store_closures_link()} →
-				</Link>
-			)}
-
 			{isOwner &&
 				activeStore &&
 				activeSubscription &&
