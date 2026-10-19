@@ -1,6 +1,6 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
-import { TabNav } from "@bibs/ui/custom/tab-nav";
+import { TabNav, tabId } from "@bibs/ui/custom/tab-nav";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreIcon } from "lucide-react";
@@ -288,6 +288,7 @@ function StoreSettingsPage() {
 			<div
 				id="store-settings-panel"
 				role="tabpanel"
+				aria-labelledby={tabId("store-settings-panel", active)}
 				className="flex flex-1 flex-col"
 			>
 				{visited.has("profilo") && (

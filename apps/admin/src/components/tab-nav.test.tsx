@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { TabNav } from "@bibs/ui/custom/tab-nav";
+import { TabNav, tabId } from "@bibs/ui/custom/tab-nav";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -73,6 +73,19 @@ describe("TabNav", () => {
 		for (const tab of screen.getAllByRole("tab")) {
 			expect(tab.getAttribute("aria-controls")).toBe("lista");
 		}
+	});
+
+	it("con panelId ogni scheda ha un id, che il pannello cita in aria-labelledby", () => {
+		render(<Harness />);
+		const ids = screen.getAllByRole("tab").map((t) => t.id);
+		expect(ids).toEqual(TABS.map((t) => tabId("lista", t.value)));
+		expect(new Set(ids).size).toBe(TABS.length);
+		expect(ids.every(Boolean)).toBe(true);
+	});
+
+	it("senza panelId le schede restano senza id", () => {
+		render(<TabNav tabs={TABS} activeTab="all" onTabChange={() => {}} />);
+		for (const tab of screen.getAllByRole("tab")) expect(tab.id).toBe("");
 	});
 
 	it("colora i contatori coi toni di stato", () => {

@@ -30,10 +30,17 @@ interface TabNavProps {
 	onTabChange: (value: string) => void;
 	/** Nome accessibile del tablist (es. «Stato dei prodotti»). */
 	label?: string;
-	/** Id dell'elemento che le schede filtrano, per `aria-controls`. */
+	/**
+	 * Id dell'elemento che le schede filtrano, per `aria-controls`. Dà anche un
+	 * id a ogni scheda (`tabId`), che il pannello cita in `aria-labelledby`.
+	 */
 	panelId?: string;
 	children?: React.ReactNode;
 }
+
+/** Id della scheda `value` di una TabNav con `panelId`. */
+export const tabId = (panelId: string, value: string) =>
+	`${panelId}-tab-${value}`;
 
 /** Indice della scheda raggiunta da un tasto, o null se il tasto non naviga. */
 function targetIndex(key: string, current: number, count: number) {
@@ -120,6 +127,7 @@ export function TabNav({
 								key={tab.value}
 								type="button"
 								role="tab"
+								id={panelId && tabId(panelId, tab.value)}
 								aria-selected={isActive}
 								aria-controls={panelId}
 								tabIndex={isActive ? 0 : -1}
