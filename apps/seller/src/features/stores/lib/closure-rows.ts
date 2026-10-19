@@ -124,14 +124,21 @@ export interface PendingClosure {
 }
 
 /**
- * Bozza → chiusura, o null se non lo è ancora (senza Dal, o Al prima di Dal).
- * Il Salva del pannello la include: chi la scrive e salva senza «Aggiungi» non
- * la perde.
+ * Bozza → chiusura, o null se non lo è ancora (senza Dal, Dal prima di oggi o
+ * Al prima di Dal). Il Salva del pannello la include: chi la scrive e salva
+ * senza «Aggiungi» non la perde.
  */
 export function pendingToClosure(
 	pending: PendingClosure | null,
+	today: string,
 ): CustomClosure | null {
-	if (!pending?.start || (pending.end && pending.end < pending.start)) {
+	// Il min del campo non ferma chi digita: una chiusura passata si
+	// salverebbe e poi sparirebbe dalla lista.
+	if (
+		!pending?.start ||
+		pending.start < today ||
+		(pending.end && pending.end < pending.start)
+	) {
 		return null;
 	}
 	return {

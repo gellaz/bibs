@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it } from "vitest";
 import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
-import type { HolidayRow } from "../lib/closure-rows";
+import type { HolidayRow, PendingClosure } from "../lib/closure-rows";
 import { ClosuresList } from "./closures-list";
 
 const originalGetLocale = getLocale;
@@ -63,5 +63,32 @@ describe("ClosuresList", () => {
 		const html = render();
 		expect(html.indexOf("Festa 6")).toBeLessThan(html.indexOf("Ferie"));
 		expect(html.indexOf("Festa 0")).toBeLessThan(html.indexOf("Festa 1"));
+	});
+
+	const renderPending = (pending: PendingClosure) => {
+		overwriteGetLocale(() => "it");
+		return renderToStaticMarkup(
+			<ClosuresList
+				holidays={[]}
+				value={{ optOutIds: [], customClosures: [] }}
+				onChange={() => {}}
+				pending={pending}
+				onPendingChange={() => {}}
+			/>,
+		);
+	};
+
+	it("la nota si ferma a 200 caratteri, come l'API", () => {
+		const html = renderPending({ start: "", end: "", note: "" });
+		const note = html.match(/<input[^>]*placeholder="Nota[^>]*>/)?.[0];
+		expect(note).toMatch(/maxLength="200"/i);
+	});
+
+	it("Dal digitato nel passato: campo non valido e «Aggiungi» spento", () => {
+		const html = renderPending({ start: "2020-01-01", end: "", note: "" });
+		expect(html).toMatch(
+			/<input[^>]*id="closure-start"[^>]*aria-invalid="true"/,
+		);
+		expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Aggiungi<\/button>/);
 	});
 });

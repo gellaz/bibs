@@ -47,7 +47,9 @@ export function ClosuresList({
 }) {
 	const draft = pending ?? EMPTY_DRAFT;
 	const setDraft = onPendingChange;
-	const closure = pendingToClosure(pending);
+	const today = romeToday();
+	const closure = pendingToClosure(pending, today);
+	const startInvalid = !!draft.start && draft.start < today;
 	const rangeInvalid = !!draft.end && draft.end < draft.start;
 
 	const add = () => {
@@ -74,8 +76,9 @@ export function ClosuresList({
 							<Input
 								id="closure-start"
 								type="date"
-								min={romeToday()}
+								min={today}
 								value={draft.start}
+								aria-invalid={startInvalid}
 								onChange={(e) => setDraft({ ...draft, start: e.target.value })}
 							/>
 						</div>
@@ -94,6 +97,8 @@ export function ClosuresList({
 					<Input
 						aria-label={m.store_closures_note_ph()}
 						placeholder={m.store_closures_note_ph()}
+						// Come CustomClosureSchema.note: oltre, il 422 fa fallire tutto il Salva.
+						maxLength={200}
 						value={draft.note}
 						onChange={(e) => setDraft({ ...draft, note: e.target.value })}
 					/>

@@ -55,12 +55,15 @@
 		"@inlang/paraglide-js": "catalog:",
 		"@rolldown/plugin-babel": "catalog:",
 		"@tanstack/devtools-vite": "catalog:",
+		"@testing-library/dom": "catalog:",
+		"@testing-library/react": "catalog:",
 		"@types/leaflet": "catalog:",
 		"@types/node": "catalog:",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "catalog:",
 		"babel-plugin-react-compiler": "catalog:",
+		"jsdom": "catalog:",
 		"vite": "catalog:",
 		"vitest": "catalog:"
 	}

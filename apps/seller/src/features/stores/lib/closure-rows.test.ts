@@ -113,26 +113,46 @@ describe("serializeClosures", () => {
 describe("pendingToClosure", () => {
 	it("una chiusura scritta ma non aggiunta vale se ha Dal", () => {
 		expect(
-			pendingToClosure({
-				start: "2027-02-10",
-				end: "2027-02-12",
-				note: " Ferie ",
-			}),
+			pendingToClosure(
+				{
+					start: "2027-02-10",
+					end: "2027-02-12",
+					note: " Ferie ",
+				},
+				TODAY,
+			),
 		).toEqual({
 			startDate: "2027-02-10",
 			endDate: "2027-02-12",
 			note: "Ferie",
 		});
 		expect(
-			pendingToClosure({ start: "2027-02-10", end: "2027-02-10", note: "" }),
+			pendingToClosure(
+				{ start: "2027-02-10", end: "2027-02-10", note: "" },
+				TODAY,
+			),
 		).toEqual({ startDate: "2027-02-10" });
 	});
 
 	it("senza Dal, o con Al prima di Dal, non è una chiusura", () => {
-		expect(pendingToClosure(null)).toBeNull();
-		expect(pendingToClosure({ start: "", end: "", note: "Ferie" })).toBeNull();
+		expect(pendingToClosure(null, TODAY)).toBeNull();
 		expect(
-			pendingToClosure({ start: "2027-02-10", end: "2027-02-01", note: "" }),
+			pendingToClosure({ start: "", end: "", note: "Ferie" }, TODAY),
 		).toBeNull();
+		expect(
+			pendingToClosure(
+				{ start: "2027-02-10", end: "2027-02-01", note: "" },
+				TODAY,
+			),
+		).toBeNull();
+	});
+
+	it("Dal prima di oggi non è una chiusura: si salverebbe già passata", () => {
+		expect(
+			pendingToClosure({ start: "2026-10-18", end: "", note: "" }, TODAY),
+		).toBeNull();
+		expect(
+			pendingToClosure({ start: TODAY, end: "", note: "" }, TODAY),
+		).toEqual({ startDate: TODAY });
 	});
 });

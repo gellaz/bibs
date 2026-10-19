@@ -476,7 +476,9 @@ export function StoreForm({
 				grid
 			>
 				<div className="space-y-2">
-					<div className="flex items-center justify-between">
+					{/* Alta quanto «Aggiungi», anche senza: «Sito web» accanto ha la
+					    stessa riga, e etichette e campi restano in linea. */}
+					<div className="flex min-h-7 items-center justify-between">
 						<Label>{m.store_form_phones()}</Label>
 						{!readOnly && (
 							<Button
@@ -535,7 +537,7 @@ export function StoreForm({
 				</div>
 
 				<Field data-invalid={!!errors.websiteUrl}>
-					<FieldLabel htmlFor="store-website">
+					<FieldLabel htmlFor="store-website" className="min-h-7">
 						{m.store_form_website()}
 					</FieldLabel>
 					<Input

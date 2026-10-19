@@ -167,20 +167,20 @@ export function OpeningHoursEditor({
 									<span className="w-20 text-sm font-semibold">{dayLabel}</span>
 								</div>
 
-								{/* Time slots */}
+								{/* Time slots: «09:00 – 13:00» anche da stretti, senza rientro né
+								    «Dalle/alle» a vista, che a 375 px schiacciavano i campi fino a
+								    troncare l'ora. */}
 								{isActive && (
-									<div className="flex flex-col @xl:flex-row @xl:flex-wrap gap-2 @xl:gap-3 pl-16.5 @xl:pl-0">
+									<div className="flex flex-col @xl:flex-row @xl:flex-wrap gap-2 @xl:gap-3">
 										{schedule.slots.map((slot, slotIndex) => (
 											<div
 												key={slotIndex}
 												className="flex items-center gap-1.5"
 											>
-												<span className="text-xs text-muted-foreground w-12 shrink-0 @xl:hidden">
-													{m.store_hours_from()}
-												</span>
 												<Input
 													type="time"
 													value={slot.open}
+													aria-label={m.store_hours_from()}
 													onChange={(e) =>
 														updateSlot(
 															dayOfWeek,
@@ -190,17 +190,13 @@ export function OpeningHoursEditor({
 														)
 													}
 													disabled={readOnly}
-													className="h-7 w-28 @xl:w-24 text-sm tabular-nums"
+													className="h-7 w-24 text-sm tabular-nums"
 												/>
-												<span className="text-xs text-muted-foreground shrink-0 text-center @xl:hidden w-8">
-													{m.store_hours_to()}
-												</span>
-												<span className="hidden @xl:inline text-xs text-muted-foreground">
-													–
-												</span>
+												<span className="text-xs text-muted-foreground">–</span>
 												<Input
 													type="time"
 													value={slot.close}
+													aria-label={m.store_hours_to()}
 													onChange={(e) =>
 														updateSlot(
 															dayOfWeek,
@@ -210,13 +206,13 @@ export function OpeningHoursEditor({
 														)
 													}
 													disabled={readOnly}
-													className="h-7 w-28 @xl:w-24 text-sm tabular-nums"
+													className="h-7 w-24 text-sm tabular-nums"
 												/>
 												{schedule.slots.length > 1 && !readOnly && (
 													<button
 														type="button"
 														onClick={() => removeSlot(dayOfWeek, slotIndex)}
-														className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+														className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-50"
 														title={m.store_hours_remove_slot()}
 														aria-label={m.store_hours_remove_slot()}
 													>
@@ -234,7 +230,7 @@ export function OpeningHoursEditor({
 									<button
 										type="button"
 										onClick={() => addSlot(dayOfWeek)}
-										className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors shrink-0 self-start @xl:self-auto ml-16.5 @xl:ml-0"
+										className="flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors shrink-0 self-start @xl:self-auto disabled:opacity-50"
 									>
 										<PlusCircleIcon className="size-3.5" />
 										{m.store_hours_add_slot()}
@@ -242,7 +238,7 @@ export function OpeningHoursEditor({
 								)}
 							</div>
 							{dayErrors?.[dayOfWeek] && (
-								<p className="text-sm text-destructive mt-1 pl-16.5 @xl:pl-0">
+								<p className="text-sm text-destructive mt-1">
 									{dayErrors[dayOfWeek]}
 								</p>
 							)}

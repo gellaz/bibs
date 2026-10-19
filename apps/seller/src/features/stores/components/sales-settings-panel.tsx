@@ -109,8 +109,12 @@ export function SalesSettingsPanel({
 
 	return (
 		<div className="@container flex flex-1 flex-col gap-12">
-			{/* Come Orari e chiusure: affiancati sugli schermi larghi. */}
-			<div className="grid gap-x-10 gap-y-12 @5xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+			{/* Come Orari e chiusure: affiancati sugli schermi larghi, e spenti
+			    mentre salva perché la risposta riscrive i campi. */}
+			<fieldset
+				disabled={save.isPending}
+				className="grid min-w-0 gap-x-10 gap-y-12 @5xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
+			>
 				{data ? (
 					<OrderTypesSection
 						value={types}
@@ -133,7 +137,7 @@ export function SalesSettingsPanel({
 					value={lowStockDraft}
 					onChange={setLowStockDraft}
 				/>
-			</div>
+			</fieldset>
 			<SaveBar
 				dirty={typesDirty || reservationDirty || lowStockDirty}
 				pending={save.isPending}
