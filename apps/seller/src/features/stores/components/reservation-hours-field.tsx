@@ -98,8 +98,12 @@ export function ReservationHoursField({
 					/>
 					<span className="text-sm text-muted-foreground">
 						{hasOpeningHours
-							? m.store_reservation_hours_unit()
-							: m.store_reservation_hours_unit_calendar()}
+							? parsed === 1
+								? m.store_reservation_hours_unit_one()
+								: m.store_reservation_hours_unit()
+							: parsed === 1
+								? m.store_reservation_hours_unit_calendar_one()
+								: m.store_reservation_hours_unit_calendar()}
 					</span>
 					<Button
 						type="submit"
