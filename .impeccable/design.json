@@ -146,17 +146,17 @@
 			},
 			"warning": {
 				"role": "tertiary",
-				"displayName": "Warning Amber",
-				"canonical": "oklch(0.50 0.12 58)",
+				"displayName": "Warning Segnale",
+				"canonical": "oklch(0.92 0.14 100)",
 				"tonalRamp": [
-					"oklch(0.22 0.05 60)",
-					"oklch(0.32 0.08 60)",
-					"oklch(0.45 0.12 60)",
-					"oklch(0.62 0.14 60)",
-					"oklch(0.72 0.14 60)",
-					"oklch(0.82 0.12 60)",
-					"oklch(0.90 0.08 60)",
-					"oklch(0.96 0.03 60)"
+					"oklch(0.30 0.05 95)",
+					"oklch(0.40 0.08 95)",
+					"oklch(0.55 0.11 95)",
+					"oklch(0.70 0.14 98)",
+					"oklch(0.82 0.15 100)",
+					"oklch(0.92 0.14 100)",
+					"oklch(0.95 0.09 100)",
+					"oklch(0.97 0.05 100)"
 				]
 			}
 		},
