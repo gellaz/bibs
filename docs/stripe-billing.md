@@ -309,8 +309,10 @@ in dev is for.
 
 ## Connect (pagamenti online dei negozi)
 
-Ogni seller può attivare un conto **Stripe Connect** dal proprio profilo — bottone
-«Attiva pagamenti online». Il conto nasce con **Accounts v2**
+Ogni seller può attivare un conto **Stripe Connect** da **Impostazioni negozio →
+Vendita**, nel riquadro sotto lo switch «Paga e ritira» (bottone «Attiva pagamenti
+online»), oppure dal banner giallo che il titolare vede in cima a ogni pagina finché
+l'attivazione non è fatta (la X lo nasconde 7 giorni su quel computer). Il conto nasce con **Accounts v2**
 (`stripe.v2.core.accounts.create`): configurazione `recipient` con la capability
 `stripe_balance.stripe_transfers` (che richiede da sé anche `stripe_balance.payouts`),
 `identity.country: "IT"`, `dashboard: "express"`, e
@@ -326,7 +328,10 @@ attivo, `details_submitted` = nessun requisito in attesa del seller (quindi
 `in_review` = tocca a Stripe, `incomplete` = tocca al seller). `GET
 /seller/settings` lo proietta come `onlinePayments: { status, chargesEnabled,
 payoutsEnabled } | null` (`status` ∈ `none | incomplete | in_review | enabled`), mai
-esposto ai dipendenti (solo il titolare).
+esposto ai dipendenti (solo il titolare). Unica eccezione voluta: `GET
+/seller/stores/:storeId/order-types` è leggibile anche dai dipendenti assegnati al
+negozio (per il riquadro «Come comprano i clienti» in sidebar) e la sua risposta
+include `chargesEnabled`.
 
 `POST /seller/settings/payments/onboarding` crea il conto se manca (lock su
 `seller_profiles` e rilettura: doppio click → un solo conto) e restituisce l'Account
@@ -347,9 +352,12 @@ annuncia solo col thin event v2
 `v2.core.account[configuration.recipient].capability_status_updated` (#250).
 Per questo c'è una terza route, `POST /webhooks/stripe/thin`, che gestisce quel
 tipo e `v2.core.account[requirements].updated` con lo stesso
-`refreshConnectAccount` e lo stesso ledger `stripe_events`. La card «Pagamenti
-online» del profilo rilegge `/seller/settings` ogni 10 s finché lo stato è
-`incomplete`/`in_review`, così l'attivazione compare senza ricaricare.
+`refreshConnectAccount` e lo stesso ledger `stripe_events`. Il riquadro dei
+pagamenti online nella scheda Vendita rilegge `/seller/settings` ogni 10 s finché lo
+stato è `incomplete`/`in_review`, così l'attivazione compare senza ricaricare; quando lo
+stato cambia rilegge anche le tipologie del negozio, e lo switch «Paga e ritira» si
+sblocca. Il banner nel layout non fa polling. Al ritorno da Stripe (`/payments/return`,
+`/payments/refresh`) si atterra su `/store?sezione=vendita`.
 
 `pay_pickup` («Paga e ritira») nelle «Tipologie d'acquisto» del negozio è
 attivabile solo con `chargesEnabled`; resta comunque **non offerto ai clienti**
@@ -388,8 +396,8 @@ non arriva un sync manuale).
 
 `stripe trigger account.updated` non tocca i nostri conti — crea un conto fixture
 nuovo, quindi il log dice «account.updated for unknown connected account,
-skipping». Il test vero è l'onboarding dal profilo seller (vedi lo smoke manuale
-del task 8).
+skipping». Il test vero è l'onboarding da Impostazioni negozio → Vendita (vedi lo
+smoke manuale del task 8).
 
 ## Paga e ritira (PR2) in locale
 
@@ -397,8 +405,8 @@ del task 8).
    della stessa modalità test.
 2. `bun run dev:stripe`
    — i `payment_intent.*` arrivano sulla route piattaforma.
-3. Il negozio deve avere «Paga e ritira» acceso e il conto Connect abilitato (profilo seller →
-   Pagamenti online, onboarding di test).
+3. Il negozio deve avere «Paga e ritira» acceso e il conto Connect abilitato (Impostazioni
+   negozio → Vendita → «Attiva pagamenti online», onboarding di test).
 4. Carte di test: `4242 4242 4242 4242` (ok), `4000 0025 0000 3155` (3DS), `4000 0000 0000 0002`
    (rifiutata). Scadenza futura qualsiasi, CVC qualsiasi.
 5. Senza `bun run dev:stripe` la conferma arriva solo quando il cron `expireUnpaidOrders` trova la
