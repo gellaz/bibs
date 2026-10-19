@@ -4,7 +4,12 @@ import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { useState } from "react";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
@@ -46,6 +51,8 @@ export function ReservationHoursField({
 	const preview = useQuery({
 		queryKey: ["store", storeId, "reservation-preview", hours],
 		enabled: hours !== null && hasOpeningHours,
+		// Tiene l'esempio precedente mentre arriva il nuovo: il riquadro non sparisce.
+		placeholderData: keepPreviousData,
 		queryFn: async () =>
 			unwrap(
 				await api()
