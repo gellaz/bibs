@@ -47,7 +47,9 @@ export function ClosuresList({
 }) {
 	const draft = pending ?? EMPTY_DRAFT;
 	const setDraft = onPendingChange;
-	const closure = pendingToClosure(pending);
+	const today = romeToday();
+	const closure = pendingToClosure(pending, today);
+	const startInvalid = !!draft.start && draft.start < today;
 	const rangeInvalid = !!draft.end && draft.end < draft.start;
 
 	const add = () => {
@@ -74,8 +76,9 @@ export function ClosuresList({
 							<Input
 								id="closure-start"
 								type="date"
-								min={romeToday()}
+								min={today}
 								value={draft.start}
+								aria-invalid={startInvalid}
 								onChange={(e) => setDraft({ ...draft, start: e.target.value })}
 							/>
 						</div>

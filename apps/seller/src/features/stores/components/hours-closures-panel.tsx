@@ -94,8 +94,9 @@ export function HoursClosuresPanel({
 		setClosures(toClosuresState(closuresQuery.data));
 	}
 	const [pending, setPending] = useState<PendingClosure | null>(null);
-	const pendingClosure = pendingToClosure(pending);
-	// Al prima di Dal nel modulo aperto: non si salva finché non si corregge.
+	const pendingClosure = pendingToClosure(pending, romeToday());
+	// Dal passato o Al prima di Dal nel modulo aperto: non si salva finché non
+	// si corregge.
 	const pendingInvalid = !!pending?.start && !pendingClosure;
 	const closuresDirty =
 		!!closures &&
