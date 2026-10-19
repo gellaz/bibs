@@ -29,6 +29,8 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
 	month: "short",
 	hour: "2-digit",
 	minute: "2-digit",
+	// Come gli orari del negozio e la riapertura sotto il timer: ora di Roma.
+	timeZone: "Europe/Rome",
 };
 
 /** Data e ora di una scadenza di ritiro: «mer 21 ott, 17:00». */

@@ -1,9 +1,27 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
 	canCustomerCancel,
 	formatCountdown,
+	formatPickupDate,
 	pickupDeadline,
 } from "./order-display";
+
+describe("formatPickupDate", () => {
+	const tz = process.env.TZ;
+	beforeAll(() => {
+		process.env.TZ = "America/New_York";
+	});
+	afterAll(() => {
+		if (tz === undefined) delete process.env.TZ;
+		else process.env.TZ = tz;
+	});
+	it("ora di Roma anche con il browser in un altro fuso", () => {
+		// 17:00 a Roma sono le 11:00 a New York.
+		expect(formatPickupDate("2026-10-21T17:00:00+02:00")).toBe(
+			"mer 21 ott, 17:00",
+		);
+	});
+});
 
 describe("pickupDeadline", () => {
 	const now = Date.parse("2026-09-25T09:00:00+02:00");

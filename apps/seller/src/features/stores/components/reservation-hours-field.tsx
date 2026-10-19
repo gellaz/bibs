@@ -25,6 +25,8 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
 	month: "short",
 	hour: "2-digit",
 	minute: "2-digit",
+	// Gli orari del negozio sono a Roma: lo è anche la scadenza d'esempio.
+	timeZone: "Europe/Rome",
 };
 
 /**
