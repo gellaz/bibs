@@ -151,6 +151,20 @@ describe("pagamenti online nella scheda Vendita", () => {
 		).toBeTruthy();
 	});
 
+	it("Paga e ritira acceso ma Stripe mai attivato: niente «non più abilitati»", async () => {
+		overwriteGetLocale(() => "it");
+		mockApi({
+			status: "none",
+			orderTypes: ["reserve_pickup", "pay_pickup"],
+			chargesEnabled: false,
+		});
+		renderPanel();
+		await screen.findByRole("button", { name: "Attiva pagamenti online" });
+		expect(
+			screen.queryByText(m.store_order_types_pay_account_disabled()),
+		).toBeNull();
+	});
+
 	it("quando Stripe abilita l'account rilegge le tipologie", async () => {
 		overwriteGetLocale(() => "it");
 		mockApi({ status: "incomplete" });

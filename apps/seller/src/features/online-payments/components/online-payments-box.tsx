@@ -72,7 +72,8 @@ export function OnlinePaymentsBox({
 				{status === "enabled" && !data.onlinePayments.payoutsEnabled && (
 					<p className="text-xs">{m.payments_payouts_pending()}</p>
 				)}
-				{payOn && status !== "enabled" && (
+				{/* «Non più»: l'account c'era e Stripe l'ha sospeso; mai attivato non conta. */}
+				{payOn && (status === "incomplete" || status === "in_review") && (
 					<p className="text-xs">
 						{m.store_order_types_pay_account_disabled()}
 					</p>
