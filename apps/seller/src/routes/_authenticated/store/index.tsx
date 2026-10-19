@@ -17,6 +17,7 @@ import {
 	StoreForm,
 	type StoreFormData,
 } from "@/features/stores/components/store-form";
+import { saveStoreProfile } from "@/features/stores/lib/save-store-profile";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
@@ -122,26 +123,28 @@ function StoreSettingsPage() {
 	const updateMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
 			if (!storeId) throw new Error(m.store_no_active());
-			const response = await api().seller.stores({ storeId }).patch(formData);
-			const data = unwrap(response, m.store_update_error());
-			if (newFiles.length > 0) {
-				const imgResponse = await api()
-					.seller.stores({ storeId })
-					.images.post({ files: newFiles });
-				if (imgResponse.error) {
-					toast.warning(m.store_update_images_warning());
-				} else {
-					// Le foto caricate passano tra le esistenti: senza, sparirebbero
-					// dalla vetrina fino al prossimo cambio di negozio.
-					const uploaded = imgResponse.data.data;
-					setExistingImages((prev) => [
-						...prev,
-						...uploaded.map((img) => ({ id: img.id, url: img.url })),
-					]);
-				}
-				setNewFiles([]);
-			}
-			return data;
+			const { store, uploaded } = await saveStoreProfile({
+				save: async () =>
+					unwrap(
+						await api().seller.stores({ storeId }).patch(formData),
+						m.store_update_error(),
+					),
+				upload: async (files) => {
+					const r = await api()
+						.seller.stores({ storeId })
+						.images.post({ files });
+					return r.error ? null : r.data.data;
+				},
+				files: newFiles,
+			});
+			// Le foto caricate passano tra le esistenti: senza, sparirebbero dalla
+			// vetrina fino al prossimo cambio di negozio.
+			setExistingImages((prev) => [
+				...prev,
+				...uploaded.map((img) => ({ id: img.id, url: img.url })),
+			]);
+			setNewFiles([]);
+			return store;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["stores"] });
