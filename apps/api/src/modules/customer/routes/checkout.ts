@@ -5,7 +5,7 @@ import {
 	CheckoutPreviewSchema,
 	CheckoutSchema,
 	okRes,
-	ReservationDeadlineSchema,
+	StoreReservationDeadlineSchema,
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
@@ -36,14 +36,7 @@ export const checkoutRoutes = new Elysia()
 				}),
 			}),
 			response: withErrors({
-				200: okRes(
-					t.Array(
-						t.Object({
-							storeId: t.String(),
-							...ReservationDeadlineSchema.properties,
-						}),
-					),
-				),
+				200: okRes(t.Array(StoreReservationDeadlineSchema)),
 			}),
 			detail: {
 				summary: "Scadenze delle prenotazioni",

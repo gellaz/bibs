@@ -1360,6 +1360,11 @@ export const ReservationDeadlineSchema = t.Object({
 	}),
 });
 
+export const StoreReservationDeadlineSchema = t.Object({
+	storeId: t.String({ description: "ID del negozio" }),
+	...ReservationDeadlineSchema.properties,
+});
+
 export const StoreOrderTypesSchema = t.Object({
 	orderTypes: t.Array(StoreOrderTypeLiteral, {
 		description: "Tipologie configurate dal negozio",
