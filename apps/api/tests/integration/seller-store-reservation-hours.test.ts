@@ -84,13 +84,18 @@ async function setup(withHours = true) {
 	return { sellerProfileId: seller.profile.id, storeId: store.id };
 }
 
-const patch = (s: { sellerProfileId: string; storeId: string }, body: object) =>
+const patch = (
+	s: { sellerProfileId: string; storeId: string },
+	body: object,
+	owner = true,
+) =>
 	app.handle(
 		new Request(`http://localhost/stores/${s.storeId}`, {
 			method: "PATCH",
 			headers: {
 				"content-type": "application/json",
 				"x-seller": s.sellerProfileId,
+				"x-owner": owner ? "1" : "0",
 			},
 			body: JSON.stringify(body),
 		}),
@@ -145,6 +150,13 @@ describe("ore di ritiro del negozio", () => {
 			expect(await savedHours(s.storeId)).toBe(24);
 		});
 	}
+
+	it("PATCH da dipendente → 403, valore invariato", async () => {
+		const s = await setup();
+		const res = await patch(s, { reservationHours: 48 }, false);
+		expect(res.status).toBe(403);
+		expect(await savedHours(s.storeId)).toBe(24);
+	});
 });
 
 describe("anteprima della scadenza", () => {
