@@ -15,8 +15,7 @@ import {
 	type ExistingImage,
 	ProductImageDropzone,
 } from "@/features/products/components/product-image-dropzone";
-import { LowStockThresholdSection } from "@/features/stores/components/low-stock-threshold-section";
-import { OrderTypesSection } from "@/features/stores/components/order-types-section";
+import { SalesSettingsPanel } from "@/features/stores/components/sales-settings-panel";
 import {
 	StoreForm,
 	type StoreFormData,
@@ -27,7 +26,17 @@ import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
+export type StoreSection = "profilo" | "orari" | "vendita";
+const SECTIONS: StoreSection[] = ["profilo", "orari", "vendita"];
+
 export const Route = createFileRoute("/_authenticated/store/")({
+	// Scheda aperta: assente = Profilo negozio.
+	validateSearch: (
+		search: Record<string, unknown>,
+	): { sezione?: StoreSection } =>
+		SECTIONS.includes(search.sezione as StoreSection)
+			? { sezione: search.sezione as StoreSection }
+			: {},
 	loader: ({ context }) =>
 		context.queryClient.ensureQueryData(municipalitiesQueryOptions()),
 	component: StoreSettingsPage,
@@ -244,18 +253,14 @@ function StoreSettingsPage() {
 									maxFiles={MAX_STORE_IMAGES}
 								/>
 							</FormSection>
-							<OrderTypesSection
+							<SalesSettingsPanel
 								key={activeStore.id}
 								storeId={activeStore.id}
 								reservationHours={store.reservationHours}
+								lowStockThreshold={store.lowStockThreshold}
 								hasOpeningHours={
 									store.openingHours?.some((d) => d.slots.length > 0) ?? false
 								}
-							/>
-							<LowStockThresholdSection
-								key={`low-stock-${activeStore.id}`}
-								storeId={activeStore.id}
-								value={store.lowStockThreshold}
 							/>
 						</div>
 					</div>

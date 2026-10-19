@@ -1,118 +1,84 @@
 import { Label } from "@bibs/ui/components/label";
-import { toast } from "@bibs/ui/components/sonner";
 import { Switch } from "@bibs/ui/components/switch";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { Link } from "@tanstack/react-router";
+import { CircleCheckIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { FormSection } from "@/components/form-section";
-import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
-import { ReservationHoursField } from "./reservation-hours-field";
-
-type OrderType = "reserve_pickup" | "pay_pickup";
+import { isToggleLocked, type OrderType } from "../lib/order-types";
 
 /**
- * «Tipologie d'acquisto» del negozio: switch immediati per reserve_pickup /
- * pay_pickup; con reserve_pickup attivo, anche il tempo per ritirare. pay_pickup richiede chargesEnabled per essere acceso (Task 5);
- * offeredOrderTypes riflette cosa vede davvero il cliente: PR2 solo con il
- * conto abilitato.
+ * «Tipologie d'acquisto» del negozio, controllate: le salva la scheda Vendita.
+ * Con «Prenota» accesa, sotto c'è il tempo per ritirare; sotto «Paga e
+ * ritira», lo stato dei pagamenti online da cui dipende.
  */
 export function OrderTypesSection({
-	storeId,
-	reservationHours,
-	hasOpeningHours,
+	value,
+	onChange,
+	chargesEnabled,
+	disabled,
+	reservationField,
 }: {
-	storeId: string;
-	reservationHours: number;
-	hasOpeningHours: boolean;
+	value: OrderType[];
+	onChange: (next: OrderType[]) => void;
+	chargesEnabled: boolean;
+	disabled: boolean;
+	reservationField: ReactNode;
 }) {
-	const qc = useQueryClient();
-	const key = ["store", storeId, "order-types"];
-	const { data } = useQuery({
-		queryKey: key,
-		queryFn: async () =>
-			unwrap(
-				await api().seller.stores({ storeId })["order-types"].get(),
-				m.store_order_types_error(),
-			).data,
-	});
-
-	const save = useMutation({
-		mutationFn: async (orderTypes: OrderType[]) =>
-			unwrap(
-				await api().seller.stores({ storeId })["order-types"].patch({
-					orderTypes,
-				}),
-				m.store_order_types_error(),
-			).data,
-		onSuccess: (next) => {
-			qc.setQueryData(key, next);
-			toast.success(m.store_order_types_saved());
-		},
-		onError: (error: Error) => toast.error(error.message),
-	});
-
-	if (!data) {
-		return (
-			<FormSection title={m.store_order_types_title()}>{null}</FormSection>
-		);
-	}
-
-	const on = (type: OrderType) => data.orderTypes.includes(type);
+	const on = (type: OrderType) => value.includes(type);
 	const toggle = (type: OrderType, checked: boolean) =>
-		save.mutate(
-			checked
-				? [...data.orderTypes, type]
-				: data.orderTypes.filter((t) => t !== type),
-		);
-
-	const payOn = on("pay_pickup");
-	const payOffered = data.offeredOrderTypes.includes("pay_pickup");
-	// Spegnere l'ultima tipologia offerta lo rifiuterebbe l'API (regola 2b
-	// del design): si disabilita prima lato FE.
-	const lastOffered = (type: OrderType) =>
-		data.offeredOrderTypes.length === 1 && data.offeredOrderTypes[0] === type;
+		onChange(checked ? [...value, type] : value.filter((t) => t !== type));
+	const locked = (type: OrderType) =>
+		disabled || isToggleLocked(type, value, chargesEnabled);
 
 	return (
 		<FormSection
 			title={m.store_order_types_title()}
 			description={m.store_order_types_description()}
 		>
-			<div className="space-y-5">
-				<Row
-					id="order-type-reserve"
-					label={m.orders_type_reserve_pickup()}
-					hint={m.store_order_types_reserve_hint()}
-					checked={on("reserve_pickup")}
-					disabled={
-						save.isPending ||
-						(on("reserve_pickup") && lastOffered("reserve_pickup"))
-					}
-					onChange={(checked) => toggle("reserve_pickup", checked)}
-				/>
-				{on("reserve_pickup") && (
-					<div className="space-y-3 border-l-2 border-warm-line pl-3">
-						<ReservationHoursField
-							storeId={storeId}
-							value={reservationHours}
-							hasOpeningHours={hasOpeningHours}
-						/>
-					</div>
-				)}
-				<Row
-					id="order-type-pay"
-					label={m.orders_type_pay_pickup()}
-					hint={m.store_order_types_pay_hint()}
-					checked={payOn}
-					// Accendere richiede il conto abilitato; spegnere è sempre permesso.
-					disabled={
-						save.isPending ||
-						(!payOn && !data.chargesEnabled) ||
-						(payOn && lastOffered("pay_pickup"))
-					}
-					onChange={(checked) => toggle("pay_pickup", checked)}
-				>
-					{!payOn && !data.chargesEnabled && (
+			<div className="divide-y divide-border rounded-lg border border-border">
+				<div className="space-y-4 p-4">
+					<Row
+						id="order-type-reserve"
+						label={m.orders_type_reserve_pickup()}
+						hint={m.store_order_types_reserve_hint()}
+						checked={on("reserve_pickup")}
+						disabled={locked("reserve_pickup")}
+						onChange={(checked) => toggle("reserve_pickup", checked)}
+					/>
+					{on("reserve_pickup") && (
+						<div className="space-y-3 rounded-md border border-border p-3">
+							{reservationField}
+						</div>
+					)}
+				</div>
+				<div className="space-y-3 p-4">
+					<Row
+						id="order-type-pay"
+						label={m.orders_type_pay_pickup()}
+						hint={m.store_order_types_pay_hint()}
+						checked={on("pay_pickup")}
+						disabled={locked("pay_pickup")}
+						onChange={(checked) => toggle("pay_pickup", checked)}
+					/>
+					{chargesEnabled ? (
+						<div className="flex flex-wrap items-center gap-2 text-sm">
+							<StatusBadge tone="success" icon={CircleCheckIcon}>
+								{m.store_order_types_payments_on()}
+							</StatusBadge>
+							<Link
+								to="/profile"
+								className="font-medium text-foreground underline-offset-4 hover:underline"
+							>
+								{m.store_order_types_manage_payments()}
+							</Link>
+						</div>
+					) : on("pay_pickup") ? (
+						<p className="text-xs text-muted-foreground">
+							{m.store_order_types_pay_account_disabled()}
+						</p>
+					) : (
 						<p className="text-xs text-muted-foreground">
 							{m.store_order_types_pay_needs_payments()}{" "}
 							<Link
@@ -123,12 +89,7 @@ export function OrderTypesSection({
 							</Link>
 						</p>
 					)}
-					{payOn && !payOffered && (
-						<p className="text-xs text-muted-foreground">
-							{m.store_order_types_pay_account_disabled()}
-						</p>
-					)}
-				</Row>
+				</div>
 			</div>
 		</FormSection>
 	);
@@ -141,14 +102,14 @@ function Row(props: {
 	checked: boolean;
 	disabled: boolean;
 	onChange: (checked: boolean) => void;
-	children?: ReactNode;
 }) {
 	return (
 		<div className="flex items-start justify-between gap-4">
 			<div className="space-y-1">
-				<Label htmlFor={props.id}>{props.label}</Label>
-				<p className="text-xs text-muted-foreground">{props.hint}</p>
-				{props.children}
+				<Label htmlFor={props.id} className="font-semibold">
+					{props.label}
+				</Label>
+				<p className="text-sm text-muted-foreground">{props.hint}</p>
 			</div>
 			<Switch
 				id={props.id}
