@@ -59,7 +59,12 @@ export function OnlinePaymentsBox({
 					: "border-border",
 			)}
 		>
-			<StatusBadge tone={badge.tone} icon={badge.icon}>
+			{/* Sul giallo il fondo tinto al 12% non regge AA in scuro: fondo pieno. */}
+			<StatusBadge
+				tone={badge.tone}
+				icon={badge.icon}
+				className={todo ? "bg-background" : undefined}
+			>
 				{badge.label()}
 			</StatusBadge>
 			<div

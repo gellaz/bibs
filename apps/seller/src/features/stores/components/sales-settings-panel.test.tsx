@@ -115,6 +115,17 @@ describe("pagamenti online nella scheda Vendita", () => {
 		expect(screen.queryByText("Vai ai pagamenti online")).toBeNull();
 	});
 
+	it("sul giallo il badge ha un fondo pieno: il tinto al 12% non regge AA in scuro", async () => {
+		overwriteGetLocale(() => "it");
+		mockApi({ status: "none" });
+		renderPanel();
+		const badge = (await screen.findByText("Da attivare")).closest(
+			"[data-slot='status-badge']",
+		) as HTMLElement;
+		expect(badge.className).toContain("bg-background");
+		expect(badge.className).not.toContain("bg-action/12");
+	});
+
 	it("da completare: aggiorna stato e completa", async () => {
 		overwriteGetLocale(() => "it");
 		mockApi({ status: "incomplete" });
