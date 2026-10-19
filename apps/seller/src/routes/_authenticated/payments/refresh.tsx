@@ -22,7 +22,11 @@ function PaymentsRefreshPage() {
 		start.mutate(undefined, {
 			onError: (e) => {
 				toast.error(e.message);
-				void navigate({ to: "/profile", replace: true });
+				void navigate({
+					to: "/store",
+					search: { sezione: "vendita" },
+					replace: true,
+				});
 			},
 		});
 	}, [start, navigate]);

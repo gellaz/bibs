@@ -1,8 +1,5 @@
 import { Label } from "@bibs/ui/components/label";
 import { Switch } from "@bibs/ui/components/switch";
-import { StatusBadge } from "@bibs/ui/custom/status-badge";
-import { Link } from "@tanstack/react-router";
-import { CircleCheckIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { FormSection } from "@/components/form-section";
 import { m } from "@/paraglide/messages";
@@ -11,7 +8,7 @@ import { isToggleLocked, type OrderType } from "../lib/order-types";
 /**
  * «Tipologie d'acquisto» del negozio, controllate: le salva la scheda Vendita.
  * Con «Prenota» accesa, sotto c'è il tempo per ritirare; sotto «Paga e
- * ritira», lo stato dei pagamenti online da cui dipende.
+ * ritira», il riquadro dei pagamenti online da cui dipende.
  */
 export function OrderTypesSection({
 	value,
@@ -19,12 +16,14 @@ export function OrderTypesSection({
 	chargesEnabled,
 	disabled,
 	reservationField,
+	paymentsBox,
 }: {
 	value: OrderType[];
 	onChange: (next: OrderType[]) => void;
 	chargesEnabled: boolean;
 	disabled: boolean;
 	reservationField: ReactNode;
+	paymentsBox: ReactNode;
 }) {
 	const on = (type: OrderType) => value.includes(type);
 	const toggle = (type: OrderType, checked: boolean) =>
@@ -62,33 +61,7 @@ export function OrderTypesSection({
 						disabled={locked("pay_pickup")}
 						onChange={(checked) => toggle("pay_pickup", checked)}
 					/>
-					{chargesEnabled ? (
-						<div className="flex flex-wrap items-center gap-2 text-sm">
-							<StatusBadge tone="success" icon={CircleCheckIcon}>
-								{m.store_order_types_payments_on()}
-							</StatusBadge>
-							<Link
-								to="/profile"
-								className="font-medium text-foreground underline-offset-4 hover:underline"
-							>
-								{m.store_order_types_manage_payments()}
-							</Link>
-						</div>
-					) : on("pay_pickup") ? (
-						<p className="text-xs text-muted-foreground">
-							{m.store_order_types_pay_account_disabled()}
-						</p>
-					) : (
-						<p className="text-xs text-muted-foreground">
-							{m.store_order_types_pay_needs_payments()}{" "}
-							<Link
-								to="/profile"
-								className="font-medium text-foreground underline-offset-4 hover:underline"
-							>
-								{m.store_order_types_pay_go_to_profile()}
-							</Link>
-						</p>
-					)}
+					{paymentsBox}
 				</div>
 			</div>
 		</FormSection>
