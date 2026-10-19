@@ -150,7 +150,12 @@ export function HoursClosuresPanel({
 				readOnly && "max-w-3xl",
 			)}
 		>
-			<div className="grid gap-x-10 gap-y-12 @5xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+			{/* Spento mentre salva: la risposta riscrive orari e chiusure, e una
+			    modifica fatta nel frattempo andrebbe persa senza essere inviata. */}
+			<fieldset
+				disabled={save.isPending}
+				className="grid min-w-0 gap-x-10 gap-y-12 @5xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
+			>
 				<FormSection
 					title={m.store_hours_week_title()}
 					description={m.store_hours_week_description()}
@@ -192,7 +197,7 @@ export function HoursClosuresPanel({
 						)}
 					</FormSection>
 				)}
-			</div>
+			</fieldset>
 
 			{!readOnly && (
 				<SaveBar
