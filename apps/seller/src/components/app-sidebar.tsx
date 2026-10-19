@@ -21,6 +21,7 @@ import {
 	TagIcon,
 } from "lucide-react";
 import { NavUser } from "@/components/nav-user";
+import { OrderTypesSidebarCard } from "@/components/order-types-sidebar-card";
 import { StoreSwitcher } from "@/components/store-switcher";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { m } from "@/paraglide/messages";
@@ -112,6 +113,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 			</SidebarContent>
 
 			<SidebarFooter>
+				<OrderTypesSidebarCard />
 				<NavUser />
 			</SidebarFooter>
 

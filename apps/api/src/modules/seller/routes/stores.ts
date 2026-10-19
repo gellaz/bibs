@@ -16,7 +16,7 @@ import {
 } from "@/lib/schemas";
 import { CreateStoreBody } from "@/lib/schemas/forms";
 import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
-import { requireOwner, withSeller } from "../context";
+import { ensureStoreAccess, requireOwner, withSeller } from "../context";
 import {
 	getStoreOrderTypes,
 	previewReservationDeadline,
@@ -238,8 +238,8 @@ export const storesRoutes = new Elysia()
 	.get(
 		"/stores/:storeId/order-types",
 		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
-			requireOwner(isOwner);
+			const { sellerProfile: sp, accessCtx, params } = withSeller(ctx);
+			await ensureStoreAccess(params.storeId, accessCtx);
 			return ok(
 				await getStoreOrderTypes({
 					sellerProfileId: sp.id,
@@ -255,7 +255,7 @@ export const storesRoutes = new Elysia()
 			detail: {
 				summary: "Tipologie d'acquisto del negozio",
 				description:
-					"Tipologie configurate, quelle offerte davvero ai clienti e se il venditore può incassare online. Solo il titolare.",
+					"Tipologie configurate, quelle offerte davvero ai clienti e se il venditore può incassare online. Titolare e dipendenti assegnati al negozio.",
 				tags: ["Seller - Stores"],
 			},
 		},

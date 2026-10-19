@@ -20,7 +20,12 @@ export function useSyncOnlinePayments() {
 			const r = await api().seller.settings.payments.sync.post();
 			return unwrap(r, m.payments_error_sync()).data;
 		},
-		onSuccess: () =>
-			void qc.invalidateQueries({ queryKey: ["seller", "settings"] }),
+		onSuccess: () => {
+			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });
+			// Le tipologie offerte dipendono dall'account che incassa.
+			void qc.invalidateQueries({
+				predicate: (q) => q.queryKey[2] === "order-types",
+			});
+		},
 	});
 }

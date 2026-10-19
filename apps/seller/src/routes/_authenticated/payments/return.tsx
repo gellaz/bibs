@@ -2,7 +2,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { useSyncOnlinePayments } from "@/features/profile/hooks/use-online-payments";
+import { useSyncOnlinePayments } from "@/features/online-payments/hooks/use-online-payments";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/payments/return")({
@@ -10,7 +10,8 @@ export const Route = createFileRoute("/_authenticated/payments/return")({
 });
 
 // Stripe rimanda qui a fine onboarding senza dire com'è andata: si rilegge il
-// conto (il webhook può non essere ancora arrivato) e si torna al profilo.
+// conto (il webhook può non essere ancora arrivato) e si torna alla scheda
+// Vendita, dove c'è lo switch «Paga e ritira» da accendere.
 function PaymentsReturnPage() {
 	const navigate = useNavigate();
 	const sync = useSyncOnlinePayments();
@@ -21,7 +22,12 @@ function PaymentsReturnPage() {
 		started.current = true;
 		sync.mutate(undefined, {
 			onError: (e) => toast.error(e.message),
-			onSettled: () => void navigate({ to: "/profile", replace: true }),
+			onSettled: () =>
+				void navigate({
+					to: "/store",
+					search: { sezione: "vendita" },
+					replace: true,
+				}),
 		});
 	}, [sync, navigate]);
 

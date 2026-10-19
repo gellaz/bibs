@@ -2,7 +2,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { useStartOnboarding } from "@/features/profile/hooks/use-online-payments";
+import { useStartOnboarding } from "@/features/online-payments/hooks/use-online-payments";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/payments/refresh")({
@@ -22,7 +22,11 @@ function PaymentsRefreshPage() {
 		start.mutate(undefined, {
 			onError: (e) => {
 				toast.error(e.message);
-				void navigate({ to: "/profile", replace: true });
+				void navigate({
+					to: "/store",
+					search: { sezione: "vendita" },
+					replace: true,
+				});
 			},
 		});
 	}, [start, navigate]);

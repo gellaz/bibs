@@ -1,10 +1,15 @@
 import { toast } from "@bibs/ui/components/sonner";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { FormSection } from "@/components/form-section";
 import { SaveBar } from "@/components/save-bar";
+import { OnlinePaymentsBox } from "@/features/online-payments/components/online-payments-box";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
+import {
+	storeOrderTypesKey,
+	useStoreOrderTypes,
+} from "../hooks/use-store-order-types";
 import type { OrderType } from "../lib/order-types";
 import { parseReservationHours } from "../lib/reservation-hours";
 import {
@@ -33,15 +38,7 @@ export function SalesSettingsPanel({
 	hasOpeningHours: boolean;
 }) {
 	const qc = useQueryClient();
-	const typesKey = ["store", storeId, "order-types"];
-	const { data } = useQuery({
-		queryKey: typesKey,
-		queryFn: async () =>
-			unwrap(
-				await api().seller.stores({ storeId })["order-types"].get(),
-				m.store_order_types_error(),
-			).data,
-	});
+	const { data } = useStoreOrderTypes(storeId);
 
 	const [typesDraft, setTypesDraft] = useState<OrderType[] | null>(null);
 	const [saved, setSaved] = useState({ reservationHours, lowStockThreshold });
@@ -74,7 +71,7 @@ export function SalesSettingsPanel({
 						["order-types"].patch({ orderTypes: typesDraft }),
 					m.store_order_types_error(),
 				).data;
-				qc.setQueryData(typesKey, next);
+				qc.setQueryData(storeOrderTypesKey(storeId), next);
 				setTypesDraft(null);
 			}
 			const patch: { reservationHours?: number; lowStockThreshold?: number } =
@@ -121,6 +118,12 @@ export function SalesSettingsPanel({
 						onChange={setTypesDraft}
 						chargesEnabled={data.chargesEnabled}
 						disabled={save.isPending}
+						paymentsBox={
+							<OnlinePaymentsBox
+								storeId={storeId}
+								payOn={types.includes("pay_pickup")}
+							/>
+						}
 						reservationField={
 							<ReservationHoursField
 								storeId={storeId}
