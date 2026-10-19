@@ -71,6 +71,10 @@ const firstTime = (container: HTMLElement) =>
 	) as HTMLInputElement;
 const save = () =>
 	fireEvent.click(screen.getByRole("button", { name: "Salva Modifiche" }));
+const removeUpcoming = () =>
+	fireEvent.click(
+		screen.getByRole("button", { name: `Rimuovi ${UPCOMING.note}` }),
+	);
 
 describe("HoursClosuresPanel", () => {
 	it("mentre salva orari e chiusure non si modificano: il salvataggio non riscrive ciò che scrivi", async () => {
@@ -95,6 +99,54 @@ describe("HoursClosuresPanel", () => {
 		finish(ok({}));
 		await waitFor(() =>
 			expect(firstTime(container).matches(":disabled")).toBe(false),
+		);
+	});
+
+	it("il PUT rimanda intatte le chiusure già finite, che non si vedono", async () => {
+		calls.put.mockResolvedValue(ok({ holidays: [], customClosures: [PAST] }));
+		await renderPanel();
+		expect(screen.queryByText(PAST.note)).toBeNull();
+
+		removeUpcoming();
+		save();
+
+		await waitFor(() => expect(calls.put).toHaveBeenCalledTimes(1));
+		expect(calls.put).toHaveBeenCalledWith({
+			optOutIds: [],
+			customClosures: [PAST],
+		});
+		expect(calls.patch).not.toHaveBeenCalled();
+	});
+
+	it("orari salvati e chiusure fallite: al nuovo Salva restano solo le chiusure", async () => {
+		calls.patch.mockResolvedValue(ok({}));
+		calls.put.mockResolvedValueOnce({
+			data: null,
+			error: { status: 500, value: { message: "Errore" } },
+		});
+		const { container } = await renderPanel();
+		fireEvent.change(firstTime(container), { target: { value: "10:00" } });
+		removeUpcoming();
+		save();
+
+		await waitFor(() => expect(calls.put).toHaveBeenCalledTimes(1));
+		await waitFor(() =>
+			expect(
+				screen
+					.getByRole("button", { name: "Salva Modifiche" })
+					.matches(":disabled"),
+			).toBe(false),
+		);
+		expect(screen.getByText("Modifiche non salvate")).toBeTruthy();
+
+		calls.put.mockResolvedValueOnce(
+			ok({ holidays: [], customClosures: [PAST] }),
+		);
+		save();
+		await waitFor(() => expect(calls.put).toHaveBeenCalledTimes(2));
+		expect(calls.patch).toHaveBeenCalledTimes(1);
+		await waitFor(() =>
+			expect(screen.queryByText("Modifiche non salvate")).toBeNull(),
 		);
 	});
 });
