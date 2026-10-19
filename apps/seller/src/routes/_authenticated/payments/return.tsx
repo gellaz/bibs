@@ -2,7 +2,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { useSyncOnlinePayments } from "@/features/profile/hooks/use-online-payments";
+import { useSyncOnlinePayments } from "@/features/online-payments/hooks/use-online-payments";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/payments/return")({

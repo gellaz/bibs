@@ -16,12 +16,12 @@ import {
 	PlugIcon,
 	SearchCheckIcon,
 } from "lucide-react";
-import { useSellerSettings } from "@/hooks/use-seller-settings";
-import { m } from "@/paraglide/messages";
 import {
 	useStartOnboarding,
 	useSyncOnlinePayments,
-} from "../hooks/use-online-payments";
+} from "@/features/online-payments/hooks/use-online-payments";
+import { useSellerSettings } from "@/hooks/use-seller-settings";
+import { m } from "@/paraglide/messages";
 
 type OnlinePaymentsStatus = "none" | "incomplete" | "in_review" | "enabled";
 

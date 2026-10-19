@@ -16,6 +16,7 @@ import { AppBreadcrumb } from "@/components/app-breadcrumb";
 import { AppSidebar } from "@/components/app-sidebar";
 import { StoreBillingBanner } from "@/components/store-billing-banner";
 import type { OnboardingStatus } from "@/db/schemas/seller";
+import { OnlinePaymentsBanner } from "@/features/online-payments/components/online-payments-banner";
 import { ActiveStoreProvider } from "@/hooks/use-active-store";
 import { useFirstStoreOnboarding } from "@/hooks/use-first-store-onboarding";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
@@ -176,8 +177,9 @@ function AuthenticatedLayout() {
 							{/* clip, non hidden: hidden ne fa un contenitore di scroll che
 							    non scorre mai (scorre la finestra) e blocca ogni `sticky`. */}
 							<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-clip p-4">
-								<div className="mb-4 empty:hidden">
+								<div className="mb-4 space-y-2 empty:hidden">
 									<StoreBillingBanner />
+									<OnlinePaymentsBanner />
 								</div>
 								<Outlet />
 							</div>
