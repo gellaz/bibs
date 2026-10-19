@@ -23,9 +23,11 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { Elysia } from "elysia";
+import { holidayDefinition } from "@/db/schemas/holiday-definition";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { reservationDeadline } from "@/lib/holidays";
+import { resolveReservationDeadlines } from "@/lib/store-open-status";
 import { storesRoutes } from "@/modules/seller/routes/stores";
 import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
@@ -187,5 +189,31 @@ describe("anteprima della scadenza", () => {
 		const s = await setup();
 		const res = await preview(s, "0");
 		expect(res.status).toBe(422);
+	});
+});
+
+describe("scadenza dentro una transazione", () => {
+	it("legge festività e opt-out con la tx passata", async () => {
+		// Mercoledì 21 ottobre 2026, 10:00 a Roma.
+		const now = new Date("2026-10-21T10:00:00+02:00");
+		const s = {
+			id: crypto.randomUUID(),
+			openingHours,
+			closures: null,
+			reservationHours: 1,
+		};
+		await getTestDb().transaction(async (tx) => {
+			// Non ancora committata: la vede solo chi legge con la tx.
+			await tx.insert(holidayDefinition).values({
+				name: "Chiusura di prova",
+				type: "one_off",
+				oneOffDate: "2026-10-21",
+			});
+			const deadlines = await resolveReservationDeadlines([s], now, tx);
+			// Oggi festivo: si riparte giovedì alle 8, scade alle 9.
+			expect(deadlines.get(s.id)?.expiresAt).toEqual(
+				new Date("2026-10-22T09:00:00+02:00"),
+			);
+		});
 	});
 });
