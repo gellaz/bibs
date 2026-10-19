@@ -242,11 +242,8 @@ export function BulkStockAdjustDialog({
 					    cambia mai dimensione tra stati e mode. */}
 					<div className="flex min-h-12 items-center justify-center">
 						{showZeroWarning ? (
-							<div className="border-warning/40 bg-warning/10 flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm">
-								<TriangleAlertIcon
-									aria-hidden
-									className="text-warning size-4 shrink-0"
-								/>
+							<div className="flex items-center gap-2 rounded-md border border-warning-foreground/15 bg-warning px-3 py-1.5 text-sm text-warning-foreground">
+								<TriangleAlertIcon aria-hidden className="size-4 shrink-0" />
 								<span>
 									{m.products_bulk_adjust_warning_zero({
 										count: productIds.length,

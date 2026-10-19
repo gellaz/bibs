@@ -19,7 +19,7 @@ const MEDIA_VARIANTS = {
 	/** Cambia stato senza distruggere dati: sospendi, archivia, disabilita. */
 	warning: {
 		icon: TriangleAlertIcon,
-		className: "bg-warning/15 text-warning",
+		className: "bg-warning text-warning-foreground",
 	},
 	/** Conferma neutra o riattivazione. */
 	info: {
