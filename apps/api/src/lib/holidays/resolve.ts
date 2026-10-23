@@ -54,7 +54,9 @@ export function resolveStoreClosedDates(
 		// Clip the range to the window BEFORE expanding, so a far-future endDate
 		// can't materialize an enormous array on the hot path (listStores).
 		const rawEnd = c.endDate ?? c.startDate;
+		// biome-ignore lint/complexity/useMathMinMax: YYYY-MM-DD strings, Math.max would give NaN
 		const start = c.startDate > window.from ? c.startDate : window.from;
+		// biome-ignore lint/complexity/useMathMinMax: YYYY-MM-DD strings, Math.min would give NaN
 		const end = rawEnd < window.to ? rawEnd : window.to;
 		for (const ymd of expandRange(start, end)) closed.add(ymd);
 	}
