@@ -33,7 +33,7 @@ Managed with [skills.sh](https://skills.sh) unless noted.
 | Skills | Source |
 |---|---|
 | `tanstack-{start,router,query,integration}-best-practices` | [deckardger/tanstack-agent-skills](https://github.com/deckardger/tanstack-agent-skills) |
-| `elysiajs` | [elysiajs/skills](https://github.com/elysiajs/skills) |
+| `elysiajs` (frozen v1 snapshot, not in the lock) | [elysiajs/skills](https://github.com/elysiajs/skills) |
 | `shadcn` | [shadcn/ui](https://ui.shadcn.com/docs/skills) |
 | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices`, `organization-best-practices`, `two-factor-authentication-best-practices`, `create-auth` | [better-auth/skills](https://github.com/better-auth/skills) |
 | `impeccable` (own updater, `npx impeccable`) | [impeccable.style](https://impeccable.style) |
