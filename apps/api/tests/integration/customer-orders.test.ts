@@ -179,7 +179,7 @@ describe("createOrder — stock, righe e punti", () => {
 		});
 	});
 
-	it("awards loyalty points at pickup, not at creation", async () => {
+	it("no loyalty points at pickup: paid in store, not through bibs", async () => {
 		// Use inline fixtures so we can control stock precisely
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
@@ -188,7 +188,6 @@ describe("createOrder — stock, righe e punti", () => {
 		const prod = await createTestProduct(db, seller.profile.id, {
 			price: "10.00",
 		});
-		// 10 items * €10.00 = €100.00 → 100 points
 		const sp = await createTestStoreProduct(db, testStore.id, prod.id, {
 			stock: 10,
 		});
@@ -209,14 +208,14 @@ describe("createOrder — stock, righe e punti", () => {
 			"completed",
 			[testStore.id],
 		);
-		// 1 point per euro → 10 items × €10 = €100 = 100 points
-		expect(picked.pointsEarned).toBe(100);
+		expect(picked.status).toBe("completed");
+		expect(picked.pointsEarned).toBe(0);
 
 		const [profile] = await db
 			.select()
 			.from(customerProfile)
 			.where(eq(customerProfile.id, customer.profile.id));
-		expect(profile.points).toBe(100);
+		expect(profile.points).toBe(0);
 	});
 });
 

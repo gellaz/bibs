@@ -99,17 +99,24 @@ describe("point_transactions — Σ amount = saldo", () => {
 	it("regge guadagno al ritiro, uso con annullamento e uso con ritiro", async () => {
 		const { seller, store, sp, customer } = await seed();
 		const cpId = customer.profile.id;
+		// Pagato: lo conferma il webhook del PaymentIntent.
+		const confirm = (orderId: string) =>
+			getTestDb()
+				.update(order)
+				.set({ status: "confirmed" })
+				.where(eq(order.id, orderId));
 		const pickup = (orderId: string) =>
 			transitionOrder(orderId, seller.profile.id, "completed", [store.id]);
 
-		// 10 × 10 € ritirati → +100 punti earned
+		// 10 × 10 € pagati e ritirati → +100 punti earned
 		const first = await createOrder({
 			customerProfileId: cpId,
 			customerPoints: 0,
-			type: "reserve_pickup",
+			type: "pay_pickup",
 			storeId: store.id,
 			items: [{ storeProductId: sp.id, quantity: 10 }],
 		});
+		await confirm(first.id);
 		await pickup(first.id);
 		expect(await balance(cpId)).toBe(100);
 		expect(await ledgerSum(cpId)).toBe(100);
@@ -140,11 +147,7 @@ describe("point_transactions — Σ amount = saldo", () => {
 			pointsToSpend: 100,
 		});
 		expect(await redeemedAmount(picked.id)).toBe(-100);
-		// Pagato: lo conferma il webhook del PaymentIntent.
-		await getTestDb()
-			.update(order)
-			.set({ status: "confirmed" })
-			.where(eq(order.id, picked.id));
+		await confirm(picked.id);
 		await pickup(picked.id);
 		expect(await balance(cpId)).toBe(9);
 		expect(await ledgerSum(cpId)).toBe(9);

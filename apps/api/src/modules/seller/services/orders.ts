@@ -18,7 +18,10 @@ import { parsePagination } from "@/lib/pagination";
 import { normalizePickupCode } from "@/lib/pickup-code";
 import { userSummaryWith } from "@/lib/user-summary";
 import { refundOrderPayment } from "@/modules/billing/services/order-payments";
-import { assertCancellable } from "@/modules/customer/services/orders";
+import {
+	assertCancellable,
+	PAY_TYPES,
+} from "@/modules/customer/services/orders";
 
 /**
  * Fetches and validates that an order belongs to one of the seller's stores.
@@ -40,7 +43,7 @@ export async function findSellerOrder(
 
 /**
  * Transitions an order to a new status, validating via the state machine.
- * Handles points awarding on completion.
+ * Handles points awarding on completion (only for orders paid through bibs).
  */
 export async function transitionOrder(
 	orderId: string,
@@ -89,6 +92,10 @@ export async function transitionOrder(
 				.returning();
 			if (!claimed)
 				throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
+			// Punti solo su ciò che il cliente ha pagato a bibs: «Prenota e paga
+			// in negozio» si salda al banco, fuori da bibs.
+			if (!PAY_TYPES.includes(existing.type as OrderType)) return claimed;
 
 			const pointsEarned = await awardPoints(tx, {
 				customerProfileId: existing.customerProfileId,
