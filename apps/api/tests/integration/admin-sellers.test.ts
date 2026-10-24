@@ -24,6 +24,11 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+const sendEmail = mock(
+	async (_params: { to: string; subject: string; html: string }) => {},
+);
+mock.module("@/lib/email", () => ({ sendEmail }));
+
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
 import { eq } from "drizzle-orm";
@@ -64,6 +69,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
 	await truncateAll(getTestDb());
+	sendEmail.mockReset();
+	sendEmail.mockImplementation(async () => {});
 });
 
 // ── Helper: create a seller with given onboarding status ──────────────────────
@@ -380,6 +387,70 @@ describe("rejectSeller", () => {
 			);
 		});
 	}
+});
+
+// ── Moderation emails ─────────────────────────────────────────────────────────
+
+describe("moderation emails", () => {
+	it("verifySeller emails the seller that the account is active", async () => {
+		const seller = await createSellerAtStatus(
+			"mario@test.com",
+			"pending_review",
+		);
+
+		await verifySeller(seller.profile.id);
+
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+		const [email] = sendEmail.mock.calls[0];
+		expect(email.to).toBe("mario@test.com");
+		expect(email.subject).toBe("Il tuo account venditore su bibs è attivo");
+	});
+
+	it("rejectSeller emails the reason and the link to the step to fix", async () => {
+		const seller = await createSellerAtStatus(
+			"mario@test.com",
+			"pending_review",
+		);
+
+		await rejectSeller(seller.profile.id, {
+			reason: "Documento illeggibile",
+			fixStep: "document",
+		});
+
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+		const [email] = sendEmail.mock.calls[0];
+		expect(email.to).toBe("mario@test.com");
+		expect(email.html).toContain("Documento illeggibile");
+		expect(email.html).toContain("/onboarding/document");
+	});
+
+	it("a second reject on the same application is 409 and sends no second email", async () => {
+		const seller = await createSellerAtStatus(
+			"mario@test.com",
+			"pending_review",
+		);
+
+		await rejectSeller(seller.profile.id, DEFINITIVE);
+		await expectServiceError(rejectSeller(seller.profile.id, DEFINITIVE), 409);
+
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+	});
+
+	it("a failing email does not fail the moderation", async () => {
+		sendEmail.mockImplementation(async () => {
+			throw new Error("resend down");
+		});
+		const seller = await createSellerAtStatus(
+			"mario@test.com",
+			"pending_review",
+		);
+
+		await rejectSeller(seller.profile.id, DEFINITIVE);
+
+		expect((await profileOf(seller.profile.id)).onboardingStatus).toBe(
+			"rejected",
+		);
+	});
 });
 
 // ── countSellersByStatus ──────────────────────────────────────────────────────

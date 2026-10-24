@@ -8,6 +8,7 @@ import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
 import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import { checkDocument } from "./document-check";
+import { notifyApplicationReceived } from "./onboarding-notifications";
 import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
@@ -141,6 +142,8 @@ export async function updateDocument(params: DocumentParams) {
 		})
 		.where(eq(sellerProfile.userId, userId));
 
+	if (existingOrganization) await notifyApplicationReceived(profile.id);
+
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
 	);
@@ -188,6 +191,8 @@ export async function updateCompany(params: CompanyParams) {
 			.set({ onboardingStatus: "pending_review" })
 			.where(eq(sellerProfile.userId, userId));
 	});
+
+	await notifyApplicationReceived(profile.id);
 
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),

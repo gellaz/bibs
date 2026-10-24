@@ -22,6 +22,11 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+const sendEmail = mock(
+	async (_params: { to: string; subject: string; html: string }) => {},
+);
+mock.module("@/lib/email", () => ({ sendEmail }));
+
 const write = mock(async () => {});
 mock.module("@/lib/s3", () => ({
 	s3: { write, delete: mock(async () => {}) },
@@ -30,7 +35,10 @@ mock.module("@/lib/s3", () => ({
 
 import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
-import { updateDocument } from "@/modules/seller/services/onboarding";
+import {
+	updateCompany,
+	updateDocument,
+} from "@/modules/seller/services/onboarding";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestMunicipality,
@@ -47,6 +55,8 @@ afterAll(async () => {
 beforeEach(async () => {
 	await truncateAll(getTestDb());
 	write.mockClear();
+	sendEmail.mockReset();
+	sendEmail.mockImplementation(async () => {});
 });
 
 async function sellerAtDocumentStep() {
@@ -90,6 +100,10 @@ describe("updateDocument", () => {
 		});
 
 		expect(profile.onboardingStatus).toBe("pending_review");
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+		expect(sendEmail.mock.calls[0][0].subject).toBe(
+			"Abbiamo ricevuto la tua candidatura su bibs",
+		);
 	});
 
 	it("salva tipo e numero normalizzato e passa a pending_company", async () => {
@@ -108,6 +122,7 @@ describe("updateDocument", () => {
 		expect(profile.documentNumber).toBe("YA1234567");
 		expect(profile.onboardingStatus).toBe("pending_company");
 		expect(write).toHaveBeenCalledTimes(1);
+		expect(sendEmail).not.toHaveBeenCalled();
 	});
 
 	it("rifiuta con 422 un numero che non è del tipo scelto, senza caricare la foto", async () => {
@@ -144,5 +159,33 @@ describe("updateDocument", () => {
 
 		expect(write).not.toHaveBeenCalled();
 		expect(await statusOf(userId)).toBe("pending_document");
+	});
+});
+
+describe("updateCompany", () => {
+	it("porta in revisione e manda l'email di candidatura ricevuta", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "mario@test.com" });
+		await db
+			.update(sellerProfile)
+			.set({ onboardingStatus: "pending_company" })
+			.where(eq(sellerProfile.id, seller.profile.id));
+		const municipality = await createTestMunicipality(db);
+
+		const profile = await updateCompany({
+			userId: seller.user.id,
+			businessName: "Forno Bianchi",
+			vatNumber: "12345678903",
+			legalForm: "srl",
+			addressLine1: "Via Roma 1",
+			municipalityId: municipality.id,
+			zipCode: "40100",
+		});
+
+		expect(profile.onboardingStatus).toBe("pending_review");
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+		const [email] = sendEmail.mock.calls[0];
+		expect(email.to).toBe("mario@test.com");
+		expect(email.subject).toBe("Abbiamo ricevuto la tua candidatura su bibs");
 	});
 });

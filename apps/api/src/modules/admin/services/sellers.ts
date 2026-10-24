@@ -12,8 +12,13 @@ import { parsePagination } from "@/lib/pagination";
 import {
 	DocumentChangeBody,
 	type RejectSellerBody,
+	type SellerRejectionFixStep,
 	VatChangeBody,
 } from "@/lib/schemas/forms";
+import {
+	notifySellerApproved,
+	notifySellerRejected,
+} from "@/modules/seller/services/onboarding-notifications";
 
 /** Statuses visible to admins (past onboarding steps). */
 const REVIEWABLE_STATUSES: OnboardingStatus[] = [
@@ -242,42 +247,47 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 	return updated;
 }
 
-export function verifySeller(sellerId: string) {
-	return decideReview(sellerId, {
+export async function verifySeller(sellerId: string) {
+	const updated = await decideReview(sellerId, {
 		onboardingStatus: "active",
 		rejectionReason: null,
 		organization: { vatStatus: "verified" },
 	});
+	await notifySellerApproved(sellerId);
+	return updated;
 }
+
+const REJECTION_OUTCOMES: Record<
+	SellerRejectionFixStep | "definitive",
+	Pick<ReviewOutcome, "onboardingStatus" | "organization">
+> = {
+	document: { onboardingStatus: "pending_document", organization: "keep" },
+	company: { onboardingStatus: "pending_company", organization: "delete" },
+	definitive: {
+		onboardingStatus: "rejected",
+		organization: { vatStatus: "rejected" },
+	},
+};
 
 /**
  * fixStep null = definitive rejection; "document" / "company" send the seller
  * back to that step to fix it and resubmit.
  */
-export function rejectSeller(
+export async function rejectSeller(
 	sellerId: string,
 	{ reason, fixStep }: Static<typeof RejectSellerBody>,
 ) {
 	const rejectionReason = reason.trim();
-	if (fixStep === "document") {
-		return decideReview(sellerId, {
-			onboardingStatus: "pending_document",
-			rejectionReason,
-			organization: "keep",
-		});
-	}
-	if (fixStep === "company") {
-		return decideReview(sellerId, {
-			onboardingStatus: "pending_company",
-			rejectionReason,
-			organization: "delete",
-		});
-	}
-	return decideReview(sellerId, {
-		onboardingStatus: "rejected",
+	const updated = await decideReview(sellerId, {
+		...REJECTION_OUTCOMES[fixStep ?? "definitive"],
 		rejectionReason,
-		organization: { vatStatus: "rejected" },
 	});
+	await notifySellerRejected({
+		sellerProfileId: sellerId,
+		reason: rejectionReason,
+		fixStep,
+	});
+	return updated;
 }
 
 interface SellerStatusCounts {
