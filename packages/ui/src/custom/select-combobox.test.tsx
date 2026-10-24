@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Dialog, DialogContent, DialogTitle } from "~/components/dialog";
 import { groupOptions, SelectCombobox } from "./select-combobox";
 
 // Senza `globals` testing-library non registra da sé la pulizia del DOM.
@@ -64,5 +65,22 @@ describe("SelectCombobox", () => {
 		fireEvent.keyDown(input, { key: "Escape" });
 		expect(onChange).not.toHaveBeenCalled();
 		expect(input.value).toBe("Caffè");
+	});
+
+	it("Escape a tendina chiusa arriva al dialog che lo contiene", () => {
+		const onOpenChange = vi.fn();
+		render(
+			<Dialog open onOpenChange={onOpenChange}>
+				<DialogContent>
+					<DialogTitle>Nuova categoria</DialogTitle>
+					<SelectCombobox {...common} value="b" />
+				</DialogContent>
+			</Dialog>,
+		);
+		const input = screen.getByRole("combobox", { name: "Categoria" });
+		input.focus();
+		fireEvent.keyDown(input, { key: "Escape" });
+		expect(onOpenChange).toHaveBeenCalledWith(false, expect.anything());
+		expect((input as HTMLInputElement).value).toBe("Caffè");
 	});
 });

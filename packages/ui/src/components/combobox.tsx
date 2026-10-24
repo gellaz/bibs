@@ -13,7 +13,8 @@ import {
 } from "~/components/input-group";
 
 // base-ui svuota scelta e testo con Escape a tendina chiusa: in una scelta da
-// elenco Escape chiude pannelli e dialog, e non deve cancellare nulla.
+// elenco Escape chiude pannelli e dialog, e non deve cancellare nulla. Annullato
+// lo svuotamento, l'Escape prosegue fino al dialog o allo sheet che lo contiene.
 function Combobox<
 	Value,
 	Multiple extends boolean | undefined = false,
@@ -27,11 +28,17 @@ function Combobox<
 		<ComboboxPrimitive.Root
 			{...props}
 			onValueChange={(value, details) => {
-				if (details.reason === "escape-key") return details.cancel();
+				if (details.reason === "escape-key") {
+					details.allowPropagation();
+					return details.cancel();
+				}
 				onValueChange?.(value, details);
 			}}
 			onInputValueChange={(value, details) => {
-				if (details.reason === "escape-key") return details.cancel();
+				if (details.reason === "escape-key") {
+					details.allowPropagation();
+					return details.cancel();
+				}
 				onInputValueChange?.(value, details);
 			}}
 		/>
