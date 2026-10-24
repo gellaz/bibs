@@ -48,25 +48,24 @@ export function ProductRowActions({
 	return (
 		<>
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon">
-						<MoreHorizontalIcon className="size-4" />
-					</Button>
+				<DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+					<MoreHorizontalIcon className="size-4" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-auto">
 					{status !== "trashed" && (
-						<DropdownMenuItem asChild className="whitespace-nowrap">
-							<Link to="/products/$productId" params={{ productId }}>
-								<PencilIcon />
-								{m.products_action_edit()}
-							</Link>
+						<DropdownMenuItem
+							className="whitespace-nowrap"
+							render={<Link to="/products/$productId" params={{ productId }} />}
+						>
+							<PencilIcon />
+							{m.products_action_edit()}
 						</DropdownMenuItem>
 					)}
 
 					{status !== "trashed" && (
 						<DropdownMenuItem
 							className="whitespace-nowrap"
-							onSelect={() => setAddStoreOpen(true)}
+							onClick={() => setAddStoreOpen(true)}
 						>
 							<CopyPlusIcon />
 							{m.products_action_add_to_store()}
@@ -76,7 +75,7 @@ export function ProductRowActions({
 					{status === "active" && (
 						<DropdownMenuItem
 							className="whitespace-nowrap"
-							onSelect={() => setApplyPromoOpen(true)}
+							onClick={() => setApplyPromoOpen(true)}
 						>
 							<TagIcon />
 							{m.products_apply_promotion_action()}
@@ -85,7 +84,7 @@ export function ProductRowActions({
 
 					<DropdownMenuItem
 						className="whitespace-nowrap"
-						onSelect={async () => {
+						onClick={async () => {
 							try {
 								await navigator.clipboard.writeText(productId);
 								toast.success(m.products_action_copy_id_success());
@@ -101,7 +100,7 @@ export function ProductRowActions({
 					{status === "disabled" && (
 						<DropdownMenuItem
 							className="whitespace-nowrap"
-							onSelect={() =>
+							onClick={() =>
 								setStatus.mutate({
 									productId,
 									status: "active",
@@ -117,7 +116,7 @@ export function ProductRowActions({
 					{status === "trashed" && (
 						<DropdownMenuItem
 							className="whitespace-nowrap"
-							onSelect={() =>
+							onClick={() =>
 								setStatus.mutate({
 									productId,
 									status: "active",
@@ -136,7 +135,7 @@ export function ProductRowActions({
 						<DropdownMenuItem
 							variant="warning"
 							className="whitespace-nowrap"
-							onSelect={() =>
+							onClick={() =>
 								setStatus.mutate({
 									productId,
 									status: "disabled",
@@ -153,7 +152,7 @@ export function ProductRowActions({
 						<DropdownMenuItem
 							variant="destructive"
 							className="whitespace-nowrap"
-							onSelect={() =>
+							onClick={() =>
 								setStatus.mutate({
 									productId,
 									status: "trashed",
@@ -168,7 +167,7 @@ export function ProductRowActions({
 						<DropdownMenuItem
 							variant="destructive"
 							className="whitespace-nowrap"
-							onSelect={() => setConfirmOpen(true)}
+							onClick={() => setConfirmOpen(true)}
 						>
 							<TrashIcon />
 							{m.products_action_delete_permanent()}

@@ -79,8 +79,13 @@ function ProductDetailPage() {
 				title={m.product_detail_not_found_title()}
 				description={m.product_detail_not_found_description()}
 				action={
-					<Button asChild variant="secondary" size="sm">
-						<Link to="/products">{m.product_detail_back_to_products()}</Link>
+					<Button
+						variant="secondary"
+						size="sm"
+						nativeButton={false}
+						render={<Link to="/products" />}
+					>
+						{m.product_detail_back_to_products()}
 					</Button>
 				}
 			/>

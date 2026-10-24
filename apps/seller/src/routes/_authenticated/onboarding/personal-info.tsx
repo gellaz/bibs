@@ -112,7 +112,14 @@ function PersonalInfoPage() {
 							control={control}
 							name="citizenship"
 							render={({ field }) => (
-								<Select value={field.value} onValueChange={field.onChange}>
+								<Select
+									items={countries.map((c) => ({
+										value: c.code,
+										label: c.label,
+									}))}
+									value={field.value}
+									onValueChange={field.onChange}
+								>
 									<SelectTrigger className="w-full">
 										<SelectValue
 											placeholder={m.onboarding_select_placeholder()}
@@ -137,7 +144,14 @@ function PersonalInfoPage() {
 							control={control}
 							name="birthCountry"
 							render={({ field }) => (
-								<Select value={field.value} onValueChange={field.onChange}>
+								<Select
+									items={countries.map((c) => ({
+										value: c.code,
+										label: c.label,
+									}))}
+									value={field.value}
+									onValueChange={field.onChange}
+								>
 									<SelectTrigger className="w-full">
 										<SelectValue
 											placeholder={m.onboarding_select_placeholder()}
@@ -169,7 +183,14 @@ function PersonalInfoPage() {
 						control={control}
 						name="residenceCountry"
 						render={({ field }) => (
-							<Select value={field.value} onValueChange={field.onChange}>
+							<Select
+								items={countries.map((c) => ({
+									value: c.code,
+									label: c.label,
+								}))}
+								value={field.value}
+								onValueChange={field.onChange}
+							>
 								<SelectTrigger className="w-full">
 									<SelectValue
 										placeholder={m.onboarding_select_placeholder()}

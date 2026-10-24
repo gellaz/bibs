@@ -292,18 +292,20 @@ function BillingPage() {
 											<TableCell>{periodLabel}</TableCell>
 											<TableCell>
 												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															aria-label={m.common_actions()}
-														>
-															<MoreVerticalIcon className="h-4 w-4" />
-														</Button>
+													<DropdownMenuTrigger
+														render={
+															<Button
+																variant="ghost"
+																size="icon"
+																aria-label={m.common_actions()}
+															/>
+														}
+													>
+														<MoreVerticalIcon className="h-4 w-4" />
 													</DropdownMenuTrigger>
 													<DropdownMenuContent align="end">
 														<DropdownMenuItem
-															onSelect={() => portalMutation.mutate()}
+															onClick={() => portalMutation.mutate()}
 														>
 															{m.billing_manage_payment()}
 														</DropdownMenuItem>
@@ -324,7 +326,8 @@ function BillingPage() {
 																trigger={
 																	<DropdownMenuItem
 																		variant="destructive"
-																		onSelect={(e) => e.preventDefault()}
+																		// il dialog vive dentro il menu: chiuderlo lo smonterebbe
+																		closeOnClick={false}
 																	>
 																		{m.billing_cancel()}
 																	</DropdownMenuItem>
@@ -335,7 +338,7 @@ function BillingPage() {
 															s.cancelAtPeriodEnd) &&
 															s.status !== "suspended" && (
 																<DropdownMenuItem
-																	onSelect={() =>
+																	onClick={() =>
 																		reactivateMutation.mutate(s.storeId)
 																	}
 																>

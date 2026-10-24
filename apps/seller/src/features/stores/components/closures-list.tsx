@@ -18,7 +18,7 @@ import {
 
 // Segmento scelto pieno: a colpo d'occhio si vede se quel giorno sei chiuso o aperto.
 const SEGMENT =
-	"px-2.5 text-muted-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground";
+	"px-2.5 text-muted-foreground data-pressed:bg-primary data-pressed:text-primary-foreground";
 
 const EMPTY_DRAFT = { start: "", end: "", note: "" };
 
@@ -165,11 +165,10 @@ export function ClosuresList({
 							</div>
 							{row.kind === "holiday" ? (
 								<ToggleGroup
-									type="single"
 									variant="outline"
 									size="sm"
-									value={row.closed ? "closed" : "open"}
-									onValueChange={(v) =>
+									value={[row.closed ? "closed" : "open"]}
+									onValueChange={([v]) =>
 										v && setHolidayClosed(row.definitionId, v === "closed")
 									}
 									aria-label={m.store_closures_toggle_label({ name })}

@@ -59,8 +59,12 @@ function CheckoutChoicePage() {
 					title={m.cart_empty_title()}
 					description={m.cart_empty_description()}
 					action={
-						<Button asChild className="min-h-11 sm:min-h-9">
-							<Link to="/cart">{m.checkout_back_to_cart()}</Link>
+						<Button
+							className="min-h-11 sm:min-h-9"
+							nativeButton={false}
+							render={<Link to="/cart" />}
+						>
+							{m.checkout_back_to_cart()}
 						</Button>
 					}
 				/>
@@ -125,17 +129,27 @@ function CheckoutChoicePage() {
 			})}
 
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-				<Button asChild variant="secondary" className="min-h-11">
-					<Link to="/cart">{m.checkout_back_to_cart()}</Link>
+				<Button
+					variant="secondary"
+					className="min-h-11"
+					nativeButton={false}
+					render={<Link to="/cart" />}
+				>
+					{m.checkout_back_to_cart()}
 				</Button>
 				{complete ? (
-					<Button asChild size="lg" className="min-h-11">
-						<Link
-							to="/checkout/review"
-							search={{ choice: serializeChoice(choice) }}
-						>
-							{m.checkout_next()}
-						</Link>
+					<Button
+						size="lg"
+						className="min-h-11"
+						nativeButton={false}
+						render={
+							<Link
+								to="/checkout/review"
+								search={{ choice: serializeChoice(choice) }}
+							/>
+						}
+					>
+						{m.checkout_next()}
 					</Button>
 				) : (
 					<Button size="lg" className="min-h-11" disabled>

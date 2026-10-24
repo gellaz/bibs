@@ -98,7 +98,7 @@ export function ProductCharacteristicsSection({
 											})}
 								</span>
 							)}
-							<ChevronDownIcon className="size-4 transition-transform group-data-[state=open]:rotate-180" />
+							<ChevronDownIcon className="size-4 transition-transform group-data-panel-open:rotate-180" />
 						</span>
 					</CollapsibleTrigger>
 					<CollapsibleContent className="border-t border-warm-line px-4 py-4">
@@ -172,11 +172,10 @@ function CharacteristicControl({
 			return (
 				<ToggleGroup
 					id={id}
-					type="single"
 					variant="outline"
 					aria-label={def.name}
-					value={value === true ? "yes" : value === false ? "no" : ""}
-					onValueChange={(v) =>
+					value={value === true ? ["yes"] : value === false ? ["no"] : []}
+					onValueChange={([v]) =>
 						onChange(v === "yes" ? true : v === "no" ? false : null)
 					}
 					className="justify-start"
@@ -206,6 +205,10 @@ function CharacteristicControl({
 		case "enum":
 			return (
 				<Select
+					items={[
+						{ value: NOT_SET, label: m.products_characteristics_not_set() },
+						...def.options.map((o) => ({ value: o.id, label: o.value })),
+					]}
 					value={typeof value === "string" && value ? value : NOT_SET}
 					onValueChange={(v) => onChange(v === NOT_SET ? null : v)}
 				>

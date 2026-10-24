@@ -302,7 +302,7 @@ export function HolidaysPanel({
 						<RowActionsMenu name={h.name}>
 							<DropdownMenuItem
 								className="whitespace-nowrap"
-								onSelect={() => {
+								onClick={() => {
 									setSelected(h);
 									setEditName(h.name);
 									setEditOpen(true);
@@ -314,7 +314,7 @@ export function HolidaysPanel({
 							{!h.isActive && (
 								<DropdownMenuItem
 									className="whitespace-nowrap"
-									onSelect={() =>
+									onClick={() =>
 										updateMutation.mutate({ id: h.id, isActive: true })
 									}
 								>
@@ -327,7 +327,7 @@ export function HolidaysPanel({
 								<DropdownMenuItem
 									variant="warning"
 									className="whitespace-nowrap"
-									onSelect={() =>
+									onClick={() =>
 										updateMutation.mutate({ id: h.id, isActive: false })
 									}
 								>
@@ -338,7 +338,7 @@ export function HolidaysPanel({
 							<DropdownMenuItem
 								variant="destructive"
 								className="whitespace-nowrap"
-								onSelect={() => {
+								onClick={() => {
 									setSelected(h);
 									setDeleteOpen(true);
 								}}
@@ -586,7 +586,7 @@ export function HolidaysPanel({
 							disabled={bulkMutation.isPending}
 							onClick={(e) => {
 								// Resta aperto finché le chiamate non finiscono.
-								e.preventDefault();
+								e.preventBaseUIHandler();
 								bulkMutation.mutate({ action: "delete", items: selectedRows });
 							}}
 						>

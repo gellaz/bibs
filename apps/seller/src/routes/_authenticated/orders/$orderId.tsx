@@ -64,13 +64,17 @@ function OrderDetailPage() {
 			<EmptyState
 				title={m.orders_detail_not_found()}
 				action={
-					<Button asChild variant="secondary">
-						<Link
-							to="/orders"
-							search={{ tab: "all", type: undefined, page: 1, limit: 20 }}
-						>
-							{m.orders_page_title()}
-						</Link>
+					<Button
+						variant="secondary"
+						nativeButton={false}
+						render={
+							<Link
+								to="/orders"
+								search={{ tab: "all", type: undefined, page: 1, limit: 20 }}
+							/>
+						}
+					>
+						{m.orders_page_title()}
 					</Button>
 				}
 			/>

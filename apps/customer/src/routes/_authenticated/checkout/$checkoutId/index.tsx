@@ -48,10 +48,11 @@ function CheckoutDonePage() {
 				title={m.checkout_not_found()}
 				description={m.orders_empty_description()}
 				action={
-					<Button asChild>
-						<Link to="/orders" search={{ tab: "reserved", page: 1 }}>
-							{m.checkout_done_orders_cta()}
-						</Link>
+					<Button
+						nativeButton={false}
+						render={<Link to="/orders" search={{ tab: "reserved", page: 1 }} />}
+					>
+						{m.checkout_done_orders_cta()}
 					</Button>
 				}
 			/>
@@ -215,18 +216,34 @@ function CheckoutDonePage() {
 			})()}
 
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-				<Button asChild variant="secondary" className="min-h-11">
-					<Link to="/stores" search={{ q: undefined, categoryId: undefined }}>
-						{m.checkout_done_continue()}
-					</Link>
+				<Button
+					variant="secondary"
+					className="min-h-11"
+					nativeButton={false}
+					render={
+						<Link
+							to="/stores"
+							search={{ q: undefined, categoryId: undefined }}
+						/>
+					}
+				>
+					{m.checkout_done_continue()}
 				</Button>
-				<Button asChild size="lg" className="min-h-11">
-					<Link
-						to="/orders"
-						search={{ tab: payment === "none" ? "reserved" : "paid", page: 1 }}
-					>
-						{m.checkout_done_orders_cta()}
-					</Link>
+				<Button
+					size="lg"
+					className="min-h-11"
+					nativeButton={false}
+					render={
+						<Link
+							to="/orders"
+							search={{
+								tab: payment === "none" ? "reserved" : "paid",
+								page: 1,
+							}}
+						/>
+					}
+				>
+					{m.checkout_done_orders_cta()}
 				</Button>
 			</div>
 		</div>

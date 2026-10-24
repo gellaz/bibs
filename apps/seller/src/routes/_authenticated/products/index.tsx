@@ -269,13 +269,8 @@ function ProductsListPage() {
 				header: () => (
 					<div className="flex justify-center">
 						<Checkbox
-							checked={
-								selection.headerCheckboxState === "checked"
-									? true
-									: selection.headerCheckboxState === "indeterminate"
-										? "indeterminate"
-										: false
-							}
+							checked={selection.headerCheckboxState === "checked"}
+							indeterminate={selection.headerCheckboxState === "indeterminate"}
 							onCheckedChange={() => selection.toggleAllOnPage()}
 							aria-label={m.products_select_all()}
 						/>
@@ -570,8 +565,8 @@ function ProductsListPage() {
 						: m.products_page_subtitle_no_store()
 				}
 			>
-				<CreateButton asChild>
-					<Link to="/products/new">{m.products_new_cta()}</Link>
+				<CreateButton nativeButton={false} render={<Link to="/products/new" />}>
+					{m.products_new_cta()}
 				</CreateButton>
 			</PageHeader>
 
@@ -659,8 +654,11 @@ function ProductsListPage() {
 							title={m.products_empty_catalog()}
 							description={m.products_empty_catalog_description()}
 							action={
-								<CreateButton asChild>
-									<Link to="/products/new">{m.products_new_cta()}</Link>
+								<CreateButton
+									nativeButton={false}
+									render={<Link to="/products/new" />}
+								>
+									{m.products_new_cta()}
 								</CreateButton>
 							}
 						/>

@@ -119,21 +119,23 @@ function PricingPage() {
 				</p>
 
 				<Dialog open={open} onOpenChange={setOpen}>
-					<DialogTrigger asChild>
-						<Button
-							className="mt-4 self-start"
-							onClick={() => {
-								setFields({
-									fee: (current.storeMonthlyFeeCents / 100).toFixed(2),
-									days: String(current.suspendedAutoCancelDays),
-									hours: String(current.pendingCreationExpiryHours),
-									productId: current.stripeProductId ?? "",
-								});
-								setTouched(new Set());
-							}}
-						>
-							{m.common_edit()}
-						</Button>
+					<DialogTrigger
+						render={
+							<Button
+								className="mt-4 self-start"
+								onClick={() => {
+									setFields({
+										fee: (current.storeMonthlyFeeCents / 100).toFixed(2),
+										days: String(current.suspendedAutoCancelDays),
+										hours: String(current.pendingCreationExpiryHours),
+										productId: current.stripeProductId ?? "",
+									});
+									setTouched(new Set());
+								}}
+							/>
+						}
+					>
+						{m.common_edit()}
 					</DialogTrigger>
 					<DialogContent>
 						<DialogHeader>

@@ -220,22 +220,22 @@ export function ProductsFilterSheet({
 
 	return (
 		<Sheet open={open} onOpenChange={setOpen}>
-			<SheetTrigger asChild>
-				<Button variant="outline" className="relative gap-2">
-					<FilterIcon className="size-4" />
-					{m.products_filter_title()}
-					{activeCount > 0 && (
-						<span
-							role="status"
-							aria-label={m.products_filter_active_badge({
-								count: activeCount,
-							})}
-							className="bg-cobalt-soft text-cobalt-deep ring-background absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold tabular-nums ring-2"
-						>
-							{activeCount}
-						</span>
-					)}
-				</Button>
+			<SheetTrigger
+				render={<Button variant="outline" className="relative gap-2" />}
+			>
+				<FilterIcon className="size-4" />
+				{m.products_filter_title()}
+				{activeCount > 0 && (
+					<span
+						role="status"
+						aria-label={m.products_filter_active_badge({
+							count: activeCount,
+						})}
+						className="bg-cobalt-soft text-cobalt-deep ring-background absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-semibold tabular-nums ring-2"
+					>
+						{activeCount}
+					</span>
+				)}
 			</SheetTrigger>
 			<SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
 				<SheetHeader className="border-b px-6 py-5">

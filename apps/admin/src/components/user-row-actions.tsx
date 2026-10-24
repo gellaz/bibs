@@ -80,19 +80,21 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 	return (
 		<>
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
-						variant="ghost"
-						size="icon"
-						aria-label={m.users_actions_label()}
-					>
-						<MoreHorizontalIcon className="size-4" />
-					</Button>
+				<DropdownMenuTrigger
+					render={
+						<Button
+							variant="ghost"
+							size="icon"
+							aria-label={m.users_actions_label()}
+						/>
+					}
+				>
+					<MoreHorizontalIcon className="size-4" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-auto">
 					<DropdownMenuItem
 						className="whitespace-nowrap"
-						onSelect={async () => {
+						onClick={async () => {
 							try {
 								await navigator.clipboard.writeText(userId);
 								toast.success(m.users_id_copied());
@@ -112,7 +114,7 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 								<DropdownMenuItem
 									className="whitespace-nowrap"
 									disabled={unbanMutation.isPending}
-									onSelect={() => unbanMutation.mutate()}
+									onClick={() => unbanMutation.mutate()}
 								>
 									<ShieldCheckIcon />
 									{m.users_unban()}
@@ -121,7 +123,7 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 								<DropdownMenuItem
 									variant="destructive"
 									className="whitespace-nowrap"
-									onSelect={() => setConfirmBanOpen(true)}
+									onClick={() => setConfirmBanOpen(true)}
 								>
 									<BanIcon />
 									{m.users_ban()}
@@ -149,7 +151,7 @@ export function UserRowActions({ userId, userName, banned, canBan }: Props) {
 						<AlertDialogAction
 							variant="destructive"
 							onClick={(e) => {
-								e.preventDefault();
+								e.preventBaseUIHandler();
 								banMutation.mutate();
 							}}
 							disabled={banMutation.isPending}

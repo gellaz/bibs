@@ -50,18 +50,16 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" asChild>
-							<Link to="/">
-								<BrandMark className="size-8" />
-								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="font-display truncate font-semibold">
-										bibs
-									</span>
-									<span className="truncate text-xs text-muted-foreground">
-										Admin
-									</span>
-								</div>
-							</Link>
+						<SidebarMenuButton size="lg" render={<Link to="/" />}>
+							<BrandMark className="size-8" />
+							<div className="grid flex-1 text-left text-sm leading-tight">
+								<span className="font-display truncate font-semibold">
+									bibs
+								</span>
+								<span className="truncate text-xs text-muted-foreground">
+									Admin
+								</span>
+							</div>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
 				</SidebarMenu>
@@ -80,15 +78,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 								return (
 									<SidebarMenuItem key={item.to}>
 										<SidebarMenuButton
-											asChild
 											tooltip={item.title()}
 											isActive={isActive}
 											className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+											render={<Link to={item.to} />}
 										>
-											<Link to={item.to}>
-												<item.icon />
-												<span>{item.title()}</span>
-											</Link>
+											<item.icon />
+											<span>{item.title()}</span>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								);

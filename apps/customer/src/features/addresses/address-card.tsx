@@ -67,18 +67,23 @@ export function AddressCard({
 				    nuovi indirizzi, ma l'API le ammette nulle. */}
 				{address.location && (
 					<Button
-						asChild
 						variant="secondary"
 						size="sm"
 						className="min-h-11 sm:min-h-9"
+						nativeButton={false}
+						render={
+							<Link
+								to="/stores"
+								search={{
+									near: address.id,
+									q: undefined,
+									categoryId: undefined,
+								}}
+							/>
+						}
 					>
-						<Link
-							to="/stores"
-							search={{ near: address.id, q: undefined, categoryId: undefined }}
-						>
-							<Search className="size-4" aria-hidden />
-							{m.origin_search_here()}
-						</Link>
+						<Search className="size-4" aria-hidden />
+						{m.origin_search_here()}
 					</Button>
 				)}
 				<Button
@@ -91,15 +96,17 @@ export function AddressCard({
 					{m.addresses_edit()}
 				</Button>
 				<AlertDialog>
-					<AlertDialogTrigger asChild>
-						<Button
-							variant="ghost"
-							size="sm"
-							className="min-h-11 text-destructive sm:min-h-9"
-							disabled={busy}
-						>
-							{m.addresses_delete()}
-						</Button>
+					<AlertDialogTrigger
+						render={
+							<Button
+								variant="ghost"
+								size="sm"
+								className="min-h-11 text-destructive sm:min-h-9"
+								disabled={busy}
+							/>
+						}
+					>
+						{m.addresses_delete()}
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>

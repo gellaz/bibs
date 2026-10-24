@@ -151,11 +151,11 @@ export function BulkStockAdjustDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
 				className="sm:max-w-sm"
-				onOpenAutoFocus={(e) => {
+				initialFocus={() => {
 					// Il focus di default andrebbe sul primo tab: meglio partire
 					// dalla quantità, già selezionata per sovrascriverla al volo.
-					e.preventDefault();
 					inputRef.current?.select();
+					return inputRef.current;
 				}}
 			>
 				<DialogHeader>

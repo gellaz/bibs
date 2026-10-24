@@ -128,8 +128,13 @@ export function ApplyPromotionDialog({
 						<p className="text-muted-foreground text-sm">
 							{m.products_apply_promotion_empty()}
 						</p>
-						<Button asChild variant="outline" size="sm">
-							<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
+						<Button
+							variant="outline"
+							size="sm"
+							nativeButton={false}
+							render={<Link to="/promotions/new" />}
+						>
+							{m.promotions_new_cta()}
 						</Button>
 					</div>
 				) : (

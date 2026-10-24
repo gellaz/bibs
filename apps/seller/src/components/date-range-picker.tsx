@@ -73,20 +73,22 @@ export function DateRangePicker({
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<Button
-					type="button"
-					variant="outline"
-					disabled={disabled}
-					className={cn(
-						"justify-start font-normal",
-						!from && "text-muted-foreground",
-						className,
-					)}
-				>
-					<CalendarIcon className="mr-2 size-4" />
-					{triggerLabel}
-				</Button>
+			<PopoverTrigger
+				render={
+					<Button
+						type="button"
+						variant="outline"
+						disabled={disabled}
+						className={cn(
+							"justify-start font-normal",
+							!from && "text-muted-foreground",
+							className,
+						)}
+					/>
+				}
+			>
+				<CalendarIcon className="mr-2 size-4" />
+				{triggerLabel}
 			</PopoverTrigger>
 			<PopoverContent className="w-auto p-0" align="start">
 				{editMode === "from-only" ? (

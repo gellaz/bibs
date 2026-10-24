@@ -13,7 +13,7 @@ import {
 import { toast } from "@bibs/ui/components/sonner";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import type { ReactElement } from "react";
 import { api, unwrap } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
@@ -23,7 +23,7 @@ interface Props {
 	storeName: string;
 	status: "active" | "past_due" | "canceling" | "suspended";
 	currentPeriodEnd: Date | string;
-	trigger: ReactNode;
+	trigger: ReactElement;
 }
 
 export function CancelStoreDialog({
@@ -61,7 +61,7 @@ export function CancelStoreDialog({
 
 	return (
 		<AlertDialog>
-			<AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+			<AlertDialogTrigger render={trigger} />
 			<AlertDialogContent>
 				<AlertDialogHeader>
 					{/* Sospeso → archiviazione immediata e definitiva (destructive);

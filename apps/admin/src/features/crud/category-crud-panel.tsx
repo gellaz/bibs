@@ -366,7 +366,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 				<RowActionsMenu name={row.original.name}>
 					<DropdownMenuItem
 						className="whitespace-nowrap"
-						onSelect={() => {
+						onClick={() => {
 							setSelected(row.original);
 							setEditOpen(true);
 						}}
@@ -378,7 +378,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 					<DropdownMenuItem
 						variant="destructive"
 						className="whitespace-nowrap"
-						onSelect={() => {
+						onClick={() => {
 							setSelected(row.original);
 							setDeleteOpen(true);
 						}}
@@ -591,7 +591,7 @@ export function CategoryCrudPanel<TEntity extends CategoryEntity, TForm>({
 							variant="destructive"
 							onClick={(e) => {
 								// Resta aperto finché le chiamate non finiscono.
-								e.preventDefault();
+								e.preventBaseUIHandler();
 								bulkDeleteMutation.mutate(selectedRows);
 							}}
 							disabled={bulkDeleteMutation.isPending}

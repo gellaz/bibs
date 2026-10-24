@@ -102,27 +102,37 @@ function PointsPage() {
 			{pages > 1 && (
 				<div className="flex justify-between">
 					{page > 1 ? (
-						<Button asChild variant="secondary" className="min-h-11">
-							<Link
-								to="/points"
-								search={{ page: page - 1 }}
-								aria-label={m.points_page_prev()}
-							>
-								←
-							</Link>
+						<Button
+							variant="secondary"
+							className="min-h-11"
+							nativeButton={false}
+							render={
+								<Link
+									to="/points"
+									search={{ page: page - 1 }}
+									aria-label={m.points_page_prev()}
+								/>
+							}
+						>
+							←
 						</Button>
 					) : (
 						<span />
 					)}
 					{page < pages && (
-						<Button asChild variant="secondary" className="min-h-11">
-							<Link
-								to="/points"
-								search={{ page: page + 1 }}
-								aria-label={m.points_page_next()}
-							>
-								→
-							</Link>
+						<Button
+							variant="secondary"
+							className="min-h-11"
+							nativeButton={false}
+							render={
+								<Link
+									to="/points"
+									search={{ page: page + 1 }}
+									aria-label={m.points_page_next()}
+								/>
+							}
+						>
+							→
 						</Button>
 					)}
 				</div>

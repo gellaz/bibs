@@ -33,14 +33,16 @@ export function UserMenu() {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<button
-					type="button"
-					aria-label={m.nav_account_menu_aria()}
-					className="flex size-11 items-center justify-center rounded-full outline-none transition-[background-color] hover:bg-muted focus-visible:focus-ring"
-				>
-					<UserAvatar name={label} image={user.image} />
-				</button>
+			<DropdownMenuTrigger
+				render={
+					<button
+						type="button"
+						aria-label={m.nav_account_menu_aria()}
+						className="flex size-11 items-center justify-center rounded-full outline-none transition-[background-color] hover:bg-muted focus-visible:focus-ring"
+					/>
+				}
+			>
+				<UserAvatar name={label} image={user.image} />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" sideOffset={8} className="w-64">
 				<DropdownMenuLabel className="flex flex-col gap-0.5">
@@ -54,17 +56,15 @@ export function UserMenu() {
 					)}
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem asChild>
-					<Link to="/orders" search={{ tab: "reserved", page: 1 }}>
-						<ReceiptText />
-						{m.nav_orders()}
-					</Link>
+				<DropdownMenuItem
+					render={<Link to="/orders" search={{ tab: "reserved", page: 1 }} />}
+				>
+					<ReceiptText />
+					{m.nav_orders()}
 				</DropdownMenuItem>
-				<DropdownMenuItem asChild>
-					<Link to="/profile">
-						<UserRound />
-						{m.profile_title()}
-					</Link>
+				<DropdownMenuItem render={<Link to="/profile" />}>
+					<UserRound />
+					{m.profile_title()}
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<ThemeToggle
@@ -78,7 +78,7 @@ export function UserMenu() {
 				<LocaleSelect />
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onSelect={() => {
+					onClick={() => {
 						void authClient.signOut().then(() => navigate({ to: "/login" }));
 					}}
 				>

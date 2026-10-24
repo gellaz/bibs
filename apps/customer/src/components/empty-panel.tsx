@@ -20,17 +20,29 @@ export function EmptyPanel(props: EmptyStateProps) {
 export function exploreActions() {
 	return {
 		action: (
-			<Button asChild className="min-h-11 sm:min-h-9">
-				<Link to="/products" search={{ q: undefined, categoryId: undefined }}>
-					{m.explore_products_cta()}
-				</Link>
+			<Button
+				className="min-h-11 sm:min-h-9"
+				nativeButton={false}
+				render={
+					<Link
+						to="/products"
+						search={{ q: undefined, categoryId: undefined }}
+					/>
+				}
+			>
+				{m.explore_products_cta()}
 			</Button>
 		),
 		secondary: (
-			<Button asChild variant="outline" className="min-h-11 sm:min-h-9">
-				<Link to="/stores" search={{ q: undefined, categoryId: undefined }}>
-					{m.explore_stores_cta()}
-				</Link>
+			<Button
+				variant="outline"
+				className="min-h-11 sm:min-h-9"
+				nativeButton={false}
+				render={
+					<Link to="/stores" search={{ q: undefined, categoryId: undefined }} />
+				}
+			>
+				{m.explore_stores_cta()}
 			</Button>
 		),
 	};

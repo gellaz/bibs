@@ -486,6 +486,10 @@ export function ProductForm({
 								name="vatRate"
 								render={({ field }) => (
 									<Select
+										items={["22", "10", "5", "4", "0"].map((r) => ({
+											value: r,
+											label: `${r}%`,
+										}))}
 										value={field.value}
 										onValueChange={(value) => {
 											vatRateChosen.current = true;

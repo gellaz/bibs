@@ -67,8 +67,8 @@ export function AppBreadcrumb() {
 					{atHome ? (
 						<BreadcrumbPage>{m.shell_nav_home()}</BreadcrumbPage>
 					) : (
-						<BreadcrumbLink asChild>
-							<Link to="/">{m.shell_nav_home()}</Link>
+						<BreadcrumbLink render={<Link to="/" />}>
+							{m.shell_nav_home()}
 						</BreadcrumbLink>
 					)}
 				</BreadcrumbItem>
@@ -81,9 +81,11 @@ export function AppBreadcrumb() {
 								{isLast ? (
 									<BreadcrumbPage>{c.label}</BreadcrumbPage>
 								) : (
-									<BreadcrumbLink asChild>
-										{/* `to` is typed as a route union; safe cast for built paths. */}
-										<Link to={c.href as never}>{c.label}</Link>
+									<BreadcrumbLink
+										// `to` is typed as a route union; safe cast for built paths.
+										render={<Link to={c.href as never} />}
+									>
+										{c.label}
 									</BreadcrumbLink>
 								)}
 							</BreadcrumbItem>

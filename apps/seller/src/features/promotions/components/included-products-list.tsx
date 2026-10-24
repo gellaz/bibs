@@ -66,13 +66,18 @@ export function IncludedProductsList({ discountId }: Props) {
 				<p className="text-muted-foreground text-sm">
 					{m.promotions_included_empty()}
 				</p>
-				<Button asChild variant="link" size="sm">
-					<Link
-						to="/products"
-						search={{ page: 1, limit: 20, statusFilter: "active" }}
-					>
-						{m.promotions_included_add_hint()}
-					</Link>
+				<Button
+					variant="link"
+					size="sm"
+					nativeButton={false}
+					render={
+						<Link
+							to="/products"
+							search={{ page: 1, limit: 20, statusFilter: "active" }}
+						/>
+					}
+				>
+					{m.promotions_included_add_hint()}
 				</Button>
 			</div>
 		);

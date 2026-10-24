@@ -40,13 +40,15 @@ describe("LocaleToggle", () => {
 				label="Lingua"
 			/>,
 		);
-		expect(screen.getByRole("radiogroup", { name: "Lingua" })).toBeTruthy();
-		expect(screen.getByRole("radio", { name: "Italiano" }).textContent).toBe(
-			"IT",
-		);
-		expect(screen.getByRole("radio", { name: "English" }).textContent).toBe(
-			"EN",
-		);
+		expect(screen.getByRole("group", { name: "Lingua" })).toBeTruthy();
+		expect(
+			screen.getByRole("button", { name: "Italiano", pressed: true })
+				.textContent,
+		).toBe("IT");
+		expect(
+			screen.getByRole("button", { name: "English", pressed: false })
+				.textContent,
+		).toBe("EN");
 	});
 
 	it("calls onChange with the picked locale, not with the current one", () => {
@@ -59,9 +61,9 @@ describe("LocaleToggle", () => {
 				label="Lingua"
 			/>,
 		);
-		fireEvent.click(screen.getByRole("radio", { name: "English" }));
+		fireEvent.click(screen.getByRole("button", { name: "English" }));
 		expect(onChange).toHaveBeenCalledWith("en");
-		fireEvent.click(screen.getByRole("radio", { name: "Italiano" }));
+		fireEvent.click(screen.getByRole("button", { name: "Italiano" }));
 		expect(onChange).toHaveBeenCalledTimes(1);
 	});
 });

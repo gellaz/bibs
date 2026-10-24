@@ -158,19 +158,25 @@ function OrdersPage() {
 			{pages > 1 && (
 				<div className="flex justify-between">
 					{page > 1 ? (
-						<Button asChild variant="secondary" className="min-h-11">
-							<Link to="/orders" search={{ tab, page: page - 1 }}>
-								←
-							</Link>
+						<Button
+							variant="secondary"
+							className="min-h-11"
+							nativeButton={false}
+							render={<Link to="/orders" search={{ tab, page: page - 1 }} />}
+						>
+							←
 						</Button>
 					) : (
 						<span />
 					)}
 					{page < pages && (
-						<Button asChild variant="secondary" className="min-h-11">
-							<Link to="/orders" search={{ tab, page: page + 1 }}>
-								→
-							</Link>
+						<Button
+							variant="secondary"
+							className="min-h-11"
+							nativeButton={false}
+							render={<Link to="/orders" search={{ tab, page: page + 1 }} />}
+						>
+							→
 						</Button>
 					)}
 				</div>

@@ -34,11 +34,8 @@ export function selectColumn<T extends { id: string; name: string }>(
 			return (
 				<div className="flex justify-center">
 					<Checkbox
-						checked={
-							selection.headerCheckboxState === "indeterminate"
-								? "indeterminate"
-								: selection.headerCheckboxState === "checked"
-						}
+						checked={selection.headerCheckboxState === "checked"}
+						indeterminate={selection.headerCheckboxState === "indeterminate"}
 						onCheckedChange={() => selection.toggleAllOnPage()}
 						aria-label={m.common_select_all()}
 					/>
@@ -70,14 +67,16 @@ export function RowActionsMenu({
 	return (
 		<div className="flex justify-center">
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button
-						variant="ghost"
-						size="icon"
-						aria-label={m.common_row_actions({ name })}
-					>
-						<MoreHorizontalIcon className="size-4" />
-					</Button>
+				<DropdownMenuTrigger
+					render={
+						<Button
+							variant="ghost"
+							size="icon"
+							aria-label={m.common_row_actions({ name })}
+						/>
+					}
+				>
+					<MoreHorizontalIcon className="size-4" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-auto">
 					{children}

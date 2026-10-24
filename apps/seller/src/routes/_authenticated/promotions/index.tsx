@@ -224,30 +224,32 @@ function PromotionsListPage() {
 					const r = row.original;
 					return (
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="icon-sm">
-									<MoreVerticalIcon />
-									<span className="sr-only">{m.common_actions()}</span>
-								</Button>
+							<DropdownMenuTrigger
+								render={<Button variant="ghost" size="icon-sm" />}
+							>
+								<MoreVerticalIcon />
+								<span className="sr-only">{m.common_actions()}</span>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">
-								<DropdownMenuItem asChild>
-									<Link
-										to="/promotions/$discountId"
-										params={{ discountId: r.id }}
-									>
-										{m.promotions_action_edit()}
-									</Link>
+								<DropdownMenuItem
+									render={
+										<Link
+											to="/promotions/$discountId"
+											params={{ discountId: r.id }}
+										/>
+									}
+								>
+									{m.promotions_action_edit()}
 								</DropdownMenuItem>
 								{r.status !== "archived" && (
-									<DropdownMenuItem onSelect={() => onPauseToggle(r.id)}>
+									<DropdownMenuItem onClick={() => onPauseToggle(r.id)}>
 										{r.status === "paused"
 											? m.promotions_action_resume()
 											: m.promotions_action_pause()}
 									</DropdownMenuItem>
 								)}
 								{r.status !== "archived" && (
-									<DropdownMenuItem onSelect={() => onArchive(r.id)}>
+									<DropdownMenuItem onClick={() => onArchive(r.id)}>
 										{m.promotions_action_archive()}
 									</DropdownMenuItem>
 								)}
@@ -266,8 +268,11 @@ function PromotionsListPage() {
 				title={m.promotions_page_title()}
 				description={m.promotions_page_subtitle()}
 			>
-				<CreateButton asChild>
-					<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
+				<CreateButton
+					nativeButton={false}
+					render={<Link to="/promotions/new" />}
+				>
+					{m.promotions_new_cta()}
 				</CreateButton>
 			</PageHeader>
 
@@ -299,8 +304,11 @@ function PromotionsListPage() {
 							title={EMPTY_MESSAGE.assignable()}
 							description={m.promotions_empty_active_description()}
 							action={
-								<CreateButton asChild>
-									<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
+								<CreateButton
+									nativeButton={false}
+									render={<Link to="/promotions/new" />}
+								>
+									{m.promotions_new_cta()}
 								</CreateButton>
 							}
 						/>

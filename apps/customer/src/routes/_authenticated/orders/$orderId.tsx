@@ -66,10 +66,11 @@ function OrderDetailPage() {
 				title={m.orders_not_found()}
 				description={m.orders_empty_description()}
 				action={
-					<Button asChild>
-						<Link to="/orders" search={{ tab: "reserved", page: 1 }}>
-							{m.orders_title()}
-						</Link>
+					<Button
+						nativeButton={false}
+						render={<Link to="/orders" search={{ tab: "reserved", page: 1 }} />}
+					>
+						{m.orders_title()}
 					</Button>
 				}
 			/>
@@ -200,26 +201,33 @@ function OrderDetailPage() {
 			{order.type === "pay_pickup" &&
 				order.status === "pending" &&
 				order.checkoutId && (
-					<Button asChild size="lg" className="min-h-11">
-						<Link
-							to="/checkout/$checkoutId/pay"
-							params={{ checkoutId: order.checkoutId }}
-						>
-							{m.orders_complete_payment()}
-						</Link>
+					<Button
+						size="lg"
+						className="min-h-11"
+						nativeButton={false}
+						render={
+							<Link
+								to="/checkout/$checkoutId/pay"
+								params={{ checkoutId: order.checkoutId }}
+							/>
+						}
+					>
+						{m.orders_complete_payment()}
 					</Button>
 				)}
 
 			{canCustomerCancel(order) && (
 				<AlertDialog>
-					<AlertDialogTrigger asChild>
-						<Button
-							variant="ghost"
-							className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
-							disabled={cancel.isPending}
-						>
-							{paid ? m.orders_cancel_paid() : m.orders_cancel()}
-						</Button>
+					<AlertDialogTrigger
+						render={
+							<Button
+								variant="ghost"
+								className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
+								disabled={cancel.isPending}
+							/>
+						}
+					>
+						{paid ? m.orders_cancel_paid() : m.orders_cancel()}
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>

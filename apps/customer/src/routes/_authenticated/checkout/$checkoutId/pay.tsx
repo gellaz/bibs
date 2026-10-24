@@ -61,10 +61,11 @@ function CheckoutPayPage() {
 				title={m.checkout_not_found()}
 				description={m.orders_empty_description()}
 				action={
-					<Button asChild>
-						<Link to="/orders" search={{ tab: "paid", page: 1 }}>
-							{m.checkout_done_orders_cta()}
-						</Link>
+					<Button
+						nativeButton={false}
+						render={<Link to="/orders" search={{ tab: "paid", page: 1 }} />}
+					>
+						{m.checkout_done_orders_cta()}
 					</Button>
 				}
 			/>

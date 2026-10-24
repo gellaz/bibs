@@ -139,11 +139,9 @@ function EmptyStoresState() {
 				</h1>
 				<p className="text-muted-foreground">{m.dashboard_empty_body()}</p>
 			</div>
-			<Button asChild size="lg">
-				<Link to="/store/new">
-					<Plus className="size-4" />
-					{m.dashboard_empty_cta()}
-				</Link>
+			<Button size="lg" nativeButton={false} render={<Link to="/store/new" />}>
+				<Plus className="size-4" />
+				{m.dashboard_empty_cta()}
 			</Button>
 		</div>
 	);

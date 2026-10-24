@@ -222,10 +222,13 @@ function CheckoutCta({ groups }: { groups: CartGroup[] }) {
 					<p className="text-destructive text-sm">{m.cart_fix_quantities()}</p>
 				</>
 			) : (
-				<Button asChild size="lg" className="min-h-11 w-full sm:w-auto">
-					<Link to="/checkout" search={{ choice: undefined }}>
-						{m.cart_checkout_cta()}
-					</Link>
+				<Button
+					size="lg"
+					className="min-h-11 w-full sm:w-auto"
+					nativeButton={false}
+					render={<Link to="/checkout" search={{ choice: undefined }} />}
+				>
+					{m.cart_checkout_cta()}
 				</Button>
 			)}
 		</div>
