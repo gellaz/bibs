@@ -14,9 +14,9 @@
 		"react-email": "catalog:"
 	},
 	"devDependencies": {
-		"@react-email/ui": "^6.11.2",
+		"@react-email/ui": "^6.11.3",
 		"@types/react": "catalog:",
-		"bun-types": "1.4.3"
+		"bun-types": "1.4.4"
 	},
 	"exports": {
 		".": "./src/index.tsx"

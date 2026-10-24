@@ -53,7 +53,7 @@ services:
       start_period: 5s
 
   bibs-mailpit:
-    image: axllent/mailpit:v1.31.4
+    image: axllent/mailpit:v1.32.0
     container_name: bibs-mailpit
     ports:
       - "8025:8025" # web UI + REST API

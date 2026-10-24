@@ -51,13 +51,13 @@ Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.cl
 | Skill | Purpose |
 |---|---|
 | `tanstack-start-best-practices`, `tanstack-router-best-practices`, `tanstack-query-best-practices`, `tanstack-integration-best-practices` | TanStack patterns — activates in `apps/{admin,customer,seller}` |
-| `elysiajs` | Canonical Elysia patterns — activates in `apps/api` |
+| `elysiajs` | Canonical Elysia 1.x patterns — activates in `apps/api`. Frozen snapshot outside `skills-lock.json`: upstream moved to Elysia 2 (rc), re-add it when we migrate |
 | `shadcn` | shadcn/ui CLI, theming, registries — activates on `packages/ui` work |
 | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices` | Better Auth — matches the current auth stack |
 | `organization-best-practices`, `two-factor-authentication-best-practices` | Installed ahead of need — activate only when those Better Auth plugins are enabled |
 | `create-auth` | Better Auth scaffolding — installed ahead of need, the stack is already wired |
 | `impeccable` | Frontend design/UX passes — ships its own native engine, updated by `npx impeccable` (not skills.sh) |
-| `design-taste-frontend` | Anti-slop design direction for landing/marketing pages and redesigns (not dashboards) — DESIGN.md brand tokens still win |
+| `design-taste-frontend` | Anti-slop design direction for landing/marketing pages, redesigns and app screens (dashboards, settings) — DESIGN.md brand tokens still win |
 | `emil-design-eng` | Emil Kowalski's UI polish rules — animation decisions (easing, duration, origin, reduced motion), press feedback, motion review checklist |
 | `animate`, `animation-performance`, `animation-vocabulary`, `apple-design` | Same source: build a single animation, fix dropped frames, name a motion effect, Apple-style gestures/springs |
 | `improve-animations`, `find-animation-opportunities` | Read-only motion audits: prioritized fix plans / where motion would earn its place |

@@ -28,7 +28,7 @@
 		"better-auth": "catalog:",
 		"drizzle-orm": "^0.45.4",
 		"elysia": "catalog:",
-		"logixlysia": "^6.10.0",
+		"logixlysia": "^6.10.3",
 		"pg": "catalog:",
 		"pino": "^10.4.0",
 		"sharp": "catalog:",
@@ -36,7 +36,7 @@
 	},
 	"devDependencies": {
 		"@types/pg": "catalog:",
-		"bun-types": "1.4.3",
+		"bun-types": "1.4.4",
 		"drizzle-kit": "^0.31.11",
 		"testcontainers": "^12.2.1"
 	},
