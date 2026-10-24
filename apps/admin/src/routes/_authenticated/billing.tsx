@@ -28,16 +28,26 @@ function BillingLayout() {
 			/>
 			<Tabs value={value}>
 				<TabsList>
-					<TabsTrigger value="overview" asChild>
-						<Link to="/billing">{m.billing_tab_overview()}</Link>
+					<TabsTrigger
+						value="overview"
+						nativeButton={false}
+						render={<Link to="/billing" />}
+					>
+						{m.billing_tab_overview()}
 					</TabsTrigger>
-					<TabsTrigger value="pricing" asChild>
-						<Link to="/billing/pricing">{m.billing_tab_pricing()}</Link>
+					<TabsTrigger
+						value="pricing"
+						nativeButton={false}
+						render={<Link to="/billing/pricing" />}
+					>
+						{m.billing_tab_pricing()}
 					</TabsTrigger>
-					<TabsTrigger value="subscriptions" asChild>
-						<Link to="/billing/subscriptions">
-							{m.billing_tab_subscriptions()}
-						</Link>
+					<TabsTrigger
+						value="subscriptions"
+						nativeButton={false}
+						render={<Link to="/billing/subscriptions" />}
+					>
+						{m.billing_tab_subscriptions()}
 					</TabsTrigger>
 				</TabsList>
 			</Tabs>

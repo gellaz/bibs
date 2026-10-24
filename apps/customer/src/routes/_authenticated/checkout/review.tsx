@@ -1,8 +1,9 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { toast } from "@bibs/ui/components/sonner";
 import { Switch } from "@bibs/ui/components/switch";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { cn } from "@bibs/ui/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	createFileRoute,
@@ -361,11 +362,13 @@ function CheckoutReviewPage() {
 			)}
 
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-				<Button asChild variant="secondary" className="min-h-11">
-					<Link to="/checkout" search={{ choice: serializeChoice(choice) }}>
-						{m.checkout_edit_choice()}
-					</Link>
-				</Button>
+				<Link
+					to="/checkout"
+					search={{ choice: serializeChoice(choice) }}
+					className={cn(buttonVariants({ variant: "secondary" }), "min-h-11")}
+				>
+					{m.checkout_edit_choice()}
+				</Link>
 				<Button
 					size="lg"
 					className="min-h-11"

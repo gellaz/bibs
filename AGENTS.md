@@ -10,7 +10,7 @@ This file provides guidance when working with the **bibs** monorepo.
 - `apps/customer/` — Customer-facing web app (TanStack Start + React 19), port **3001**
 - `apps/seller/` — Seller back-office (TanStack Start + React 19), port **3002**
 - `apps/admin/` — Admin back-office (TanStack Start + React 19), port **3003**
-- `packages/ui/` — Shared UI component library (`@bibs/ui`) — shadcn/ui (radix-nova style) + Radix UI + Tailwind CSS v4
+- `packages/ui/` — Shared UI component library (`@bibs/ui`) — shadcn/ui (base-nova style) + Base UI + Tailwind CSS v4
 - `packages/emails/` — Transactional email templates (`@bibs/emails`, react-email); preview server on port **3004**
 
 Cross-app architecture (type flow, API patterns, data model, frontend stack):
@@ -365,7 +365,7 @@ When adding a route under `apps/api/src/`, follow the existing pattern:
 - i18n via Paraglide — add strings to `messages/*.json`, never hard-code user-facing copy.
 - Data fetching via Eden Treaty + TanStack Query (`src/lib/api.ts`). Types come from the API — no manual DTOs.
 - Forms: `react-hook-form` + `@hookform/resolvers` + Zod (or TypeBox through the shared schemas).
-- UI primitives from `@bibs/ui` (`~/` alias), not raw Radix or hand-rolled shadcn copies.
+- UI primitives from `@bibs/ui` (`~/` alias), not raw Base UI or hand-rolled shadcn copies.
 
 ## Commit Conventions
 

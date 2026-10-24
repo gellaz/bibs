@@ -37,7 +37,11 @@ describe("StoreForm con hideHours", () => {
 			</QueryClientProvider>,
 		);
 		expect(html).not.toContain("Orari di apertura");
-		// Abilitato = nessun disabled tra type="submit" e la chiusura del tag.
-		expect(html).toMatch(/type="submit">Salva<\/button>/);
+		// Abilitato = nessun disabled / data-disabled sul pulsante di invio.
+		const submit = html.match(
+			/<button[^>]*type="submit"[^>]*>Salva<\/button>/,
+		)?.[0];
+		expect(submit).toBeTruthy();
+		expect(submit).not.toMatch(/\s(data-)?disabled[=\s>]/);
 	});
 });

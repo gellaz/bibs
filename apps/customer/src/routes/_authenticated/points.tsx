@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { cn } from "@bibs/ui/lib/utils";
@@ -102,28 +102,32 @@ function PointsPage() {
 			{pages > 1 && (
 				<div className="flex justify-between">
 					{page > 1 ? (
-						<Button asChild variant="secondary" className="min-h-11">
-							<Link
-								to="/points"
-								search={{ page: page - 1 }}
-								aria-label={m.points_page_prev()}
-							>
-								←
-							</Link>
-						</Button>
+						<Link
+							to="/points"
+							search={{ page: page - 1 }}
+							aria-label={m.points_page_prev()}
+							className={cn(
+								buttonVariants({ variant: "secondary" }),
+								"min-h-11",
+							)}
+						>
+							←
+						</Link>
 					) : (
 						<span />
 					)}
 					{page < pages && (
-						<Button asChild variant="secondary" className="min-h-11">
-							<Link
-								to="/points"
-								search={{ page: page + 1 }}
-								aria-label={m.points_page_next()}
-							>
-								→
-							</Link>
-						</Button>
+						<Link
+							to="/points"
+							search={{ page: page + 1 }}
+							aria-label={m.points_page_next()}
+							className={cn(
+								buttonVariants({ variant: "secondary" }),
+								"min-h-11",
+							)}
+						>
+							→
+						</Link>
 					)}
 				</div>
 			)}

@@ -203,7 +203,11 @@ function useRemoveEmployee() {
 
 // ─── Invite Employee Dialog (owner-only) ─────────────────
 
-function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
+function InviteEmployeeDialog({
+	trigger,
+}: {
+	trigger?: React.ReactElement;
+} = {}) {
 	const inviteMutation = useInviteEmployee();
 	const { data: allStores } = useStores();
 	const [open, setOpen] = useState(false);
@@ -244,14 +248,16 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 				if (!v) reset();
 			}}
 		>
-			<DialogTrigger asChild>
-				{trigger ?? (
-					<Button>
-						<SendIcon />
-						<span>{m.team_invite_trigger()}</span>
-					</Button>
-				)}
-			</DialogTrigger>
+			<DialogTrigger
+				render={
+					trigger ?? (
+						<Button>
+							<SendIcon />
+							<span>{m.team_invite_trigger()}</span>
+						</Button>
+					)
+				}
+			/>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>{m.team_invite_title()}</DialogTitle>
@@ -327,10 +333,8 @@ function InviteEmployeeDialog({ trigger }: { trigger?: React.ReactNode } = {}) {
 						)}
 					</div>
 					<DialogFooter>
-						<DialogClose asChild>
-							<Button type="button" variant="outline">
-								{m.common_cancel()}
-							</Button>
+						<DialogClose render={<Button type="button" variant="outline" />}>
+							{m.common_cancel()}
 						</DialogClose>
 						<Button
 							type="submit"
@@ -419,20 +423,13 @@ function EmployeeActions({
 	return (
 		<>
 			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button variant="ghost" size="icon-sm">
-						<MoreHorizontalIcon />
-						<span className="sr-only">{m.common_actions()}</span>
-					</Button>
+				<DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+					<MoreHorizontalIcon />
+					<span className="sr-only">{m.common_actions()}</span>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
 					{status !== "removed" && (
-						<DropdownMenuItem
-							onSelect={(e) => {
-								e.preventDefault();
-								setStoresDialogOpen(true);
-							}}
-						>
+						<DropdownMenuItem onClick={() => setStoresDialogOpen(true)}>
 							<PencilIcon />
 							{m.team_edit_stores()}
 						</DropdownMenuItem>

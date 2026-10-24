@@ -1,5 +1,5 @@
 import { Badge } from "@bibs/ui/components/badge";
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -7,12 +7,12 @@ import {
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
 import { toast } from "@bibs/ui/components/sonner";
-import { CreateButton } from "@bibs/ui/custom/create-button";
 import { DataTable } from "@bibs/ui/custom/data-table";
 import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { CreateIcon } from "@bibs/ui/icons";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
@@ -224,30 +224,32 @@ function PromotionsListPage() {
 					const r = row.original;
 					return (
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="icon-sm">
-									<MoreVerticalIcon />
-									<span className="sr-only">{m.common_actions()}</span>
-								</Button>
+							<DropdownMenuTrigger
+								render={<Button variant="ghost" size="icon-sm" />}
+							>
+								<MoreVerticalIcon />
+								<span className="sr-only">{m.common_actions()}</span>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">
-								<DropdownMenuItem asChild>
-									<Link
-										to="/promotions/$discountId"
-										params={{ discountId: r.id }}
-									>
-										{m.promotions_action_edit()}
-									</Link>
+								<DropdownMenuItem
+									render={
+										<Link
+											to="/promotions/$discountId"
+											params={{ discountId: r.id }}
+										/>
+									}
+								>
+									{m.promotions_action_edit()}
 								</DropdownMenuItem>
 								{r.status !== "archived" && (
-									<DropdownMenuItem onSelect={() => onPauseToggle(r.id)}>
+									<DropdownMenuItem onClick={() => onPauseToggle(r.id)}>
 										{r.status === "paused"
 											? m.promotions_action_resume()
 											: m.promotions_action_pause()}
 									</DropdownMenuItem>
 								)}
 								{r.status !== "archived" && (
-									<DropdownMenuItem onSelect={() => onArchive(r.id)}>
+									<DropdownMenuItem onClick={() => onArchive(r.id)}>
 										{m.promotions_action_archive()}
 									</DropdownMenuItem>
 								)}
@@ -266,9 +268,10 @@ function PromotionsListPage() {
 				title={m.promotions_page_title()}
 				description={m.promotions_page_subtitle()}
 			>
-				<CreateButton asChild>
-					<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
-				</CreateButton>
+				<Link to="/promotions/new" className={buttonVariants()}>
+					<CreateIcon />
+					{m.promotions_new_cta()}
+				</Link>
 			</PageHeader>
 
 			<div className="shrink-0">
@@ -299,9 +302,10 @@ function PromotionsListPage() {
 							title={EMPTY_MESSAGE.assignable()}
 							description={m.promotions_empty_active_description()}
 							action={
-								<CreateButton asChild>
-									<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
-								</CreateButton>
+								<Link to="/promotions/new" className={buttonVariants()}>
+									<CreateIcon />
+									{m.promotions_new_cta()}
+								</Link>
 							}
 						/>
 					) : (

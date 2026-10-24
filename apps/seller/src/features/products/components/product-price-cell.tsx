@@ -37,13 +37,15 @@ export function ProductPriceCell({ price, vatRate, appliedDiscount }: Props) {
 						{formatPriceEur(price)}
 					</span>
 					<Tooltip>
-						<TooltipTrigger asChild>
-							<button
-								type="button"
-								className="inline-flex cursor-help rounded-md focus-visible:focus-ring"
-							>
-								<Badge variant="secondary">-{appliedDiscount.percent}%</Badge>
-							</button>
+						<TooltipTrigger
+							render={
+								<button
+									type="button"
+									className="inline-flex cursor-help rounded-md focus-visible:focus-ring"
+								/>
+							}
+						>
+							<Badge variant="secondary">-{appliedDiscount.percent}%</Badge>
 						</TooltipTrigger>
 						<TooltipContent>{appliedDiscount.title}</TooltipContent>
 					</Tooltip>

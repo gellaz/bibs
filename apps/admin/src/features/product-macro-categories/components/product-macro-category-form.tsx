@@ -80,7 +80,14 @@ export function ProductMacroCategoryForm({
 						control={control}
 						name="suggestedVatRate"
 						render={({ field }) => (
-							<Select value={field.value} onValueChange={field.onChange}>
+							<Select
+								items={["22", "10", "5", "4", "0"].map((r) => ({
+									value: r,
+									label: `${r}%`,
+								}))}
+								value={field.value}
+								onValueChange={field.onChange}
+							>
 								<SelectTrigger
 									id="product-macro-category-vat"
 									className="w-full"

@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Compass, Globe, MapPin, Phone, RotateCw } from "lucide-react";
@@ -122,12 +122,15 @@ function StoreAside({
 					<span className="block">{cityLine}</span>
 				</p>
 				{mapsHref && (
-					<Button asChild variant="secondary" size="sm">
-						<a href={mapsHref} target="_blank" rel="noopener noreferrer">
-							<MapPin className="size-4" aria-hidden />
-							{m.store_open_maps()}
-						</a>
-					</Button>
+					<a
+						href={mapsHref}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={buttonVariants({ variant: "secondary", size: "sm" })}
+					>
+						<MapPin className="size-4" aria-hidden />
+						{m.store_open_maps()}
+					</a>
 				)}
 			</RailSection>
 
@@ -225,12 +228,13 @@ function QuickFacts({
 				</p>
 			)}
 			{phoneNumber && (
-				<Button asChild variant="secondary" size="sm">
-					<a href={`tel:${phoneNumber}`}>
-						<Phone className="size-4" aria-hidden />
-						{m.store_call()}
-					</a>
-				</Button>
+				<a
+					href={`tel:${phoneNumber}`}
+					className={buttonVariants({ variant: "secondary", size: "sm" })}
+				>
+					<Phone className="size-4" aria-hidden />
+					{m.store_call()}
+				</a>
 			)}
 		</div>
 	);
@@ -318,11 +322,13 @@ function StoreDetailPage() {
 				title={m.store_not_found_title()}
 				description={m.store_not_found_description()}
 				action={
-					<Button asChild variant="secondary" size="sm">
-						<Link to="/stores" search={{ q: undefined, categoryId: undefined }}>
-							{m.store_back_to_stores()}
-						</Link>
-					</Button>
+					<Link
+						to="/stores"
+						search={{ q: undefined, categoryId: undefined }}
+						className={buttonVariants({ variant: "secondary", size: "sm" })}
+					>
+						{m.store_back_to_stores()}
+					</Link>
 				}
 			/>
 		);

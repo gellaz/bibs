@@ -68,19 +68,21 @@ function PromotionDetailPage() {
 						menu={
 							isActive ? (
 								<DropdownMenu>
-									<DropdownMenuTrigger asChild>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="size-10"
-											aria-label={m.common_more_actions()}
-										>
-											<MoreHorizontalIcon className="size-5" />
-										</Button>
+									<DropdownMenuTrigger
+										render={
+											<Button
+												variant="ghost"
+												size="icon"
+												className="size-10"
+												aria-label={m.common_more_actions()}
+											/>
+										}
+									>
+										<MoreHorizontalIcon className="size-5" />
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align="end" className="w-48">
 										<DropdownMenuItem
-											onSelect={() =>
+											onClick={() =>
 												pause.mutate(discountId, {
 													onSuccess: () =>
 														toast.success(
@@ -101,7 +103,7 @@ function PromotionDetailPage() {
 										<DropdownMenuSeparator />
 										<DropdownMenuItem
 											className="text-destructive focus:text-destructive focus:bg-destructive/10"
-											onSelect={() =>
+											onClick={() =>
 												archive.mutate(discountId, {
 													onSuccess: () =>
 														toast.success(m.promotions_toast_archived()),

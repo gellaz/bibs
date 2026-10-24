@@ -13,7 +13,8 @@ import {
 } from "~/components/input-group";
 
 // base-ui svuota scelta e testo con Escape a tendina chiusa: in una scelta da
-// elenco Escape chiude pannelli e dialog, e non deve cancellare nulla.
+// elenco Escape chiude pannelli e dialog, e non deve cancellare nulla. Annullato
+// lo svuotamento, l'Escape prosegue fino al dialog o allo sheet che lo contiene.
 function Combobox<
 	Value,
 	Multiple extends boolean | undefined = false,
@@ -27,11 +28,17 @@ function Combobox<
 		<ComboboxPrimitive.Root
 			{...props}
 			onValueChange={(value, details) => {
-				if (details.reason === "escape-key") return details.cancel();
+				if (details.reason === "escape-key") {
+					details.allowPropagation();
+					return details.cancel();
+				}
 				onValueChange?.(value, details);
 			}}
 			onInputValueChange={(value, details) => {
-				if (details.reason === "escape-key") return details.cancel();
+				if (details.reason === "escape-key") {
+					details.allowPropagation();
+					return details.cancel();
+				}
 				onInputValueChange?.(value, details);
 			}}
 		/>
@@ -97,13 +104,11 @@ function ComboboxInput({
 					<InputGroupButton
 						size="icon-xs"
 						variant="ghost"
-						asChild
+						render={<ComboboxTrigger />}
 						data-slot="input-group-button"
 						className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
 						disabled={disabled}
-					>
-						<ComboboxTrigger />
-					</InputGroupButton>
+					/>
 				)}
 				{showClear && (
 					<ComboboxClear disabled={disabled} aria-label={clearLabel} />
@@ -135,16 +140,7 @@ function ComboboxContent({
 				align={align}
 				alignOffset={alignOffset}
 				anchor={anchor}
-				// A modal Radix Dialog sets `pointer-events: none` on <body> while
-				// it's open, and only re-enables pointer events inside its own
-				// DialogContent. This popup renders through @base-ui/react's own
-				// portal, a sibling of DialogContent, so it inherits that
-				// `pointer-events: none` and mouse clicks on items never land
-				// (they're hit-tested against whatever Dialog content sits
-				// beneath the popup instead). Force pointer events back on here,
-				// the same trick Radix's own DismissableLayer uses to make
-				// popovers/menus interactive inside a modal dialog.
-				className="isolate z-50 pointer-events-auto"
+				className="isolate z-50"
 			>
 				<ComboboxPrimitive.Popup
 					data-slot="combobox-content"

@@ -9,11 +9,12 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@bibs/ui/components/alert-dialog";
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { toast } from "@bibs/ui/components/sonner";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
+import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SearchX } from "lucide-react";
 import { NoticePage } from "@/components/notice";
@@ -66,11 +67,13 @@ function OrderDetailPage() {
 				title={m.orders_not_found()}
 				description={m.orders_empty_description()}
 				action={
-					<Button asChild>
-						<Link to="/orders" search={{ tab: "reserved", page: 1 }}>
-							{m.orders_title()}
-						</Link>
-					</Button>
+					<Link
+						to="/orders"
+						search={{ tab: "reserved", page: 1 }}
+						className={buttonVariants()}
+					>
+						{m.orders_title()}
+					</Link>
 				}
 			/>
 		);
@@ -200,26 +203,27 @@ function OrderDetailPage() {
 			{order.type === "pay_pickup" &&
 				order.status === "pending" &&
 				order.checkoutId && (
-					<Button asChild size="lg" className="min-h-11">
-						<Link
-							to="/checkout/$checkoutId/pay"
-							params={{ checkoutId: order.checkoutId }}
-						>
-							{m.orders_complete_payment()}
-						</Link>
-					</Button>
+					<Link
+						to="/checkout/$checkoutId/pay"
+						params={{ checkoutId: order.checkoutId }}
+						className={cn(buttonVariants({ size: "lg" }), "min-h-11")}
+					>
+						{m.orders_complete_payment()}
+					</Link>
 				)}
 
 			{canCustomerCancel(order) && (
 				<AlertDialog>
-					<AlertDialogTrigger asChild>
-						<Button
-							variant="ghost"
-							className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
-							disabled={cancel.isPending}
-						>
-							{paid ? m.orders_cancel_paid() : m.orders_cancel()}
-						</Button>
+					<AlertDialogTrigger
+						render={
+							<Button
+								variant="ghost"
+								className="min-h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
+								disabled={cancel.isPending}
+							/>
+						}
+					>
+						{paid ? m.orders_cancel_paid() : m.orders_cancel()}
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>

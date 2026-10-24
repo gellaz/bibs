@@ -1,6 +1,7 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { EmptyPanel } from "@/components/empty-panel";
 import { NARROW_PAGE } from "@/components/page";
@@ -59,9 +60,12 @@ function CheckoutChoicePage() {
 					title={m.cart_empty_title()}
 					description={m.cart_empty_description()}
 					action={
-						<Button asChild className="min-h-11 sm:min-h-9">
-							<Link to="/cart">{m.checkout_back_to_cart()}</Link>
-						</Button>
+						<Link
+							to="/cart"
+							className={cn(buttonVariants(), "min-h-11 sm:min-h-9")}
+						>
+							{m.checkout_back_to_cart()}
+						</Link>
 					}
 				/>
 			</div>
@@ -125,18 +129,20 @@ function CheckoutChoicePage() {
 			})}
 
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-				<Button asChild variant="secondary" className="min-h-11">
-					<Link to="/cart">{m.checkout_back_to_cart()}</Link>
-				</Button>
+				<Link
+					to="/cart"
+					className={cn(buttonVariants({ variant: "secondary" }), "min-h-11")}
+				>
+					{m.checkout_back_to_cart()}
+				</Link>
 				{complete ? (
-					<Button asChild size="lg" className="min-h-11">
-						<Link
-							to="/checkout/review"
-							search={{ choice: serializeChoice(choice) }}
-						>
-							{m.checkout_next()}
-						</Link>
-					</Button>
+					<Link
+						to="/checkout/review"
+						search={{ choice: serializeChoice(choice) }}
+						className={cn(buttonVariants({ size: "lg" }), "min-h-11")}
+					>
+						{m.checkout_next()}
+					</Link>
 				) : (
 					<Button size="lg" className="min-h-11" disabled>
 						{m.checkout_next()}

@@ -59,30 +59,32 @@ export function StoreSwitcher() {
 		<SidebarMenu>
 			<SidebarMenuItem>
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<SidebarMenuButton
-							size="lg"
-							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-						>
-							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-								<StoreIcon className="size-4" />
-							</div>
-							<div className="grid flex-1 text-left text-sm leading-tight">
-								<span className="truncate font-medium">
-									{activeStore?.name ?? m.shell_store_select()}
-								</span>
-								<span className="truncate text-xs text-muted-foreground">
-									{activeStore?.municipality?.name}
-									{activeStore?.municipality
-										? ` (${activeStore.municipality.provinceAcronym})`
-										: ""}
-								</span>
-							</div>
-							<ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground" />
-						</SidebarMenuButton>
+					<DropdownMenuTrigger
+						render={
+							<SidebarMenuButton
+								size="lg"
+								className="data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground"
+							/>
+						}
+					>
+						<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+							<StoreIcon className="size-4" />
+						</div>
+						<div className="grid flex-1 text-left text-sm leading-tight">
+							<span className="truncate font-medium">
+								{activeStore?.name ?? m.shell_store_select()}
+							</span>
+							<span className="truncate text-xs text-muted-foreground">
+								{activeStore?.municipality?.name}
+								{activeStore?.municipality
+									? ` (${activeStore.municipality.provinceAcronym})`
+									: ""}
+							</span>
+						</div>
+						<ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground" />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
-						className="w-(--radix-dropdown-menu-trigger-width) min-w-64 overflow-hidden rounded-lg p-0"
+						className="w-(--anchor-width) min-w-64 overflow-hidden rounded-lg p-0"
 						align="start"
 						side={isMobile ? "bottom" : "right"}
 						sideOffset={4}
@@ -136,13 +138,11 @@ export function StoreSwitcher() {
 								)}
 								<div className="py-1">
 									<DropdownMenuItem
-										asChild
 										className="mx-1 gap-2 rounded-md px-2 py-2"
+										render={<Link to="/store/new" />}
 									>
-										<Link to="/store/new">
-											<CreateIcon className="size-4" />
-											<span>{m.shell_store_add()}</span>
-										</Link>
+										<CreateIcon className="size-4" />
+										<span>{m.shell_store_add()}</span>
 									</DropdownMenuItem>
 								</div>
 							</>

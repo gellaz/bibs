@@ -319,16 +319,22 @@ function ProductsPage() {
 					<div className="flex min-h-9 flex-wrap items-center justify-between gap-x-4 gap-y-2">
 						<div className="flex min-w-0 items-center gap-3">
 							<Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-								<SheetTrigger asChild>
-									<Button variant="secondary" size="sm" className="lg:hidden">
-										<SlidersHorizontal className="size-4" aria-hidden />
-										{m.product_filters()}
-										{activeFilterCount > 0 && (
-											<span className="-mr-1 ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary font-mono text-[0.6875rem] text-primary-foreground tabular-nums">
-												{activeFilterCount}
-											</span>
-										)}
-									</Button>
+								<SheetTrigger
+									render={
+										<Button
+											variant="secondary"
+											size="sm"
+											className="lg:hidden"
+										/>
+									}
+								>
+									<SlidersHorizontal className="size-4" aria-hidden />
+									{m.product_filters()}
+									{activeFilterCount > 0 && (
+										<span className="-mr-1 ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-primary font-mono text-[0.6875rem] text-primary-foreground tabular-nums">
+											{activeFilterCount}
+										</span>
+									)}
 								</SheetTrigger>
 								<SheetContent
 									side="left"

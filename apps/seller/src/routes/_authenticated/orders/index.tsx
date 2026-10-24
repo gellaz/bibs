@@ -215,21 +215,23 @@ function OrdersListPage() {
 					const r = row.original;
 					return (
 						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="icon-sm">
-									<MoreVerticalIcon />
-									<span className="sr-only">{m.common_actions()}</span>
-								</Button>
+							<DropdownMenuTrigger
+								render={<Button variant="ghost" size="icon-sm" />}
+							>
+								<MoreVerticalIcon />
+								<span className="sr-only">{m.common_actions()}</span>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end">
-								<DropdownMenuItem asChild>
-									<Link to="/orders/$orderId" params={{ orderId: r.id }}>
-										{m.orders_action_detail()}
-									</Link>
+								<DropdownMenuItem
+									render={
+										<Link to="/orders/$orderId" params={{ orderId: r.id }} />
+									}
+								>
+									{m.orders_action_detail()}
 								</DropdownMenuItem>
 								{canMarkReady(r) && (
 									<DropdownMenuItem
-										onSelect={() =>
+										onClick={() =>
 											markReady.mutate(r.id, {
 												onSuccess: () =>
 													toast.success(m.orders_ready_success()),
@@ -267,6 +269,13 @@ function OrdersListPage() {
 			<div className="flex shrink-0 flex-wrap items-end justify-between gap-3">
 				<OrderStatusTabs value={tab} onChange={goToTab} counts={counts} />
 				<Select
+					items={[
+						{ value: ALL_TYPES, label: m.orders_type_all() },
+						...ORDER_TYPES.map((t) => ({
+							value: t,
+							label: ORDER_TYPE_LABEL[t](),
+						})),
+					]}
 					value={type ?? ALL_TYPES}
 					onValueChange={(v) =>
 						void navigate({

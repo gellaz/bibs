@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Compass, RotateCw } from "lucide-react";
@@ -79,9 +79,12 @@ function ProductDetailPage() {
 				title={m.product_detail_not_found_title()}
 				description={m.product_detail_not_found_description()}
 				action={
-					<Button asChild variant="secondary" size="sm">
-						<Link to="/products">{m.product_detail_back_to_products()}</Link>
-					</Button>
+					<Link
+						to="/products"
+						className={buttonVariants({ variant: "secondary", size: "sm" })}
+					>
+						{m.product_detail_back_to_products()}
+					</Link>
 				}
 			/>
 		);

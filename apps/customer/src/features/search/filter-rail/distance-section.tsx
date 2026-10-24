@@ -11,7 +11,7 @@ const ANY = "any";
 
 /** Stessa voce attiva del selettore Lista/Mappa: la scelta corrente prende l'Ink pieno. */
 const ITEM =
-	"min-h-11 text-[0.8125rem] tabular-nums group-data-[spacing=0]/toggle-group:px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground sm:min-h-8";
+	"min-h-11 text-[0.8125rem] tabular-nums group-data-[spacing=0]/toggle-group:px-3 data-pressed:bg-primary data-pressed:text-primary-foreground sm:min-h-8";
 
 interface DistanceSectionProps {
 	title: string;
@@ -47,14 +47,13 @@ export function DistanceSection({
 	return (
 		<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 			<ToggleGroup
-				type="single"
 				size="sm"
 				variant="outline"
 				disabled={!hasOrigin}
 				// Senza origine nessuna voce è accesa: il raggio non si applica.
-				value={hasOrigin ? String(radius ?? ANY) : ""}
-				// Radix emette "" quando si ri-clicca la voce attiva: un raggio c'è sempre.
-				onValueChange={(next) =>
+				value={hasOrigin ? [String(radius ?? ANY)] : []}
+				// Ri-cliccare la voce attiva la spegne ([]): un raggio c'è sempre.
+				onValueChange={([next]) =>
 					next && onRadiusChange(next === ANY ? undefined : Number(next))
 				}
 				aria-label={title}

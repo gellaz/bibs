@@ -1,5 +1,5 @@
 import { Badge } from "@bibs/ui/components/badge";
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import {
 	Dialog,
 	DialogContent,
@@ -128,9 +128,12 @@ export function ApplyPromotionDialog({
 						<p className="text-muted-foreground text-sm">
 							{m.products_apply_promotion_empty()}
 						</p>
-						<Button asChild variant="outline" size="sm">
-							<Link to="/promotions/new">{m.promotions_new_cta()}</Link>
-						</Button>
+						<Link
+							to="/promotions/new"
+							className={buttonVariants({ variant: "outline", size: "sm" })}
+						>
+							{m.promotions_new_cta()}
+						</Link>
 					</div>
 				) : (
 					<ScrollArea className="-mx-1 max-h-72 px-1">

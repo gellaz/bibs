@@ -52,8 +52,8 @@ export function SearchOriginChip() {
 	// copie "nascoste con il CSS" si aprirebbero tutte e due.
 	if (isMobile) {
 		return (
-			<Drawer open={pickerOpen} onOpenChange={setPickerOpen}>
-				<DrawerTrigger asChild>{trigger}</DrawerTrigger>
+			<Drawer open={pickerOpen} onOpenChange={setPickerOpen} showSwipeHandle>
+				<DrawerTrigger render={trigger} />
 				<DrawerContent>
 					<DrawerHeader>
 						<DrawerTitle>{m.origin_title()}</DrawerTitle>
@@ -68,7 +68,7 @@ export function SearchOriginChip() {
 
 	return (
 		<Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
+			<PopoverTrigger render={trigger} />
 			<PopoverContent align="end" className="w-80 gap-0 p-2">
 				<p className="px-2 pt-1 pb-2 font-medium text-muted-foreground text-xs">
 					{m.origin_title()}

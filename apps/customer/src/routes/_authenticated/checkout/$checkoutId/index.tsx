@@ -1,6 +1,7 @@
-import { Button } from "@bibs/ui/components/button";
+import { buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	CheckCircle2,
@@ -48,11 +49,13 @@ function CheckoutDonePage() {
 				title={m.checkout_not_found()}
 				description={m.orders_empty_description()}
 				action={
-					<Button asChild>
-						<Link to="/orders" search={{ tab: "reserved", page: 1 }}>
-							{m.checkout_done_orders_cta()}
-						</Link>
-					</Button>
+					<Link
+						to="/orders"
+						search={{ tab: "reserved", page: 1 }}
+						className={buttonVariants()}
+					>
+						{m.checkout_done_orders_cta()}
+					</Link>
 				}
 			/>
 		);
@@ -215,19 +218,23 @@ function CheckoutDonePage() {
 			})()}
 
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-				<Button asChild variant="secondary" className="min-h-11">
-					<Link to="/stores" search={{ q: undefined, categoryId: undefined }}>
-						{m.checkout_done_continue()}
-					</Link>
-				</Button>
-				<Button asChild size="lg" className="min-h-11">
-					<Link
-						to="/orders"
-						search={{ tab: payment === "none" ? "reserved" : "paid", page: 1 }}
-					>
-						{m.checkout_done_orders_cta()}
-					</Link>
-				</Button>
+				<Link
+					to="/stores"
+					search={{ q: undefined, categoryId: undefined }}
+					className={cn(buttonVariants({ variant: "secondary" }), "min-h-11")}
+				>
+					{m.checkout_done_continue()}
+				</Link>
+				<Link
+					to="/orders"
+					search={{
+						tab: payment === "none" ? "reserved" : "paid",
+						page: 1,
+					}}
+					className={cn(buttonVariants({ size: "lg" }), "min-h-11")}
+				>
+					{m.checkout_done_orders_cta()}
+				</Link>
 			</div>
 		</div>
 	);

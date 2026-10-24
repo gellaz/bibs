@@ -94,15 +94,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 								return (
 									<SidebarMenuItem key={item.to}>
 										<SidebarMenuButton
-											asChild
 											tooltip={title}
 											isActive={isActive}
 											className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+											render={<Link to={item.to} />}
 										>
-											<Link to={item.to}>
-												<item.icon />
-												<span>{title}</span>
-											</Link>
+											<item.icon />
+											<span>{title}</span>
 										</SidebarMenuButton>
 									</SidebarMenuItem>
 								);

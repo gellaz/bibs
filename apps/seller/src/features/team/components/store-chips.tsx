@@ -37,18 +37,20 @@ export function StoreChips({ storeIds }: { storeIds: string[] }) {
 			))}
 			{overflow.length > 0 && (
 				<Popover>
-					<PopoverTrigger asChild>
-						<button
-							type="button"
-							className="cursor-pointer rounded-4xl outline-none focus-visible:focus-ring"
+					<PopoverTrigger
+						render={
+							<button
+								type="button"
+								className="cursor-pointer rounded-4xl outline-none focus-visible:focus-ring"
+							/>
+						}
+					>
+						<Badge
+							variant="outline"
+							className="text-xs font-normal hover:bg-accent"
 						>
-							<Badge
-								variant="outline"
-								className="text-xs font-normal hover:bg-accent"
-							>
-								+{overflow.length}
-							</Badge>
-						</button>
+							+{overflow.length}
+						</Badge>
 					</PopoverTrigger>
 					<PopoverContent align="start" className="w-auto max-w-xs p-2">
 						<ul className="flex flex-col gap-0.5 text-sm">

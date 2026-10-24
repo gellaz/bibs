@@ -49,8 +49,8 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 				setOpen(o);
 			}}
 		>
-			<DialogTrigger asChild>
-				<Button variant="outline">{m.profile_vat_request_change()}</Button>
+			<DialogTrigger render={<Button variant="outline" />}>
+				{m.profile_vat_request_change()}
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
@@ -75,8 +75,8 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 					{error && <p className="text-sm text-destructive">{error}</p>}
 				</div>
 				<DialogFooter>
-					<DialogClose asChild>
-						<Button variant="ghost">{m.common_cancel()}</Button>
+					<DialogClose render={<Button variant="ghost" />}>
+						{m.common_cancel()}
 					</DialogClose>
 					<Button
 						onClick={() => {

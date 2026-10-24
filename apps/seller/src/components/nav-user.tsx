@@ -45,25 +45,27 @@ export function NavUser() {
 		<SidebarMenu>
 			<SidebarMenuItem>
 				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<SidebarMenuButton
-							size="lg"
-							className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-						>
-							<UserAvatar name={label} image={user.image} />
-							<div className="grid flex-1 text-left text-sm leading-tight">
-								<span className="truncate font-medium">{label}</span>
-								{label !== user.email && (
-									<span className="truncate text-xs text-muted-foreground">
-										{user.email}
-									</span>
-								)}
-							</div>
-							<MoreHorizontalIcon
-								aria-label={m.shell_user_menu_open()}
-								className="ml-auto size-4 text-muted-foreground"
+					<DropdownMenuTrigger
+						render={
+							<SidebarMenuButton
+								size="lg"
+								className="data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground"
 							/>
-						</SidebarMenuButton>
+						}
+					>
+						<UserAvatar name={label} image={user.image} />
+						<div className="grid flex-1 text-left text-sm leading-tight">
+							<span className="truncate font-medium">{label}</span>
+							{label !== user.email && (
+								<span className="truncate text-xs text-muted-foreground">
+									{user.email}
+								</span>
+							)}
+						</div>
+						<MoreHorizontalIcon
+							aria-label={m.shell_user_menu_open()}
+							className="ml-auto size-4 text-muted-foreground"
+						/>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
 						className="min-w-64 rounded-lg"
@@ -90,31 +92,25 @@ export function NavUser() {
 						<DropdownMenuSeparator />
 
 						<DropdownMenuGroup>
-							<DropdownMenuItem asChild>
-								<Link to="/profile">
-									<UserIcon />
-									<span>{m.shell_user_profile()}</span>
-								</Link>
+							<DropdownMenuItem render={<Link to="/profile" />}>
+								<UserIcon />
+								<span>{m.shell_user_profile()}</span>
 							</DropdownMenuItem>
 							{isOwner && (
 								<>
-									<DropdownMenuItem asChild>
-										<Link to="/team" search={{ page: 1, limit: 20 }}>
-											<UsersIcon />
-											<span>{m.shell_user_team()}</span>
-										</Link>
+									<DropdownMenuItem
+										render={<Link to="/team" search={{ page: 1, limit: 20 }} />}
+									>
+										<UsersIcon />
+										<span>{m.shell_user_team()}</span>
 									</DropdownMenuItem>
-									<DropdownMenuItem asChild>
-										<Link to="/billing">
-											<CreditCardIcon />
-											<span>{m.shell_nav_billing()}</span>
-										</Link>
+									<DropdownMenuItem render={<Link to="/billing" />}>
+										<CreditCardIcon />
+										<span>{m.shell_nav_billing()}</span>
 									</DropdownMenuItem>
-									<DropdownMenuItem asChild>
-										<Link to="/store/archived">
-											<ArchiveIcon />
-											<span>{m.shell_nav_archive()}</span>
-										</Link>
+									<DropdownMenuItem render={<Link to="/store/archived" />}>
+										<ArchiveIcon />
+										<span>{m.shell_nav_archive()}</span>
 									</DropdownMenuItem>
 								</>
 							)}

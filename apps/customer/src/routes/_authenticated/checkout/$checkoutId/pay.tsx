@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
@@ -61,11 +61,13 @@ function CheckoutPayPage() {
 				title={m.checkout_not_found()}
 				description={m.orders_empty_description()}
 				action={
-					<Button asChild>
-						<Link to="/orders" search={{ tab: "paid", page: 1 }}>
-							{m.checkout_done_orders_cta()}
-						</Link>
-					</Button>
+					<Link
+						to="/orders"
+						search={{ tab: "paid", page: 1 }}
+						className={buttonVariants()}
+					>
+						{m.checkout_done_orders_cta()}
+					</Link>
 				}
 			/>
 		);

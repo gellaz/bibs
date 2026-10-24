@@ -1,17 +1,17 @@
 # @bibs/ui
 
 Shared UI component library for the **bibs** monorepo, based on [shadcn/ui](https://ui.shadcn.com/) with the *
-*radix-nova** style.
+*base-nova** style.
 
 ## Tech Stack
 
-- **Components** — [shadcn/ui](https://ui.shadcn.com/) (radix-nova style) + [Radix UI](https://www.radix-ui.com/)
+- **Components** — [shadcn/ui](https://ui.shadcn.com/) (base-nova style) + [Base UI](https://base-ui.com/)
 - **Styling
   ** — [Tailwind CSS v4](https://tailwindcss.com/) + [cn](https://github.com/shadcn-ui/cn) + [class-variance-authority](https://cva.style/)
 - **Icons** — [Lucide React](https://lucide.dev/)
 - **Animations** — [tw-animate-css](https://github.com/nicholasgillespie/tw-animate-css)
 - **Extra
-  ** — [sonner](https://sonner.emilkowal.dev/), [vaul](https://vaul.emilkowal.dev/), [react-day-picker](https://react-day-picker.js.org/)
+  ** — [sonner](https://sonner.emilkowal.dev/), [react-day-picker](https://react-day-picker.js.org/)
 
 ## Components
 

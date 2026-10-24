@@ -10,7 +10,8 @@ import {
 	AlertDialogTrigger,
 } from "@bibs/ui/components/alert-dialog";
 import { Badge } from "@bibs/ui/components/badge";
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
+import { cn } from "@bibs/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { m } from "@/paraglide/messages";
@@ -66,20 +67,21 @@ export function AddressCard({
 				    ricerca identica a quella di prima. La rubrica le esige sui
 				    nuovi indirizzi, ma l'API le ammette nulle. */}
 				{address.location && (
-					<Button
-						asChild
-						variant="secondary"
-						size="sm"
-						className="min-h-11 sm:min-h-9"
+					<Link
+						to="/stores"
+						search={{
+							near: address.id,
+							q: undefined,
+							categoryId: undefined,
+						}}
+						className={cn(
+							buttonVariants({ variant: "secondary", size: "sm" }),
+							"min-h-11 sm:min-h-9",
+						)}
 					>
-						<Link
-							to="/stores"
-							search={{ near: address.id, q: undefined, categoryId: undefined }}
-						>
-							<Search className="size-4" aria-hidden />
-							{m.origin_search_here()}
-						</Link>
-					</Button>
+						<Search className="size-4" aria-hidden />
+						{m.origin_search_here()}
+					</Link>
 				)}
 				<Button
 					variant="secondary"
@@ -91,15 +93,17 @@ export function AddressCard({
 					{m.addresses_edit()}
 				</Button>
 				<AlertDialog>
-					<AlertDialogTrigger asChild>
-						<Button
-							variant="ghost"
-							size="sm"
-							className="min-h-11 text-destructive sm:min-h-9"
-							disabled={busy}
-						>
-							{m.addresses_delete()}
-						</Button>
+					<AlertDialogTrigger
+						render={
+							<Button
+								variant="ghost"
+								size="sm"
+								className="min-h-11 text-destructive sm:min-h-9"
+								disabled={busy}
+							/>
+						}
+					>
+						{m.addresses_delete()}
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>

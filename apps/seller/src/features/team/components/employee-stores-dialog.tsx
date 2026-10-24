@@ -24,7 +24,7 @@ import { m } from "@/paraglide/messages";
 interface Props {
 	employeeId: string;
 	employeeName: string;
-	trigger?: React.ReactNode;
+	trigger?: React.ReactElement;
 	open?: boolean;
 	onOpenChange?: (v: boolean) => void;
 }
@@ -76,7 +76,7 @@ export function EmployeeStoresDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			{trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+			{trigger && <DialogTrigger render={trigger} />}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>
@@ -141,8 +141,8 @@ export function EmployeeStoresDialog({
 					</p>
 				)}
 				<DialogFooter>
-					<DialogClose asChild>
-						<Button variant="ghost">{m.common_cancel()}</Button>
+					<DialogClose render={<Button variant="ghost" />}>
+						{m.common_cancel()}
 					</DialogClose>
 					<Button
 						onClick={submit}

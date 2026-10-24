@@ -8,6 +8,7 @@ import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -89,60 +90,63 @@ export function TableColumnsToggle<TData extends RowData>({
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label={labels.trigger}
-					title={labels.trigger}
-					className={className}
-				>
-					<Columns3Icon />
-				</Button>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						aria-label={labels.trigger}
+						title={labels.trigger}
+						className={className}
+					/>
+				}
+			>
+				<Columns3Icon />
 			</DropdownMenuTrigger>
 
 			<DropdownMenuContent align={align} className="min-w-56">
-				<div className="flex items-center justify-between gap-2 px-1.5 py-1">
-					<DropdownMenuLabel className="text-foreground px-0 py-0 text-sm font-semibold tracking-normal normal-case">
-						{labels.menuTitle}
-					</DropdownMenuLabel>
-					<span
-						aria-hidden="true"
-						className="text-muted-foreground text-xs tabular-nums"
-					>
-						{visible}/{total}
-					</span>
-				</div>
-				<DropdownMenuSeparator />
-
-				{menuColumns.map((col) => {
-					const label = getMenuLabel(col) ?? col.id;
-					const canHide = col.getCanHide();
-					return (
-						<DropdownMenuCheckboxItem
-							key={col.id}
-							checked={col.getIsVisible()}
-							disabled={!canHide}
-							onSelect={(event) => event.preventDefault()}
-							onCheckedChange={(value) => col.toggleVisibility(Boolean(value))}
+				<DropdownMenuGroup>
+					<div className="flex items-center justify-between gap-2 px-1.5 py-1">
+						<DropdownMenuLabel className="text-foreground px-0 py-0 text-sm font-semibold tracking-normal normal-case">
+							{labels.menuTitle}
+						</DropdownMenuLabel>
+						<span
+							aria-hidden="true"
+							className="text-muted-foreground text-xs tabular-nums"
 						>
-							<span className="flex-1 truncate">{label}</span>
-							{!canHide ? (
-								<LockIcon
-									aria-label={labels.locked}
-									className="text-muted-foreground/70 mr-5"
-								/>
-							) : null}
-						</DropdownMenuCheckboxItem>
-					);
-				})}
+							{visible}/{total}
+						</span>
+					</div>
+					<DropdownMenuSeparator />
+
+					{menuColumns.map((col) => {
+						const label = getMenuLabel(col) ?? col.id;
+						const canHide = col.getCanHide();
+						return (
+							<DropdownMenuCheckboxItem
+								key={col.id}
+								checked={col.getIsVisible()}
+								disabled={!canHide}
+								onCheckedChange={(value) =>
+									col.toggleVisibility(Boolean(value))
+								}
+							>
+								<span className="flex-1 truncate">{label}</span>
+								{!canHide ? (
+									<LockIcon
+										aria-label={labels.locked}
+										className="text-muted-foreground/70 mr-5"
+									/>
+								) : null}
+							</DropdownMenuCheckboxItem>
+						);
+					})}
+				</DropdownMenuGroup>
 
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onSelect={(event) => {
-						event.preventDefault();
-						table.resetColumnVisibility();
-					}}
+					closeOnClick={false}
+					onClick={() => table.resetColumnVisibility()}
 					disabled={isAtDefault}
 				>
 					{labels.reset}

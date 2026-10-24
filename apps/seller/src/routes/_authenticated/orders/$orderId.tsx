@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { buttonVariants } from "@bibs/ui/components/button";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { formatPriceEur } from "@bibs/ui/custom/price";
@@ -64,14 +64,13 @@ function OrderDetailPage() {
 			<EmptyState
 				title={m.orders_detail_not_found()}
 				action={
-					<Button asChild variant="secondary">
-						<Link
-							to="/orders"
-							search={{ tab: "all", type: undefined, page: 1, limit: 20 }}
-						>
-							{m.orders_page_title()}
-						</Link>
-					</Button>
+					<Link
+						to="/orders"
+						search={{ tab: "all", type: undefined, page: 1, limit: 20 }}
+						className={buttonVariants({ variant: "secondary" })}
+					>
+						{m.orders_page_title()}
+					</Link>
 				}
 			/>
 		);

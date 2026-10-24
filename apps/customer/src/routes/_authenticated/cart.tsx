@@ -1,7 +1,8 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { DiscountedPrice } from "@bibs/ui/custom/discounted-price";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
 import { EmptyPanel, exploreActions } from "@/components/empty-panel";
@@ -222,11 +223,16 @@ function CheckoutCta({ groups }: { groups: CartGroup[] }) {
 					<p className="text-destructive text-sm">{m.cart_fix_quantities()}</p>
 				</>
 			) : (
-				<Button asChild size="lg" className="min-h-11 w-full sm:w-auto">
-					<Link to="/checkout" search={{ choice: undefined }}>
-						{m.cart_checkout_cta()}
-					</Link>
-				</Button>
+				<Link
+					to="/checkout"
+					search={{ choice: undefined }}
+					className={cn(
+						buttonVariants({ size: "lg" }),
+						"min-h-11 w-full sm:w-auto",
+					)}
+				>
+					{m.cart_checkout_cta()}
+				</Link>
 			)}
 		</div>
 	);

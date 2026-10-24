@@ -1,5 +1,6 @@
-import { Button } from "@bibs/ui/components/button";
+import { buttonVariants } from "@bibs/ui/components/button";
 import { EmptyState, type EmptyStateProps } from "@bibs/ui/custom/empty-state";
+import { cn } from "@bibs/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { m } from "@/paraglide/messages";
 
@@ -20,18 +21,25 @@ export function EmptyPanel(props: EmptyStateProps) {
 export function exploreActions() {
 	return {
 		action: (
-			<Button asChild className="min-h-11 sm:min-h-9">
-				<Link to="/products" search={{ q: undefined, categoryId: undefined }}>
-					{m.explore_products_cta()}
-				</Link>
-			</Button>
+			<Link
+				to="/products"
+				search={{ q: undefined, categoryId: undefined }}
+				className={cn(buttonVariants(), "min-h-11 sm:min-h-9")}
+			>
+				{m.explore_products_cta()}
+			</Link>
 		),
 		secondary: (
-			<Button asChild variant="outline" className="min-h-11 sm:min-h-9">
-				<Link to="/stores" search={{ q: undefined, categoryId: undefined }}>
-					{m.explore_stores_cta()}
-				</Link>
-			</Button>
+			<Link
+				to="/stores"
+				search={{ q: undefined, categoryId: undefined }}
+				className={cn(
+					buttonVariants({ variant: "outline" }),
+					"min-h-11 sm:min-h-9",
+				)}
+			>
+				{m.explore_stores_cta()}
+			</Link>
 		),
 	};
 }

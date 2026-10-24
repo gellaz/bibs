@@ -153,11 +153,13 @@ export function AvatarUploadDialog({
 						<div className="flex items-center gap-3">
 							<span className="text-xs text-muted-foreground">1×</span>
 							<Slider
-								value={[zoom]}
+								value={zoom}
 								min={1}
 								max={3}
 								step={0.05}
-								onValueChange={(v) => setZoom(v[0] ?? 1)}
+								onValueChange={(v) =>
+									setZoom(typeof v === "number" ? v : (v[0] ?? 1))
+								}
 							/>
 							<span className="text-xs text-muted-foreground">3×</span>
 						</div>
