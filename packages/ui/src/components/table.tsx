@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import type * as React from "react";
+import * as React from "react";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
 	return (
@@ -43,7 +43,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
 		<tfoot
 			data-slot="table-footer"
 			className={cn(
-				"bg-muted/50 border-t font-medium [&>tr]:last:border-b-0",
+				"border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
 				className,
 			)}
 			{...props}
@@ -60,7 +60,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
 				// solo tinta di fondo, il contenuto resta a piena opacità. Il
 				// compound selected:hover blocca l'hover muted sulle righe
 				// selezionate (cascade non deterministica tra le due utility).
-				"hover:bg-muted/50 data-[state=selected]:bg-cobalt-soft data-[state=selected]:hover:bg-cobalt-soft border-b transition-colors",
+				"border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-cobalt-soft data-[state=selected]:hover:bg-cobalt-soft",
 				className,
 			)}
 			{...props}
@@ -73,7 +73,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
 		<th
 			data-slot="table-head"
 			className={cn(
-				"text-muted-foreground h-9 px-3 text-left align-middle text-[0.72rem] font-medium tracking-[0.08em] uppercase whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+				"text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 text-muted-foreground h-9 px-3 text-[0.72rem] tracking-[0.08em] uppercase",
 				className,
 			)}
 			{...props}
@@ -101,7 +101,7 @@ function TableCaption({
 	return (
 		<caption
 			data-slot="table-caption"
-			className={cn("text-muted-foreground mt-4 text-sm", className)}
+			className={cn("mt-4 text-sm text-muted-foreground", className)}
 			{...props}
 		/>
 	);
