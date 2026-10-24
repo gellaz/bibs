@@ -1,21 +1,9 @@
 import { Label } from "@bibs/ui/components/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@bibs/ui/components/select";
+import { SelectCombobox } from "@bibs/ui/custom/select-combobox";
 import { useQuery } from "@tanstack/react-query";
 import { useId } from "react";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
-
-// Radix rifiuta value="" su un SelectItem, quindi la voce «nessuna categoria»
-// viaggia con un sentinella che il gestore ritraduce in null. È l'unico modo
-// che il venditore ha per togliere una categoria già assegnata senza passare
-// dal cambio di macro (che sovrascriverebbe anche l'aliquota IVA).
-const NO_CATEGORY = "__none__";
 
 interface ProductCategoryPickerProps {
 	macroCategoryId: string | null;
@@ -74,28 +62,23 @@ export function ProductCategoryPicker({
 					{m.products_category_macro_label()}
 					{required && " *"}
 				</Label>
-				<Select
-					value={macroCategoryId ?? ""}
-					onValueChange={(v) =>
+				<SelectCombobox
+					id={macroSelectId}
+					options={macros.map((macro) => ({
+						value: macro.id,
+						label: macro.name,
+					}))}
+					value={macroCategoryId}
+					onChange={(v) =>
 						onMacroChange(
-							v || null,
+							v,
 							macros.find((macro) => macro.id === v)?.suggestedVatRate,
 						)
 					}
-				>
-					<SelectTrigger id={macroSelectId} className="w-full">
-						<SelectValue
-							placeholder={m.products_category_macro_placeholder()}
-						/>
-					</SelectTrigger>
-					<SelectContent>
-						{macros.map((macro) => (
-							<SelectItem key={macro.id} value={macro.id}>
-								{macro.name}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+					placeholder={m.products_category_macro_placeholder()}
+					emptyText={m.products_category_macro_search_empty()}
+					clearLabel={(name) => m.common_remove_named({ name })}
+				/>
 			</div>
 
 			{macroCategoryId && (
@@ -104,32 +87,16 @@ export function ProductCategoryPicker({
 						{m.products_category_label()}
 						{required && " *"}
 					</Label>
-					<Select
-						value={
-							categoryId === undefined
-								? ""
-								: categoryId === null
-									? NO_CATEGORY
-									: categoryId
-						}
-						onValueChange={(v) =>
-							onCategoryChange(!v || v === NO_CATEGORY ? null : v)
-						}
-					>
-						<SelectTrigger id={categorySelectId} className="w-full">
-							<SelectValue placeholder={m.products_category_placeholder()} />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value={NO_CATEGORY}>
-								{m.products_category_none()}
-							</SelectItem>
-							{categories.map((c) => (
-								<SelectItem key={c.id} value={c.id}>
-									{c.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<SelectCombobox
+						id={categorySelectId}
+						options={categories.map((c) => ({ value: c.id, label: c.name }))}
+						value={categoryId ?? null}
+						onChange={onCategoryChange}
+						placeholder={m.products_category_placeholder()}
+						emptyText={m.products_category_search_empty()}
+						clearLabel={(name) => m.common_remove_named({ name })}
+						disabled={categoriesLoaded && categories.length === 0}
+					/>
 					{categoriesLoaded && categories.length === 0 && (
 						<p className="text-muted-foreground text-sm">
 							{m.products_category_empty()}

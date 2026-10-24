@@ -12,7 +12,31 @@ import {
 } from "~/components/input-group";
 import { cn } from "~/lib/utils";
 
-const Combobox = ComboboxPrimitive.Root;
+// base-ui svuota scelta e testo con Escape a tendina chiusa: in una scelta da
+// elenco Escape chiude pannelli e dialog, e non deve cancellare nulla.
+function Combobox<
+	Value,
+	Multiple extends boolean | undefined = false,
+	Item = Value,
+>({
+	onValueChange,
+	onInputValueChange,
+	...props
+}: ComboboxPrimitive.Root.Props<Value, Multiple, Item>) {
+	return (
+		<ComboboxPrimitive.Root
+			{...props}
+			onValueChange={(value, details) => {
+				if (details.reason === "escape-key") return details.cancel();
+				onValueChange?.(value, details);
+			}}
+			onInputValueChange={(value, details) => {
+				if (details.reason === "escape-key") return details.cancel();
+				onInputValueChange?.(value, details);
+			}}
+		/>
+	);
+}
 
 function ComboboxValue({ ...props }: ComboboxPrimitive.Value.Props) {
 	return <ComboboxPrimitive.Value data-slot="combobox-value" {...props} />;
@@ -54,10 +78,13 @@ function ComboboxInput({
 	disabled = false,
 	showTrigger = true,
 	showClear = false,
+	clearLabel,
 	...props
 }: ComboboxPrimitive.Input.Props & {
 	showTrigger?: boolean;
 	showClear?: boolean;
+	/** Nome accessibile del pulsante che svuota la scelta. */
+	clearLabel?: string;
 }) {
 	return (
 		<InputGroup className={cn("w-auto", className)}>
@@ -78,7 +105,9 @@ function ComboboxInput({
 						<ComboboxTrigger />
 					</InputGroupButton>
 				)}
-				{showClear && <ComboboxClear disabled={disabled} />}
+				{showClear && (
+					<ComboboxClear disabled={disabled} aria-label={clearLabel} />
+				)}
 			</InputGroupAddon>
 			{children}
 		</InputGroup>
@@ -246,9 +275,12 @@ function ComboboxChip({
 	className,
 	children,
 	showRemove = true,
+	removeLabel,
 	...props
 }: ComboboxPrimitive.Chip.Props & {
 	showRemove?: boolean;
+	/** Nome accessibile del pulsante che toglie il chip. */
+	removeLabel?: string;
 }) {
 	return (
 		<ComboboxPrimitive.Chip
@@ -265,6 +297,7 @@ function ComboboxChip({
 					render={<Button variant="ghost" size="icon-xs" />}
 					className="-ml-1 opacity-50 hover:opacity-100"
 					data-slot="combobox-chip-remove"
+					aria-label={removeLabel}
 				>
 					<XIcon className="pointer-events-none" />
 				</ComboboxPrimitive.ChipRemove>

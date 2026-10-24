@@ -1,11 +1,8 @@
 import { Button } from "@bibs/ui/components/button";
 import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
-import {
-	NativeSelect,
-	NativeSelectOption,
-} from "@bibs/ui/components/native-select";
-import { type SubmitHandler, useForm } from "react-hook-form";
+import { SelectCombobox } from "@bibs/ui/custom/select-combobox";
+import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import {
 	type ProductCategoryFormData,
 	productCategoryFormSchema,
@@ -44,6 +41,7 @@ export function ProductCategoryForm({
 	// salvava il nome vecchio). Il dialog monta un form per riga (`key`).
 	const {
 		register,
+		control,
 		handleSubmit,
 		formState: { errors },
 	} = useForm<ProductCategoryFormData>({
@@ -62,23 +60,28 @@ export function ProductCategoryForm({
 					<FieldLabel htmlFor="product-category-macro">
 						{m.categories_macro_column()}
 					</FieldLabel>
-					<NativeSelect
-						id="product-category-macro"
-						className="w-full"
-						disabled={macrosLoading}
-						{...register("macroCategoryId")}
-					>
-						<NativeSelectOption value="">
-							{macrosLoading
-								? m.common_loading()
-								: m.categories_macro_select_placeholder()}
-						</NativeSelectOption>
-						{macros.map((mc) => (
-							<NativeSelectOption key={mc.id} value={mc.id}>
-								{mc.name}
-							</NativeSelectOption>
-						))}
-					</NativeSelect>
+					<Controller
+						control={control}
+						name="macroCategoryId"
+						render={({ field }) => (
+							<SelectCombobox
+								id="product-category-macro"
+								ref={field.ref}
+								options={macros.map((mc) => ({ value: mc.id, label: mc.name }))}
+								value={field.value || null}
+								onChange={(v) => field.onChange(v ?? "")}
+								placeholder={
+									macrosLoading
+										? m.common_loading()
+										: m.categories_macro_select_placeholder()
+								}
+								emptyText={m.categories_macro_search_empty()}
+								clearLabel={(name) => m.common_remove_named({ name })}
+								disabled={macrosLoading}
+								aria-invalid={!!errors.macroCategoryId}
+							/>
+						)}
+					/>
 					<FieldError errors={[errors.macroCategoryId]} />
 				</Field>
 
