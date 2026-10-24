@@ -235,6 +235,27 @@ describe("verifySeller", () => {
 		await expectServiceError(verifySeller(crypto.randomUUID()), 404);
 	});
 
+	it("clears the reason left by a previous rejection", async () => {
+		const db = getTestDb();
+		const seller = await createSellerAtStatus(
+			"s@test.com",
+			"pending_review",
+			"pending",
+		);
+		await db
+			.update(sellerProfile)
+			.set({ rejectionReason: "Documento illeggibile" })
+			.where(eq(sellerProfile.id, seller.profile.id));
+
+		await verifySeller(seller.profile.id);
+
+		const [profile] = await db
+			.select()
+			.from(sellerProfile)
+			.where(eq(sellerProfile.id, seller.profile.id));
+		expect(profile.rejectionReason).toBeNull();
+	});
+
 	for (const [status, vat] of [
 		["rejected", "rejected"],
 		["active", "verified"],
@@ -248,32 +269,102 @@ describe("verifySeller", () => {
 
 // ── rejectSeller ──────────────────────────────────────────────────────────────
 
+const DEFINITIVE = {
+	reason: "Attività non ammessa su bibs",
+	fixStep: null,
+} as const;
+
+async function profileOf(sellerId: string) {
+	const [profile] = await getTestDb()
+		.select()
+		.from(sellerProfile)
+		.where(eq(sellerProfile.id, sellerId));
+	return profile;
+}
+
+async function organizationOf(sellerId: string) {
+	const [org] = await getTestDb()
+		.select()
+		.from(organization)
+		.where(eq(organization.sellerProfileId, sellerId));
+	return org;
+}
+
 describe("rejectSeller", () => {
-	it("sets seller onboarding to rejected and organization vatStatus to rejected", async () => {
-		const db = getTestDb();
+	it("definitive: sets onboarding and vatStatus to rejected and stores the reason", async () => {
 		const seller = await createSellerAtStatus(
 			"s@test.com",
 			"pending_review",
 			"pending",
 		);
 
-		await rejectSeller(seller.profile.id);
+		await rejectSeller(seller.profile.id, DEFINITIVE);
 
-		const [profile] = await db
-			.select()
-			.from(sellerProfile)
-			.where(eq(sellerProfile.id, seller.profile.id));
+		const profile = await profileOf(seller.profile.id);
 		expect(profile.onboardingStatus).toBe("rejected");
+		expect(profile.rejectionReason).toBe("Attività non ammessa su bibs");
+		expect((await organizationOf(seller.profile.id)).vatStatus).toBe(
+			"rejected",
+		);
+	});
 
-		const [org] = await db
-			.select()
-			.from(organization)
-			.where(eq(organization.sellerProfileId, seller.profile.id));
-		expect(org.vatStatus).toBe("rejected");
+	it("fixStep document: back to the document step, organization kept as pending", async () => {
+		const seller = await createSellerAtStatus(
+			"s@test.com",
+			"pending_review",
+			"pending",
+		);
+
+		await rejectSeller(seller.profile.id, {
+			reason: "Documento illeggibile",
+			fixStep: "document",
+		});
+
+		const profile = await profileOf(seller.profile.id);
+		expect(profile.onboardingStatus).toBe("pending_document");
+		expect(profile.rejectionReason).toBe("Documento illeggibile");
+		expect((await organizationOf(seller.profile.id)).vatStatus).toBe("pending");
+	});
+
+	it("fixStep company: back to the company step, organization removed", async () => {
+		const seller = await createSellerAtStatus(
+			"s@test.com",
+			"pending_review",
+			"pending",
+		);
+
+		await rejectSeller(seller.profile.id, {
+			reason: "P.IVA non valida o diversa dalla ragione sociale",
+			fixStep: "company",
+		});
+
+		const profile = await profileOf(seller.profile.id);
+		expect(profile.onboardingStatus).toBe("pending_company");
+		expect(await organizationOf(seller.profile.id)).toBeUndefined();
+	});
+
+	it("stores the reason trimmed", async () => {
+		const seller = await createSellerAtStatus(
+			"s@test.com",
+			"pending_review",
+			"pending",
+		);
+
+		await rejectSeller(seller.profile.id, {
+			reason: "  Foto di un'altra persona  ",
+			fixStep: null,
+		});
+
+		expect((await profileOf(seller.profile.id)).rejectionReason).toBe(
+			"Foto di un'altra persona",
+		);
 	});
 
 	it("throws ServiceError 404 when seller does not exist", async () => {
-		await expectServiceError(rejectSeller(crypto.randomUUID()), 404);
+		await expectServiceError(
+			rejectSeller(crypto.randomUUID(), DEFINITIVE),
+			404,
+		);
 	});
 
 	for (const [status, vat] of [
@@ -282,7 +373,11 @@ describe("rejectSeller", () => {
 		["pending_company", "pending"],
 	] as const) {
 		it(`throws 409 and changes nothing when the seller is ${status}`, async () => {
-			await expectConflictUnchanged(rejectSeller, status, vat);
+			await expectConflictUnchanged(
+				(id) => rejectSeller(id, DEFINITIVE),
+				status,
+				vat,
+			);
 		});
 	}
 });

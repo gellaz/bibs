@@ -61,6 +61,7 @@ const rawSellerProfile = {
 	documentIssuedMunicipalityId: null,
 	documentImageUrl: null,
 	vatChangeBlocked: false,
+	rejectionReason: null,
 	// extra raw columns not in the schema → must be stripped
 	documentImageKey: null,
 	stripeCustomerId: null,
