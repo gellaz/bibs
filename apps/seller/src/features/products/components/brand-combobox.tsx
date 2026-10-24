@@ -1,19 +1,12 @@
-import { Button } from "@bibs/ui/components/button";
 import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-} from "@bibs/ui/components/command";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@bibs/ui/components/popover";
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+} from "@bibs/ui/components/combobox";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronsUpDownIcon, XIcon } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
@@ -24,13 +17,23 @@ export interface BrandComboboxValue {
 }
 
 interface BrandComboboxProps {
-	/** Id del trigger, per collegarlo a una `<label htmlFor>`. */
+	/** Id dell'input, per collegarlo a una `<label htmlFor>`. */
 	id?: string;
 	value: BrandComboboxValue | null;
 	onChange: (next: BrandComboboxValue | null) => void;
 	placeholder?: string;
 }
 
+/** Un brand esistente (con id) o da creare (solo nome). */
+type BrandItem = { brandId?: string; brandName: string };
+
+const sameBrand = (a: BrandItem, b: BrandItem) =>
+	a.brandId || b.brandId
+		? a.brandId === b.brandId
+		: a.brandName === b.brandName;
+
+// Stessa tendina di SelectCombobox, ma l'elenco lo filtra il server e in coda
+// c'è la voce per creare il brand scritto.
 export function BrandCombobox({
 	id,
 	value,
@@ -39,7 +42,14 @@ export function BrandCombobox({
 }: BrandComboboxProps) {
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const deferredQuery = useDeferredValue(query);
+
+	const selected: BrandItem | null = value?.brandName
+		? { brandId: value.brandId, brandName: value.brandName }
+		: null;
+	// Il testo uguale al brand scelto non è una ricerca: riaprendo si vede di
+	// nuovo tutto l'elenco.
+	const search = query === selected?.brandName ? "" : query;
+	const deferredQuery = useDeferredValue(search);
 
 	const { data: brands = [] } = useQuery({
 		queryKey: ["seller-brands", deferredQuery],
@@ -53,91 +63,58 @@ export function BrandCombobox({
 		staleTime: 30_000,
 	});
 
-	const trimmed = query.trim();
+	const trimmed = search.trim();
 	const exactMatch = brands.some(
 		(b) => b.name.toLowerCase() === trimmed.toLowerCase(),
 	);
-	const showCreateOption = trimmed.length > 0 && !exactMatch;
-
-	const displayLabel =
-		value?.brandName ?? placeholder ?? m.products_brand_placeholder();
+	const items: BrandItem[] = brands.map((b) => ({
+		brandId: b.id,
+		brandName: b.name,
+	}));
+	if (trimmed && !exactMatch) items.push({ brandName: trimmed });
 
 	return (
-		<div className="flex items-center gap-2">
-			<Popover open={open} onOpenChange={setOpen}>
-				<PopoverTrigger asChild>
-					<Button
-						id={id}
-						type="button"
-						variant="outline"
-						role="combobox"
-						aria-expanded={open}
-						className="w-full justify-between font-normal"
-					>
-						<span className={value ? "" : "text-muted-foreground"}>
-							{displayLabel}
-						</span>
-						<ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent
-					className="w-[--radix-popover-trigger-width] p-0"
-					align="start"
-				>
-					<Command shouldFilter={false}>
-						<CommandInput
-							placeholder={m.products_brand_search()}
-							value={query}
-							onValueChange={setQuery}
-						/>
-						<CommandList>
-							<CommandEmpty>{m.products_brand_empty()}</CommandEmpty>
-							{brands.length > 0 && (
-								<CommandGroup heading={m.products_brand_existing()}>
-									{brands.map((b) => (
-										<CommandItem
-											key={b.id}
-											value={b.id}
-											onSelect={() => {
-												onChange({ brandId: b.id, brandName: b.name });
-												setOpen(false);
-												setQuery("");
-											}}
-										>
-											{b.name}
-										</CommandItem>
-									))}
-								</CommandGroup>
-							)}
-							{showCreateOption && (
-								<CommandGroup heading={m.products_brand_new()}>
-									<CommandItem
-										value={`__create__${trimmed}`}
-										onSelect={() => {
-											onChange({ brandName: trimmed });
-											setOpen(false);
-											setQuery("");
-										}}
-									>
-										{m.products_brand_create({ name: trimmed })}
-									</CommandItem>
-								</CommandGroup>
-							)}
-						</CommandList>
-					</Command>
-				</PopoverContent>
-			</Popover>
-			{value && (
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon"
-					onClick={() => onChange(null)}
-					aria-label={m.products_brand_remove()}
-				>
-					<XIcon className="h-4 w-4" />
-				</Button>
-			)}
-		</div>
+		<Combobox
+			items={items}
+			filter={null}
+			value={selected}
+			onValueChange={(next: BrandItem | null) =>
+				onChange(
+					next ? { brandId: next.brandId, brandName: next.brandName } : null,
+				)
+			}
+			onOpenChange={setOpen}
+			onInputValueChange={(next: string) => setQuery(next)}
+			itemToStringLabel={(item: BrandItem) => item.brandName}
+			isItemEqualToValue={sameBrand}
+			autoHighlight
+		>
+			<ComboboxInput
+				id={id}
+				placeholder={placeholder ?? m.products_brand_placeholder()}
+				showClear={!!selected}
+				clearLabel={
+					selected
+						? m.common_remove_named({ name: selected.brandName })
+						: undefined
+				}
+				className="w-full"
+			/>
+			<ComboboxContent>
+				<ComboboxEmpty>{m.products_brand_empty()}</ComboboxEmpty>
+				<ComboboxList>
+					{(item: BrandItem) => (
+						<ComboboxItem
+							key={item.brandId ?? `new:${item.brandName}`}
+							value={item}
+						>
+							{item.brandId
+								? item.brandName
+								: m.products_brand_create({ name: item.brandName })}
+						</ComboboxItem>
+					)}
+				</ComboboxList>
+			</ComboboxContent>
+		</Combobox>
 	);
 }

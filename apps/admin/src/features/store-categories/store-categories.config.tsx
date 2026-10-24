@@ -1,7 +1,4 @@
-import {
-	NativeSelect,
-	NativeSelectOption,
-} from "@bibs/ui/components/native-select";
+import { SelectCombobox } from "@bibs/ui/custom/select-combobox";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import type {
@@ -67,22 +64,17 @@ function MacroFilter({
 }) {
 	const { macros, isLoading } = useMacros();
 	return (
-		<NativeSelect
+		<SelectCombobox
 			className="w-56"
-			value={values.macroCategoryId ?? ""}
-			onChange={(e) => set("macroCategoryId", e.target.value)}
-			disabled={isLoading}
 			aria-label={m.categories_macro_filter_aria()}
-		>
-			<NativeSelectOption value="">
-				{m.categories_macro_filter_all()}
-			</NativeSelectOption>
-			{macros.map((mc) => (
-				<NativeSelectOption key={mc.id} value={mc.id}>
-					{mc.name}
-				</NativeSelectOption>
-			))}
-		</NativeSelect>
+			options={macros.map((mc) => ({ value: mc.id, label: mc.name }))}
+			value={values.macroCategoryId || null}
+			onChange={(v) => set("macroCategoryId", v ?? "")}
+			placeholder={m.categories_macro_filter_all()}
+			emptyText={m.categories_macro_search_empty()}
+			clearLabel={(name) => m.common_remove_named({ name })}
+			disabled={isLoading}
+		/>
 	);
 }
 
