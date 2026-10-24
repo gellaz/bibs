@@ -111,7 +111,8 @@ function DataPagination({
 	const pages = generatePageRange(current, totalPages, siblingCount);
 
 	return (
-		<Pagination className={cn("justify-start", className)}>
+		// w-auto: con il w-full di shadcn, nel piede in flex-wrap, andrebbe sempre a capo.
+		<Pagination className={cn("mx-0 w-auto justify-start", className)}>
 			<PaginationContent className="gap-1">
 				<PaginationItem>
 					<Button
@@ -138,15 +139,14 @@ function DataPagination({
 					return (
 						<PaginationItem key={item}>
 							<Button
-								variant="ghost"
+								variant={isActive ? "default" : "ghost"}
 								size="icon"
 								onClick={() => onPageChange(item)}
 								aria-label={labels.page(item)}
 								aria-current={isActive ? "page" : undefined}
 								className={cn(
 									"tabular-nums",
-									isActive &&
-										"bg-foreground text-background hover:bg-foreground/90 hover:text-background font-semibold cursor-default",
+									isActive && "hover:bg-primary cursor-default",
 								)}
 							>
 								{item}

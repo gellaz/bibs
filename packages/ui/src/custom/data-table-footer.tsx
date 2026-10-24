@@ -42,18 +42,20 @@ export function DataTableFooter({
 	const end = Math.min(current * pageSize, total);
 
 	return (
-		<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
+		<div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-4 max-sm:pt-2">
 			<p className="text-muted-foreground text-sm tabular-nums">
 				{rangeLabel({ start, end, total })}
 			</p>
-			{/* flex-wrap: a 390 px selettore e paginazione non stanno su una riga. */}
-			<div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+			{/* Su mobile il gruppo si scioglie: range e selettore su una riga, paginazione sotto, centrata e separata da un filo.
+			    -mx-4 annulla il p-4 delle shell admin/seller: il filo arriva a bordo schermo. */}
+			<div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-3">
 				<PageSizeSelector
 					label={labels.rowsPerPage}
 					pageSize={pageSize}
 					onPageSizeChange={onPageSizeChange}
 				/>
 				<DataPagination
+					className="max-sm:-mx-4 max-sm:w-[calc(100%+2rem)] max-sm:justify-center max-sm:border-t max-sm:pt-4"
 					labels={labels.pagination}
 					page={page}
 					totalPages={totalPages}
