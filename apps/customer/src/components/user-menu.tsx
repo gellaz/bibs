@@ -1,6 +1,7 @@
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -45,16 +46,18 @@ export function UserMenu() {
 				<UserAvatar name={label} image={user.image} />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" sideOffset={8} className="w-64">
-				<DropdownMenuLabel className="flex flex-col gap-0.5">
-					<span className="truncate font-medium text-foreground text-sm">
-						{label}
-					</span>
-					{label !== user.email && (
-						<span className="truncate font-normal text-muted-foreground text-xs">
-							{user.email}
+				<DropdownMenuGroup>
+					<DropdownMenuLabel className="flex flex-col gap-0.5">
+						<span className="truncate font-medium text-foreground text-sm">
+							{label}
 						</span>
-					)}
-				</DropdownMenuLabel>
+						{label !== user.email && (
+							<span className="truncate font-normal text-muted-foreground text-xs">
+								{user.email}
+							</span>
+						)}
+					</DropdownMenuLabel>
+				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
 					render={<Link to="/orders" search={{ tab: "reserved", page: 1 }} />}

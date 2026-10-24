@@ -84,7 +84,7 @@ export function StoreSwitcher() {
 						<ChevronsUpDownIcon className="ml-auto size-4 text-muted-foreground" />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent
-						className="w-(--radix-dropdown-menu-trigger-width) min-w-64 overflow-hidden rounded-lg p-0"
+						className="w-(--anchor-width) min-w-64 overflow-hidden rounded-lg p-0"
 						align="start"
 						side={isMobile ? "bottom" : "right"}
 						sideOffset={4}
