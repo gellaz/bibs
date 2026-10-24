@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -11,6 +12,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ClockIcon, MailIcon, XCircleIcon } from "lucide-react";
 import { useOnboardingStatus } from "@/hooks/use-onboarding";
 import { authClient } from "@/lib/auth-client";
+import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/onboarding/pending")({
@@ -49,7 +51,12 @@ function PendingPage() {
 	} else if (isRejected) {
 		icon = <XCircleIcon className="size-6" />;
 		title = m.onboarding_pending_rejected_title();
-		description = m.onboarding_pending_rejected_body();
+		// Profiles rejected before reasons existed have none: keep the generic copy.
+		description = onboarding?.rejectionReason
+			? m.onboarding_pending_rejected_reason({
+					reason: onboarding.rejectionReason,
+				})
+			: m.onboarding_pending_rejected_body();
 	}
 
 	return (
@@ -66,6 +73,24 @@ function PendingPage() {
 					{isPendingEmail && (
 						<p className="text-center text-sm text-muted-foreground">
 							{m.onboarding_pending_email_spam()}
+						</p>
+					)}
+
+					{isRejected && (
+						<p className="text-center text-sm text-muted-foreground">
+							{richMessage(
+								m.onboarding_pending_rejected_support({ email: "{email}" }),
+								{
+									email: (
+										<a
+											href={`mailto:${SUPPORT_EMAIL}`}
+											className="underline underline-offset-4"
+										>
+											{SUPPORT_EMAIL}
+										</a>
+									),
+								},
+							)}
 						</p>
 					)}
 

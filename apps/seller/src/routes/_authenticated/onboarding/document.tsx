@@ -118,8 +118,18 @@ function DocumentPage() {
 		}
 		if (invalid || !documentImage) return;
 		try {
-			await mutation.mutateAsync({ ...data, documentNumber, documentImage });
-			void navigate({ to: "/onboarding/company" });
+			const { data: updated } = await mutation.mutateAsync({
+				...data,
+				documentNumber,
+				documentImage,
+			});
+			// Resubmission after a "document" rejection skips the company step.
+			void navigate({
+				to:
+					updated.onboardingStatus === "pending_review"
+						? "/onboarding/pending"
+						: "/onboarding/company",
+			});
 		} catch (err) {
 			setApiError(
 				err instanceof Error
