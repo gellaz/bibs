@@ -205,8 +205,8 @@ default.
 - Motion respects `prefers-reduced-motion` without exception. Ease-out
   exponential curves, no bounce.
 
-**Register split.** PRODUCT.md sets the customer as brand-default surface;
-seller and admin override to product per task. DESIGN.md follows: every
+**Register split.** The customer app is the brand surface; the seller and
+admin back-offices are product surfaces. DESIGN.md follows: every
 token is shared (one ink, one cream, one type ramp), but two accents are
 reserved per register — saffron on brand, cobalt on product. A seller chip
 in saffron, or a customer reward pill in cobalt, is wrong by construction.
