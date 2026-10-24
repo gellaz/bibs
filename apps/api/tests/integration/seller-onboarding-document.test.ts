@@ -32,7 +32,11 @@ import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
 import { updateDocument } from "@/modules/seller/services/onboarding";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestMunicipality, createTestSeller } from "../helpers/fixtures";
+import {
+	createTestMunicipality,
+	createTestOrganization,
+	createTestSeller,
+} from "../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -53,7 +57,11 @@ async function sellerAtDocumentStep() {
 		.set({ onboardingStatus: "pending_document" })
 		.where(eq(sellerProfile.id, seller.profile.id));
 	const municipality = await createTestMunicipality(db);
-	return { userId: seller.user.id, municipalityId: municipality.id };
+	return {
+		userId: seller.user.id,
+		profileId: seller.profile.id,
+		municipalityId: municipality.id,
+	};
 }
 
 const image = () =>
@@ -68,6 +76,22 @@ async function statusOf(userId: string) {
 }
 
 describe("updateDocument", () => {
+	it("con l'organizzazione già salvata (rifiuto 'document') va dritto in revisione", async () => {
+		const { userId, profileId, municipalityId } = await sellerAtDocumentStep();
+		await createTestOrganization(getTestDb(), profileId);
+
+		const profile = await updateDocument({
+			userId,
+			documentType: "passport",
+			documentNumber: "YA1234567",
+			documentExpiry: "2099-12-31",
+			documentIssuedMunicipalityId: municipalityId,
+			documentImage: image(),
+		});
+
+		expect(profile.onboardingStatus).toBe("pending_review");
+	});
+
 	it("salva tipo e numero normalizzato e passa a pending_company", async () => {
 		const { userId, municipalityId } = await sellerAtDocumentStep();
 

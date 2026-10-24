@@ -122,6 +122,12 @@ export async function updateDocument(params: DocumentParams) {
 	await s3.write(key, documentImage);
 	const url = publicUrl(key);
 
+	// Company data already saved = resubmission after a "document" rejection.
+	const existingOrganization = await db.query.organization.findFirst({
+		where: eq(organization.sellerProfileId, profile.id),
+		columns: { id: true },
+	});
+
 	await db
 		.update(sellerProfile)
 		.set({
@@ -129,7 +135,9 @@ export async function updateDocument(params: DocumentParams) {
 			documentNumber,
 			documentImageKey: key,
 			documentImageUrl: url,
-			onboardingStatus: "pending_company",
+			onboardingStatus: existingOrganization
+				? "pending_review"
+				: "pending_company",
 		})
 		.where(eq(sellerProfile.userId, userId));
 
