@@ -18,6 +18,7 @@ const EnvSchema = t.Object({
 	TRUST_PROXY: t.Optional(t.String()),
 	RESEND_API_KEY: t.Optional(t.String()),
 	EMAIL_FROM: t.Optional(t.String()),
+	SUPPORT_EMAIL: t.Optional(t.String()),
 	MAILPIT_URL: t.Optional(t.String()),
 	CUSTOMER_APP_URL: t.Optional(t.String()),
 	SELLER_APP_URL: t.Optional(t.String()),
@@ -58,6 +59,8 @@ export const env = {
 	TRUST_PROXY: process.env.TRUST_PROXY ?? "false",
 	RESEND_API_KEY: process.env.RESEND_API_KEY,
 	EMAIL_FROM: process.env.EMAIL_FROM,
+	// Indirizzo che i venditori vedono per contattare il supporto (email e app).
+	SUPPORT_EMAIL: process.env.SUPPORT_EMAIL ?? "supporto@bibs.it",
 	MAILPIT_URL: process.env.MAILPIT_URL,
 	CUSTOMER_APP_URL: process.env.CUSTOMER_APP_URL ?? "http://localhost:3001",
 	SELLER_APP_URL: process.env.SELLER_APP_URL ?? "http://localhost:3002",

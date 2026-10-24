@@ -9,7 +9,16 @@ import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
-import { DocumentChangeBody, VatChangeBody } from "@/lib/schemas/forms";
+import {
+	DocumentChangeBody,
+	type RejectSellerBody,
+	type SellerRejectionFixStep,
+	VatChangeBody,
+} from "@/lib/schemas/forms";
+import {
+	notifySellerApproved,
+	notifySellerRejected,
+} from "@/modules/seller/services/onboarding-notifications";
 
 /** Statuses visible to admins (past onboarding steps). */
 const REVIEWABLE_STATUSES: OnboardingStatus[] = [
@@ -180,8 +189,16 @@ async function fetchProfileWithMunicipalities(sellerId: string) {
 }
 
 interface ReviewOutcome {
-	onboardingStatus: Extract<OnboardingStatus, "active" | "rejected">;
-	vatStatus: Extract<VatStatus, "verified" | "rejected">;
+	onboardingStatus: Extract<
+		OnboardingStatus,
+		"active" | "rejected" | "pending_document" | "pending_company"
+	>;
+	rejectionReason: string | null;
+	/** "delete": the seller re-enters company data (same as goBack from review). */
+	organization:
+		| { vatStatus: Extract<VatStatus, "verified" | "rejected"> }
+		| "keep"
+		| "delete";
 }
 
 // Moderation only decides pending_review applications. The status predicate in
@@ -192,7 +209,10 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 	await db.transaction(async (tx) => {
 		const [moved] = await tx
 			.update(sellerProfile)
-			.set({ onboardingStatus: outcome.onboardingStatus })
+			.set({
+				onboardingStatus: outcome.onboardingStatus,
+				rejectionReason: outcome.rejectionReason,
+			})
 			.where(
 				and(
 					eq(sellerProfile.id, sellerId),
@@ -210,10 +230,16 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 			throw new ServiceError(409, "La candidatura è già stata decisa");
 		}
 
-		await tx
-			.update(organization)
-			.set({ vatStatus: outcome.vatStatus })
-			.where(eq(organization.sellerProfileId, sellerId));
+		if (outcome.organization === "delete") {
+			await tx
+				.delete(organization)
+				.where(eq(organization.sellerProfileId, sellerId));
+		} else if (outcome.organization !== "keep") {
+			await tx
+				.update(organization)
+				.set({ vatStatus: outcome.organization.vatStatus })
+				.where(eq(organization.sellerProfileId, sellerId));
+		}
 	});
 
 	const updated = await fetchProfileWithMunicipalities(sellerId);
@@ -221,18 +247,47 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 	return updated;
 }
 
-export function verifySeller(sellerId: string) {
-	return decideReview(sellerId, {
+export async function verifySeller(sellerId: string) {
+	const updated = await decideReview(sellerId, {
 		onboardingStatus: "active",
-		vatStatus: "verified",
+		rejectionReason: null,
+		organization: { vatStatus: "verified" },
 	});
+	await notifySellerApproved(sellerId);
+	return updated;
 }
 
-export function rejectSeller(sellerId: string) {
-	return decideReview(sellerId, {
+const REJECTION_OUTCOMES: Record<
+	SellerRejectionFixStep | "definitive",
+	Pick<ReviewOutcome, "onboardingStatus" | "organization">
+> = {
+	document: { onboardingStatus: "pending_document", organization: "keep" },
+	company: { onboardingStatus: "pending_company", organization: "delete" },
+	definitive: {
 		onboardingStatus: "rejected",
-		vatStatus: "rejected",
+		organization: { vatStatus: "rejected" },
+	},
+};
+
+/**
+ * fixStep null = definitive rejection; "document" / "company" send the seller
+ * back to that step to fix it and resubmit.
+ */
+export async function rejectSeller(
+	sellerId: string,
+	{ reason, fixStep }: Static<typeof RejectSellerBody>,
+) {
+	const rejectionReason = reason.trim();
+	const updated = await decideReview(sellerId, {
+		...REJECTION_OUTCOMES[fixStep ?? "definitive"],
+		rejectionReason,
 	});
+	await notifySellerRejected({
+		sellerProfileId: sellerId,
+		reason: rejectionReason,
+		fixStep,
+	});
+	return updated;
 }
 
 interface SellerStatusCounts {

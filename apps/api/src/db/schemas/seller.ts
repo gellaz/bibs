@@ -69,6 +69,8 @@ export const sellerProfile = pgTable(
 		documentImageUrl: text("document_image_url"),
 
 		vatChangeBlocked: boolean("vat_change_blocked").default(false).notNull(),
+		// Motivo dell'ultimo rifiuto della candidatura; azzerato all'approvazione.
+		rejectionReason: text("rejection_reason"),
 		stripeCustomerId: text("stripe_customer_id").unique(),
 
 		createdAt: timestamp("created_at", { withTimezone: true })

@@ -1,6 +1,5 @@
 import { eq, type SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { ServiceError } from "@/lib/errors";
 import {
@@ -70,51 +69,4 @@ export async function getSellerProfileWithOrg(userId: string) {
 	}
 
 	return profile;
-}
-
-interface UpdateVatParams {
-	userId: string;
-	vatNumber: string;
-}
-
-/**
- * Updates the VAT number for a rejected seller.
- * Resets organization vatStatus to pending.
- */
-export async function updateSellerVat(params: UpdateVatParams) {
-	const { userId, vatNumber } = params;
-
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-	});
-
-	if (!profile) {
-		throw new ServiceError(404, "Profilo venditore non trovato");
-	}
-
-	if (profile.onboardingStatus !== "rejected") {
-		throw new ServiceError(
-			400,
-			"La partita IVA si può modificare solo se la candidatura è stata rifiutata",
-		);
-	}
-
-	// Update organization VAT and reset statuses
-	await db.transaction(async (tx) => {
-		await tx
-			.update(organization)
-			.set({ vatNumber, vatStatus: "pending" })
-			.where(eq(organization.sellerProfileId, profile.id));
-
-		await tx
-			.update(sellerProfile)
-			.set({ onboardingStatus: "pending_review" })
-			.where(eq(sellerProfile.userId, userId));
-	});
-
-	const updated = await fetchSellerProfileCompact(
-		eq(sellerProfile.userId, userId),
-	);
-	if (!updated) throw new ServiceError(404, "Profilo venditore non trovato");
-	return updated;
 }

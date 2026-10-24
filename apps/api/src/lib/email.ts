@@ -80,18 +80,30 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
 		return;
 	}
 
+	await sendEmailToResend(
+		{ to, subject, html },
+		env.RESEND_API_KEY,
+		env.EMAIL_FROM ?? "bibs <noreply@bibs.it>",
+	);
+}
+
+/**
+ * Production delivery via Resend. Callers await it on user-facing requests
+ * (onboarding, moderation), so a hanging Resend must time out, not block them.
+ */
+export async function sendEmailToResend(
+	{ to, subject, html }: SendEmailParams,
+	apiKey: string,
+	from: string,
+) {
 	const res = await fetch("https://api.resend.com/emails", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			Authorization: `Bearer ${env.RESEND_API_KEY}`,
+			Authorization: `Bearer ${apiKey}`,
 		},
-		body: JSON.stringify({
-			from: env.EMAIL_FROM ?? "bibs <noreply@bibs.it>",
-			to,
-			subject,
-			html,
-		}),
+		body: JSON.stringify({ from, to, subject, html }),
+		signal: AbortSignal.timeout(5000),
 	});
 
 	if (!res.ok) {

@@ -10,6 +10,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas";
+import { RejectSellerBody } from "@/lib/schemas/forms";
 import { withAdmin } from "../context";
 import {
 	countSellersByStatus,
@@ -115,15 +116,17 @@ export const sellersRoutes = new Elysia()
 	.patch(
 		"/sellers/:sellerId/reject",
 		async (ctx) => {
-			const { params, store, user } = withAdmin(ctx);
+			const { params, body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await rejectSeller(params.sellerId);
+			const data = await rejectSeller(params.sellerId, body);
 
 			pino.warn(
 				{
 					adminId: user.id,
 					sellerId: data.id,
 					userId: data.userId,
+					reason: body.reason,
+					fixStep: body.fixStep,
 					action: "seller_rejected",
 				},
 				"Venditore rifiutato",
@@ -135,11 +138,12 @@ export const sellersRoutes = new Elysia()
 			params: t.Object({
 				sellerId: t.String({ description: "ID del profilo venditore" }),
 			}),
+			body: RejectSellerBody,
 			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Rifiuta venditore",
 				description:
-					"Rifiuta il venditore. Il venditore dovrà aggiornare i dati e ripresentare la richiesta. Solo da pending_review: 409 se la candidatura è già stata decisa.",
+					"Respinge la candidatura con un motivo obbligatorio, mostrato al venditore e inviato per email. `fixStep` null = rifiuto definitivo (rejected); `document` / `company` = il venditore torna a quello step per correggere e reinviare. Solo da pending_review: 409 se la candidatura è già stata decisa.",
 				tags: ["Admin"],
 			},
 		},

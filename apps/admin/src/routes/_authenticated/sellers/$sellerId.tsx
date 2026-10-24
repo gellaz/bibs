@@ -1,3 +1,4 @@
+import { Alert, AlertDescription } from "@bibs/ui/components/alert";
 import { Button } from "@bibs/ui/components/button";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { displayName } from "@bibs/ui/lib/display-name";
@@ -126,6 +127,16 @@ function SellerDetailPage() {
 					</span>
 				</div>
 			</div>
+
+			{seller.rejectionReason && (
+				<Alert variant={isPendingReview ? "default" : "destructive"}>
+					<AlertDescription className="whitespace-pre-line">
+						{(isPendingReview
+							? m.sellers_rejection_reason_previous
+							: m.sellers_rejection_reason)({ reason: seller.rejectionReason })}
+					</AlertDescription>
+				</Alert>
+			)}
 
 			{/* Body: two-column layout */}
 			<div className="bg-card rounded-lg border shadow-sm">
