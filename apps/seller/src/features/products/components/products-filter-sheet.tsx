@@ -1,19 +1,6 @@
 import { Button } from "@bibs/ui/components/button";
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-} from "@bibs/ui/components/command";
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@bibs/ui/components/popover";
 import { Separator } from "@bibs/ui/components/separator";
 import {
 	Sheet,
@@ -24,10 +11,9 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@bibs/ui/components/sheet";
+import { SelectCombobox } from "@bibs/ui/custom/select-combobox";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
 import {
-	CheckIcon,
-	ChevronDownIcon,
 	EuroIcon,
 	FilterIcon,
 	type LucideIcon,
@@ -149,8 +135,6 @@ function SectionHeader({
 	);
 }
 
-const VISIBLE_CHIPS = 2;
-
 export function ProductsFilterSheet({
 	value,
 	onChange,
@@ -163,7 +147,6 @@ export function ProductsFilterSheet({
 	const [localMax, setLocalMax] = useState(value.maxPrice ?? "");
 	const debouncedMin = useDebouncedValue(localMin, 300);
 	const debouncedMax = useDebouncedValue(localMax, 300);
-	const [categoryOpen, setCategoryOpen] = useState(false);
 
 	useEffect(() => {
 		setLocalMin(value.minPrice ?? "");
@@ -187,61 +170,30 @@ export function ProductsFilterSheet({
 
 	const { data: categories = [], isLoading: catsLoading } =
 		useSellerCategoriesInUse(storeId, statusFilter);
-	type Category = (typeof categories)[number];
 
-	const grouped = useMemo(() => {
-		const map = new Map<string, { macroName: string; items: Category[] }>();
-		for (const c of categories) {
-			const mid = c.macroCategory.id;
-			const entry = map.get(mid);
-			if (entry) {
-				entry.items.push(c);
-			} else {
-				map.set(mid, { macroName: c.macroCategory.name, items: [c] });
-			}
-		}
-		const arr = Array.from(map.values());
-		arr.sort((a, b) => a.macroName.localeCompare(b.macroName, "it"));
-		for (const g of arr) {
-			g.items.sort((a, b) => a.name.localeCompare(b.name, "it"));
-		}
-		return arr;
-	}, [categories]);
-
-	const selectedIds = value.categoryIds ?? [];
-	const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-	const selectedCategories = useMemo(
+	// Gruppi per macro, macro e categorie in ordine alfabetico.
+	const categoryOptions = useMemo(
 		() =>
-			selectedIds
-				.map((id) => categories.find((c) => c.id === id))
-				.filter((c): c is Category => Boolean(c)),
-		[selectedIds, categories],
+			categories
+				.map((c) => ({
+					value: c.id,
+					label: c.name,
+					group: c.macroCategory.name,
+				}))
+				.sort(
+					(a, b) =>
+						a.group.localeCompare(b.group, "it") ||
+						a.label.localeCompare(b.label, "it"),
+				),
+		[categories],
 	);
 
-	const toggleCategory = (id: string) => {
-		const next = new Set(selectedSet);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		onChange({
-			...value,
-			categoryIds: next.size === 0 ? undefined : Array.from(next),
-		});
-	};
-
-	const removeCategory = (id: string) => {
-		const next = selectedIds.filter((cid) => cid !== id);
-		onChange({
-			...value,
-			categoryIds: next.length === 0 ? undefined : next,
-		});
-	};
+	const selectedIds = value.categoryIds ?? [];
 
 	const clearCategories = () => {
 		onChange({ ...value, categoryIds: undefined });
 	};
 
-	const visibleChips = selectedCategories.slice(0, VISIBLE_CHIPS);
-	const overflowCount = selectedCategories.length - visibleChips.length;
 	const noCategoriesAvailable = !catsLoading && categories.length === 0;
 
 	const priceHint = (() => {
@@ -312,118 +264,28 @@ export function ProductsFilterSheet({
 							summary={selectedCategoriesLabel(selectedIds.length)}
 							onClear={clearCategories}
 						/>
-						<Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-							<PopoverTrigger asChild>
-								<button
-									type="button"
-									aria-expanded={categoryOpen}
-									disabled={noCategoriesAvailable}
-									className="border-input dark:bg-input/30 dark:hover:bg-input/50 focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-9 w-full items-center justify-between gap-1.5 rounded-lg border bg-transparent px-2.5 py-1.5 text-sm transition-colors outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60"
-								>
-									<div className="flex flex-wrap items-center gap-1.5">
-										{catsLoading && selectedCategories.length === 0 && (
-											<span className="text-muted-foreground">
-												{m.products_filter_loading()}
-											</span>
-										)}
-										{!catsLoading && selectedCategories.length === 0 && (
-											<span className="text-muted-foreground">
-												{noCategoriesAvailable
-													? m.products_filter_category_none_in_catalog()
-													: m.products_filter_category_placeholder()}
-											</span>
-										)}
-										{visibleChips.map((cat) => (
-											<span
-												key={cat.id}
-												className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-											>
-												{cat.name}
-												{/* biome-ignore lint/a11y/useSemanticElements: nested <button> inside the picker trigger button is invalid HTML; span with role keeps the X interactive without DOM nesting issues. */}
-												<span
-													role="button"
-													tabIndex={0}
-													aria-label={m.products_filter_category_remove({
-														name: cat.name,
-													})}
-													className="hover:bg-primary-foreground/20 -mr-0.5 flex size-3.5 items-center justify-center rounded-full"
-													onClick={(e) => {
-														e.stopPropagation();
-														removeCategory(cat.id);
-													}}
-													onKeyDown={(e) => {
-														if (e.key === "Enter" || e.key === " ") {
-															e.preventDefault();
-															e.stopPropagation();
-															removeCategory(cat.id);
-														}
-													}}
-												>
-													<XIcon className="size-3" />
-												</span>
-											</span>
-										))}
-										{overflowCount > 0 && (
-											<span className="text-muted-foreground text-xs">
-												+{overflowCount}
-											</span>
-										)}
-									</div>
-									<ChevronDownIcon className="text-muted-foreground size-4 shrink-0" />
-								</button>
-							</PopoverTrigger>
-							<PopoverContent
-								className="w-(--radix-popover-trigger-width) p-0"
-								align="start"
-								sideOffset={4}
-							>
-								<Command>
-									<CommandInput
-										placeholder={m.products_filter_category_search()}
-									/>
-									<CommandList className="max-h-72">
-										<CommandEmpty>
-											{m.products_filter_category_empty()}
-										</CommandEmpty>
-										{selectedIds.length > 0 && (
-											<CommandGroup>
-												<CommandItem
-													value="__clear__"
-													onSelect={() => clearCategories()}
-													className="text-muted-foreground"
-												>
-													<div className="flex w-4 items-center" />
-													{m.products_filter_category_clear_selection({
-														count: selectedIds.length,
-													})}
-												</CommandItem>
-											</CommandGroup>
-										)}
-										{grouped.map((g) => (
-											<CommandGroup key={g.macroName} heading={g.macroName}>
-												{g.items.map((c) => {
-													const isOn = selectedSet.has(c.id);
-													return (
-														<CommandItem
-															key={c.id}
-															value={`${c.name} ${g.macroName}`}
-															onSelect={() => toggleCategory(c.id)}
-														>
-															<div className="flex w-4 items-center">
-																{isOn && (
-																	<CheckIcon className="text-primary size-4" />
-																)}
-															</div>
-															{c.name}
-														</CommandItem>
-													);
-												})}
-											</CommandGroup>
-										))}
-									</CommandList>
-								</Command>
-							</PopoverContent>
-						</Popover>
+						<SelectCombobox
+							multiple
+							aria-label={m.products_filter_category()}
+							options={categoryOptions}
+							value={selectedIds}
+							onChange={(ids) =>
+								onChange({
+									...value,
+									categoryIds: ids.length === 0 ? undefined : ids,
+								})
+							}
+							placeholder={
+								catsLoading
+									? m.products_filter_loading()
+									: noCategoriesAvailable
+										? m.products_filter_category_none_in_catalog()
+										: m.products_filter_category_placeholder()
+							}
+							emptyText={m.products_filter_category_empty()}
+							clearLabel={(name) => m.common_remove_named({ name })}
+							disabled={catsLoading || noCategoriesAvailable}
+						/>
 					</section>
 
 					<Separator />

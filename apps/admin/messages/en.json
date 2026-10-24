@@ -69,6 +69,8 @@
 	"categories_macro_filter_aria": "Filter by macro category",
 	"categories_macro_filter_all": "All macro categories",
 	"categories_macro_select_placeholder": "Select macro category...",
+	"categories_macro_search_empty": "No macro category found",
+	"common_remove_named": "Remove {name}",
 	"categories_macro_required": "Macro category is required",
 	"categories_macros_load_error": "Error loading macro categories",
 	"categories_macro_total": "Total: {count} macro categories",
