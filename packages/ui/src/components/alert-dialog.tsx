@@ -1,10 +1,10 @@
 "use client";
 
+import { cn } from "cn";
 import { InfoIcon, OctagonAlertIcon, TriangleAlertIcon } from "lucide-react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import type * as React from "react";
 import { Button } from "~/components/button";
-import { cn } from "~/lib/utils";
 
 // Icona e tinta fissate per tipo, non scelte dal call-site (stessa filosofia
 // di EmptyState): ogni dialogo di conferma parla la stessa lingua visiva.

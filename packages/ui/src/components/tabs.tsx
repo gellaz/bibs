@@ -6,10 +6,9 @@
 // data-[state=X]: su ogni primitive nuova.
 
 import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
 import { Tabs as TabsPrimitive } from "radix-ui";
 import type * as React from "react";
-
-import { cn } from "~/lib/utils";
 
 function Tabs({
 	className,

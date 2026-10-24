@@ -7,22 +7,20 @@ Shared UI component library for the **bibs** monorepo, based on [shadcn/ui](http
 
 - **Components** — [shadcn/ui](https://ui.shadcn.com/) (radix-nova style) + [Radix UI](https://www.radix-ui.com/)
 - **Styling
-  ** — [Tailwind CSS v4](https://tailwindcss.com/) + [tailwind-merge](https://github.com/dcastil/tailwind-merge) + [class-variance-authority](https://cva.style/)
+  ** — [Tailwind CSS v4](https://tailwindcss.com/) + [cn](https://github.com/shadcn-ui/cn) + [class-variance-authority](https://cva.style/)
 - **Icons** — [Lucide React](https://lucide.dev/)
-- **Charts** — [Recharts](https://recharts.org/)
 - **Animations** — [tw-animate-css](https://github.com/nicholasgillespie/tw-animate-css)
 - **Extra
-  ** — [cmdk](https://cmdk.paco.me/), [sonner](https://sonner.emilkowal.dev/), [vaul](https://vaul.emilkowal.dev/), [react-day-picker](https://react-day-picker.js.org/), [embla-carousel](https://www.embla-carousel.com/), [input-otp](https://input-otp.rodz.dev/)
+  ** — [sonner](https://sonner.emilkowal.dev/), [vaul](https://vaul.emilkowal.dev/), [react-day-picker](https://react-day-picker.js.org/)
 
 ## Components
 
-55+ components available:
+Only the components the apps import are kept; add others with `shadcn add <name>` when needed:
 
-accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb, button, button-group, calendar, card, carousel,
-chart, checkbox, collapsible, combobox, command, context-menu, dialog, direction, drawer, dropdown-menu, empty, field,
-hover-card, input, input-group, input-otp, item, kbd, label, menubar, native-select, navigation-menu, pagination,
-popover, progress, radio-group, resizable, scroll-area, select, separator, sheet, sidebar, skeleton, slider, sonner,
-spinner, switch, table, tabs, textarea, toggle, toggle-group, tooltip
+alert, alert-dialog, avatar, badge, breadcrumb, button, calendar, card, checkbox, collapsible, combobox, dialog, drawer,
+dropdown-menu, field, input, input-group, label, native-select, pagination, popover, radio-group, scroll-area, select,
+separator, sheet, sidebar, skeleton, slider, sonner, spinner, switch, table, tabs, textarea, toggle, toggle-group,
+tooltip, plus dropzone from Kibo UI
 
 ## Hooks
 
@@ -140,7 +138,7 @@ src/
 ├── custom/        # Components written for bibs
 ├── hooks/         # React hooks
 ├── lib/
-│   └── utils.ts   # cn() utility (clsx + tailwind-merge)
+│   └── utils.ts   # cn() re-exported from the cn package
 └── styles/
     └── globals.css # Tailwind base + CSS variables (zinc theme)
 ```
