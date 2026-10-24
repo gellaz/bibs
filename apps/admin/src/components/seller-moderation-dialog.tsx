@@ -1,4 +1,8 @@
 import {
+	SELLER_REJECTION_REASONS,
+	type SellerRejectionFixStep,
+} from "@bibs/api/schemas";
+import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -8,7 +12,14 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@bibs/ui/components/alert-dialog";
+import { Field, FieldDescription, FieldLabel } from "@bibs/ui/components/field";
+import {
+	NativeSelect,
+	NativeSelectOption,
+} from "@bibs/ui/components/native-select";
+import { RadioGroup, RadioGroupItem } from "@bibs/ui/components/radio-group";
 import { toast } from "@bibs/ui/components/sonner";
+import { Textarea } from "@bibs/ui/components/textarea";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/lib/api";
@@ -20,6 +31,31 @@ export interface ModerationTarget {
 	sellerId: string;
 	/** Pre-resolved display name: organization?.businessName ?? displayName(user) */
 	sellerName: string;
+}
+
+/** Body of PATCH /admin/sellers/:id/reject (RejectSellerBody). */
+export interface Rejection {
+	reason: string;
+	fixStep: SellerRejectionFixStep | null;
+}
+
+/**
+ * Form → body of the reject call. `choice` is an index into
+ * SELLER_REJECTION_REASONS or "other" (hand-written reason + chosen outcome);
+ * null while the form is incomplete.
+ */
+export function rejectionFromForm(
+	choice: number | "other" | null,
+	otherText: string,
+	otherFixStep: SellerRejectionFixStep | null,
+): Rejection | null {
+	if (choice === null) return null;
+	if (choice === "other") {
+		const reason = otherText.trim();
+		return reason ? { reason, fixStep: otherFixStep } : null;
+	}
+	const preset = SELLER_REJECTION_REASONS[choice];
+	return { reason: preset.label, fixStep: preset.fixStep };
 }
 
 /**
@@ -62,8 +98,16 @@ export function useSellerModeration(opts?: {
 	});
 
 	const rejectMutation = useMutation({
-		mutationFn: async (sellerId: string) => {
-			const response = await api().admin.sellers({ sellerId }).reject.patch();
+		mutationFn: async ({
+			sellerId,
+			rejection,
+		}: {
+			sellerId: string;
+			rejection: Rejection;
+		}) => {
+			const response = await api()
+				.admin.sellers({ sellerId })
+				.reject.patch(rejection);
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || m.sellers_reject_error(),
@@ -81,10 +125,11 @@ export function useSellerModeration(opts?: {
 		},
 	});
 
-	const confirm = () => {
+	const confirm = (rejection?: Rejection) => {
 		if (!target) return;
-		const mutation = target.type === "verify" ? verifyMutation : rejectMutation;
-		mutation.mutate(target.sellerId);
+		if (target.type === "verify") verifyMutation.mutate(target.sellerId);
+		else if (rejection)
+			rejectMutation.mutate({ sellerId: target.sellerId, rejection });
 	};
 
 	return {
@@ -95,6 +140,134 @@ export function useSellerModeration(opts?: {
 	};
 }
 
+const OUTCOME_LABEL = {
+	document: m.sellers_reject_outcome_document,
+	company: m.sellers_reject_outcome_company,
+	definitive: m.sellers_reject_outcome_definitive,
+};
+
+const FIX_OPTIONS = [
+	{ value: "none", label: m.sellers_reject_fix_none },
+	{ value: "document", label: m.sellers_reject_fix_document },
+	{ value: "company", label: m.sellers_reject_fix_company },
+] as const;
+
+/** Reason picker; reports the reject body (or null while incomplete) upward. */
+function RejectionFields({
+	onChange,
+}: {
+	onChange: (rejection: Rejection | null) => void;
+}) {
+	const [choice, setChoice] = useState<number | "other" | null>(null);
+	const [otherText, setOtherText] = useState("");
+	const [otherFixStep, setOtherFixStep] =
+		useState<SellerRejectionFixStep | null>(null);
+
+	const update = (
+		next: Partial<{
+			choice: number | "other" | null;
+			otherText: string;
+			otherFixStep: SellerRejectionFixStep | null;
+		}>,
+	) => {
+		const merged = { choice, otherText, otherFixStep, ...next };
+		setChoice(merged.choice);
+		setOtherText(merged.otherText);
+		setOtherFixStep(merged.otherFixStep);
+		onChange(
+			rejectionFromForm(merged.choice, merged.otherText, merged.otherFixStep),
+		);
+	};
+
+	const presetFixStep =
+		typeof choice === "number"
+			? SELLER_REJECTION_REASONS[choice].fixStep
+			: null;
+
+	return (
+		<div className="flex flex-col gap-4">
+			<Field>
+				<FieldLabel htmlFor="reject-reason">
+					{m.sellers_reject_reason_label()}
+				</FieldLabel>
+				<NativeSelect
+					id="reject-reason"
+					value={choice === null ? "" : String(choice)}
+					onChange={(e) => {
+						const v = e.target.value;
+						update({ choice: v === "" ? null : v === "other" ? v : Number(v) });
+					}}
+				>
+					<NativeSelectOption value="" disabled>
+						{m.sellers_reject_reason_placeholder()}
+					</NativeSelectOption>
+					{SELLER_REJECTION_REASONS.map((r, i) => (
+						<NativeSelectOption key={r.label} value={String(i)}>
+							{r.label}
+						</NativeSelectOption>
+					))}
+					<NativeSelectOption value="other">
+						{m.sellers_reject_reason_other()}
+					</NativeSelectOption>
+				</NativeSelect>
+				{typeof choice === "number" && (
+					<FieldDescription>
+						{OUTCOME_LABEL[presetFixStep ?? "definitive"]()}
+					</FieldDescription>
+				)}
+			</Field>
+
+			{choice === "other" && (
+				<>
+					<Field>
+						<FieldLabel htmlFor="reject-other-text">
+							{m.sellers_reject_other_text_label()}
+						</FieldLabel>
+						<Textarea
+							id="reject-other-text"
+							maxLength={500}
+							value={otherText}
+							onChange={(e) => update({ otherText: e.target.value })}
+						/>
+						<FieldDescription>
+							{m.sellers_reject_other_text_hint()}
+						</FieldDescription>
+					</Field>
+					<Field>
+						<FieldLabel id="reject-fix-label">
+							{m.sellers_reject_fix_label()}
+						</FieldLabel>
+						<RadioGroup
+							aria-labelledby="reject-fix-label"
+							value={otherFixStep ?? "none"}
+							onValueChange={(v) =>
+								update({
+									otherFixStep:
+										v === "none" ? null : (v as SellerRejectionFixStep),
+								})
+							}
+						>
+							{FIX_OPTIONS.map((o) => (
+								<label
+									key={o.value}
+									htmlFor={`reject-fix-${o.value}`}
+									className="flex cursor-pointer items-center gap-2 text-sm"
+								>
+									<RadioGroupItem
+										id={`reject-fix-${o.value}`}
+										value={o.value}
+									/>
+									{o.label()}
+								</label>
+							))}
+						</RadioGroup>
+					</Field>
+				</>
+			)}
+		</div>
+	);
+}
+
 export function SellerModerationDialog({
 	target,
 	onOpenChange,
@@ -103,10 +276,18 @@ export function SellerModerationDialog({
 }: {
 	target: ModerationTarget | null;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: () => void;
+	onConfirm: (rejection?: Rejection) => void;
 	isPending: boolean;
 }) {
 	const isVerify = target?.type === "verify";
+	const [rejection, setRejection] = useState<Rejection | null>(null);
+	// A new target starts with an empty reason (the fields remount via key).
+	const [seenTarget, setSeenTarget] = useState(target);
+	if (seenTarget !== target) {
+		setSeenTarget(target);
+		setRejection(null);
+	}
+
 	return (
 		<AlertDialog open={!!target} onOpenChange={onOpenChange}>
 			<AlertDialogContent>
@@ -123,14 +304,19 @@ export function SellerModerationDialog({
 						)}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
+				{target?.type === "reject" && (
+					<RejectionFields key={target.sellerId} onChange={setRejection} />
+				)}
 				<AlertDialogFooter>
 					<AlertDialogCancel disabled={isPending}>
 						{m.common_cancel()}
 					</AlertDialogCancel>
 					<AlertDialogAction
 						variant={isVerify ? "success" : "destructive"}
-						onClick={onConfirm}
-						disabled={isPending}
+						onClick={() =>
+							onConfirm(isVerify ? undefined : (rejection ?? undefined))
+						}
+						disabled={isPending || (!isVerify && !rejection)}
 					>
 						{isPending
 							? m.common_please_wait()

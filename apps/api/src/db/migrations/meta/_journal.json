@@ -22,6 +22,13 @@
       "when": 1792339365567,
       "tag": "0002_gigantic_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792846398761,
+      "tag": "0003_long_sage",
+      "breakpoints": true
     }
   ]
 }

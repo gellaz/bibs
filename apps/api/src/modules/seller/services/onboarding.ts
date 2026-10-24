@@ -8,6 +8,7 @@ import { ServiceError } from "@/lib/errors";
 import { publicUrl, s3 } from "@/lib/s3";
 import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import { checkDocument } from "./document-check";
+import { notifyApplicationReceived } from "./onboarding-notifications";
 import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────
@@ -122,6 +123,12 @@ export async function updateDocument(params: DocumentParams) {
 	await s3.write(key, documentImage);
 	const url = publicUrl(key);
 
+	// Company data already saved = resubmission after a "document" rejection.
+	const existingOrganization = await db.query.organization.findFirst({
+		where: eq(organization.sellerProfileId, profile.id),
+		columns: { id: true },
+	});
+
 	await db
 		.update(sellerProfile)
 		.set({
@@ -129,9 +136,13 @@ export async function updateDocument(params: DocumentParams) {
 			documentNumber,
 			documentImageKey: key,
 			documentImageUrl: url,
-			onboardingStatus: "pending_company",
+			onboardingStatus: existingOrganization
+				? "pending_review"
+				: "pending_company",
 		})
 		.where(eq(sellerProfile.userId, userId));
+
+	if (existingOrganization) await notifyApplicationReceived(profile.id);
 
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
@@ -180,6 +191,8 @@ export async function updateCompany(params: CompanyParams) {
 			.set({ onboardingStatus: "pending_review" })
 			.where(eq(sellerProfile.userId, userId));
 	});
+
+	await notifyApplicationReceived(profile.id);
 
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),

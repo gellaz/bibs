@@ -22,6 +22,11 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+const sendEmail = mock(
+	async (_params: { to: string; subject: string; html: string }) => {},
+);
+mock.module("@/lib/email", () => ({ sendEmail }));
+
 const write = mock(async () => {});
 mock.module("@/lib/s3", () => ({
 	s3: { write, delete: mock(async () => {}) },
@@ -30,9 +35,18 @@ mock.module("@/lib/s3", () => ({
 
 import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
-import { updateDocument } from "@/modules/seller/services/onboarding";
+import {
+	goBack,
+	updateCompany,
+	updateDocument,
+	updatePersonalInfo,
+} from "@/modules/seller/services/onboarding";
 import { truncateAll } from "../helpers/cleanup";
-import { createTestMunicipality, createTestSeller } from "../helpers/fixtures";
+import {
+	createTestMunicipality,
+	createTestOrganization,
+	createTestSeller,
+} from "../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -43,6 +57,8 @@ afterAll(async () => {
 beforeEach(async () => {
 	await truncateAll(getTestDb());
 	write.mockClear();
+	sendEmail.mockReset();
+	sendEmail.mockImplementation(async () => {});
 });
 
 async function sellerAtDocumentStep() {
@@ -53,7 +69,11 @@ async function sellerAtDocumentStep() {
 		.set({ onboardingStatus: "pending_document" })
 		.where(eq(sellerProfile.id, seller.profile.id));
 	const municipality = await createTestMunicipality(db);
-	return { userId: seller.user.id, municipalityId: municipality.id };
+	return {
+		userId: seller.user.id,
+		profileId: seller.profile.id,
+		municipalityId: municipality.id,
+	};
 }
 
 const image = () =>
@@ -68,6 +88,26 @@ async function statusOf(userId: string) {
 }
 
 describe("updateDocument", () => {
+	it("con l'organizzazione già salvata (rifiuto 'document') va dritto in revisione", async () => {
+		const { userId, profileId, municipalityId } = await sellerAtDocumentStep();
+		await createTestOrganization(getTestDb(), profileId);
+
+		const profile = await updateDocument({
+			userId,
+			documentType: "passport",
+			documentNumber: "YA1234567",
+			documentExpiry: "2099-12-31",
+			documentIssuedMunicipalityId: municipalityId,
+			documentImage: image(),
+		});
+
+		expect(profile.onboardingStatus).toBe("pending_review");
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+		expect(sendEmail.mock.calls[0][0].subject).toBe(
+			"Abbiamo ricevuto la tua candidatura su bibs",
+		);
+	});
+
 	it("salva tipo e numero normalizzato e passa a pending_company", async () => {
 		const { userId, municipalityId } = await sellerAtDocumentStep();
 
@@ -84,6 +124,36 @@ describe("updateDocument", () => {
 		expect(profile.documentNumber).toBe("YA1234567");
 		expect(profile.onboardingStatus).toBe("pending_company");
 		expect(write).toHaveBeenCalledTimes(1);
+		expect(sendEmail).not.toHaveBeenCalled();
+	});
+
+	it("dopo un rifiuto 'document', tornare all'anagrafica e riavanzare non perde i dati aziendali", async () => {
+		const { userId, profileId, municipalityId } = await sellerAtDocumentStep();
+		await createTestOrganization(getTestDb(), profileId);
+
+		await goBack(userId);
+		await updatePersonalInfo({
+			userId,
+			firstName: "Mario",
+			lastName: "Rossi",
+			citizenship: "IT",
+			birthCountry: "IT",
+			birthDate: "1990-01-01",
+			residenceCountry: "IT",
+			residenceMunicipalityId: municipalityId,
+			residenceAddress: "Via Roma 1",
+			residenceZipCode: "40100",
+		});
+		const profile = await updateDocument({
+			userId,
+			documentType: "passport",
+			documentNumber: "YA1234567",
+			documentExpiry: "2099-12-31",
+			documentIssuedMunicipalityId: municipalityId,
+			documentImage: image(),
+		});
+
+		expect(profile.onboardingStatus).toBe("pending_review");
 	});
 
 	it("rifiuta con 422 un numero che non è del tipo scelto, senza caricare la foto", async () => {
@@ -120,5 +190,33 @@ describe("updateDocument", () => {
 
 		expect(write).not.toHaveBeenCalled();
 		expect(await statusOf(userId)).toBe("pending_document");
+	});
+});
+
+describe("updateCompany", () => {
+	it("porta in revisione e manda l'email di candidatura ricevuta", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "mario@test.com" });
+		await db
+			.update(sellerProfile)
+			.set({ onboardingStatus: "pending_company" })
+			.where(eq(sellerProfile.id, seller.profile.id));
+		const municipality = await createTestMunicipality(db);
+
+		const profile = await updateCompany({
+			userId: seller.user.id,
+			businessName: "Forno Bianchi",
+			vatNumber: "12345678903",
+			legalForm: "srl",
+			addressLine1: "Via Roma 1",
+			municipalityId: municipality.id,
+			zipCode: "40100",
+		});
+
+		expect(profile.onboardingStatus).toBe("pending_review");
+		expect(sendEmail).toHaveBeenCalledTimes(1);
+		const [email] = sendEmail.mock.calls[0];
+		expect(email.to).toBe("mario@test.com");
+		expect(email.subject).toBe("Abbiamo ricevuto la tua candidatura su bibs");
 	});
 });

@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
-import { SellerModerationDialog } from "./seller-moderation-dialog";
+import {
+	rejectionFromForm,
+	SellerModerationDialog,
+} from "./seller-moderation-dialog";
 
 const originalGetLocale = getLocale;
 
@@ -11,12 +14,18 @@ afterEach(() => {
 	overwriteGetLocale(originalGetLocale);
 });
 
-function renderDialog(type: "verify" | "reject", isPending = false) {
+function renderDialog(
+	type: "verify" | "reject",
+	isPending = false,
+	onConfirm: Parameters<
+		typeof SellerModerationDialog
+	>[0]["onConfirm"] = () => {},
+) {
 	render(
 		<SellerModerationDialog
 			target={{ type, sellerId: "s1", sellerName: "Bottega Rossi" }}
 			onOpenChange={() => {}}
-			onConfirm={() => {}}
+			onConfirm={onConfirm}
 			isPending={isPending}
 		/>,
 	);
@@ -40,7 +49,7 @@ describe("SellerModerationDialog", () => {
 		expect(
 			screen.getByText(/Are you sure you want to reject/).textContent,
 		).toBe(
-			"Are you sure you want to reject Bottega Rossi? The seller will need to update their details and resubmit the application.",
+			"Are you sure you want to reject Bottega Rossi? The seller will receive an email with the reason.",
 		);
 		expect(screen.getByRole("button", { name: "Reject" })).toBeDefined();
 	});
@@ -49,5 +58,59 @@ describe("SellerModerationDialog", () => {
 		overwriteGetLocale(() => "it");
 		renderDialog("verify", true);
 		expect(screen.getByRole("button", { name: "Attendere..." })).toBeDefined();
+	});
+});
+
+describe("rifiuto con motivo", () => {
+	it("«Rifiuta» resta disabilitato finché non c'è un motivo", () => {
+		overwriteGetLocale(() => "it");
+		renderDialog("reject");
+		expect(
+			(screen.getByRole("button", { name: "Rifiuta" }) as HTMLButtonElement)
+				.disabled,
+		).toBe(true);
+	});
+
+	it("con un motivo della lista conferma motivo ed esito", () => {
+		overwriteGetLocale(() => "it");
+		const onConfirm = vi.fn();
+		renderDialog("reject", false, onConfirm);
+
+		fireEvent.change(screen.getByLabelText("Motivo"), {
+			target: { value: "0" },
+		});
+		expect(
+			screen.getByText("Il venditore potrà ricaricare il documento"),
+		).toBeDefined();
+		fireEvent.click(screen.getByRole("button", { name: "Rifiuta" }));
+
+		expect(onConfirm).toHaveBeenCalledWith({
+			reason: "Documento illeggibile",
+			fixStep: "document",
+		});
+	});
+});
+
+describe("rejectionFromForm", () => {
+	it("voce della lista: testo ed esito della voce", () => {
+		expect(rejectionFromForm(0, "", null)).toEqual({
+			reason: "Documento illeggibile",
+			fixStep: "document",
+		});
+		expect(rejectionFromForm(4, "", null)).toEqual({
+			reason: "Attività non ammessa su bibs",
+			fixStep: null,
+		});
+	});
+
+	it("«Altro»: testo ripulito ed esito scelto, null se vuoto", () => {
+		expect(rejectionFromForm("other", "   ", null)).toBeNull();
+		expect(
+			rejectionFromForm("other", " Foto di un'altra persona ", "document"),
+		).toEqual({ reason: "Foto di un'altra persona", fixStep: "document" });
+	});
+
+	it("nessuna scelta: null", () => {
+		expect(rejectionFromForm(null, "x", null)).toBeNull();
 	});
 });

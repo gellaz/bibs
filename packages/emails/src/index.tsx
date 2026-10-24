@@ -8,6 +8,15 @@ import PaymentFailedEmail, {
 import ResetPasswordEmail, {
 	type ResetPasswordEmailProps,
 } from "../emails/reset-password-email";
+import SellerApplicationReceivedEmail, {
+	type SellerApplicationReceivedEmailProps,
+} from "../emails/seller-application-received-email";
+import SellerApprovedEmail, {
+	type SellerApprovedEmailProps,
+} from "../emails/seller-approved-email";
+import SellerRejectedEmail, {
+	type SellerRejectedEmailProps,
+} from "../emails/seller-rejected-email";
 import StoreCanceledEmail, {
 	type StoreCanceledEmailProps,
 } from "../emails/store-canceled-email";
@@ -83,10 +92,45 @@ export async function renderStoreCanceledEmail(
 	};
 }
 
+/** Onboarding: candidatura completata (o reinviata), in attesa di revisione. */
+export async function renderSellerApplicationReceivedEmail(
+	props: SellerApplicationReceivedEmailProps,
+): Promise<RenderedEmail> {
+	return {
+		subject: "Abbiamo ricevuto la tua candidatura su bibs",
+		html: await render(<SellerApplicationReceivedEmail {...props} />),
+	};
+}
+
+/** Onboarding: candidatura approvata dall'admin. */
+export async function renderSellerApprovedEmail(
+	props: SellerApprovedEmailProps,
+): Promise<RenderedEmail> {
+	return {
+		subject: "Il tuo account venditore su bibs è attivo",
+		html: await render(<SellerApprovedEmail {...props} />),
+	};
+}
+
+/** Onboarding: candidatura respinta, da correggere (`fix`) o definitivamente. */
+export async function renderSellerRejectedEmail(
+	props: SellerRejectedEmailProps,
+): Promise<RenderedEmail> {
+	return {
+		subject: props.fix
+			? "La tua candidatura su bibs va corretta"
+			: "La tua candidatura su bibs non è stata approvata",
+		html: await render(<SellerRejectedEmail {...props} />),
+	};
+}
+
 export type {
 	EmployeeInviteEmailProps,
 	PaymentFailedEmailProps,
 	ResetPasswordEmailProps,
+	SellerApplicationReceivedEmailProps,
+	SellerApprovedEmailProps,
+	SellerRejectedEmailProps,
 	StoreCanceledEmailProps,
 	StoreSuspendedEmailProps,
 	VerificationEmailProps,

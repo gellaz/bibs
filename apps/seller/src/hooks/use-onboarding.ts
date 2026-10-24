@@ -28,8 +28,8 @@ export function useOnboardingStatus({
  * Generic mutation hook for onboarding steps.
  * Invalidates onboarding status query on success.
  */
-function useOnboardingMutation<TParams>(
-	mutationFn: (params: TParams) => Promise<unknown>,
+function useOnboardingMutation<TParams, TData>(
+	mutationFn: (params: TParams) => Promise<TData>,
 ) {
 	const queryClient = useQueryClient();
 

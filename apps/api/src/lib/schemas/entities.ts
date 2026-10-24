@@ -242,6 +242,12 @@ export const SellerProfileSchema = t.Object({
 		description:
 			"Se true, il seller ha una richiesta di cambio P.IVA in attesa e non può ricevere nuovi ordini",
 	}),
+	rejectionReason: t.Nullable(
+		t.String({
+			description:
+				"Motivo dell'ultimo rifiuto della candidatura, azzerato all'approvazione",
+		}),
+	),
 	createdAt: t.Date(),
 });
 

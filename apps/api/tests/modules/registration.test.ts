@@ -69,6 +69,7 @@ const mockRegisterSeller = mock(
 			documentIssuedMunicipalityId: null,
 			documentImageUrl: null,
 			vatChangeBlocked: false,
+			rejectionReason: null,
 			createdAt: now,
 		},
 		token: "mock-token-seller",
