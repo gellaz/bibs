@@ -130,7 +130,7 @@ function SellerDetailPage() {
 
 			{seller.rejectionReason && (
 				<Alert variant={isPendingReview ? "default" : "destructive"}>
-					<AlertDescription>
+					<AlertDescription className="whitespace-pre-line">
 						{(isPendingReview
 							? m.sellers_rejection_reason_previous
 							: m.sellers_rejection_reason)({ reason: seller.rejectionReason })}

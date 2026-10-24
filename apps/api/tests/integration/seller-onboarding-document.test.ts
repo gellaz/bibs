@@ -28,14 +28,16 @@ const sendEmail = mock(
 mock.module("@/lib/email", () => ({ sendEmail }));
 
 const write = mock(async () => {});
+const remove = mock(async (_key: string) => {});
 mock.module("@/lib/s3", () => ({
-	s3: { write, delete: mock(async () => {}) },
+	s3: { write, delete: remove },
 	publicUrl: (key: string) => `https://cdn.test/${key}`,
 }));
 
 import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
 import {
+	getOnboardingStatus,
 	goBack,
 	updateCompany,
 	updateDocument,
@@ -57,6 +59,8 @@ afterAll(async () => {
 beforeEach(async () => {
 	await truncateAll(getTestDb());
 	write.mockClear();
+	remove.mockReset();
+	remove.mockImplementation(async () => {});
 	sendEmail.mockReset();
 	sendEmail.mockImplementation(async () => {});
 });
@@ -87,6 +91,16 @@ async function statusOf(userId: string) {
 	return row.onboardingStatus;
 }
 
+describe("getOnboardingStatus", () => {
+	it("include l'indirizzo del supporto da mostrare al venditore", async () => {
+		const { userId } = await sellerAtDocumentStep();
+
+		const status = await getOnboardingStatus(userId);
+
+		expect(status.supportEmail).toBe("supporto@bibs.it");
+	});
+});
+
 describe("updateDocument", () => {
 	it("con l'organizzazione già salvata (rifiuto 'document') va dritto in revisione", async () => {
 		const { userId, profileId, municipalityId } = await sellerAtDocumentStep();
@@ -108,6 +122,48 @@ describe("updateDocument", () => {
 		);
 	});
 
+	it("ricaricando il documento cancella dallo storage la foto precedente", async () => {
+		const { userId, profileId, municipalityId } = await sellerAtDocumentStep();
+		await getTestDb()
+			.update(sellerProfile)
+			.set({ documentImageKey: `documents/${profileId}/vecchia` })
+			.where(eq(sellerProfile.id, profileId));
+
+		await updateDocument({
+			userId,
+			documentType: "passport",
+			documentNumber: "YA1234567",
+			documentExpiry: "2099-12-31",
+			documentIssuedMunicipalityId: municipalityId,
+			documentImage: image(),
+		});
+
+		expect(remove).toHaveBeenCalledTimes(1);
+		expect(remove.mock.calls[0][0]).toBe(`documents/${profileId}/vecchia`);
+	});
+
+	it("se la cancellazione della foto precedente fallisce, il documento nuovo resta salvato", async () => {
+		const { userId, profileId, municipalityId } = await sellerAtDocumentStep();
+		await getTestDb()
+			.update(sellerProfile)
+			.set({ documentImageKey: `documents/${profileId}/vecchia` })
+			.where(eq(sellerProfile.id, profileId));
+		remove.mockImplementation(async () => {
+			throw new Error("storage giù");
+		});
+
+		const profile = await updateDocument({
+			userId,
+			documentType: "passport",
+			documentNumber: "YA1234567",
+			documentExpiry: "2099-12-31",
+			documentIssuedMunicipalityId: municipalityId,
+			documentImage: image(),
+		});
+
+		expect(profile.onboardingStatus).toBe("pending_company");
+	});
+
 	it("salva tipo e numero normalizzato e passa a pending_company", async () => {
 		const { userId, municipalityId } = await sellerAtDocumentStep();
 
@@ -124,6 +180,7 @@ describe("updateDocument", () => {
 		expect(profile.documentNumber).toBe("YA1234567");
 		expect(profile.onboardingStatus).toBe("pending_company");
 		expect(write).toHaveBeenCalledTimes(1);
+		expect(remove).not.toHaveBeenCalled();
 		expect(sendEmail).not.toHaveBeenCalled();
 	});
 

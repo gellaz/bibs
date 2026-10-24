@@ -26,7 +26,7 @@ export default function SellerRejectedEmail({
 						: "abbiamo controllato la tua candidatura e purtroppo non possiamo approvarla."}
 				</Text>
 				<Text>
-					Motivo: <strong>{reason}</strong>
+					Motivo: <strong style={{ whiteSpace: "pre-line" }}>{reason}</strong>
 				</Text>
 				{fix && (
 					<>

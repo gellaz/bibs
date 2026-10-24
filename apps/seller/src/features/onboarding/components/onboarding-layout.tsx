@@ -43,7 +43,9 @@ export function OnboardingLayout({
 				{rejectionReason && (
 					<Alert variant="destructive" className="mb-4">
 						<AlertTitle>{m.onboarding_rejected_fix_title()}</AlertTitle>
-						<AlertDescription>{rejectionReason}</AlertDescription>
+						<AlertDescription className="whitespace-pre-line">
+							{rejectionReason}
+						</AlertDescription>
 					</Alert>
 				)}
 				<Card>

@@ -10,10 +10,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { sendEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import {
-	type SellerRejectionFixStep,
-	SUPPORT_EMAIL,
-} from "@/lib/schemas/forms";
+import type { SellerRejectionFixStep } from "@/lib/schemas/forms";
 
 /**
  * Email della candidatura al venditore (titolare del seller_profile).
@@ -94,7 +91,7 @@ export function notifySellerRejected(params: {
 			fix: fixStep
 				? { step: fixStep, url: sellerUrl(`/onboarding/${fixStep}`) }
 				: null,
-			supportEmail: SUPPORT_EMAIL,
+			supportEmail: env.SUPPORT_EMAIL,
 		}),
 	);
 }

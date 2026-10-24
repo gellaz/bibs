@@ -742,6 +742,7 @@ Optional:
 - `RESEND_API_KEY` — Resend API key for sending emails (production only; in dev emails are delivered to Mailpit, falling back to the log)
 - `MAILPIT_URL` — Mailpit base URL for dev email delivery (default `http://localhost:8025`)
 - `EMAIL_FROM` — sender address for emails (default `Bibs <noreply@bibs.it>`)
+- `SUPPORT_EMAIL` — support address shown to sellers in emails and in the seller app (default `supporto@bibs.it`)
 - `CUSTOMER_APP_URL` — customer frontend URL (default `http://localhost:3001`)
 - `SELLER_APP_URL` — seller frontend URL (default `http://localhost:3002`)
 - `GEOCODING_PROVIDER` — geocoding provider (default `photon`; `google` is not implemented yet)

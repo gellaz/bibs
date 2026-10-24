@@ -1,4 +1,3 @@
-import { SUPPORT_EMAIL } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -37,6 +36,7 @@ function PendingPage() {
 	}
 
 	const status = onboarding?.onboardingStatus;
+	const supportEmail = onboarding?.supportEmail;
 	const isPendingEmail = status === "pending_email";
 	const isRejected = status === "rejected";
 
@@ -67,7 +67,9 @@ function PendingPage() {
 						{icon}
 					</div>
 					<CardTitle className="text-xl">{title}</CardTitle>
-					<CardDescription>{description}</CardDescription>
+					<CardDescription className="whitespace-pre-line">
+						{description}
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="flex flex-col gap-4">
 					{isPendingEmail && (
@@ -76,17 +78,17 @@ function PendingPage() {
 						</p>
 					)}
 
-					{isRejected && (
+					{isRejected && supportEmail && (
 						<p className="text-center text-sm text-muted-foreground">
 							{richMessage(
 								m.onboarding_pending_rejected_support({ email: "{email}" }),
 								{
 									email: (
 										<a
-											href={`mailto:${SUPPORT_EMAIL}`}
+											href={`mailto:${supportEmail}`}
 											className="underline underline-offset-4"
 										>
-											{SUPPORT_EMAIL}
+											{supportEmail}
 										</a>
 									),
 								},

@@ -1,8 +1,6 @@
 import { Type } from "@sinclair/typebox";
 
-export const SELLER_REJECTION_FIX_STEPS = ["document", "company"] as const;
-export type SellerRejectionFixStep =
-	(typeof SELLER_REJECTION_FIX_STEPS)[number];
+export type SellerRejectionFixStep = "document" | "company";
 
 /**
  * Motivi predefiniti del rifiuto di una candidatura venditore. Testo italiano
@@ -23,8 +21,6 @@ export const SELLER_REJECTION_REASONS: readonly {
 	{ label: "Attività non ammessa su bibs", fixStep: null },
 	{ label: "Identità non verificabile", fixStep: null },
 ];
-
-export const SUPPORT_EMAIL = "supporto@bibs.it";
 
 export const RejectSellerBody = Type.Object({
 	reason: Type.String({

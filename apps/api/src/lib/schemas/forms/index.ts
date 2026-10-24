@@ -26,10 +26,8 @@ export {
 } from "./products";
 export {
 	RejectSellerBody,
-	SELLER_REJECTION_FIX_STEPS,
 	SELLER_REJECTION_REASONS,
 	type SellerRejectionFixStep,
-	SUPPORT_EMAIL,
 } from "./seller-rejection";
 export {
 	CompanySettingsBody,

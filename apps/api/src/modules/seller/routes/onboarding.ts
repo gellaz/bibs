@@ -30,11 +30,22 @@ export const onboardingRoutes = new Elysia({ prefix: "/onboarding" })
 			return ok(data);
 		},
 		{
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
+			response: withErrors({
+				200: okRes(
+					t.Composite([
+						SellerProfileSchema,
+						t.Object({
+							supportEmail: t.String({
+								description: "Indirizzo del supporto da mostrare al venditore",
+							}),
+						}),
+					]),
+				),
+			}),
 			detail: {
 				summary: "Stato onboarding",
 				description:
-					"Restituisce lo stato corrente dell'onboarding del venditore con tutti i dati già compilati.",
+					"Restituisce lo stato corrente dell'onboarding del venditore con tutti i dati già compilati e l'indirizzo del supporto.",
 				tags: ["Seller - Onboarding"],
 			},
 		},

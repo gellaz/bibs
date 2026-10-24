@@ -53,6 +53,18 @@ describe("renderSellerRejectedEmail", () => {
 		expect(text).not.toContain("Correggi e reinvia");
 	});
 
+	it("keeps the line breaks of a reason written on several lines", async () => {
+		const { html } = await renderSellerRejectedEmail({
+			firstName: "Mario",
+			reason: "Foto sfocata.\nRifalla con più luce.",
+			fix: null,
+			supportEmail: "supporto@bibs.it",
+		});
+		const text = normalize(html);
+		expect(text).toContain("Foto sfocata.\nRifalla con più luce.");
+		expect(text).toContain("white-space:pre-line");
+	});
+
 	it("document fix: asks to upload the document again and links to the step", async () => {
 		const { subject, html } = await renderSellerRejectedEmail({
 			firstName: "Mario",
