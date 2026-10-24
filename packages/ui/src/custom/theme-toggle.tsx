@@ -15,7 +15,7 @@ export type ThemeMode = "light" | "dark" | "auto";
 export const segmentedTrayClassName =
 	"rounded-lg bg-accent p-1 dark:bg-background";
 export const segmentedTrayItemClassName =
-	"rounded-md border-0 bg-transparent text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground dark:hover:bg-accent/50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs dark:aria-pressed:bg-accent data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-xs data-[state=on]:hover:bg-background data-[state=on]:hover:text-foreground dark:data-[state=on]:bg-accent dark:data-[state=on]:hover:bg-accent";
+	"rounded-md border-0 bg-transparent text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground dark:hover:bg-accent/50 aria-pressed:bg-background aria-pressed:text-foreground aria-pressed:shadow-xs dark:aria-pressed:bg-accent data-pressed:bg-background data-pressed:text-foreground data-pressed:shadow-xs data-pressed:hover:bg-background data-pressed:hover:text-foreground dark:data-pressed:bg-accent dark:data-pressed:hover:bg-accent";
 
 function getInitialMode(): ThemeMode {
 	if (typeof window === "undefined") return "auto";
@@ -106,9 +106,8 @@ export function ThemeToggle({
 		>
 			<span className="font-medium text-muted-foreground text-xs">{label}</span>
 			<ToggleGroup
-				type="single"
-				value={themeMode}
-				onValueChange={(value) => {
+				value={[themeMode]}
+				onValueChange={([value]) => {
 					if (!value) return;
 					setThemeMode(value as ThemeMode);
 				}}

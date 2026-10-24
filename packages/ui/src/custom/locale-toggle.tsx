@@ -46,9 +46,8 @@ export function LocaleToggle<L extends string>({
 		>
 			<span className="font-medium text-muted-foreground text-xs">{label}</span>
 			<ToggleGroup
-				type="single"
-				value={value}
-				onValueChange={(next) => {
+				value={[value]}
+				onValueChange={([next]) => {
 					if (!next || next === value) return;
 					onChange(next as L);
 				}}

@@ -89,16 +89,18 @@ export function TableColumnsToggle<TData extends RowData>({
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					aria-label={labels.trigger}
-					title={labels.trigger}
-					className={className}
-				>
-					<Columns3Icon />
-				</Button>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon-sm"
+						aria-label={labels.trigger}
+						title={labels.trigger}
+						className={className}
+					/>
+				}
+			>
+				<Columns3Icon />
 			</DropdownMenuTrigger>
 
 			<DropdownMenuContent align={align} className="min-w-56">
@@ -123,7 +125,6 @@ export function TableColumnsToggle<TData extends RowData>({
 							key={col.id}
 							checked={col.getIsVisible()}
 							disabled={!canHide}
-							onSelect={(event) => event.preventDefault()}
 							onCheckedChange={(value) => col.toggleVisibility(Boolean(value))}
 						>
 							<span className="flex-1 truncate">{label}</span>
@@ -139,10 +140,8 @@ export function TableColumnsToggle<TData extends RowData>({
 
 				<DropdownMenuSeparator />
 				<DropdownMenuItem
-					onSelect={(event) => {
-						event.preventDefault();
-						table.resetColumnVisibility();
-					}}
+					closeOnClick={false}
+					onClick={() => table.resetColumnVisibility()}
 					disabled={isAtDefault}
 				>
 					{labels.reset}
