@@ -1,7 +1,7 @@
 import { Badge } from "@bibs/ui/components/badge";
+import { buttonVariants } from "@bibs/ui/components/button";
 import { Checkbox } from "@bibs/ui/components/checkbox";
 import { CopyButton } from "@bibs/ui/custom/copy-button";
-import { CreateButton } from "@bibs/ui/custom/create-button";
 import { DataTable, SortableHeader } from "@bibs/ui/custom/data-table";
 import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
@@ -10,6 +10,7 @@ import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
 import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
+import { CreateIcon } from "@bibs/ui/icons";
 import { formatDate } from "@bibs/ui/lib/date";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
@@ -565,9 +566,10 @@ function ProductsListPage() {
 						: m.products_page_subtitle_no_store()
 				}
 			>
-				<CreateButton nativeButton={false} render={<Link to="/products/new" />}>
+				<Link to="/products/new" className={buttonVariants()}>
+					<CreateIcon />
 					{m.products_new_cta()}
-				</CreateButton>
+				</Link>
 			</PageHeader>
 
 			{activeStore && (
@@ -654,12 +656,10 @@ function ProductsListPage() {
 							title={m.products_empty_catalog()}
 							description={m.products_empty_catalog_description()}
 							action={
-								<CreateButton
-									nativeButton={false}
-									render={<Link to="/products/new" />}
-								>
+								<Link to="/products/new" className={buttonVariants()}>
+									<CreateIcon />
 									{m.products_new_cta()}
-								</CreateButton>
+								</Link>
 							}
 						/>
 					) : (

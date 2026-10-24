@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
@@ -158,26 +158,30 @@ function OrdersPage() {
 			{pages > 1 && (
 				<div className="flex justify-between">
 					{page > 1 ? (
-						<Button
-							variant="secondary"
-							className="min-h-11"
-							nativeButton={false}
-							render={<Link to="/orders" search={{ tab, page: page - 1 }} />}
+						<Link
+							to="/orders"
+							search={{ tab, page: page - 1 }}
+							className={cn(
+								buttonVariants({ variant: "secondary" }),
+								"min-h-11",
+							)}
 						>
 							←
-						</Button>
+						</Link>
 					) : (
 						<span />
 					)}
 					{page < pages && (
-						<Button
-							variant="secondary"
-							className="min-h-11"
-							nativeButton={false}
-							render={<Link to="/orders" search={{ tab, page: page + 1 }} />}
+						<Link
+							to="/orders"
+							search={{ tab, page: page + 1 }}
+							className={cn(
+								buttonVariants({ variant: "secondary" }),
+								"min-h-11",
+							)}
 						>
 							→
-						</Button>
+						</Link>
 					)}
 				</div>
 			)}

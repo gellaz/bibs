@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import {
@@ -66,19 +66,13 @@ export function IncludedProductsList({ discountId }: Props) {
 				<p className="text-muted-foreground text-sm">
 					{m.promotions_included_empty()}
 				</p>
-				<Button
-					variant="link"
-					size="sm"
-					nativeButton={false}
-					render={
-						<Link
-							to="/products"
-							search={{ page: 1, limit: 20, statusFilter: "active" }}
-						/>
-					}
+				<Link
+					to="/products"
+					search={{ page: 1, limit: 20, statusFilter: "active" }}
+					className={buttonVariants({ variant: "link", size: "sm" })}
 				>
 					{m.promotions_included_add_hint()}
-				</Button>
+				</Link>
 			</div>
 		);
 	}

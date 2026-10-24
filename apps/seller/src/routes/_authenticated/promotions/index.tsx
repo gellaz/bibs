@@ -1,5 +1,5 @@
 import { Badge } from "@bibs/ui/components/badge";
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -7,12 +7,12 @@ import {
 	DropdownMenuTrigger,
 } from "@bibs/ui/components/dropdown-menu";
 import { toast } from "@bibs/ui/components/sonner";
-import { CreateButton } from "@bibs/ui/custom/create-button";
 import { DataTable } from "@bibs/ui/custom/data-table";
 import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { CreateIcon } from "@bibs/ui/icons";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
@@ -268,12 +268,10 @@ function PromotionsListPage() {
 				title={m.promotions_page_title()}
 				description={m.promotions_page_subtitle()}
 			>
-				<CreateButton
-					nativeButton={false}
-					render={<Link to="/promotions/new" />}
-				>
+				<Link to="/promotions/new" className={buttonVariants()}>
+					<CreateIcon />
 					{m.promotions_new_cta()}
-				</CreateButton>
+				</Link>
 			</PageHeader>
 
 			<div className="shrink-0">
@@ -304,12 +302,10 @@ function PromotionsListPage() {
 							title={EMPTY_MESSAGE.assignable()}
 							description={m.promotions_empty_active_description()}
 							action={
-								<CreateButton
-									nativeButton={false}
-									render={<Link to="/promotions/new" />}
-								>
+								<Link to="/promotions/new" className={buttonVariants()}>
+									<CreateIcon />
 									{m.promotions_new_cta()}
-								</CreateButton>
+								</Link>
 							}
 						/>
 					) : (

@@ -1,4 +1,4 @@
-import { Button } from "@bibs/ui/components/button";
+import { buttonVariants } from "@bibs/ui/components/button";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { cn } from "@bibs/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -139,10 +139,10 @@ function EmptyStoresState() {
 				</h1>
 				<p className="text-muted-foreground">{m.dashboard_empty_body()}</p>
 			</div>
-			<Button size="lg" nativeButton={false} render={<Link to="/store/new" />}>
+			<Link to="/store/new" className={buttonVariants({ size: "lg" })}>
 				<Plus className="size-4" />
 				{m.dashboard_empty_cta()}
-			</Button>
+			</Link>
 		</div>
 	);
 }

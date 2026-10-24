@@ -1,6 +1,7 @@
-import { Button } from "@bibs/ui/components/button";
+import { buttonVariants } from "@bibs/ui/components/button";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { cn } from "@bibs/ui/lib/utils";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	CheckCircle2,
@@ -48,12 +49,13 @@ function CheckoutDonePage() {
 				title={m.checkout_not_found()}
 				description={m.orders_empty_description()}
 				action={
-					<Button
-						nativeButton={false}
-						render={<Link to="/orders" search={{ tab: "reserved", page: 1 }} />}
+					<Link
+						to="/orders"
+						search={{ tab: "reserved", page: 1 }}
+						className={buttonVariants()}
 					>
 						{m.checkout_done_orders_cta()}
-					</Button>
+					</Link>
 				}
 			/>
 		);
@@ -216,35 +218,23 @@ function CheckoutDonePage() {
 			})()}
 
 			<div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-				<Button
-					variant="secondary"
-					className="min-h-11"
-					nativeButton={false}
-					render={
-						<Link
-							to="/stores"
-							search={{ q: undefined, categoryId: undefined }}
-						/>
-					}
+				<Link
+					to="/stores"
+					search={{ q: undefined, categoryId: undefined }}
+					className={cn(buttonVariants({ variant: "secondary" }), "min-h-11")}
 				>
 					{m.checkout_done_continue()}
-				</Button>
-				<Button
-					size="lg"
-					className="min-h-11"
-					nativeButton={false}
-					render={
-						<Link
-							to="/orders"
-							search={{
-								tab: payment === "none" ? "reserved" : "paid",
-								page: 1,
-							}}
-						/>
-					}
+				</Link>
+				<Link
+					to="/orders"
+					search={{
+						tab: payment === "none" ? "reserved" : "paid",
+						page: 1,
+					}}
+					className={cn(buttonVariants({ size: "lg" }), "min-h-11")}
 				>
 					{m.checkout_done_orders_cta()}
-				</Button>
+				</Link>
 			</div>
 		</div>
 	);

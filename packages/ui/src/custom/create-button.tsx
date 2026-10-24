@@ -6,13 +6,14 @@ import { CreateIcon } from "~/icons";
 /**
  * CTA di creazione entità: un Button con il glifo di creazione
  * (`CreateIcon`) fissato per costruzione, così nessun call-site può
- * divergere. Con `render` l'icona resta dentro l'elemento renderizzato,
- * quindi con un `<Link>` fa parte della hit area dell'anchor.
+ * divergere. Per una CTA che naviga serve un link, non un Button (Base UI
+ * gli darebbe role="button"): stesso glifo su un `<Link>` stilato.
  *
  * ```tsx
- * <CreateButton nativeButton={false} render={<Link to="/products/new" />}>
+ * <Link to="/products/new" className={buttonVariants()}>
+ *   <CreateIcon />
  *   Nuovo Prodotto
- * </CreateButton>
+ * </Link>
  *
  * <CreateButton onClick={() => setCreateOpen(true)}>
  *   Nuova Categoria

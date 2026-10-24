@@ -10,7 +10,8 @@ import {
 	AlertDialogTrigger,
 } from "@bibs/ui/components/alert-dialog";
 import { Badge } from "@bibs/ui/components/badge";
-import { Button } from "@bibs/ui/components/button";
+import { Button, buttonVariants } from "@bibs/ui/components/button";
+import { cn } from "@bibs/ui/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { m } from "@/paraglide/messages";
@@ -66,25 +67,21 @@ export function AddressCard({
 				    ricerca identica a quella di prima. La rubrica le esige sui
 				    nuovi indirizzi, ma l'API le ammette nulle. */}
 				{address.location && (
-					<Button
-						variant="secondary"
-						size="sm"
-						className="min-h-11 sm:min-h-9"
-						nativeButton={false}
-						render={
-							<Link
-								to="/stores"
-								search={{
-									near: address.id,
-									q: undefined,
-									categoryId: undefined,
-								}}
-							/>
-						}
+					<Link
+						to="/stores"
+						search={{
+							near: address.id,
+							q: undefined,
+							categoryId: undefined,
+						}}
+						className={cn(
+							buttonVariants({ variant: "secondary", size: "sm" }),
+							"min-h-11 sm:min-h-9",
+						)}
 					>
 						<Search className="size-4" aria-hidden />
 						{m.origin_search_here()}
-					</Button>
+					</Link>
 				)}
 				<Button
 					variant="secondary"
