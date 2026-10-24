@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
-import { sendEmailToMailpit, toMailpitPayload } from "@/lib/email";
+import {
+	sendEmailToMailpit,
+	sendEmailToResend,
+	toMailpitPayload,
+} from "@/lib/email";
 
 const realFetch = globalThis.fetch;
 
@@ -66,5 +70,24 @@ describe("sendEmailToMailpit", () => {
 		expect(await sendEmailToMailpit(params, "http://mailpit.test:8025")).toBe(
 			false,
 		);
+	});
+});
+
+describe("sendEmailToResend", () => {
+	it("posts to Resend with a timeout signal, so a hanging Resend can't block the request", async () => {
+		const fetchMock = mock(
+			async (_url: string, _init: RequestInit) =>
+				new Response("{}", { status: 200 }),
+		);
+		globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+		await sendEmailToResend(params, "re_test_key", "bibs <noreply@bibs.it>");
+
+		const [url, init] = fetchMock.mock.calls[0];
+		expect(url).toBe("https://api.resend.com/emails");
+		expect((init.headers as Record<string, string>).Authorization).toBe(
+			"Bearer re_test_key",
+		);
+		expect(init.signal).toBeInstanceOf(AbortSignal);
 	});
 });

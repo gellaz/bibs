@@ -36,8 +36,10 @@ mock.module("@/lib/s3", () => ({
 import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
 import {
+	goBack,
 	updateCompany,
 	updateDocument,
+	updatePersonalInfo,
 } from "@/modules/seller/services/onboarding";
 import { truncateAll } from "../helpers/cleanup";
 import {
@@ -123,6 +125,35 @@ describe("updateDocument", () => {
 		expect(profile.onboardingStatus).toBe("pending_company");
 		expect(write).toHaveBeenCalledTimes(1);
 		expect(sendEmail).not.toHaveBeenCalled();
+	});
+
+	it("dopo un rifiuto 'document', tornare all'anagrafica e riavanzare non perde i dati aziendali", async () => {
+		const { userId, profileId, municipalityId } = await sellerAtDocumentStep();
+		await createTestOrganization(getTestDb(), profileId);
+
+		await goBack(userId);
+		await updatePersonalInfo({
+			userId,
+			firstName: "Mario",
+			lastName: "Rossi",
+			citizenship: "IT",
+			birthCountry: "IT",
+			birthDate: "1990-01-01",
+			residenceCountry: "IT",
+			residenceMunicipalityId: municipalityId,
+			residenceAddress: "Via Roma 1",
+			residenceZipCode: "40100",
+		});
+		const profile = await updateDocument({
+			userId,
+			documentType: "passport",
+			documentNumber: "YA1234567",
+			documentExpiry: "2099-12-31",
+			documentIssuedMunicipalityId: municipalityId,
+			documentImage: image(),
+		});
+
+		expect(profile.onboardingStatus).toBe("pending_review");
 	});
 
 	it("rifiuta con 422 un numero che non è del tipo scelto, senza caricare la foto", async () => {
