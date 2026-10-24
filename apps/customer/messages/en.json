@@ -416,7 +416,7 @@
 	"points_type_redeemed": "Used",
 	"points_type_refunded": "Refunded",
 	"points_empty_title": "No activity yet",
-	"points_empty_description": "You earn points when you pick up an order: they show up here, along with the ones you use.",
+	"points_empty_description": "You earn points when you pick up an order paid online with “Pay and pick up”: they show up here, along with the ones you use.",
 	"points_load_failed": "We couldn't load your points.",
 	"points_page_prev": "Previous page",
 	"points_page_next": "Next page",

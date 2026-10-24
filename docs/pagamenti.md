@@ -45,7 +45,7 @@ cliente fa il checkout ──► ordine «confirmed», stock scalato, codice di 
                                │
       entro le ore del negozio ▼
 seller: «pronto» ──► cliente ritira e paga alla cassa ──► seller: «completato»
-                                                            └► punti accreditati
+                                                            └► nessun punto (pagato fuori da bibs)
       scadenza + 15 min senza ritiro ──► cron: «expired», stock e punti restituiti
 ```
 
@@ -224,7 +224,9 @@ Il seller paga 58 € al mese; a bibs restano 56,22 €. Ciclo di vita dell'abbo
 ## Punti fedeltà
 
 - **Si guadagnano** quando il seller segna l'ordine «completato»: 1 punto per euro del
-  totale pagato (arrotondato per difetto). Ordine da 40 € → 40 punti.
+  totale pagato (arrotondato per difetto). Ordine da 40 € → 40 punti. **Solo sugli ordini
+  pagati a bibs** («Paga e ritira»): «Prenota e paga in negozio» si salda alla cassa, fuori da
+  bibs, e non accredita punti.
 - **Si spendono** come sconto: 100 punti = 1 €.
 - Annullamento o scadenza: i punti spesi tornano al cliente.
 

@@ -494,7 +494,7 @@ describe("ritiro con codice", () => {
 		).rejects.toMatchObject({ status: 404 });
 	});
 
-	it("conferma: completa, accredita i punti una volta sola", async () => {
+	it("conferma: completa una volta sola, senza punti (pagato in negozio)", async () => {
 		const db = getTestDb();
 		const {
 			seller,
@@ -529,12 +529,12 @@ describe("ritiro con codice", () => {
 					eq(pointTransaction.type, "earned"),
 				),
 			);
-		expect(earned).toHaveLength(1);
+		expect(earned).toHaveLength(0);
 		const [cp] = await db
 			.select()
 			.from(customerProfile)
 			.where(eq(customerProfile.id, customer.profile.id));
-		expect(cp.points).toBe(earned[0].amount);
+		expect(cp.points).toBe(0);
 	});
 
 	it("un pay_pickup pronto per il ritiro si completa per codice con i punti", async () => {
