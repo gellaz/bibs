@@ -53,6 +53,7 @@ Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.cl
 | `tanstack-start-best-practices`, `tanstack-router-best-practices`, `tanstack-query-best-practices`, `tanstack-integration-best-practices` | TanStack patterns — activates in `apps/{admin,customer,seller}` |
 | `elysiajs` | Canonical Elysia 1.x patterns — activates in `apps/api`. Frozen snapshot outside `skills-lock.json`: upstream moved to Elysia 2 (rc), re-add it when we migrate |
 | `shadcn` | shadcn/ui CLI, theming, registries — activates on `packages/ui` work |
+| `migrate-radix-to-base` | Official shadcn skill for moving wrappers and call sites from Radix to Base UI (golden pair + `git merge-file`, reports in `.migration/`) |
 | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices` | Better Auth — matches the current auth stack |
 | `organization-best-practices`, `two-factor-authentication-best-practices` | Installed ahead of need — activate only when those Better Auth plugins are enabled |
 | `create-auth` | Better Auth scaffolding — installed ahead of need, the stack is already wired |
