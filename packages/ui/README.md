@@ -7,7 +7,7 @@ Shared UI component library for the **bibs** monorepo, based on [shadcn/ui](http
 
 - **Components** — [shadcn/ui](https://ui.shadcn.com/) (radix-nova style) + [Radix UI](https://www.radix-ui.com/)
 - **Styling
-  ** — [Tailwind CSS v4](https://tailwindcss.com/) + [tailwind-merge](https://github.com/dcastil/tailwind-merge) + [class-variance-authority](https://cva.style/)
+  ** — [Tailwind CSS v4](https://tailwindcss.com/) + [cn](https://github.com/shadcn-ui/cn) + [class-variance-authority](https://cva.style/)
 - **Icons** — [Lucide React](https://lucide.dev/)
 - **Animations** — [tw-animate-css](https://github.com/nicholasgillespie/tw-animate-css)
 - **Extra
@@ -138,7 +138,7 @@ src/
 ├── custom/        # Components written for bibs
 ├── hooks/         # React hooks
 ├── lib/
-│   └── utils.ts   # cn() utility (clsx + tailwind-merge)
+│   └── utils.ts   # cn() re-exported from the cn package
 └── styles/
     └── globals.css # Tailwind base + CSS variables (zinc theme)
 ```
