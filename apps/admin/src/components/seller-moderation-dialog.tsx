@@ -31,6 +31,8 @@ export interface ModerationTarget {
 	sellerId: string;
 	/** Pre-resolved display name: organization?.businessName ?? displayName(user) */
 	sellerName: string;
+	/** Seller's updatedAt as shown on the page: the API 409s if it changed since. */
+	updatedAt: Date;
 }
 
 /** Body of PATCH /admin/sellers/:id/reject (RejectSellerBody). */
@@ -78,8 +80,10 @@ export function useSellerModeration(opts?: {
 	};
 
 	const verifyMutation = useMutation({
-		mutationFn: async (sellerId: string) => {
-			const response = await api().admin.sellers({ sellerId }).verify.patch();
+		mutationFn: async ({ sellerId, updatedAt }: ModerationTarget) => {
+			const response = await api()
+				.admin.sellers({ sellerId })
+				.verify.patch({ expectedUpdatedAt: updatedAt });
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || m.sellers_verify_error(),
@@ -93,21 +97,25 @@ export function useSellerModeration(opts?: {
 			toast.success(m.sellers_verify_success());
 		},
 		onError: (error: Error) => {
+			// Already decided or resubmitted meanwhile: close on the old version
+			// and show the current data.
+			invalidateLists();
+			setTarget(null);
 			toast.error(error.message || m.sellers_verify_failed());
 		},
 	});
 
 	const rejectMutation = useMutation({
 		mutationFn: async ({
-			sellerId,
+			target: { sellerId, updatedAt },
 			rejection,
 		}: {
-			sellerId: string;
+			target: ModerationTarget;
 			rejection: Rejection;
 		}) => {
 			const response = await api()
 				.admin.sellers({ sellerId })
-				.reject.patch(rejection);
+				.reject.patch({ ...rejection, expectedUpdatedAt: updatedAt });
 			if (response.error) {
 				throw new Error(
 					response.error.value?.message || m.sellers_reject_error(),
@@ -121,15 +129,16 @@ export function useSellerModeration(opts?: {
 			toast.success(m.sellers_reject_success());
 		},
 		onError: (error: Error) => {
+			invalidateLists();
+			setTarget(null);
 			toast.error(error.message || m.sellers_reject_failed());
 		},
 	});
 
 	const confirm = (rejection?: Rejection) => {
 		if (!target) return;
-		if (target.type === "verify") verifyMutation.mutate(target.sellerId);
-		else if (rejection)
-			rejectMutation.mutate({ sellerId: target.sellerId, rejection });
+		if (target.type === "verify") verifyMutation.mutate(target);
+		else if (rejection) rejectMutation.mutate({ target, rejection });
 	};
 
 	return {

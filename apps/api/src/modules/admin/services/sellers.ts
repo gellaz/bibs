@@ -1,6 +1,16 @@
 import { type Static, Type } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
-import { and, asc, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	ilike,
+	inArray,
+	or,
+	sql,
+} from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { organization, type VatStatus } from "@/db/schemas/organization";
@@ -8,7 +18,9 @@ import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
+import { logger } from "@/lib/logger";
 import { parsePagination } from "@/lib/pagination";
+import { s3 } from "@/lib/s3";
 import {
 	DocumentChangeBody,
 	type RejectSellerBody,
@@ -201,11 +213,16 @@ interface ReviewOutcome {
 		| "delete";
 }
 
-// Moderation only decides pending_review applications. The status predicate in
-// the UPDATE makes it a compare-and-set: a second click or a stale tab can't
-// re-verify a rejected seller or reject an active one. The organization is
-// touched only after the profile row actually moved.
-async function decideReview(sellerId: string, outcome: ReviewOutcome) {
+// Moderation only decides pending_review applications, and only the version the
+// admin is looking at: status + updatedAt in the UPDATE make it a
+// compare-and-set. A second click or a stale tab can't re-verify a rejected
+// seller, nor approve a resubmission (new document or company) it never saw.
+// The organization is touched only after the profile row actually moved.
+async function decideReview(
+	sellerId: string,
+	expectedUpdatedAt: Date,
+	outcome: ReviewOutcome,
+) {
 	await db.transaction(async (tx) => {
 		const [moved] = await tx
 			.update(sellerProfile)
@@ -217,17 +234,25 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 				and(
 					eq(sellerProfile.id, sellerId),
 					eq(sellerProfile.onboardingStatus, "pending_review"),
+					// JS dates stop at milliseconds; a row written by now() has microseconds.
+					sql`date_trunc('milliseconds', ${sellerProfile.updatedAt}) = ${expectedUpdatedAt.toISOString()}`,
 				),
 			)
 			.returning({ id: sellerProfile.id });
 
 		if (!moved) {
-			const exists = await tx.query.sellerProfile.findFirst({
+			const current = await tx.query.sellerProfile.findFirst({
 				where: eq(sellerProfile.id, sellerId),
-				columns: { id: true },
+				columns: { onboardingStatus: true },
 			});
-			if (!exists) throw new ServiceError(404, "Profilo venditore non trovato");
-			throw new ServiceError(409, "La candidatura è già stata decisa");
+			if (!current)
+				throw new ServiceError(404, "Profilo venditore non trovato");
+			throw new ServiceError(
+				409,
+				current.onboardingStatus === "pending_review"
+					? "Il venditore ha aggiornato la candidatura: ricontrolla i dati prima di decidere"
+					: "La candidatura è già stata decisa",
+			);
 		}
 
 		if (outcome.organization === "delete") {
@@ -247,8 +272,8 @@ async function decideReview(sellerId: string, outcome: ReviewOutcome) {
 	return updated;
 }
 
-export async function verifySeller(sellerId: string) {
-	const updated = await decideReview(sellerId, {
+export async function verifySeller(sellerId: string, expectedUpdatedAt: Date) {
+	const updated = await decideReview(sellerId, expectedUpdatedAt, {
 		onboardingStatus: "active",
 		rejectionReason: null,
 		organization: { vatStatus: "verified" },
@@ -275,10 +300,11 @@ const REJECTION_OUTCOMES: Record<
  */
 export async function rejectSeller(
 	sellerId: string,
+	expectedUpdatedAt: Date,
 	{ reason, fixStep }: Static<typeof RejectSellerBody>,
 ) {
 	const rejectionReason = reason.trim();
-	const updated = await decideReview(sellerId, {
+	const updated = await decideReview(sellerId, expectedUpdatedAt, {
 		...REJECTION_OUTCOMES[fixStep ?? "definitive"],
 		rejectionReason,
 	});
@@ -522,7 +548,7 @@ export async function approveChange(changeId: string, adminUserId: string) {
 	// Narrowed per branch below; the check above guarantees the shape.
 	const changeData = change.changeData;
 
-	return db.transaction(async (tx) => {
+	const { updated, replacedImageKey } = await db.transaction(async (tx) => {
 		// Atomic compare-and-swap gate: flip pending -> approved guarded by the
 		// current status, INSIDE the transaction. A concurrent approver blocks on
 		// this row lock, then re-reads status != 'pending', gets 0 rows back and
@@ -568,8 +594,16 @@ export async function approveChange(changeId: string, adminUserId: string) {
 				.where(eq(sellerProfile.id, change.sellerProfileId));
 		}
 
+		let replacedImageKey: string | null = null;
 		if (change.changeType === "document") {
 			const doc = changeData as Static<typeof StoredDocumentChange>;
+			if (doc.documentImageKey) {
+				const current = await tx.query.sellerProfile.findFirst({
+					where: eq(sellerProfile.id, change.sellerProfileId),
+					columns: { documentImageKey: true },
+				});
+				replacedImageKey = current?.documentImageKey ?? null;
+			}
 			await tx
 				.update(sellerProfile)
 				.set({
@@ -587,8 +621,17 @@ export async function approveChange(changeId: string, adminUserId: string) {
 				.where(eq(sellerProfile.id, change.sellerProfileId));
 		}
 
-		return updated;
+		return { updated, replacedImageKey };
 	});
+
+	if (replacedImageKey) {
+		await deleteDocumentImage(
+			replacedImageKey,
+			change.sellerProfileId,
+			"document_change_old_cleanup_failed",
+		);
+	}
+	return updated;
 }
 
 interface RejectChangeParams {
@@ -606,7 +649,7 @@ export async function rejectChange(params: RejectChangeParams) {
 
 	if (!change) throw new ServiceError(404, "Richiesta di modifica non trovata");
 
-	return db.transaction(async (tx) => {
+	const updated = await db.transaction(async (tx) => {
 		// Atomic compare-and-swap gate (see approveChange): flip pending ->
 		// rejected guarded by the current status inside the transaction so a
 		// concurrent reviewer can't double-apply the VAT unblock below.
@@ -642,5 +685,38 @@ export async function rejectChange(params: RejectChangeParams) {
 		}
 
 		return updated;
+	});
+
+	// The photo uploaded with the request goes nowhere once it's rejected.
+	const { documentImageKey } = change.changeData as {
+		documentImageKey?: unknown;
+	};
+	if (
+		change.changeType === "document" &&
+		typeof documentImageKey === "string"
+	) {
+		await deleteDocumentImage(
+			documentImageKey,
+			change.sellerProfileId,
+			"document_change_rejected_cleanup_failed",
+		);
+	}
+	return updated;
+}
+
+// Document photos are personal data: delete the ones nobody references any
+// more. Best-effort, after the commit: a failed delete leaves an orphan file,
+// never a half-applied decision. Only pending requests are ever shown, so a
+// decided request's changeData pointing at a deleted key is never read.
+async function deleteDocumentImage(
+	key: string,
+	sellerProfileId: string,
+	action: string,
+) {
+	await s3.delete(key).catch((err) => {
+		logger.warn(
+			{ sellerProfileId, key, action, err: String(err) },
+			"Cleanup foto del documento fallito",
+		);
 	});
 }

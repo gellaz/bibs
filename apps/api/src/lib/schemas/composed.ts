@@ -49,6 +49,10 @@ export const StoreWithPhonesSchema = t.Object({
 // Seller profile + user + organization (admin pending list)
 export const SellerProfileWithUserSchema = t.Object({
 	...SellerProfileSchema.properties,
+	updatedAt: t.Date({
+		description:
+			"Versione della candidatura: da rimandare in verify/reject come expectedUpdatedAt",
+	}),
 	user: UserSchema,
 	organization: t.Nullable(OrganizationSchema),
 });

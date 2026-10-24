@@ -90,6 +90,7 @@ function SellerDetailPage() {
 											sellerName:
 												seller.organization?.businessName ??
 												displayName(seller.user),
+											updatedAt: seller.updatedAt,
 										})
 									}
 								>
@@ -106,6 +107,7 @@ function SellerDetailPage() {
 											sellerName:
 												seller.organization?.businessName ??
 												displayName(seller.user),
+											updatedAt: seller.updatedAt,
 										})
 									}
 								>
@@ -265,6 +267,7 @@ function SellerDetailPage() {
 								sellerId,
 								sellerName:
 									seller.organization?.businessName ?? displayName(seller.user),
+								updatedAt: seller.updatedAt,
 							})
 						}
 					>
@@ -280,6 +283,7 @@ function SellerDetailPage() {
 								sellerId,
 								sellerName:
 									seller.organization?.businessName ?? displayName(seller.user),
+								updatedAt: seller.updatedAt,
 							})
 						}
 					>

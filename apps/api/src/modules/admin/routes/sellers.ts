@@ -20,6 +20,11 @@ import {
 	verifySeller,
 } from "../services/sellers";
 
+const ExpectedUpdatedAt = t.Date({
+	description:
+		"`updatedAt` del venditore come l'admin l'ha visto: 409 se nel frattempo la candidatura è cambiata (es. reinvio dopo un rifiuto)",
+});
+
 export const sellersRoutes = new Elysia()
 	.get(
 		"/sellers/counts",
@@ -84,9 +89,9 @@ export const sellersRoutes = new Elysia()
 	.patch(
 		"/sellers/:sellerId/verify",
 		async (ctx) => {
-			const { params, store, user } = withAdmin(ctx);
+			const { params, body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await verifySeller(params.sellerId);
+			const data = await verifySeller(params.sellerId, body.expectedUpdatedAt);
 
 			pino.info(
 				{
@@ -104,11 +109,12 @@ export const sellersRoutes = new Elysia()
 			params: t.Object({
 				sellerId: t.String({ description: "ID del profilo venditore" }),
 			}),
+			body: t.Object({ expectedUpdatedAt: ExpectedUpdatedAt }),
 			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Verifica venditore",
 				description:
-					"Approva il venditore e imposta l'onboarding come completato. Abilita il venditore a operare sulla piattaforma. Solo da pending_review: 409 se la candidatura è già stata decisa.",
+					"Approva il venditore e imposta l'onboarding come completato. Abilita il venditore a operare sulla piattaforma. Solo da pending_review e sulla versione vista dall'admin: 409 se la candidatura è già stata decisa o è cambiata.",
 				tags: ["Admin"],
 			},
 		},
@@ -118,7 +124,12 @@ export const sellersRoutes = new Elysia()
 		async (ctx) => {
 			const { params, body, store, user } = withAdmin(ctx);
 			const pino = getLogger(store);
-			const data = await rejectSeller(params.sellerId, body);
+			const { expectedUpdatedAt, ...rejection } = body;
+			const data = await rejectSeller(
+				params.sellerId,
+				expectedUpdatedAt,
+				rejection,
+			);
 
 			pino.warn(
 				{
@@ -138,12 +149,15 @@ export const sellersRoutes = new Elysia()
 			params: t.Object({
 				sellerId: t.String({ description: "ID del profilo venditore" }),
 			}),
-			body: RejectSellerBody,
+			body: t.Object({
+				...RejectSellerBody.properties,
+				expectedUpdatedAt: ExpectedUpdatedAt,
+			}),
 			response: withConflictErrors({ 200: okRes(SellerProfileSchema) }),
 			detail: {
 				summary: "Rifiuta venditore",
 				description:
-					"Respinge la candidatura con un motivo obbligatorio, mostrato al venditore e inviato per email. `fixStep` null = rifiuto definitivo (rejected); `document` / `company` = il venditore torna a quello step per correggere e reinviare. Solo da pending_review: 409 se la candidatura è già stata decisa.",
+					"Respinge la candidatura con un motivo obbligatorio, mostrato al venditore e inviato per email. `fixStep` null = rifiuto definitivo (rejected); `document` / `company` = il venditore torna a quello step per correggere e reinviare. Solo da pending_review e sulla versione vista dall'admin: 409 se la candidatura è già stata decisa o è cambiata.",
 				tags: ["Admin"],
 			},
 		},

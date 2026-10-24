@@ -29,9 +29,15 @@ const sendEmail = mock(
 );
 mock.module("@/lib/email", () => ({ sendEmail }));
 
+const remove = mock(async (_key: string) => {});
+mock.module("@/lib/s3", () => ({
+	s3: { delete: remove },
+	publicUrl: (key: string) => `https://cdn.test/${key}`,
+}));
+
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
@@ -71,6 +77,8 @@ beforeEach(async () => {
 	await truncateAll(getTestDb());
 	sendEmail.mockReset();
 	sendEmail.mockImplementation(async () => {});
+	remove.mockReset();
+	remove.mockImplementation(async () => {});
 });
 
 // ── Helper: create a seller with given onboarding status ──────────────────────
@@ -167,6 +175,24 @@ async function seedChange(params: {
 	return row;
 }
 
+// ── Helpers for verifySeller / rejectSeller ───────────────────────────────────
+
+/** updatedAt as the admin page read it: what the moderation dialog sends back. */
+async function seenVersion(sellerId: string) {
+	return (await profileOf(sellerId))?.updatedAt ?? new Date();
+}
+
+async function verify(sellerId: string) {
+	return verifySeller(sellerId, await seenVersion(sellerId));
+}
+
+async function reject(
+	sellerId: string,
+	body: Parameters<typeof rejectSeller>[2],
+) {
+	return rejectSeller(sellerId, await seenVersion(sellerId), body);
+}
+
 // ── listSellers ───────────────────────────────────────────────────────────────
 
 describe("listSellers", () => {
@@ -223,7 +249,7 @@ describe("verifySeller", () => {
 			"pending",
 		);
 
-		await verifySeller(seller.profile.id);
+		await verify(seller.profile.id);
 
 		const [profile] = await db
 			.select()
@@ -239,7 +265,7 @@ describe("verifySeller", () => {
 	});
 
 	it("throws ServiceError 404 when seller does not exist", async () => {
-		await expectServiceError(verifySeller(crypto.randomUUID()), 404);
+		await expectServiceError(verify(crypto.randomUUID()), 404);
 	});
 
 	it("clears the reason left by a previous rejection", async () => {
@@ -254,7 +280,7 @@ describe("verifySeller", () => {
 			.set({ rejectionReason: "Documento illeggibile" })
 			.where(eq(sellerProfile.id, seller.profile.id));
 
-		await verifySeller(seller.profile.id);
+		await verify(seller.profile.id);
 
 		const [profile] = await db
 			.select()
@@ -269,7 +295,7 @@ describe("verifySeller", () => {
 		["pending_document", "pending"],
 	] as const) {
 		it(`throws 409 and changes nothing when the seller is ${status}`, async () => {
-			await expectConflictUnchanged(verifySeller, status, vat);
+			await expectConflictUnchanged(verify, status, vat);
 		});
 	}
 });
@@ -305,7 +331,7 @@ describe("rejectSeller", () => {
 			"pending",
 		);
 
-		await rejectSeller(seller.profile.id, DEFINITIVE);
+		await reject(seller.profile.id, DEFINITIVE);
 
 		const profile = await profileOf(seller.profile.id);
 		expect(profile.onboardingStatus).toBe("rejected");
@@ -322,7 +348,7 @@ describe("rejectSeller", () => {
 			"pending",
 		);
 
-		await rejectSeller(seller.profile.id, {
+		await reject(seller.profile.id, {
 			reason: "Documento illeggibile",
 			fixStep: "document",
 		});
@@ -340,7 +366,7 @@ describe("rejectSeller", () => {
 			"pending",
 		);
 
-		await rejectSeller(seller.profile.id, {
+		await reject(seller.profile.id, {
 			reason: "P.IVA non valida o diversa dalla ragione sociale",
 			fixStep: "company",
 		});
@@ -357,7 +383,7 @@ describe("rejectSeller", () => {
 			"pending",
 		);
 
-		await rejectSeller(seller.profile.id, {
+		await reject(seller.profile.id, {
 			reason: "  Foto di un'altra persona  ",
 			fixStep: null,
 		});
@@ -368,10 +394,7 @@ describe("rejectSeller", () => {
 	});
 
 	it("throws ServiceError 404 when seller does not exist", async () => {
-		await expectServiceError(
-			rejectSeller(crypto.randomUUID(), DEFINITIVE),
-			404,
-		);
+		await expectServiceError(reject(crypto.randomUUID(), DEFINITIVE), 404);
 	});
 
 	for (const [status, vat] of [
@@ -381,12 +404,59 @@ describe("rejectSeller", () => {
 	] as const) {
 		it(`throws 409 and changes nothing when the seller is ${status}`, async () => {
 			await expectConflictUnchanged(
-				(id) => rejectSeller(id, DEFINITIVE),
+				(id) => reject(id, DEFINITIVE),
 				status,
 				vat,
 			);
 		});
 	}
+});
+
+// ── Stale admin page ──────────────────────────────────────────────────────────
+
+describe("moderation on a stale page", () => {
+	it("a page opened before a resubmission can't decide it: 409, nothing changes", async () => {
+		const db = getTestDb();
+		const seller = await createSellerAtStatus("s@test.com", "pending_review");
+		const stale = await seenVersion(seller.profile.id);
+		// Rejected for the document elsewhere, then the seller resubmits it.
+		await reject(seller.profile.id, {
+			reason: "Documento illeggibile",
+			fixStep: "document",
+		});
+		await db
+			.update(sellerProfile)
+			.set({
+				onboardingStatus: "pending_review",
+				documentImageKey: "documents/x/new",
+				// Explicit: three writes can share a millisecond inside a test.
+				updatedAt: new Date(stale.getTime() + 60_000),
+			})
+			.where(eq(sellerProfile.id, seller.profile.id));
+
+		await expectServiceError(verifySeller(seller.profile.id, stale), 409);
+		await expectServiceError(
+			rejectSeller(seller.profile.id, stale, DEFINITIVE),
+			409,
+		);
+
+		const profile = await profileOf(seller.profile.id);
+		expect(profile.onboardingStatus).toBe("pending_review");
+		expect((await organizationOf(seller.profile.id)).vatStatus).toBe("pending");
+	});
+
+	it("accepts the version of a row written by now(), which has microseconds", async () => {
+		const seller = await createSellerAtStatus("s@test.com", "pending_review");
+		await getTestDb().execute(
+			sql`UPDATE seller_profiles SET updated_at = '2026-10-24 10:00:00.123987+00' WHERE id = ${seller.profile.id}`,
+		);
+
+		await verify(seller.profile.id);
+
+		expect((await profileOf(seller.profile.id)).onboardingStatus).toBe(
+			"active",
+		);
+	});
 });
 
 // ── Moderation emails ─────────────────────────────────────────────────────────
@@ -398,7 +468,7 @@ describe("moderation emails", () => {
 			"pending_review",
 		);
 
-		await verifySeller(seller.profile.id);
+		await verify(seller.profile.id);
 
 		expect(sendEmail).toHaveBeenCalledTimes(1);
 		const [email] = sendEmail.mock.calls[0];
@@ -412,7 +482,7 @@ describe("moderation emails", () => {
 			"pending_review",
 		);
 
-		await rejectSeller(seller.profile.id, {
+		await reject(seller.profile.id, {
 			reason: "Documento illeggibile",
 			fixStep: "document",
 		});
@@ -430,8 +500,8 @@ describe("moderation emails", () => {
 			"pending_review",
 		);
 
-		await rejectSeller(seller.profile.id, DEFINITIVE);
-		await expectServiceError(rejectSeller(seller.profile.id, DEFINITIVE), 409);
+		await reject(seller.profile.id, DEFINITIVE);
+		await expectServiceError(reject(seller.profile.id, DEFINITIVE), 409);
 
 		expect(sendEmail).toHaveBeenCalledTimes(1);
 	});
@@ -445,7 +515,7 @@ describe("moderation emails", () => {
 			"pending_review",
 		);
 
-		await rejectSeller(seller.profile.id, DEFINITIVE);
+		await reject(seller.profile.id, DEFINITIVE);
 
 		expect((await profileOf(seller.profile.id)).onboardingStatus).toBe(
 			"rejected",
@@ -591,6 +661,63 @@ describe("approveChange", () => {
 			.where(eq(sellerProfile.id, seller.profile.id));
 		expect(profile.documentNumber).toBe("YA1234567");
 		expect(profile.documentType).toBe("passport");
+		expect(remove).not.toHaveBeenCalled();
+	});
+
+	async function seedDocumentChangeWithPhoto(email: string) {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email });
+		await db
+			.update(sellerProfile)
+			.set({
+				documentImageKey: "documents/x/old",
+				documentImageUrl: "https://cdn.test/documents/x/old",
+			})
+			.where(eq(sellerProfile.id, seller.profile.id));
+		const municipality = await createTestMunicipality(db);
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "document",
+			changeData: {
+				documentType: "passport",
+				documentNumber: "YA1234567",
+				documentExpiry: "2030-01-01",
+				documentIssuedMunicipalityId: municipality.id,
+				documentImageKey: "documents/x/new",
+				documentImageUrl: "https://cdn.test/documents/x/new",
+			},
+		});
+		return { seller, change };
+	}
+
+	it("with a new photo, deletes the one it replaces from storage", async () => {
+		const { seller, change } =
+			await seedDocumentChangeWithPhoto("doc-photo@test.com");
+		const adminId = await seedAdmin("doc-photo-admin@test.com");
+
+		await approveChange(change.id, adminId);
+
+		expect((await profileOf(seller.profile.id)).documentImageKey).toBe(
+			"documents/x/new",
+		);
+		expect(remove.mock.calls).toEqual([["documents/x/old"]]);
+	});
+
+	it("a failing delete of the old photo doesn't undo the approval", async () => {
+		remove.mockImplementation(async () => {
+			throw new Error("s3 down");
+		});
+		const { seller, change } = await seedDocumentChangeWithPhoto(
+			"doc-photo-fail@test.com",
+		);
+		const adminId = await seedAdmin("doc-photo-fail-admin@test.com");
+
+		const updated = await approveChange(change.id, adminId);
+
+		expect(updated.status).toBe("approved");
+		expect((await profileOf(seller.profile.id)).documentImageKey).toBe(
+			"documents/x/new",
+		);
 	});
 
 	it("applies VAT side effects once and flips the change to approved", async () => {
@@ -717,6 +844,39 @@ describe("rejectChange", () => {
 			.from(sellerProfile)
 			.where(eq(sellerProfile.id, seller.profile.id));
 		expect(profile.vatChangeBlocked).toBe(false);
+		expect(remove).not.toHaveBeenCalled();
+	});
+
+	it("deletes the photo uploaded with a rejected document change, keeps the current one", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "rej-doc@test.com" });
+		await db
+			.update(sellerProfile)
+			.set({
+				documentImageKey: "documents/x/old",
+				documentImageUrl: "https://cdn.test/documents/x/old",
+			})
+			.where(eq(sellerProfile.id, seller.profile.id));
+		const adminId = await seedAdmin("rej-doc-admin@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "document",
+			changeData: {
+				documentType: "passport",
+				documentNumber: "YA1234567",
+				documentExpiry: "2030-01-01",
+				documentIssuedMunicipalityId: "m-1",
+				documentImageKey: "documents/x/new",
+				documentImageUrl: "https://cdn.test/documents/x/new",
+			},
+		});
+
+		await rejectChange({ changeId: change.id, adminUserId: adminId });
+
+		expect(remove.mock.calls).toEqual([["documents/x/new"]]);
+		expect((await profileOf(seller.profile.id)).documentImageKey).toBe(
+			"documents/x/old",
+		);
 	});
 
 	it("throws 400 when the change is already rejected", async () => {

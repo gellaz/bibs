@@ -65,6 +65,7 @@ interface Seller {
 	firstName: string | null;
 	lastName: string | null;
 	createdAt: string | Date;
+	updatedAt: Date;
 	user: {
 		id: string;
 		name: string;
@@ -297,6 +298,7 @@ function SellersPage() {
 										sellerId: s.id,
 										sellerName:
 											s.organization?.businessName ?? displayName(s.user),
+										updatedAt: s.updatedAt,
 									})
 								}
 							>
@@ -312,6 +314,7 @@ function SellersPage() {
 										sellerId: s.id,
 										sellerName:
 											s.organization?.businessName ?? displayName(s.user),
+										updatedAt: s.updatedAt,
 									})
 								}
 							>
