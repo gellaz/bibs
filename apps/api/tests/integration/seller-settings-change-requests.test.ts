@@ -22,8 +22,9 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+const s3Delete = mock(async (_key: string) => {});
 mock.module("@/lib/s3", () => ({
-	s3: { write: mock(async () => {}), delete: mock(async () => {}) },
+	s3: { write: mock(async () => {}), delete: s3Delete },
 	publicUrl: (key: string) => `https://cdn.test/${key}`,
 }));
 
@@ -231,5 +232,25 @@ describe("cancelSellerChange", () => {
 			.from(sellerProfileChange)
 			.where(eq(sellerProfileChange.id, change.id));
 		expect(row.status).toBe("pending");
+	});
+
+	it("annullando un cambio documento cancella la foto caricata", async () => {
+		const seller = await createTestSeller(getTestDb());
+		const [change] = await getTestDb()
+			.insert(sellerProfileChange)
+			.values({
+				sellerProfileId: seller.profile.id,
+				changeType: "document",
+				changeData: { documentImageKey: "documents/x/y" },
+			})
+			.returning();
+		s3Delete.mockClear();
+
+		await cancelSellerChange({
+			sellerProfileId: seller.profile.id,
+			changeId: change.id,
+		});
+
+		expect(s3Delete).toHaveBeenCalledWith("documents/x/y");
 	});
 });

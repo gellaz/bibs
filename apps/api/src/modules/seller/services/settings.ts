@@ -5,6 +5,7 @@ import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
@@ -329,11 +330,29 @@ export async function requestVatChange(params: VatChangeParams) {
 	});
 }
 
+// Document photos are personal data: delete the ones nobody references any
+// more. Best-effort, after the commit: a failed delete leaves an orphan file,
+// never a half-applied decision. Only pending requests are ever shown, so a
+// decided request's changeData pointing at a deleted key is never read.
+export async function deleteDocumentImage(
+	key: string,
+	sellerProfileId: string,
+	action: string,
+) {
+	const { s3 } = await import("@/lib/s3");
+	await s3.delete(key).catch((err) => {
+		logger.warn(
+			{ sellerProfileId, key, action, err: String(err) },
+			"Cleanup foto del documento fallito",
+		);
+	});
+}
+
 export async function cancelSellerChange(params: {
 	sellerProfileId: string;
 	changeId: string;
 }) {
-	return db.transaction(async (tx) => {
+	const updated = await db.transaction(async (tx) => {
 		// Compare-and-set come in approveChange/rejectChange: una decisione
 		// dell'admin arrivata prima non si sovrascrive.
 		const [updated] = await tx
@@ -364,6 +383,22 @@ export async function cancelSellerChange(params: {
 
 		return updated;
 	});
+
+	// La foto caricata con la richiesta non serve più (come in rejectChange).
+	const { documentImageKey } = updated.changeData as {
+		documentImageKey?: unknown;
+	};
+	if (
+		updated.changeType === "document" &&
+		typeof documentImageKey === "string"
+	) {
+		await deleteDocumentImage(
+			documentImageKey,
+			params.sellerProfileId,
+			"document_change_cancelled_cleanup_failed",
+		);
+	}
+	return updated;
 }
 
 interface DocumentChangeParams {

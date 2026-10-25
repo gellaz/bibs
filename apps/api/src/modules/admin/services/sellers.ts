@@ -19,9 +19,7 @@ import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
-import { logger } from "@/lib/logger";
 import { parsePagination } from "@/lib/pagination";
-import { s3 } from "@/lib/s3";
 import {
 	DocumentChangeBody,
 	type RejectSellerBody,
@@ -32,6 +30,7 @@ import {
 	notifySellerApproved,
 	notifySellerRejected,
 } from "@/modules/seller/services/onboarding-notifications";
+import { deleteDocumentImage } from "@/modules/seller/services/settings";
 
 /** Statuses visible to admins (past onboarding steps). */
 const REVIEWABLE_STATUSES: OnboardingStatus[] = [
@@ -719,21 +718,4 @@ export async function rejectChange(params: RejectChangeParams) {
 		);
 	}
 	return updated;
-}
-
-// Document photos are personal data: delete the ones nobody references any
-// more. Best-effort, after the commit: a failed delete leaves an orphan file,
-// never a half-applied decision. Only pending requests are ever shown, so a
-// decided request's changeData pointing at a deleted key is never read.
-async function deleteDocumentImage(
-	key: string,
-	sellerProfileId: string,
-	action: string,
-) {
-	await s3.delete(key).catch((err) => {
-		logger.warn(
-			{ sellerProfileId, key, action, err: String(err) },
-			"Cleanup foto del documento fallito",
-		);
-	});
 }
