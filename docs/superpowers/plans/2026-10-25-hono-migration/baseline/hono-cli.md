@@ -14,12 +14,13 @@ identical.
 Entry: [`../tools/hono-entry.ts`](../tools/hono-entry.ts). It takes the real app from
 [`../tools/load-app.ts`](../tools/load-app.ts) (no listen, no cron, `ensureBucket()` stubbed) and puts
 it behind `new Hono()`: every Elysia route is registered on Hono with a handler that forwards the
-untouched request to the same `app.fetch`, and `.mount("/", app.fetch)` stays as the fallback. The answers
+untouched request to the same `app.fetch`, and a `hono/mount` middleware on `/*` stays as the fallback
+(it was `.mount("/", app.fetch)` on Hono 4; `app.mount()` is gone in Hono 5). The answers
 are Elysia's; the table is only there so the CLI can see the routes.
 
-Run the CLI file with Bun, from `apps/api` (Bun loads `.env` and `.env.local` from the cwd). Until
-`hono` is a dependency of `apps/api`, link it first with `bun add -d hono@4.13.14 --no-save` and drop it
-afterwards with `rm node_modules/hono` (`git status` must stay clean):
+Run the CLI file with Bun, from `apps/api` (Bun loads `.env` and `.env.local` from the cwd). Since U1
+`hono` (5.0.0-rc.1) is a dependency of `apps/api`; before U1 it had to be linked first with
+`bun add -d hono@4.13.14 --no-save` and dropped afterwards with `rm node_modules/hono`:
 
 ```bash
 cd apps/api

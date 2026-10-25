@@ -3,6 +3,7 @@ import { openapi } from "@elysiajs/openapi";
 import { Elysia } from "elysia";
 import logixlysia from "logixlysia";
 import { db } from "@/db";
+import { honoPaths } from "@/http/openapi";
 import { OpenAPI } from "@/lib/auth";
 import { isOriginAllowed } from "@/lib/cors";
 import { env } from "@/lib/env";
@@ -12,7 +13,7 @@ import { adminModule } from "@/modules/admin";
 import { catalogModule } from "@/modules/catalog";
 import { customerModule } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
-import { meModule } from "@/modules/me";
+import { meApp } from "@/modules/me";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
 import { stripeWebhookRoutes } from "@/modules/webhooks";
@@ -150,7 +151,11 @@ const app = new Elysia()
 						},
 					},
 				},
-				paths: await OpenAPI.getPaths(),
+				// Strangler: i path delle sub-app Hono montate (il mount è nascosto).
+				paths: {
+					...(await OpenAPI.getPaths()),
+					...honoPaths(meApp, "/me", ["auth"]),
+				},
 			},
 		}),
 	)
@@ -162,7 +167,8 @@ const app = new Elysia()
 	.use(locationsModule)
 	.use(sellerModule)
 	.use(customerModule)
-	.use(meModule)
+	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
+	.mount("/me", meApp.fetch)
 	.use(cronJobs)
 	.use(health);
 

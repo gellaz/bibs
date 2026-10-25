@@ -162,7 +162,82 @@ Path aliases (identical in all three apps): `@/*` → `./src/*` (the tsconfig ad
 `../api/src/*` as a secondary target for type resolution — write runtime imports
 against `./src/*` only), `~/*` → `packages/ui/src/*`.
 
-## Frontend ↔ API integration (Eden Treaty)
+## Migrazione Elysia → Hono (in corso)
+
+Dal 2026-10-25 l'API passa da Elysia a Hono e i frontend da Eden a `hc`, un modulo
+per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline e
+verifica di ogni PR stanno nel piano
+[`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
+(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1).
+
+- **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
+  (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
+  `.mount("/me", meApp.fetch)`. Il mount toglie il prefisso e non legge il body;
+  una route Elysia vince sempre sul mount. Finché c'è Elysia restano suoi il
+  preflight e gli header CORS, `X-Request-Id`, la riga di log di logixlysia e la
+  sovrascrittura di `x-forwarded-for`; tutto il resto lo fa la sub-app (prove in
+  `apps/api/tests/http/mount.test.ts`).
+- **Hono 5** (`5.0.0-rc.1` nel catalog, stessa versione in API e frontend: `hc` la
+  richiede). `app.mount()` non esiste più: per montare un handler si usa
+  `mount` da `hono/mount`; `onError` riceve il contesto (`c.error`).
+- **Kit `apps/api/src/http/`.** `moduleApp()` (sub-app con `onError` e `notFound`
+  con l'inviluppo JSON e il Content-Type di Elysia, path instradato grezzo come
+  Elysia — `/me/%61vatar` è un 404 — e slash finale tollerato);
+  `v(target, schema)` (validatore con le regole di Elysia: body letto per
+  Content-Type, trim tranne le password, default della radice e pulizia di
+  exact-mirror emulati in `lib/zod/mirror.ts` per avere lo stesso primo errore,
+  coercizione di query e params, campi sconosciuti tolti, magic byte dei file,
+  422 italiano); `send(c, schema, data)` (risposta validata come la `response` di
+  Elysia: campi in più tolti, `Date` in ISO, t.Integer e t.Date codificati senza
+  decodifica, fuori schema → 500); `requireAuth` (sessione better-auth in
+  `c.var.user` / `c.var.session`; se un middleware a monte ha già messo l'utente
+  non rilegge la sessione); `toErrorResponse` (una sola mappatura errore →
+  risposta, usata anche dal plugin Elysia); `doc(...)` + generatore OpenAPI (i path
+  delle sub-app si uniscono al documento di Elysia: `/openapi/json` è uguale alla
+  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi).
+- **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
+  i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
+  modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
+  `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`) e il
+  mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
+  in `src/index.ts`. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
+  ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
+  guardia del modulo, o `publicRoute` in un modulo che dichiara `"publicRoute"`
+  (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
+  /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
+  un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
+  query → body.
+- **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
+  (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
+  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
+  `zFiles`, `zFormat`); per il resto Zod normale, con `title`/`error`/`description`
+  in `.meta()`. Regole per scrivere un gemello:
+  - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
+    form condivisi) → `z.int()`; `t.Date` → `zDate`; `t.Nullable(x)` →
+    `x.nullable()`; unione di letterali → `z.enum`; `t.Union` di oggetti →
+    `z.union`, mai `z.discriminatedUnion`;
+  - ogni gemello nuovo entra in `apps/api/tests/http/parity-cases.ts` con lo schema
+    TypeBox e l'atteso: il test confronta dal vivo con Elysia status, corpo del 422
+    e OpenAPI. I casi coprono anche l'ordine del primo errore, i t.Nullable di
+    oggetti e array, le unioni alla radice e i body multipart con file;
+  - differenze note che nessuna route di oggi tocca (coercizione annidata in
+    query, default annidati, chiavi multipart `a.b`/`a[0]`): nel piano, Trappole.
+- **Test delle sub-app.** `apps/api/tests/helpers/hono-app.ts`: `testRequest`,
+  `signIn(email, role)` (utente e sessione better-auth veri sul DB di test) e
+  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB). I log
+  degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
+  U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
+- **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
+  `src/types.ts` (`MeApp`); ogni app crea in `src/lib/api.ts` il client del
+  sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
+  `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
+  stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano
+  come stringhe ISO.
+
+## Frontend ↔ API integration (Eden Treaty, in transizione verso `hc`)
+
+> In transizione: i moduli già migrati a Hono (vedi la sezione sopra) usano `hc`;
+> tutto il resto passa ancora da Eden come descritto qui.
 
 Each app builds an isomorphic Eden client in `src/lib/api.ts` with
 `createIsomorphicFn` (works in SSR loaders and in the browser) and
@@ -194,7 +269,7 @@ Gotchas learned the hard way:
 
 ## Testing
 
-- **API** (`apps/api/tests/`): `unit/`, `lib/`, `modules/`, `plugins/` run with
+- **API** (`apps/api/tests/`): `unit/`, `lib/`, `modules/`, `plugins/`, `http/` run with
   `bun run test:unit`; `integration/` runs real Postgres/PostGIS via **testcontainers**
   (`bun run test:integration`, 180 s timeout). Stripe and email sending are mocked with
   `mock.module(...)`; the database is never mocked. Shared fixtures and the

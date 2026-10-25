@@ -1,6 +1,6 @@
 import type { ValueError } from "@sinclair/typebox/errors";
 import type { ValidationError } from "elysia";
-import { validationRule } from "./validation-rule";
+import { type ValidationRule, validationRule } from "./validation-rule";
 
 // Etichette italiane per i campi di input che arrivano dai form, sull'ultimo
 // segmento del path. I campi assenti restano col path tecnico: utile al debug
@@ -95,15 +95,21 @@ const FORMAT_RULES: Record<string, string> = {
 };
 
 const REQUIRED = "campo obbligatorio";
-const INVALID = "valore non valido";
+export const INVALID = "valore non valido";
 
 function items(n: number): string {
 	return n === 1 ? "1 elemento" : `${n} elementi`;
 }
 
-/** La regola violata, in italiano, senza il nome del campo. */
 function describeRule(error: ValueError): string {
-	const rule = validationRule(error);
+	return ruleText(validationRule(error));
+}
+
+/**
+ * La regola violata, in italiano, senza il nome del campo. La usa anche il
+ * validatore Hono (`src/http/validation-message.ts`) sulle issue di Zod.
+ */
+export function ruleText(rule: ValidationRule): string {
 	switch (rule.kind) {
 		case "required":
 			return REQUIRED;
@@ -151,7 +157,7 @@ function describeRule(error: ValueError): string {
 }
 
 /** «Quantità (riga 2)» per `/items/1/quantity`, path tecnico se non in dizionario. */
-function fieldLabel(path: string): string {
+export function fieldLabel(path: string): string {
 	const segments = path.split("/").slice(1);
 	const last = segments.at(-1) ?? "";
 	const label = FIELD_LABELS[last];

@@ -1,0 +1,18 @@
+{"method":"POST","path":"/me/avatar","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Richiesta non valida"}}}
+{"method":"POST","path":"/me/avatar","body":"name=x","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"File: campo obbligatorio"}}}
+{"method":"POST","path":"/me/avatar","body":{"file":"x"},"expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"File: tipo di file non ammesso"}}}
+{"method":"POST","path":"/me/avatar","body":{"other":1},"expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"File: campo obbligatorio"}}}
+{"method":"DELETE","path":"/me/avatar","expect":{"status":401,"body":{"success":false,"error":"UNAUTHORIZED","message":"Devi accedere per continuare"}}}
+{"method":"DELETE","path":"/me/avatar/","expect":{"status":401,"body":{"success":false,"error":"UNAUTHORIZED","message":"Devi accedere per continuare"}}}
+{"method":"POST","path":"/me/avatar/","body":{"file":"x"},"expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"File: tipo di file non ammesso"}}}
+{"path":"/me/avatar","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"path":"/me/nope","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"path":"/me","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"DELETE","path":"/me/%61vatar","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"OPTIONS","path":"/me/avatar","headers":{"origin":"http://localhost:3001","access-control-request-method":"POST"},"expect":{"status":204}}
+{"method":"POST","path":"/auth/api/sign-in/email","headers":{"origin":"http://localhost:3001"},"body":{"email":"customer1@test.com","password":"password123"},"expect":{"status":200,"body":{"user":{"email":"customer1@test.com"}}}}
+{"method":"POST","path":"/me/avatar","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Richiesta non valida"}}}
+{"method":"POST","path":"/me/avatar","body":{"file":"x"},"expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"File: tipo di file non ammesso"}}}
+{"method":"DELETE","path":"/me/avatar","expect":{"status":200,"body":{"success":true,"data":null,"message":"Avatar rimosso"}}}
+{"method":"DELETE","path":"/me/avatar/","expect":{"status":200,"body":{"success":true,"data":null,"message":"Avatar rimosso"}}}
+{"method":"DELETE","path":"/me/av%61tar","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}

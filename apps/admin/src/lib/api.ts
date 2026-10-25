@@ -1,6 +1,11 @@
-import type { App } from "@bibs/api";
-import { createApiClient } from "@bibs/ui/lib/api-client";
+import type { App, MeApp } from "@bibs/api";
+import { createApiClient, type WithErrors } from "@bibs/ui/lib/api-client";
+import { hc } from "hono/client";
 
-export const api = createApiClient<App>(
-	import.meta.env.VITE_API_URL || "http://localhost:3000",
-);
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+export const api = createApiClient<App>(API_URL);
+
+// Client `hc` per i moduli già su Hono: uno per sotto-albero.
+const init = { credentials: "include" } satisfies RequestInit;
+export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });

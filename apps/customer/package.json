@@ -37,6 +37,7 @@
 		"@tanstack/react-start": "catalog:",
 		"@tanstack/router-plugin": "catalog:",
 		"better-auth": "catalog:",
+		"hono": "catalog:",
 		"leaflet": "catalog:",
 		"leaflet.markercluster": "catalog:",
 		"lucide-react": "catalog:",
