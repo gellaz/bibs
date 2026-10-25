@@ -1,0 +1,110 @@
+{
+	"404": {
+		"status": 404,
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}"
+	},
+	"reg-empty": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: campo obbligatorio\"}"
+	},
+	"reg-bad-email": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: indirizzo email non valido\"}"
+	},
+	"reg-short-pw": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: almeno 8 caratteri\"}"
+	},
+	"reg-short-pw-en": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: almeno 8 caratteri\"}"
+	},
+	"reg-pw-number": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: deve essere un testo\"}"
+	},
+	"disc-empty-title": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Titolo: campo obbligatorio\"}"
+	},
+	"disc-percent-150": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: deve essere al massimo 99\"}"
+	},
+	"disc-percent-float": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: deve essere un numero intero\"}"
+	},
+	"disc-percent-str": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: deve essere un numero intero\"}"
+	},
+	"disc-percent-numstr-valid": {
+		"status": 401,
+		"body": "{\"success\":false,\"error\":\"UNAUTHORIZED\",\"message\":\"Devi accedere per continuare\"}"
+	},
+	"disc-bad-date": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"disc-bad-endsAt": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Fine: data non valida\"}"
+	},
+	"disc-missing-startsAt": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: campo obbligatorio\"}"
+	},
+	"disc-valid": {
+		"status": 401,
+		"body": "{\"success\":false,\"error\":\"UNAUTHORIZED\",\"message\":\"Devi accedere per continuare\"}"
+	},
+	"q-page-0": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}"
+	},
+	"q-page-abc": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Pagina: deve essere un numero intero\"}"
+	},
+	"q-limit-1000": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 100\"}"
+	},
+	"q-state-bad": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"state: valore non ammesso\"}"
+	},
+	"q-valid": {
+		"status": 401,
+		"body": "{\"success\":false,\"error\":\"UNAUTHORIZED\",\"message\":\"Devi accedere per continuare\"}"
+	},
+	"q-search-lat-bad": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Latitudine: valore non valido\"}"
+	},
+	"q-search-lat-200": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 90\"}"
+	},
+	"q-search-openNow-bad": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openNow: valore non valido\"}"
+	},
+	"q-search-radius-0": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere maggiore di 0\"}"
+	},
+	"reg-malformed-json": {
+		"status": 500,
+		"body": "{\"success\":false,\"error\":\"INTERNAL_ERROR\",\"message\":\"Errore interno del server\"}"
+	},
+	"reg-no-content-type": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"reg-text-plain": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: campo obbligatorio\"}"
+	}
+}
