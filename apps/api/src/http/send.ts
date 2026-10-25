@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
+import { asResponse } from "@/lib/zod/t";
 import { ResponseValidationError } from "./errors";
 
 /** Il Content-Type JSON di Elysia: i client vedono lo stesso header. */
@@ -16,7 +17,8 @@ export const json = <T, S extends ContentfulStatusCode>(
 /**
  * Risposta di successo validata dallo schema (D4 del piano Hono), come la
  * `response` di Elysia: i campi fuori schema spariscono a ogni profondità
- * (colonne interne), i `Date` escono come stringhe ISO, e un dato che non
+ * (colonne interne), i `Date` escono come stringhe ISO, t.Integer e t.Date
+ * codificano senza decodificare (`asResponse`), e un dato che non
  * rispetta lo schema è un bug nostro → 500 «Errore interno del server».
  * `hc` tipizza la risposta dallo schema.
  */
@@ -25,7 +27,7 @@ export function send<S extends z.ZodType>(
 	schema: S,
 	data: z.input<S>,
 ) {
-	const result = schema.safeParse(data);
+	const result = asResponse(() => schema.safeParse(data));
 	if (!result.success) {
 		const path = result.error.issues[0]?.path ?? [];
 		throw new ResponseValidationError(path.length ? `/${path.join("/")}` : "");

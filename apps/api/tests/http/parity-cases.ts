@@ -1,3 +1,4 @@
+import { Type } from "@sinclair/typebox";
 import { Elysia, type TSchema, t } from "elysia";
 import { z } from "zod";
 import "@/lib/schemas/forms/formats";
@@ -9,6 +10,9 @@ import {
 	DiscountCreateBody as TbDiscountCreateBody,
 	DiscountListQuery as TbDiscountListQuery,
 } from "@/lib/schemas";
+import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
+import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/lib/schemas/holidays";
+import { StockBulkAdjustBody as TbStockBulkAdjustBody } from "@/lib/schemas/stock";
 import { PaginationQuery } from "@/lib/zod/pagination";
 import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
@@ -211,6 +215,103 @@ const ProductSearchQuery = PaginationQuery.extend({
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
+// Gemello di `OpeningHoursSchema` (`lib/schemas/forms/opening-hours.ts`):
+// `Type.Integer` di TypeBox è `z.int()`, il `t.Integer` di Elysia è `zInteger`.
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const slotTime = (description: string) =>
+	z
+		.string()
+		.regex(HHMM)
+		.meta({ description, error: "Formato orario non valido (HH:mm)" });
+const OpeningHours = z
+	.array(
+		z.object({
+			dayOfWeek: z.int().min(0).max(6).meta({
+				description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
+			}),
+			slots: z
+				.array(
+					z.object({
+						open: slotTime("Orario di apertura (HH:mm)"),
+						close: slotTime("Orario di chiusura (HH:mm)"),
+					}),
+				)
+				.min(1)
+				.max(4)
+				.meta({ description: "Fasce orarie del giorno" }),
+		}),
+	)
+	.max(7)
+	.meta({ description: "Orari di apertura del negozio" });
+
+// Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
+// (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
+const bulkStoreId = z
+	.string()
+	.meta({ description: "ID negozio attivo del chiamante" });
+const bulkProductIds = z
+	.array(z.string())
+	.min(1)
+	.max(100)
+	.meta({ description: "ID dei prodotti su cui applicare l'operazione" });
+const StockBulkAdjustBody = z.union([
+	z.object({
+		storeId: bulkStoreId,
+		mode: z
+			.literal("delta")
+			.meta({ description: "Somma algebrica di `value` allo stock corrente" }),
+		value: zInteger({
+			minimum: -1000,
+			maximum: 1000,
+			description: "Variazione (segno + per aumentare, - per diminuire).",
+		}),
+		productIds: bulkProductIds,
+	}),
+	z.object({
+		storeId: bulkStoreId,
+		mode: z
+			.literal("set")
+			.meta({ description: "Imposta lo stock a `value` per ogni prodotto" }),
+		value: zInteger({
+			minimum: 0,
+			maximum: 100000,
+			description: "Valore assoluto da impostare.",
+		}),
+		productIds: bulkProductIds,
+	}),
+]);
+
+const holidayName = z
+	.string()
+	.min(1)
+	.max(100)
+	.meta({ description: "Nome festività" });
+const CreateHolidayDefinitionBody = z.union([
+	z.object({
+		type: z.literal("fixed"),
+		name: holidayName,
+		month: zInteger({ minimum: 1, maximum: 12, description: "Mese (1-12)" }),
+		day: zInteger({ minimum: 1, maximum: 31, description: "Giorno (1-31)" }),
+	}),
+	z.object({
+		type: z.literal("easter_relative"),
+		name: holidayName,
+		easterOffsetDays: zInteger({
+			minimum: -60,
+			maximum: 60,
+			description: "Offset dalla Pasqua (Pasqua=0, Pasquetta=1)",
+		}),
+	}),
+	z.object({
+		type: z.literal("one_off"),
+		name: holidayName,
+		oneOffDate: z
+			.string()
+			.regex(/^\d{4}-\d{2}-\d{2}$/)
+			.meta({ description: "Data YYYY-MM-DD" }),
+	}),
+]);
+
 const body = (
 	name: string,
 	tb: TSchema,
@@ -283,6 +384,40 @@ const file = [
 	t.Object({ file: t.File({ type: "image", maxSize: "1k" }) }),
 	z.object({ file: zFile({ type: "image", maxSize: "1k" }) }),
 ] as const;
+const enumAfterString = [
+	t.Object({
+		name: t.String(),
+		state: t.Union([t.Literal("a"), t.Literal("b")]),
+	}),
+	z.object({ name: z.string(), state: z.enum(["a", "b"]) }),
+] as const;
+const nullableAfterString = [
+	t.Object({ name: t.String(), note: t.Nullable(t.String()) }),
+	z.object({ name: z.string(), note: z.string().nullable() }),
+] as const;
+const plainOrder = [
+	t.Object({ a: t.String({ minLength: 3 }), b: t.String() }),
+	z.object({ a: z.string().min(3), b: z.string() }),
+] as const;
+const openingHours = [
+	t.Object({ openingHours: t.Optional(t.Nullable(TbOpeningHours)) }),
+	z.object({ openingHours: OpeningHours.nullable().optional() }),
+] as const;
+const formWithFile = [
+	t.Object({
+		name: t.String(),
+		meta: t.Object({ a: t.String() }),
+		tags: t.Array(t.String()),
+		file: t.File(),
+	}),
+	z.object({
+		name: z.string(),
+		meta: z.object({ a: z.string() }),
+		tags: z.array(z.string()),
+		file: zFile(),
+	}),
+] as const;
+const png = () => new File([PNG], "a.png", { type: "image/png" });
 
 export const cases: Case[] = [
 	// tests/lib/validation-message.test.ts, stesse stringhe
@@ -1095,5 +1230,305 @@ export const cases: Case[] = [
 		"?n=",
 		422,
 		fail("n: valore non valido"),
+	),
+
+	// Ordine del primo errore con la pulizia di Elysia (`lib/zod/mirror.ts`):
+	// le chiavi anyOf mancanti prima, poi i campi nell'ordine dello schema.
+	body(
+		"ordine: t.Integer e t.Date mancanti prima del titolo (DiscountCreateBody)",
+		TbDiscountCreateBody,
+		DiscountCreateBody,
+		{},
+		422,
+		fail("Percentuale: campo obbligatorio"),
+	),
+	body(
+		"ordine: JSON null su uno schema con default (DiscountCreateBody)",
+		TbDiscountCreateBody,
+		DiscountCreateBody,
+		null,
+		422,
+		fail("Percentuale: campo obbligatorio"),
+	),
+	body(
+		"ordine: JSON numero su uno schema con default (DiscountCreateBody)",
+		TbDiscountCreateBody,
+		DiscountCreateBody,
+		5,
+		422,
+		fail("Percentuale: campo obbligatorio"),
+	),
+	{
+		name: "ordine: senza Content-Type su uno schema con default",
+		target: "json",
+		tb: TbDiscountCreateBody,
+		zod: DiscountCreateBody,
+		req: { raw: "x" },
+		status: 422,
+		body: fail("Percentuale: campo obbligatorio"),
+	},
+	body(
+		"ordine: solo il titolo manca (DiscountCreateBody)",
+		TbDiscountCreateBody,
+		DiscountCreateBody,
+		{ percent: 5, startsAt: "2026-01-01" },
+		422,
+		fail("Titolo: campo obbligatorio"),
+	),
+	body(
+		"ordine: unione di letterali mancante prima di una stringa",
+		...enumAfterString,
+		{},
+		422,
+		fail("state: campo obbligatorio"),
+	),
+	body(
+		"ordine: t.Nullable mancante prima di una stringa",
+		...nullableAfterString,
+		{},
+		422,
+		fail("Note: campo obbligatorio"),
+	),
+	body(
+		"ordine: stringa obbligatoria mancante dopo un campo non valido",
+		...plainOrder,
+		{ a: "x" },
+		422,
+		fail("a: almeno 3 caratteri"),
+	),
+	body(
+		"ordine: oggetto Optional null diventa un oggetto vuoto",
+		t.Object({ o: t.Optional(t.Object({ p: t.String() })) }),
+		z.object({ o: z.object({ p: z.string() }).optional() }),
+		{ o: null },
+		422,
+		fail("o.p: campo obbligatorio"),
+	),
+	body(
+		"ordine: numero su uno schema con oggetto annidato obbligatorio",
+		t.Object({ a: t.String(), o: t.Object({ p: t.String() }) }),
+		z.object({ a: z.string(), o: z.object({ p: z.string() }) }),
+		5,
+		422,
+		fail("Richiesta non valida"),
+	),
+	body(
+		"ordine: JSON null con soli default di file",
+		t.Object({ name: t.String(), n: t.Integer(), file: t.File() }),
+		z.object({ name: z.string(), n: zInteger(), file: zFile() }),
+		null,
+		422,
+		fail("Richiesta non valida"),
+	),
+	body(
+		"ordine: JSON null con un default oltre al file",
+		t.Object({
+			name: t.String({ default: "a" }),
+			n: t.Integer(),
+			file: t.File(),
+		}),
+		z.object({ name: z.string().default("a"), n: zInteger(), file: zFile() }),
+		null,
+		422,
+		fail("n: campo obbligatorio"),
+	),
+	query(
+		"ordine: in query un numero mancante prima di una stringa",
+		t.Object({ s: t.String(), n: t.Number() }),
+		z.object({ s: z.string(), n: z.number() }),
+		"?",
+		422,
+		fail("n: campo obbligatorio"),
+	),
+
+	// t.Nullable di un array: l'errore sta sul campo, con la regola del primo
+	// errore dentro e senza il messaggio custom annidato.
+	body(
+		"nullable: orario annidato non valido (openingHours)",
+		...openingHours,
+		{
+			openingHours: [
+				{ dayOfWeek: 0, slots: [{ open: "25:00", close: "10:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: formato non valido"),
+	),
+	body(
+		"nullable: fasce mancanti (openingHours)",
+		...openingHours,
+		{ openingHours: [{ dayOfWeek: 0 }] },
+		422,
+		fail("openingHours: campo obbligatorio"),
+	),
+	body(
+		"nullable: giorno fuori intervallo (openingHours)",
+		...openingHours,
+		{
+			openingHours: [
+				{ dayOfWeek: 9, slots: [{ open: "09:00", close: "10:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: deve essere al massimo 6"),
+	),
+	body(
+		"nullable: Type.Integer come stringa (openingHours)",
+		...openingHours,
+		{
+			openingHours: [
+				{ dayOfWeek: "1", slots: [{ open: "09:00", close: "10:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: deve essere un numero intero"),
+	),
+	body(
+		"nullable: orari validi, campi in più tolti (openingHours)",
+		...openingHours,
+		{
+			openingHours: [
+				{
+					dayOfWeek: 1,
+					x: 1,
+					slots: [{ open: "09:00", close: "10:00", y: 2 }],
+				},
+			],
+		},
+		200,
+		{
+			ok: {
+				openingHours: [
+					{ dayOfWeek: 1, slots: [{ open: "09:00", close: "10:00" }] },
+				],
+			},
+		},
+	),
+	body(
+		"Type.Integer: una stringa è «deve essere un numero intero»",
+		t.Object({ n: Type.Integer({ minimum: 0 }) }),
+		z.object({ n: z.int().min(0) }),
+		{ n: "1" },
+		422,
+		fail("n: deve essere un numero intero"),
+	),
+
+	// Unioni alla radice: un ramo che passa il controllo e fallisce la
+	// decodifica dà l'errore di decodifica.
+	body(
+		"unione: t.Integer come stringa oltre il massimo (StockBulkAdjustBody)",
+		TbStockBulkAdjustBody,
+		StockBulkAdjustBody,
+		{ storeId: "s", mode: "delta", value: "5000", productIds: ["a"] },
+		422,
+		fail("Valore non valido: deve essere al massimo 1000"),
+	),
+	body(
+		"unione: nessun ramo valido (StockBulkAdjustBody)",
+		TbStockBulkAdjustBody,
+		StockBulkAdjustBody,
+		{ storeId: "s", mode: "set", value: -1, productIds: ["a"] },
+		422,
+		fail("Richiesta non valida"),
+	),
+	body(
+		"unione: oggetto vuoto (StockBulkAdjustBody)",
+		TbStockBulkAdjustBody,
+		StockBulkAdjustBody,
+		{},
+		422,
+		fail("Richiesta non valida"),
+	),
+	body(
+		"unione: intero come stringa valido (StockBulkAdjustBody)",
+		TbStockBulkAdjustBody,
+		StockBulkAdjustBody,
+		{ storeId: "s", mode: "set", value: "7", productIds: ["a"], extra: 1 },
+		200,
+		{ ok: { storeId: "s", mode: "set", value: 7, productIds: ["a"] } },
+	),
+	body(
+		"unione: mese come stringa oltre il massimo (CreateHolidayDefinitionBody)",
+		TbCreateHolidayDefinitionBody,
+		CreateHolidayDefinitionBody,
+		{ type: "fixed", name: "x", month: "13", day: 1 },
+		422,
+		fail("Valore non valido: deve essere al massimo 12"),
+	),
+
+	// Body con un file: oggetti e array di primo livello sono unioni per
+	// Elysia (ObjectString, ArrayString).
+	{
+		name: "multipart con file: oggetto JSON non valido",
+		target: "form",
+		tb: formWithFile[0],
+		zod: formWithFile[1],
+		req: { form: { name: "n", meta: "{abc", tags: '["a"]', file: png() } },
+		status: 422,
+		body: fail("meta: valore non valido"),
+	},
+	{
+		name: "multipart con file: oggetto JSON con un campo sbagliato",
+		target: "form",
+		tb: formWithFile[0],
+		zod: formWithFile[1],
+		req: { form: { name: "n", meta: '{"a":5}', tags: '["a"]', file: png() } },
+		status: 422,
+		body: fail("meta: valore non valido"),
+	},
+	{
+		name: "multipart con file: array come testo semplice",
+		target: "form",
+		tb: formWithFile[0],
+		zod: formWithFile[1],
+		req: { form: { name: "n", meta: '{"a":"x"}', tags: "a,b", file: png() } },
+		status: 422,
+		body: fail("tags: valore non valido"),
+	},
+	{
+		name: "multipart con file: oggetto e array mancanti prima del nome",
+		target: "form",
+		tb: formWithFile[0],
+		zod: formWithFile[1],
+		req: { form: { file: png() } },
+		status: 422,
+		body: fail("meta: campo obbligatorio"),
+	},
+	body(
+		"ordine: in un oggetto annidato t.Date mancante prima della stringa",
+		t.Object({ o: t.Object({ s: t.String({ minLength: 3 }), d: t.Date() }) }),
+		z.object({ o: z.object({ s: z.string().min(3), d: zDate() }) }),
+		{ o: { s: "x" } },
+		422,
+		fail("o.d: campo obbligatorio"),
+	),
+	body(
+		"ordine: array Optional di oggetti null (la pulizia lancia)",
+		t.Object({
+			a: t.String({ minLength: 3 }),
+			l: t.Optional(t.Array(t.Object({ x: t.String() }))),
+		}),
+		z.object({
+			a: z.string().min(3),
+			l: z.array(z.object({ x: z.string() })).optional(),
+		}),
+		{ a: "x", l: null },
+		422,
+		fail("a: almeno 3 caratteri"),
+	),
+	body(
+		"nullable: maxItems prima degli elementi",
+		t.Object({
+			l: t.Nullable(t.Array(t.Object({ a: t.String() }), { maxItems: 1 })),
+		}),
+		z.object({
+			l: z
+				.array(z.object({ a: z.string() }))
+				.max(1)
+				.nullable(),
+		}),
+		{ l: [{}, {}] },
+		422,
+		fail("l: al massimo 1 elemento"),
 	),
 ];

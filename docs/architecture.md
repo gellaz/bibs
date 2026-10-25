@@ -180,23 +180,47 @@ verifica di ogni PR stanno nel piano
 - **Hono 5** (`5.0.0-rc.1` nel catalog, stessa versione in API e frontend: `hc` la
   richiede). `app.mount()` non esiste più: per montare un handler si usa
   `mount` da `hono/mount`; `onError` riceve il contesto (`c.error`).
-- **Kit `apps/api/src/http/`.** `moduleApp()` (sub-app con `strict: false`,
-  `onError` e `notFound` con l'inviluppo JSON e il Content-Type di Elysia);
+- **Kit `apps/api/src/http/`.** `moduleApp()` (sub-app con `onError` e `notFound`
+  con l'inviluppo JSON e il Content-Type di Elysia, path instradato grezzo come
+  Elysia — `/me/%61vatar` è un 404 — e slash finale tollerato);
   `v(target, schema)` (validatore con le regole di Elysia: body letto per
-  Content-Type, trim tranne le password, coercizione di query e params, default,
-  campi sconosciuti tolti, magic byte dei file, 422 italiano identico al byte);
-  `send(c, schema, data)` (risposta validata: campi in più tolti, `Date` in ISO,
-  fuori schema → 500); `requireAuth` (sessione better-auth in `c.var.user` /
-  `c.var.session`, messo in ogni route **dopo** i `v(...)`: il 422 arriva prima del
-  401 come oggi); `toErrorResponse` (una sola mappatura errore → risposta, usata
-  anche dal plugin Elysia); `doc(...)` + generatore OpenAPI (i path delle sub-app si
-  uniscono al documento di Elysia: `/openapi` resta identico alla baseline).
+  Content-Type, trim tranne le password, default della radice e pulizia di
+  exact-mirror emulati in `lib/zod/mirror.ts` per avere lo stesso primo errore,
+  coercizione di query e params, campi sconosciuti tolti, magic byte dei file,
+  422 italiano); `send(c, schema, data)` (risposta validata come la `response` di
+  Elysia: campi in più tolti, `Date` in ISO, t.Integer e t.Date codificati senza
+  decodifica, fuori schema → 500); `requireAuth` (sessione better-auth in
+  `c.var.user` / `c.var.session`; se un middleware a monte ha già messo l'utente
+  non rilegge la sessione); `toErrorResponse` (una sola mappatura errore →
+  risposta, usata anche dal plugin Elysia); `doc(...)` + generatore OpenAPI (i path
+  delle sub-app si uniscono al documento di Elysia: `/openapi/json` è uguale alla
+  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi).
+- **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
+  i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
+  modulo. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a ogni avvio)
+  ferma l'API se una route non ha un middleware di auth marcato con `guard()`
+  (`requireAuth` e quelli di ruolo) né `publicRoute`, se un `v()` sta dopo l'auth
+  o se i `v()` non sono nell'ordine di Elysia: params → query → body.
 - **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
   (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
   Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
   `zFiles`, `zFormat`); per il resto Zod normale, con `title`/`error`/`description`
-  in `.meta()`. La parità con Elysia (stesso status e corpo, OpenAPI uguale) è
-  provata su ~90 casi in `apps/api/tests/http/`.
+  in `.meta()`. Regole per scrivere un gemello:
+  - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
+    form condivisi) → `z.int()`; `t.Date` → `zDate`; `t.Nullable(x)` →
+    `x.nullable()`; unione di letterali → `z.enum`; `t.Union` di oggetti →
+    `z.union`, mai `z.discriminatedUnion`;
+  - ogni gemello nuovo entra in `apps/api/tests/http/parity-cases.ts` con lo schema
+    TypeBox e l'atteso: il test confronta dal vivo con Elysia status, corpo del 422
+    e OpenAPI. I casi coprono anche l'ordine del primo errore, i t.Nullable di
+    oggetti e array, le unioni alla radice e i body multipart con file;
+  - differenze note che nessuna route di oggi tocca (coercizione annidata in
+    query, default annidati, chiavi multipart `a.b`/`a[0]`): nel piano, Trappole.
+- **Test delle sub-app.** `apps/api/tests/helpers/hono-app.ts`: `testRequest`,
+  `signIn(email, role)` (utente e sessione better-auth veri sul DB di test) e
+  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB). I log
+  degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
+  U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
   `src/types.ts` (`MeApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama

@@ -16,6 +16,7 @@ import { betterAuth } from "@/plugins/better-auth";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 import { requestId } from "@/plugins/request-id";
+import { noopPino } from "./parity-cases";
 
 // La rete dello strangler (D8 del piano Hono, `notes/probe-mount.md`): cosa
 // Elysia continua a dare alle sub-app Hono montate con `.mount(prefisso,
@@ -287,6 +288,45 @@ describe("mount — errori: li formatta la sub-app, non Elysia", () => {
 		expect(res.status).toBe(422);
 		expect(await res.json()).toEqual(
 			errorBody("VALIDATION_ERROR", "File: tipo di file non ammesso"),
+		);
+	});
+});
+
+describe("path grezzo come Elysia (`moduleApp`)", () => {
+	const elysia = new Elysia()
+		.use(errorHandler)
+		.state("pino", noopPino)
+		.get("/p/:id", ({ params }) => ({ id: params.id }))
+		.delete("/avatar", () => ({ ok: true }));
+	const hono = moduleApp()
+		.get("/p/:id", (c) => c.json({ id: c.req.param("id") }))
+		.delete("/avatar", (c) => c.json({ ok: true }));
+	for (const [method, path] of [
+		["DELETE", "/%61vatar"],
+		["DELETE", "/av%61tar"],
+		["DELETE", "/avatar/"],
+		["GET", "/p/caf%C3%A9"],
+		["GET", "/p/a%2Fb"],
+		["GET", "/p/a%20b?x=1"],
+		["GET", "/%70/x"],
+	])
+		it(`${method} ${path}`, async () => {
+			const init = { method };
+			const e = await elysia.handle(
+				new Request(`http://localhost${path}`, init),
+			);
+			const h = await hono.request(`http://localhost${path}`, init);
+			expect({ status: h.status, body: await h.json() }).toEqual({
+				status: e.status,
+				body: await e.json(),
+			});
+		});
+
+	it("/me/%61vatar montato: 404 come prima", async () => {
+		const res = await req("/me/%61vatar", { method: "DELETE" });
+		expect(res.status).toBe(404);
+		expect(await res.json()).toEqual(
+			errorBody("NOT_FOUND", "Risorsa non trovata"),
 		);
 	});
 });

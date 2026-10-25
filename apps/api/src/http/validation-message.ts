@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { fieldLabel, INVALID, ruleText } from "@/lib/validation-message";
 import { type Issue, issueRule, ruleParams } from "@/lib/zod/issues";
+import { nodeAt } from "@/lib/zod/mirror";
 
 // Il messaggio italiano del 422 per un'issue di Zod, con le stesse regole di
 // `lib/validation-message.ts` sugli errori TypeBox (D6 del piano Hono):
@@ -21,39 +22,9 @@ function sameNode(schema: z.ZodType): z.ZodType[] {
 	}
 }
 
-// Per scendere in un campo si attraversano anche nullable e pipe.
-function container(schema: z.ZodType): z.ZodType {
-	const def = defOf(schema);
-	switch (def.type) {
-		case "optional":
-		case "default":
-		case "nullable":
-			return container(def.innerType);
-		case "pipe":
-			return container(def.in);
-		default:
-			return schema;
-	}
-}
-
-function child(schema: z.ZodType, key: PropertyKey): z.ZodType | undefined {
-	const def = defOf(container(schema));
-	switch (def.type) {
-		case "object":
-			return def.shape[key as string];
-		case "array":
-			return def.element;
-		case "record":
-			return def.valueType;
-		default:
-			return undefined;
-	}
-}
-
 /** `title` ed `error` dello schema che ha prodotto l'issue. */
 export function issueMeta(root: z.ZodType, path: PropertyKey[]) {
-	let node: z.ZodType | undefined = root;
-	for (const key of path) node = node && child(node, key);
+	const node = nodeAt(root, path);
 	const meta: { title?: unknown; error?: unknown } = {};
 	for (const s of node ? sameNode(node) : []) {
 		const m = z.globalRegistry.get(s);
@@ -66,7 +37,7 @@ export function issueMeta(root: z.ZodType, path: PropertyKey[]) {
 export function zodValidationMessage(issue: Issue, root: z.ZodType): string {
 	const meta = issueMeta(root, issue.path);
 	if (typeof meta.error === "string") return meta.error;
-	const rule = ruleText(issueRule(issue));
+	const rule = ruleText(issueRule(issue, nodeAt(root, issue.path)));
 	// Errore della decodifica di Elysia (coercizione, t.Integer, t.Date): il
 	// nome del campo è perso, resta la regola.
 	if (ruleParams(issue)?.decode)

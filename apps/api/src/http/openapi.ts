@@ -1,6 +1,7 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { z } from "zod";
 import { elysiaJson } from "@/lib/zod/t";
+import { assertRoutes } from "./routes";
 import { VALIDATES, type Validates } from "./validator";
 
 // OpenAPI delle route Hono (D11 del piano Hono): ogni route porta `doc(…)` e i
@@ -294,6 +295,11 @@ export function generatePaths(ops: Operation[]) {
 	return paths;
 }
 
-/** Path OpenAPI di una sub-app montata su `prefix`. */
-export const honoPaths = (app: Hono<any, any, any>, prefix: string) =>
-	generatePaths(operations(app, prefix));
+/**
+ * Path OpenAPI di una sub-app montata su `prefix`. Controlla anche le sue
+ * route (`assertRoutes`): una route senza auth né `publicRoute` ferma l'avvio.
+ */
+export function honoPaths(app: Hono<any, any, any>, prefix: string) {
+	assertRoutes(app);
+	return generatePaths(operations(app, prefix));
+}

@@ -15,7 +15,10 @@ import { firstIssue, type Issue, issueRule, type RuleParams } from "./issues";
 // accettano e rifiutano gli stessi valori, danno la stessa regola nel 422 e lo
 // stesso JSON Schema in /openapi. Per tutto il resto i gemelli usano Zod
 // normale (`z.string().min(1)`, `z.object`, `z.enum`, `.nullable()`, …) e i
-// metadati con `.meta({ title, description, error })`.
+// metadati con `.meta({ title, description, error })`. Corrispondenze da
+// tenere: `t.Integer` di Elysia → `zInteger` (accetta "5"), `Type.Integer` di
+// TypeBox → `z.int()` (non accetta stringhe); `t.Union` di oggetti →
+// `z.union`, mai `z.discriminatedUnion` (dà errori che TypeBox non dà).
 
 type Json = Record<string, unknown>;
 
@@ -59,6 +62,21 @@ function fail(ctx: Ctx, input: unknown, rule: ValidationRule, decode = false) {
 }
 
 const ruleOf = (issues: Issue[]) => issueRule(firstIssue(issues));
+
+// Le risposte (`send()`) Elysia le controlla e poi le codifica, senza
+// decodificarle: «5» per un t.Integer esce com'è, un numero per un t.Date è
+// un 500 (l'Encode di t.Date vuole una data o una stringa).
+let encoding = false;
+
+/** Esegue `fn` (un parse sincrono) con la semantica di risposta di Elysia. */
+export function asResponse<T>(fn: () => T): T {
+	encoding = true;
+	try {
+		return fn();
+	} finally {
+		encoding = false;
+	}
+}
 
 // Con `default` nelle opzioni (come in TypeBox) il campo diventa facoltativo in
 // ingresso; senza, il tipo resta quello del costruttore.
@@ -124,6 +142,7 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 		.custom<number | string>(() => true)
 		.transform((value, ctx) => {
 			if (typeof value === "string" && isIntegerString(value)) {
+				if (encoding) return value as unknown as number;
 				const n = +value;
 				const rule = parseRule(inner, n);
 				return rule ? fail(ctx, n, rule, true) : n;
@@ -203,7 +222,7 @@ export function zDate<O extends Meta & { default?: string | Date }>(
 		.transform((value, ctx) => {
 			if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
 			let date: Date | undefined;
-			if (typeof value === "number" && Number.isFinite(value))
+			if (typeof value === "number" && Number.isFinite(value) && !encoding)
 				date = new Date(value);
 			else if (
 				typeof value === "string" &&
