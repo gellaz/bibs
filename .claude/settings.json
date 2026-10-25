@@ -29,9 +29,7 @@
 			"Bash(git branch:*)",
 			"Bash(git fetch:*)",
 			"Bash(git stash:*)",
-			"WebFetch(domain:hono.dev)",
-			"Bash(curl -H 'Accept: text/markdown' https://hono.dev/*)",
-			"Bash(curl -H \"Accept: text/markdown\" https://hono.dev/*)"
+			"WebFetch(domain:hono.dev)"
 		],
 		"deny": [
 			"Read(**/.env)",

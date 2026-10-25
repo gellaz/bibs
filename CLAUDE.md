@@ -14,7 +14,7 @@ Claude Code-specific tooling for this repository.
    - `context7` — live library docs for TanStack, Elysia, Drizzle, Tailwind (and a fallback for better-auth)
    - `shadcn` — browse/search/install components from the registries declared in [packages/ui/components.json](packages/ui/components.json) (shadcn/ui, `@kibo-ui`, `@shadcnblocks` — needs `SHADCNBLOCKS_API_KEY` in `packages/ui/.env.local`; see [packages/ui/README.md](packages/ui/README.md#registries))
    - `better-auth` — remote MCP server at `https://mcp.better-auth.com/mcp`. Preferred over context7 for Better Auth work
-   - Hono has no docs MCP: every page is served as Markdown (`curl -H 'Accept: text/markdown' https://hono.dev/docs/api/routing`, index at `https://hono.dev/llms.txt`), pre-approved in `.claude/settings.json`
+   - Hono has no docs MCP: every page is served as Markdown (`curl -H 'Accept: text/markdown' https://hono.dev/docs/api/routing`, index at `https://hono.dev/llms.txt`). Only `WebFetch` on `hono.dev` is pre-approved: a `Bash(curl …)` allow rule would also let any extra curl flag through (upload, write to disk)
    Claude Code prompts on first run to approve them.
 3. **Hooks, permissions & plugins**: `.claude/settings.json` is checked in and applied automatically:
    - Biome auto-fix hook on every `Edit`/`Write`
