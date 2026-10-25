@@ -48,6 +48,7 @@ describe("renderSellerChangeOutcomeEmail", () => {
 		const text = normalize(html);
 		expect(text).toContain("della partita IVA");
 		expect(text).not.toContain("Motivo");
+		expect(text).toContain("tornano a ricevere ordini");
 	});
 
 	it("rejected: shows the reason", async () => {
@@ -64,6 +65,7 @@ describe("renderSellerChangeOutcomeEmail", () => {
 		expect(text).toContain("del documento d&#x27;identità");
 		expect(text).toContain("Motivo: <strong");
 		expect(text).toContain("Numero non valido");
+		expect(text).not.toContain("tornano a ricevere ordini");
 	});
 
 	it("neutral greeting without a first name", async () => {

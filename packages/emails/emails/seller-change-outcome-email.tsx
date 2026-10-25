@@ -29,6 +29,9 @@ export default function SellerChangeOutcomeEmail({
 						? `abbiamo approvato la modifica ${WHAT[changeType]}.`
 						: `purtroppo non possiamo approvare la modifica ${WHAT[changeType]}.`}
 				</Text>
+				{changeType === "vat" && (
+					<Text>I tuoi negozi tornano a ricevere ordini.</Text>
+				)}
 				{!approved && reason && (
 					<Text>
 						Motivo: <strong style={{ whiteSpace: "pre-line" }}>{reason}</strong>
