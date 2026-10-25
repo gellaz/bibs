@@ -406,6 +406,10 @@ const quantity199 = [
 	t.Object({ quantity: t.Integer({ minimum: 1, maximum: 99 }) }),
 	z.object({ quantity: zInteger({ minimum: 1, maximum: 99 }) }),
 ] as const;
+const quantity1e20 = [
+	t.Object({ quantity: t.Integer() }),
+	z.object({ quantity: zInteger() }),
+] as const;
 const storeIds = [
 	t.Object({
 		storeIds: t.Array(t.String(), {
@@ -950,6 +954,29 @@ export const cases: Case[] = [
 		"?page=0",
 		422,
 		fail("Valore non valido: deve essere almeno 1"),
+	),
+	query(
+		"municipalities: page oltre i safe-int (t.Integer non li limita)",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?page=9007199254740993",
+		200,
+		{ ok: { page: 9007199254740992, limit: 20 } },
+	),
+	query(
+		"municipalities: limit oltre i safe-int → massimo 100",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?limit=9007199254740993",
+		422,
+		fail("Valore non valido: deve essere al massimo 100"),
+	),
+	body(
+		"t.Integer: numero oltre i safe-int nel JSON",
+		...quantity1e20,
+		{ quantity: 1e20 },
+		200,
+		{ ok: { quantity: 1e20 } },
 	),
 	body(
 		"disc-empty-title (trim)",

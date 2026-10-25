@@ -12,6 +12,8 @@
 {"method":"GET","path":"/locations/municipalities?limit=abc","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Elementi per pagina: deve essere un numero intero"}}}
 {"method":"GET","path":"/locations/municipalities?page=1.5","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Pagina: deve essere un numero intero"}}}
 {"method":"GET","path":"/locations/municipalities?page=","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Pagina: deve essere un numero intero"}}}
+{"method":"GET","path":"/locations/municipalities?page=9007199254740993&limit=1","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":9007199254740992,"limit":1,"total":7904}}}}
+{"method":"GET","path":"/locations/municipalities?limit=9007199254740993","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere al massimo 100"}}}
 {"method":"GET","path":"/locations/municipalities/all","expect":{"status":200,"body":{"success":true}}}
 {"method":"GET","path":"/locations/geocode?q=via%20roma%2012","expect":{"status":401,"body":{"success":false,"error":"UNAUTHORIZED","message":"Devi accedere per continuare"}}}
 {"method":"GET","path":"/locations/geocode","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"q: campo obbligatorio"}}}
