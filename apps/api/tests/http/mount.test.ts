@@ -322,6 +322,23 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 			});
 		});
 
+	it("radice di una sub-app montata: /x e /x/ sì, /x// no, come Elysia", async () => {
+		const root = new Elysia()
+			.use(errorHandler)
+			.state("pino", noopPino)
+			.get("/elysia", () => ({ ok: true }))
+			.mount("/hono", moduleApp().get("/", (c) => c.json({ ok: true })).fetch);
+		for (const suffix of ["", "/", "//"]) {
+			const e = await root.handle(
+				new Request(`http://localhost/elysia${suffix}`),
+			);
+			const h = await root.handle(
+				new Request(`http://localhost/hono${suffix}`),
+			);
+			expect([suffix, h.status]).toEqual([suffix, e.status]);
+		}
+	});
+
 	it("/me/%61vatar montato: 404 come prima", async () => {
 		const res = await req("/me/%61vatar", { method: "DELETE" });
 		expect(res.status).toBe(404);

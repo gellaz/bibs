@@ -1687,6 +1687,21 @@ export const cases: Case[] = [
 		},
 	),
 	query(
+		"U8 categorie: page oltre i safe-int (t.Integer non li limita)",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		"?page=9007199254740992",
+		200,
+		{
+			ok: {
+				page: 9007199254740992,
+				limit: 20,
+				sortBy: "name",
+				sortOrder: "asc",
+			},
+		},
+	),
+	query(
 		"U8 categorie: ordinamento non ammesso",
 		TbCategoryListQuery,
 		CategoryListQuery,
@@ -1846,6 +1861,22 @@ export const cases: Case[] = [
 		{ confirmAffected: 1.5 },
 		422,
 		fail("confirmAffected: deve essere un numero intero"),
+	),
+	body(
+		"U8 elimina caratteristica: confirmAffected oltre i safe-int",
+		TbDeleteProductCharacteristicBody,
+		DeleteProductCharacteristicBody,
+		{ confirmAffected: 1e20 },
+		200,
+		{ ok: { confirmAffected: 1e20 } },
+	),
+	body(
+		"U8 caratteristica: confirmAffected come stringa oltre i safe-int",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{ confirmAffected: "9007199254740993" },
+		200,
+		{ ok: { confirmAffected: 9007199254740992 } },
 	),
 	body(
 		"U8 togli caratteristica: confirmAffected negativo",

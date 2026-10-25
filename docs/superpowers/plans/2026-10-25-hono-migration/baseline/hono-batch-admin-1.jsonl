@@ -143,3 +143,29 @@
 {"method":"POST","path":"/admin/holiday-definitions","body":{"type":"fixed","name":"Collaudo Hono U8 fissa","month":"12","day":31},"save":{"hid2":"data.id"},"expect":{"status":200,"body":{"success":true,"data":{"name":"Collaudo Hono U8 fissa","type":"fixed","month":12,"day":31,"easterOffsetDays":null,"oneOffDate":null,"isActive":true}}}}
 {"method":"DELETE","path":"/admin/holiday-definitions/{{hid2}}","expect":{"status":200,"body":{"success":true,"data":null,"message":"Festività eliminata"}}}
 {"path":"/admin/configurations/counts","expect":{"status":200,"body":{"success":true,"data":{"productCategories":190,"productMacroCategories":14,"storeCategories":109,"storeMacroCategories":16,"productCharacteristics":224}}}}
+{"method":"POST","path":"/auth/api/sign-out","headers":{"origin":"http://localhost:3003"},"body":{},"expect":{"status":200,"body":{"success":true}}}
+{"path":"/product-macro-categories?page=9007199254740992&limit=1","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":9007199254740992,"limit":1,"total":14}}}}
+{"path":"/product-categories?page=9007199254740992&limit=1","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":9007199254740992,"limit":1,"total":190}}}}
+{"path":"/store-macro-categories?page=1e16&limit=1","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":10000000000000000,"limit":1,"total":16}}}}
+{"path":"/store-categories?page=1e16&limit=1","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":10000000000000000,"limit":1,"total":109}}}}
+{"path":"/product-macro-categories?page=1e20","expect":{"status":500,"body":{"success":false,"error":"INTERNAL_ERROR","message":"Errore interno del server"}}}
+{"path":"/product-categories?page=99999999999999999999","expect":{"status":500,"body":{"success":false,"error":"INTERNAL_ERROR","message":"Errore interno del server"}}}
+{"path":"/product-macro-categories//","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"path":"/product-categories//","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"path":"/store-macro-categories//","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"path":"/store-categories//","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"path":"/admin/configurations/counts//","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"path":"/admin/product-categories?page=1e16","expect":{"status":401,"body":{"success":false,"error":"UNAUTHORIZED","message":"Devi accedere per continuare"}}}
+{"path":"/admin/product-characteristics?page=1e16","expect":{"status":401,"body":{"success":false,"error":"UNAUTHORIZED","message":"Devi accedere per continuare"}}}
+{"method":"DELETE","path":"/admin/product-characteristics/x","body":{"confirmAffected":1E+20},"expect":{"status":401,"body":{"success":false,"error":"UNAUTHORIZED","message":"Devi accedere per continuare"}}}
+{"method":"POST","path":"/auth/api/sign-in/email","headers":{"origin":"http://localhost:3003"},"body":{"email":"customer1@test.com","password":"password123"},"expect":{"status":200,"body":{"user":{"email":"customer1@test.com"}}}}
+{"path":"/admin/product-categories?page=1e16","expect":{"status":403,"body":{"success":false,"error":"FORBIDDEN","message":"Accesso riservato agli amministratori"}}}
+{"method":"DELETE","path":"/admin/product-characteristics/x","body":{"confirmAffected":"9007199254740993"},"expect":{"status":403,"body":{"success":false,"error":"FORBIDDEN","message":"Accesso riservato agli amministratori"}}}
+{"method":"PATCH","path":"/admin/product-characteristics/x","body":{"confirmAffected":1E+16},"expect":{"status":403,"body":{"success":false,"error":"FORBIDDEN","message":"Accesso riservato agli amministratori"}}}
+{"method":"POST","path":"/auth/api/sign-in/email","headers":{"origin":"http://localhost:3003"},"body":{"email":"admin1@test.com","password":"password123"},"expect":{"status":200,"body":{"user":{"email":"admin1@test.com"}}}}
+{"path":"/admin/product-categories?page=1e16&limit=1","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":10000000000000000,"limit":1,"total":190}}}}
+{"path":"/admin/product-characteristics?page=1e16&limit=1","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":10000000000000000,"limit":1,"total":224}}}}
+{"method":"POST","path":"/admin/product-characteristics","body":{"name":"Collaudo Hono U8 safe-int","dataType":"number","unit":"kg"},"save":{"chid3":"data.id"},"expect":{"status":200,"body":{"success":true,"data":{"name":"Collaudo Hono U8 safe-int","dataType":"number","unit":"kg"}}}}
+{"method":"PATCH","path":"/admin/product-characteristics/{{chid3}}","body":{"unit":"g","confirmAffected":1E+16},"expect":{"status":200,"body":{"success":true,"data":{"name":"Collaudo Hono U8 safe-int","dataType":"number","unit":"g"}}}}
+{"method":"DELETE","path":"/admin/product-characteristics/{{chid3}}","body":{"confirmAffected":1E+20},"expect":{"status":200,"body":{"success":true,"data":null,"message":"Caratteristica eliminata"}}}
+{"method":"DELETE","path":"/admin/product-characteristics/{{chid3}}","body":{"confirmAffected":0},"expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Caratteristica non trovata"}}}
