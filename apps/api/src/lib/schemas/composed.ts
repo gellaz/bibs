@@ -351,11 +351,13 @@ export const AdminRequestRowSchema = t.Object({
 });
 
 const DocumentSnapshotSchema = t.Object({
-	documentType: t.Union([
-		t.Literal("identity_card"),
-		t.Literal("driving_license"),
-		t.Literal("passport"),
-	]),
+	documentType: t.Nullable(
+		t.Union([
+			t.Literal("identity_card"),
+			t.Literal("driving_license"),
+			t.Literal("passport"),
+		]),
+	),
 	documentNumber: t.Nullable(t.String()),
 	documentExpiry: t.Nullable(t.String()),
 	issuedMunicipality: t.Nullable(

@@ -225,6 +225,13 @@ describe("admin requests", () => {
 		expect(d.document?.requested.imageUrl).toBe("https://cdn.test/old.jpg");
 	});
 
+	it("document detail shows a null current type as null", async () => {
+		const { doc } = await seedAll();
+		const d = await getChangeDetail(doc.id);
+		expect(d.document?.current.documentType).toBeNull();
+		expect(d.document?.requested.documentType).toBe("passport");
+	});
+
 	it("detail of a cancelled change reports its status", async () => {
 		const { vat } = await seedAll();
 		await getTestDb()

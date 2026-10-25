@@ -159,7 +159,7 @@ export async function getChangeDetail(changeId: string) {
 		vat: null,
 		document: {
 			current: {
-				documentType: sp.documentType ?? req.documentType,
+				documentType: sp.documentType,
 				documentNumber: sp.documentNumber,
 				documentExpiry: sp.documentExpiry,
 				issuedMunicipality: toMunicipality(sp.documentIssuedMunicipality),
