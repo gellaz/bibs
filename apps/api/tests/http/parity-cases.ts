@@ -15,7 +15,7 @@ import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/
 import { StockBulkAdjustBody as TbStockBulkAdjustBody } from "@/lib/schemas/stock";
 import { PaginationQuery } from "@/lib/zod/pagination";
 import { ProductSearchQuery } from "@/lib/zod/queries";
-import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
+import { zDate, zFile, zFiles, zFormat, zInteger, zString } from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 
@@ -130,17 +130,19 @@ const TbRegister = t.Object({
 });
 const Register = z.object({
 	email: zFormat("email").meta({ description: "Indirizzo email" }),
-	password: z.string().min(8).max(128).meta({
+	password: zString({
+		minLength: 8,
+		maxLength: 128,
 		description: "Password (minimo 8, massimo 128 caratteri)",
 	}),
 });
 
 const DiscountCreateBody = z.object({
-	title: z
-		.string()
-		.min(1)
-		.max(80)
-		.meta({ description: "Titolo della promozione" }),
+	title: zString({
+		minLength: 1,
+		maxLength: 80,
+		description: "Titolo della promozione",
+	}),
 	percent: zInteger({ minimum: 1, maximum: 99 }),
 	startsAt: zDate(),
 	endsAt: zDate().nullable().optional(),
@@ -159,7 +161,7 @@ const DiscountListQuery = PaginationQuery.extend({
 				"Filtro lista: 'assignable' = in corso/programmate/in pausa; 'concluded' = scadute/archiviate",
 		})
 		.optional(),
-	search: z.string().max(80).optional(),
+	search: zString({ maxLength: 80 }).optional(),
 });
 
 // Gemello di `ProductSearchQuery`: `lib/zod/queries.ts` (U3).
@@ -232,11 +234,11 @@ const StockBulkAdjustBody = z.union([
 	}),
 ]);
 
-const holidayName = z
-	.string()
-	.min(1)
-	.max(100)
-	.meta({ description: "Nome festività" });
+const holidayName = zString({
+	minLength: 1,
+	maxLength: 100,
+	description: "Nome festività",
+});
 const CreateHolidayDefinitionBody = z.union([
 	z.object({
 		type: z.literal("fixed"),
@@ -366,6 +368,34 @@ const formWithFile = [
 		meta: z.object({ a: z.string() }),
 		tags: z.array(z.string()),
 		file: zFile(),
+	}),
+] as const;
+const name200 = [
+	t.Object({ name: t.String({ maxLength: 200 }) }),
+	z.object({ name: zString({ maxLength: 200 }) }),
+] as const;
+const country2 = [
+	t.Object({
+		country: t.String({ minLength: 2, maxLength: 2, title: "Codice" }),
+	}),
+	z.object({
+		country: zString({ minLength: 2, maxLength: 2, title: "Codice" }),
+	}),
+] as const;
+const phone = [
+	t.Object({
+		phone: t.String({
+			maxLength: 5,
+			pattern: "^(.{2,})?$",
+			description: "Telefono",
+		}),
+	}),
+	z.object({
+		phone: zString({
+			maxLength: 5,
+			pattern: "^(.{2,})?$",
+			description: "Telefono",
+		}),
 	}),
 ] as const;
 const png = () => new File([PNG], "a.png", { type: "image/png" });
@@ -1525,5 +1555,103 @@ export const cases: Case[] = [
 		{ l: [{}, {}] },
 		422,
 		fail("l: al massimo 1 elemento"),
+	),
+
+	// t.String conta le unità UTF-16, `z.string().min/max` i code point:
+	// `zString` (giro di correzione di U3).
+	body(
+		"zString: maxLength in unità UTF-16 (101 emoji = 202)",
+		...name200,
+		{ name: "😀".repeat(101) },
+		422,
+		fail("Nome: al massimo 200 caratteri"),
+	),
+	body(
+		"zString: 100 emoji = 200 unità, al limite",
+		...name200,
+		{ name: "😀".repeat(100) },
+		200,
+		{ ok: { name: "😀".repeat(100) } },
+	),
+	body(
+		"zString: un emoji rispetta minLength 2 e maxLength 2",
+		...country2,
+		{ country: "😀" },
+		200,
+		{ ok: { country: "😀" } },
+	),
+	body(
+		"zString: minLength con title",
+		...country2,
+		{ country: "a" },
+		422,
+		fail("Codice: almeno 2 caratteri"),
+	),
+	body(
+		"zString: maxLength prima di pattern",
+		...phone,
+		{ phone: "😀😀😀" },
+		422,
+		fail("Telefono: al massimo 5 caratteri"),
+	),
+	body(
+		"zString: pattern",
+		...phone,
+		{ phone: "a" },
+		422,
+		fail("Telefono: formato non valido"),
+	),
+	body(
+		"zString: nullable, regola del ramo non nullo",
+		t.Object({ note: t.Nullable(t.String({ maxLength: 3 })) }),
+		z.object({ note: zString({ maxLength: 3 }).nullable() }),
+		{ note: "😀😀" },
+		422,
+		fail("Note: al massimo 3 caratteri"),
+	),
+	query(
+		"zString in query: maxLength in unità UTF-16",
+		t.Object({ storeIds: t.String({ maxLength: 4 }) }),
+		z.object({ storeIds: zString({ maxLength: 4 }) }),
+		`?storeIds=${encodeURIComponent("😀😀😀")}`,
+		422,
+		fail("Negozi: al massimo 4 caratteri"),
+	),
+
+	// Numeri non finiti (`1e400` nel JSON è Infinity).
+	{
+		name: "t.Integer: 1e400 è «numero intero»",
+		target: "json",
+		tb: quantity199[0],
+		zod: quantity199[1],
+		req: { raw: '{"quantity":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Quantità: deve essere un numero intero"),
+	},
+	{
+		name: "t.Integer: -1e400 è «numero intero»",
+		target: "json",
+		tb: quantity199[0],
+		zod: quantity199[1],
+		req: { raw: '{"quantity":-1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Quantità: deve essere un numero intero"),
+	},
+	{
+		name: "t.Number: 1e400 nel body",
+		target: "json",
+		tb: t.Object({ price: t.Number() }),
+		zod: z.object({ price: z.number() }),
+		req: { raw: '{"price":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Prezzo: deve essere un numero"),
+	},
+	query(
+		"t.Number in query: 1e400",
+		t.Object({ price: t.Number() }),
+		z.object({ price: z.number() }),
+		"?price=1e400",
+		422,
+		fail("Valore non valido: deve essere un numero"),
 	),
 ];

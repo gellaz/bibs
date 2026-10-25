@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { OpenStatusSchema } from "./holidays";
-import { zDate, zInteger } from "./t";
+import { zDate, zInteger, zString } from "./t";
 
 // Gemelli Zod di `lib/schemas/entities.ts` (D3 del piano Hono), nello stesso
 // ordine e con gli stessi nomi; per ora solo quelli delle route migrate.
-// `t.Integer` e `t.Date` di Elysia → `zInteger` e `zDate`, `t.Nullable` →
+// `t.Integer` e `t.Date` di Elysia → `zInteger` e `zDate`, `t.String` con
+// `minLength`/`maxLength` → `zString`, `t.Nullable` →
 // `.nullable()`, unioni di letterali → `z.enum`.
 
 const d = (description: string) => ({ description });
@@ -32,38 +33,50 @@ export const LocationField = z
 
 /** Required address fields for create operations. */
 export const AddressFieldsRequired = {
-	addressLine1: z.string().min(1).max(200).meta(d("Indirizzo (riga 1)")),
-	addressLine2: z.string().max(200).meta(d("Indirizzo (riga 2)")).optional(),
-	municipalityId: z.string().min(1).meta(d("ID del comune")),
+	addressLine1: zString({
+		minLength: 1,
+		maxLength: 200,
+		...d("Indirizzo (riga 1)"),
+	}),
+	addressLine2: zString({
+		maxLength: 200,
+		...d("Indirizzo (riga 2)"),
+	}).optional(),
+	municipalityId: zString({ minLength: 1, ...d("ID del comune") }),
 	zipCode: z
 		.string()
 		.regex(/^\d{5}$/)
 		.meta(d("CAP italiano (5 cifre)")),
-	country: z
-		.string()
-		.min(2)
-		.max(2)
-		.meta(d("Codice paese ISO 3166-1 alpha-2 (default: IT)"))
-		.optional(),
+	country: zString({
+		minLength: 2,
+		maxLength: 2,
+		...d("Codice paese ISO 3166-1 alpha-2 (default: IT)"),
+	}).optional(),
 	location: LocationField,
 };
 
 /** Optional address fields for update/patch operations. */
 export const AddressFieldsOptional = {
-	addressLine1: z
-		.string()
-		.min(1)
-		.max(200)
-		.meta(d("Indirizzo (riga 1)"))
-		.optional(),
-	addressLine2: z.string().max(200).meta(d("Indirizzo (riga 2)")).optional(),
-	municipalityId: z.string().min(1).meta(d("ID del comune")).optional(),
+	addressLine1: zString({
+		minLength: 1,
+		maxLength: 200,
+		...d("Indirizzo (riga 1)"),
+	}).optional(),
+	addressLine2: zString({
+		maxLength: 200,
+		...d("Indirizzo (riga 2)"),
+	}).optional(),
+	municipalityId: zString({ minLength: 1, ...d("ID del comune") }).optional(),
 	zipCode: z
 		.string()
 		.regex(/^\d{5}$/)
 		.meta(d("CAP italiano (5 cifre)"))
 		.optional(),
-	country: z.string().min(2).max(2).meta(d("Codice paese")).optional(),
+	country: zString({
+		minLength: 2,
+		maxLength: 2,
+		...d("Codice paese"),
+	}).optional(),
 	location: LocationField,
 };
 
@@ -75,11 +88,11 @@ export const MunicipalityCompactSchema = z
 	.object({
 		id: z.string().meta(d("Identificatore univoco del comune")),
 		name: z.string().meta(d("Nome del comune")),
-		provinceAcronym: z
-			.string()
-			.min(2)
-			.max(2)
-			.meta(d("Sigla provincia (2 lettere)")),
+		provinceAcronym: zString({
+			minLength: 2,
+			maxLength: 2,
+			...d("Sigla provincia (2 lettere)"),
+		}),
 	})
 	.meta(d("Comune in formato compatto per liste precaricate"));
 

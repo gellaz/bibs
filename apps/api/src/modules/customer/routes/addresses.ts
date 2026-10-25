@@ -19,6 +19,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/zod/responses";
+import { zString } from "@/lib/zod/t";
 import { customerSecurity } from "../context";
 import {
 	createAddress,
@@ -31,11 +32,11 @@ import {
  * Opzionale, ma se c'è almeno 5 caratteri. La stringa vuota lo cancella (il
  * service la salva come `null`).
  */
-const AddressPhone = z
-	.string()
-	.max(30)
-	.regex(/^(.{5,})?$/)
-	.meta({ description: "Numero di telefono; stringa vuota per rimuoverlo" });
+const AddressPhone = zString({
+	maxLength: 30,
+	pattern: "^(.{5,})?$",
+	description: "Numero di telefono; stringa vuota per rimuoverlo",
+});
 
 const AddressPage = okPageRes(CustomerAddressSchema);
 const AddressResponse = okRes(CustomerAddressSchema);
@@ -81,16 +82,14 @@ export const addressesRoutes = new Hono()
 		v(
 			"json",
 			z.object({
-				label: z
-					.string()
-					.max(50)
-					.meta({ description: "Etichetta (es. 'Casa', 'Ufficio')" })
-					.optional(),
-				recipientName: z
-					.string()
-					.max(100)
-					.meta({ description: "Nome del destinatario" })
-					.optional(),
+				label: zString({
+					maxLength: 50,
+					description: "Etichetta (es. 'Casa', 'Ufficio')",
+				}).optional(),
+				recipientName: zString({
+					maxLength: 100,
+					description: "Nome del destinatario",
+				}).optional(),
 				phone: AddressPhone.optional(),
 				...AddressFieldsRequired,
 				isDefault: z
@@ -138,12 +137,11 @@ export const addressesRoutes = new Hono()
 		v(
 			"json",
 			z.object({
-				label: z.string().max(50).meta({ description: "Etichetta" }).optional(),
-				recipientName: z
-					.string()
-					.max(100)
-					.meta({ description: "Nome del destinatario" })
-					.optional(),
+				label: zString({ maxLength: 50, description: "Etichetta" }).optional(),
+				recipientName: zString({
+					maxLength: 100,
+					description: "Nome del destinatario",
+				}).optional(),
 				phone: AddressPhone.optional(),
 				...AddressFieldsOptional,
 				isDefault: z

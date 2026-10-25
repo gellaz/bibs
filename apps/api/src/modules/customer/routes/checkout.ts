@@ -9,7 +9,7 @@ import { ok } from "@/lib/responses";
 import { CheckoutPreviewSchema, CheckoutSchema } from "@/lib/zod/composed";
 import { StoreReservationDeadlineSchema } from "@/lib/zod/entities";
 import { okRes, withConflictErrors, withErrors } from "@/lib/zod/responses";
-import { zFormat } from "@/lib/zod/t";
+import { zFormat, zString } from "@/lib/zod/t";
 import { customerSecurity } from "../context";
 import {
 	createCheckout,
@@ -39,7 +39,8 @@ export const checkoutRoutes = new Hono()
 		v(
 			"query",
 			z.object({
-				storeIds: z.string().max(2000).meta({
+				storeIds: zString({
+					maxLength: 2000,
 					description: "ID dei negozi separati da virgola (al massimo 50)",
 				}),
 			}),
@@ -71,7 +72,8 @@ export const checkoutRoutes = new Hono()
 		v(
 			"query",
 			z.object({
-				stores: z.string().max(5000).meta({
+				stores: zString({
+					maxLength: 5000,
 					description:
 						"Scelta per negozio, `storeId:tipo` separati da virgola (tipo: reserve_pickup | pay_pickup)",
 				}),
