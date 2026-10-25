@@ -77,6 +77,7 @@ export function useSellerModeration(opts?: {
 		}
 		void queryClient.invalidateQueries({ queryKey: ["admin-sellers"] });
 		void queryClient.invalidateQueries({ queryKey: ["admin-sellers-counts"] });
+		void queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
 	};
 
 	const verifyMutation = useMutation({

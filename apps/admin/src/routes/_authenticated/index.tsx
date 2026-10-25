@@ -5,7 +5,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@bibs/ui/components/card";
-import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { requestCountsQuery } from "@/features/requests/use-request-counts";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -13,8 +15,27 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function Dashboard() {
+	const { data: counts } = useQuery(requestCountsQuery);
+
 	return (
 		<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			<Card>
+				<CardHeader>
+					<CardDescription>{m.dashboard_pending_requests()}</CardDescription>
+					<CardTitle className="text-2xl tabular-nums">
+						{counts?.total ?? "—"}
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<Link
+						to="/requests"
+						search={{ type: undefined }}
+						className="text-xs text-muted-foreground hover:text-primary hover:underline"
+					>
+						{m.dashboard_pending_requests_open()}
+					</Link>
+				</CardContent>
+			</Card>
 			<Card>
 				<CardHeader>
 					<CardDescription>{m.dashboard_orders_today()}</CardDescription>

@@ -24,6 +24,8 @@ import { Route as AuthenticatedBillingPricingRouteImport } from './routes/_authe
 import { Route as AuthenticatedBillingSubscriptionsRouteImport } from './routes/_authenticated/billing/subscriptions'
 import { Route as AuthenticatedConfigurationsIndexRouteImport } from './routes/_authenticated/configurations/index'
 import { Route as AuthenticatedConfigurationsSectionRouteImport } from './routes/_authenticated/configurations/$section'
+import { Route as AuthenticatedRequestsIndexRouteImport } from './routes/_authenticated/requests/index'
+import { Route as AuthenticatedRequestsChangeIdRouteImport } from './routes/_authenticated/requests/$changeId'
 import { Route as AuthenticatedSellersIndexRouteImport } from './routes/_authenticated/sellers/index'
 import { Route as AuthenticatedSellersSellerIdRouteImport } from './routes/_authenticated/sellers/$sellerId'
 
@@ -107,6 +109,18 @@ const AuthenticatedConfigurationsSectionRoute =
     path: '/configurations/$section',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedRequestsIndexRoute =
+  AuthenticatedRequestsIndexRouteImport.update({
+    id: '/requests/',
+    path: '/requests/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedRequestsChangeIdRoute =
+  AuthenticatedRequestsChangeIdRouteImport.update({
+    id: '/requests/$changeId',
+    path: '/requests/$changeId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSellersIndexRoute =
   AuthenticatedSellersIndexRouteImport.update({
     id: '/',
@@ -133,9 +147,11 @@ export interface FileRoutesByFullPath {
   '/billing/pricing': typeof AuthenticatedBillingPricingRoute
   '/billing/subscriptions': typeof AuthenticatedBillingSubscriptionsRoute
   '/configurations/$section': typeof AuthenticatedConfigurationsSectionRoute
+  '/requests/$changeId': typeof AuthenticatedRequestsChangeIdRoute
   '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/billing/': typeof AuthenticatedBillingIndexRoute
   '/configurations/': typeof AuthenticatedConfigurationsIndexRoute
+  '/requests/': typeof AuthenticatedRequestsIndexRoute
   '/sellers/': typeof AuthenticatedSellersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -149,9 +165,11 @@ export interface FileRoutesByTo {
   '/billing/pricing': typeof AuthenticatedBillingPricingRoute
   '/billing/subscriptions': typeof AuthenticatedBillingSubscriptionsRoute
   '/configurations/$section': typeof AuthenticatedConfigurationsSectionRoute
+  '/requests/$changeId': typeof AuthenticatedRequestsChangeIdRoute
   '/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/billing': typeof AuthenticatedBillingIndexRoute
   '/configurations': typeof AuthenticatedConfigurationsIndexRoute
+  '/requests': typeof AuthenticatedRequestsIndexRoute
   '/sellers': typeof AuthenticatedSellersIndexRoute
 }
 export interface FileRoutesById {
@@ -169,9 +187,11 @@ export interface FileRoutesById {
   '/_authenticated/billing/pricing': typeof AuthenticatedBillingPricingRoute
   '/_authenticated/billing/subscriptions': typeof AuthenticatedBillingSubscriptionsRoute
   '/_authenticated/configurations/$section': typeof AuthenticatedConfigurationsSectionRoute
+  '/_authenticated/requests/$changeId': typeof AuthenticatedRequestsChangeIdRoute
   '/_authenticated/sellers/$sellerId': typeof AuthenticatedSellersSellerIdRoute
   '/_authenticated/billing/': typeof AuthenticatedBillingIndexRoute
   '/_authenticated/configurations/': typeof AuthenticatedConfigurationsIndexRoute
+  '/_authenticated/requests/': typeof AuthenticatedRequestsIndexRoute
   '/_authenticated/sellers/': typeof AuthenticatedSellersIndexRoute
 }
 export interface FileRouteTypes {
@@ -189,9 +209,11 @@ export interface FileRouteTypes {
     | '/billing/pricing'
     | '/billing/subscriptions'
     | '/configurations/$section'
+    | '/requests/$changeId'
     | '/sellers/$sellerId'
     | '/billing/'
     | '/configurations/'
+    | '/requests/'
     | '/sellers/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -205,9 +227,11 @@ export interface FileRouteTypes {
     | '/billing/pricing'
     | '/billing/subscriptions'
     | '/configurations/$section'
+    | '/requests/$changeId'
     | '/sellers/$sellerId'
     | '/billing'
     | '/configurations'
+    | '/requests'
     | '/sellers'
   id:
     | '__root__'
@@ -224,9 +248,11 @@ export interface FileRouteTypes {
     | '/_authenticated/billing/pricing'
     | '/_authenticated/billing/subscriptions'
     | '/_authenticated/configurations/$section'
+    | '/_authenticated/requests/$changeId'
     | '/_authenticated/sellers/$sellerId'
     | '/_authenticated/billing/'
     | '/_authenticated/configurations/'
+    | '/_authenticated/requests/'
     | '/_authenticated/sellers/'
   fileRoutesById: FileRoutesById
 }
@@ -342,6 +368,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfigurationsSectionRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/requests/': {
+      id: '/_authenticated/requests/'
+      path: '/requests'
+      fullPath: '/requests/'
+      preLoaderRoute: typeof AuthenticatedRequestsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/requests/$changeId': {
+      id: '/_authenticated/requests/$changeId'
+      path: '/requests/$changeId'
+      fullPath: '/requests/$changeId'
+      preLoaderRoute: typeof AuthenticatedRequestsChangeIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sellers/': {
       id: '/_authenticated/sellers/'
       path: '/'
@@ -398,7 +438,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedConfigurationsSectionRoute: typeof AuthenticatedConfigurationsSectionRoute
+  AuthenticatedRequestsChangeIdRoute: typeof AuthenticatedRequestsChangeIdRoute
   AuthenticatedConfigurationsIndexRoute: typeof AuthenticatedConfigurationsIndexRoute
+  AuthenticatedRequestsIndexRoute: typeof AuthenticatedRequestsIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -412,7 +454,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedConfigurationsSectionRoute:
     AuthenticatedConfigurationsSectionRoute,
+  AuthenticatedRequestsChangeIdRoute: AuthenticatedRequestsChangeIdRoute,
   AuthenticatedConfigurationsIndexRoute: AuthenticatedConfigurationsIndexRoute,
+  AuthenticatedRequestsIndexRoute: AuthenticatedRequestsIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
