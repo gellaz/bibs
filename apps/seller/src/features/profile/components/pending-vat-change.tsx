@@ -13,6 +13,7 @@ import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Clock } from "lucide-react";
 import { api, unwrap } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
@@ -44,7 +45,7 @@ export function PendingVatChange({ change, canCancel }: Props) {
 			<div className="flex flex-wrap items-center gap-2">
 				<span>{m.profile_vat_pending_label()}</span>
 				<span className="font-medium">{vatNumber}</span>
-				<StatusBadge tone="waiting" className="bg-background">
+				<StatusBadge tone="waiting" icon={Clock} className="bg-background">
 					{m.profile_vat_pending_badge()}
 				</StatusBadge>
 			</div>
