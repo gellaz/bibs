@@ -126,6 +126,15 @@ jobs:
           done
           echo "API did not become ready" >&2
           exit 1
+      # bun build inlines NODE_ENV: a bundle built without it stays
+      # "development" (log-only emails, credentialed localhost CORS) even with
+      # NODE_ENV=production at runtime.
+      - name: Production build (no localhost CORS)
+        run: |
+          if curl -sS -o /dev/null -D - -H 'Origin: http://localhost:9999' localhost:3000/ready | grep -qi '^access-control-allow-origin'; then
+            echo "Image is not a production build: localhost origin allowed" >&2
+            exit 1
+          fi
       - name: API logs
         if: failure()
         run: docker logs api || true

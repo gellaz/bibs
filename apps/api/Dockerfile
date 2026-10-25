@@ -29,7 +29,9 @@ RUN bun install --frozen-lockfile --ignore-scripts --filter @bibs/api
 COPY apps/api apps/api
 COPY packages/emails packages/emails
 
-RUN bun run --cwd apps/api build
+# `bun build` inlines NODE_ENV at build time: without it the bundle stays
+# "development" whatever the runtime env says (Mailpit/log emails, localhost CORS).
+RUN NODE_ENV=production bun run --cwd apps/api build
 
 
 # ---------- Runtime stage ----------
