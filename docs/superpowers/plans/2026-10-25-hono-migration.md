@@ -19,7 +19,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | Unità | Contenuto | Dipende da | Stato | PR |
 |---|---|---|---|---|
 | U0 | Piano + baseline | — | fatto | #300 |
-| U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | fatto, PR aperta (branch `feat/hono-u1-me`) | — |
+| U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | fatto | #301 |
 | U2 | `locations/` (+ rate limit) | U1 | da fare | — |
 | U3 | `customer/` | U1 | da fare | — |
 | U4 | `registration/` | U2 (rate limit) | da fare | — |
@@ -273,7 +273,7 @@ Per ogni unità: backend, test (cambia solo l'invio della richiesta), call site 
 
 ### U1 — `me/` e fondamenta
 
-**Stato:** fatto, PR aperta · **PR:** — · **Branch:** `feat/hono-u1-me` (nome dato dall'orchestratore al posto di `refactor/hono-me`)
+**Stato:** fatto · **PR:** #301 · **Branch:** `feat/hono-u1-me` (nome dato dall'orchestratore al posto di `refactor/hono-me`)
 
 Primo modulo: 2 endpoint (`POST /me/avatar` multipart con `t.File({ type: "image", maxSize: "5m" })`, `DELETE /me/avatar`), entrambi con auth per route. Costruisce il kit, conferma D1–D11 e D13–D15 e misura il costo di `hc`.
 
