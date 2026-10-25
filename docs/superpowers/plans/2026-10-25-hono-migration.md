@@ -20,9 +20,9 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 |---|---|---|---|---|
 | U0 | Piano + baseline | — | fatto | #300 |
 | U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | fatto | #301 |
-| U2 | `locations/` (+ rate limit) — **stessa PR di U4** | U1 | fatto, in revisione | — |
+| U2 | `locations/` (+ rate limit) — **stessa PR di U4** | U1 | fatto | #302 |
 | U3 | `customer/` | U1 | da fare | — |
-| U4 | `registration/` — **stessa PR di U2** | U2 (rate limit) | fatto, in revisione | — |
+| U4 | `registration/` — **stessa PR di U2** | U2 (rate limit) | fatto | #302 |
 | U5 | seller 1: contesto seller + products, brands, images, product-characteristics, stock | U1 | da fare | — |
 | U6 | seller 2: stores, store-images, settings, closures, employees, onboarding, profile, dashboard | U5 | da fare | — |
 | U7 | seller 3: orders, discounts, checkout, billing | U5 | da fare | — |
@@ -362,7 +362,7 @@ Rifiutati, con le prove: i cinque rilievi della lente «parity» sono stati misu
 
 ### U2 — `locations/`
 
-**Stato:** fatto, in revisione (stessa PR di U4) · **PR:** — · **Branch:** `feat/hono-u2-u4-locations-registration` (U2 e U4 insieme, nome dato dall'orchestratore al posto di `refactor/hono-locations`)
+**Stato:** fatto (stessa PR di U4) · **PR:** #302 · **Branch:** `feat/hono-u2-u4-locations-registration` (U2 e U4 insieme, nome dato dall'orchestratore al posto di `refactor/hono-locations`)
 
 6 endpoint, `GET /locations/geocode` con auth e poi rate limit (`ip` 30/min; risposte 429 e 503), query con `title` («Numero di suggerimenti»), `limit` intero 1–10 default 5, `lat`/`lng` numeri; `/municipalities/all` con `cache-control` (prod `public, max-age=86400, stale-while-revalidate=604800`, altrimenti `no-store`); `/municipalities` con query composta (paginazione + filtri).
 
@@ -400,7 +400,7 @@ Test FE: `src/features/products/product-detail-api.test.ts`: il test 1 verifica 
 
 ### U4 — `registration/`
 
-**Stato:** fatto, in revisione (stessa PR di U2) · **PR:** — · **Branch:** `feat/hono-u2-u4-locations-registration`
+**Stato:** fatto (stessa PR di U2) · **PR:** #302 · **Branch:** `feat/hono-u2-u4-locations-registration`
 
 4 POST pubblici con rate limit: `/register/customer` e `/register/seller` (ip 10/h, email 3/h), `/register/accept-invite` (ip 20/h; password diverse → 400 «Le password non coincidono»), `/register/sign-in` (ip 30/15 min, email 10/15 min; restituisce il token nel corpo e **non** imposta cookie). Risposte `withConflictErrors({200, 429})`; 409 `EMAIL_ALREADY_REGISTERED` e `EMAIL_PENDING_VERIFICATION` con `resentAt`.
 
