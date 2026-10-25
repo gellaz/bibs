@@ -1,13 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
 import { ordersRoutes } from "@/modules/customer/routes/orders";
-import { locationsRoutes } from "@/modules/locations/routes/locations";
+import { locationsApp } from "@/modules/locations";
 import { brandsRoutes } from "@/modules/seller/routes/brands";
 import { imagesRoutes } from "@/modules/seller/routes/images";
 import { stockRoutes } from "@/modules/seller/routes/stock";
 import { storeImagesRoutes } from "@/modules/seller/routes/store-images";
 import { storesRoutes } from "@/modules/seller/routes/stores";
 import { errorHandler } from "@/plugins/error-handler";
+import { testRequest } from "../helpers/hono-app";
 
 const noopPino = {
 	debug: () => {},
@@ -29,7 +30,6 @@ const app = new Elysia()
 	.use(imagesRoutes)
 	.use(storeImagesRoutes)
 	.use(brandsRoutes)
-	.use(locationsRoutes)
 	.use(ordersRoutes);
 
 function json(method: string, path: string, body: unknown) {
@@ -44,6 +44,11 @@ function json(method: string, path: string, body: unknown) {
 
 function get(path: string) {
 	return app.handle(new Request(`http://localhost${path}`));
+}
+
+// /locations è una sub-app Hono (montata su /locations: path relativi).
+function locations(path: string) {
+	return testRequest(locationsApp, path);
 }
 
 // 1×1 PNG: a real image, so the multipart `files` field passes t.Files.
@@ -105,7 +110,7 @@ describe("integer inputs reject fractions with 422", () => {
 		// The shared PaginationQuery, spread into ~19 routes.
 		["GET /stores (PaginationQuery) limit", () => get("/stores?limit=2.5")],
 		["GET /orders (PaginationQuery) page", () => get("/orders?page=1.5")],
-		["GET /geocode limit", () => get("/geocode?q=Via%20Roma&limit=2.5")],
+		["GET /geocode limit", () => locations("/geocode?q=Via%20Roma&limit=2.5")],
 	];
 
 	for (const [label, send] of fractional) {
@@ -147,7 +152,7 @@ describe("integer inputs: Italian 422 message on real routes", () => {
 		],
 		[
 			"GET /geocode limit (title on the schema)",
-			() => get("/geocode?q=Via%20Roma&limit=2.5"),
+			() => locations("/geocode?q=Via%20Roma&limit=2.5"),
 			"Numero di suggerimenti: deve essere un numero intero",
 		],
 		[

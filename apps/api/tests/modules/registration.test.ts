@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import { Elysia } from "elysia";
 
 // ── Mock service layer ────────────────────────────────────────────────────────
 
@@ -104,37 +103,20 @@ import {
 	PendingVerificationError,
 	ServiceError,
 } from "@/lib/errors";
-import { registration } from "@/modules/registration";
-import { errorHandler } from "@/plugins/error-handler";
+import { registrationApp } from "@/modules/registration";
 import { __clearRateLimitStores } from "@/plugins/rate-limit";
-import { requestId } from "@/plugins/request-id";
-
-// Provides store.pino, which logixlysia normally injects in production.
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(requestId)
-	.use(registration);
+import { testRequest } from "../helpers/hono-app";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// La sub-app Hono è montata su /register in src/index.ts: il mount toglie il
+// prefisso, qui lo si toglie a mano.
 function post(path: string, body: unknown) {
-	return app.handle(
-		new Request(`http://localhost${path}`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(body),
-		}),
-	);
+	return testRequest(registrationApp, path.replace(/^\/register/, ""), {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
 }
 
 async function json(res: Response) {

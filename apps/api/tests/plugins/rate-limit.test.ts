@@ -1,40 +1,35 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
+import { z } from "zod";
+import { moduleApp } from "@/http/app";
+import { v } from "@/http/validator";
+import { betterAuth } from "@/plugins/better-auth";
 import { clientIp, rateLimit } from "@/plugins/rate-limit";
-
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as const;
 
 // Tests simulate being behind a trusted proxy so X-Forwarded-For is honoured.
 function ipApp() {
-	return new Elysia()
-		.state("pino", noopPino)
-		.get("/limited", () => ({ success: true, data: "ok" }), {
-			beforeHandle: rateLimit({
-				name: "test-ip",
-				trustProxy: true,
-				limits: [{ by: "ip", window: 10_000, max: 2 }],
-			}),
-		});
+	return moduleApp().get(
+		"/limited",
+		rateLimit({
+			name: "test-ip",
+			trustProxy: true,
+			limits: [{ by: "ip", window: 10_000, max: 2 }],
+		}),
+		(c) => c.json({ success: true, data: "ok" }),
+	);
 }
 
 function emailApp() {
-	return new Elysia()
-		.state("pino", noopPino)
-		.post("/limited", () => ({ success: true, data: "ok" }), {
-			body: t.Object({ email: t.String() }),
-			beforeHandle: rateLimit({
-				name: "test-email",
-				trustProxy: true,
-				limits: [{ by: "email", window: 10_000, max: 2 }],
-			}),
-		});
+	return moduleApp().post(
+		"/limited",
+		v("json", z.object({ email: z.string() })),
+		rateLimit({
+			name: "test-email",
+			trustProxy: true,
+			limits: [{ by: "email", window: 10_000, max: 2 }],
+		}),
+		(c) => c.json({ success: true, data: "ok" }),
+	);
 }
 
 function reqIp(ip: string) {
@@ -55,10 +50,10 @@ describe("rateLimit — IP keyed", () => {
 	it("allows requests up to the max then returns 429 with Retry-After", async () => {
 		const app = ipApp();
 
-		expect((await app.handle(reqIp("1.1.1.1"))).status).toBe(200);
-		expect((await app.handle(reqIp("1.1.1.1"))).status).toBe(200);
+		expect((await app.request(reqIp("1.1.1.1"))).status).toBe(200);
+		expect((await app.request(reqIp("1.1.1.1"))).status).toBe(200);
 
-		const blocked = await app.handle(reqIp("1.1.1.1"));
+		const blocked = await app.request(reqIp("1.1.1.1"));
 		expect(blocked.status).toBe(429);
 		expect(blocked.headers.get("retry-after")).toBeString();
 
@@ -70,12 +65,12 @@ describe("rateLimit — IP keyed", () => {
 	it("keeps limits independent per client IP", async () => {
 		const app = ipApp();
 
-		await app.handle(reqIp("2.2.2.2"));
-		await app.handle(reqIp("2.2.2.2"));
-		expect((await app.handle(reqIp("2.2.2.2"))).status).toBe(429);
+		await app.request(reqIp("2.2.2.2"));
+		await app.request(reqIp("2.2.2.2"));
+		expect((await app.request(reqIp("2.2.2.2"))).status).toBe(429);
 
 		// A different IP is unaffected.
-		expect((await app.handle(reqIp("3.3.3.3"))).status).toBe(200);
+		expect((await app.request(reqIp("3.3.3.3"))).status).toBe(200);
 	});
 });
 
@@ -83,30 +78,30 @@ describe("rateLimit — email keyed", () => {
 	it("limits per email address regardless of how the body is sent", async () => {
 		const app = emailApp();
 
-		expect((await app.handle(reqEmail("a@x.it"))).status).toBe(200);
-		expect((await app.handle(reqEmail("a@x.it"))).status).toBe(200);
-		expect((await app.handle(reqEmail("a@x.it"))).status).toBe(429);
+		expect((await app.request(reqEmail("a@x.it"))).status).toBe(200);
+		expect((await app.request(reqEmail("a@x.it"))).status).toBe(200);
+		expect((await app.request(reqEmail("a@x.it"))).status).toBe(429);
 
 		// A different email gets its own bucket.
-		expect((await app.handle(reqEmail("b@x.it"))).status).toBe(200);
+		expect((await app.request(reqEmail("b@x.it"))).status).toBe(200);
 	});
 });
 
 describe("rateLimit — stacked ip + email rules (the real /sign-in shape)", () => {
 	function signInApp() {
-		return new Elysia()
-			.state("pino", noopPino)
-			.post("/limited", () => ({ success: true, data: "ok" }), {
-				body: t.Object({ email: t.String() }),
-				beforeHandle: rateLimit({
-					name: "test-sign-in",
-					trustProxy: true,
-					limits: [
-						{ by: "ip", window: 60_000, max: 5 },
-						{ by: "email", window: 60_000, max: 2 },
-					],
-				}),
-			});
+		return moduleApp().post(
+			"/limited",
+			v("json", z.object({ email: z.string() })),
+			rateLimit({
+				name: "test-sign-in",
+				trustProxy: true,
+				limits: [
+					{ by: "ip", window: 60_000, max: 5 },
+					{ by: "email", window: 60_000, max: 2 },
+				],
+			}),
+			(c) => c.json({ success: true, data: "ok" }),
+		);
 	}
 
 	function signInReq(ip: string, email: string) {
@@ -120,19 +115,19 @@ describe("rateLimit — stacked ip + email rules (the real /sign-in shape)", () 
 	it("blocks on the email cap before the IP cap when one email is hammered from one IP", async () => {
 		const app = signInApp();
 
-		expect((await app.handle(signInReq("9.9.9.9", "victim@x.it"))).status).toBe(
-			200,
-		);
-		expect((await app.handle(signInReq("9.9.9.9", "victim@x.it"))).status).toBe(
-			200,
-		);
+		expect(
+			(await app.request(signInReq("9.9.9.9", "victim@x.it"))).status,
+		).toBe(200);
+		expect(
+			(await app.request(signInReq("9.9.9.9", "victim@x.it"))).status,
+		).toBe(200);
 		// 3rd hit on the same email trips the email cap (max 2), well under the IP cap (max 5).
-		expect((await app.handle(signInReq("9.9.9.9", "victim@x.it"))).status).toBe(
-			429,
-		);
+		expect(
+			(await app.request(signInReq("9.9.9.9", "victim@x.it"))).status,
+		).toBe(429);
 
 		// A different email from the same IP is still allowed (IP cap not reached).
-		expect((await app.handle(signInReq("9.9.9.9", "other@x.it"))).status).toBe(
+		expect((await app.request(signInReq("9.9.9.9", "other@x.it"))).status).toBe(
 			200,
 		);
 	});
@@ -162,5 +157,54 @@ describe("clientIp", () => {
 			headers: { "x-forwarded-for": "9.9.9.9" },
 		});
 		expect(clientIp(req, null, false)).toBe("unknown");
+	});
+});
+
+// D12 del piano Hono: sotto il mount di Elysia Hono non riceve il server di
+// Bun, quindi l'IP è l'x-forwarded-for che l'hook globale di better-auth ha già
+// riscritto con l'IP del socket. Senza, tutti i client finirebbero nel bucket
+// "unknown"; fidandosi del valore del client, ognuno se ne farebbe uno nuovo.
+describe("rateLimit — sotto il mount di Elysia (strangler)", () => {
+	const limited = () =>
+		moduleApp().get(
+			"/limited",
+			rateLimit({
+				name: "test-mount",
+				trustProxy: false,
+				limits: [{ by: "ip", window: 10_000, max: 2 }],
+			}),
+			(c) => c.json({ success: true, data: "ok" }),
+		);
+
+	it("due x-forwarded-for diversi finiscono in bucket diversi", async () => {
+		const app = limited();
+
+		expect((await app.request(reqIp("4.4.4.4"))).status).toBe(200);
+		expect((await app.request(reqIp("4.4.4.4"))).status).toBe(200);
+		expect((await app.request(reqIp("4.4.4.4"))).status).toBe(429);
+		expect((await app.request(reqIp("5.5.5.5"))).status).toBe(200);
+	});
+
+	it("su un socket vero un x-forwarded-for falsificato non apre un bucket nuovo", async () => {
+		const app = new Elysia()
+			.use(betterAuth)
+			.mount("/rl", limited().fetch)
+			.listen(0);
+		const url = `http://localhost:${app.server?.port}/rl/limited`;
+		const spoofed = (ip: string) =>
+			fetch(url, { headers: { "x-forwarded-for": ip } });
+		try {
+			expect((await spoofed("1.1.1.1")).status).toBe(200);
+			expect((await spoofed("2.2.2.2")).status).toBe(200);
+			expect((await spoofed("3.3.3.3")).status).toBe(429);
+			// Il bucket pieno è quello del socket, non "unknown": senza socket
+			// (app.handle, nessun x-forwarded-for) la richiesta passa.
+			const noSocket = await app.handle(
+				new Request("http://localhost/rl/limited"),
+			);
+			expect(noSocket.status).toBe(200);
+		} finally {
+			await app.stop();
+		}
 	});
 });

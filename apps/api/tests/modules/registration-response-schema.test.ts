@@ -1,18 +1,20 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
+import { moduleApp } from "@/http/app";
+import { send } from "@/http/send";
 import { ok } from "@/lib/responses";
 import {
-	okRes,
 	RegisterCustomerResult,
 	RegisterSellerResult,
 	SignInResult,
-} from "@/lib/schemas";
+} from "@/lib/zod/composed";
+import { okRes } from "@/lib/zod/responses";
 
 // The registration/sign-in handlers return RAW database rows (no joined
 // municipalities, plus columns like updatedAt / documentImageKey / stripeCustomerId).
 // These tests feed representative raw rows through the new response schemas using
-// Elysia's real normalization pipeline, proving the schemas accept the actual
-// shapes (so they won't 500 at runtime) without needing a database.
+// the real response pipeline (`send()`, as in the Hono routes), proving the
+// schemas accept the actual shapes (so they won't 500 at runtime) without
+// needing a database.
 
 const now = new Date();
 
@@ -84,38 +86,42 @@ const rawOrganization = {
 	updatedAt: now,
 };
 
-const app = new Elysia()
-	.post(
-		"/customer",
-		() => ok({ user: rawUser, profile: rawCustomerProfile, token: null }),
-		{
-			response: { 200: okRes(RegisterCustomerResult) },
-		},
+const app = moduleApp()
+	.post("/customer", (c) =>
+		send(
+			c,
+			okRes(RegisterCustomerResult),
+			ok({ user: rawUser, profile: rawCustomerProfile, token: null }),
+		),
 	)
-	.post(
-		"/seller",
-		() =>
+	.post("/seller", (c) =>
+		send(
+			c,
+			okRes(RegisterSellerResult),
 			ok({
 				user: { ...rawUser, role: "seller" },
 				profile: rawSellerProfile,
 				token: "tok",
 			}),
-		{ response: { 200: okRes(RegisterSellerResult) } },
+		),
 	)
-	.post(
-		"/sign-in",
-		() =>
+	.post("/sign-in", (c) =>
+		send(
+			c,
+			okRes(SignInResult),
 			ok({
 				user: rawUser,
 				profiles: { customer: rawCustomerProfile, seller: rawSellerProfile },
 				organization: rawOrganization,
 				token: "tok",
 			}),
-		{ response: { 200: okRes(SignInResult) } },
+		),
 	);
 
 function post(path: string) {
-	return app.handle(new Request(`http://localhost${path}`, { method: "POST" }));
+	return app.request(
+		new Request(`http://localhost${path}`, { method: "POST" }),
+	);
 }
 
 describe("registration response schemas accept the raw DB rows", () => {

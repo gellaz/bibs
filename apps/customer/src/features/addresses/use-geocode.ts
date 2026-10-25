@@ -1,17 +1,17 @@
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/location/coords";
-import { api } from "@/lib/api";
+import { locationsApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 async function fetchSuggestions(q: string, near: Coords | null) {
-	const res = await api().locations.geocode.get({
+	const res = await locationsApi.geocode.$get({
 		query: {
 			q,
 			...(near ? { lat: near.lat, lng: near.lng } : {}),
 		},
 	});
-	return unwrap(res, m.address_geocode_failed()).data;
+	return (await unwrapJson(res, m.address_geocode_failed())).data;
 }
 
 export type GeocodeSuggestionItem = Awaited<

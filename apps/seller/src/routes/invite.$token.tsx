@@ -9,10 +9,11 @@ import {
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
+import type { ErrorBody } from "@bibs/ui/lib/api-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircleIcon } from "lucide-react";
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { registerApi } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
@@ -45,18 +46,18 @@ function AcceptInvitePage() {
 
 		setIsSubmitting(true);
 		try {
-			const response = await api().register["accept-invite"].post({
-				token,
-				password,
-				confirmPassword,
+			const response = await registerApi["accept-invite"].$post({
+				json: { token, password, confirmPassword },
 			});
 
-			if (response.error) {
+			if (!response.ok) {
 				// The API error envelope is always an object { success, error, message };
 				// surface the server's message (e.g. expired token, password mismatch)
 				// instead of always collapsing to the generic fallback.
-				const value = response.error.value as { message?: string } | null;
-				setApiError(value?.message ?? m.auth_invite_create_error());
+				const value: Partial<ErrorBody> = await response
+					.json()
+					.catch(() => ({}));
+				setApiError(value.message ?? m.auth_invite_create_error());
 				return;
 			}
 
