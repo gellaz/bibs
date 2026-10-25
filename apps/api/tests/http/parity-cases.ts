@@ -1404,6 +1404,50 @@ export const cases: Case[] = [
 			},
 		},
 	),
+
+	// Pulizia delle unioni (handleUnion di exact-mirror): se nessun ramo
+	// accetta il valore, vince il primo ramo che accetta il valore pulito; se
+	// la pulizia di un ramo lancia, Elysia controlla il body com'era.
+	body(
+		"unione pulita: una stringa vuota diventa [] (openingHours)",
+		...openingHours,
+		{ openingHours: "   " },
+		200,
+		{ ok: { openingHours: [] } },
+	),
+	body(
+		"unione pulita: la pulizia lancia, primo errore sul body com'era",
+		t.Object({
+			name: t.String({ minLength: 1, error: "Il nome è obbligatorio" }),
+			address: t.String({
+				minLength: 1,
+				error: "L'indirizzo è obbligatorio",
+			}),
+			openingHours: t.Optional(t.Nullable(TbOpeningHours)),
+		}),
+		z.object({
+			name: z.string().min(1).meta({ error: "Il nome è obbligatorio" }),
+			address: z.string().min(1).meta({ error: "L'indirizzo è obbligatorio" }),
+			openingHours: OpeningHours.nullable().optional(),
+		}),
+		{ name: "", openingHours: [{ dayOfWeek: 1 }] },
+		422,
+		fail("L'indirizzo è obbligatorio"),
+	),
+	body(
+		"unione pulita: la pulizia lancia, un oggetto annidato resta com'era",
+		t.Object({
+			location: t.Optional(t.Object({ x: t.Number(), y: t.Number() })),
+			openingHours: t.Optional(t.Nullable(TbOpeningHours)),
+		}),
+		z.object({
+			location: z.object({ x: z.number(), y: z.number() }).optional(),
+			openingHours: OpeningHours.nullable().optional(),
+		}),
+		{ location: [], openingHours: "x" },
+		422,
+		fail("location: valore non valido"),
+	),
 	body(
 		"Type.Integer: una stringa è «deve essere un numero intero»",
 		t.Object({ n: Type.Integer({ minimum: 0 }) }),

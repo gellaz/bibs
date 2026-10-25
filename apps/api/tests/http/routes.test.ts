@@ -1,9 +1,12 @@
 import { describe, expect, it } from "bun:test";
+import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
 import { requireAuth } from "@/http/auth";
-import { assertRoutes, publicRoute, routeProblems } from "@/http/routes";
+import { doc } from "@/http/openapi";
+import { assertRoutes, guard, publicRoute, routeProblems } from "@/http/routes";
 import { v } from "@/http/validator";
+import { ServiceError } from "@/lib/errors";
 import { meApp } from "@/modules/me";
 import { withVars } from "../helpers/hono-app";
 
@@ -18,26 +21,26 @@ const ok = (c: { json: (b: unknown) => Response }) => c.json({ ok: true });
 
 describe("routeProblems()", () => {
 	it("il modulo me/ è a posto", () => {
-		expect(routeProblems(meApp)).toEqual([]);
-		expect(() => assertRoutes(meApp)).not.toThrow();
+		expect(routeProblems(meApp, ["auth"])).toEqual([]);
+		expect(() => assertRoutes(meApp, ["auth"])).not.toThrow();
 	});
 
 	it("una route senza guardia né publicRoute è un errore", () => {
 		const app = moduleApp().patch("/b/:id", v("json", Body), ok);
-		expect(routeProblems(app)).toEqual([
+		expect(routeProblems(app, ["auth"])).toEqual([
 			"PATCH /b/:id: né guardia di auth né publicRoute",
 		]);
-		expect(() => assertRoutes(app)).toThrow("Route Hono non valide");
+		expect(() => assertRoutes(app, ["auth"])).toThrow("Route Hono non valide");
 	});
 
 	it("publicRoute dichiara una route pubblica", () => {
 		const app = moduleApp().get("/p", publicRoute, v("query", Query), ok);
-		expect(routeProblems(app)).toEqual([]);
+		expect(routeProblems(app, [])).toEqual([]);
 	});
 
 	it("un v() dopo l'auth è un errore (422 prima di 401)", () => {
 		const app = moduleApp().post("/x", requireAuth, v("json", Body), ok);
-		expect(routeProblems(app)).toEqual([
+		expect(routeProblems(app, ["auth"])).toEqual([
 			"POST /x: un v() dopo l'auth (422 prima di 401)",
 		]);
 	});
@@ -51,7 +54,7 @@ describe("routeProblems()", () => {
 			requireAuth,
 			ok,
 		);
-		expect(routeProblems(bad)).toEqual([
+		expect(routeProblems(bad, ["auth"])).toEqual([
 			"POST /x/:id: v() fuori ordine (params, query, body)",
 		]);
 		const good = moduleApp().post(
@@ -62,7 +65,75 @@ describe("routeProblems()", () => {
 			requireAuth,
 			ok,
 		);
-		expect(routeProblems(good)).toEqual([]);
+		expect(routeProblems(good, ["auth"])).toEqual([]);
+	});
+});
+
+describe("routeProblems(): guardia del modulo e handler davanti all'auth", () => {
+	// Un middleware di ruolo come quelli delle unità seguenti (D9).
+	const requireAdmin = guard(
+		createMiddleware(async (c, next) => {
+			if (c.var.user?.role !== "admin")
+				throw new ServiceError(403, "Accesso riservato agli amministratori");
+			await next();
+		}),
+		"admin",
+	);
+
+	it("una route admin con solo requireAuth è un errore", async () => {
+		const adminApp = moduleApp()
+			.delete("/product-categories/:id", requireAuth, requireAdmin, ok)
+			.patch("/product-categories/:id", requireAuth, ok);
+		expect(routeProblems(adminApp, ["admin"])).toEqual([
+			"PATCH /product-categories/:id: manca la guardia del modulo (admin)",
+		]);
+		// Senza il controllo la route risponderebbe a un utente qualunque.
+		const res = await withVars(adminApp, {
+			user: { id: "u1", role: "user" },
+		}).request("/product-categories/1", { method: "PATCH" });
+		expect(res.status).toBe(200);
+	});
+
+	it("un modulo tutto pubblico accetta solo publicRoute", () => {
+		const app = moduleApp()
+			.get("/a", publicRoute, ok)
+			.get("/b", requireAuth, ok);
+		expect(routeProblems(app, [])).toEqual([
+			"GET /b: manca la guardia del modulo (publicRoute)",
+		]);
+	});
+
+	it("una seconda registrazione dello stesso path non protegge la prima", async () => {
+		const app = moduleApp()
+			.get("/x", ok)
+			.get("/x", requireAuth, (c) => c.json({ guarded: true }));
+		expect(routeProblems(app, ["auth"])).toEqual([
+			"GET /x: né guardia di auth né publicRoute",
+		]);
+		expect(await (await app.request("/x")).json()).toEqual({ ok: true });
+	});
+
+	it("la guardia del modulo vale solo prima del primo handler", () => {
+		const app = moduleApp()
+			.get("/x", requireAuth, ok)
+			.get("/x", requireAdmin, ok);
+		expect(routeProblems(app, ["admin"])).toEqual([
+			"GET /x: manca la guardia del modulo (admin)",
+		]);
+	});
+
+	it("un .all() senza * è una route e vuole la guardia", () => {
+		const app = moduleApp().all("/thing", ok);
+		expect(routeProblems(app, ["auth"])).toEqual([
+			"ALL /thing: né guardia di auth né publicRoute",
+		]);
+	});
+
+	it("use() su * e doc() davanti all'auth non sono problemi", () => {
+		const app = moduleApp()
+			.use("*", async (_c, next) => next())
+			.get("/x", doc({}), v("query", Query), requireAuth, ok);
+		expect(routeProblems(app, ["auth"])).toEqual([]);
 	});
 });
 

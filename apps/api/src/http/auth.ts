@@ -30,4 +30,5 @@ export const requireAuth = guard(
 		}
 		await next();
 	}),
+	"auth",
 );

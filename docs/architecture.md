@@ -197,10 +197,15 @@ verifica di ogni PR stanno nel piano
   baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi).
 - **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
   i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
-  modulo. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a ogni avvio)
-  ferma l'API se una route non ha un middleware di auth marcato con `guard()`
-  (`requireAuth` e quelli di ruolo) né `publicRoute`, se un `v()` sta dopo l'auth
-  o se i `v()` non sono nell'ordine di Elysia: params → query → body.
+  modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
+  `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`) e il
+  mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
+  in `src/index.ts`. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
+  ogni avvio) ferma l'API se prima del primo handler di una route non c'è
+  `publicRoute` né una guardia del modulo (`requireAuth` da solo non basta su
+  /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
+  un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
+  query → body.
 - **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
   (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
   Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,

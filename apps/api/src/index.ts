@@ -154,7 +154,7 @@ const app = new Elysia()
 				// Strangler: i path delle sub-app Hono montate (il mount è nascosto).
 				paths: {
 					...(await OpenAPI.getPaths()),
-					...honoPaths(meApp, "/me"),
+					...honoPaths(meApp, "/me", ["auth"]),
 				},
 			},
 		}),

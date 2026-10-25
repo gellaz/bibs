@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import { elysiaJson } from "./t";
 
 // Il valore che Elysia controlla davvero, per avere da Zod lo stesso primo
@@ -12,8 +12,10 @@ import { elysiaJson } from "./t";
 //    chiave propria anche se manca (TypeBox lo segnala al suo posto
 //    nell'ordine dello schema), uno Optional o anyOf (t.Integer, t.Date,
 //    t.Nullable, unioni; vedi anche `coercedKeys`) sparisce se
-//    manca (TypeBox lo segnala per primo). Se legge un campo di un valore
-//    nullo lancia, ed Elysia controlla il body com'era.
+//    manca (TypeBox lo segnala per primo); un'unione (anche t.Nullable) si
+//    pulisce col primo ramo che accetta il valore, o col primo ramo che
+//    accetta il valore pulito (`openingHours: ""` diventa `[]`). Se legge un
+//    campo di un valore nullo lancia, ed Elysia controlla il body com'era.
 
 type Def = z.core.$ZodTypeDef & Record<string, any>;
 type Json = Record<string, any>;
@@ -195,17 +197,49 @@ function read(value: unknown, key: string, soft: boolean) {
 	return (value as Record<string, unknown>)[key];
 }
 
+const NULL = z.null();
+
+/**
+ * `handleUnion` di exact-mirror: il primo ramo che accetta il valore lo
+ * pulisce; se nessuno lo accetta, vince il primo ramo che accetta il valore
+ * pulito da lui; se no il valore com'è. t.Integer, t.Date e le unioni di
+ * letterali hanno solo rami primitivi: il valore resta com'è.
+ * ponytail: «accetta» è il safeParse di Zod, non il Check di TypeBox; si
+ * scostano solo coi default annidati in un ramo (gap noto, Trappole del piano).
+ */
+function union(node: z.ZodType, value: unknown) {
+	const def = defOf(node);
+	const raw = plain(value);
+	const branches: z.ZodType[] | undefined = elysiaJson.has(def)
+		? undefined
+		: def.type === "nullable"
+			? [def.innerType, NULL]
+			: def.type === "union"
+				? def.options
+				: undefined;
+	if (!branches) return raw;
+	const hit = branches.find((b) => b.safeParse(raw).success);
+	if (hit) return mirror(hit, value, true, true);
+	for (const branch of branches) {
+		const cleaned = mirror(branch, value, true, true);
+		if (branch.safeParse(cleaned).success) return cleaned;
+	}
+	return raw;
+}
+
 // `soft`: i campi di questo nodo si leggono con `?.` (nodo Optional, o
-// elementi di un array Optional), come nel codice generato da exact-mirror.
+// elementi di un array Optional), come nel codice generato da exact-mirror;
+// `inUnion`: dentro un ramo di un'unione si legge tutto con `?.`.
 function mirror(
 	schema: z.ZodType,
 	value: unknown,
 	soft: boolean,
+	inUnion = false,
 	anyOfKeys?: Set<string>,
 ): unknown {
 	const { node } = unwrap(schema);
 	const def = defOf(node);
-	if (isAnyOf(node)) return plain(value);
+	if (isAnyOf(node)) return union(node, value);
 	if (def.type === "object") {
 		const loose = def.catchall && defOf(def.catchall).type !== "never";
 		const out: Record<string, unknown> =
@@ -216,9 +250,9 @@ function mirror(
 			const inner = unwrap(prop);
 			const optional =
 				inner.optional || isAnyOf(inner.node) || !!anyOfKeys?.has(key);
-			const child = read(value, key, soft);
+			const child = read(value, key, soft || inUnion);
 			if (optional && plain(child) === undefined) continue;
-			out[key] = mirror(prop, child, optional);
+			out[key] = mirror(prop, child, optional, inUnion);
 		}
 		return out;
 	}
@@ -231,7 +265,7 @@ function mirror(
 		// Come exact-mirror: `.length` di un nullo lancia, di un numero è undefined.
 		const out = new Array(list.length);
 		for (let i = 0; i < list.length; i++)
-			out[i] = mirror(def.element, list[i], soft);
+			out[i] = mirror(def.element, list[i], soft, inUnion);
 		return out;
 	}
 	if (def.type === "record") Object.keys(plain(value) as object);
@@ -255,7 +289,7 @@ export function elysiaValue(
 	)
 		value = Object.assign({}, value);
 	try {
-		return mirror(schema, value, false, coercedKeys(schema, target));
+		return mirror(schema, value, false, false, coercedKeys(schema, target));
 	} catch {
 		return value;
 	}

@@ -135,7 +135,7 @@ describe("OpenAPI — modulo me/ contro la baseline", () => {
 				"../../../../docs/superpowers/plans/2026-10-25-hono-migration/baseline/openapi.json",
 			),
 		).json();
-		const paths = honoPaths(meApp, "/me");
+		const paths = honoPaths(meApp, "/me", ["auth"]);
 		expect(Object.keys(paths)).toEqual(["/me/avatar"]);
 		expect(paths["/me/avatar"]).toEqual(baseline.paths["/me/avatar"]);
 	});
