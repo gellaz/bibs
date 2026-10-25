@@ -18,7 +18,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 
 | Unità | Contenuto | Dipende da | Stato | PR |
 |---|---|---|---|---|
-| U0 | Piano + baseline | — | in corso | (in apertura) |
+| U0 | Piano + baseline | — | in corso | #300 |
 | U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | da fare | — |
 | U2 | `locations/` (+ rate limit) | U1 | da fare | — |
 | U3 | `customer/` | U1 | da fare | — |
@@ -230,13 +230,14 @@ Per ogni unità: backend, test (cambia solo l'invio della richiesta), call site 
 
 ### U0 — Piano e baseline
 
-**Stato:** in corso · **PR:** (in apertura) · **Branch:** `docs/hono-migration-plan`
+**Stato:** in corso · **PR:** #300 · **Branch:** `docs/hono-migration-plan`
 
 - [x] Baseline e strumenti (`baseline/`, `tools/`), commit `4a37d2ab`.
 - [x] Mappe e note delle sonde spostate in `notes/` (anche prototipi e inventario delle chiamate FE).
 - [x] Piano scritto.
 - [x] `bun run lint` verde.
-- [ ] PR aperta verso `feat/hono-migration`, CI verde, merge squash.
+- [x] PR #300 aperta verso `feat/hono-migration`.
+- [ ] CI verde, merge squash.
 
 ### U1 — `me/` e fondamenta
 
