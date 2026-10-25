@@ -1,14 +1,18 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
 import {
+	sendEmail,
 	sendEmailToMailpit,
 	sendEmailToResend,
 	toMailpitPayload,
 } from "@/lib/email";
+import { env } from "@/lib/env";
 
 const realFetch = globalThis.fetch;
+const realEnv = { ...env };
 
 afterEach(() => {
 	globalThis.fetch = realFetch;
+	Object.assign(env, realEnv);
 });
 
 const params = {
@@ -89,5 +93,22 @@ describe("sendEmailToResend", () => {
 			"Bearer re_test_key",
 		);
 		expect(init.signal).toBeInstanceOf(AbortSignal);
+	});
+});
+
+describe("sendEmail in production", () => {
+	it("throws when Resend rejects the send, so callers can report the failure", async () => {
+		Object.assign(env, { NODE_ENV: "production", RESEND_API_KEY: "re_test" });
+		globalThis.fetch = mock(
+			async () => new Response("domain not verified", { status: 403 }),
+		) as unknown as typeof fetch;
+
+		await expect(sendEmail(params)).rejects.toThrow();
+	});
+
+	it("throws when RESEND_API_KEY is missing", async () => {
+		Object.assign(env, { NODE_ENV: "production", RESEND_API_KEY: undefined });
+
+		await expect(sendEmail(params)).rejects.toThrow();
 	});
 });
