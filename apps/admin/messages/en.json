@@ -550,5 +550,20 @@
 	"requests_pagination_range": "{start}–{end} of {total} requests",
 	"requests_pagination_range_one": "{start}–{end} of {total} request",
 	"dashboard_pending_requests": "Requests waiting",
-	"dashboard_pending_requests_open": "Go to requests"
+	"dashboard_pending_requests_open": "Go to requests",
+	"request_detail_title": "Change request",
+	"request_detail_type_vat": "VAT number change",
+	"request_detail_type_document": "Document change",
+	"request_detail_current": "Current",
+	"request_detail_requested": "Requested",
+	"request_detail_seller_link": "Seller profile",
+	"request_detail_not_pending": "This request is no longer pending",
+	"request_detail_approve_confirm": "Approve the request? The new data replaces the current data.",
+	"request_detail_reject_title": "Reject the request",
+	"request_detail_reject_reason": "Reason for rejection",
+	"request_detail_reject_hint": "The seller will receive it by email.",
+	"request_detail_approved": "Request approved",
+	"request_detail_rejected": "Request rejected",
+	"request_detail_action_error": "Operation failed",
+	"request_detail_not_found": "Request not found"
 }

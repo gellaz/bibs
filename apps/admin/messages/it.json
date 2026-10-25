@@ -550,5 +550,20 @@
 	"requests_pagination_range": "{start}–{end} di {total} richieste",
 	"requests_pagination_range_one": "{start}–{end} di {total} richiesta",
 	"dashboard_pending_requests": "Richieste in attesa",
-	"dashboard_pending_requests_open": "Vai alle richieste"
+	"dashboard_pending_requests_open": "Vai alle richieste",
+	"request_detail_title": "Richiesta di modifica",
+	"request_detail_type_vat": "Cambio partita IVA",
+	"request_detail_type_document": "Cambio documento",
+	"request_detail_current": "Attuale",
+	"request_detail_requested": "Richiesto",
+	"request_detail_seller_link": "Scheda venditore",
+	"request_detail_not_pending": "Questa richiesta non è più in attesa",
+	"request_detail_approve_confirm": "Approvare la richiesta? I nuovi dati sostituiscono quelli attuali.",
+	"request_detail_reject_title": "Rifiuta la richiesta",
+	"request_detail_reject_reason": "Motivo del rifiuto",
+	"request_detail_reject_hint": "Il venditore lo riceverà via email.",
+	"request_detail_approved": "Richiesta approvata",
+	"request_detail_rejected": "Richiesta rifiutata",
+	"request_detail_action_error": "Operazione non riuscita",
+	"request_detail_not_found": "Richiesta non trovata"
 }
