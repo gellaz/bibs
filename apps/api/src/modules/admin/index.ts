@@ -10,6 +10,7 @@ import { holidayDefinitionsRoutes } from "./routes/holiday-definitions";
 import { productCategoriesWriteRoutes } from "./routes/product-categories";
 import { productCharacteristicsRoutes } from "./routes/product-characteristics";
 import { productMacroCategoriesWriteRoutes } from "./routes/product-macro-categories";
+import { requestsRoutes } from "./routes/requests";
 import { sellerChangesRoutes } from "./routes/seller-changes";
 import { sellersRoutes } from "./routes/sellers";
 import { storeCategoriesWriteRoutes } from "./routes/store-categories";
@@ -48,5 +49,6 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				.use(sellersRoutes)
 				.use(storesRoutes)
 				.use(sellerChangesRoutes)
+				.use(requestsRoutes)
 				.use(adminBillingRoutes),
 	);

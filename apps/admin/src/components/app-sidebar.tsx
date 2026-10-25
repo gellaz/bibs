@@ -7,15 +7,18 @@ import {
 	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
+	SidebarMenuBadge,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
 } from "@bibs/ui/components/sidebar";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
 	CreditCardIcon,
 	HomeIcon,
+	InboxIcon,
 	PackageIcon,
 	SettingsIcon,
 	ShieldCheckIcon,
@@ -24,6 +27,7 @@ import {
 	WalletIcon,
 } from "lucide-react";
 import { NavUser } from "@/components/nav-user";
+import { requestCountsQuery } from "@/features/requests/use-request-counts";
 import { m } from "@/paraglide/messages";
 
 // Titoli come funzioni: vanno letti a ogni render, dopo un cambio di lingua.
@@ -31,6 +35,7 @@ const navItems = [
 	{ title: m.shell_nav_home, to: "/" as const, icon: HomeIcon },
 	{ title: m.common_users, to: "/users" as const, icon: UsersIcon },
 	{ title: m.common_sellers, to: "/sellers" as const, icon: ShieldCheckIcon },
+	{ title: m.requests_title, to: "/requests" as const, icon: InboxIcon },
 	{ title: m.common_stores, to: "/stores" as const, icon: StoreIcon },
 	{ title: m.common_products, to: "/products" as const, icon: PackageIcon },
 	{ title: m.common_revenue, to: "/collections" as const, icon: WalletIcon },
@@ -44,6 +49,7 @@ const navItems = [
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const { data: counts } = useQuery(requestCountsQuery);
 
 	return (
 		<Sidebar collapsible="icon" {...props}>
@@ -86,6 +92,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 											<item.icon />
 											<span>{item.title()}</span>
 										</SidebarMenuButton>
+										{item.to === "/requests" && counts && counts.total > 0 && (
+											<SidebarMenuBadge>{counts.total}</SidebarMenuBadge>
+										)}
 									</SidebarMenuItem>
 								);
 							})}

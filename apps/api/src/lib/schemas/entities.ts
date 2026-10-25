@@ -935,7 +935,12 @@ export const SellerProfileChangeSchema = t.Object({
 	}),
 	changeData: t.Unknown({ description: "Dati della modifica (JSON)" }),
 	status: t.Union(
-		[t.Literal("pending"), t.Literal("approved"), t.Literal("rejected")],
+		[
+			t.Literal("pending"),
+			t.Literal("approved"),
+			t.Literal("rejected"),
+			t.Literal("cancelled"),
+		],
 		{ description: "Stato della richiesta" },
 	),
 	reviewedBy: t.Nullable(t.String()),
@@ -1380,5 +1385,9 @@ export const StoreOrderTypesSchema = t.Object({
 	}),
 	chargesEnabled: t.Boolean({
 		description: "Il venditore può incassare online (Stripe Connect)",
+	}),
+	vatChangeBlocked: t.Boolean({
+		description:
+			"Cambio partita IVA in attesa: gli ordini sono bloccati finché l'admin non decide",
 	}),
 });

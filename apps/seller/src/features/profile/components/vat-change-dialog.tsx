@@ -30,6 +30,8 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });
+			// Il blocco ordini copre ogni negozio: ricarica anche i tipi d'ordine.
+			void qc.invalidateQueries({ queryKey: ["store"] });
 			toast.success(m.profile_vat_request_sent());
 			setOpen(false);
 			setVat("");

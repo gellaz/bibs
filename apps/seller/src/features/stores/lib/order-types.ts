@@ -1,10 +1,15 @@
 export type OrderType = "reserve_pickup" | "pay_pickup";
 
-/** Cosa vede il cliente: Paga e ritira solo con i pagamenti abilitati (stessa regola dell'API). */
+/**
+ * Cosa vede il cliente: Paga e ritira solo con i pagamenti abilitati, niente
+ * con un cambio di partita IVA in attesa (stessa regola dell'API).
+ */
 export function offeredTypes(
 	draft: OrderType[],
 	chargesEnabled: boolean,
+	vatChangeBlocked: boolean,
 ): OrderType[] {
+	if (vatChangeBlocked) return [];
 	return draft.filter((t) => t === "reserve_pickup" || chargesEnabled);
 }
 
@@ -18,6 +23,6 @@ export function isToggleLocked(
 	chargesEnabled: boolean,
 ): boolean {
 	if (!draft.includes(type)) return type === "pay_pickup" && !chargesEnabled;
-	const offered = offeredTypes(draft, chargesEnabled);
+	const offered = offeredTypes(draft, chargesEnabled, false);
 	return offered.length === 1 && offered[0] === type;
 }

@@ -22,6 +22,7 @@ import { useSellerSettings } from "@/hooks/use-seller-settings";
 import { api, unwrap } from "@/lib/api";
 import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
+import { PendingVatChange } from "./pending-vat-change";
 import { VatChangeDialog } from "./vat-change-dialog";
 
 export const businessInfoSchema = z.object({
@@ -51,6 +52,7 @@ interface Props {
 export function BusinessInfoCard({ readOnly }: Props) {
 	const { data, isLoading } = useSellerSettings();
 	const org = data?.organization;
+	const pendingVat = data?.pendingChanges.find((c) => c.changeType === "vat");
 	const qc = useQueryClient();
 
 	const {
@@ -138,8 +140,13 @@ export function BusinessInfoCard({ readOnly }: Props) {
 								value={org.vatNumber}
 								className="flex-1"
 							/>
-							{!readOnly && <VatChangeDialog currentVat={org.vatNumber} />}
+							{!readOnly && !pendingVat && (
+								<VatChangeDialog currentVat={org.vatNumber} />
+							)}
 						</div>
+						{pendingVat && (
+							<PendingVatChange change={pendingVat} canCancel={!readOnly} />
+						)}
 					</Field>
 
 					<Field data-invalid={!!formState.errors.addressLine1}>

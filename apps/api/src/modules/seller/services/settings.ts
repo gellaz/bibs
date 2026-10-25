@@ -4,7 +4,9 @@ import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
+import { notifyAdminsNewRequest } from "@/lib/admin-notifications";
 import { ServiceError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
@@ -309,7 +311,7 @@ export async function requestVatChange(params: VatChangeParams) {
 		);
 	}
 
-	return db.transaction(async (tx) => {
+	const change = await db.transaction(async (tx) => {
 		const [change] = await tx
 			.insert(sellerProfileChange)
 			.values({
@@ -327,6 +329,83 @@ export async function requestVatChange(params: VatChangeParams) {
 
 		return change;
 	});
+	await notifyAdminsNewRequest({
+		kind: "vat",
+		sellerProfileId,
+		changeId: change.id,
+	});
+	return change;
+}
+
+// Document photos are personal data: delete the ones nobody references any
+// more. Best-effort, after the commit: a failed delete leaves an orphan file,
+// never a half-applied decision. A decided request's changeData may point at a
+// deleted key: the admin detail hides the photo once the request isn't pending.
+export async function deleteDocumentImage(
+	key: string,
+	sellerProfileId: string,
+	action: string,
+) {
+	const { s3 } = await import("@/lib/s3");
+	await s3.delete(key).catch((err) => {
+		logger.warn(
+			{ sellerProfileId, key, action, err: String(err) },
+			"Cleanup foto del documento fallito",
+		);
+	});
+}
+
+export async function cancelSellerChange(params: {
+	sellerProfileId: string;
+	changeId: string;
+}) {
+	const updated = await db.transaction(async (tx) => {
+		// Compare-and-set come in approveChange/rejectChange: una decisione
+		// dell'admin arrivata prima non si sovrascrive.
+		const [updated] = await tx
+			.update(sellerProfileChange)
+			.set({ status: "cancelled" })
+			.where(
+				and(
+					eq(sellerProfileChange.id, params.changeId),
+					eq(sellerProfileChange.sellerProfileId, params.sellerProfileId),
+					eq(sellerProfileChange.status, "pending"),
+				),
+			)
+			.returning();
+
+		if (!updated) {
+			throw new ServiceError(
+				400,
+				"La richiesta di modifica non è più in attesa",
+			);
+		}
+
+		if (updated.changeType === "vat") {
+			await tx
+				.update(sellerProfile)
+				.set({ vatChangeBlocked: false })
+				.where(eq(sellerProfile.id, params.sellerProfileId));
+		}
+
+		return updated;
+	});
+
+	// La foto caricata con la richiesta non serve più (come in rejectChange).
+	const { documentImageKey } = updated.changeData as {
+		documentImageKey?: unknown;
+	};
+	if (
+		updated.changeType === "document" &&
+		typeof documentImageKey === "string"
+	) {
+		await deleteDocumentImage(
+			documentImageKey,
+			params.sellerProfileId,
+			"document_change_cancelled_cleanup_failed",
+		);
+	}
+	return updated;
 }
 
 interface DocumentChangeParams {
@@ -360,8 +439,9 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 		? { documentImageKey: key, documentImageUrl: publicUrl(key) }
 		: {};
 
+	let change: typeof sellerProfileChange.$inferSelect;
 	try {
-		const [change] = await db
+		[change] = await db
 			.insert(sellerProfileChange)
 			.values({
 				sellerProfileId,
@@ -369,11 +449,16 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 				changeData: { ...data, documentNumber, ...imageData },
 			})
 			.returning();
-		return change;
 	} catch (err) {
 		// Nessuna richiesta salvata (es. una concorrente ha preso il posto):
 		// il file caricato resterebbe orfano (best-effort).
 		if (key) await s3.delete(key).catch(() => {});
 		throw err;
 	}
+	await notifyAdminsNewRequest({
+		kind: "document",
+		sellerProfileId,
+		changeId: change.id,
+	});
+	return change;
 }

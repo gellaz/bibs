@@ -23,6 +23,7 @@ import {
 } from "@/modules/billing/services/connect-account";
 import { requireOwner, withSeller } from "../context";
 import {
+	cancelSellerChange,
 	getSellerSettings,
 	requestDocumentChange,
 	requestVatChange,
@@ -192,6 +193,38 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 				summary: "Richiedi aggiornamento documento",
 				description:
 					"Crea una richiesta di aggiornamento del documento di identità. Richiede approvazione admin. L'operatività del negozio non viene interrotta. Solo il titolare può richiedere.",
+				tags: ["Seller - Settings"],
+			},
+		},
+	)
+	.patch(
+		"/changes/:changeId/cancel",
+		async (ctx) => {
+			const { sellerProfile: sp, store, isOwner } = withSeller(ctx);
+			requireOwner(isOwner);
+			const data = await cancelSellerChange({
+				sellerProfileId: sp.id,
+				changeId: ctx.params.changeId,
+			});
+
+			getLogger(store).info(
+				{
+					sellerId: sp.id,
+					changeId: data.id,
+					action: "cancel_seller_change",
+				},
+				"Seller change request cancelled",
+			);
+
+			return ok(data);
+		},
+		{
+			params: t.Object({ changeId: t.String() }),
+			response: withErrors({ 200: okRes(SellerProfileChangeSchema) }),
+			detail: {
+				summary: "Annulla richiesta di modifica",
+				description:
+					"Annulla una richiesta di modifica ancora in attesa. Per la partita IVA toglie anche il blocco dei nuovi ordini. Solo il titolare.",
 				tags: ["Seller - Settings"],
 			},
 		},

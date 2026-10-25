@@ -8,6 +8,7 @@ import {
 	eq,
 	ilike,
 	inArray,
+	ne,
 	or,
 	sql,
 } from "drizzle-orm";
@@ -16,11 +17,9 @@ import { user } from "@/db/schemas/auth";
 import { organization, type VatStatus } from "@/db/schemas/organization";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
-import { ServiceError } from "@/lib/errors";
+import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
-import { logger } from "@/lib/logger";
 import { parsePagination } from "@/lib/pagination";
-import { s3 } from "@/lib/s3";
 import {
 	DocumentChangeBody,
 	type RejectSellerBody,
@@ -29,8 +28,10 @@ import {
 } from "@/lib/schemas/forms";
 import {
 	notifySellerApproved,
+	notifySellerChangeDecided,
 	notifySellerRejected,
 } from "@/modules/seller/services/onboarding-notifications";
+import { deleteDocumentImage } from "@/modules/seller/services/settings";
 
 /** Statuses visible to admins (past onboarding steps). */
 const REVIEWABLE_STATUSES: OnboardingStatus[] = [
@@ -579,13 +580,40 @@ export async function approveChange(changeId: string, adminUserId: string) {
 
 		// Apply the change based on type
 		if (change.changeType === "vat") {
-			await tx
-				.update(organization)
-				.set({
-					vatNumber: (changeData as Static<typeof VatChangeBody>).vatNumber,
-					vatStatus: "verified",
-				})
-				.where(eq(organization.sellerProfileId, change.sellerProfileId));
+			const { vatNumber } = changeData as Static<typeof VatChangeBody>;
+			// Un altro venditore può averla registrata dopo la richiesta: il 409
+			// annulla anche il passaggio a "approved" (stessa transazione).
+			const takenBy = await tx.query.organization.findFirst({
+				columns: { id: true },
+				where: and(
+					eq(organization.vatNumber, vatNumber),
+					ne(organization.sellerProfileId, change.sellerProfileId),
+				),
+			});
+			if (takenBy) {
+				throw new ServiceError(
+					409,
+					"Questa partita IVA è già registrata da un altro venditore",
+				);
+			}
+			try {
+				await tx
+					.update(organization)
+					.set({
+						vatNumber,
+						vatStatus: "verified",
+					})
+					.where(eq(organization.sellerProfileId, change.sellerProfileId));
+			} catch (err) {
+				// Registrazione concorrente della stessa partita IVA dopo il controllo.
+				if (isUniqueViolation(err)) {
+					throw new ServiceError(
+						409,
+						"Questa partita IVA è già registrata da un altro venditore",
+					);
+				}
+				throw err;
+			}
 
 			// Unblock new orders
 			await tx
@@ -631,6 +659,12 @@ export async function approveChange(changeId: string, adminUserId: string) {
 			"document_change_old_cleanup_failed",
 		);
 	}
+	await notifySellerChangeDecided({
+		sellerProfileId: change.sellerProfileId,
+		changeType: change.changeType,
+		approved: true,
+		reason: null,
+	});
 	return updated;
 }
 
@@ -701,22 +735,11 @@ export async function rejectChange(params: RejectChangeParams) {
 			"document_change_rejected_cleanup_failed",
 		);
 	}
-	return updated;
-}
-
-// Document photos are personal data: delete the ones nobody references any
-// more. Best-effort, after the commit: a failed delete leaves an orphan file,
-// never a half-applied decision. Only pending requests are ever shown, so a
-// decided request's changeData pointing at a deleted key is never read.
-async function deleteDocumentImage(
-	key: string,
-	sellerProfileId: string,
-	action: string,
-) {
-	await s3.delete(key).catch((err) => {
-		logger.warn(
-			{ sellerProfileId, key, action, err: String(err) },
-			"Cleanup foto del documento fallito",
-		);
+	await notifySellerChangeDecided({
+		sellerProfileId: change.sellerProfileId,
+		changeType: change.changeType,
+		approved: false,
+		reason: updated.rejectionReason,
 	});
+	return updated;
 }

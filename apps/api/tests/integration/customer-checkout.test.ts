@@ -30,6 +30,7 @@ import { customerProfile as customerProfileTable } from "@/db/schemas/customer";
 import { order } from "@/db/schemas/order";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
+import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { reservationDeadline } from "@/lib/holidays";
 import { checkoutRoutes } from "@/modules/customer/routes/checkout";
@@ -292,6 +293,51 @@ describe("createCheckout", () => {
 				],
 			}),
 		).rejects.toMatchObject({ status: 400 });
+	});
+});
+
+describe("createCheckout — cambio partita IVA in attesa", () => {
+	async function blockedAndFree() {
+		const db = getTestDb();
+		const blockedSeller = await createTestSeller(db);
+		const freeSeller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const blocked = await sellable(blockedSeller.profile.id, "Bloccato");
+		const free = await sellable(freeSeller.profile.id, "Libero");
+		await createTestCartItem(db, customer.profile.id, blocked.sp.id);
+		await createTestCartItem(db, customer.profile.id, free.sp.id);
+		await db
+			.update(sellerProfile)
+			.set({ vatChangeBlocked: true })
+			.where(eq(sellerProfile.id, blockedSeller.profile.id));
+		return { db, customer, blocked, free };
+	}
+
+	it("rifiuta un ordine per un venditore con cambio partita IVA in attesa", async () => {
+		const { db, customer, blocked } = await blockedAndFree();
+		await expect(
+			createCheckout({
+				customerProfileId: customer.profile.id,
+				customerPoints: 0,
+				idempotencyKey: crypto.randomUUID(),
+				stores: [{ storeId: blocked.store.id, type: "reserve_pickup" }],
+			}),
+		).rejects.toMatchObject({
+			status: 400,
+			message: "Bloccato non offre questa modalità d'acquisto",
+		});
+		expect(await db.select().from(order)).toHaveLength(0);
+	});
+
+	it("ordina dagli altri negozi del carrello quando uno è bloccato", async () => {
+		const { customer, free } = await blockedAndFree();
+		const result = await createCheckout({
+			customerProfileId: customer.profile.id,
+			customerPoints: 0,
+			idempotencyKey: crypto.randomUUID(),
+			stores: [{ storeId: free.store.id, type: "reserve_pickup" }],
+		});
+		expect(result.orders).toHaveLength(1);
 	});
 });
 
