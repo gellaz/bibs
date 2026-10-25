@@ -168,7 +168,8 @@ Dal 2026-10-25 l'API passa da Elysia a Hono e i frontend da Eden a `hc`, un modu
 per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline e
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
-(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1).
+(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
+`locations/` e `registration/` (U2+U4).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
@@ -207,8 +208,16 @@ verifica di ogni PR stanno nel piano
   /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
   un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
   query → body.
+- **Rate limit.** `rateLimit({ name, limits })` (`src/plugins/rate-limit.ts`) è un
+  middleware Hono: va dopo i `v()` e dopo la guardia o `publicRoute` (un input non
+  valido non consuma budget; la chiave `email` è quella del body validato). Sotto
+  il mount l'IP è l'`x-forwarded-for` che Elysia ha già riscritto con l'IP del
+  socket.
 - **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
-  (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
+  (stessi nomi di `lib/schemas/`), scritti modulo per modulo; gli input che in
+  Elysia erano scritti nella route stanno in `lib/zod/<modulo>.ts`
+  (`registration.ts`, `locations.ts`), senza effetti all'import, così li usano
+  anche i casi di parità. I tipi propri di
   Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
   `zFiles`, `zFormat`); per il resto Zod normale, con `title`/`error`/`description`
   in `.meta()`. Regole per scrivere un gemello:
@@ -228,7 +237,8 @@ verifica di ogni PR stanno nel piano
   degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
-  `src/types.ts` (`MeApp`); ogni app crea in `src/lib/api.ts` il client del
+  `src/types.ts` (`MeApp`, `LocationsApp`, `RegistrationApp`); ogni app crea in
+  `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

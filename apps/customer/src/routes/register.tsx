@@ -15,13 +15,14 @@ import {
 import { Input } from "@bibs/ui/components/input";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { PasswordInput } from "@bibs/ui/custom/password-input";
+import type { ErrorBody } from "@bibs/ui/lib/api-client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthLocaleFooter } from "@/components/auth-locale-footer";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
-import { api } from "@/lib/api";
+import { registerApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
@@ -80,17 +81,13 @@ function RegisterPage() {
 		setError("");
 		setPending(null);
 		try {
-			const { error: regError } = await api().register.customer.post({
-				email: data.email,
-				password: data.password,
+			const res = await registerApi.customer.$post({
+				json: { email: data.email, password: data.password },
 			});
 
-			if (regError) {
-				const errVal = regError.value as {
-					error?: string;
-					message?: string;
-					resentAt?: string;
-				};
+			if (!res.ok) {
+				// Un corpo non JSON (proxy) vale come errore senza dettagli, come con Eden.
+				const errVal: Partial<ErrorBody> = await res.json().catch(() => ({}));
 
 				if (errVal.error === "EMAIL_PENDING_VERIFICATION" && errVal.resentAt) {
 					setPending({
