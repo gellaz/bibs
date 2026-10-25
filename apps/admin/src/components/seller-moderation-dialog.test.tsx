@@ -23,7 +23,12 @@ function renderDialog(
 ) {
 	render(
 		<SellerModerationDialog
-			target={{ type, sellerId: "s1", sellerName: "Bottega Rossi" }}
+			target={{
+				type,
+				sellerId: "s1",
+				sellerName: "Bottega Rossi",
+				updatedAt: new Date(),
+			}}
 			onOpenChange={() => {}}
 			onConfirm={onConfirm}
 			isPending={isPending}
