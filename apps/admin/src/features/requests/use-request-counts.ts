@@ -4,6 +4,8 @@ import { api } from "@/lib/api";
 /** Conteggi delle richieste in attesa: menu, schede della pagina, dashboard. */
 export const requestCountsQuery = queryOptions({
 	queryKey: ["admin-requests", "counts"],
+	// Il numero nel menu è la notifica in-app: si aggiorna anche senza cambi di focus.
+	refetchInterval: 60_000,
 	queryFn: async () => {
 		const response = await api().admin.requests.counts.get();
 		if (response.error) return null;

@@ -3,6 +3,7 @@ import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
+import { unwrap } from "@bibs/ui/lib/api-client";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
@@ -95,12 +96,7 @@ function RequestsPage() {
 			const response = await api().admin.requests.get({
 				query: { type, page, limit },
 			});
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m.requests_load_error(),
-				);
-			}
-			return response.data;
+			return unwrap(response, m.requests_load_error());
 		},
 	});
 

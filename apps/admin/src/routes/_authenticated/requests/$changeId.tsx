@@ -12,6 +12,8 @@ import {
 import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { unwrap } from "@bibs/ui/lib/api-client";
+import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -51,12 +53,7 @@ function ChangeDetailPage() {
 		queryKey: detailKey,
 		queryFn: async () => {
 			const response = await api().admin.requests.changes({ changeId }).get();
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m.request_detail_not_found(),
-				);
-			}
-			return response.data.data;
+			return unwrap(response, m.request_detail_not_found()).data;
 		},
 	});
 
@@ -67,11 +64,7 @@ function ChangeDetailPage() {
 				reason === null
 					? await change.approve.patch()
 					: await change.reject.patch({ reason });
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m.request_detail_action_error(),
-				);
-			}
+			unwrap(response, m.request_detail_action_error());
 			return reason === null;
 		},
 		onSuccess: (approved) => {
@@ -86,9 +79,9 @@ function ChangeDetailPage() {
 			toast.error(e.message);
 			setApproveOpen(false);
 			setRejectOpen(false);
-			// 400 «non più in attesa»: ricarica per mostrare lo stato attuale.
+			// 400 «non più in attesa»: ricarica dettaglio, lista e badge.
 			// Con il 409 sulla partita IVA la richiesta resta in attesa e rifiutabile.
-			void queryClient.invalidateQueries({ queryKey: detailKey });
+			void queryClient.invalidateQueries({ queryKey: ["admin-requests"] });
 		},
 	});
 
@@ -136,6 +129,7 @@ function ChangeDetailPage() {
 								<Button
 									variant="destructive"
 									size="sm"
+									disabled={decide.isPending}
 									onClick={() => setRejectOpen(true)}
 								>
 									{m.sellers_reject()}
@@ -143,6 +137,7 @@ function ChangeDetailPage() {
 								<Button
 									variant="success"
 									size="sm"
+									disabled={decide.isPending}
 									onClick={() => setApproveOpen(true)}
 								>
 									{m.sellers_approve()}
@@ -152,7 +147,8 @@ function ChangeDetailPage() {
 					</div>
 				</div>
 				<p className="text-muted-foreground text-sm">
-					{data.seller.businessName ?? data.seller.name ?? data.seller.email}
+					{displayName(data.seller)}
+					{data.seller.businessName && ` (${data.seller.businessName})`}
 					{" · "}
 					{data.changeType === "vat"
 						? m.request_detail_type_vat()

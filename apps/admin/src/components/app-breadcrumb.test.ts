@@ -40,6 +40,7 @@ describe("buildCrumbs", () => {
 				"subscriptions",
 				"profile",
 				"configurations",
+				"requests",
 			].map((s) => labelFor(s)),
 		).toEqual([
 			"Utenti",
@@ -52,6 +53,7 @@ describe("buildCrumbs", () => {
 			"Abbonamenti",
 			"Profilo",
 			"Configurazioni",
+			"Richieste",
 		]);
 	});
 

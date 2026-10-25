@@ -24,6 +24,7 @@ const SEGMENT_LABEL: Record<string, () => string> = {
 	subscriptions: m.billing_tab_subscriptions,
 	profile: m.shell_crumb_profile,
 	configurations: m.configurations_title,
+	requests: m.requests_title,
 };
 
 const UUID_RE =
