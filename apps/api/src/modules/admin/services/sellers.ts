@@ -28,6 +28,7 @@ import {
 } from "@/lib/schemas/forms";
 import {
 	notifySellerApproved,
+	notifySellerChangeDecided,
 	notifySellerRejected,
 } from "@/modules/seller/services/onboarding-notifications";
 import { deleteDocumentImage } from "@/modules/seller/services/settings";
@@ -647,6 +648,12 @@ export async function approveChange(changeId: string, adminUserId: string) {
 			"document_change_old_cleanup_failed",
 		);
 	}
+	await notifySellerChangeDecided({
+		sellerProfileId: change.sellerProfileId,
+		changeType: change.changeType,
+		approved: true,
+		reason: null,
+	});
 	return updated;
 }
 
@@ -717,5 +724,11 @@ export async function rejectChange(params: RejectChangeParams) {
 			"document_change_rejected_cleanup_failed",
 		);
 	}
+	await notifySellerChangeDecided({
+		sellerProfileId: change.sellerProfileId,
+		changeType: change.changeType,
+		approved: false,
+		reason: updated.rejectionReason,
+	});
 	return updated;
 }

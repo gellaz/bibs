@@ -4,6 +4,7 @@ import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
+import { notifyAdminsNewRequest } from "@/lib/admin-notifications";
 import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
@@ -160,7 +161,13 @@ export async function updateDocument(params: DocumentParams) {
 		});
 	}
 
-	if (existingOrganization) await notifyApplicationReceived(profile.id);
+	if (existingOrganization) {
+		await notifyApplicationReceived(profile.id);
+		await notifyAdminsNewRequest({
+			kind: "candidature",
+			sellerProfileId: profile.id,
+		});
+	}
 
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),
@@ -211,6 +218,10 @@ export async function updateCompany(params: CompanyParams) {
 	});
 
 	await notifyApplicationReceived(profile.id);
+	await notifyAdminsNewRequest({
+		kind: "candidature",
+		sellerProfileId: profile.id,
+	});
 
 	const updated = await fetchSellerProfileCompact(
 		eq(sellerProfile.userId, userId),

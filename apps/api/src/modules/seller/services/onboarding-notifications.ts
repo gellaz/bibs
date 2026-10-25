@@ -2,6 +2,7 @@ import {
 	type RenderedEmail,
 	renderSellerApplicationReceivedEmail,
 	renderSellerApprovedEmail,
+	renderSellerChangeOutcomeEmail,
 	renderSellerRejectedEmail,
 } from "@bibs/emails";
 import { eq } from "drizzle-orm";
@@ -92,6 +93,23 @@ export function notifySellerRejected(params: {
 				? { step: fixStep, url: sellerUrl(`/onboarding/${fixStep}`) }
 				: null,
 			supportEmail: env.SUPPORT_EMAIL,
+		}),
+	);
+}
+
+export function notifySellerChangeDecided(params: {
+	sellerProfileId: string;
+	changeType: "vat" | "document";
+	approved: boolean;
+	reason: string | null;
+}): Promise<void> {
+	const { sellerProfileId, changeType, approved, reason } = params;
+	return notifySeller("change_decided", sellerProfileId, (seller) =>
+		renderSellerChangeOutcomeEmail({
+			firstName: seller.firstName,
+			changeType,
+			approved,
+			reason,
 		}),
 	);
 }

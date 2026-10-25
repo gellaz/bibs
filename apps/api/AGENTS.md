@@ -745,6 +745,7 @@ Optional:
 - `SUPPORT_EMAIL` — support address shown to sellers in emails and in the seller app (default `supporto@bibs.it`)
 - `CUSTOMER_APP_URL` — customer frontend URL (default `http://localhost:3001`)
 - `SELLER_APP_URL` — seller frontend URL (default `http://localhost:3002`)
+- `ADMIN_APP_URL` — admin frontend URL, used in the emails to admins (default `http://localhost:3003`)
 - `GEOCODING_PROVIDER` — geocoding provider (default `photon`; `google` is not implemented yet)
 - `PHOTON_URL` — Photon endpoint (default `https://photon.komoot.io/api`)
 - `GEOCODING_USER_AGENT` — User-Agent sent to the geocoding provider (Photon requires identification)

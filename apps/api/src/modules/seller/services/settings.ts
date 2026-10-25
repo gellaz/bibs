@@ -4,6 +4,7 @@ import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
+import { notifyAdminsNewRequest } from "@/lib/admin-notifications";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import {
@@ -310,7 +311,7 @@ export async function requestVatChange(params: VatChangeParams) {
 		);
 	}
 
-	return db.transaction(async (tx) => {
+	const change = await db.transaction(async (tx) => {
 		const [change] = await tx
 			.insert(sellerProfileChange)
 			.values({
@@ -328,6 +329,12 @@ export async function requestVatChange(params: VatChangeParams) {
 
 		return change;
 	});
+	await notifyAdminsNewRequest({
+		kind: "vat",
+		sellerProfileId,
+		changeId: change.id,
+	});
+	return change;
 }
 
 // Document photos are personal data: delete the ones nobody references any
@@ -441,6 +448,11 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 				changeData: { ...data, documentNumber, ...imageData },
 			})
 			.returning();
+		await notifyAdminsNewRequest({
+			kind: "document",
+			sellerProfileId,
+			changeId: change.id,
+		});
 		return change;
 	} catch (err) {
 		// Nessuna richiesta salvata (es. una concorrente ha preso il posto):
