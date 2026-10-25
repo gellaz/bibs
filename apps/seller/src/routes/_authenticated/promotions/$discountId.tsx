@@ -19,6 +19,7 @@ import { useState } from "react";
 import { EntityFormHeader } from "@/components/entity-form-header";
 import { SectionHeader } from "@/components/section-header";
 import { DiscountForm } from "@/features/promotions/components/discount-form";
+import { toLocal } from "@/features/promotions/components/discount-period-picker";
 import { IncludedProductsList } from "@/features/promotions/components/included-products-list";
 import { PromotionStateBadge } from "@/features/promotions/components/promotion-state-badge";
 import {
@@ -126,10 +127,8 @@ function PromotionDetailPage() {
 						defaultValues={{
 							title: d.title,
 							percent: d.percent,
-							startsAt: new Date(d.startsAt).toISOString().slice(0, 16),
-							endsAt: d.endsAt
-								? new Date(d.endsAt).toISOString().slice(0, 16)
-								: "",
+							startsAt: toLocal(new Date(d.startsAt)),
+							endsAt: d.endsAt ? toLocal(new Date(d.endsAt)) : "",
 							noEndDate: !d.endsAt,
 						}}
 						disablePercent={isStarted}

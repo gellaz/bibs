@@ -5,7 +5,10 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { DiscountPercentInput } from "@/features/promotions/components/discount-percent-input";
-import { DiscountPeriodPicker } from "@/features/promotions/components/discount-period-picker";
+import {
+	DiscountPeriodPicker,
+	toLocal,
+} from "@/features/promotions/components/discount-period-picker";
 import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 
@@ -46,14 +49,6 @@ export interface DiscountFormProps {
 	submitting?: boolean;
 }
 
-function defaultLocalNow(): string {
-	const d = new Date();
-	const pad = (n: number) => n.toString().padStart(2, "0");
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-		d.getHours(),
-	)}:${pad(d.getMinutes())}`;
-}
-
 export function DiscountForm({
 	defaultValues,
 	disablePercent,
@@ -70,7 +65,7 @@ export function DiscountForm({
 		defaultValues: {
 			title: "",
 			percent: 10,
-			startsAt: defaultLocalNow(),
+			startsAt: toLocal(new Date()),
 			endsAt: "",
 			noEndDate: false,
 			...defaultValues,
