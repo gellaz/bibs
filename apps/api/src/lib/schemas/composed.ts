@@ -331,3 +331,62 @@ export const AdminStoreListItemSchema = t.Object(
 			"Negozio nella lista admin, con venditore, comune e stato dell'abbonamento",
 	},
 );
+
+// ── Admin: pagina «Richieste» ──────────────
+export const AdminRequestRowSchema = t.Object({
+	kind: t.Union([
+		t.Literal("candidature"),
+		t.Literal("vat"),
+		t.Literal("document"),
+	]),
+	id: t.String({
+		description: "ID della richiesta; per le candidature il sellerProfileId",
+	}),
+	sellerProfileId: t.String(),
+	seller: t.Object({ name: t.Nullable(t.String()), email: t.String() }),
+	businessName: t.Nullable(t.String()),
+	currentValue: t.Nullable(t.String()),
+	requestedValue: t.Nullable(t.String()),
+	submittedAt: t.Date(),
+});
+
+const DocumentSnapshotSchema = t.Object({
+	documentType: t.Union([
+		t.Literal("identity_card"),
+		t.Literal("driving_license"),
+		t.Literal("passport"),
+	]),
+	documentNumber: t.Nullable(t.String()),
+	documentExpiry: t.Nullable(t.String()),
+	issuedMunicipality: t.Nullable(
+		t.Object({ name: t.String(), provinceAcronym: t.String() }),
+	),
+	imageUrl: t.Nullable(t.String()),
+});
+
+export const AdminChangeDetailSchema = t.Object({
+	id: t.String(),
+	changeType: t.Union([t.Literal("vat"), t.Literal("document")]),
+	status: t.Union([
+		t.Literal("pending"),
+		t.Literal("approved"),
+		t.Literal("rejected"),
+		t.Literal("cancelled"),
+	]),
+	createdAt: t.Date(),
+	seller: t.Object({
+		id: t.String(),
+		name: t.Nullable(t.String()),
+		email: t.String(),
+		businessName: t.Nullable(t.String()),
+	}),
+	vat: t.Nullable(
+		t.Object({ current: t.Nullable(t.String()), requested: t.String() }),
+	),
+	document: t.Nullable(
+		t.Object({
+			current: DocumentSnapshotSchema,
+			requested: DocumentSnapshotSchema,
+		}),
+	),
+});
