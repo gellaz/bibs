@@ -1,0 +1,1255 @@
+[
+	{
+		"file": "apps/admin/src/features/store-macro-categories/store-macro-categories.config.tsx",
+		"line": 22,
+		"client": "api",
+		"path": "/store-macro-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/store-macro-categories/store-macro-categories.config.tsx",
+		"line": 32,
+		"client": "api",
+		"path": "/admin/store-macro-categories",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/store-macro-categories/store-macro-categories.config.tsx",
+		"line": 34,
+		"client": "api",
+		"path": "/admin/store-macro-categories(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/features/store-macro-categories/store-macro-categories.config.tsx",
+		"line": 38,
+		"client": "api",
+		"path": "/admin/store-macro-categories(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/admin/src/features/product-categories/product-categories.config.tsx",
+		"line": 36,
+		"client": "api",
+		"path": "/product-macro-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/product-categories/product-categories.config.tsx",
+		"line": 106,
+		"client": "api",
+		"path": "/admin/product-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/product-categories/product-categories.config.tsx",
+		"line": 119,
+		"client": "api",
+		"path": "/admin/product-categories",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/product-categories/product-categories.config.tsx",
+		"line": 124,
+		"client": "api",
+		"path": "/admin/product-categories(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/features/product-categories/product-categories.config.tsx",
+		"line": 128,
+		"client": "api",
+		"path": "/admin/product-categories(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/admin/src/features/product-categories/product-categories.config.tsx",
+		"line": 139,
+		"client": "api",
+		"path": "/admin/product-categories/import",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/product-characteristics/product-characteristics.config.tsx",
+		"line": 125,
+		"client": "api",
+		"path": "/admin/product-characteristics",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/product-characteristics/product-characteristics.config.tsx",
+		"line": 138,
+		"client": "api",
+		"path": "/admin/product-characteristics",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/product-characteristics/product-characteristics.config.tsx",
+		"line": 140,
+		"client": "api",
+		"path": "/admin/product-characteristics(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/features/product-characteristics/product-characteristics.config.tsx",
+		"line": 144,
+		"client": "api",
+		"path": "/admin/product-characteristics(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/admin/src/features/product-characteristics/product-characteristics.config.tsx",
+		"line": 170,
+		"client": "api",
+		"path": "/admin/product-characteristics/import",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/holidays/components/holidays-panel.tsx",
+		"line": 128,
+		"client": "api",
+		"path": "/admin/holiday-definitions",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/holidays/components/holidays-panel.tsx",
+		"line": 136,
+		"client": "api",
+		"path": "/admin/holiday-definitions/preview",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/holidays/components/holidays-panel.tsx",
+		"line": 151,
+		"client": "api",
+		"path": "/admin/holiday-definitions",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/holidays/components/holidays-panel.tsx",
+		"line": 169,
+		"client": "api",
+		"path": "/admin/holiday-definitions(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/features/holidays/components/holidays-panel.tsx",
+		"line": 185,
+		"client": "api",
+		"path": "/admin/holiday-definitions(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/admin/src/features/holidays/components/holidays-panel.tsx",
+		"line": 221,
+		"client": "api",
+		"path": "/admin/holiday-definitions(:param)",
+		"method": null
+	},
+	{
+		"file": "apps/admin/src/features/requests/use-request-counts.ts",
+		"line": 10,
+		"client": "api",
+		"path": "/admin/requests/counts",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/category-characteristics/hooks/use-category-characteristics.ts",
+		"line": 13,
+		"client": "api",
+		"path": "/admin/product-categories(:param)/characteristics",
+		"method": null
+	},
+	{
+		"file": "apps/admin/src/features/product-macro-categories/product-macro-categories.config.tsx",
+		"line": 34,
+		"client": "api",
+		"path": "/product-macro-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/product-macro-categories/product-macro-categories.config.tsx",
+		"line": 44,
+		"client": "api",
+		"path": "/admin/product-macro-categories",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/product-macro-categories/product-macro-categories.config.tsx",
+		"line": 49,
+		"client": "api",
+		"path": "/admin/product-macro-categories(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/features/product-macro-categories/product-macro-categories.config.tsx",
+		"line": 53,
+		"client": "api",
+		"path": "/admin/product-macro-categories(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/admin/src/features/store-categories/store-categories.config.tsx",
+		"line": 34,
+		"client": "api",
+		"path": "/store-macro-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/store-categories/store-categories.config.tsx",
+		"line": 97,
+		"client": "api",
+		"path": "/store-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/features/store-categories/store-categories.config.tsx",
+		"line": 110,
+		"client": "api",
+		"path": "/admin/store-categories",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/features/store-categories/store-categories.config.tsx",
+		"line": 115,
+		"client": "api",
+		"path": "/admin/store-categories(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/features/store-categories/store-categories.config.tsx",
+		"line": 118,
+		"client": "api",
+		"path": "/admin/store-categories(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/admin/src/features/store-categories/store-categories.config.tsx",
+		"line": 129,
+		"client": "api",
+		"path": "/admin/store-categories/import",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/components/seller-moderation-dialog.tsx",
+		"line": 85,
+		"client": "api",
+		"path": "/admin/sellers(:param)/verify",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/components/seller-moderation-dialog.tsx",
+		"line": 117,
+		"client": "api",
+		"path": "/admin/sellers(:param)/reject",
+		"method": "patch"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/configurations/index.tsx",
+		"line": 21,
+		"client": "api",
+		"path": "/admin/configurations/counts",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/stores.tsx",
+		"line": 109,
+		"client": "api",
+		"path": "/admin/stores/counts",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/stores.tsx",
+		"line": 117,
+		"client": "api",
+		"path": "/admin/stores",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/requests/index.tsx",
+		"line": 96,
+		"client": "api",
+		"path": "/admin/requests",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/requests/$changeId.tsx",
+		"line": 55,
+		"client": "api",
+		"path": "/admin/requests/changes(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/requests/$changeId.tsx",
+		"line": 62,
+		"client": "api",
+		"path": "/admin/sellers/changes(:param)",
+		"method": null
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/profile.tsx",
+		"line": 78,
+		"client": "api",
+		"path": "/me/avatar",
+		"method": "post"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/profile.tsx",
+		"line": 85,
+		"client": "api",
+		"path": "/me/avatar",
+		"method": "delete"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/billing/index.tsx",
+		"line": 23,
+		"client": "api",
+		"path": "/admin/billing/overview",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/billing/pricing.tsx",
+		"line": 49,
+		"client": "api",
+		"path": "/admin/billing/pricing/current",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/billing/pricing.tsx",
+		"line": 74,
+		"client": "api",
+		"path": "/admin/billing/pricing",
+		"method": "put"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/billing/subscriptions.tsx",
+		"line": 46,
+		"client": "api",
+		"path": "/admin/billing/subscriptions",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/sellers/index.tsx",
+		"line": 122,
+		"client": "api",
+		"path": "/admin/sellers/counts",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/sellers/index.tsx",
+		"line": 131,
+		"client": "api",
+		"path": "/admin/sellers",
+		"method": "get"
+	},
+	{
+		"file": "apps/admin/src/routes/_authenticated/sellers/$sellerId.tsx",
+		"line": 36,
+		"client": "api",
+		"path": "/admin/sellers(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/products/product-detail-api.test.ts",
+		"line": 11,
+		"client": "api",
+		"path": "/",
+		"method": null
+	},
+	{
+		"file": "apps/customer/src/features/products/product-detail-api.test.ts",
+		"line": 68,
+		"client": "api",
+		"path": "/customer/products(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/products/product-detail-api.ts",
+		"line": 29,
+		"client": "apiNoDates",
+		"path": "/customer/products(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/catalog/use-product-search.ts",
+		"line": 66,
+		"client": "api",
+		"path": "/customer/products",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/catalog/use-product-facets.ts",
+		"line": 56,
+		"client": "api",
+		"path": "/customer/products/facets",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/discovery/use-nearby-products.ts",
+		"line": 44,
+		"client": "api",
+		"path": "/customer/products",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/stores/use-store-detail.ts",
+		"line": 31,
+		"client": "api",
+		"path": "/customer/stores(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/stores/use-store-search.ts",
+		"line": 60,
+		"client": "api",
+		"path": "/customer/stores",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/stores/use-store-facets.ts",
+		"line": 47,
+		"client": "api",
+		"path": "/customer/stores/facets",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/stores/use-store-products.ts",
+		"line": 25,
+		"client": "api",
+		"path": "/customer/stores(:param)/products",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/stores/use-store-map.ts",
+		"line": 67,
+		"client": "api",
+		"path": "/customer/stores/map",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/checkout/use-checkout.ts",
+		"line": 47,
+		"client": "api",
+		"path": "/customer/checkout/reservation-deadlines",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/checkout/use-checkout.ts",
+		"line": 67,
+		"client": "api",
+		"path": "/customer/checkout/preview",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/checkout/use-checkout.ts",
+		"line": 88,
+		"client": "api",
+		"path": "/customer/checkout",
+		"method": "post"
+	},
+	{
+		"file": "apps/customer/src/features/checkout/use-checkout.ts",
+		"line": 121,
+		"client": "api",
+		"path": "/customer/checkouts(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/profile/use-customer-profile.ts",
+		"line": 6,
+		"client": "api",
+		"path": "/customer/profile",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/profile/profile-identity.tsx",
+		"line": 56,
+		"client": "api",
+		"path": "/me/avatar",
+		"method": "post"
+	},
+	{
+		"file": "apps/customer/src/features/profile/profile-identity.tsx",
+		"line": 63,
+		"client": "api",
+		"path": "/me/avatar",
+		"method": "delete"
+	},
+	{
+		"file": "apps/customer/src/features/addresses/use-geocode.ts",
+		"line": 8,
+		"client": "api",
+		"path": "/locations/geocode",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/addresses/use-addresses.ts",
+		"line": 11,
+		"client": "api",
+		"path": "/customer/addresses",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/addresses/use-municipalities.ts",
+		"line": 29,
+		"client": "api",
+		"path": "/locations/municipalities/all",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/addresses/use-address-mutations.ts",
+		"line": 22,
+		"client": "api",
+		"path": "/customer/addresses",
+		"method": "post"
+	},
+	{
+		"file": "apps/customer/src/features/addresses/use-address-mutations.ts",
+		"line": 34,
+		"client": "api",
+		"path": "/customer/addresses(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/customer/src/features/addresses/use-address-mutations.ts",
+		"line": 48,
+		"client": "api",
+		"path": "/customer/addresses(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/customer/src/features/points/use-points.ts",
+		"line": 15,
+		"client": "api",
+		"path": "/customer/points",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/cart/use-cart.ts",
+		"line": 14,
+		"client": "api",
+		"path": "/customer/cart",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/cart/use-cart.ts",
+		"line": 52,
+		"client": "api",
+		"path": "/customer/cart/items",
+		"method": "post"
+	},
+	{
+		"file": "apps/customer/src/features/cart/use-cart.ts",
+		"line": 64,
+		"client": "api",
+		"path": "/customer/cart/items(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/customer/src/features/cart/use-cart.ts",
+		"line": 75,
+		"client": "api",
+		"path": "/customer/cart/items(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/customer/src/features/orders/use-orders.ts",
+		"line": 18,
+		"client": "api",
+		"path": "/customer/orders",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/orders/use-orders.ts",
+		"line": 31,
+		"client": "api",
+		"path": "/customer/orders(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/customer/src/features/orders/use-orders.ts",
+		"line": 41,
+		"client": "api",
+		"path": "/customer/orders(:param)/cancel",
+		"method": "post"
+	},
+	{
+		"file": "apps/customer/src/routes/register.tsx",
+		"line": 83,
+		"client": "api",
+		"path": "/register/customer",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/product-status-tabs.tsx",
+		"line": 18,
+		"client": "api",
+		"path": "/seller/products/status-counts",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/brand-combobox.tsx",
+		"line": 57,
+		"client": "api",
+		"path": "/seller/brands",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/product-category-picker.tsx",
+		"line": 24,
+		"client": "api",
+		"path": "/product-macro-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/product-category-picker.tsx",
+		"line": 46,
+		"client": "api",
+		"path": "/product-categories",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/product-stock-manager.tsx",
+		"line": 56,
+		"client": "api",
+		"path": "/seller/products(:param)/stores(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/product-stock-manager.tsx",
+		"line": 73,
+		"client": "api",
+		"path": "/seller/products(:param)/stores",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/product-form.tsx",
+		"line": 188,
+		"client": "api",
+		"path": "/seller/products/lookup",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/products/components/store-assignment-dialog.tsx",
+		"line": 47,
+		"client": "api",
+		"path": "/seller/products(:param)/stores",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-seller-categories-in-use.ts",
+		"line": 18,
+		"client": "api",
+		"path": "/seller/products/categories-in-use",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-stock-adjust-mutation.ts",
+		"line": 69,
+		"client": "api",
+		"path": "/seller/products(:param)/stores(:param)/stock-adjust",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-stock-adjust-mutation.ts",
+		"line": 80,
+		"client": "api",
+		"path": "/seller/products(:param)/stores(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-bulk-stock-adjust-mutation.ts",
+		"line": 35,
+		"client": "api",
+		"path": "/seller/products/bulk/stock-adjust",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-category-characteristics.ts",
+		"line": 6,
+		"client": "api",
+		"path": "/seller/product-categories(:param)/characteristics",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-product-mutations.ts",
+		"line": 44,
+		"client": "api",
+		"path": "/seller/products(:param)/status",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-product-mutations.ts",
+		"line": 76,
+		"client": "api",
+		"path": "/seller/products/bulk/status",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/products/hooks/use-product-mutations.ts",
+		"line": 98,
+		"client": "api",
+		"path": "/seller/products/bulk/delete-permanent",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/online-payments/hooks/use-online-payments.ts",
+		"line": 9,
+		"client": "api",
+		"path": "/seller/settings/payments/onboarding",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/online-payments/hooks/use-online-payments.ts",
+		"line": 20,
+		"client": "api",
+		"path": "/seller/settings/payments/sync",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/stores/components/reservation-hours-field.tsx",
+		"line": 54,
+		"client": "api",
+		"path": "/seller/stores(:param)/reservation-preview",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/stores/components/sales-settings-panel.tsx",
+		"line": 69,
+		"client": "api",
+		"path": "/seller/stores(:param)/order-types",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/stores/components/sales-settings-panel.tsx",
+		"line": 85,
+		"client": "api",
+		"path": "/seller/stores(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/stores/components/hours-closures-panel.tsx",
+		"line": 87,
+		"client": "api",
+		"path": "/seller/stores(:param)/closures",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/stores/components/hours-closures-panel.tsx",
+		"line": 112,
+		"client": "api",
+		"path": "/seller/stores(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/stores/components/hours-closures-panel.tsx",
+		"line": 121,
+		"client": "api",
+		"path": "/seller/stores(:param)/closures",
+		"method": "put"
+	},
+	{
+		"file": "apps/seller/src/features/stores/hooks/use-geocode.ts",
+		"line": 7,
+		"client": "api",
+		"path": "/locations/geocode",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/stores/hooks/use-store-order-types.ts",
+		"line": 14,
+		"client": "api",
+		"path": "/seller/stores(:param)/order-types",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 25,
+		"client": "api",
+		"path": "/seller/discounts",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 37,
+		"client": "api",
+		"path": "/seller/discounts(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 48,
+		"client": "api",
+		"path": "/seller/discounts(:param)/pause",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 62,
+		"client": "api",
+		"path": "/seller/discounts(:param)/archive",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 81,
+		"client": "api",
+		"path": "/seller/discounts(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 95,
+		"client": "api",
+		"path": "/seller/discounts(:param)/products",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 116,
+		"client": "api",
+		"path": "/seller/discounts(:param)/products",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/promotions/hooks/use-discounts.ts",
+		"line": 133,
+		"client": "api",
+		"path": "/seller/discounts(:param)/products",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/profile/components/personal-info-card.tsx",
+		"line": 73,
+		"client": "api",
+		"path": "/me/avatar",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/profile/components/personal-info-card.tsx",
+		"line": 80,
+		"client": "api",
+		"path": "/me/avatar",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/features/profile/components/business-info-card.tsx",
+		"line": 83,
+		"client": "api",
+		"path": "/seller/settings/company",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/profile/components/pending-vat-change.tsx",
+		"line": 32,
+		"client": "api",
+		"path": "/seller/settings/changes(:param)/cancel",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/profile/components/vat-change-dialog.tsx",
+		"line": 28,
+		"client": "api",
+		"path": "/seller/settings/vat",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-orders.ts",
+		"line": 20,
+		"client": "api",
+		"path": "/seller/orders",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-orders.ts",
+		"line": 35,
+		"client": "api",
+		"path": "/seller/orders/counts",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-orders.ts",
+		"line": 48,
+		"client": "api",
+		"path": "/seller/orders(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-orders.ts",
+		"line": 69,
+		"client": "api",
+		"path": "/seller/orders(:param)/ready",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-orders.ts",
+		"line": 77,
+		"client": "api",
+		"path": "/seller/orders(:param)/complete",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-orders.ts",
+		"line": 85,
+		"client": "api",
+		"path": "/seller/orders(:param)/cancel",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-pickup.ts",
+		"line": 12,
+		"client": "api",
+		"path": "/seller/orders/pickup(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/features/orders/hooks/use-pickup.ts",
+		"line": 27,
+		"client": "api",
+		"path": "/seller/orders/pickup",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/features/billing/components/cancel-store-dialog.tsx",
+		"line": 40,
+		"client": "api",
+		"path": "/seller/stores(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/components/store-billing-banner.tsx",
+		"line": 18,
+		"client": "api",
+		"path": "/seller/billing/portal",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/components/store-billing-banner.tsx",
+		"line": 30,
+		"client": "api",
+		"path": "/seller/stores(:param)/reactivate",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-first-store-onboarding.ts",
+		"line": 25,
+		"client": "api",
+		"path": "/seller/stores/archived",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-seller-settings.ts",
+		"line": 20,
+		"client": "api",
+		"path": "/seller/settings",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-onboarding.ts",
+		"line": 19,
+		"client": "api",
+		"path": "/seller/onboarding/status",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-onboarding.ts",
+		"line": 63,
+		"client": "api",
+		"path": "/seller/onboarding/personal-info",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-onboarding.ts",
+		"line": 75,
+		"client": "api",
+		"path": "/seller/onboarding/document",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-onboarding.ts",
+		"line": 95,
+		"client": "api",
+		"path": "/seller/onboarding/company",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-onboarding.ts",
+		"line": 106,
+		"client": "api",
+		"path": "/seller/onboarding/go-back",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-stores.ts",
+		"line": 13,
+		"client": "api",
+		"path": "/seller/stores",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-active-store.tsx",
+		"line": 71,
+		"client": "api",
+		"path": "/seller/billing/subscriptions",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-countries.ts",
+		"line": 13,
+		"client": "api",
+		"path": "/locations/countries",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-employee-stores.ts",
+		"line": 15,
+		"client": "api",
+		"path": "/seller/employees(:param)/stores",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-employee-stores.ts",
+		"line": 32,
+		"client": "api",
+		"path": "/seller/employees(:param)/stores",
+		"method": "put"
+	},
+	{
+		"file": "apps/seller/src/hooks/use-municipalities.ts",
+		"line": 10,
+		"client": "api",
+		"path": "/locations/municipalities/all",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/index.tsx",
+		"line": 56,
+		"client": "api",
+		"path": "/seller/dashboard",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/products/index.tsx",
+		"line": 178,
+		"client": "api",
+		"path": "/seller/products",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/products/$productId.tsx",
+		"line": 47,
+		"client": "apiNoDates",
+		"path": "/seller/products(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/products/$productId.tsx",
+		"line": 62,
+		"client": "api",
+		"path": "/seller/products(:param)/images(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/products/$productId.tsx",
+		"line": 82,
+		"client": "api",
+		"path": "/seller/products(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/products/$productId.tsx",
+		"line": 101,
+		"client": "api",
+		"path": "/seller/products(:param)/images",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/products/new.tsx",
+		"line": 35,
+		"client": "api",
+		"path": "/seller/products",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/products/new.tsx",
+		"line": 51,
+		"client": "api",
+		"path": "/seller/products(:param)/images",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/promotions/new.tsx",
+		"line": 24,
+		"client": "api",
+		"path": "/seller/discounts",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 86,
+		"client": "api",
+		"path": "/seller/employees",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 98,
+		"client": "api",
+		"path": "/seller/employees/invitations",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 109,
+		"client": "api",
+		"path": "/seller/employees/invite",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 124,
+		"client": "api",
+		"path": "/seller/employees/invitations(:param)/resend",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 145,
+		"client": "api",
+		"path": "/seller/employees/invitations(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 167,
+		"client": "api",
+		"path": "/seller/employees(:param)/ban",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 180,
+		"client": "api",
+		"path": "/seller/employees(:param)/unban",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/team/index.tsx",
+		"line": 195,
+		"client": "api",
+		"path": "/seller/employees(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/billing.tsx",
+		"line": 119,
+		"client": "api",
+		"path": "/seller/billing/summary",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/billing.tsx",
+		"line": 128,
+		"client": "api",
+		"path": "/seller/billing/subscriptions",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/billing.tsx",
+		"line": 137,
+		"client": "api",
+		"path": "/seller/billing/invoices",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/billing.tsx",
+		"line": 146,
+		"client": "api",
+		"path": "/seller/billing/portal",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/billing.tsx",
+		"line": 157,
+		"client": "api",
+		"path": "/seller/stores(:param)/reactivate",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/index.tsx",
+		"line": 85,
+		"client": "api",
+		"path": "/seller/stores",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/index.tsx",
+		"line": 114,
+		"client": "api",
+		"path": "/seller/stores(:param)/images(:param)",
+		"method": "delete"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/index.tsx",
+		"line": 133,
+		"client": "api",
+		"path": "/seller/stores(:param)",
+		"method": "patch"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/index.tsx",
+		"line": 137,
+		"client": "api",
+		"path": "/seller/stores(:param)/images",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/archived.tsx",
+		"line": 70,
+		"client": "api",
+		"path": "/seller/stores/archived",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/archived.tsx",
+		"line": 82,
+		"client": "api",
+		"path": "/seller/stores(:param)/reactivation-checkout",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/new_.processing.tsx",
+		"line": 47,
+		"client": "api",
+		"path": "/seller/checkout-sessions(:param)/status",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/new.tsx",
+		"line": 75,
+		"client": "api",
+		"path": "/seller/stores/checkout(:param)",
+		"method": "get"
+	},
+	{
+		"file": "apps/seller/src/routes/_authenticated/store/new.tsx",
+		"line": 93,
+		"client": "api",
+		"path": "/seller/stores/checkout",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/register.tsx",
+		"line": 44,
+		"client": "api",
+		"path": "/register/seller",
+		"method": "post"
+	},
+	{
+		"file": "apps/seller/src/routes/invite.$token.tsx",
+		"line": 48,
+		"client": "api",
+		"path": "/register/accept-invite",
+		"method": "post"
+	}
+]
