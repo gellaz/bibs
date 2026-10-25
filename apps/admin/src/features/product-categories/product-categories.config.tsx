@@ -1,5 +1,5 @@
 import { SelectCombobox } from "@bibs/ui/custom/select-combobox";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import { CategoryCharacteristicsButton } from "@/features/category-characteristics/components/category-characteristics-button";
@@ -10,7 +10,7 @@ import type {
 import type { CsvImportResult } from "@/features/csv-import/components/csv-import-dialog";
 import { ProductCategoryForm } from "@/features/product-categories/components/product-category-form";
 import type { ProductCategoryFormData } from "@/features/product-categories/schemas/product-category";
-import { api } from "@/lib/api";
+import { adminApi, catalogApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface MacroCategory {
@@ -33,10 +33,10 @@ function useMacros() {
 	const { data, isLoading } = useQuery({
 		queryKey: ["product-macro-categories", "all"],
 		queryFn: async () => {
-			const res = await api()["product-macro-categories"].get({
+			const res = await catalogApi["product-macro-categories"].$get({
 				query: { limit: 100, sortBy: "name", sortOrder: "asc" },
 			});
-			return unwrap(res, m.categories_macros_load_error());
+			return unwrapJson(res, m.categories_macros_load_error());
 		},
 		// Both the toolbar filter and the form mount their own observer of this
 		// query; a stale time keeps the second mount (opening a dialog) from
@@ -103,29 +103,31 @@ export const productCategoriesConfig: CategoryCrudConfig<
 	extraInvalidate: [["admin-configurations-counts"]],
 
 	list: (q) =>
-		api().admin["product-categories"].get({
+		adminApi["product-categories"].$get({
 			query: {
 				page: q.page,
 				limit: q.limit,
 				...(q.search ? { search: q.search } : {}),
 				...(q.macroCategoryId
-					? { macroCategoryId: q.macroCategoryId as string }
+					? { macroCategoryId: String(q.macroCategoryId) }
 					: {}),
 				sortBy: q.sortBy,
 				sortOrder: q.sortOrder,
 			},
 		}),
 	create: (form) =>
-		api().admin["product-categories"].post({
-			name: form.name,
-			macroCategoryId: form.macroCategoryId,
+		adminApi["product-categories"].$post({
+			json: { name: form.name, macroCategoryId: form.macroCategoryId },
 		}),
 	update: (id, form) =>
-		api()
-			.admin["product-categories"]({ productCategoryId: id })
-			.patch({ name: form.name, macroCategoryId: form.macroCategoryId }),
+		adminApi["product-categories"][":productCategoryId"].$patch({
+			param: { productCategoryId: id },
+			json: { name: form.name, macroCategoryId: form.macroCategoryId },
+		}),
 	remove: (id) =>
-		api().admin["product-categories"]({ productCategoryId: id }).delete(),
+		adminApi["product-categories"][":productCategoryId"].$delete({
+			param: { productCategoryId: id },
+		}),
 
 	extraColumns: () => [macroColumn(), characteristicsColumn()],
 
@@ -136,8 +138,10 @@ export const productCategoriesConfig: CategoryCrudConfig<
 
 	csvImport: {
 		onImport: async (file): Promise<CsvImportResult> => {
-			const res = await api().admin["product-categories"].import.post({ file });
-			return unwrap(res, m.common_import_error()).data;
+			const res = await adminApi["product-categories"].import.$post({
+				form: { file },
+			});
+			return (await unwrapJson(res, m.common_import_error())).data;
 		},
 		labels: () => ({
 			title: m.categories_product_import_title(),

@@ -168,7 +168,9 @@ Dal 2026-10-25 l'API passa da Elysia a Hono e i frontend da Eden a `hc`, un modu
 per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline e
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
-(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1).
+(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
+catalogo pubblico e admin 1 (U8: configurazioni, tassonomia, caratteristiche,
+festività, import CSV; il resto di /admin resta Elysia fino a U9 e vince sul mount).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
@@ -206,7 +208,12 @@ verifica di ogni PR stanno nel piano
   (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
   /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
   un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
-  query → body.
+  query → body. Le guardie di ruolo (`requireAdmin`) leggono la sessione da sole
+  (401, poi 403): in una route basta lei, l'ordine fra guardie non conta.
+- **Catalogo: quattro path radice, quattro mount.** `/product-categories`,
+  `/product-macro-categories`, `/store-categories`, `/store-macro-categories` sono
+  quattro sub-app con la route `/`, montate ognuna sul suo path; per i FE un solo
+  tipo `CatalogApp` e un client `catalogApi = hc<WithErrors<CatalogApp>>(API_URL)`.
 - **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
   (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
   Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
@@ -228,7 +235,7 @@ verifica di ogni PR stanno nel piano
   degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
-  `src/types.ts` (`MeApp`); ogni app crea in `src/lib/api.ts` il client del
+  `src/types.ts` (`MeApp`, `AdminApp`, `CatalogApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

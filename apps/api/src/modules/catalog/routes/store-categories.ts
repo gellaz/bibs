@@ -1,36 +1,44 @@
-import { Elysia, t } from "elysia";
-import { CategoryListQuery } from "@/lib/queries";
+import { Hono } from "hono";
+import { z } from "zod";
+import { doc } from "@/http/openapi";
+import { publicRoute } from "@/http/routes";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { okPage } from "@/lib/responses";
-import {
-	okPageRes,
-	StoreCategoryWithMacroSchema,
-	withErrors,
-} from "@/lib/schemas";
+import { StoreCategoryWithMacroSchema } from "@/lib/zod/entities";
+import { CategoryListQuery } from "@/lib/zod/queries";
+import { okPageRes, withErrors } from "@/lib/zod/responses";
 import { listStoreCategories } from "../services/store-categories";
 
-const StoreCategoryListQuery = t.Composite([
-	CategoryListQuery,
-	t.Object({
-		macroCategoryId: t.Optional(
-			t.String({ description: "Filtra per ID della macro categoria" }),
-		),
-	}),
-]);
+const StoreCategoryListQuery = CategoryListQuery.extend({
+	macroCategoryId: z
+		.string()
+		.meta({ description: "Filtra per ID della macro categoria" })
+		.optional(),
+});
 
-export const storeCategoriesRoutes = new Elysia().get(
-	"/store-categories",
-	async ({ query }) => {
-		const result = await listStoreCategories(query);
-		return okPage(result.data, result.pagination);
-	},
-	{
-		query: StoreCategoryListQuery,
-		response: withErrors({ 200: okPageRes(StoreCategoryWithMacroSchema) }),
+const StoreCategoryListResponse = okPageRes(StoreCategoryWithMacroSchema);
+
+// Route relativa: la sub-app è montata su /store-categories.
+export const storeCategoriesRoutes = new Hono().get(
+	"/",
+	doc({
+		response: withErrors({ 200: StoreCategoryListResponse }),
 		detail: {
 			summary: "Lista categorie negozio",
 			description:
 				"Restituisce la lista paginata delle categorie negozio con la macro categoria di appartenenza.",
 			tags: ["Store Categories"],
 		},
+	}),
+	publicRoute,
+	v("query", StoreCategoryListQuery),
+	async (c) => {
+		const result = await listStoreCategories(c.req.valid("query"));
+		return send(
+			c,
+			StoreCategoryListResponse,
+			okPage(result.data, result.pagination),
+		);
 	},
 );

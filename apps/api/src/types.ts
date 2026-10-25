@@ -7,4 +7,6 @@
 export type { App } from "./index";
 export type { auth } from "./lib/auth";
 // Client `hc` per sotto-albero (migrazione Hono): uno per sub-app montata.
+export type { AdminApp } from "./modules/admin";
+export type { CatalogApp } from "./modules/catalog";
 export type { MeApp } from "./modules/me";

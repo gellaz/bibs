@@ -9,8 +9,13 @@ import { isOriginAllowed } from "@/lib/cors";
 import { env } from "@/lib/env";
 import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
-import { adminModule } from "@/modules/admin";
-import { catalogModule } from "@/modules/catalog";
+import { adminApp, adminModule } from "@/modules/admin";
+import {
+	productCategoriesApp,
+	productMacroCategoriesApp,
+	storeCategoriesApp,
+	storeMacroCategoriesApp,
+} from "@/modules/catalog";
 import { customerModule } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
 import { meApp } from "@/modules/me";
@@ -155,6 +160,19 @@ const app = new Elysia()
 				paths: {
 					...(await OpenAPI.getPaths()),
 					...honoPaths(meApp, "/me", ["auth"]),
+					...honoPaths(adminApp, "/admin", ["admin"]),
+					...honoPaths(productMacroCategoriesApp, "/product-macro-categories", [
+						"publicRoute",
+					]),
+					...honoPaths(productCategoriesApp, "/product-categories", [
+						"publicRoute",
+					]),
+					...honoPaths(storeMacroCategoriesApp, "/store-macro-categories", [
+						"publicRoute",
+					]),
+					...honoPaths(storeCategoriesApp, "/store-categories", [
+						"publicRoute",
+					]),
 				},
 			},
 		}),
@@ -163,12 +181,16 @@ const app = new Elysia()
 	.use(betterAuth)
 	.use(registration)
 	.use(adminModule)
-	.use(catalogModule)
 	.use(locationsModule)
 	.use(sellerModule)
 	.use(customerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
+	.mount("/admin", adminApp.fetch)
+	.mount("/product-macro-categories", productMacroCategoriesApp.fetch)
+	.mount("/product-categories", productCategoriesApp.fetch)
+	.mount("/store-macro-categories", storeMacroCategoriesApp.fetch)
+	.mount("/store-categories", storeCategoriesApp.fetch)
 	.use(cronJobs)
 	.use(health);
 

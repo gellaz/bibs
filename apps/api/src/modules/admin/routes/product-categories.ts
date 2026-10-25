@@ -1,33 +1,63 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAdmin } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import {
-	OkMessage,
-	okRes,
-	ProductCategorySchema,
-	withConflictErrors,
-} from "@/lib/schemas";
-import { withAdmin } from "../context";
+import { ProductCategorySchema } from "@/lib/zod/entities";
+import { OkMessage, okRes, withConflictErrors } from "@/lib/zod/responses";
+import { adminDetail } from "../context";
 import {
 	createProductCategory,
 	deleteProductCategory,
 	updateProductCategory,
 } from "../services/product-categories";
 
-export const productCategoriesWriteRoutes = new Elysia()
+const ProductCategoryResponse = okRes(ProductCategorySchema);
+
+const Params = z.object({
+	productCategoryId: z
+		.string()
+		.meta({ description: "ID della categoria prodotto" }),
+});
+
+export const productCategoriesWriteRoutes = new Hono()
 	.post(
 		"/product-categories",
-		async (ctx) => {
-			const { body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: ProductCategoryResponse }),
+			detail: adminDetail(
+				"Crea categoria prodotto",
+				"Crea una nuova sotto-categoria prodotto sotto una macro categoria. Il nome deve essere univoco all'interno della stessa macro.",
+			),
+		}),
+		v(
+			"json",
+			z.object({
+				name: z
+					.string()
+					.min(1)
+					.max(100)
+					.meta({ description: "Nome della sotto-categoria" }),
+				macroCategoryId: z
+					.string()
+					.min(1)
+					.meta({ description: "ID della macro categoria di appartenenza" }),
+			}),
+		),
+		requireAdmin,
+		async (c) => {
+			const body = c.req.valid("json");
 			const data = await createProductCategory({
 				name: body.name,
 				macroCategoryId: body.macroCategoryId,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					categoryId: data.id,
 					categoryName: data.name,
 					macroCategoryId: data.macroCategoryId,
@@ -36,43 +66,49 @@ export const productCategoriesWriteRoutes = new Elysia()
 				"Categoria prodotto creata",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome della sotto-categoria",
-				}),
-				macroCategoryId: t.String({
-					minLength: 1,
-					description: "ID della macro categoria di appartenenza",
-				}),
-			}),
-			response: withConflictErrors({ 200: okRes(ProductCategorySchema) }),
-			detail: {
-				summary: "Crea categoria prodotto",
-				description:
-					"Crea una nuova sotto-categoria prodotto sotto una macro categoria. Il nome deve essere univoco all'interno della stessa macro.",
-				tags: ["Admin"],
-			},
+			return send(c, ProductCategoryResponse, ok(data));
 		},
 	)
 	.patch(
 		"/product-categories/:productCategoryId",
-		async (ctx) => {
-			const { params, body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: ProductCategoryResponse }),
+			detail: adminDetail(
+				"Aggiorna categoria prodotto",
+				"Aggiorna nome e/o macro categoria di una sotto-categoria prodotto esistente.",
+			),
+		}),
+		v("param", Params),
+		v(
+			"json",
+			z.object({
+				name: z
+					.string()
+					.min(1)
+					.max(100)
+					.meta({ description: "Nuovo nome della sotto-categoria" })
+					.optional(),
+				macroCategoryId: z
+					.string()
+					.min(1)
+					.meta({
+						description: "Nuovo ID della macro categoria di appartenenza",
+					})
+					.optional(),
+			}),
+		),
+		requireAdmin,
+		async (c) => {
+			const body = c.req.valid("json");
 			const data = await updateProductCategory({
-				productCategoryId: params.productCategoryId,
+				productCategoryId: c.req.valid("param").productCategoryId,
 				name: body.name,
 				macroCategoryId: body.macroCategoryId,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					categoryId: data.id,
 					newName: data.name,
 					newMacroCategoryId: data.macroCategoryId,
@@ -81,48 +117,28 @@ export const productCategoriesWriteRoutes = new Elysia()
 				"Categoria prodotto aggiornata",
 			);
 
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				productCategoryId: t.String({
-					description: "ID della categoria prodotto",
-				}),
-			}),
-			body: t.Object({
-				name: t.Optional(
-					t.String({
-						minLength: 1,
-						maxLength: 100,
-						description: "Nuovo nome della sotto-categoria",
-					}),
-				),
-				macroCategoryId: t.Optional(
-					t.String({
-						minLength: 1,
-						description: "Nuovo ID della macro categoria di appartenenza",
-					}),
-				),
-			}),
-			response: withConflictErrors({ 200: okRes(ProductCategorySchema) }),
-			detail: {
-				summary: "Aggiorna categoria prodotto",
-				description:
-					"Aggiorna nome e/o macro categoria di una sotto-categoria prodotto esistente.",
-				tags: ["Admin"],
-			},
+			return send(c, ProductCategoryResponse, ok(data));
 		},
 	)
 	.delete(
 		"/product-categories/:productCategoryId",
-		async (ctx) => {
-			const { params, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
-			const deleted = await deleteProductCategory(params.productCategoryId);
+		doc({
+			response: withConflictErrors({ 200: OkMessage }),
+			detail: adminDetail(
+				"Elimina categoria prodotto",
+				"Elimina una sotto-categoria prodotto. Fallisce se la categoria non esiste (404) o se ci sono prodotti collegati (409).",
+			),
+		}),
+		v("param", Params),
+		requireAdmin,
+		async (c) => {
+			const deleted = await deleteProductCategory(
+				c.req.valid("param").productCategoryId,
+			);
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					categoryId: deleted.id,
 					categoryName: deleted.name,
 					action: "product_category_deleted",
@@ -130,20 +146,6 @@ export const productCategoriesWriteRoutes = new Elysia()
 				"Categoria prodotto eliminata",
 			);
 
-			return okMessage("Sotto-categoria eliminata");
-		},
-		{
-			params: t.Object({
-				productCategoryId: t.String({
-					description: "ID della categoria prodotto",
-				}),
-			}),
-			response: withConflictErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Elimina categoria prodotto",
-				description:
-					"Elimina una sotto-categoria prodotto. Fallisce se la categoria non esiste (404) o se ci sono prodotti collegati (409).",
-				tags: ["Admin"],
-			},
+			return send(c, OkMessage, okMessage("Sotto-categoria eliminata"));
 		},
 	);

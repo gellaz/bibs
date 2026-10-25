@@ -1,4 +1,4 @@
-import type { App, MeApp } from "@bibs/api";
+import type { App, CatalogApp, MeApp } from "@bibs/api";
 import { createApiClient, type WithErrors } from "@bibs/ui/lib/api-client";
 import { hc } from "hono/client";
 
@@ -9,6 +9,8 @@ export const api = createApiClient<App>(API_URL);
 // Client `hc` per i moduli già su Hono: uno per sotto-albero.
 const init = { credentials: "include" } satisfies RequestInit;
 export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });
+// Le liste pubbliche della tassonomia: quattro path radice in un client.
+export const catalogApi = hc<WithErrors<CatalogApp>>(API_URL, { init });
 
 // Variante senza revival delle date: alcune caratteristiche testuali (es.
 // "Scadenza/TMC") accettano un testo libero che può somigliare a una data

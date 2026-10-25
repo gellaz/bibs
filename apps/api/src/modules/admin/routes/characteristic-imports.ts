@@ -1,30 +1,49 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAdmin } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
 import {
 	CsvImportWithMissingResultSchema,
 	CsvUpsertResultSchema,
-	okRes,
-	withConflictErrors,
-} from "@/lib/schemas";
-import { withAdmin } from "../context";
+} from "@/lib/zod/entities";
+import { okRes, withConflictErrors } from "@/lib/zod/responses";
+import { zFile } from "@/lib/zod/t";
+import { adminDetail } from "../context";
 import {
 	importCategoryCharacteristicsFromCsv,
 	importCharacteristicsFromCsv,
 } from "../services/characteristic-import";
 
-export const characteristicImportsRoutes = new Elysia()
+const CsvUpsertResponse = okRes(CsvUpsertResultSchema);
+const CsvImportWithMissingResponse = okRes(CsvImportWithMissingResultSchema);
+
+// `t.File()` senza `type`: niente controllo dei magic byte (è un CSV).
+const csvBody = (description: string) =>
+	z.object({ file: zFile({ description }) });
+
+export const characteristicImportsRoutes = new Hono()
 	.post(
 		"/product-characteristics/import",
-		async (ctx) => {
-			const { body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
-			const csvText = await body.file.text();
+		doc({
+			response: withConflictErrors({ 200: CsvUpsertResponse }),
+			detail: adminDetail(
+				"Importa il dizionario delle caratteristiche da CSV",
+				"Importa il dizionario delle caratteristiche prodotto in blocco da un file CSV. Colonne attese: name, data_type (text, number, boolean, enum), unit, options (separate da `|`). L'import è in aggiornamento: una caratteristica già presente viene aggiornata (tipo, unità, opzioni) invece di essere saltata.",
+			),
+		}),
+		v("form", csvBody("File CSV con il dizionario delle caratteristiche")),
+		requireAdmin,
+		async (c) => {
+			const csvText = await c.req.valid("form").file.text();
 			const result = await importCharacteristicsFromCsv(csvText);
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					created: result.created,
 					updated: result.updated,
 					failed: result.failed,
@@ -33,34 +52,30 @@ export const characteristicImportsRoutes = new Elysia()
 				"Importazione dizionario caratteristiche da CSV completata",
 			);
 
-			return ok(result);
-		},
-		{
-			body: t.Object({
-				file: t.File({
-					description: "File CSV con il dizionario delle caratteristiche",
-				}),
-			}),
-			response: withConflictErrors({ 200: okRes(CsvUpsertResultSchema) }),
-			detail: {
-				summary: "Importa il dizionario delle caratteristiche da CSV",
-				description:
-					"Importa il dizionario delle caratteristiche prodotto in blocco da un file CSV. Colonne attese: name, data_type (text, number, boolean, enum), unit, options (separate da `|`). L'import è in aggiornamento: una caratteristica già presente viene aggiornata (tipo, unità, opzioni) invece di essere saltata.",
-				tags: ["Admin"],
-			},
+			return send(c, CsvUpsertResponse, ok(result));
 		},
 	)
 	.post(
 		"/product-category-characteristics/import",
-		async (ctx) => {
-			const { body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
-			const csvText = await body.file.text();
+		doc({
+			response: withConflictErrors({ 200: CsvImportWithMissingResponse }),
+			detail: adminDetail(
+				"Importa la matrice categoria-caratteristiche da CSV",
+				"Importa in blocco da un file CSV quali caratteristiche si applicano a quale sotto-categoria prodotto. Colonne attese: macro_category, subcategory, characteristic, required (true/false). L'import è solo additivo: non cancella mai una riga esistente, ma riporta in `missing` le righe presenti nel database e assenti dal file, raggruppate per sotto-categoria.",
+			),
+		}),
+		v(
+			"form",
+			csvBody("File CSV con la matrice categoria-caratteristiche da importare"),
+		),
+		requireAdmin,
+		async (c) => {
+			const csvText = await c.req.valid("form").file.text();
 			const result = await importCategoryCharacteristicsFromCsv(csvText);
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					created: result.created,
 					skipped: result.skipped,
 					failed: result.failed,
@@ -70,23 +85,6 @@ export const characteristicImportsRoutes = new Elysia()
 				"Importazione matrice categoria-caratteristiche da CSV completata",
 			);
 
-			return ok(result);
-		},
-		{
-			body: t.Object({
-				file: t.File({
-					description:
-						"File CSV con la matrice categoria-caratteristiche da importare",
-				}),
-			}),
-			response: withConflictErrors({
-				200: okRes(CsvImportWithMissingResultSchema),
-			}),
-			detail: {
-				summary: "Importa la matrice categoria-caratteristiche da CSV",
-				description:
-					"Importa in blocco da un file CSV quali caratteristiche si applicano a quale sotto-categoria prodotto. Colonne attese: macro_category, subcategory, characteristic, required (true/false). L'import è solo additivo: non cancella mai una riga esistente, ma riporta in `missing` le righe presenti nel database e assenti dal file, raggruppate per sotto-categoria.",
-				tags: ["Admin"],
-			},
+			return send(c, CsvImportWithMissingResponse, ok(result));
 		},
 	);
