@@ -37,7 +37,12 @@ export function PendingVatChange({ change, canCancel }: Props) {
 		onSuccess: () => toast.success(m.profile_vat_cancelled()),
 		onError: (e: Error) => toast.error(e.message),
 		// Anche con «non più in attesa» ricarica: l'admin ha già deciso.
-		onSettled: () => qc.invalidateQueries({ queryKey: ["seller", "settings"] }),
+		// Il blocco ordini copre ogni negozio: ricarica anche i tipi d'ordine.
+		onSettled: () =>
+			Promise.all([
+				qc.invalidateQueries({ queryKey: ["seller", "settings"] }),
+				qc.invalidateQueries({ queryKey: ["store"] }),
+			]),
 	});
 
 	return (
