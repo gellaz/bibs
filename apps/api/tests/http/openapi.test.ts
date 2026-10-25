@@ -95,6 +95,10 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 		updatedAt: zDate(),
 	});
 
+	// ponytail: gli schemi di risposta veri (`withErrors`, `DiscountSchema`)
+	// sono condivisi col resto di test:unit; se un file che li compila in
+	// Elysia gira prima di questo (oggi no, su macOS e Linux), la spec non è più
+	// «a freddo» e i primi due casi falliscono. Allora: `--isolate` in test:unit.
 	const responses: [
 		string,
 		Record<number, TSchema>,

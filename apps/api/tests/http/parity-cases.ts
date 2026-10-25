@@ -1,4 +1,4 @@
-import { Type } from "@sinclair/typebox";
+import { CloneType, Type } from "@sinclair/typebox";
 import { Elysia, type TSchema, t } from "elysia";
 import { z } from "zod";
 import "@/lib/schemas/forms/formats";
@@ -97,9 +97,12 @@ export function elysiaApp(c: Case) {
 		.state("pino", noopPino)
 		.use(errorHandler)
 		.use(normalize);
+	// Una copia: compilando, Elysia scrive `additionalProperties: false` nello
+	// schema, e `openapi.test.ts` (stesso processo) vuole la spec «a freddo».
+	const tb = CloneType(c.tb);
 	return c.target === "query"
-		? app.get("/", ({ query }) => ({ ok: query }), { query: c.tb })
-		: app.post("/", ({ body }) => ({ ok: body }), { body: c.tb });
+		? app.get("/", ({ query }) => ({ ok: query }), { query: tb })
+		: app.post("/", ({ body }) => ({ ok: body }), { body: tb });
 }
 
 export function honoApp(c: Case) {
