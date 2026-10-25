@@ -1,4 +1,7 @@
 import { render } from "react-email";
+import AdminNewRequestEmail, {
+	type AdminNewRequestEmailProps,
+} from "../emails/admin-new-request-email";
 import EmployeeInviteEmail, {
 	type EmployeeInviteEmailProps,
 } from "../emails/employee-invite-email";
@@ -14,6 +17,9 @@ import SellerApplicationReceivedEmail, {
 import SellerApprovedEmail, {
 	type SellerApprovedEmailProps,
 } from "../emails/seller-approved-email";
+import SellerChangeOutcomeEmail, {
+	type SellerChangeOutcomeEmailProps,
+} from "../emails/seller-change-outcome-email";
 import SellerRejectedEmail, {
 	type SellerRejectedEmailProps,
 } from "../emails/seller-rejected-email";
@@ -124,12 +130,42 @@ export async function renderSellerRejectedEmail(
 	};
 }
 
+const ADMIN_REQUEST_SUBJECTS = {
+	candidature: "Nuova candidatura venditore su bibs",
+	vat: "Nuova richiesta di cambio partita IVA",
+	document: "Nuova richiesta di cambio documento",
+} as const;
+
+/** Agli admin: nuova candidatura o richiesta di modifica da valutare. */
+export async function renderAdminNewRequestEmail(
+	props: AdminNewRequestEmailProps,
+): Promise<RenderedEmail> {
+	return {
+		subject: ADMIN_REQUEST_SUBJECTS[props.kind],
+		html: await render(<AdminNewRequestEmail {...props} />),
+	};
+}
+
+/** Al venditore: esito di una richiesta di cambio partita IVA o documento. */
+export async function renderSellerChangeOutcomeEmail(
+	props: SellerChangeOutcomeEmailProps,
+): Promise<RenderedEmail> {
+	return {
+		subject: props.approved
+			? "La tua richiesta di modifica su bibs è stata approvata"
+			: "La tua richiesta di modifica su bibs non è stata approvata",
+		html: await render(<SellerChangeOutcomeEmail {...props} />),
+	};
+}
+
 export type {
+	AdminNewRequestEmailProps,
 	EmployeeInviteEmailProps,
 	PaymentFailedEmailProps,
 	ResetPasswordEmailProps,
 	SellerApplicationReceivedEmailProps,
 	SellerApprovedEmailProps,
+	SellerChangeOutcomeEmailProps,
 	SellerRejectedEmailProps,
 	StoreCanceledEmailProps,
 	StoreSuspendedEmailProps,
