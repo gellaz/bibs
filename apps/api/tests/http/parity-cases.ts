@@ -2003,4 +2003,13 @@ export const cases: Case[] = [
 		422,
 		fail("Valore non valido: deve essere al massimo 100"),
 	),
+	// Elysia non taglia il frammento: il `#` resta nell'ultimo valore.
+	query(
+		"query: il # resta nel valore, anche negli array",
+		t.Object({ q: t.String(), ids: t.Array(t.String()) }),
+		z.object({ q: z.string(), ids: z.array(z.string()) }),
+		"?ids=a,b&q=x%20y#z&ids=c#d",
+		200,
+		{ ok: { q: "x y#z", ids: ["a", "b", "c#d"] } },
+	),
 ];
