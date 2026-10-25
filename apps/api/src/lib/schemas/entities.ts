@@ -935,7 +935,12 @@ export const SellerProfileChangeSchema = t.Object({
 	}),
 	changeData: t.Unknown({ description: "Dati della modifica (JSON)" }),
 	status: t.Union(
-		[t.Literal("pending"), t.Literal("approved"), t.Literal("rejected")],
+		[
+			t.Literal("pending"),
+			t.Literal("approved"),
+			t.Literal("rejected"),
+			t.Literal("cancelled"),
+		],
 		{ description: "Stato della richiesta" },
 	),
 	reviewedBy: t.Nullable(t.String()),

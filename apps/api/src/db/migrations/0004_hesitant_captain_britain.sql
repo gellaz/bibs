@@ -1,0 +1,2 @@
+ALTER TABLE "seller_profile_changes" DROP CONSTRAINT "seller_profile_change_status_valid";--> statement-breakpoint
+ALTER TABLE "seller_profile_changes" ADD CONSTRAINT "seller_profile_change_status_valid" CHECK ("seller_profile_changes"."status" IN ('pending','approved','rejected','cancelled'));

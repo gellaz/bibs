@@ -8,6 +8,7 @@ import {
 	eq,
 	ilike,
 	inArray,
+	ne,
 	or,
 	sql,
 } from "drizzle-orm";
@@ -579,10 +580,26 @@ export async function approveChange(changeId: string, adminUserId: string) {
 
 		// Apply the change based on type
 		if (change.changeType === "vat") {
+			const { vatNumber } = changeData as Static<typeof VatChangeBody>;
+			// Un altro venditore può averla registrata dopo la richiesta: il 409
+			// annulla anche il passaggio a "approved" (stessa transazione).
+			const takenBy = await tx.query.organization.findFirst({
+				columns: { id: true },
+				where: and(
+					eq(organization.vatNumber, vatNumber),
+					ne(organization.sellerProfileId, change.sellerProfileId),
+				),
+			});
+			if (takenBy) {
+				throw new ServiceError(
+					409,
+					"Questa partita IVA è già registrata da un altro venditore",
+				);
+			}
 			await tx
 				.update(organization)
 				.set({
-					vatNumber: (changeData as Static<typeof VatChangeBody>).vatNumber,
+					vatNumber,
 					vatStatus: "verified",
 				})
 				.where(eq(organization.sellerProfileId, change.sellerProfileId));

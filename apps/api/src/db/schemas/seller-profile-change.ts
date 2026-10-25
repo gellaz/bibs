@@ -15,7 +15,12 @@ import { sellerProfile } from "./seller";
 export const changeTypes = ["vat", "document"] as const;
 export type ChangeType = (typeof changeTypes)[number];
 
-export const changeStatuses = ["pending", "approved", "rejected"] as const;
+export const changeStatuses = [
+	"pending",
+	"approved",
+	"rejected",
+	"cancelled",
+] as const;
 export type ChangeStatus = (typeof changeStatuses)[number];
 
 export const sellerProfileChange = pgTable(
@@ -53,7 +58,7 @@ export const sellerProfileChange = pgTable(
 		),
 		check(
 			"seller_profile_change_status_valid",
-			sql`${t.status} IN ('pending','approved','rejected')`,
+			sql`${t.status} IN ('pending','approved','rejected','cancelled')`,
 		),
 	],
 );

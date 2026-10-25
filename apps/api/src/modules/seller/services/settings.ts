@@ -329,6 +329,43 @@ export async function requestVatChange(params: VatChangeParams) {
 	});
 }
 
+export async function cancelSellerChange(params: {
+	sellerProfileId: string;
+	changeId: string;
+}) {
+	return db.transaction(async (tx) => {
+		// Compare-and-set come in approveChange/rejectChange: una decisione
+		// dell'admin arrivata prima non si sovrascrive.
+		const [updated] = await tx
+			.update(sellerProfileChange)
+			.set({ status: "cancelled" })
+			.where(
+				and(
+					eq(sellerProfileChange.id, params.changeId),
+					eq(sellerProfileChange.sellerProfileId, params.sellerProfileId),
+					eq(sellerProfileChange.status, "pending"),
+				),
+			)
+			.returning();
+
+		if (!updated) {
+			throw new ServiceError(
+				400,
+				"La richiesta di modifica non è più in attesa",
+			);
+		}
+
+		if (updated.changeType === "vat") {
+			await tx
+				.update(sellerProfile)
+				.set({ vatChangeBlocked: false })
+				.where(eq(sellerProfile.id, params.sellerProfileId));
+		}
+
+		return updated;
+	});
+}
+
 interface DocumentChangeParams {
 	sellerProfileId: string;
 	documentType: IdentityDocumentType;

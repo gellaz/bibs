@@ -56,11 +56,18 @@ import {
 	rejectSeller,
 	verifySeller,
 } from "@/modules/admin/services/sellers";
+import { getCart } from "@/modules/customer/services/cart";
 import { truncateAll } from "../helpers/cleanup";
 import {
+	createTestCartItem,
+	createTestCustomer,
 	createTestMunicipality,
 	createTestOrganization,
+	createTestProduct,
 	createTestSeller,
+	createTestStore,
+	createTestStoreProduct,
+	createTestStoreSubscription,
 } from "../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -802,6 +809,68 @@ describe("approveChange", () => {
 			.from(sellerProfileChange)
 			.where(eq(sellerProfileChange.id, change.id));
 		expect(row.reviewedBy).toBe(firstAdmin);
+	});
+
+	it("approveChange risponde 409 se la partita IVA è stata presa nel frattempo", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "vat-taken@test.com" });
+		await createTestOrganization(db, seller.profile.id, {
+			vatNumber: "00000000001",
+		});
+		const other = await createTestSeller(db, { email: "vat-owner@test.com" });
+		await createTestOrganization(db, other.profile.id, {
+			vatNumber: "00000000009",
+		});
+		const adminId = await seedAdmin("vat-taken-admin@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "vat",
+			changeData: { vatNumber: "00000000009" },
+		});
+
+		await expect(approveChange(change.id, adminId)).rejects.toMatchObject({
+			status: 409,
+			message: "Questa partita IVA è già registrata da un altro venditore",
+		});
+
+		const [row] = await db
+			.select()
+			.from(sellerProfileChange)
+			.where(eq(sellerProfileChange.id, change.id));
+		expect(row.status).toBe("pending");
+	});
+
+	it("dopo l'approvazione il carrello torna ordinabile", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db, { email: "vat-cart@test.com" });
+		await createTestOrganization(db, seller.profile.id, {
+			vatNumber: "00000000001",
+		});
+		const customer = await createTestCustomer(db);
+		const store = await createTestStore(db, seller.profile.id);
+		await createTestStoreSubscription(db, store.id, { status: "active" });
+		const product = await createTestProduct(db, seller.profile.id);
+		const sp = await createTestStoreProduct(db, store.id, product.id, {
+			stock: 10,
+		});
+		await createTestCartItem(db, customer.profile.id, sp.id);
+		await db
+			.update(sellerProfile)
+			.set({ vatChangeBlocked: true })
+			.where(eq(sellerProfile.id, seller.profile.id));
+		const adminId = await seedAdmin("vat-cart-admin@test.com");
+		const change = await seedChange({
+			sellerProfileId: seller.profile.id,
+			changeType: "vat",
+			changeData: { vatNumber: "00000000002" },
+		});
+		const before = await getCart(customer.profile.id);
+		expect(before.groups[0].items.map((i) => i.issue)).toEqual(["unavailable"]);
+
+		await approveChange(change.id, adminId);
+
+		const after = await getCart(customer.profile.id);
+		expect(after.groups[0].items.map((i) => i.issue)).toEqual(["ok"]);
 	});
 
 	it("throws 404 when the change does not exist", async () => {
