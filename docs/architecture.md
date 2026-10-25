@@ -212,11 +212,13 @@ verifica di ogni PR stanno nel piano
   query → body.
 - **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
   (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
-  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
-  `zFiles`, `zFormat`, `zString`); per il resto Zod normale, con
+  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zInt`, `zDate`,
+  `zFile`, `zFiles`, `zFormat`, `zString`); per il resto Zod normale, con
   `title`/`error`/`description` in `.meta()`. Regole per scrivere un gemello:
   - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
-    form condivisi) → `z.int()`; `t.String` con `minLength`/`maxLength` →
+    form condivisi) → `zInt()`, mai `z.int()` né `z.number().int()` (Zod 4.6
+    rifiuta gli interi oltre ±2^53, TypeBox no: `page=9007199254740993` è 200
+    in Elysia); `t.String` con `minLength`/`maxLength` →
     `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
     unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
     per Zod); `t.Date` → `zDate`; `t.Nullable(x)` →

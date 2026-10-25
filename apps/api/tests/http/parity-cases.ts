@@ -15,7 +15,15 @@ import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/
 import { StockBulkAdjustBody as TbStockBulkAdjustBody } from "@/lib/schemas/stock";
 import { PaginationQuery } from "@/lib/zod/pagination";
 import { ProductSearchQuery } from "@/lib/zod/queries";
-import { zDate, zFile, zFiles, zFormat, zInteger, zString } from "@/lib/zod/t";
+import {
+	zDate,
+	zFile,
+	zFiles,
+	zFormat,
+	zInt,
+	zInteger,
+	zString,
+} from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 
@@ -169,7 +177,7 @@ const DiscountListQuery = PaginationQuery.extend({
 // ── i casi ──────────────────────────────────────────────────────────────────
 
 // Gemello di `OpeningHoursSchema` (`lib/schemas/forms/opening-hours.ts`):
-// `Type.Integer` di TypeBox è `z.int()`, il `t.Integer` di Elysia è `zInteger`.
+// `Type.Integer` di TypeBox è `zInt()`, il `t.Integer` di Elysia è `zInteger`.
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const slotTime = (description: string) =>
 	z
@@ -179,7 +187,7 @@ const slotTime = (description: string) =>
 const OpeningHours = z
 	.array(
 		z.object({
-			dayOfWeek: z.int().min(0).max(6).meta({
+			dayOfWeek: zInt().min(0).max(6).meta({
 				description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
 			}),
 			slots: z
@@ -1432,7 +1440,7 @@ export const cases: Case[] = [
 	body(
 		"Type.Integer: una stringa è «deve essere un numero intero»",
 		t.Object({ n: Type.Integer({ minimum: 0 }) }),
-		z.object({ n: z.int().min(0) }),
+		z.object({ n: zInt().min(0) }),
 		{ n: "1" },
 		422,
 		fail("n: deve essere un numero intero"),
@@ -1654,4 +1662,164 @@ export const cases: Case[] = [
 		422,
 		fail("Valore non valido: deve essere un numero"),
 	),
+
+	// Interi oltre ±2^53: TypeBox controlla `Number.isInteger`, `z.int()` di
+	// Zod anche i limiti dei safe integer (422 «al massimo 9007199254740991»).
+	...bigIntegers(),
 ];
+
+function bigIntegers(): Case[] {
+	const page = [
+		t.Object({ page: t.Integer({ minimum: 1 }) }),
+		z.object({ page: zInteger({ minimum: 1 }) }),
+	] as const;
+	const typeboxQuantity = [
+		t.Object({ quantity: Type.Integer({ minimum: 1, maximum: 99 }) }),
+		z.object({ quantity: zInt().min(1).max(99) }),
+	] as const;
+	const json = (
+		name: string,
+		[tb, zod]: readonly [TSchema, z.ZodType],
+		raw: string,
+		status: number,
+		expected: unknown,
+	): Case => ({
+		name,
+		target: "json",
+		tb,
+		zod,
+		req: { raw, contentType: "application/json" },
+		status,
+		body: expected,
+	});
+	const max99 = "Quantità: deve essere al massimo 99";
+	const min1 = "Quantità: deve essere almeno 1";
+	return [
+		query("t.Integer in query: 1e20", ...page, "?page=1e20", 200, {
+			ok: { page: 1e20 },
+		}),
+		query(
+			"t.Integer in query: 2^53+1",
+			...page,
+			"?page=9007199254740993",
+			200,
+			{
+				ok: { page: 9007199254740992 },
+			},
+		),
+		query(
+			"t.Integer in query: 20 cifre",
+			...page,
+			"?page=99999999999999999999",
+			200,
+			{ ok: { page: 1e20 } },
+		),
+		query(
+			"t.Integer in query: -1e20",
+			...page,
+			"?page=-99999999999999999999",
+			422,
+			fail("Valore non valido: deve essere almeno 1"),
+		),
+		query(
+			"t.Integer in query: 1e20 oltre il massimo",
+			...quantity199,
+			"?quantity=1e20",
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		query(
+			"t.Integer in query: 2^53+1 oltre il massimo",
+			...quantity199,
+			"?quantity=9007199254740993",
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		query(
+			"t.Integer in query: -1e20 sotto il minimo",
+			...quantity199,
+			"?quantity=-1e20",
+			422,
+			fail("Valore non valido: deve essere almeno 1"),
+		),
+		json("t.Integer: 1e20 nel body", page, '{"page":1e20}', 200, {
+			ok: { page: 1e20 },
+		}),
+		json("t.Integer: 2^53+1 nel body", page, '{"page":9007199254740993}', 200, {
+			ok: { page: 9007199254740992 },
+		}),
+		json(
+			"t.Integer: 20 cifre in stringa nel body",
+			page,
+			'{"page":"99999999999999999999"}',
+			200,
+			{ ok: { page: 1e20 } },
+		),
+		json(
+			"t.Integer: 1e20 oltre il massimo",
+			quantity199,
+			'{"quantity":1e20}',
+			422,
+			fail(max99),
+		),
+		json(
+			"t.Integer: -1e20 sotto il minimo",
+			quantity199,
+			'{"quantity":-1e20}',
+			422,
+			fail(min1),
+		),
+		json(
+			"t.Integer: 2^53 oltre il massimo",
+			quantity199,
+			'{"quantity":9007199254740992}',
+			422,
+			fail(max99),
+		),
+		json(
+			"t.Integer: 20 cifre in stringa oltre il massimo",
+			quantity199,
+			'{"quantity":"99999999999999999999"}',
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		json(
+			"Type.Integer: 1e20 oltre il massimo",
+			typeboxQuantity,
+			'{"quantity":1e20}',
+			422,
+			fail(max99),
+		),
+		json(
+			"Type.Integer: -1e20 sotto il minimo",
+			typeboxQuantity,
+			'{"quantity":-1e20}',
+			422,
+			fail(min1),
+		),
+		json(
+			"Type.Integer: 2^53+1 oltre il massimo",
+			typeboxQuantity,
+			'{"quantity":9007199254740993}',
+			422,
+			fail(max99),
+		),
+		json(
+			"Type.Integer: 20 cifre in stringa",
+			typeboxQuantity,
+			'{"quantity":"99999999999999999999"}',
+			422,
+			fail("Quantità: deve essere un numero intero"),
+		),
+		json(
+			"Type.Integer: 1e20 senza massimo",
+			[
+				t.Object({ n: Type.Integer({ minimum: 0 }) }),
+				z.object({ n: zInt().min(0) }),
+			],
+			'{"n":1e20}',
+			200,
+			{ ok: { n: 1e20 } },
+		),
+	];
+}

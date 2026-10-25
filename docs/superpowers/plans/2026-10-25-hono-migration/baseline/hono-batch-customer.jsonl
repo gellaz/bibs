@@ -1,17 +1,17 @@
-{"path":"/customer/products","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":1666}}}}
-{"path":"/customer/products?limit=3","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":3,"total":1666}}},"save":{"productId":".data.0.id","storeId":".data.0.store.id"}}
+{"path":"/customer/products","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
+{"path":"/customer/products?limit=3","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":3}}},"save":{"productId":".data.0.id","storeId":".data.0.store.id"}}
 {"path":"/customer/products?lat=abc","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Latitudine: valore non valido"}}}
 {"path":"/customer/products?lat=200","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere al massimo 90"}}}
 {"path":"/customer/products?openNow=maybe","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"openNow: valore non valido"}}}
 {"path":"/customer/products?radius=0","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere maggiore di 0"}}}
 {"path":"/customer/products?page=0","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere almeno 1"}}}
 {"path":"/customer/products?limit=2.5","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Elementi per pagina: deve essere un numero intero"}}}
-{"path":"/customer/products?lat=44.49&lng=11.34&radius=5&openNow=false&onSale=false&minPrice=0&maxPrice=100&limit=5","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":5,"total":771}}}}
+{"path":"/customer/products?lat=44.49&lng=11.34&radius=5&openNow=false&onSale=false&minPrice=0&maxPrice=100&limit=5","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":5}}}}
 {"path":"/customer/products?q=%20pane%20&unknown=1&limit=5","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":5,"total":8}}}}
 {"path":"/customer/products?lat=44.49&lng=11.34&openNow=true&onSale=true&limit=5","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":5}}}}
 {"path":"/customer/products?minPrice=-1","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere almeno 0"}}}
 {"path":"/customer/products?categoryId=a&categoryId=b&limit=2","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":2,"total":0}}}}
-{"path":"/customer/products/","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":1666}}}}
+{"path":"/customer/products/","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
 {"path":"/customer/products/facets","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/products/facets?page=abc&limit=xyz&categoryId=1","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/products/facets?lat=abc","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Latitudine: valore non valido"}}}
@@ -21,12 +21,12 @@
 {"path":"/customer/products/{{productId}}?storeId={{storeId}}&lat=44.49&lng=11.34","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/products/{{productId}}?lat=999","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere al massimo 90"}}}
 {"path":"/customer/products/{{productId}}?lng=abc","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Longitudine: valore non valido"}}}
-{"path":"/customer/stores","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":116}}}}
-{"path":"/customer/stores?limit=2","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":2,"total":116}}},"save":{"sid":".data.0.id"}}
-{"path":"/customer/stores/","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":116}}}}
+{"path":"/customer/stores","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
+{"path":"/customer/stores?limit=2","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":2}}},"save":{"sid":".data.0.id"}}
+{"path":"/customer/stores/","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
 {"path":"/customer/stores?radius=101","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere al massimo 100"}}}
 {"path":"/customer/stores?openNow=1","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"openNow: valore non valido"}}}
-{"path":"/customer/stores?lat=44.49&lng=11.34&radius=10&openNow=false&q=bologna","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":62}}}}
+{"path":"/customer/stores?lat=44.49&lng=11.34&radius=10&openNow=false&q=bologna","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
 {"path":"/customer/stores/facets","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/stores/facets?lat=44.49&lng=11.34&radius=10&openNow=true","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/stores/facets?lng=500","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere al massimo 180"}}}
@@ -36,8 +36,8 @@
 {"path":"/customer/stores/map?radius=abc","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Raggio: valore non valido"}}}
 {"path":"/customer/stores/{{sid}}","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/stores/{{sid}}/","expect":{"status":200,"body":{"success":true}}}
-{"path":"/customer/stores/{{sid}}/products","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":17}}}}
-{"path":"/customer/stores/{{sid}}/products?page=2&limit=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":2,"limit":1,"total":17}}}}
+{"path":"/customer/stores/{{sid}}/products","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
+{"path":"/customer/stores/{{sid}}/products?page=2&limit=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":2,"limit":1}}}}
 {"path":"/customer/stores/{{sid}}/products?page=0","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere almeno 1"}}}
 {"path":"/customer/stores/f142e101-82db-4a94-a0ae-8f0f32269bbc","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Negozio non trovato"}}}
 {"path":"/customer/stores/f142e101-82db-4a94-a0ae-8f0f32269bbc/products","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Negozio non trovato"}}}
@@ -101,12 +101,19 @@
 {"method":"POST","path":"/customer/cart/items","body":"{\"storeProductId\":\"x\",\"quantity\":1e400}","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Quantità: deve essere un numero intero"}}}
 {"method":"POST","path":"/customer/cart/items","body":"{\"storeProductId\":\"x\",\"quantity\":-1e400}","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Quantità: deve essere un numero intero"}}}
 {"method":"PATCH","path":"/customer/cart/items/f142e101-82db-4a94-a0ae-8f0f32269bbc","body":"{\"quantity\":1e400}","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Quantità: deve essere un numero intero"}}}
+{"path":"/customer/orders?page=1e20","expect":{"status":401,"body":{"success":false,"error":"UNAUTHORIZED","message":"Devi accedere per continuare"}}}
+{"path":"/customer/products?page=9007199254740993","expect":{"status":200,"body":{"success":true,"data":[],"pagination":{"page":9007199254740992,"limit":20}}}}
+{"path":"/customer/products?page=1e20","expect":{"status":500,"body":{"success":false,"error":"INTERNAL_ERROR","message":"Errore interno del server"}}}
+{"path":"/customer/products?limit=1e20","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere al massimo 100"}}}
+{"method":"POST","path":"/customer/cart/items","body":"{\"storeProductId\":\"x\",\"quantity\":1e20}","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Quantità: deve essere al massimo 99"}}}
+{"method":"POST","path":"/customer/cart/items","body":"{\"storeProductId\":\"x\",\"quantity\":\"99999999999999999999\"}","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere al massimo 99"}}}
+{"method":"PATCH","path":"/customer/cart/items/f142e101-82db-4a94-a0ae-8f0f32269bbc","body":"{\"quantity\":9007199254740992}","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Quantità: deve essere al massimo 99"}}}
 {"method":"POST","path":"/auth/api/sign-in/email","headers":{"origin":"http://localhost:3001"},"body":{"email":"seller@dev.bibs","password":"password123"},"expect":{"status":200,"body":{"user":{"email":"seller@dev.bibs"}}}}
 {"path":"/customer/profile","expect":{"status":403,"body":{"success":false,"error":"FORBIDDEN","message":"Profilo cliente non trovato"}}}
 {"path":"/customer/cart","expect":{"status":403,"body":{"success":false,"error":"FORBIDDEN","message":"Profilo cliente non trovato"}}}
 {"path":"/customer/orders?page=0","expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"Valore non valido: deve essere almeno 1"}}}
 {"method":"POST","path":"/customer/cart/items","body":{"storeProductId":"x","quantity":1},"expect":{"status":403,"body":{"success":false,"error":"FORBIDDEN","message":"Profilo cliente non trovato"}}}
-{"path":"/customer/products?limit=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":1,"total":1666}}}}
+{"path":"/customer/products?limit=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":1}}}}
 {"method":"POST","path":"/auth/api/sign-in/email","headers":{"origin":"http://localhost:3001"},"body":{"email":"customer1@test.com","password":"password123"},"expect":{"status":200,"body":{"user":{"email":"customer1@test.com"}}}}
 {"path":"/customer/profile","expect":{"status":200,"body":{"success":true,"data":{"id":"f0b4301c-434c-411a-8c01-ec43f365759f","userId":"zfwYVzlMw3ogE2HNRUOEmywN3lUZ48Qy","points":250,"createdAt":"2026-10-24T08:45:55.447Z"}}}}
 {"path":"/customer/addresses","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":2}}}}
@@ -130,4 +137,4 @@
 {"method":"PATCH","path":"/customer/cart/items/f142e101-82db-4a94-a0ae-8f0f32269bbc","body":{"quantity":1},"expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Prodotto non nel carrello"}}}
 {"method":"DELETE","path":"/customer/cart/items/f142e101-82db-4a94-a0ae-8f0f32269bbc","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Prodotto non nel carrello"}}}
 {"method":"POST","path":"/customer/checkout","body":{"idempotencyKey":"nope","stores":[]},"expect":{"status":422,"body":{"success":false,"error":"VALIDATION_ERROR","message":"idempotencyKey: identificativo non valido"}}}
-{"path":"/customer/products?limit=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":1,"total":1666}}}}
+{"path":"/customer/products?limit=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":1}}}}

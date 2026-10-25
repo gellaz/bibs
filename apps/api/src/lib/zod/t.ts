@@ -17,10 +17,10 @@ import { firstIssue, type Issue, issueRule, type RuleParams } from "./issues";
 // normale (`z.string().regex()`, `z.object`, `z.enum`, `.nullable()`, …) e i
 // metadati con `.meta({ title, description, error })`. Corrispondenze da
 // tenere: `t.Integer` di Elysia → `zInteger` (accetta "5"), `Type.Integer` di
-// TypeBox → `z.int()` (non accetta stringhe); `t.String({ minLength,
-// maxLength })` → `zString` (mai `z.string().min/max`: contano i code point);
-// `t.Union` di oggetti → `z.union`, mai `z.discriminatedUnion` (dà errori che
-// TypeBox non dà).
+// TypeBox → `zInt()` (non accetta stringhe; mai `z.int()`: vedi
+// `integerCheck`); `t.String({ minLength, maxLength })` → `zString` (mai
+// `z.string().min/max`: contano i code point); `t.Union` di oggetti →
+// `z.union`, mai `z.discriminatedUnion` (dà errori che TypeBox non dà).
 
 type Json = Record<string, unknown>;
 
@@ -156,6 +156,24 @@ export interface NumberOptions extends Meta {
 	multipleOf?: number;
 }
 
+/**
+ * Intero come per TypeBox (`Number.isInteger`). `z.int()` e
+ * `z.number().int()` di Zod 4.6 controllano anche i limiti dei safe integer:
+ * `page=9007199254740993` o `1e20` sarebbero 422, e con un massimo il primo
+ * errore diventerebbe «al massimo 9007199254740991».
+ */
+export const integerCheck = z.check<number>((ctx) => {
+	if (!Number.isInteger(ctx.value))
+		ctx.issues.push({
+			code: "invalid_type",
+			expected: "int",
+			input: ctx.value,
+		});
+});
+
+/** `Type.Integer` di TypeBox (form condivisi): intero, niente stringhe. */
+export const zInt = () => z.number().check(integerCheck);
+
 function numberChecks<S extends z.ZodNumber>(schema: S, o: NumberOptions) {
 	let s: z.ZodNumber = schema;
 	if (o.exclusiveMaximum !== undefined) s = s.lt(o.exclusiveMaximum);
@@ -181,7 +199,7 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 	options: O = {} as O,
 ) {
 	const { default: defaultValue, ...o } = options;
-	const inner = numberChecks(z.number().int(), o);
+	const inner = numberChecks(zInt(), o);
 	const schema = z
 		.custom<number | string>(() => true)
 		.transform((value, ctx) => {
