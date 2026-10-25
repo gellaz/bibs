@@ -10,6 +10,7 @@ import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
 import { PasswordInput } from "@bibs/ui/custom/password-input";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AuthLocaleFooter } from "@/components/auth-locale-footer";
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
@@ -60,6 +62,8 @@ function LoginPage() {
 				return;
 			}
 
+			// Stessa scheda, account diverso: le risposte in cache sono del precedente.
+			queryClient.clear();
 			void navigate({ to: "/" });
 		} catch {
 			setError(m.auth_login_error());
