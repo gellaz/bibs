@@ -1,5 +1,6 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 type Mode = "delta" | "set";
@@ -31,9 +32,10 @@ export function useBulkStockAdjustMutation() {
 
 	return useMutation({
 		mutationFn: async (params: MutateParams): Promise<BulkResult> => {
-			const response =
-				await api().seller.products.bulk["stock-adjust"].post(params);
-			return unwrap(response, m.common_error()).data as BulkResult;
+			const response = await sellerApi.products.bulk["stock-adjust"].$post({
+				json: params,
+			});
+			return (await unwrapJson(response, m.common_error())).data;
 		},
 		onSuccess: (result) => {
 			// Patcha la lista per ogni riga succeeded

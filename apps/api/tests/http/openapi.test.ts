@@ -95,10 +95,10 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 		updatedAt: zDate(),
 	});
 
-	// ponytail: gli schemi di risposta veri (`withErrors`, `DiscountSchema`)
-	// sono condivisi col resto di test:unit; se un file che li compila in
-	// Elysia gira prima di questo (oggi no, su macOS e Linux), la spec non è più
-	// «a freddo» e i primi due casi falliscono. Allora: `--isolate` in test:unit.
+	// Gli schemi di risposta veri (`withErrors`, `DiscountSchema`) sono
+	// condivisi col resto di test:unit: un file che li compila in Elysia
+	// (`mount.test.ts` dalla U5, con `sellerModule`) li renderebbe non più «a
+	// freddo». Per questo test:unit gira con `--isolate`.
 	const responses: [
 		string,
 		Record<number, TSchema>,
@@ -120,6 +120,26 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 				200: t.Object({ at: t.Nullable(t.Date()), n: t.Nullable(t.String()) }),
 			},
 			{ 200: z.object({ at: zDate().nullable(), n: z.string().nullable() }) },
+		],
+		[
+			// Zod scrive `type: [..]` per un'unione di tipi semplici (U5).
+			"unione di tipi semplici in risposta",
+			{
+				200: t.Object({
+					v: t.Union([t.String(), t.Number(), t.Boolean()], {
+						description: "x",
+					}),
+					n: t.Union([t.String(), t.Null()]),
+				}),
+			},
+			{
+				200: z.object({
+					v: z
+						.union([z.string(), z.number(), z.boolean()])
+						.meta({ description: "x" }),
+					n: z.union([z.string(), z.null()]),
+				}),
+			},
 		],
 	];
 	for (const [name, tb, zod] of responses) {

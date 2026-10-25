@@ -2,12 +2,13 @@ import { describe, expect, it } from "bun:test";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
-import { requireAuth } from "@/http/auth";
+import { requireAuth, requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
 import { assertRoutes, guard, publicRoute, routeProblems } from "@/http/routes";
 import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
 import { meApp } from "@/modules/me";
+import { sellerApp, sellerGuards } from "@/modules/seller";
 import { withVars } from "../helpers/hono-app";
 
 // Le route Hono hanno l'auth dentro ogni route (D9 del piano Hono): il
@@ -160,5 +161,70 @@ describe("requireAuth con l'utente già messo a monte (harness dei test)", () =>
 		const res = await withVars(app, { user: { id: "u1" } }).request("/who");
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ id: "u1" });
+	});
+});
+
+// U5: le guardie del seller si controllano route per route (`sellerGuards`),
+// e le guardie di ruolo leggono la sessione da sé (l'ordine non conta).
+describe("guardie seller", () => {
+	// Come sarà `requireSellerRole` in U6 (D9): ruolo seller, niente partita IVA.
+	const requireSellerRole = guard(
+		createMiddleware(async (_c, next) => next()),
+		"sellerRole",
+	);
+
+	it("il modulo seller è a posto", () => {
+		expect(routeProblems(sellerApp, sellerGuards)).toEqual([]);
+		expect(() => assertRoutes(sellerApp, sellerGuards)).not.toThrow();
+	});
+
+	it("la guardia sbagliata per il path è un errore, nei due sensi", () => {
+		const app = moduleApp()
+			.get("/products", requireSellerRole, ok)
+			.get("/profile", requireSeller, ok)
+			.patch("/onboarding/company", requireSeller, ok)
+			.get("/onboarding/status", requireSellerRole, ok)
+			.get("/brands", requireAuth, ok);
+		expect(routeProblems(app, sellerGuards)).toEqual([
+			"GET /products: manca la guardia del modulo (seller)",
+			"GET /profile: manca la guardia del modulo (sellerRole)",
+			"PATCH /onboarding/company: manca la guardia del modulo (sellerRole)",
+			"GET /brands: manca la guardia del modulo (seller)",
+		]);
+	});
+
+	it("requireSeller senza requireAuth davanti: 401 per l'anonimo", async () => {
+		const app = moduleApp().get("/x", requireSeller, ok);
+		const res = await app.request("/x");
+		expect(res.status).toBe(401);
+		expect(await res.json()).toEqual({
+			success: false,
+			error: "UNAUTHORIZED",
+			message: "Devi accedere per continuare",
+		});
+	});
+
+	it("requireSeller: un ruolo non seller è 403, dopo i validatori", async () => {
+		const app = moduleApp().get("/x", v("query", Query), requireSeller, ok);
+		const customer = withVars(app, { user: { id: "u1", role: "customer" } });
+		const res = await customer.request("/x?q=a");
+		expect(res.status).toBe(403);
+		expect(await res.json()).toEqual({
+			success: false,
+			error: "FORBIDDEN",
+			message: "Accesso riservato a venditori e dipendenti",
+		});
+		expect((await customer.request("/x")).status).toBe(422);
+	});
+
+	it("requireSeller non rilegge c.var.seller messo a monte", async () => {
+		const app = moduleApp().get("/x", requireSeller, (c) =>
+			c.json({ profile: c.var.seller.sellerProfile.id }),
+		);
+		const res = await withVars(app, {
+			user: { id: "u1", role: "seller" },
+			seller: { sellerProfile: { id: "sp1" }, isOwner: true },
+		}).request("/x");
+		expect(await res.json()).toEqual({ profile: "sp1" });
 	});
 });

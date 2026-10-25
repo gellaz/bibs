@@ -7,7 +7,7 @@ import { CopyPlusIcon, StoreIcon, Trash2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useStores } from "@/hooks/use-stores";
-import { api } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import { StockEditorCell } from "./stock-editor-cell";
 import { StoreAssignmentDialog } from "./store-assignment-dialog";
@@ -53,11 +53,10 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 
 	const removeMutation = useMutation({
 		mutationFn: async (storeId: string) => {
-			const response = await api()
-				.seller.products({ productId })
-				.stores({ storeId })
-				.delete();
-			if (response.error)
+			const response = await sellerApi.products[":productId"].stores[
+				":storeId"
+			].$delete({ param: { productId, storeId } });
+			if (!response.ok)
 				throw new Error(m.products_stock_manager_remove_error());
 		},
 		onSuccess: () => {
@@ -70,10 +69,11 @@ export function ProductStockManager({ productId, storeProducts }: Props) {
 	const assignActiveMutation = useMutation({
 		mutationFn: async () => {
 			if (!activeStore) throw new Error(m.products_stock_manager_no_store());
-			const response = await api()
-				.seller.products({ productId })
-				.stores.post({ storeIds: [activeStore.id], stock: 0 });
-			if (response.error) throw new Error(m.products_store_assignment_error());
+			const response = await sellerApi.products[":productId"].stores.$post({
+				param: { productId },
+				json: { storeIds: [activeStore.id], stock: 0 },
+			});
+			if (!response.ok) throw new Error(m.products_store_assignment_error());
 		},
 		onSuccess: () => {
 			toast.success(m.products_stock_manager_assigned_success());

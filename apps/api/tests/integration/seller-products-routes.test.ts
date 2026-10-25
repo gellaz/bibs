@@ -32,12 +32,9 @@ mock.module("@/lib/s3", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { product } from "@/db/schemas/product";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
-import { errorHandler } from "@/plugins/error-handler";
-import { normalize } from "@/plugins/normalize";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestBrand,
@@ -48,34 +45,21 @@ import {
 	createTestStore,
 	createTestStoreProduct,
 } from "../helpers/fixtures";
-import { signIn } from "../helpers/hono-app";
+import { signIn, testRequest } from "../helpers/hono-app";
 
-// Le route di U5 (prodotti, brand, immagini, caratteristiche, stock) con
-// sessioni better-auth vere: guardia seller (i quattro 403 di
-// `resolveSellerAccess`), scritture, multipart, strip in ingresso e in uscita.
-// Le risposte sono quelle di Elysia prima della migrazione: il file è nato
-// contro `sellerModule` e da allora cambia solo `call()`.
+// Le route di U5 (prodotti, brand, immagini, caratteristiche, stock) sulla
+// sub-app Hono, con sessioni better-auth vere: guardia seller (i quattro 403
+// di `resolveSellerAccess`), scritture, multipart, strip in ingresso e in
+// uscita. Le risposte sono quelle di Elysia prima della migrazione: il file è
+// nato contro `sellerModule` (commit eba68c30, verde) e da allora cambia solo
+// `call()`.
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-let app: { handle: (req: Request) => Promise<Response> };
+let sellerApp: typeof import("@/modules/seller").sellerApp;
 
 beforeAll(async () => {
 	await setupTestContainer();
 	// dinamico: @/lib/auth cattura `db` alla valutazione
-	const { sellerModule } = await import("@/modules/seller");
-	app = new Elysia()
-		.state("pino", noopPino)
-		.use(errorHandler)
-		.use(normalize)
-		.use(sellerModule);
+	({ sellerApp } = await import("@/modules/seller"));
 }, 180_000);
 
 afterAll(async () => {
@@ -90,7 +74,7 @@ beforeEach(async () => {
 
 /** Una richiesta a /seller<path>. */
 function call(path: string, init: RequestInit = {}) {
-	return app.handle(new Request(`http://localhost/seller${path}`, init));
+	return testRequest(sellerApp, path, init);
 }
 
 const json = (method: string, body: unknown, cookie?: string) => ({
