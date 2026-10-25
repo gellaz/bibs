@@ -1,0 +1,21 @@
+{"method":"POST","path":"/webhooks/stripe","headers":{"content-type":"text/plain"},"body":"raw","expect":{"status":400,"body":{"error":"missing signature"}}}
+{"method":"POST","path":"/webhooks/stripe/connect","headers":{"content-type":"text/plain"},"body":"raw","expect":{"status":400,"body":{"error":"missing signature"}}}
+{"method":"POST","path":"/webhooks/stripe/thin","headers":{"content-type":"text/plain"},"body":"raw","expect":{"status":400,"body":{"error":"missing signature"}}}
+{"method":"POST","path":"/webhooks/stripe","expect":{"status":400,"body":{"error":"missing signature"}}}
+{"method":"POST","path":"/webhooks/stripe","headers":{"stripe-signature":""},"body":{"id":"evt_x"},"expect":{"status":400,"body":{"error":"missing signature"}}}
+{"method":"POST","path":"/webhooks/stripe","headers":{"content-type":"application/json"},"body":"{","expect":{"status":400,"body":{"error":"missing signature"}}}
+{"method":"POST","path":"/webhooks/stripe","headers":{"stripe-signature":"t=1,v1=bad"},"body":{"id":"evt_x","type":"x"},"expect":{"status":400,"body":{"error":"invalid signature"}}}
+{"method":"POST","path":"/webhooks/stripe/connect","headers":{"stripe-signature":"t=1,v1=bad"},"body":{"id":"evt_x","type":"x"},"expect":{"status":400,"body":{"error":"invalid signature"}}}
+{"method":"POST","path":"/webhooks/stripe/thin","headers":{"stripe-signature":"t=1,v1=bad"},"body":{"id":"evt_x","type":"x"},"expect":{"status":400,"body":{"error":"invalid signature"}}}
+{"method":"POST","path":"/webhooks/stripe","headers":{"stripe-signature":"t=1,v1=bad","content-type":"application/json"},"body":"{","expect":{"status":400,"body":{"error":"invalid signature"}}}
+{"method":"POST","path":"/webhooks/stripe","headers":{"stripe-signature":"t=1,v1=bad","content-type":"multipart/form-data; boundary=x"},"body":"--x--","expect":{"status":400,"body":{"error":"invalid signature"}}}
+{"method":"POST","path":"/webhooks/stripe","headers":{"stripe-signature":"t=1,v1=bad"},"expect":{"status":400,"body":{"error":"invalid signature"}}}
+{"method":"POST","path":"/webhooks/stripe/","headers":{"content-type":"text/plain"},"body":"raw","expect":{"status":400,"body":{"error":"missing signature"}}}
+{"method":"POST","path":"/webhooks/stripe/connect/","headers":{"stripe-signature":"t=1,v1=bad"},"body":{"id":"evt_x"},"expect":{"status":400,"body":{"error":"invalid signature"}}}
+{"path":"/webhooks/stripe","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"PUT","path":"/webhooks/stripe","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"POST","path":"/webhooks","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"POST","path":"/webhooks/nope","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"POST","path":"/webhooks/%73tripe","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"POST","path":"/webhooks/stripe/thin/x","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}}}
+{"method":"OPTIONS","path":"/webhooks/stripe","headers":{"origin":"http://localhost:3001","access-control-request-method":"POST"},"expect":{"status":204}}

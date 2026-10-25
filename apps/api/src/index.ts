@@ -16,7 +16,7 @@ import { locationsModule } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registration } from "@/modules/registration";
 import { sellerModule } from "@/modules/seller";
-import { stripeWebhookRoutes } from "@/modules/webhooks";
+import { webhooksApp } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
 import { errorHandler } from "@/plugins/error-handler";
@@ -155,11 +155,11 @@ const app = new Elysia()
 				paths: {
 					...(await OpenAPI.getPaths()),
 					...honoPaths(meApp, "/me", ["auth"]),
+					...honoPaths(webhooksApp, "/webhooks", ["publicRoute"]),
 				},
 			},
 		}),
 	)
-	.use(stripeWebhookRoutes)
 	.use(betterAuth)
 	.use(registration)
 	.use(adminModule)
@@ -169,6 +169,7 @@ const app = new Elysia()
 	.use(customerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
+	.mount("/webhooks", webhooksApp.fetch)
 	.use(cronJobs)
 	.use(health);
 

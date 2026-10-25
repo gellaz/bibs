@@ -168,7 +168,7 @@ Dal 2026-10-25 l'API passa da Elysia a Hono e i frontend da Eden a `hc`, un modu
 per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline e
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
-(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1).
+(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1), `webhooks/` (U10).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
