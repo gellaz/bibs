@@ -68,6 +68,26 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 	// z.int() aggiunge i limiti dei safe integer, che Type.Integer non ha.
 	if (json.minimum === -MAX_SAFE) delete json.minimum;
 	if (json.maximum === MAX_SAFE) delete json.maximum;
+	// t.Union scrive sempre `anyOf`; dopo l'override Zod compatterebbe i rami di
+	// solo tipo (`string | number | boolean`) in `type: [...]`. La chiave si
+	// nasconde qui e torna `anyOf` in `toJsonSchema`.
+	if (def.type === "union" && Array.isArray(json.anyOf)) {
+		json[HIDDEN_ANY_OF] = json.anyOf;
+		delete json.anyOf;
+	}
+}
+
+const HIDDEN_ANY_OF = "~anyOf";
+
+function restoreAnyOf(value: unknown): unknown {
+	if (Array.isArray(value)) return value.map(restoreAnyOf);
+	if (!value || typeof value !== "object") return value;
+	return Object.fromEntries(
+		Object.entries(value).map(([k, v]) => [
+			k === HIDDEN_ANY_OF ? "anyOf" : k,
+			restoreAnyOf(v),
+		]),
+	);
 }
 
 /** JSON Schema di uno schema Zod, come TypeBox lo scrive per il gemello. */
@@ -78,7 +98,7 @@ export function toJsonSchema(schema: z.ZodType): Json {
 		reused: "inline",
 		override: overrideNode,
 	});
-	return json;
+	return restoreAnyOf(json) as Json;
 }
 
 // ── trasformazioni di @elysiajs/openapi 1.4.16 ──────────────────────────────

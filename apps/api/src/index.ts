@@ -11,7 +11,7 @@ import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { catalogModule } from "@/modules/catalog";
-import { customerModule } from "@/modules/customer";
+import { customerApp } from "@/modules/customer";
 import { locationsModule } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registration } from "@/modules/registration";
@@ -155,6 +155,7 @@ const app = new Elysia()
 				paths: {
 					...(await OpenAPI.getPaths()),
 					...honoPaths(meApp, "/me", ["auth"]),
+					...honoPaths(customerApp, "/customer", ["customer", "publicRoute"]),
 				},
 			},
 		}),
@@ -166,9 +167,9 @@ const app = new Elysia()
 	.use(catalogModule)
 	.use(locationsModule)
 	.use(sellerModule)
-	.use(customerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
+	.mount("/customer", customerApp.fetch)
 	.use(cronJobs)
 	.use(health);
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
+import { moduleApp } from "@/http/app";
 import { ordersRoutes } from "@/modules/customer/routes/orders";
 import { locationsRoutes } from "@/modules/locations/routes/locations";
 import { brandsRoutes } from "@/modules/seller/routes/brands";
@@ -8,6 +9,7 @@ import { stockRoutes } from "@/modules/seller/routes/stock";
 import { storeImagesRoutes } from "@/modules/seller/routes/store-images";
 import { storesRoutes } from "@/modules/seller/routes/stores";
 import { errorHandler } from "@/plugins/error-handler";
+import { testRequest } from "../helpers/hono-app";
 
 const noopPino = {
 	debug: () => {},
@@ -29,8 +31,10 @@ const app = new Elysia()
 	.use(imagesRoutes)
 	.use(storeImagesRoutes)
 	.use(brandsRoutes)
-	.use(locationsRoutes)
-	.use(ordersRoutes);
+	.use(locationsRoutes);
+
+// Modulo customer: sub-app Hono (piano Hono, U3).
+const customer = moduleApp().route("/", ordersRoutes);
 
 function json(method: string, path: string, body: unknown) {
 	return app.handle(
@@ -104,7 +108,10 @@ describe("integer inputs reject fractions with 422", () => {
 		["GET /brands page", () => get("/brands?page=1.5")],
 		// The shared PaginationQuery, spread into ~19 routes.
 		["GET /stores (PaginationQuery) limit", () => get("/stores?limit=2.5")],
-		["GET /orders (PaginationQuery) page", () => get("/orders?page=1.5")],
+		[
+			"GET /orders (PaginationQuery) page",
+			() => testRequest(customer, "/orders?page=1.5"),
+		],
 		["GET /geocode limit", () => get("/geocode?q=Via%20Roma&limit=2.5")],
 	];
 

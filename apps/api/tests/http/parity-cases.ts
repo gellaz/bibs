@@ -14,6 +14,7 @@ import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/openin
 import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/lib/schemas/holidays";
 import { StockBulkAdjustBody as TbStockBulkAdjustBody } from "@/lib/schemas/stock";
 import { PaginationQuery } from "@/lib/zod/pagination";
+import { ProductSearchQuery } from "@/lib/zod/queries";
 import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
@@ -161,60 +162,7 @@ const DiscountListQuery = PaginationQuery.extend({
 	search: z.string().max(80).optional(),
 });
 
-// Gemello di `ProductSearchQuery` (`lib/queries.ts`), descrizioni comprese.
-const d = (description: string) => ({ description });
-const ProductSearchQuery = PaginationQuery.extend({
-	q: z.string().meta(d("Testo di ricerca (full-text italiano)")).optional(),
-	categoryId: z.string().meta(d("Filtra per ID categoria prodotto")).optional(),
-	macroCategoryId: z
-		.string()
-		.meta(
-			d(
-				"Filtra per ID macro categoria prodotto. Ignorato se `categoryId` è presente: la categoria è già dentro la sua macro.",
-			),
-		)
-		.optional(),
-	lat: z
-		.number()
-		.min(-90)
-		.max(90)
-		.meta(d("Latitudine del punto di ricerca"))
-		.optional(),
-	lng: z
-		.number()
-		.min(-180)
-		.max(180)
-		.meta(d("Longitudine del punto di ricerca"))
-		.optional(),
-	radius: z
-		.number()
-		.gt(0)
-		.max(100)
-		.meta(d("Raggio in km (opzionale, nessun limite di default; max 100)"))
-		.optional(),
-	openNow: z
-		.boolean()
-		.meta(
-			d(
-				"Solo i prodotti disponibili in un negozio aperto in questo momento (fuso Europe/Rome). Restringe anche quale negozio viene agganciato al risultato.",
-			),
-		)
-		.optional(),
-	onSale: z
-		.boolean()
-		.meta(d("Solo i prodotti con uno sconto attivo in questo momento"))
-		.optional(),
-	minPrice: z
-		.number()
-		.min(0)
-		.meta(d("Prezzo minimo in €, sul prezzo scontato"))
-		.optional(),
-	maxPrice: z
-		.number()
-		.min(0)
-		.meta(d("Prezzo massimo in €, sul prezzo scontato"))
-		.optional(),
-});
+// Gemello di `ProductSearchQuery`: `lib/zod/queries.ts` (U3).
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 

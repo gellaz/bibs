@@ -1,27 +1,46 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
-import { ProductDetailQuery, ProductSearchQuery } from "@/lib/queries";
+import { Hono } from "hono";
+import { z } from "zod";
+import { doc } from "@/http/openapi";
+import { publicRoute } from "@/http/routes";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
 import {
 	CustomerProductDetailSchema,
-	okPageRes,
-	okRes,
 	ProductCardSchema,
 	ProductFacetsSchema,
-	withErrors,
-} from "@/lib/schemas";
+} from "@/lib/zod/entities";
+import { ProductDetailQuery, ProductSearchQuery } from "@/lib/zod/queries";
+import { okPageRes, okRes, withErrors } from "@/lib/zod/responses";
 import { getProductDetail } from "../services/product-detail";
 import { getProductFacets } from "../services/product-facets";
 import { searchProducts } from "../services/product-search";
 
-export const productsRoutes = new Elysia()
+const ProductPage = okPageRes(ProductCardSchema);
+const FacetsResponse = okRes(ProductFacetsSchema);
+const DetailResponse = okRes(CustomerProductDetailSchema);
+
+// Route relative e pubbliche: il modulo è montato su /customer (`src/index.ts`).
+export const productsRoutes = new Hono()
 	.get(
 		"/products",
-		async ({ query, store }) => {
-			const pino = getLogger(store);
+		doc({
+			response: withErrors({ 200: ProductPage }),
+			detail: {
+				summary: "Ricerca prodotti",
+				description:
+					"Ricerca pubblica di prodotti con full-text italiano e filtro geografico (PostGIS). Ogni risultato è un prodotto agganciato al negozio più vicino che lo ha disponibile fra quelli che soddisfano i filtri; `otherStoreCount` dice quanti altri ce l'hanno. Solo negozi pubblicamente visibili. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		}),
+		publicRoute,
+		v("query", ProductSearchQuery),
+		async (c) => {
+			const query = c.req.valid("query");
 			const result = await searchProducts(query);
 
-			pino.info(
+			logger.info(
 				{
 					searchQuery: query.q,
 					categoryId: query.categoryId,
@@ -36,25 +55,34 @@ export const productsRoutes = new Elysia()
 				"Ricerca prodotti eseguita",
 			);
 
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: ProductSearchQuery,
-			response: withErrors({ 200: okPageRes(ProductCardSchema) }),
-			detail: {
-				summary: "Ricerca prodotti",
-				description:
-					"Ricerca pubblica di prodotti con full-text italiano e filtro geografico (PostGIS). Ogni risultato è un prodotto agganciato al negozio più vicino che lo ha disponibile fra quelli che soddisfano i filtri; `otherStoreCount` dice quanti altri ce l'hanno. Solo negozi pubblicamente visibili. Non richiede autenticazione.",
-				tags: ["Customer - Search"],
-			},
+			return send(c, ProductPage, okPage(result.data, result.pagination));
 		},
 	)
 	.get(
 		"/products/facets",
-		async ({ query, store }) => {
-			const pino = getLogger(store);
+		doc({
+			response: withErrors({ 200: FacetsResponse }),
+			detail: {
+				summary: "Facet di ricerca prodotti",
+				description:
+					"Conteggi per macro categoria e categoria sui prodotti che corrispondono a testo, geografia, prezzo e offerta. Non applica mai la categoria già selezionata: il rail deve mostrare le alternative. Le macro senza prodotti non vengono restituite. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		}),
+		publicRoute,
+		v(
+			"query",
+			ProductSearchQuery.omit({
+				page: true,
+				limit: true,
+				categoryId: true,
+				macroCategoryId: true,
+			}),
+		),
+		async (c) => {
+			const query = c.req.valid("query");
 			const facets = await getProductFacets(query);
-			pino.info(
+			logger.info(
 				{
 					searchQuery: query.q,
 					hasGeoFilter: query.lat !== undefined && query.lng !== undefined,
@@ -66,32 +94,33 @@ export const productsRoutes = new Elysia()
 				},
 				"Facet di ricerca prodotti richiesti",
 			);
-			return ok(facets);
-		},
-		{
-			query: t.Omit(ProductSearchQuery, [
-				"page",
-				"limit",
-				"categoryId",
-				"macroCategoryId",
-			]),
-			response: withErrors({ 200: okRes(ProductFacetsSchema) }),
-			detail: {
-				summary: "Facet di ricerca prodotti",
-				description:
-					"Conteggi per macro categoria e categoria sui prodotti che corrispondono a testo, geografia, prezzo e offerta. Non applica mai la categoria già selezionata: il rail deve mostrare le alternative. Le macro senza prodotti non vengono restituite. Non richiede autenticazione.",
-				tags: ["Customer - Search"],
-			},
+			return send(c, FacetsResponse, ok(facets));
 		},
 	)
 	.get(
 		"/products/:id",
-		async ({ params, query, store }) => {
-			const pino = getLogger(store);
-			const detail = await getProductDetail(params.id, query);
-			pino.info(
+		doc({
+			response: withErrors({ 200: DetailResponse }),
+			detail: {
+				summary: "Scheda prodotto",
+				description:
+					"Scheda pubblica di un prodotto con un negozio agganciato: quello indicato da `storeId` se lo ha disponibile, altrimenti il più vicino all'origine, altrimenti il primo per nome. Include le sole caratteristiche valorizzate, con l'etichetta delle opzioni. Restituisce 404 se il prodotto non è attivo o nessun negozio visibile lo ha disponibile. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		}),
+		publicRoute,
+		v(
+			"param",
+			z.object({ id: z.string().meta({ description: "ID del prodotto" }) }),
+		),
+		v("query", ProductDetailQuery),
+		async (c) => {
+			const { id } = c.req.valid("param");
+			const query = c.req.valid("query");
+			const detail = await getProductDetail(id, query);
+			logger.info(
 				{
-					productId: params.id,
+					productId: id,
 					requestedStoreId: query.storeId,
 					attachedStoreId: detail.offer.store.id,
 					hasGeo: query.lat !== undefined && query.lng !== undefined,
@@ -100,17 +129,6 @@ export const productsRoutes = new Elysia()
 				},
 				"Scheda prodotto richiesta",
 			);
-			return ok(detail);
-		},
-		{
-			params: t.Object({ id: t.String({ description: "ID del prodotto" }) }),
-			query: ProductDetailQuery,
-			response: withErrors({ 200: okRes(CustomerProductDetailSchema) }),
-			detail: {
-				summary: "Scheda prodotto",
-				description:
-					"Scheda pubblica di un prodotto con un negozio agganciato: quello indicato da `storeId` se lo ha disponibile, altrimenti il più vicino all'origine, altrimenti il primo per nome. Include le sole caratteristiche valorizzate, con l'etichetta delle opzioni. Restituisce 404 se il prodotto non è attivo o nessun negozio visibile lo ha disponibile. Non richiede autenticazione.",
-				tags: ["Customer - Search"],
-			},
+			return send(c, DetailResponse, ok(detail));
 		},
 	);

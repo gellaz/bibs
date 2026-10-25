@@ -36,6 +36,24 @@ export function withVars(
 }
 
 /**
+ * Come `withVars`, con le variabili risolte a ogni richiesta (il `.resolve`
+ * finto degli harness Elysia: es. utente e profilo cliente letti dal DB di
+ * test con l'id nell'header `x-test-user`).
+ */
+export function withResolve(
+	app: Hono<any, any, any>,
+	resolve: (request: Request) => Promise<Record<string, unknown>>,
+) {
+	return moduleApp()
+		.use(async (c, next) => {
+			for (const [key, value] of Object.entries(await resolve(c.req.raw)))
+				c.set(key as never, value as never);
+			await next();
+		})
+		.route("/", app);
+}
+
+/**
  * Utente vero con sessione better-auth sul DB di test, per le route con
  * `requireAuth`: il cookie va nell'header `cookie`.
  * Chiamare dopo `mock.module("@/db")` (e di `@/lib/email`): better-auth si

@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { ProductCardData } from "@/features/catalog/product-tile";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 
 /** La tile del catalogo negozio sa anche cosa ordinare e quanto ce n'è. */
 export interface StoreProductCardData extends ProductCardData {
@@ -22,13 +22,13 @@ export function useStoreProducts(storeId: string, limit = 20) {
 		staleTime: 60_000,
 		initialPageParam: 1,
 		queryFn: async ({ pageParam }) => {
-			const { data, error } = await api()
-				.customer.stores({ id: storeId })
-				.products.get({ query: { page: pageParam, limit } });
-			if (error) {
-				throw new Error(`Caricamento prodotti non riuscito (${error.status})`);
-			}
-			return data;
+			const res = await customerApi.stores[":id"].products.$get({
+				param: { id: storeId },
+				query: { page: pageParam, limit },
+			});
+			if (!res.ok)
+				throw new Error(`Caricamento prodotti non riuscito (${res.status})`);
+			return res.json();
 		},
 		getNextPageParam: (lastPage) => {
 			const { page, limit: lim, total } = lastPage.pagination;

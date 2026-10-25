@@ -168,7 +168,8 @@ Dal 2026-10-25 l'API passa da Elysia a Hono e i frontend da Eden a `hc`, un modu
 per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline e
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
-(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1).
+(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
+`customer/` (U3).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
@@ -198,7 +199,9 @@ verifica di ogni PR stanno nel piano
 - **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
   i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
   modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
-  `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`) e il
+  `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`; una
+  guardia di ruolo legge da sé la sessione, come `requireCustomer`, così basta
+  da sola e non c'è un ordine fra guardie da rispettare) e il
   mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
   in `src/index.ts`. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
   ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
@@ -214,8 +217,9 @@ verifica di ogni PR stanno nel piano
   in `.meta()`. Regole per scrivere un gemello:
   - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
     form condivisi) → `z.int()`; `t.Date` → `zDate`; `t.Nullable(x)` →
-    `x.nullable()`; unione di letterali → `z.enum`; `t.Union` di oggetti →
-    `z.union`, mai `z.discriminatedUnion`;
+    `x.nullable()`; unione di letterali → `z.enum` (se i letterali sono numeri
+    in stringa, `"22"`, `"10"`: `z.union` di `z.literal`, perché `z.enum` li
+    riordina); `t.Union` di oggetti → `z.union`, mai `z.discriminatedUnion`;
   - ogni gemello nuovo entra in `apps/api/tests/http/parity-cases.ts` con lo schema
     TypeBox e l'atteso: il test confronta dal vivo con Elysia status, corpo del 422
     e OpenAPI. I casi coprono anche l'ordine del primo errore, i t.Nullable di
@@ -224,11 +228,13 @@ verifica di ogni PR stanno nel piano
     query, default annidati, chiavi multipart `a.b`/`a[0]`): nel piano, Trappole.
 - **Test delle sub-app.** `apps/api/tests/helpers/hono-app.ts`: `testRequest`,
   `signIn(email, role)` (utente e sessione better-auth veri sul DB di test) e
-  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB). I log
+  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB),
+  `withResolve(app, (request) => vars)` (variabili risolte a ogni richiesta, il
+  `.resolve` finto degli harness Elysia). I log
   degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
-  `src/types.ts` (`MeApp`); ogni app crea in `src/lib/api.ts` il client del
+  `src/types.ts` (`MeApp`, `CustomerApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

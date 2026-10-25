@@ -20,6 +20,7 @@ import {
 	withErrors,
 } from "@/lib/zod/responses";
 import { zDate, zInteger } from "@/lib/zod/t";
+import { customerApp } from "@/modules/customer";
 import { meApp } from "@/modules/me";
 import { type Case, cases } from "./parity-cases";
 
@@ -121,6 +122,42 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 			},
 			{ 200: z.object({ at: zDate().nullable(), n: z.string().nullable() }) },
 		],
+		// U3: Zod compatta un'unione di tipi semplici in `type: [...]`
+		// (`value` delle caratteristiche nella scheda prodotto).
+		[
+			"unione di tipi semplici",
+			{
+				200: t.Object({
+					v: t.Union([t.String(), t.Number(), t.Boolean()], {
+						description: "d",
+					}),
+					n: t.Union([t.String(), t.Number()]),
+				}),
+			},
+			{
+				200: z.object({
+					v: z
+						.union([z.string(), z.number(), z.boolean()])
+						.meta({ description: "d" }),
+					n: z.union([z.string(), z.number()]),
+				}),
+			},
+		],
+		// U3: `z.enum(["22", "10"])` esce in ordine crescente (chiavi numeriche
+		// di un oggetto JS); l'ordine di TypeBox lo tiene un'unione di letterali.
+		[
+			"letterali numerici nell'ordine dello schema",
+			{
+				200: t.Object({
+					vat: t.Union([t.Literal("22"), t.Literal("10"), t.Literal("0")]),
+				}),
+			},
+			{
+				200: z.object({
+					vat: z.union([z.literal("22"), z.literal("10"), z.literal("0")]),
+				}),
+			},
+		],
 	];
 	for (const [name, tb, zod] of responses) {
 		it(`response: ${name}`, async () => {
@@ -131,7 +168,7 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 	}
 });
 
-describe("OpenAPI — modulo me/ contro la baseline", () => {
+describe("OpenAPI — moduli migrati contro la baseline", () => {
 	it("POST e DELETE /me/avatar identici a baseline/openapi.json", async () => {
 		const baseline = await Bun.file(
 			join(
@@ -142,5 +179,27 @@ describe("OpenAPI — modulo me/ contro la baseline", () => {
 		const paths = honoPaths(meApp, "/me", ["auth"]);
 		expect(Object.keys(paths)).toEqual(["/me/avatar"]);
 		expect(paths["/me/avatar"]).toEqual(baseline.paths["/me/avatar"]);
+	});
+
+	it("le 25 operazioni di /customer identiche a baseline/openapi.json", async () => {
+		const baseline = await Bun.file(
+			join(
+				import.meta.dir,
+				"../../../../docs/superpowers/plans/2026-10-25-hono-migration/baseline/openapi.json",
+			),
+		).json();
+		const paths = honoPaths(customerApp, "/customer", [
+			"customer",
+			"publicRoute",
+		]);
+		const expected = Object.keys(baseline.paths).filter((p) =>
+			p.startsWith("/customer/"),
+		);
+		expect(Object.keys(paths).sort()).toEqual(expected.sort());
+		expect(
+			Object.values(paths).reduce((n, ops) => n + Object.keys(ops).length, 0),
+		).toBe(25);
+		for (const path of expected)
+			expect(paths[path]).toEqual(baseline.paths[path]);
 	});
 });
