@@ -201,8 +201,9 @@ verifica di ogni PR stanno nel piano
   `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`) e il
   mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
   in `src/index.ts`. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
-  ogni avvio) ferma l'API se prima del primo handler di una route non c'è
-  `publicRoute` né una guardia del modulo (`requireAuth` da solo non basta su
+  ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
+  guardia del modulo, o `publicRoute` in un modulo che dichiara `"publicRoute"`
+  (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
   /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
   un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
   query → body.

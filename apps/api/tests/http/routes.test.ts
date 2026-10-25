@@ -35,7 +35,15 @@ describe("routeProblems()", () => {
 
 	it("publicRoute dichiara una route pubblica", () => {
 		const app = moduleApp().get("/p", publicRoute, v("query", Query), ok);
-		expect(routeProblems(app, [])).toEqual([]);
+		expect(routeProblems(app, ["publicRoute"])).toEqual([]);
+	});
+
+	it("publicRoute vale solo se il modulo la dichiara", () => {
+		const app = moduleApp().get("/p", publicRoute, ok);
+		expect(routeProblems(app, ["admin"])).toEqual([
+			"GET /p: manca la guardia del modulo (admin)",
+		]);
+		expect(routeProblems(app, ["customer", "publicRoute"])).toEqual([]);
 	});
 
 	it("un v() dopo l'auth è un errore (422 prima di 401)", () => {
@@ -98,9 +106,16 @@ describe("routeProblems(): guardia del modulo e handler davanti all'auth", () =>
 		const app = moduleApp()
 			.get("/a", publicRoute, ok)
 			.get("/b", requireAuth, ok);
-		expect(routeProblems(app, [])).toEqual([
+		expect(routeProblems(app, ["publicRoute"])).toEqual([
 			"GET /b: manca la guardia del modulo (publicRoute)",
 		]);
+	});
+
+	it("una guardia già marcata non si rimarca", () => {
+		expect(() => guard(requireAuth, "admin")).toThrow(
+			'guard(): middleware già marcato "auth"',
+		);
+		expect(routeProblems(meApp, ["auth"])).toEqual([]);
 	});
 
 	it("una seconda registrazione dello stesso path non protegge la prima", async () => {

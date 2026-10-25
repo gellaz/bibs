@@ -5,9 +5,10 @@ import { type Target, VALIDATES, type Validates } from "./validator";
 // da `honoPaths()` e nei test: l'auth sta in ogni route e non nel modulo, quindi
 // una route senza guardia, o con la guardia sbagliata, sarebbe aperta in
 // silenzio. Prima del primo handler vero (tutto ciò che non è `doc()`, `v()`,
-// una guardia o `publicRoute`) ogni route deve avere `publicRoute` o una
-// guardia del modulo (es. `requireAdmin` per /admin: `requireAuth` non basta);
-// i `v()` vengono prima dell'auth e nell'ordine di Elysia: params, query, body.
+// una guardia o `publicRoute`) ogni route deve avere una guardia del modulo
+// (es. `requireAdmin` per /admin: `requireAuth` non basta) o `publicRoute`, se
+// il modulo dichiara `"publicRoute"`; i `v()` vengono prima dell'auth e
+// nell'ordine di Elysia: params, query, body.
 
 /** Le guardie di D9: `requireAuth` e i middleware di ruolo. */
 export type GuardTag = "auth" | "customer" | "seller" | "sellerRole" | "admin";
@@ -17,11 +18,22 @@ const PUBLIC = Symbol("public");
 /** Metadati OpenAPI di `doc()` (`openapi.ts`). */
 export const DOC = Symbol("doc");
 
-/** Marca un middleware di auth con la sua guardia. */
+/** Ciò che un modulo accetta in testa alle route: guardie e `publicRoute`. */
+export type ModuleGuard = GuardTag | "publicRoute";
+
+/**
+ * Marca un middleware di auth con la sua guardia. Una guardia già marcata non
+ * si rimarca: `guard(requireAuth, "admin")` darebbe a `requireAuth` il ruolo
+ * admin senza il controllo del ruolo.
+ */
 export const guard = <M extends MiddlewareHandler<any, any, any>>(
 	m: M,
 	tag: GuardTag,
-) => Object.assign(m, { [GUARD]: tag });
+) => {
+	const marked = (m as Marked)[GUARD];
+	if (marked) throw new Error(`guard(): middleware già marcato "${marked}"`);
+	return Object.assign(m, { [GUARD]: tag });
+};
 
 /** Route volutamente pubblica: middleware che non fa niente. */
 export const publicRoute: MiddlewareHandler = Object.assign(
@@ -39,12 +51,13 @@ type Marked = {
 };
 
 /**
- * Le route che non rispettano le regole, con il motivo. `guards`: le guardie
- * che il modulo accetta (una basta); `[]` se tutte le route sono pubbliche.
+ * Le route che non rispettano le regole, con il motivo. `guards`: ciò che il
+ * modulo accetta (una voce basta); `["publicRoute"]` se tutte le route sono
+ * pubbliche, `["customer", "publicRoute"]` per un modulo misto.
  */
 export function routeProblems(
 	app: Hono<any, any, any>,
-	guards: readonly GuardTag[],
+	guards: readonly ModuleGuard[],
 ): string[] {
 	const routes = new Map<string, Marked[]>();
 	for (const r of app.routes) {
@@ -74,11 +87,12 @@ export function routeProblems(
 		if (!head.some((h) => h[GUARD] || h[PUBLIC]))
 			problems.push(`${key}: né guardia di auth né publicRoute`);
 		else if (
-			!head.some((h) => h[PUBLIC]) &&
-			!head.some((h) => guards.some((tag) => h[GUARD] === tag))
+			!head.some((h) =>
+				guards.includes(h[PUBLIC] ? "publicRoute" : (h[GUARD] as GuardTag)),
+			)
 		)
 			problems.push(
-				`${key}: manca la guardia del modulo (${guards.join(" o ") || "publicRoute"})`,
+				`${key}: manca la guardia del modulo (${guards.join(" o ")})`,
 			);
 		if (auth !== -1 && validators.some((v) => v.i > auth))
 			problems.push(`${key}: un v() dopo l'auth (422 prima di 401)`);
@@ -91,7 +105,7 @@ export function routeProblems(
 /** Lancia se una route non rispetta le regole: l'API non parte. */
 export function assertRoutes(
 	app: Hono<any, any, any>,
-	guards: readonly GuardTag[],
+	guards: readonly ModuleGuard[],
 ) {
 	const problems = routeProblems(app, guards);
 	if (problems.length)

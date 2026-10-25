@@ -26,8 +26,10 @@ import { zodValidationMessage } from "./validation-message";
 // Trappole): coercizione di query e params solo al primo livello (Elysia
 // scende anche negli anyOf e negli array: `?from=<epoch>` su un t.Date
 // opzionale), default annidati (Zod li mette, Elysia no), chiavi multipart
-// `a.b`/`a[0]` e fusione JSON + file non portate. Chi aggiunge uno schema così
-// estende `coerce()`/`readFormData()` e mette i casi in tests/http/parity-cases.ts.
+// `a.b`/`a[0]` e fusione JSON + file non portate, pulizia dei valori oggetto di
+// un t.Record e primo errore di un'unione di oggetti annidata (mirror.ts,
+// issues.ts). Chi aggiunge uno schema così estende `coerce()`/`readFormData()`/
+// mirror.ts/issues.ts e mette i casi in tests/http/parity-cases.ts.
 
 export type Target = "json" | "form" | "query" | "param";
 
