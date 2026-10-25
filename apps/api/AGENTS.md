@@ -217,7 +217,9 @@ domain map:
 - `admin/` (`/admin`) — guarded by `user.role === "admin"`: category CRUD + CSV bulk
   imports, seller verification, profile-change review (`GET
   /admin/sellers/changes/pending`, `PATCH /admin/sellers/changes/:changeId/approve`,
-  `PATCH /admin/sellers/changes/:changeId/reject` with optional reason), holiday
+  `PATCH /admin/sellers/changes/:changeId/reject` with optional reason), the
+  "Richieste" inbox (`GET /admin/requests`, `GET /admin/requests/counts`,
+  `GET /admin/requests/changes/:changeId`), holiday
   definitions, pricing configuration.
 - `seller/` (`/seller`) — two guard levels: **auth-only** (`withSellerAuth`) for
   profile + onboarding routes, accessible to any authenticated seller regardless of
@@ -231,7 +233,8 @@ domain map:
       excluding VAT). Applied immediately.
     - *Level 2 — Admin review*: `PATCH /settings/vat` (VAT change — blocks new orders during review),
       `PATCH /settings/document` (ID document update). Creates a `seller_profile_changes` record; current data stays
-      active until admin approves.
+      active until admin approves. The owner can withdraw a pending request with
+      `PATCH /settings/changes/:changeId/cancel`.
     - *Online payments*: `POST /settings/payments/onboarding` creates the seller's Stripe Connect account (if missing;
       Accounts v2 with the `recipient` configuration — `stripe_balance.stripe_transfers`, Express dashboard,
       fees/losses on the platform) and returns the Stripe-hosted v2 Account Link; `POST /settings/payments/sync`

@@ -83,7 +83,7 @@ export const order = pgTable(
 		pointsSpent: integer("points_spent").default(0).notNull(),
 		idempotencyKey: text("idempotency_key"),
 		// Checkout che ha prodotto l'ordine; NULL per ordini creati da
-		// POST /customer/orders.
+		// createOrder (seed e test).
 		checkoutId: text("checkout_id").references(() => checkout.id, {
 			onDelete: "set null",
 		}),

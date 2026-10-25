@@ -24,7 +24,7 @@ export const cartItem = pgTable(
 			.notNull()
 			.references(() => customerProfile.id, { onDelete: "cascade" }),
 		// storeProduct, non product: pinna prodotto E negozio in una colonna sola,
-		// ed è l'identificatore che POST /customer/orders si aspetta. Il cascade è
+		// ed è l'identificatore che createOrder (seed e test) si aspetta. Il cascade è
 		// voluto: se il venditore toglie il prodotto dal negozio, la riga sparisce
 		// (al contrario di order_items, che snapshotta per restare leggibile).
 		storeProductId: text("store_product_id")
