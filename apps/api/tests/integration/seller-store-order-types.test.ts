@@ -22,7 +22,9 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+import { eq } from "drizzle-orm";
 import { paymentMethod } from "@/db/schemas/payment-method";
+import { sellerProfile } from "@/db/schemas/seller";
 import {
 	getStoreOrderTypes,
 	updateStoreOrderTypes,
@@ -72,6 +74,7 @@ describe("tipologie d'acquisto del negozio", () => {
 			orderTypes: ["reserve_pickup", "pay_pickup"],
 			offeredOrderTypes: ["reserve_pickup", "pay_pickup"],
 			chargesEnabled: true,
+			vatChangeBlocked: false,
 		});
 	});
 
@@ -141,6 +144,7 @@ describe("tipologie d'acquisto del negozio", () => {
 			orderTypes: ["reserve_pickup", "pay_pickup"],
 			offeredOrderTypes: ["reserve_pickup"],
 			chargesEnabled: false,
+			vatChangeBlocked: false,
 		});
 	});
 
@@ -172,5 +176,23 @@ describe("tipologie d'acquisto del negozio", () => {
 				storeId: a.storeId,
 			}),
 		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("con un cambio partita IVA in attesa non si offre niente, ma si salva", async () => {
+		const s = await setup({ chargesEnabled: true });
+		await getTestDb()
+			.update(sellerProfile)
+			.set({ vatChangeBlocked: true })
+			.where(eq(sellerProfile.id, s.sellerProfileId));
+		expect(await getStoreOrderTypes(s)).toMatchObject({
+			vatChangeBlocked: true,
+			offeredOrderTypes: [],
+		});
+		const saved = await updateStoreOrderTypes({
+			...s,
+			orderTypes: ["reserve_pickup", "pay_pickup"],
+		});
+		expect(saved.orderTypes).toEqual(["reserve_pickup", "pay_pickup"]);
+		expect(saved.offeredOrderTypes).toEqual([]);
 	});
 });

@@ -29,6 +29,7 @@ import {
 	product as productTable,
 	storeProduct as storeProductTable,
 } from "@/db/schemas/product";
+import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import {
@@ -359,6 +360,52 @@ describe("getCart", () => {
 
 		const cart = await getCart(customer.profile.id);
 		expect(cart.groups[0].store.orderTypes).toEqual(["reserve_pickup"]);
+	});
+
+	it("segna non disponibili le righe di un venditore con cambio partita IVA in attesa", async () => {
+		const db = getTestDb();
+		const blocked = await createTestSeller(db);
+		const other = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const { storeProduct: spBlocked } = await sellableProduct(
+			blocked.profile.id,
+			{ storeName: "Bloccato" },
+		);
+		const { storeProduct: spOk } = await sellableProduct(other.profile.id, {
+			storeName: "Libero",
+		});
+		await createTestCartItem(db, customer.profile.id, spBlocked.id);
+		await createTestCartItem(db, customer.profile.id, spOk.id);
+		await db
+			.update(sellerProfile)
+			.set({ vatChangeBlocked: true })
+			.where(eq(sellerProfile.id, blocked.profile.id));
+
+		const cart = await getCart(customer.profile.id);
+		const byName = (n: string) => cart.groups.find((g) => g.store.name === n)!;
+		expect(byName("Bloccato").store.orderTypes).toEqual([]);
+		expect(byName("Bloccato").items.map((i) => i.issue)).toEqual([
+			"unavailable",
+		]);
+		expect(byName("Libero").items.map((i) => i.issue)).toEqual(["ok"]);
+	});
+
+	it("segna non disponibili le righe di un negozio senza modalità d'acquisto", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const customer = await createTestCustomer(db);
+		const { store: s, storeProduct: sp } = await sellableProduct(
+			seller.profile.id,
+		);
+		await createTestCartItem(db, customer.profile.id, sp.id);
+		await db
+			.update(storeTable)
+			.set({ orderTypes: ["pay_pickup"] })
+			.where(eq(storeTable.id, s.id));
+
+		const cart = await getCart(customer.profile.id);
+		expect(cart.groups[0].store.orderTypes).toEqual([]);
+		expect(cart.groups[0].items.map((i) => i.issue)).toEqual(["unavailable"]);
 	});
 
 	it("returns zeros for an empty cart", async () => {

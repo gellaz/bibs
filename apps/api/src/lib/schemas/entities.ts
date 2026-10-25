@@ -1381,4 +1381,8 @@ export const StoreOrderTypesSchema = t.Object({
 	chargesEnabled: t.Boolean({
 		description: "Il venditore può incassare online (Stripe Connect)",
 	}),
+	vatChangeBlocked: t.Boolean({
+		description:
+			"Cambio partita IVA in attesa: gli ordini sono bloccati finché l'admin non decide",
+	}),
 });

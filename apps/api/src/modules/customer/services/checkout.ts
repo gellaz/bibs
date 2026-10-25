@@ -10,7 +10,11 @@ import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { fromCents, toCents } from "@/lib/money";
 import { isBelowOnlineMinimum } from "@/lib/online-charge";
-import { offeredOrderTypes, sellerChargesEnabledSql } from "@/lib/order-types";
+import {
+	offeredOrderTypes,
+	sellerChargesEnabledSql,
+	sellerVatChangeBlockedSql,
+} from "@/lib/order-types";
 import { allocateCheckoutPoints } from "@/lib/points-allocation";
 import {
 	resolveOpenStatuses,
@@ -67,6 +71,7 @@ export async function resolveCheckoutLines(
 			storeName: store.name,
 			orderTypes: store.orderTypes,
 			chargesEnabled: sellerChargesEnabledSql,
+			vatChangeBlocked: sellerVatChangeBlockedSql,
 		})
 		.from(cartItem)
 		.innerJoin(storeProduct, eq(storeProduct.id, cartItem.storeProductId))
@@ -98,6 +103,7 @@ export async function resolveCheckoutLines(
 		if (
 			!offeredOrderTypes(own[0].orderTypes, {
 				chargesEnabled: own[0].chargesEnabled,
+				vatChangeBlocked: own[0].vatChangeBlocked,
 			}).includes(choice.type)
 		)
 			throw new ServiceError(

@@ -1,5 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
+import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import {
@@ -28,28 +29,46 @@ async function ownStore({ sellerProfileId, storeId }: StoreRef) {
 	return found;
 }
 
-function view(orderTypes: StoreOrderType[], chargesEnabled: boolean) {
+async function isVatChangeBlocked(sellerProfileId: string) {
+	const [row] = await db
+		.select({ blocked: sellerProfile.vatChangeBlocked })
+		.from(sellerProfile)
+		.where(eq(sellerProfile.id, sellerProfileId));
+	return row?.blocked ?? false;
+}
+
+function view(
+	orderTypes: StoreOrderType[],
+	chargesEnabled: boolean,
+	vatChangeBlocked: boolean,
+) {
 	return {
 		orderTypes,
-		offeredOrderTypes: offeredOrderTypes(orderTypes, { chargesEnabled }),
+		offeredOrderTypes: offeredOrderTypes(orderTypes, {
+			chargesEnabled,
+			vatChangeBlocked,
+		}),
 		chargesEnabled,
+		vatChangeBlocked,
 	};
 }
 
 export async function getStoreOrderTypes(ref: StoreRef) {
-	const [s, pm] = await Promise.all([
+	const [s, pm, blocked] = await Promise.all([
 		ownStore(ref),
 		getDefaultPaymentMethod(ref.sellerProfileId),
+		isVatChangeBlocked(ref.sellerProfileId),
 	]);
-	return view(s.orderTypes, pm?.chargesEnabled ?? false);
+	return view(s.orderTypes, pm?.chargesEnabled ?? false, blocked);
 }
 
 export async function updateStoreOrderTypes(
 	ref: StoreRef & { orderTypes: StoreOrderType[] },
 ) {
-	const [s, pm] = await Promise.all([
+	const [s, pm, blocked] = await Promise.all([
 		ownStore(ref),
 		getDefaultPaymentMethod(ref.sellerProfileId),
+		isVatChangeBlocked(ref.sellerProfileId),
 	]);
 	const chargesEnabled = pm?.chargesEnabled ?? false;
 	// Ordine canonico e senza doppioni, qualunque cosa mandi il client.
@@ -62,14 +81,18 @@ export async function updateStoreOrderTypes(
 			400,
 			"Per «Paga e ritira» attiva prima i pagamenti online",
 		);
-	if (offeredOrderTypes(next, { chargesEnabled }).length === 0)
+	// Il blocco IVA è temporaneo: non deve impedire di salvare una scelta valida (spec §3).
+	if (
+		offeredOrderTypes(next, { chargesEnabled, vatChangeBlocked: false })
+			.length === 0
+	)
 		throw new ServiceError(
 			400,
 			"Deve restare almeno una tipologia d'acquisto disponibile ai clienti",
 		);
 
 	await db.update(store).set({ orderTypes: next }).where(eq(store.id, s.id));
-	return view(next, chargesEnabled);
+	return view(next, chargesEnabled, blocked);
 }
 
 /** Scadenza che avrebbe adesso una prenotazione con `hours` ore, senza salvarle. */

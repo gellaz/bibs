@@ -11,6 +11,7 @@ import {
 	offeredOrderTypes,
 	type StoreOrderType,
 	sellerChargesEnabledSql,
+	sellerVatChangeBlockedSql,
 } from "@/lib/order-types";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
@@ -164,6 +165,7 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 			storeName: store.name,
 			storeOrderTypes: store.orderTypes,
 			sellerChargesEnabled: sellerChargesEnabledSql,
+			sellerVatChangeBlocked: sellerVatChangeBlockedSql,
 			municipalityName: municipality.name,
 			provinceAcronym: province.acronym,
 			// publiclyVisibleStore() NON è usabile qui: è scritto per una .where(),
@@ -215,8 +217,14 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 		const lineCents =
 			toCents(discount?.discountedPrice ?? row.price) * row.quantity;
 
+		const orderTypes = offeredOrderTypes(row.storeOrderTypes, {
+			chargesEnabled: row.sellerChargesEnabled,
+			vatChangeBlocked: row.sellerVatChangeBlocked,
+		});
 		const issue: CartItemIssue =
-			!row.storeVisible || row.productStatus !== "active"
+			!row.storeVisible ||
+			row.productStatus !== "active" ||
+			orderTypes.length === 0
 				? "unavailable"
 				: row.stock < row.quantity
 					? "insufficient_stock"
@@ -232,9 +240,7 @@ export async function getCart(customerProfileId: string): Promise<CartView> {
 						name: row.municipalityName,
 						provinceAcronym: row.provinceAcronym,
 					},
-					orderTypes: offeredOrderTypes(row.storeOrderTypes, {
-						chargesEnabled: row.sellerChargesEnabled,
-					}),
+					orderTypes,
 				},
 				items: [],
 				subtotal: "0.00",
