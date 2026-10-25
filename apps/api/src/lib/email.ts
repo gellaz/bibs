@@ -52,7 +52,8 @@ export async function sendEmailToMailpit(
  * - In development: delivers to the local Mailpit catcher (web UI on :8025);
  *   falls back to logging the content if Mailpit is down.
  * - In test: logs the email content (no external service needed).
- * - In production: sends via Resend API.
+ * - In production: sends via Resend API; throws if it can't, so callers that
+ *   report the outcome (e.g. "Invito reinviato") don't lie.
  */
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
 	if (env.NODE_ENV === "development") {
@@ -77,7 +78,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams) {
 
 	if (!env.RESEND_API_KEY) {
 		logger.warn({ to, subject }, "⚠️ RESEND_API_KEY not set — email not sent");
-		return;
+		throw new Error("RESEND_API_KEY not set");
 	}
 
 	await sendEmailToResend(
@@ -112,5 +113,6 @@ export async function sendEmailToResend(
 			{ to, subject, status: res.status, body },
 			"Failed to send email via Resend",
 		);
+		throw new Error(`Resend responded ${res.status}`);
 	}
 }
