@@ -19,7 +19,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | Unità | Contenuto | Dipende da | Stato | PR |
 |---|---|---|---|---|
 | U0 | Piano + baseline | — | fatto | #300 |
-| U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | fatto, PR da aprire (branch `feat/hono-u1-me`) | — |
+| U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | fatto, PR aperta (branch `feat/hono-u1-me`) | — |
 | U2 | `locations/` (+ rate limit) | U1 | da fare | — |
 | U3 | `customer/` | U1 | da fare | — |
 | U4 | `registration/` | U2 (rate limit) | da fare | — |
@@ -273,7 +273,7 @@ Per ogni unità: backend, test (cambia solo l'invio della richiesta), call site 
 
 ### U1 — `me/` e fondamenta
 
-**Stato:** fatto, PR da aprire · **PR:** — · **Branch:** `feat/hono-u1-me` (nome dato dall'orchestratore al posto di `refactor/hono-me`)
+**Stato:** fatto, PR aperta · **PR:** — · **Branch:** `feat/hono-u1-me` (nome dato dall'orchestratore al posto di `refactor/hono-me`)
 
 Primo modulo: 2 endpoint (`POST /me/avatar` multipart con `t.File({ type: "image", maxSize: "5m" })`, `DELETE /me/avatar`), entrambi con auth per route. Costruisce il kit, conferma D1–D11 e D13–D15 e misura il costo di `hc`.
 
@@ -311,7 +311,7 @@ Primo modulo: 2 endpoint (`POST /me/avatar` multipart con `t.File({ type: "image
 - [x] Prima di toccare il codice: catturato `baseline/hono-batch-me.jsonl` (16 passi: 422 da anonimo per body assente/urlencoded/JSON, 401, slash finale, 404, preflight 204, login `customer1@test.com`, 422 e 200 con sessione; DELETE è un no-op per l'utente del seed senza immagine). Header di `/me/avatar` catturati con `hono request` e asseriti in `tests/http/mount.test.ts`. Il 200 dell'upload è nel test di route (testcontainer): sul DB di dev avrebbe scritto sull'utente del seed.
 - [x] Kit `src/http/` e test di `validator` (89), `send` (2), `mount` (16), `openapi` (54) verdi.
 - [x] `me/` su Hono, route Elysia e `meModule` tolti, mount in `src/index.ts`.
-- [ ] Tre FE su `hc` per `/me` (fatto, typecheck e test verdi); **upload e rimozione avatar nel browser non provati in U1**: da fare nel collaudo dell'orchestratore, con un utente di prova per app (memoria «Collaudi browser senza scritture sul seed»).
+- [x] Tre FE su `hc` per `/me` (typecheck e test verdi); upload e rimozione avatar provati nel browser nella spedizione (sotto), con un cliente di prova creato dalla registrazione.
 - [x] D11: confronto generatore nel repo vs `@hono/zod-openapi` su `me/` (0 contro 74 foglie diverse), scelta scritta in D11; righe 3 e 4 del registro dei delta compilate.
 - [x] Typecheck dei 4 workspace (wall time, media di 2 run; baseline tra parentesi): api 6,63 s (6,65) · admin 8,35 s (9,51) · customer 8,04 s (8,61) · seller 9,95 s (9,96). Istanziazioni (`--extendedDiagnostics`): api 2,12 M (1,77 M), admin 2,45 M (2,23 M), customer 2,31 M (2,10 M), seller 2,59 M (2,37 M): +9–20 %, senza effetto sul tempo.
 - [x] D1–D11, D13–D15 marcate «confermata» o «cambiata».
@@ -346,6 +346,15 @@ Rifiutati, con le prove: i cinque rilievi della lente «parity» sono stati misu
   - inventario route: 246 righe, diff con la baseline solo `/me/auth`, `/me/auth/*` → `/me`, `/me/*` (delta 1 e 2); OpenAPI: l'output a chiavi ordinate di `openapi-snapshot.ts` identico al byte a `baseline/openapi.json` (198 path, 228 operazioni; il documento grezzo servito differisce solo nell'ordine, delta 9), `assertRoutes` passato con `["auth"]`;
   - Hono CLI: batch della baseline 66/66; `baseline/hono-batch-me.jsonl` 18/18 (corpi attesi; `batch` confronta solo status e corpo, gli header di `/me/avatar` li asserisce `tests/http/mount.test.ts`); snapshot rigenerato (196 righe): solo le 4 righe di `/me` (delta 2);
   - typecheck, wall time medio di 2 run (baseline tra parentesi): api 6,96 s (6,65) · admin 8,32 s (9,51) · customer 9,35 s (8,61; run 10,69 e 8,00, carico 4,4) · seller 9,96 s (9,96), sotto il budget.
+
+**Spedizione** (orchestratore, sul commit `862112ba`). Rilievi della verifica finale: la lente «parity» ripeteva i cinque rilievi già chiusi nel giro 2 (rimisurati: `DELETE /me/avatar` con body illeggibile = delta 6; 32 richieste con segmenti codificati sotto `/me` — `%61vatar`, `%2F`, `%20`, `/%6De/avatar`, `//`, `/./`, maiuscole — status e corpo identici a `origin/feat/hono-migration`; chiavi multipart = delta 7; header = delta 4 e 5; OpenAPI: corretta la frase «identico al byte», vale per l'output a chiavi ordinate, l'ordine grezzo è il delta 9). Lente «foundations», corretti i due banali: `publicRoute` vale solo nei moduli che la dichiarano (`"publicRoute"` tra le voci di `honoPaths()`; prima una route admin marcata pubblica passava `assertRoutes`) e `guard()` rifiuta un middleware già marcato (prima `guard(requireAuth, "admin")` cambiava la guardia di `requireAuth`), due test in `tests/http/routes.test.ts` (14); annotati tra i gap noti la pulizia dei `t.Record` e il primo errore di un'unione di oggetti annidata. Rimandati (nessuna route di U1 li tocca): guardie seller in una sola lista (U5/U6), ordine auth → ruolo (U3, U5, U8), ALL e `use()` su un path con `*` (al primo modulo che li usa). Verifica:
+  - typecheck: `bun run typecheck` → exit 0, 6 workspace e 3 `pretypecheck` con `Exited with code 0`; lint → exit 0, 0 errori (gli stessi 6 avvisi);
+  - test: `bun run test` → exit 0 in 339 s, ogni workspace `Exited with code 0`; emails 26, ui 40, api unit 760 in 70 file (+2), api integration 975 in 102 file (298,6 s), admin 112, customer 169, seller 206; totale 2.288, 0 fail, 0 skip, nessun `Unhandled error between tests`;
+  - build e avvio: 7,49 MB; `PORT=3100 bun dist/index.js` → `/ready` 200 `{"status":"ok","services":{"database":"ok","s3":"ok"}}`, `DELETE /me/avatar` 401 con `access-control-allow-origin` e `x-request-id`, `DELETE /me/%61vatar` 404, `/openapi/json` con `/me/avatar` (delete, post); fermato;
+  - inventario route: 246 righe, diff solo `/me/auth`, `/me/auth/*` → `/me`, `/me/*` (delta 1 e 2); OpenAPI: output di `openapi-snapshot.ts` uguale al byte (`cmp`) a `baseline/openapi.json` (198 path, 228 operazioni), `assertRoutes` passato;
+  - Hono CLI: batch della baseline 66/66; `baseline/hono-batch-me.jsonl` 18/18; snapshot 196 righe, diff solo le 4 righe di `/me` (delta 2). Header: i 18 passi più 3 (DELETE e preflight da un'origine non ammessa, multipart rotto) rigiocati con `app.handle` sul commit base e sul branch: 21/21 con status, corpo e header uguali, tranne `x-request-id` sui cinque 404 (delta 4);
+  - typecheck, wall time medio di 2 run (baseline tra parentesi): api 6,98 s (6,65) · admin 8,32 s (9,51) · customer 8,16 s (8,61) · seller 9,92 s (9,96), sotto il budget;
+  - browser (Chrome DevTools MCP, un contesto isolato per ruolo, server sulle porte standard, prima da un worktree di `origin/feat/hono-migration` e poi dal branch, stesso copione): profilo e dialogo dell'avatar per `customer1@test.com`, `seller@dev.bibs`, `employee1@test.com`, `admin1@test.com`; upload e rimozione veri con `collaudo.hono.u1@test.com` (cliente creato dalla registrazione e verificato da Mailpit; resta nel DB di dev, senza immagine); per seller e admin upload con `fetch` intercettato (nessuna scrittura sul seed): stessa richiesta prima e dopo (`POST /me/avatar`, multipart, campo `file` `avatar.jpg` `image/jpeg`, `credentials: include`). 15 stati: `outerHTML` di `main` e dei dialoghi (senza `data-tsd-source`) identici, a parte la chiave S3 casuale dell'avatar caricato; console senza errori (solo l'avviso del preload del font Geist, uguale prima e dopo); rete con le stesse URL, metodi e status, nessun 4xx/5xx.
 
 ### U2 — `locations/`
 
