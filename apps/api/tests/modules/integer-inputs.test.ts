@@ -70,12 +70,6 @@ const STORE_BODY = {
 	zipCode: "20100",
 };
 
-const ORDER_BODY = {
-	type: "reserve_pickup",
-	storeId: "some-store",
-	items: [{ storeProductId: "some-sp", quantity: 1 }],
-};
-
 describe("integer inputs reject fractions with 422", () => {
 	const fractional: Array<[string, () => Promise<Response>]> = [
 		[
@@ -112,14 +106,6 @@ describe("integer inputs reject fractions with 422", () => {
 		["GET /stores (PaginationQuery) limit", () => get("/stores?limit=2.5")],
 		["GET /orders (PaginationQuery) page", () => get("/orders?page=1.5")],
 		["GET /geocode limit", () => get("/geocode?q=Via%20Roma&limit=2.5")],
-		[
-			"POST /orders quantity",
-			() =>
-				json("POST", "/orders", {
-					...ORDER_BODY,
-					items: [{ storeProductId: "some-sp", quantity: 1.5 }],
-				}),
-		],
 	];
 
 	for (const [label, send] of fractional) {
@@ -136,7 +122,6 @@ describe("integer inputs still accept whole numbers", () => {
 			"POST product image position '2' (multipart string)",
 			() => multipart("/products/p/images", "2"),
 		],
-		["POST /orders quantity 1", () => json("POST", "/orders", ORDER_BODY)],
 	];
 
 	for (const [label, send] of whole) {
@@ -150,18 +135,6 @@ describe("integer inputs still accept whole numbers", () => {
 // Il 422 arriva al toast dei FE: in italiano, col campo e la regola.
 describe("integer inputs: Italian 422 message on real routes", () => {
 	const cases: Array<[string, () => Promise<Response>, string]> = [
-		[
-			"POST /orders quantity in the second row",
-			() =>
-				json("POST", "/orders", {
-					...ORDER_BODY,
-					items: [
-						{ storeProductId: "a", quantity: 1 },
-						{ storeProductId: "b", quantity: 1.5 },
-					],
-				}),
-			"Quantità (riga 2): deve essere un numero intero",
-		],
 		[
 			"PATCH stock",
 			() => json("PATCH", "/products/p/stores/s", { stock: 1.5 }),

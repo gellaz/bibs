@@ -13,77 +13,11 @@ import {
 import { withCustomer } from "../context";
 import {
 	cancelOrder,
-	createOrder,
 	getCustomerOrder,
 	listCustomerOrders,
 } from "../services/orders";
 
 export const ordersRoutes = new Elysia()
-	.post(
-		"/orders",
-		async (ctx) => {
-			const { customerProfile: cp, body, store, user } = withCustomer(ctx);
-			const pino = getLogger(store);
-
-			const data = await createOrder({
-				customerProfileId: cp.id,
-				customerPoints: cp.points,
-				...body,
-			});
-
-			pino.info(
-				{
-					userId: user.id,
-					customerProfileId: cp.id,
-					orderId: data.id,
-					orderType: data.type,
-					storeId: data.storeId,
-					total: data.total,
-					itemCount: body.items.length,
-					action: "order_created",
-				},
-				`Ordine creato: ${data.type}`,
-			);
-
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				type: t.Literal("reserve_pickup", {
-					description:
-						"Tipo di ordine: solo reserve_pickup (prenota e ritira). Gli ordini pagati online nascono solo da POST /customer/checkout, che crea il pagamento. direct arriverà con il pagamento in negozio via QR: fino ad allora non è un ingresso.",
-				}),
-				storeId: t.String({ description: "ID del negozio" }),
-				items: t.Array(
-					t.Object({
-						storeProductId: t.String({ description: "ID dello store_product" }),
-						quantity: t.Integer({ minimum: 1, description: "Quantità" }),
-					}),
-					{ minItems: 1, description: "Articoli dell'ordine (almeno uno)" },
-				),
-				shippingAddressId: t.Optional(
-					t.String({
-						description:
-							"ID indirizzo di spedizione (obbligatorio per pay_deliver)",
-					}),
-				),
-				idempotencyKey: t.Optional(
-					t.String({
-						format: "uuid",
-						description:
-							"UUID di idempotenza. Se fornito, richieste duplicate con la stessa key restituiscono l'ordine già creato.",
-					}),
-				),
-			}),
-			response: withConflictErrors({ 200: okRes(OrderSchema) }),
-			detail: {
-				summary: "Crea ordine",
-				description:
-					"Crea un ordine diretto o una prenotazione. Per pagare online usare POST /customer/checkout.",
-				tags: ["Customer - Orders"],
-			},
-		},
-	)
 	.get(
 		"/orders",
 		async (ctx) => {
