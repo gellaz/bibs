@@ -14,6 +14,7 @@ Claude Code-specific tooling for this repository.
    - `context7` — live library docs for TanStack, Elysia, Drizzle, Tailwind (and a fallback for better-auth)
    - `shadcn` — browse/search/install components from the registries declared in [packages/ui/components.json](packages/ui/components.json) (shadcn/ui, `@kibo-ui`, `@shadcnblocks` — needs `SHADCNBLOCKS_API_KEY` in `packages/ui/.env.local`; see [packages/ui/README.md](packages/ui/README.md#registries))
    - `better-auth` — remote MCP server at `https://mcp.better-auth.com/mcp`. Preferred over context7 for Better Auth work
+   - Hono has no docs MCP: every page is served as Markdown (`curl -H 'Accept: text/markdown' https://hono.dev/docs/api/routing`, index at `https://hono.dev/llms.txt`), pre-approved in `.claude/settings.json`
    Claude Code prompts on first run to approve them.
 3. **Hooks, permissions & plugins**: `.claude/settings.json` is checked in and applied automatically:
    - Biome auto-fix hook on every `Edit`/`Write`
@@ -51,7 +52,8 @@ Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.cl
 | Skill | Purpose |
 |---|---|
 | `tanstack-start-best-practices`, `tanstack-router-best-practices`, `tanstack-query-best-practices`, `tanstack-integration-best-practices` | TanStack patterns — activates in `apps/{admin,customer,seller}` |
-| `elysiajs` | Canonical Elysia 1.x patterns — activates in `apps/api`. Frozen snapshot outside `skills-lock.json`: upstream moved to Elysia 2 (rc), re-add it when we migrate |
+| `elysiajs` | Canonical Elysia 1.x patterns — activates in `apps/api`. Frozen snapshot outside `skills-lock.json`; remove it once the API is on Hono |
+| `hono` | Official Hono skill (honojs/skills) for the Elysia → Hono migration of `apps/api` — inline API reference, RPC client rules, Hono CLI |
 | `shadcn` | shadcn/ui CLI, theming, registries — activates on `packages/ui` work |
 | `migrate-radix-to-base` | Official shadcn skill for moving wrappers and call sites from Radix to Base UI (golden pair + `git merge-file`, reports in `.migration/`) |
 | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices` | Better Auth — matches the current auth stack |

@@ -9,6 +9,11 @@ bibs-elysia is a backend API for a local-commerce marketplace built with **Elysi
 authentication (email/password, RBAC via admin plugin). An OpenAPI spec is auto-generated and served via
 `@elysiajs/openapi`.
 
+**Migration to Hono decided (2026-10-25).** The API moves from Elysia to Hono module by module (Hono app mounted
+inside Elysia until the cutover). For Hono APIs read the official docs as Markdown — index at
+`https://hono.dev/llms.txt`, any page with `curl -H 'Accept: text/markdown' https://hono.dev/docs/<path>` — or the
+`hono` skill in `.agents/skills/hono`. Until a module is migrated, the Elysia rules below still apply to it.
+
 ## Commands
 
 - `bun install` — install dependencies
