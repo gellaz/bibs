@@ -14,6 +14,12 @@ inside Elysia until the cutover). For Hono APIs read the official docs as Markdo
 `https://hono.dev/llms.txt`, any page with `curl -H 'Accept: text/markdown' https://hono.dev/docs/<path>` — or the
 `hono` skill in `.agents/skills/hono`. Until a module is migrated, the Elysia rules below still apply to it.
 
+Verify Hono routes with **Hono CLI** (`bunx hono`, devDependency `@hono/cli` 1.0 rc) instead of curl or a dev server:
+`bunx hono routes <file>`, `bunx hono request <path> <file>`, `bunx hono batch - <file>` for flows, `bunx hono diff`
+after a change. Run `bunx hono --help` first. It loads only Hono apps, so until the cutover pass the Hono app file
+explicitly (the default `src/index.ts` is still Elysia); `batch`, `snapshot` and `diff` run the app on Node, not Bun.
+Requests hit the real dev database: write only to test entities.
+
 ## Commands
 
 - `bun install` — install dependencies
