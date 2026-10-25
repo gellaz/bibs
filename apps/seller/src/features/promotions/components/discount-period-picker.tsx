@@ -26,7 +26,8 @@ function parseLocal(s: string): Date | undefined {
 	return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
-function toLocal(d: Date): string {
+/** Ora locale "YYYY-MM-DDTHH:mm", il formato che il form tiene e rilegge come locale. */
+export function toLocal(d: Date): string {
 	const pad = (n: number) => n.toString().padStart(2, "0");
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
 		d.getHours(),
