@@ -162,7 +162,52 @@ Path aliases (identical in all three apps): `@/*` → `./src/*` (the tsconfig ad
 `../api/src/*` as a secondary target for type resolution — write runtime imports
 against `./src/*` only), `~/*` → `packages/ui/src/*`.
 
-## Frontend ↔ API integration (Eden Treaty)
+## Migrazione Elysia → Hono (in corso)
+
+Dal 2026-10-25 l'API passa da Elysia a Hono e i frontend da Eden a `hc`, un modulo
+per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline e
+verifica di ogni PR stanno nel piano
+[`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
+(note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1).
+
+- **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
+  (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
+  `.mount("/me", meApp.fetch)`. Il mount toglie il prefisso e non legge il body;
+  una route Elysia vince sempre sul mount. Finché c'è Elysia restano suoi il
+  preflight e gli header CORS, `X-Request-Id`, la riga di log di logixlysia e la
+  sovrascrittura di `x-forwarded-for`; tutto il resto lo fa la sub-app (prove in
+  `apps/api/tests/http/mount.test.ts`).
+- **Hono 5** (`5.0.0-rc.1` nel catalog, stessa versione in API e frontend: `hc` la
+  richiede). `app.mount()` non esiste più: per montare un handler si usa
+  `mount` da `hono/mount`; `onError` riceve il contesto (`c.error`).
+- **Kit `apps/api/src/http/`.** `moduleApp()` (sub-app con `strict: false`,
+  `onError` e `notFound` con l'inviluppo JSON e il Content-Type di Elysia);
+  `v(target, schema)` (validatore con le regole di Elysia: body letto per
+  Content-Type, trim tranne le password, coercizione di query e params, default,
+  campi sconosciuti tolti, magic byte dei file, 422 italiano identico al byte);
+  `send(c, schema, data)` (risposta validata: campi in più tolti, `Date` in ISO,
+  fuori schema → 500); `requireAuth` (sessione better-auth in `c.var.user` /
+  `c.var.session`, messo in ogni route **dopo** i `v(...)`: il 422 arriva prima del
+  401 come oggi); `toErrorResponse` (una sola mappatura errore → risposta, usata
+  anche dal plugin Elysia); `doc(...)` + generatore OpenAPI (i path delle sub-app si
+  uniscono al documento di Elysia: `/openapi` resta identico alla baseline).
+- **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
+  (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
+  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
+  `zFiles`, `zFormat`); per il resto Zod normale, con `title`/`error`/`description`
+  in `.meta()`. La parità con Elysia (stesso status e corpo, OpenAPI uguale) è
+  provata su ~90 casi in `apps/api/tests/http/`.
+- **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
+  `src/types.ts` (`MeApp`); ogni app crea in `src/lib/api.ts` il client del
+  sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
+  `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
+  stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano
+  come stringhe ISO.
+
+## Frontend ↔ API integration (Eden Treaty, in transizione verso `hc`)
+
+> In transizione: i moduli già migrati a Hono (vedi la sezione sopra) usano `hc`;
+> tutto il resto passa ancora da Eden come descritto qui.
 
 Each app builds an isomorphic Eden client in `src/lib/api.ts` with
 `createIsomorphicFn` (works in SSR loaders and in the browser) and
@@ -194,7 +239,7 @@ Gotchas learned the hard way:
 
 ## Testing
 
-- **API** (`apps/api/tests/`): `unit/`, `lib/`, `modules/`, `plugins/` run with
+- **API** (`apps/api/tests/`): `unit/`, `lib/`, `modules/`, `plugins/`, `http/` run with
   `bun run test:unit`; `integration/` runs real Postgres/PostGIS via **testcontainers**
   (`bun run test:integration`, 180 s timeout). Stripe and email sending are mocked with
   `mock.module(...)`; the database is never mocked. Shared fixtures and the

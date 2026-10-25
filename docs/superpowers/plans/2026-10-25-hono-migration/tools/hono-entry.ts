@@ -10,11 +10,14 @@
  * The mount stays as the fallback for what no route matches (the 404 body).
  *
  * hono is imported at runtime from apps/api: a static import would make the CLI's
- * esbuild resolve it from docs/, where no node_modules has it.
+ * esbuild resolve it from docs/, where no node_modules has it. The fallback uses
+ * the `hono/mount` middleware (`app.mount()` is gone in Hono 5); registered on
+ * `/*` it is the same middleware row `app.mount("/", …)` gave on Hono 4.
  */
 import { app } from "./load-app";
 
 const { Hono } = await import(Bun.resolveSync("hono", process.cwd()));
+const { mount } = await import(Bun.resolveSync("hono/mount", process.cwd()));
 
 const hono = new Hono();
 for (const route of app.routes)
@@ -22,4 +25,4 @@ for (const route of app.routes)
 		app.fetch(c.req.raw),
 	);
 
-export default hono.mount("/", app.fetch);
+export default hono.all("/*", mount(app.fetch, { replaceRequest: false }));

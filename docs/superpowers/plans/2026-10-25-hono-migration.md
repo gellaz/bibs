@@ -6,7 +6,7 @@
 
 **Architecture:** Strangler. Ogni modulo diventa una sub-app Hono con route relative, montata nell'app Elysia con `.mount("/<prefisso>", app.fetch)`; nella stessa PR spariscono le sue route Elysia e i frontend passano a un client `hc` tipizzato solo su quel sotto-albero. Un kit condiviso in `apps/api/src/http/` (validatore, risposte, errori, auth, OpenAPI) rifà quello che Elysia dà gratis. A fine corsa (U11) Hono diventa l'app principale ed Elysia, Eden e i plugin `@elysiajs/*` escono; poi (U11b) esce anche TypeBox.
 
-**Tech Stack:** Bun 1.4.4, Hono 4.13.x (5.0 alla GA), Zod 4 (catalog `^4.6.7`), better-auth 1.7.12, Drizzle, TanStack Start/Query, bun test (api), Vitest (frontend), `@hono/cli` 1.0 rc.
+**Tech Stack:** Bun 1.4.4, Hono 5.0.0-rc.1 (da U1; ultima 5.x in U12), Zod 4 (catalog `^4.6.7`, 4.6.7), better-auth 1.7.12, Drizzle, TanStack Start/Query, bun test (api), Vitest (frontend), `@hono/cli` 1.0 rc.
 
 **Spec:** nessuna spec separata. Le decisioni di Marco del 2026-10-25 sono riassunte in [Decisioni chiuse](#decisioni-chiuse-marco-2026-10-25); le prove stanno in [`2026-10-25-hono-migration/notes/`](2026-10-25-hono-migration/notes/) e la baseline in [`2026-10-25-hono-migration/baseline/`](2026-10-25-hono-migration/baseline/).
 
@@ -18,8 +18,8 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 
 | Unità | Contenuto | Dipende da | Stato | PR |
 |---|---|---|---|---|
-| U0 | Piano + baseline | — | in corso | #300 |
-| U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | da fare | — |
+| U0 | Piano + baseline | — | fatto | #300 |
+| U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | fatto, PR da aprire (branch `feat/hono-u1-me`) | — |
 | U2 | `locations/` (+ rate limit) | U1 | da fare | — |
 | U3 | `customer/` | U1 | da fare | — |
 | U4 | `registration/` | U2 (rate limit) | da fare | — |
@@ -31,8 +31,8 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U10 | `webhooks/` (Stripe) | U1 | da fare | — |
 | U11 | Cambio finale: Hono app principale, via Elysia/Eden/logixlysia/`@elysiajs/*` | U2–U10 | da fare | — |
 | U11b | Uscita da TypeBox: form condivisi e resolver seller su Zod, `env.ts`, catalog | U11 | da fare | — |
-| U12 | Hono 5 (solo se alla GA siamo ancora su 4) | U11b | da fare | — |
-| U13 | Documentazione e rimozione della skill `elysiajs` | U12 o U11b | da fare | — |
+| U12 | Hono 5: bump all'ultima 5.x (GA se uscita, altrimenti l'ultima rc); ultima PR di codice prima di U13/U14 | U11b | da fare | — |
+| U13 | Documentazione e rimozione della skill `elysiajs` | U12 | da fare | — |
 | U14 | PR finale `feat/hono-migration` → `main` (la mergia Marco) | U13 | da fare | — |
 
 Parallelismo: al massimo 3 unità insieme, ognuna nel suo worktree; collaudo nel browser e merge uno alla volta. Dopo U1 possono partire insieme U2, U3, U5, U8, U10 (tre per volta); U4 aspetta U2, U6 e U7 aspettano U5, U9 aspetta U8. I file toccati da tutti (`apps/api/src/index.ts`, `apps/api/src/types.ts`, `apps/*/src/lib/api.ts`, `apps/api/src/lib/zod/*`) danno conflitti piccoli: si risolvono con `git merge origin/feat/hono-migration` nel branch, mai con rebase.
@@ -57,7 +57,7 @@ Parallelismo: al massimo 3 unità insieme, ognuna nel suo worktree; collaudo nel
 - **Checkout principale condiviso.** In `/Users/marcogelli/repos/jelaz/bibs` mai `git checkout/switch/reset/stash`; si lavora solo nei worktree. I file `.env`/`.env.local` di `apps/*` non sono nei worktree: si copiano con `cp` dal checkout principale, senza stamparli.
 - **Comandi vietati:** `bun run db:push`, `db:seed`, `db:reset`, `infra:reset`. Si può usare `bun run infra:up` e `bun run db:migrate`.
 - **Commit:** Conventional Commits in italiano, scope dalla lista di `AGENTS.md` (`api`, `admin`, `customer`, `seller`, `ui`, `auth`, `locations`, `onboarding`, …; più scope separati da virgola), con il trailer `Co-Authored-By` della sessione. Descrizione PR in italiano, chiusa da `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
-- **Dipendenze condivise nel catalog della root.** `hono` entra nel catalog (`^4.13.14`) e la stessa versione la usano API e FE (requisito di `hc`); `zod` usa la voce `catalog:` già presente. Nessun `latest`.
+- **Dipendenze condivise nel catalog della root.** `hono` è nel catalog con il pin esatto `5.0.0-rc.1` (U1: è una prerelease, niente range) e la stessa versione la usano API, `packages/ui` e i tre FE (requisito di `hc`); `zod` usa la voce `catalog:` già presente. Nessun `latest`.
 - **Schemi congelati.** Durante la migrazione non si cambiano le regole di validazione: se serve, si cambiano insieme lo schema TypeBox e il suo gemello Zod.
 - **Budget di typecheck:** tempo `tsc --noEmit` di ogni workspace ≤ baseline × 1,25 (api 8,3 s, admin 11,9 s, customer 10,8 s, seller 12,5 s; media di due run). Oltre: si ferma l'unità e si applica il ripiego della decisione D10.
 
@@ -86,26 +86,31 @@ Misurata il 2026-10-25 su `e4be2926` (`feat/hono-migration` = `main`), prima di 
 
 Le tre righe dello snapshot con UUID (`/customer/products/<id>`, `/customer/stores/<id>`, `/customer/stores/<id>/products`) vengono dal DB di dev e cambiano dopo un reseed.
 
-## Decisioni provvisorie (da confermare nella PR di `me/`)
+## Decisioni tecniche (confermate o cambiate in U1)
 
-Vengono dalle due sonde del 2026-10-25 ([`probe-validation.md`](2026-10-25-hono-migration/notes/probe-validation.md), [`probe-mount.md`](2026-10-25-hono-migration/notes/probe-mount.md)) e dalle mappe ([`map-backend.md`](2026-10-25-hono-migration/notes/map-backend.md), [`map-frontend.md`](2026-10-25-hono-migration/notes/map-frontend.md)). La sonda di validazione ha lavorato con TypeBox; dove la decisione Zod cambia il come, è scritto. **U1 segna ognuna «confermata» o «cambiata: …» qui sotto.**
+Vengono dalle due sonde del 2026-10-25 ([`probe-validation.md`](2026-10-25-hono-migration/notes/probe-validation.md), [`probe-mount.md`](2026-10-25-hono-migration/notes/probe-mount.md)) e dalle mappe ([`map-backend.md`](2026-10-25-hono-migration/notes/map-backend.md), [`map-frontend.md`](2026-10-25-hono-migration/notes/map-frontend.md)). La sonda di validazione ha lavorato con TypeBox; dove la decisione Zod cambia il come, è scritto. U1 (2026-10-25) ha segnato ognuna «confermata» o «cambiata» con le prove; i test citati stanno in `apps/api/tests/http/` e in `apps/api/tests/integration/me-avatar-route.test.ts`.
 
-**D1 — Versione di Hono: 4.13.x ora, 5.0 alla GA (U12).** *Da confermare in U1.*
-Prove: il prototipo dà gli stessi risultati su 4.13.14 e 5.0.0-rc.1 (27/27 casi 422 identici al byte, stessi echo, stesso `tsc` del client); l'unica differenza di codice è la firma di `onError` (`(err, c)` contro `(c) => c.error`). Sulla rc i peer di `@hono/zod-validator`, `@hono/zod-openapi`, `@hono/standard-validator` falliscono solo perché è una prerelease; `hono-openapi` (`^4.11.2`) esclude la v5 anche alla GA. `app.mount()` è deprecato in 4.13 e tolto in 5: si usa `mount` da `hono/mount`.
+**D1 — Versione di Hono.** *Cambiata in U1: Hono 5 (`5.0.0-rc.1`, pin esatto nel catalog) da subito; U12 porta all'ultima 5.x prima di U13.*
+Regola di Marco: la v5 (anche rc) se validatore, OpenAPI e better-auth funzionano. Provato con codice vero su `5.0.0-rc.1`: kit `src/http/` e `me/` su Hono 5; verdi i 89 casi di parità del validatore, i 54 confronti OpenAPI, i 16 test della rete del mount e i 6 della route con sessioni better-auth vere su testcontainer; `requireAuth` con `auth.api.getSession`; `hono/mount` con `auth.handler` (`/auth/api/ok` → 200, la strada di U11); `hc<WithErrors<MeApp>>` tipizzato nei tre FE; Hono CLI 1.0.0-rc.8 (batch e snapshot) col nuovo `tools/hono-entry.ts`. Codice specifico della v5: solo `onError((c) => c.error)` in `moduleApp()` e `hono/mount` al posto di `app.mount()` (tolto in v5) in `tools/hono-entry.ts`. L'unico pezzo che non regge la v5 è `@hono/zod-openapi` 1.6.3 (`OpenAPIHono` non è assegnabile a `Hono` 5 per `onError`/`notFound`: `hc<typeof app>` non compila), scartato comunque in D11.
+Prima (sonda): il prototipo dava gli stessi risultati su 4.13.14 e 5.0.0-rc.1; `hono-openapi` (`^4.11.2`) esclude la v5 anche alla GA.
 
-**D2 — Validatore: nostro `v(target, schema)` su `hono/validator`, con schemi Zod.** *Da confermare in U1.*
+**D2 — Validatore: nostro `v(target, schema)`, con schemi Zod.** *Confermata in U1, con una correzione: middleware nostro su `c.req.addValidatedData`, non `hono/validator`.* `hono/validator` legge il body secondo il target (un JSON su una route `form` diventa `{}`), Elysia secondo il Content-Type. `v()` (`src/http/validator.ts`) legge come Elysia (`application/json` → JSON, malformato → 500; urlencoded e multipart: chiave ripetuta → array, valore che inizia con `{`/`[` → JSON; `text/*` → testo; senza Content-Type → assente), poi trim (`lib/deep-trim.ts`, condiviso col plugin `normalize`), un primitivo o un array su uno schema oggetto diventa `{}` (come la pulizia di Elysia), coercizione di query e params, `safeParseAsync` (default, campi sconosciuti tolti, controlli, decodifica), magic byte. Prova: `tests/http/validator.test.ts`.
+
 `v` fa, in ordine: default dello schema → trim profondo di body JSON e form (come `plugins/normalize.ts`: stringhe a ogni profondità, salta le chiavi che corrispondono a `/password/i`, lascia stare File/Blob/Date) → coercizione di query e params con le regole di D5 → `safeParse` (che toglie i campi sconosciuti) → controllo dei magic byte dei file (`file-type`) → valore decodificato in `c.req.valid(target)`. Primo errore → 422 con il messaggio di D6. Tipi per `hc`: input = `z.input`, output = `z.output`.
 Prove: `@hono/typebox-validator` non sa coercizzare né decodificare (`?page=2` → 400) e il suo hook gira dopo il check; lo stesso limite vale per un validatore pronto con Zod, perché trim e coercizione stile Elysia vanno fatti prima del parse. Il prototipo `notes/prototypes/validation/validate.ts` (~240 righe, TypeBox) è il riferimento per l'ordine dei passi.
 
-**D3 — Schemi durante lo strangler: gemelli Zod in `apps/api/src/lib/zod/`.** *Da confermare in U1.*
+**D3 — Schemi durante lo strangler: gemelli Zod in `apps/api/src/lib/zod/`.** *Confermata in U1.* Ci sono `t.ts` (costruttori con la semantica di Elysia: `zInteger`, `zDate`, `zFile`, `zFiles`, `zFormat`, più `zNumeric`/`zBooleanString` che usa `v()`), `formats.ts` (le funzioni di formato di Elysia), `issues.ts` (issue Zod → regola), `responses.ts`, `pagination.ts`. Per il resto Zod normale, con `title`, `error` e `description` in `.meta()`; i costruttori di `t.ts` li prendono nelle opzioni, come TypeBox (finiscono anche nel JSON Schema). I gemelli di registrazione, sconti e ricerca prodotti del test di parità stanno in `tests/http/parity-cases.ts`: l'unità che migra quelle route li sposta in `lib/zod/`.
+
 Stessi nomi di file e di export di `lib/schemas/` (`responses.ts`, `entities.ts`, `composed.ts`, …, `forms/*`), scritti modulo per modulo quando servono, nell'ordine del file sorgente. I file TypeBox non si toccano finché li usa una route Elysia. U11 sposta `lib/zod/*` (tranne `forms/`) in `lib/schemas/`; U11b mette i form Zod al posto di `lib/schemas/forms/*` (il percorso esportato come `@bibs/api/schemas`). I servizi che importano tipi `Static<…>` li tengono fino a U11b: i tipi sono strutturalmente uguali.
 Prove: TypeBox 1 e 0.34 non si mescolano (il `TypeCompiler` 0.34 lancia sugli schemi `~kind`), e uno schema Zod in una route Elysia perderebbe i messaggi 422 (che leggono gli errori TypeBox): due copie per un tempo limitato sono il prezzo dello strangler.
 
-**D4 — Campi fuori schema tolti in ingresso e in uscita.** *Da confermare in U1.*
+**D4 — Campi fuori schema tolti in ingresso e in uscita.** *Confermata in U1* (`tests/http/validator.test.ts` «campi ignoti tolti a ogni livello», `tests/http/send.test.ts`, strip di `me/` in `tests/integration/me-avatar-route.test.ts`).
+
 Ingresso: `z.object` (non `strictObject`/`looseObject`) toglie le chiavi sconosciute a ogni profondità, come la `normalize` di Elysia. Uscita: ogni handler risponde con `send(c, Schema, data)`, che fa `Schema.parse(data)` (toglie i campi in più, `Date` → stringa ISO al `JSON.stringify`) e, se il dato non rispetta lo schema, risponde 500 `INTERNAL_ERROR` «Errore interno del server» e logga un errore, come oggi. Un solo schema di successo per route basta: tutte le 176 route con `response` hanno un solo 200.
 Prove: echo test del prototipo, campi annidati (`passwordHash`, `nested.internal`, `list[].internal`) tolti come in Elysia, 10/11 identici (l'undicesimo differisce solo nell'ordine delle chiavi dell'oggetto query interno). Oggi lo copre un solo test (`tests/modules/registration-response-schema.test.ts`), per questo ogni modulo aggiunge il suo test (vedi [Verifica](#verifica-di-ogni-pr)).
 
-**D5 — Coercizione identica a Elysia, non `z.coerce`.** *Da confermare in U1.*
+**D5 — Coercizione identica a Elysia, non `z.coerce`.** *Confermata in U1.* I formati sono le funzioni di Elysia 1.4.30 copiate in `src/lib/zod/formats.ts` (`email`, `uuid`, `uri`, `date` e `date-time` larghi) più il nostro `calendar-date`; i formati di Zod non si usano. Provati dal vivo contro Elysia: numeri e booleani in query (`"1"` → 422), array da virgole e chiavi ripetute, ultima chiave, default, stringa vuota, `1e3`, `t.Date` in query, intero come stringa nel JSON e nel multipart, oggetti JSON nel multipart, gg/mm/aaaa ed epoch per `t.Date`.
+
 Regole (da `map-backend.md` §3 e `probe-validation.md` §4):
 - solo query e params, solo al primo livello; le stringhe della query non si trimmano;
 - numero: accettato se `!!v && !isNaN(+v)`, poi ricontrollato con i vincoli dello schema;
@@ -118,7 +123,8 @@ Regole (da `map-backend.md` §3 e `probe-validation.md` §4):
 - formati: le regex di Elysia per `email`, `uuid`, `uri`, `date`, `date-time` più `calendar-date` (`lib/schemas/forms/formats.ts`): le versioni Zod accettano cose diverse (la sonda ha trovato 10 differenze su 32 campioni tra TypeBox 1 ed Elysia; con Zod va rimisurato).
 Prove: `z.coerce.boolean("false")` è `true` e `z.coerce.number("")` è `0`, quindi `z.coerce` romperebbe la parità; la sonda ha riprodotto le regole con una riscrittura dello schema di ~25 righe.
 
-**D6 — 422 identici al byte.** *Da confermare in U1.*
+**D6 — 422 identici al byte.** *Confermata in U1: 89/89 casi con status e corpo uguali a Elysia, al byte per gli errori* (`tests/http/validator.test.ts`, confronto dal vivo con un'app Elysia per caso): i 21 test di `tests/lib/validation-message.test.ts` (31 asserzioni) con le stesse stringhe, il corpus della sonda sugli schemi veri (registrazione, `DiscountCreateBody`, `DiscountListQuery`, `ProductSearchQuery`; anche JSON malformato → 500, senza Content-Type, `text/plain`, cookie `PARAGLIDE_LOCALE=en`), file e multipart. Come: `firstIssue` (`lib/zod/issues.ts`) ricostruisce il primo errore di TypeBox (prima i controlli e poi la decodifica; nell'oggetto prima le chiavi mancanti; sullo stesso valore l'ordine dei controlli di TypeBox) e `src/http/validation-message.ts` scrive il messaggio con `ruleText` e `fieldLabel` esportati da `lib/validation-message.ts`.
+
 Corpo `{"success":false,"error":"VALIDATION_ERROR","message":"<italiano>"}`. Il messaggio si costruisce dal primo errore con le regole di `lib/validation-message.ts` (vedi `map-backend.md` §1.2): messaggio custom dello schema (le 38 opzioni `error: "…"`), poi «Richiesta non valida» se non c'è dettaglio, poi «<etichetta>: <regola>» con etichetta da `title`, da `FIELD_LABELS` o dal path tecnico, «(riga N)» negli array. Le etichette e le regole si riusano esportandole dal file TypeBox, non si copiano. Stranezze da tenere:
 - un vincolo violato dopo la decodifica perde l'etichetta: `?page=0` → «Valore non valido: deve essere almeno 1» (asserito in `tests/lib/validation-message.test.ts:225`);
 - JSON malformato → **500** `INTERNAL_ERROR` (Hono lancia `HTTPException` 400: va mappata);
@@ -127,24 +133,29 @@ Corpo `{"success":false,"error":"VALIDATION_ERROR","message":"<italiano>"}`. Il 
 - file del tipo sbagliato → 422 «<etichetta>: tipo di file non ammesso» (`invalidFileTypeMessage`).
 Prove: la sonda ha ottenuto 27/27 casi identici al byte (registrazione, sconti seller body e query, query prodotti customer, 404, JSON malformato, senza Content-Type, `text/plain`, cookie `PARAGLIDE_LOCALE=en`) sia con TypeBox 1 sia con TypeBox 0.34; corpus e risultati attesi in `notes/prototypes/validation/cases.ts` e `before.json`. **Con Zod va dimostrato in U1** (`firstError` va riscritto sulle issue Zod: per gli union tiene il ramo non nullo e non di coercizione, come `unionRule` di `validation-rule.ts`). Se un caso non è riproducibile con Zod, U1 si ferma e lo scrive in [Domande aperte](#domande-aperte).
 
-**D7 — Errori: una sola mappatura, `toErrorResponse`.** *Da confermare in U1.*
+**D7 — Errori: una sola mappatura, `toErrorResponse`.** *Confermata in U1* (`src/http/errors.ts`; `tests/plugins/error-handler.test.ts` invariato e verde, 26/26). Il plugin Elysia traduce i suoi errori nelle classi del kit guardando la classe (`ValidationError`, `InvalidFileType`, `NotFoundError`), non `code`: Elysia dà un `code` anche ai nostri errori (`ServiceError(404).code` è `NOT_FOUND`). Il logger si passa (`getLogger(store)` da Elysia, standalone da Hono).
+
 Si estrae il corpo di `plugins/error-handler.ts` (APIError better-auth, `ServiceError` e sottoclassi con `resentAt`, pg 23505/23503/23514, 422, file, 404, 500; log warn sotto 500, error da 500) in una funzione senza framework `toErrorResponse(error: unknown, req: { method: string; path: string }): { status: number; body: ErrorBody }` che logga con il logger standalone. La usano sia il plugin Elysia (finché esiste) sia l'`onError` Hono. Ogni sub-app Hono ha `onError` e `notFound` propri (404 `{"success":false,"error":"NOT_FOUND","message":"Risorsa non trovata"}`), così funziona uguale montata e da sola nei test.
 Prove: senza, Hono risponde `500 text/plain "Internal Server Error"` e `404 text/plain "404 Not Found"`. La sonda ha verificato l'alternativa (sub-app che rilancia l'errore a Elysia, corpo e log identici), che resta il ripiego.
 
-**D8 — Cosa Elysia continua a dare alle route montate, cosa fa Hono.** *Da confermare in U1.*
+**D8 — Cosa Elysia continua a dare alle route montate, cosa fa Hono.** *Confermata in U1* (`tests/http/mount.test.ts`, 16 test: prefisso tolto, precedenza Elysia, preflight e header CORS, `x-request-id`, Set-Cookie multipli, riga di logixlysia con lo status di Hono, XFF sovrascritto su un socket vero, body JSON/multipart/testo intatti, errori in `text/plain` senza la fabbrica e in JSON con `moduleApp()`). In più: le risposte JSON del kit portano `Content-Type: application/json;charset=utf-8` come Elysia (`json()` in `src/http/send.ts`); un 404 sotto un prefisso montato ora ha `x-request-id` (delta 4).
+
 Gratis finché c'è Elysia: preflight e header CORS, `X-Request-Id`, riga di log di logixlysia (con lo status vero di Hono), sovrascrittura di `x-forwarded-for` con l'IP del socket. Tocca a Hono: inviluppo errori e 404 (D7), trim, campi fuori schema, coercizione e 422 (D2–D6), auth (D9), rate limit (D12), `/openapi` (D11). Ogni sub-app nasce con `new Hono({ strict: false })`: Elysia tollera lo slash finale (`/health/` → 200) e due route sono definite con lo slash (`GET /admin/requests/`, `GET /seller/settings/`) ma chiamate senza.
 Prove: tabella in `probe-mount.md` §1 (24 test verdi su app vera, DB testcontainer, sessioni better-auth vere). Il mount toglie il prefisso (Hono vede `/avatar`, non `/me/avatar`), non legge mai il body (`parse: "none"`: JSON, multipart e testo arrivano intatti) e una route Elysia vince sempre sul mount, quindi un modulo si può migrare anche in parte.
 
-**D9 — Auth come middleware, dopo i validatori.** *Da confermare in U1.*
+**D9 — Auth come middleware, dopo i validatori.** *Confermata in U1* (`src/http/auth.ts`; 422 prima del 401 per l'anonimo nel batch `baseline/hono-batch-me.jsonl` e in `me-avatar-route.test.ts`).
+
 `apps/api/src/http/auth.ts`: `type AuthEnv = { Variables: { user: AuthUser; session: AuthSession } }` (da `auth.$Infer.Session`), `requireAuth` = `createMiddleware<AuthEnv>` che chiama `auth.api.getSession({ headers: c.req.raw.headers })` e, senza sessione, lancia `ServiceError(401, "Devi accedere per continuare")`. I middleware di ruolo arrivano con il primo modulo che li usa: `requireCustomer` (U3, 403 «Profilo cliente non trovato», `c.var.customerProfile`), `requireSeller` (U5, `c.var.seller` = `resolveSellerAccess(user)`), `requireSellerRole` (U6, 403 «Accesso riservato ai venditori»), `requireAdmin` (U8, 403 «Accesso riservato agli amministratori»). Si mettono **in ogni route dopo i suoi `v(...)`**, mai come `app.use` di modulo, perché oggi la validazione precede l'auth (anonimo + query mancante su `/seller/orders` → 422 «Negozio: campo obbligatorio», già nello snapshot).
 Prove: prototipo `notes/prototypes/mount/hono-auth.ts`, 401 e quattro 403 con status e corpo uguali a Elysia. La sonda di mount proponeva di accettare il 401 prima del 422; il piano tiene la parità (vedi [Domande aperte](#domande-aperte)). `Authorization: Bearer` dà 401 oggi e domani (nessun plugin bearer, anche se `/openapi` lo dichiara).
 
-**D10 — Client: `hc` per sotto-albero, in ogni app.** *Da confermare in U1.*
+**D10 — Client: `hc` per sotto-albero, in ogni app.** *Confermata in U1.* `packages/ui/src/lib/api-client.ts`: `ErrorBody`, `WithErrors<App>` (= `ApplyGlobalResponse` con `ErrorBody` su 400/401/403/404/409/422/429/500) e `unwrapJson` (test in `api-client.test.ts`); in ogni app `meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init: { credentials: "include" } })`. Typecheck dopo `me/` (media di 2 run): api 6,63 s, admin 8,35 s, customer 8,04 s, seller 9,95 s, tutti sotto la baseline: nessun ripiego.
+
 L'API esporta un tipo per sub-app da `apps/api/src/types.ts` (`MeApp`, `LocationsApp`, `CustomerApp`, `RegistrationApp`, `SellerApp`, `AdminApp`, `CatalogApps`…); ogni app crea in `src/lib/api.ts` i client che usa, es. `hc<MeApp>(`${API_URL}/me`, { init: { credentials: "include" } })`. In `packages/ui/src/lib/api-client.ts`: `unwrapJson<T>(res: ClientResponse<T>, fallback: string): Promise<T>` che, se `!res.ok`, legge `message` dal corpo e lancia `ApiError(message, res.status)` (stessa classe di oggi, così `shouldRetryQuery` e i rami su `status` non cambiano), e il tipo `ErrorBody` applicato con `ApplyGlobalResponse` (da `hono/client`) per tipizzare i corpi 401/403/404/409/422/500. Le chiamate passano da `unwrap(await api()…, m)` a `await unwrapJson(await client….$verb(…), m)`. Le risposte arrivano con le date come stringhe (vedi [Trappole](#trappole-note)).
 Ripiego se il budget di typecheck salta: prima tipi del client precompilati (`hcWithType` con un passo di build dei `.d.ts`), poi client generato da OpenAPI.
 Prove: `probe-mount.md` §5 (`hc<MeApp>` attraverso il mount, `ApplyGlobalResponse` tipizza il 401), `probe-validation.md` §7 (json, query, param e risposta tipizzati su v4 e v5). Non misurato: il costo su tutti i 179 endpoint, per questo il budget si misura a ogni unità.
 
-**D11 — OpenAPI: generatore nel repo dai metadati delle route.** *Da confermare in U1.*
+**D11 — OpenAPI: generatore nel repo dai metadati delle route.** *Confermata in U1.* Misure su `me/`: generatore nel repo → 0 differenze (l'intero `/openapi/json` è identico al byte a `baseline/openapi.json`: 198 path, 228 operazioni) e 53 confronti schema per schema identici all'output di `@elysiajs/openapi` (`tests/http/openapi.test.ts`); `@hono/zod-openapi` 1.6.3 → 74 foglie diverse su 184 di `/me/avatar` (48 mancanti, 26 in più: letterali come `enum`, niente `operationId`, solo `multipart/form-data`, metadati del file persi), definizione delle route lunga il doppio (`createRoute` + `.openapi()` al posto di `doc()` + `v()`; prototipo in `notes/prototypes/openapi/zod-openapi-me.ts`) e, con Hono 5, `hc<typeof app>` non compila. Come: `toJsonSchema` = `z.toJSONSchema` (lato input) con un `override` che scrive il JSON di TypeBox (costruttori di `t.ts`, `required` anche coi default, `nullable: true`, letterali in `anyOf` di `const`, niente limiti safe-int), poi le trasformazioni di `@elysiajs/openapi` (`src/http/openapi.ts`). Nessuna differenza di forma dovuta a Zod: la riga 3 del registro dei delta resta vuota.
+
 Ogni route Hono porta `doc({ summary, description, tags, security, response })` (middleware no-op che conserva i metadati, come `detail`/`response` di Elysia) e gli schemi di `v(...)`; un generatore legge `app.routes`, converte gli schemi con `z.toJSONSchema` e produce i `paths`. Durante lo strangler i path delle sub-app si uniscono a `documentation.paths` del plugin Elysia (oggi solo i path better-auth), così `/openapi` resta completo; in U11 lo stesso generatore produce l'intero documento (info, tag, componenti e path better-auth, pagina Scalar).
 U1 confronta questa strada con `@hono/zod-openapi` (`createRoute` per ogni operazione, accetta la v5 alla GA) sul modulo `me/` e sceglie quella con meno differenze rispetto a `baseline/openapi.json`; `hono-openapi` è escluso (peer `^4.11.2` esclude la v5, ogni operazione esce diversa). Le differenze di forma dovute a Zod (es. nullable, formati) vanno elencate nel registro dei delta.
 Prove: con schemi TypeBox il port del generatore di `@elysiajs/openapi` 1.4.16 (`notes/prototypes/validation/openapi-gen.ts`) dà 181/181 operazioni identiche alla spec a freddo; i metadati letti da `app.routes` tramite `v()` e `doc()` sono identici (`probe-hono-routes.ts`). Con Zod la parità piena non è dimostrata: è il punto principale da misurare in U1.
@@ -152,13 +163,16 @@ Prove: con schemi TypeBox il port del generatore di `@elysiajs/openapi` 1.4.16 (
 **D12 — Rate limit: middleware Hono che riusa `consume` e `clientIp`.** *Da confermare in U2.*
 `plugins/rate-limit.ts` diventa un middleware (stesse chiavi `${name}:${by}:${identity}`, stesso 429 con `retry-after` e corpo «Troppe richieste. Riprova più tardi.»), dopo validatori e auth come oggi (i body invalidi non consumano budget). Sotto il mount Hono non riceve il `server` di Bun: l'identità `ip` va letta da `x-forwarded-for`, che l'hook globale di better-auth ha già sovrascritto con l'IP del socket; con `TRUST_PROXY=true` resta il primo hop come oggi. Senza questo tutti i client finirebbero nel bucket `"unknown"`.
 
-**D13 — Harness di test condiviso.** *Da confermare in U1.*
+**D13 — Harness di test condiviso.** *Cambiata in U1:* `tests/helpers/hono-app.ts` dà `testRequest(app, path, init)` e `signIn(email, role)` (utente e sessione better-auth veri sul DB di test, cookie da mandare): `requireAuth` sta dentro ogni route, quindi niente utente finto da `x-test-user`. I middleware di ruolo di U3 e U5 leggeranno lo stesso utente vero.
+
 `apps/api/tests/helpers/hono-app.ts`: `testRequest(app: Hono<any>, req: Request, opts?: { user?: … })` al posto dei ~20 harness copiati (`noopPino` + `errorHandler` + `.resolve` con `x-test-user`). Il finto utente si inietta come oggi dall'header `x-test-user` (lookup sul DB di test) con un middleware di test che fa `c.set("user", …)` e, per il seller, `resolveSellerAccess`. I test cambiano solo la riga che manda la richiesta.
 
-**D14 — File: `file-type` diventa dipendenza diretta.** *Da confermare in U1.*
+**D14 — File: `file-type` diventa dipendenza diretta.** *Confermata in U1* (`file-type` `^22.1.1`, nel lock la stessa 22.1.1 di prima; controllo dei magic byte in `v()` dopo la validazione).
+
 Oggi c'è solo come peer di Elysia (`file-type@22.1.1` nel lock): `apps/api` la aggiunge alla stessa versione (`^22.1.1`) per il controllo dei magic byte di `t.File({ type })`; `maxSize` resta un errore «tipo di file non ammesso» come oggi. `POST /seller/products/import` (`t.File({ type: "text/csv" })`) oggi risponde sempre 422 perché `file-type` non riconosce il testo: la parità lo lascia così (vedi [Domande aperte](#domande-aperte)).
 
-**D15 — Log.** *Da confermare in U1.*
+**D15 — Log.** *Confermata in U1.* Differenza solo di log, nessuna HTTP: gli errori gestiti da una sub-app Hono si loggano col path visto dalla sub-app (`/avatar`, prefisso tolto dal mount) fino a U11.
+
 Negli handler Hono si usa il `logger` standalone (`getLogger(undefined)` ci ricade già). La riga per richiesta resta quella di logixlysia fino a U11; in U11 un middleware Hono riscrive lo stesso formato (`{now} {level} {duration} {method} {pathname} {status} {ip}`, stdout + `logs/app.log`).
 
 ## Registro dei delta accettati
@@ -169,7 +183,8 @@ Differenze osservabili rispetto alla baseline, una riga per ciascuna, con l'unit
 |---|---|---|---|
 | 1 | `/<modulo>/auth` e `/<modulo>/auth/*` (copie morte del mount better-auth in admin, customer, locations, me, seller) rispondono col 404 JSON invece del 404 vuoto | nessuno le usa; sparite col modulo Elysia | U1, U2, U3, U5–U7, U8–U9 |
 | 2 | Le righe dei moduli migrati in `routes.json` diventano `ALL /<prefisso>` + `ALL /<prefisso>/*` con `mount: "hono"` (le route tornano elencate passando `--hono` a `route-inventory.ts`) | effetto del mount | ogni modulo |
-| 3 | (U1 compila: differenze di forma della spec OpenAPI dovute a Zod, una per tipo) | — | U1 |
+| 3 | Nessuna differenza di forma della spec OpenAPI dovuta a Zod: `/openapi/json` dopo U1 è identico al byte a `baseline/openapi.json` (198 path, 228 operazioni) | il generatore scrive il JSON di TypeBox (D11) | U1 |
+| 4 | Un 404 sotto il prefisso di una sub-app montata (es. `GET /me/nope`, `GET /me/avatar`) porta `x-request-id`; prima no (Elysia lo mette solo sulle route trovate, e il mount è una route trovata). Corpo e status uguali | effetto del mount; in U11 l'header andrà comunque su ogni risposta (Domanda aperta 6) | U1 |
 
 ## Review Focus
 
@@ -211,7 +226,11 @@ Da copiare nella descrizione della PR e spuntare con l'output alla mano. Un punt
 - **Formato errori nel FE.** `ApiError(message, status)` e `shouldRetryQuery` (niente retry sui 4xx) restano uguali; le pagine di registrazione leggono `error === "EMAIL_PENDING_VERIFICATION"` e `resentAt` dal corpo 409.
 - **Inviluppo sotto il mount.** Senza `onError`/`notFound` la sub-app risponde in `text/plain`. Sempre la fabbrica del kit.
 - **422 prima di 401.** Un `app.use(requireX)` di modulo inverte l'ordine: auth dentro ogni route, dopo i validatori.
-- **Slash finale.** `strict: false` su ogni app Hono.
+- **Slash finale.** `strict: false` su ogni app Hono (lo dà `moduleApp()`).
+- **`code` di Elysia sui nostri errori.** Nell'`onError` di Elysia un `ServiceError(404)` arriva con `code: "NOT_FOUND"` come il 404 di routing: si distingue per classe (`plugins/error-handler.ts`), mai per `code`.
+- **Body letto per Content-Type, non per target.** Non usare `hono/validator`: con il target `form` un body JSON diventa `{}`, Elysia lo legge come JSON. Si usa `v()`.
+- **Costruttori di `lib/zod/t.ts`.** `title`/`description`/`error` nelle opzioni (finiscono nel JSON Schema come in TypeBox), `default` nelle opzioni (il campo diventa facoltativo in ingresso). Un gemello nuovo si prova aggiungendo un caso a `tests/http/parity-cases.ts`: il test confronta 422 e OpenAPI con Elysia.
+- **`app.mount()` non esiste in Hono 5.** Per montare un handler fetch su Hono: `app.all("/x/*", mount(handler))` da `hono/mount` (`tools/hono-entry.ts`, better-auth in U11).
 - **Prefisso tolto dal mount** con la lunghezza del prefisso dell'istanza che monta: montare sempre sull'app radice in `src/index.ts`, mai dentro un plugin con prefisso. Il catalogo ha 4 path radice → 4 mount.
 - **Precedenza:** una route Elysia vince sul mount; migrando in parte si cancella la route Elysia nella stessa PR, o resterà lei a rispondere.
 - **bun test.** Sempre `bun run test` (`--parallel=4 --isolate`); `mock.module` è globale e passa tra file; better-auth si importa dentro il test dopo `mock.module("@/db")`; un mock di env rompe Stripe (singleton lazy).
@@ -230,31 +249,31 @@ Per ogni unità: backend, test (cambia solo l'invio della richiesta), call site 
 
 ### U0 — Piano e baseline
 
-**Stato:** in corso · **PR:** #300 · **Branch:** `docs/hono-migration-plan`
+**Stato:** fatto · **PR:** #300 · **Branch:** `docs/hono-migration-plan`
 
 - [x] Baseline e strumenti (`baseline/`, `tools/`), commit `4a37d2ab`.
 - [x] Mappe e note delle sonde spostate in `notes/` (anche prototipi e inventario delle chiamate FE).
 - [x] Piano scritto.
 - [x] `bun run lint` verde.
 - [x] PR #300 aperta verso `feat/hono-migration`.
-- [ ] CI verde, merge squash.
+- [x] CI verde, merge squash (`6fb928d9` su `feat/hono-migration`).
 
 ### U1 — `me/` e fondamenta
 
-**Stato:** da fare · **PR:** — · **Branch:** `refactor/hono-me`
+**Stato:** fatto, PR da aprire · **PR:** — · **Branch:** `feat/hono-u1-me` (nome dato dall'orchestratore al posto di `refactor/hono-me`)
 
 Primo modulo: 2 endpoint (`POST /me/avatar` multipart con `t.File({ type: "image", maxSize: "5m" })`, `DELETE /me/avatar`), entrambi con auth per route. Costruisce il kit, conferma D1–D11 e D13–D15 e misura il costo di `hc`.
 
 **Backend**
-- Root `package.json`: catalog `"hono": "^4.13.14"`. `apps/api/package.json`: `hono` e `zod` (`catalog:`), `file-type` `^22.1.1`. `packages/ui/package.json` (e le app, se importano `hono/client`): `hono` `catalog:`.
+- Root `package.json`: catalog `"hono": "5.0.0-rc.1"` (D1 cambiata; era `^4.13.14`). `apps/api/package.json`: `hono` e `zod` (`catalog:`), `file-type` `^22.1.1`. `packages/ui/package.json` (e le app, se importano `hono/client`): `hono` `catalog:`.
 - Create `apps/api/src/http/validator.ts`: `v(target: "json" | "form" | "query" | "param", schema: z.ZodType)` (D2, D5).
 - Create `apps/api/src/http/validation-message.ts`: messaggio italiano dalla prima issue Zod (D6), riusando `FIELD_LABELS` e le regole esportate da `src/lib/validation-message.ts` e `src/lib/validation-rule.ts`.
 - Create `apps/api/src/http/send.ts`: `send(c, schema, data)` (D4).
 - Create `apps/api/src/http/errors.ts`: `toErrorResponse` (D7); Modify `apps/api/src/plugins/error-handler.ts` per usarla.
 - Create `apps/api/src/http/auth.ts`: `AuthEnv`, `requireAuth` (D9).
-- Create `apps/api/src/http/app.ts`: `moduleApp()` = `new Hono<AuthEnv>({ strict: false })` con `onError` e `notFound` (D7, D8).
+- Create `apps/api/src/http/app.ts`: `moduleApp()` = `new Hono({ strict: false })` con `onError` e `notFound` (D7, D8); le variabili di `AuthEnv` le porta `requireAuth` nella catena della route.
 - Create `apps/api/src/http/openapi.ts`: `doc(…)`, generatore e unione in `documentation.paths` (D11).
-- Create `apps/api/src/lib/zod/responses.ts`: gemelli di `ok`/`okRes`/`OkMessage`/`withErrors`/`ErrorBody` (D3).
+- Create `apps/api/src/lib/zod/responses.ts`: gemelli di `ok`/`okRes`/`OkMessage`/`withErrors`/`ErrorBody` (D3); `lib/zod/{t,formats,issues,pagination}.ts` (D3, D5, D6); `lib/deep-trim.ts` (trim condiviso col plugin `normalize`).
 - Modify `apps/api/src/modules/me/index.ts`, `apps/api/src/modules/me/routes/avatar.ts`: `meApp` Hono (route relative `/avatar`), `export type MeApp`.
 - Modify `apps/api/src/index.ts`: `.use(meModule)` → `.mount("/me", meApp.fetch)`; path OpenAPI di `meApp` uniti al documento.
 - Modify `apps/api/src/types.ts`: `export type { MeApp }`.
@@ -264,8 +283,9 @@ Primo modulo: 2 endpoint (`POST /me/avatar` multipart con `t.File({ type: "image
 - Create `apps/api/tests/http/validator.test.ts`: i 21 casi di `tests/lib/validation-message.test.ts` con un gemello Zod di ogni schema in linea e **le stesse stringhe attese**; più i casi del corpus (`notes/prototypes/validation/cases.ts` + `before.json`) che non chiedono route di modulo: JSON malformato → 500 `INTERNAL_ERROR`, senza `Content-Type` → «Richiesta non valida», `text/plain` → 422, intero `"5"` accettato nel JSON e `5.5` → «… deve essere un numero intero», regole di D5 su query (numero, booleano, array con virgola e chiavi ripetute, default, ultima chiave vince), trim tranne `/password/i`, campi sconosciuti annidati tolti, cookie `PARAGLIDE_LOCALE=en` → messaggio italiano.
 - Create `apps/api/tests/http/send.test.ts`: campi annidati in più tolti, `Date` → ISO, dato fuori schema → 500 «Errore interno del server».
 - Create `apps/api/tests/http/mount.test.ts`: rete dello strangler dai 24 test della sonda (`notes/prototypes/mount/mount.test.ts`): prefisso tolto, route Elysia che vince sul mount, CORS e `x-request-id` sulle risposte montate, body grezzo intatto (JSON, multipart, testo), status e `Set-Cookie` multipli conservati.
-- Create `apps/api/tests/modules/me-avatar-route.test.ts`: senza sessione → 401 «Devi accedere per continuare»; file non immagine → lo stesso 422 di oggi (catturato prima della modifica); upload valido → 200 `{ success: true, data: { image } }`; strip (campo in più nel form e nella risposta).
+- Create `apps/api/tests/integration/me-avatar-route.test.ts` (in `integration/` e non in `modules/`: serve il DB per le sessioni better-auth vere): senza sessione → 401 «Devi accedere per continuare»; file non immagine → lo stesso 422 di oggi (catturato prima della modifica); upload valido → 200 `{ success: true, data: { image } }`; strip (campo in più nel form e nella risposta).
 - Invariati e verdi: `tests/plugins/error-handler.test.ts`, `tests/lib/validation-message.test.ts`, `tests/integration/me-avatar.test.ts`.
+- Fatto in più: `tests/http/parity-cases.ts` (89 casi, schema TypeBox + gemello Zod + atteso) usato da `validator.test.ts` e `openapi.test.ts` (D11); `tests/http` aggiunto a `test:unit`; `packages/ui/src/lib/api-client.test.ts` (`unwrapJson`).
 
 **Frontend** (6 chiamate, tutte avatar: POST multipart, DELETE)
 - `packages/ui/src/lib/api-client.ts`: `unwrapJson`, `ErrorBody` / `ApplyGlobalResponse` (D10). `unwrap`, `edenMessage`, `createApiClient` restano finché c'è Eden.
@@ -275,15 +295,24 @@ Primo modulo: 2 endpoint (`POST /me/avatar` multipart con `t.File({ type: "image
 **Date:** nessuna.
 
 **Checklist**
-- [ ] Prima di toccare il codice: catturare `baseline/hono-batch-me.jsonl` (401, 422 file sbagliato, 200 con login) e le risposte di `/me/avatar` per il test di route.
-- [ ] Kit `src/http/` e test di `validator`, `send`, `mount` verdi.
-- [ ] `me/` su Hono, route Elysia e `meModule` tolti, mount in `src/index.ts`.
-- [ ] Tre FE su `hc` per `/me`; upload e rimozione avatar provati nel browser in tutte e tre le app.
-- [ ] D11: confronto generatore nel repo vs `@hono/zod-openapi` su `me/`, scelta scritta in D11 con il numero di differenze; righe del registro dei delta compilate.
-- [ ] Typecheck dei 4 workspace misurato e annotato qui: api — · admin — · customer — · seller —.
-- [ ] D1–D11, D13–D15 marcate «confermata» o «cambiata: …».
-- [ ] Nuova sezione in `docs/architecture.md` («Migrazione Elysia → Hono»: mount, kit `src/http/`, gemelli Zod, client `hc` per sotto-albero, dove sono piano e baseline); la sezione «Frontend ↔ API integration (Eden Treaty)» dice che è in transizione.
-- [ ] [Verifica di ogni PR](#verifica-di-ogni-pr).
+- [x] Prima di toccare il codice: catturato `baseline/hono-batch-me.jsonl` (16 passi: 422 da anonimo per body assente/urlencoded/JSON, 401, slash finale, 404, preflight 204, login `customer1@test.com`, 422 e 200 con sessione; DELETE è un no-op per l'utente del seed senza immagine). Header di `/me/avatar` catturati con `hono request` e asseriti in `tests/http/mount.test.ts`. Il 200 dell'upload è nel test di route (testcontainer): sul DB di dev avrebbe scritto sull'utente del seed.
+- [x] Kit `src/http/` e test di `validator` (89), `send` (2), `mount` (16), `openapi` (54) verdi.
+- [x] `me/` su Hono, route Elysia e `meModule` tolti, mount in `src/index.ts`.
+- [ ] Tre FE su `hc` per `/me` (fatto, typecheck e test verdi); **upload e rimozione avatar nel browser non provati in U1**: da fare nel collaudo dell'orchestratore, con un utente di prova per app (memoria «Collaudi browser senza scritture sul seed»).
+- [x] D11: confronto generatore nel repo vs `@hono/zod-openapi` su `me/` (0 contro 74 foglie diverse), scelta scritta in D11; righe 3 e 4 del registro dei delta compilate.
+- [x] Typecheck dei 4 workspace (wall time, media di 2 run; baseline tra parentesi): api 6,63 s (6,65) · admin 8,35 s (9,51) · customer 8,04 s (8,61) · seller 9,95 s (9,96). Istanziazioni (`--extendedDiagnostics`): api 2,12 M (1,77 M), admin 2,45 M (2,23 M), customer 2,31 M (2,10 M), seller 2,59 M (2,37 M): +9–20 %, senza effetto sul tempo.
+- [x] D1–D11, D13–D15 marcate «confermata» o «cambiata».
+- [x] Nuova sezione in `docs/architecture.md` («Migrazione Elysia → Hono (in corso)»); la sezione Eden dice che è in transizione.
+- [x] [Verifica di ogni PR](#verifica-di-ogni-pr), con i numeri:
+  - typecheck: `bun run typecheck` → exit 0, i 6 workspace (emails, ui, api, admin, customer, seller) e i 3 `pretypecheck` con `Exited with code 0`;
+  - lint: `bun run lint` → exit 0, 0 errori (6 avvisi tutti preesistenti: i 5 dei prototipi in `notes/` e la dimensione di `baseline/openapi.json`);
+  - test: `bun run test` → exit 0; emails 26, ui 40 (+3), api unit 681 (+161), api integration 975 in 102 file (+6, +1), admin 112, customer 169, seller 206; totale 2.209 (baseline 2.039), 0 fail, 0 skip, nessun `Unhandled error between tests`;
+  - build e avvio: `bun run --filter @bibs/api build` (7,47 MB), `PORT=3100 bun dist/index.js` → `/ready` 200 `{"status":"ok","services":{"database":"ok","s3":"ok"}}`, `DELETE /me/avatar` 401 con CORS e `x-request-id`, `/openapi/json` con `/me/avatar`; fermato;
+  - inventario route: 246 righe; diff con la baseline solo `/me/auth`, `/me/auth/*` (better-auth) → `/me`, `/me/*` (hono) (delta 1 e 2);
+  - OpenAPI: identico al byte alla baseline (198 path, 228 operazioni);
+  - Hono CLI: batch della baseline 66/66; snapshot rigenerato: solo le 4 righe di `/me` previste (delta 2); `baseline/hono-batch-me.jsonl` 16/16;
+  - strip: `tests/integration/me-avatar-route.test.ts` (form e risposta) più `send.test.ts` e i casi di `validator.test.ts`;
+  - revisione avversaria e browser: non fatti in U1 (li fa l'orchestratore prima della PR).
 
 ### U2 — `locations/`
 
@@ -435,7 +464,7 @@ Hono diventa l'app principale; Elysia, Eden e i plugin escono.
 - `apps/api/src/index.ts`: solo server (`ensureBucket()`, `Bun.serve({ port, fetch: app.fetch })` che passa il server come `env`, chiusura su SIGTERM/SIGINT con `server.stop()` e `db.$client.end()`); `src/cron.ts` con i 5 job su `croner` diretto (`^6.0.7`, la versione di oggi; stessi pattern e nomi, avviati solo dall'entry server).
 - Via: `elysia`, `@elysiajs/cors`, `@elysiajs/cron`, `@elysiajs/openapi`, `logixlysia`, `src/plugins/*.ts` Elysia, `src/types/logixlysia.d.ts`, `export type App`, gli schemi TypeBox con `t` di Elysia (`lib/schemas/*.ts` tranne `forms/`, `lib/queries.ts`, `lib/pagination.ts`: i gemelli `lib/zod/*` prendono il loro posto in `lib/schemas/`), `elysia` dal catalog; `@elysiajs/eden` da catalog, `packages/ui` e app; in `packages/ui/src/lib/api-client.ts` via `createApiClient`, `unwrap`, `edenMessage`.
 - `tools/load-app.ts` cattura l'app Hono (`src/app.ts`), così `route-inventory.ts` e `openapi-snapshot.ts` continuano a funzionare; `hono-entry.ts` diventa superfluo se la CLI carica `src/app.ts` (vedi «Before relying on the CLI's own entry» in `hono-cli.md`).
-**Test:** `tests/plugins/{error-handler,normalize,request-id,rate-limit}.test.ts` passano al meccanismo Hono con le stesse asserzioni; `tests/lib/validation-message.test.ts` (oggi passa da Elysia) e `tests/lib/logger.test.ts` (logixlysia vero) idem; `tests/unit/cors-origin.test.ts` invariato. Nuovi: header CORS di preflight e di risposta uguali alla baseline (origine ammessa e non ammessa, `vary: Origin`, `access-control-allow-methods/headers` anche fuori preflight); `x-forwarded-for` falsificato sostituito dall'IP del socket su un `Bun.serve` vero, con il controllo negativo della sonda (rate limit di better-auth: 5×200 poi 429).
+**Test:** `tests/http/parity-cases.ts` perde la colonna TypeBox e il confronto dal vivo con Elysia (`validator.test.ts` resta sugli attesi scritti; `openapi.test.ts` passa a confrontare con `baseline/openapi.json`); `tests/plugins/{error-handler,normalize,request-id,rate-limit}.test.ts` passano al meccanismo Hono con le stesse asserzioni; `tests/lib/validation-message.test.ts` (oggi passa da Elysia) e `tests/lib/logger.test.ts` (logixlysia vero) idem; `tests/unit/cors-origin.test.ts` invariato. Nuovi: header CORS di preflight e di risposta uguali alla baseline (origine ammessa e non ammessa, `vary: Origin`, `access-control-allow-methods/headers` anche fuori preflight); `x-forwarded-for` falsificato sostituito dall'IP del socket su un `Bun.serve` vero, con il controllo negativo della sonda (rate limit di better-auth: 5×200 poi 429).
 **Frontend:** nessuna chiamata (già tutte su `hc`); `grep -rn "@elysiajs/eden\|apiNoDates\|edenMessage" apps packages` → nessun risultato.
 
 - [ ] Header CORS, `X-Request-Id`, 404 e corpo del JSON malformato confrontati con la baseline; differenze (es. `x-request-id` anche sui 404, che oggi non lo hanno) corrette o nel registro dei delta.
@@ -457,13 +486,13 @@ Hono diventa l'app principale; Elysia, Eden e i plugin escono.
 - [ ] Nel browser, seller: tutti i form toccati con errori in italiano e in inglese (cookie `PARAGLIDE_LOCALE=en`) uguali a prima (diff dell'`outerHTML` con i messaggi di errore visibili).
 - [ ] [Verifica di ogni PR](#verifica-di-ogni-pr).
 
-### U12 — Hono 5
+### U12 — Hono 5: ultima 5.x
 
 **Stato:** da fare · **PR:** — · **Branch:** `chore/hono-v5`
 
-Solo se D1 è rimasta «4.13.x» e la 5.0.0 è uscita in GA. Se alla fine di U11b la GA non c'è, l'unità si salta (stato «rimandata») e diventa una PR normale su `main` dopo U14.
+Da U1 il repo è già su Hono 5 (`5.0.0-rc.1`, D1). U12 è l'**ultima PR di codice prima di U13/U14**, non si rimanda: porta il catalog all'ultima 5.x (la GA `5.0.x` se è uscita, altrimenti l'ultima rc), con il pin esatto se è ancora una prerelease e `^5.x.y` alla GA.
 
-- [ ] Catalog `hono` `^5.0.0`; `onError` alla firma `(c) => c.error`; `c.req.query()` ora `string | undefined`; `c.req.json()` ora `unknown`; adapter Bun da `@hono/bun` se serve `getConnInfo`; peer di `@hono/cli` e di ogni `@hono/*` usato verificati.
+- [ ] Catalog `hono` all'ultima 5.x; changelog dalla rc.1 letto e applicato (oggi del codice specifico della v5 ci sono solo `onError((c) => c.error)` in `src/http/app.ts`, `hono/mount` e `c.req.query()`/`c.req.json()` tipizzati `string | undefined`/`unknown`); adapter Bun da `@hono/bun` se serve `getConnInfo`; peer di `@hono/cli` verificati.
 - [ ] [Verifica di ogni PR](#verifica-di-ogni-pr).
 
 ### U13 — Documentazione e skill
@@ -499,6 +528,7 @@ Tutto in [`2026-10-25-hono-migration/notes/`](2026-10-25-hono-migration/notes/),
 | `frontend-calls/calls.json`, `grouped.txt`, `eden-calls.mjs` | Le 178 chiamate `api()`/`apiNoDates()` (file, riga, path, metodo) raggruppate per prefisso, e lo script che le rigenera (`node eden-calls.mjs <radice del repo>`): a U11 deve dare zero |
 | `prototypes/validation/` | Prototipo della sonda (TypeBox): `validate.ts` (ordine dei passi del validatore), `validation-message.ts`/`validation-rule.ts` (`firstError`), `openapi-gen.ts` (port del generatore di `@elysiajs/openapi`), `probe-hono-routes.ts` (metadati da `app.routes`), `probe-client.ts` (tipi `hc`), corpus `cases.ts`/`echo-cases.ts` con i risultati Elysia `before.json`/`before-echo.json` e gli script `before*.ts`/`after-034.ts`/`probe-after.ts`/`diff.ts`; `formats-diff.ts`, `order-check.ts` |
 | `prototypes/mount/` | `hono-auth.ts` (middleware di auth), `mount.test.ts` (24 test su app vera), `overlap.test.ts` (precedenza Elysia/mount). Si lanciano copiandoli in `apps/api/tests/probe/` con `hono` installato |
+| `prototypes/openapi/` | U1: `zod-openapi-me.ts`, il modulo `me/` scritto con `@hono/zod-openapi` 1.6.3 per il confronto di D11 (diff a foglie con la baseline, tipi di `hc` su Hono 5). Non si lancia senza installare il pacchetto (`bun add --no-save`) |
 | `prototypes/elysia/` | Sonde della mappa backend: `routes.ts` (tabella route), `compose.ts` (composizione offline), `xff.ts` (sovrascrittura globale di XFF), `csvfile.ts` (import CSV sempre 422) |
 
 I prototipi non fanno parte del build né del typecheck; Biome li controlla (5 warning, nessun errore).
@@ -508,6 +538,6 @@ I prototipi non fanno parte del build né del typecheck; Biome li controlla (5 w
 1. **Zod contro la raccomandazione della sonda.** La sonda di validazione raccomandava TypeBox 0.34 durante lo strangler e TypeBox 1 alla fine (27/27 dimostrato, 181/181 su OpenAPI, nessuno schema da riscrivere), e stimava per Zod 2156 chiamate da riscrivere, differenze di forma in `/openapi` e un trucco per i messaggi senza etichetta. Il piano segue la decisione di Marco (Zod, da non rivalutare). Si torna da Marco solo se U1 dimostra che un criterio obbligatorio (422 identico al byte) non si raggiunge con Zod.
 2. **422 prima di 401.** Il piano tiene la parità (validatori prima dell'auth). La sonda di mount suggeriva di accettare il 401 per primo, per non mostrare dettagli di validazione a chi non ha fatto login. È una scelta di prodotto/sicurezza: se Marco la vuole, diventa una riga del registro dei delta e i test che la toccano vanno discussi.
 3. **`POST /seller/products/import`** (CSV) oggi risponde sempre 422 e nessuna app lo usa. Il piano tiene il comportamento; correggerlo o toglierlo va fatto fuori dalla migrazione.
-4. **`/openapi` durante lo strangler:** il piano unisce i path delle sub-app al documento di Elysia; l'alternativa è accettare un buco fino a U11. Si conferma in U1 (D11).
-5. **Hono 5:** se la GA non esce entro U11b, U12 va dopo il merge su `main`.
+4. ~~**`/openapi` durante lo strangler**~~ Chiusa in U1: i path delle sub-app si uniscono a `documentation.paths` (`honoPaths(meApp, "/me")` in `src/index.ts`) e `/openapi/json` resta identico alla baseline.
+5. ~~**Hono 5**~~ Chiusa in U1: il repo è su `5.0.0-rc.1` (D1); U12 porta all'ultima 5.x prima di U13, GA o rc.
 6. **`X-Request-Id` su 404 ed errori di parse:** oggi mancano (Elysia lo mette solo sulle route trovate). Dopo U11 un middleware globale lo metterebbe ovunque: riprodurre la differenza o registrarla come delta, si decide in U11.

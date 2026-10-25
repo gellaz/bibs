@@ -1,9 +1,14 @@
-import type { App } from "@bibs/api";
-import { createApiClient } from "@bibs/ui/lib/api-client";
+import type { App, MeApp } from "@bibs/api";
+import { createApiClient, type WithErrors } from "@bibs/ui/lib/api-client";
+import { hc } from "hono/client";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export const api = createApiClient<App>(API_URL);
+
+// Client `hc` per i moduli già su Hono: uno per sotto-albero.
+const init = { credentials: "include" } satisfies RequestInit;
+export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });
 
 // Variante senza revival delle date: alcune caratteristiche testuali (es.
 // "Scadenza/TMC") accettano un testo libero che può somigliare a una data

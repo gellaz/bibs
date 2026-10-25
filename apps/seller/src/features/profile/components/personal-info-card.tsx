@@ -3,7 +3,8 @@ import {
 	type PersonalInfoCardLabels,
 	PersonalInfoCard as SharedPersonalInfoCard,
 } from "@bibs/ui/custom/personal-info-card";
-import { api, unwrap } from "@/lib/api";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
+import { meApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-error";
 import { m } from "@/paraglide/messages";
@@ -70,15 +71,16 @@ export function PersonalInfoCard() {
 	};
 
 	const onUploadAvatar = async (file: File) => {
-		const res = await api().me.avatar.post({ file });
-		unwrap(res, m.common_error());
+		await unwrapJson(
+			await meApi.avatar.$post({ form: { file } }),
+			m.common_error(),
+		);
 		await refetch();
 		toast.success(m.profile_avatar_updated());
 	};
 
 	const onRemoveAvatar = async () => {
-		const res = await api().me.avatar.delete();
-		unwrap(res, m.common_error());
+		await unwrapJson(await meApi.avatar.$delete(), m.common_error());
 		await refetch();
 		toast.success(m.profile_avatar_removed());
 	};

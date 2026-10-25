@@ -2,13 +2,13 @@ import { Skeleton } from "@bibs/ui/components/skeleton";
 import { toast } from "@bibs/ui/components/sonner";
 import { AvatarUploadDialog } from "@bibs/ui/custom/avatar-upload-dialog";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { Link } from "@tanstack/react-router";
 import { Camera } from "lucide-react";
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { meApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 import { useCustomerProfile } from "./use-customer-profile";
@@ -53,15 +53,16 @@ export function ProfileIdentity() {
 	if (!user) return null;
 
 	const onUploadAvatar = async (file: File) => {
-		const res = await api().me.avatar.post({ file });
-		unwrap(res, m.error_generic());
+		await unwrapJson(
+			await meApi.avatar.$post({ form: { file } }),
+			m.error_generic(),
+		);
 		await refetch();
 		toast.success(m.profile_avatar_updated_toast());
 	};
 
 	const onRemoveAvatar = async () => {
-		const res = await api().me.avatar.delete();
-		unwrap(res, m.error_generic());
+		await unwrapJson(await meApi.avatar.$delete(), m.error_generic());
 		await refetch();
 		toast.success(m.profile_avatar_removed_toast());
 	};

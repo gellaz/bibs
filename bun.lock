@@ -38,6 +38,7 @@
         "@tanstack/react-table": "catalog:",
         "@tanstack/router-plugin": "catalog:",
         "better-auth": "catalog:",
+        "hono": "catalog:",
         "lucide-react": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
@@ -74,11 +75,14 @@
         "better-auth": "catalog:",
         "drizzle-orm": "^0.45.4",
         "elysia": "catalog:",
+        "file-type": "^22.1.1",
+        "hono": "catalog:",
         "logixlysia": "^6.10.3",
         "pg": "catalog:",
         "pino": "^10.4.0",
         "sharp": "catalog:",
         "stripe": "catalog:",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@hono/cli": "^1.0.0-rc.8",
@@ -109,6 +113,7 @@
         "@tanstack/react-start": "catalog:",
         "@tanstack/router-plugin": "catalog:",
         "better-auth": "catalog:",
+        "hono": "catalog:",
         "leaflet": "catalog:",
         "leaflet.markercluster": "catalog:",
         "lucide-react": "catalog:",
@@ -161,6 +166,7 @@
         "@tanstack/router-plugin": "catalog:",
         "barcode-detector": "3.2.3",
         "better-auth": "catalog:",
+        "hono": "catalog:",
         "leaflet": "catalog:",
         "lucide-react": "catalog:",
         "react": "catalog:",
@@ -217,6 +223,7 @@
         "class-variance-authority": "^0.7.1",
         "cn": "^0.5.0",
         "date-fns": "^4.4.0",
+        "hono": "catalog:",
         "lucide-react": "catalog:",
         "next-themes": "^0.4.6",
         "react-day-picker": "^9.14.0",
@@ -278,6 +285,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "1.7.12",
     "elysia": "1.4.30",
+    "hono": "5.0.0-rc.1",
     "jsdom": "^29.1.1",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
@@ -1392,7 +1400,7 @@
 
     "help-me": ["help-me@5.0.0", "", {}, "sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg=="],
 
-    "hono": ["hono@4.13.14", "", {}, "sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ=="],
+    "hono": ["hono@5.0.0-rc.1", "", {}, "sha512-vTcfU9yAggXh/+ZSi8zpYbzYDubCgFnSt8d5afCAlgkd38dyYb3CVtOh8YWhS65NkEqBseCsTj/P8mceJ+7KNA=="],
 
     "html-encoding-sniffer": ["html-encoding-sniffer@6.0.0", "", { "dependencies": { "@exodus/bytes": "^1.6.0" } }, "sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg=="],
 
@@ -1987,6 +1995,8 @@
     "@grpc/proto-loader/yargs": ["yargs@17.7.3", "", { "dependencies": { "cliui": "^8.0.1", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "require-directory": "^2.1.1", "string-width": "^4.2.3", "y18n": "^5.0.5", "yargs-parser": "^21.1.1" } }, "sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g=="],
 
     "@hono/cli/commander": ["commander@14.0.3", "", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
+
+    "@hono/cli/hono": ["hono@4.13.14", "", {}, "sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ=="],
 
     "@inlang/sdk/@sinclair/typebox": ["@sinclair/typebox@0.31.30", "", {}, "sha512-MGsM7bVmHg3sUKCphlu3SGQ+T+5JTbygZWYArfKQCW5anJeACHeqLhcnf+R7XlCWZ+QR3C8JTBx3kCKJTN69ow=="],
 
