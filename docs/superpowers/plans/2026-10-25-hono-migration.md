@@ -23,7 +23,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U2 | `locations/` (+ rate limit) — **stessa PR di U4** | U1 | fatto | #302 |
 | U3 | `customer/` | U1 | da fare | — |
 | U4 | `registration/` — **stessa PR di U2** | U2 (rate limit) | fatto | #302 |
-| U5 | seller 1: contesto seller + products, brands, images, product-characteristics, stock | U1 | fatto, PR aperta (`feat/hono-u5-seller-1`) | — |
+| U5 | seller 1: contesto seller + products, brands, images, product-characteristics, stock | U1 | fatto | #303 |
 | U6 | seller 2: stores, store-images, settings, closures, employees, onboarding, profile, dashboard | U5 | da fare | — |
 | U7 | seller 3: orders, discounts, checkout, billing | U5 | da fare | — |
 | U8 | catalogo pubblico + admin 1: configurations, categorie, macro-categorie, caratteristiche, category-characteristics, holiday-definitions, import | U1 | da fare | — |
@@ -447,7 +447,7 @@ Verifica:
 
 ### U5 — seller 1: contesto seller e prodotti
 
-**Stato:** fatto · **PR:** — · **Branch:** `feat/hono-u5-seller-1` (nome dato dall'orchestratore al posto di `refactor/hono-seller-products`)
+**Stato:** fatto · **PR:** #303 · **Branch:** `feat/hono-u5-seller-1` (nome dato dall'orchestratore al posto di `refactor/hono-seller-products`)
 
 Monta `/seller` su Hono; le route seller ancora Elysia (U6, U7) continuano a vincere sul mount. 22 endpoint: products (12, con `GET /products/lookup` che risponde `okRes(Union[EanLookupResult, Null])` e `POST /products/import` CSV, vedi D14), brands (2), images (2: `t.Files({ type: "image", maxSize: "5m" })` + `position` intero come stringa multipart), product-characteristics (1), stock (5). Query prodotti: `productCategoryIds` array (virgola e chiavi ripetute), `inStock` booleano.
 
