@@ -65,6 +65,18 @@ Reading the results:
   its cookie to the next steps.
 - The three param lines (`/customer/products/<uuid>`, `/customer/stores/<uuid>`,
   `/customer/stores/<uuid>/products`) use an id found in a dev DB response: after a reseed they change.
+  The same goes for `/seller/orders/pickup/IT`: `IT` is the first country `code` of
+  `/locations/countries`. Since U2 that route sits behind the `/locations` mount, the snapshot no
+  longer sees its answer and writes `/seller/orders/pickup/:code` without `expect` (the `batch`
+  replay of the baseline line still checks the 422).
+- Module batch files with bodies, captured on the commit before each module moved:
+  `hono-batch-me.jsonl` (U1), `hono-batch-locations.jsonl` and `hono-batch-registration.jsonl`
+  (U2+U4). The registration file logs in with `customer1@test.com` through `/register/sign-in` and
+  expects a 409 `EMAIL_PENDING_VERIFICATION` for `collaudo.hono.u4@test.com`, a customer created once
+  by a registration on the dev DB and left unverified (each replay re-sends its link to Mailpit).
+  The 409 holds for 7 days from that user's creation (2026-10-25): after that the API deletes the
+  stale account and registers it again (200, the step fails). Before replaying later, check the user
+  or drop that line; never point it at a seed user.
 - Trap the snapshot already shows: unauthenticated GETs with a missing required query answer **422
   before 401** (`/seller/orders`, `/seller/orders/counts`, `/seller/dashboard`,
   `/seller/products/status-counts`, ...): Elysia validates the query before the `auth` macro resolves.

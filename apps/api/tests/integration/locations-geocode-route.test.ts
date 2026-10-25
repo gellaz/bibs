@@ -16,30 +16,17 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-// ── Lifecycle ─────────────────────────────────────────────────────────────────
+import { testRequest } from "../helpers/hono-app";
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 // `@/lib/auth` costruisce l'adapter Drizzle all'import: va importato DENTRO il
 // test, dopo il mock di `@/db`, altrimenti punta al pool reale (ECONNREFUSED).
-let app: { handle: (request: Request) => Promise<Response> };
+let app: typeof import("@/modules/locations").locationsApp;
 
 beforeAll(async () => {
 	await setupTestContainer();
-	const { Elysia } = await import("elysia");
-	const { errorHandler } = await import("@/plugins/error-handler");
-	const { locationsModule } = await import("@/modules/locations");
-	app = new Elysia()
-		.state("pino", noopPino)
-		.use(errorHandler)
-		.use(locationsModule);
+	({ locationsApp: app } = await import("@/modules/locations"));
 }, 120_000);
 
 afterAll(async () => {
@@ -50,17 +37,14 @@ afterAll(async () => {
 
 describe("GET /locations/geocode", () => {
 	it("requires authentication", async () => {
-		const res = await app.handle(
-			new Request("http://localhost/locations/geocode?q=via%20roma%2012"),
-		);
+		// Montata su /locations: il mount toglie il prefisso.
+		const res = await testRequest(app, "/geocode?q=via%20roma%2012");
 
 		expect(res.status).toBe(401);
 	});
 
 	it("keeps the municipality list public", async () => {
-		const res = await app.handle(
-			new Request("http://localhost/locations/municipalities/all"),
-		);
+		const res = await testRequest(app, "/municipalities/all");
 
 		expect(res.status).toBe(200);
 	});
