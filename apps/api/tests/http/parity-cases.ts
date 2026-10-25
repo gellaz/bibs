@@ -14,7 +14,10 @@ import {
 	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
 import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
-import { CreateProductBody as TbCreateProductBody } from "@/lib/schemas/forms/products";
+import {
+	CharacteristicValuesField as TbCharacteristicValuesField,
+	CreateProductBody as TbCreateProductBody,
+} from "@/lib/schemas/forms/products";
 import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/lib/schemas/holidays";
 import {
 	StockAdjustBody as TbStockAdjustBody,
@@ -25,7 +28,10 @@ import {
 	BulkStatusBody,
 	ProductStatusBody,
 } from "@/lib/zod/entities";
-import { CreateProductBody } from "@/lib/zod/forms/products";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+} from "@/lib/zod/forms/products";
 import { PaginationQuery } from "@/lib/zod/pagination";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
 import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
@@ -1615,6 +1621,36 @@ export const cases: Case[] = [
 		422,
 		fail("Valore (riga 1): valore non valido"),
 	),
+	// Unione con più rami non nulli: Zod dà solo l'errore del ramo che combacia
+	// col tipo (stringa troppo lunga), TypeBox «valore non valido».
+	body(
+		"prodotti: valore di caratteristica oltre 2000 caratteri (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{
+			name: "X",
+			price: "1.00",
+			storeId: "s",
+			characteristicValues: [
+				{ characteristicId: "c", value: "y".repeat(2001) },
+			],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
+	),
+	body(
+		"prodotti: valore oltre 2000 caratteri nella riga 2 (campo del PATCH)",
+		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
+		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
+		{
+			characteristicValues: [
+				{ characteristicId: "c", value: "x" },
+				{ characteristicId: "d", value: "y".repeat(2001) },
+			],
+		},
+		422,
+		fail("Valore (riga 2): valore non valido"),
+	),
 	body(
 		"prodotti: default IVA, trim, campi ignoti tolti (CreateProductBody)",
 		TbCreateProductBody,
@@ -1704,5 +1740,48 @@ export const cases: Case[] = [
 		{ delta: "-3" },
 		200,
 		{ ok: { delta: -3 } },
+	),
+	// t.Integer non ha i limiti dei safe integer di `z.number().int()`.
+	{
+		name: "stock: delta oltre i safe integer (StockAdjustBody)",
+		target: "json",
+		tb: TbStockAdjustBody,
+		zod: StockAdjustBody,
+		req: { raw: '{"delta":9007199254740993}', contentType: "application/json" },
+		status: 422,
+		body: fail("Variazione di scorta: deve essere al massimo 1000"),
+	},
+	{
+		name: "stock: delta infinito (StockAdjustBody)",
+		target: "json",
+		tb: TbStockAdjustBody,
+		zod: StockAdjustBody,
+		req: { raw: '{"delta":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Variazione di scorta: deve essere un numero intero"),
+	},
+	body(
+		"t.Integer: 1e21 come numero e come stringa",
+		t.Object({ n: t.Integer({ minimum: 0 }), s: t.Integer({ minimum: 0 }) }),
+		z.object({ n: zInteger({ minimum: 0 }), s: zInteger({ minimum: 0 }) }),
+		{ n: 1e21, s: "1e21" },
+		200,
+		{ ok: { n: 1e21, s: 1e21 } },
+	),
+	query(
+		"paginazione: pagina oltre i safe integer (PaginationQuery)",
+		TbPaginationQuery,
+		PaginationQuery,
+		"?page=9007199254740993",
+		200,
+		{ ok: { page: 9007199254740992, limit: 20 } },
+	),
+	query(
+		"paginazione: limite oltre i safe integer (PaginationQuery)",
+		TbPaginationQuery,
+		PaginationQuery,
+		"?limit=9007199254740993",
+		422,
+		fail("Valore non valido: deve essere al massimo 100"),
 	),
 ];

@@ -310,6 +310,8 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 		["GET", "/p/a%2Fb"],
 		["GET", "/p/a%20b?x=1"],
 		["GET", "/%70/x"],
+		["DELETE", "/avatar#x"],
+		["GET", "/p/a#b"],
 	])
 		it(`${method} ${path}`, async () => {
 			const init = { method };
