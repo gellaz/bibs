@@ -3,13 +3,18 @@ import { isToggleLocked, offeredTypes } from "./order-types";
 
 describe("offeredTypes", () => {
 	it("senza pagamenti abilitati il cliente non vede Paga e ritira", () => {
-		expect(offeredTypes(["reserve_pickup", "pay_pickup"], false)).toEqual([
-			"reserve_pickup",
-		]);
-		expect(offeredTypes(["reserve_pickup", "pay_pickup"], true)).toEqual([
-			"reserve_pickup",
-			"pay_pickup",
-		]);
+		expect(
+			offeredTypes(["reserve_pickup", "pay_pickup"], false, false),
+		).toEqual(["reserve_pickup"]);
+		expect(offeredTypes(["reserve_pickup", "pay_pickup"], true, false)).toEqual(
+			["reserve_pickup", "pay_pickup"],
+		);
+	});
+
+	it("con un cambio di partita IVA in attesa non offre nulla", () => {
+		expect(offeredTypes(["reserve_pickup", "pay_pickup"], true, true)).toEqual(
+			[],
+		);
 	});
 });
 

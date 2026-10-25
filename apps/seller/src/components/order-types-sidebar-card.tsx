@@ -27,6 +27,11 @@ export function OrderTypesSidebarCard() {
 			<p className="pb-1 text-xs text-muted-foreground">
 				{m.sidebar_order_types_title()}
 			</p>
+			{data.vatChangeBlocked && (
+				<p className="rounded-md border border-warning-foreground/15 bg-warning p-2 text-xs text-warning-foreground">
+					{m.sidebar_order_types_blocked()}
+				</p>
+			)}
 			{TYPES.map(({ type, label }) => {
 				const on = data.offeredOrderTypes.includes(type);
 				return (
