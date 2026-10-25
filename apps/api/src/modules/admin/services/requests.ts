@@ -38,6 +38,18 @@ const pendingChanges = () =>
 		},
 	});
 
+const DOCUMENT_TYPE_IT = {
+	identity_card: "Carta d'identità",
+	driving_license: "Patente",
+	passport: "Passaporto",
+} as const;
+
+/** «Patente 123»: il tipo e il numero del documento, per la colonna «Cosa cambia». */
+const docLabel = (type: string | null, number: string | null) =>
+	[type && (DOCUMENT_TYPE_IT as Record<string, string>)[type], number]
+		.filter(Boolean)
+		.join(" ") || null;
+
 async function listAllRequests() {
 	const [profiles, changes] = await Promise.all([
 		candidates(),
@@ -66,15 +78,22 @@ async function listAllRequests() {
 				businessName: sp.organization?.businessName ?? null,
 				currentValue: isVat
 					? (sp.organization?.vatNumber ?? null)
-					: sp.documentNumber,
+					: docLabel(sp.documentType, sp.documentNumber),
 				requestedValue: isVat
 					? (c.changeData as { vatNumber: string }).vatNumber
-					: (c.changeData as DocumentChangeData).documentNumber,
+					: docLabel(
+							(c.changeData as DocumentChangeData).documentType,
+							(c.changeData as DocumentChangeData).documentNumber,
+						),
 				submittedAt: c.createdAt,
 			};
 		}),
 	];
-	return rows.sort((a, b) => a.submittedAt.getTime() - b.submittedAt.getTime());
+	return rows.sort(
+		(a, b) =>
+			a.submittedAt.getTime() - b.submittedAt.getTime() ||
+			a.id.localeCompare(b.id),
+	);
 }
 
 export async function listRequests(params: {
@@ -171,7 +190,11 @@ export async function getChangeDetail(changeId: string) {
 				documentExpiry: req.documentExpiry,
 				issuedMunicipality: toMunicipality(requestedMunicipality),
 				// Senza foto nuova l'approvazione non cambia quella attuale.
-				imageUrl: req.documentImageUrl ?? sp.documentImageUrl,
+				// Rifiutata o annullata: la foto nuova è stata cancellata.
+				imageUrl:
+					change.status === "pending"
+						? (req.documentImageUrl ?? sp.documentImageUrl)
+						: null,
 			},
 		},
 	};

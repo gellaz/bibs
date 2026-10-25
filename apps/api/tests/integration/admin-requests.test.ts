@@ -148,6 +148,7 @@ describe("admin requests", () => {
 		expect(vatRow.currentValue).toBe("11111111111");
 		expect(vatRow.requestedValue).toBe("22222222222");
 		expect(vatRow.seller.name).toBe("Attivo");
+		expect(res.data[0].requestedValue).toBe("Passaporto YA1234567");
 	});
 
 	it("filters by type and paginates after filtering", async () => {
@@ -239,6 +240,27 @@ describe("admin requests", () => {
 			.set({ status: "cancelled" })
 			.where(eq(sellerProfileChange.id, vat.id));
 		expect((await getChangeDetail(vat.id)).status).toBe("cancelled");
+	});
+
+	it("document detail of a decided change hides the deleted photo", async () => {
+		const { doc } = await seedAll();
+		await getTestDb()
+			.update(sellerProfileChange)
+			.set({
+				status: "rejected",
+				changeData: {
+					documentType: "passport",
+					documentNumber: "YA1234567",
+					documentExpiry: "2032-01-01",
+					documentIssuedMunicipalityId: (
+						await createTestMunicipality(getTestDb())
+					).id,
+					documentImageUrl: "https://cdn.test/new.jpg",
+				},
+			})
+			.where(eq(sellerProfileChange.id, doc.id));
+		const d = await getChangeDetail(doc.id);
+		expect(d.document?.requested.imageUrl).toBeNull();
 	});
 
 	it("detail 404 when missing", async () => {

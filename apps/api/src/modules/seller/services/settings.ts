@@ -339,8 +339,8 @@ export async function requestVatChange(params: VatChangeParams) {
 
 // Document photos are personal data: delete the ones nobody references any
 // more. Best-effort, after the commit: a failed delete leaves an orphan file,
-// never a half-applied decision. Only pending requests are ever shown, so a
-// decided request's changeData pointing at a deleted key is never read.
+// never a half-applied decision. A decided request's changeData may point at a
+// deleted key: the admin detail hides the photo once the request isn't pending.
 export async function deleteDocumentImage(
 	key: string,
 	sellerProfileId: string,
@@ -439,8 +439,9 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 		? { documentImageKey: key, documentImageUrl: publicUrl(key) }
 		: {};
 
+	let change: typeof sellerProfileChange.$inferSelect;
 	try {
-		const [change] = await db
+		[change] = await db
 			.insert(sellerProfileChange)
 			.values({
 				sellerProfileId,
@@ -448,16 +449,16 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 				changeData: { ...data, documentNumber, ...imageData },
 			})
 			.returning();
-		await notifyAdminsNewRequest({
-			kind: "document",
-			sellerProfileId,
-			changeId: change.id,
-		});
-		return change;
 	} catch (err) {
 		// Nessuna richiesta salvata (es. una concorrente ha preso il posto):
 		// il file caricato resterebbe orfano (best-effort).
 		if (key) await s3.delete(key).catch(() => {});
 		throw err;
 	}
+	await notifyAdminsNewRequest({
+		kind: "document",
+		sellerProfileId,
+		changeId: change.id,
+	});
+	return change;
 }

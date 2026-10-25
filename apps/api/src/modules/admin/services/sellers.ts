@@ -17,7 +17,7 @@ import { user } from "@/db/schemas/auth";
 import { organization, type VatStatus } from "@/db/schemas/organization";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
-import { ServiceError } from "@/lib/errors";
+import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
 import {
@@ -596,13 +596,24 @@ export async function approveChange(changeId: string, adminUserId: string) {
 					"Questa partita IVA è già registrata da un altro venditore",
 				);
 			}
-			await tx
-				.update(organization)
-				.set({
-					vatNumber,
-					vatStatus: "verified",
-				})
-				.where(eq(organization.sellerProfileId, change.sellerProfileId));
+			try {
+				await tx
+					.update(organization)
+					.set({
+						vatNumber,
+						vatStatus: "verified",
+					})
+					.where(eq(organization.sellerProfileId, change.sellerProfileId));
+			} catch (err) {
+				// Registrazione concorrente della stessa partita IVA dopo il controllo.
+				if (isUniqueViolation(err)) {
+					throw new ServiceError(
+						409,
+						"Questa partita IVA è già registrata da un altro venditore",
+					);
+				}
+				throw err;
+			}
 
 			// Unblock new orders
 			await tx
