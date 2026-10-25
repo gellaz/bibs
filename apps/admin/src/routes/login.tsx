@@ -6,6 +6,7 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LoginForm } from "@/features/auth/components/login-form";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const [error, setError] = useState("");
 
 	const { data: session } = authClient.useSession();
@@ -52,6 +54,8 @@ function LoginPage() {
 				return;
 			}
 
+			// Stessa scheda, account diverso: le risposte in cache sono del precedente.
+			queryClient.clear();
 			void navigate({ to: "/" });
 		} catch {
 			setError(m.auth_login_error());
