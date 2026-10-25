@@ -13,6 +13,7 @@ import {
 	DiscountListQuery as TbDiscountListQuery,
 	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
+import { AcceptInviteBody as TbAcceptInviteBody } from "@/lib/schemas/forms/onboarding";
 import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
 import {
 	CharacteristicValuesField as TbCharacteristicValuesField,
@@ -28,11 +29,14 @@ import {
 	BulkStatusBody,
 	ProductStatusBody,
 } from "@/lib/zod/entities";
+import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
 import {
 	CharacteristicValuesField,
 	CreateProductBody,
 } from "@/lib/zod/forms/products";
+import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
 import { PaginationQuery } from "@/lib/zod/pagination";
+import { RegisterBody, SignInBody } from "@/lib/zod/registration";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
 import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
@@ -147,12 +151,54 @@ const TbRegister = t.Object({
 		description: "Password (minimo 8, massimo 128 caratteri)",
 	}),
 });
-const Register = z.object({
-	email: zFormat("email").meta({ description: "Indirizzo email" }),
-	password: z.string().min(8).max(128).meta({
-		description: "Password (minimo 8, massimo 128 caratteri)",
-	}),
+const Register = RegisterBody;
+
+// POST /register/sign-in
+const TbSignIn = t.Object({
+	email: t.String({ format: "email", description: "Indirizzo email" }),
+	password: t.String({ description: "Password" }),
 });
+
+// GET /locations/geocode, /locations/municipalities (query scritte nella route)
+const TbGeocodeQuery = t.Object({
+	q: t.String({
+		minLength: 3,
+		maxLength: 200,
+		description: "Testo dell'indirizzo da cercare",
+	}),
+	limit: t.Optional(
+		t.Integer({
+			minimum: 1,
+			maximum: 10,
+			default: 5,
+			title: "Numero di suggerimenti",
+			description: "Numero massimo di suggerimenti (default 5)",
+		}),
+	),
+	lat: t.Optional(
+		t.Number({
+			minimum: -90,
+			maximum: 90,
+			description:
+				"Latitudine da cui cercare: i risultati vicini vengono primi",
+		}),
+	),
+	lng: t.Optional(
+		t.Number({
+			minimum: -180,
+			maximum: 180,
+			description: "Longitudine da cui cercare",
+		}),
+	),
+});
+const TbMunicipalitiesQuery = t.Composite([
+	TbPaginationQuery,
+	t.Object({
+		provinceId: t.Optional(
+			t.String({ description: "Filtra per ID provincia" }),
+		),
+	}),
+]);
 
 const DiscountCreateBody = z.object({
 	title: z
@@ -345,6 +391,10 @@ const nameMin25 = [
 const quantity199 = [
 	t.Object({ quantity: t.Integer({ minimum: 1, maximum: 99 }) }),
 	z.object({ quantity: zInteger({ minimum: 1, maximum: 99 }) }),
+] as const;
+const quantity1e20 = [
+	t.Object({ quantity: t.Integer() }),
+	z.object({ quantity: zInteger() }),
 ] as const;
 const storeIds = [
 	t.Object({
@@ -745,6 +795,175 @@ export const cases: Case[] = [
 		status: 422,
 		body: fail("Email: campo obbligatorio"),
 	},
+	body(
+		"reg: email trimmata, campi ignoti tolti",
+		TbRegister,
+		Register,
+		{
+			email: " a@b.it ",
+			password: " 12345678 ",
+			role: "admin",
+			nested: { x: 1 },
+		},
+		200,
+		{ ok: { email: "a@b.it", password: " 12345678 " } },
+	),
+	// U4: sign-in e accept-invite
+	body(
+		"sign-in: password mancante",
+		TbSignIn,
+		SignInBody,
+		{ email: "mario@example.it" },
+		422,
+		fail("Password: campo obbligatorio"),
+	),
+	body(
+		"sign-in: vuoto",
+		TbSignIn,
+		SignInBody,
+		{},
+		422,
+		fail("Email: campo obbligatorio"),
+	),
+	body(
+		"accept-invite: vuoto → error dello schema",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{},
+		422,
+		fail("Token mancante"),
+	),
+	body(
+		"accept-invite: password corta",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{ token: "x", password: "short", confirmPassword: "short" },
+		422,
+		fail("La password deve avere almeno 8 caratteri"),
+	),
+	body(
+		"accept-invite: conferma corta",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{ token: "x", password: "password123", confirmPassword: "short" },
+		422,
+		fail("La conferma password deve avere almeno 8 caratteri"),
+	),
+	body(
+		"accept-invite: valido, campi ignoti tolti",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{
+			token: " t ",
+			password: "password123",
+			confirmPassword: "password456",
+			extra: { a: 1 },
+		},
+		200,
+		{
+			ok: {
+				token: "t",
+				password: "password123",
+				confirmPassword: "password456",
+			},
+		},
+	),
+	// U2: query di /locations
+	query(
+		"geocode: limit frazionario (title dello schema)",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&limit=2.5",
+		422,
+		fail("Numero di suggerimenti: deve essere un numero intero"),
+	),
+	query(
+		"geocode: q corta",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=ab",
+		422,
+		fail("q: almeno 3 caratteri"),
+	),
+	query(
+		"geocode: q mancante",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"",
+		422,
+		fail("q: campo obbligatorio"),
+	),
+	query(
+		"geocode: lat non numerica",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&lat=abc",
+		422,
+		fail("Latitudine: valore non valido"),
+	),
+	query(
+		"geocode: lat fuori intervallo (decodifica, etichetta persa)",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&lat=100",
+		422,
+		fail("Valore non valido: deve essere al massimo 90"),
+	),
+	query(
+		"geocode: limit oltre il massimo",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&limit=11",
+		422,
+		fail("Valore non valido: deve essere al massimo 10"),
+	),
+	query(
+		"geocode: default, coercizione, campi ignoti tolti",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=%20Via%20Roma&lat=45.4&lng=9.1&x=1",
+		200,
+		{ ok: { q: " Via Roma", lat: 45.4, lng: 9.1, limit: 5 } },
+	),
+	query(
+		"municipalities: paginazione composta con provinceId",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?page=2&limit=3&page=1&provinceId=p&x=1",
+		200,
+		{ ok: { page: 1, limit: 3, provinceId: "p" } },
+	),
+	query(
+		"municipalities: page=0",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?page=0",
+		422,
+		fail("Valore non valido: deve essere almeno 1"),
+	),
+	query(
+		"municipalities: page oltre i safe-int (t.Integer non li limita)",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?page=9007199254740993",
+		200,
+		{ ok: { page: 9007199254740992, limit: 20 } },
+	),
+	query(
+		"municipalities: limit oltre i safe-int → massimo 100",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?limit=9007199254740993",
+		422,
+		fail("Valore non valido: deve essere al massimo 100"),
+	),
+	body(
+		"t.Integer: numero oltre i safe-int nel JSON",
+		...quantity1e20,
+		{ quantity: 1e20 },
+		200,
+		{ ok: { quantity: 1e20 } },
+	),
 	body(
 		"disc-empty-title (trim)",
 		TbDiscountCreateBody,

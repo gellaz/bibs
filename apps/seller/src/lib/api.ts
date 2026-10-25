@@ -1,4 +1,10 @@
-import type { App, MeApp, SellerApp } from "@bibs/api";
+import type {
+	App,
+	LocationsApp,
+	MeApp,
+	RegistrationApp,
+	SellerApp,
+} from "@bibs/api";
 import { createApiClient, type WithErrors } from "@bibs/ui/lib/api-client";
 import { hc } from "hono/client";
 
@@ -10,6 +16,14 @@ export const api = createApiClient<App>(API_URL);
 // arrivano come stringhe ISO e i testi restano testi (niente revival di Eden).
 const init = { credentials: "include" } satisfies RequestInit;
 export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });
+export const locationsApi = hc<WithErrors<LocationsApp>>(
+	`${API_URL}/locations`,
+	{ init },
+);
+export const registerApi = hc<WithErrors<RegistrationApp>>(
+	`${API_URL}/register`,
+	{ init },
+);
 // /seller in parte: prodotti, brand, immagini, caratteristiche, stock (U5).
 export const sellerApi = hc<WithErrors<SellerApp>>(`${API_URL}/seller`, {
 	init,

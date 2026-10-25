@@ -137,24 +137,27 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 	options: O = {} as O,
 ) {
 	const { default: defaultValue, ...o } = options;
-	// Niente `.int()`: in Zod 4 vuol dire safe integer, t.Integer accetta 1e21.
 	const inner = numberChecks(z.number(), o);
+	// TypeBox controlla `Number.isInteger`, senza i limiti safe-int di `.int()`.
+	const intRule = (n: number) =>
+		Number.isInteger(n) ? parseRule(inner, n) : ({ kind: "integer" } as const);
 	const schema = z
 		.custom<number | string>(() => true)
 		.transform((value, ctx) => {
 			if (typeof value === "string" && isIntegerString(value)) {
 				if (encoding) return value as unknown as number;
 				const n = +value;
-				const rule = parseRule(inner, n);
+				const rule = intRule(n);
 				return rule ? fail(ctx, n, rule, true) : n;
 			}
-			// TypeBox rivalida sul ramo Integer: tutto ciò che non è un intero
-			// (anche Infinity) è «deve essere un numero intero».
-			const rule = Number.isInteger(value)
-				? parseRule(inner, value)
-				: value === undefined
-					? ({ kind: "required" } as const)
-					: ({ kind: "integer" } as const);
+			// TypeBox rivalida sul ramo Integer: tutto ciò che non è un numero è
+			// «deve essere un numero intero».
+			const rule =
+				typeof value === "number"
+					? intRule(value)
+					: value === undefined
+						? ({ kind: "required" } as const)
+						: ({ kind: "integer" } as const);
 			return rule ? fail(ctx, value, rule) : (value as number);
 		})
 		.meta(metaOf(o));

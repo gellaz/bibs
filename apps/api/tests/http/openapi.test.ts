@@ -20,7 +20,9 @@ import {
 	withErrors,
 } from "@/lib/zod/responses";
 import { zDate, zInteger } from "@/lib/zod/t";
+import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
+import { registrationApp } from "@/modules/registration";
 import { type Case, cases } from "./parity-cases";
 
 // D11 del piano Hono: il generatore nel repo produce per le route Hono lo
@@ -151,16 +153,37 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 	}
 });
 
-describe("OpenAPI — modulo me/ contro la baseline", () => {
-	it("POST e DELETE /me/avatar identici a baseline/openapi.json", async () => {
-		const baseline = await Bun.file(
+describe("OpenAPI — moduli migrati contro la baseline", () => {
+	const baseline = () =>
+		Bun.file(
 			join(
 				import.meta.dir,
 				"../../../../docs/superpowers/plans/2026-10-25-hono-migration/baseline/openapi.json",
 			),
 		).json();
+
+	it("POST e DELETE /me/avatar identici a baseline/openapi.json", async () => {
+		const { paths: expected } = await baseline();
 		const paths = honoPaths(meApp, "/me", ["auth"]);
 		expect(Object.keys(paths)).toEqual(["/me/avatar"]);
-		expect(paths["/me/avatar"]).toEqual(baseline.paths["/me/avatar"]);
+		expect(paths["/me/avatar"]).toEqual(expected["/me/avatar"]);
 	});
+
+	const modules = [
+		["/locations", locationsApp, ["auth", "publicRoute"]],
+		["/register", registrationApp, ["publicRoute"]],
+	] as const;
+	for (const [prefix, app, guards] of modules) {
+		it(`${prefix}: ogni path identico a baseline/openapi.json`, async () => {
+			const { paths: expected } = await baseline();
+			const paths = honoPaths(app, prefix, guards);
+			expect(Object.keys(paths).sort()).toEqual(
+				Object.keys(expected)
+					.filter((p) => p.startsWith(`${prefix}/`))
+					.sort(),
+			);
+			for (const path of Object.keys(paths))
+				expect(paths[path]).toEqual(expected[path]);
+		});
+	}
 });
