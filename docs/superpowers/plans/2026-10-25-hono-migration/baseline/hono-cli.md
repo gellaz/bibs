@@ -77,6 +77,17 @@ Reading the results:
   The 409 holds for 7 days from that user's creation (2026-10-25): after that the API deletes the
   stale account and registers it again (200, the step fails). Before replaying later, check the user
   or drop that line; never point it at a seed user.
+  U5 added `hono-batch-seller-products.jsonl`, U7 `hono-batch-seller-orders.jsonl` (188 steps: orders,
+  discounts, store checkout, billing; logins of `customer1@test.com`, `seller96@test.com`,
+  `seller@dev.bibs`, `employee1@test.com`; only reads and answers that come before any write). The dev
+  DB is shared: the browser checks of other units create and cancel orders on Bottega Dev, so the U7
+  order lists filter on statuses those checks never produce (`ready_for_pickup`, `completed`,
+  `expired`, `shipped`) and the counts use stores or types without such orders. Date-bound lines: the
+  promotion «Settimana della pasta» ends on 2026-10-29 08:46 UTC, after which `/seller/discounts`
+  (assignable vs concluded) answers differently; the reservations of the seed expire on 2026-11-23.
+  To capture a batch on the base commit without a checkout, export the base tree with
+  `git archive <sha> | tar -x -C <dir>`, symlink `node_modules` (root, `apps/api`, `packages/*`) from a
+  worktree and run the CLI from `<dir>/apps/api`.
 - Trap the snapshot already shows: unauthenticated GETs with a missing required query answer **422
   before 401** (`/seller/orders`, `/seller/orders/counts`, `/seller/dashboard`,
   `/seller/products/status-counts`, ...): Elysia validates the query before the `auth` macro resolves.

@@ -170,7 +170,8 @@ verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
-immagini, caratteristiche, stock).
+immagini, caratteristiche, stock; U7: ordini, promozioni, checkout negozio,
+billing).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
