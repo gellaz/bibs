@@ -2161,6 +2161,21 @@ export const cases: Case[] = [
 		status: 422,
 		body: fail("openingHours: deve essere al massimo 6"),
 	},
+	// Zod chiude gli errori del ramo in un invalid_union: la regola resta quella
+	// dell'intero (`collapse()` in issues.ts).
+	body(
+		"negozio: giorno come stringa e orario sbagliato (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			...STORE,
+			openingHours: [
+				{ dayOfWeek: "1", slots: [{ open: "9", close: "13:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: deve essere un numero intero"),
+	),
 	body(
 		"negozio: valido, con sito null, orari null e campi ignoti (CreateStoreBody)",
 		TbCreateStoreBody,

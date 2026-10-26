@@ -213,7 +213,7 @@ function collapse(issues: Issue[], checked: Checked) {
 	}
 	return out.map((item): Issue => {
 		if (!("at" in item)) return item;
-		const { at, issues: inner } = item;
+		const { at } = item;
 		// ObjectString/ArrayString dei body con file: due rami non nulli.
 		const coerced = at.length === 1 && checked.anyOfKeys?.has(String(at[0]));
 		const node = unwrap(nodeAt(schema, at) as z.ZodType).node;
@@ -234,6 +234,19 @@ function collapse(issues: Issue[], checked: Checked) {
 				: nonNull.length === 1
 					? nonNull[0]
 					: undefined;
+		// Quando Zod chiude gli errori del ramo in un invalid_union (es. un testo
+		// al posto di un intero), si leggono quelli del ramo non nullo.
+		const union = item.issues[0];
+		const inner =
+			def.type === "union" &&
+			branch &&
+			item.issues.length === 1 &&
+			union.code === "invalid_union"
+				? (union.errors[def.options.indexOf(branch)] ?? []).map((i) => ({
+						...i,
+						path: [...at, ...i.path],
+					}))
+				: item.issues;
 		if (
 			!coerced &&
 			inner.length === 1 &&
