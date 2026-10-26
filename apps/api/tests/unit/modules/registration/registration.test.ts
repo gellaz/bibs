@@ -1,0 +1,404 @@
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+
+// ── Mock service layer ────────────────────────────────────────────────────────
+
+const now = new Date("2025-01-01T00:00:00.000Z");
+
+const mockCustomerUser = {
+	id: "user-cust-1",
+	name: "Mario Rossi",
+	email: "mario@example.it",
+	role: "customer",
+	emailVerified: false,
+	image: null,
+	createdAt: now,
+	updatedAt: now,
+	banned: null,
+	banReason: null,
+	banExpires: null,
+};
+
+const mockSellerUser = {
+	id: "user-sell-1",
+	name: "Luca Venditore",
+	email: "luca@example.it",
+	role: "seller",
+	emailVerified: false,
+	image: null,
+	createdAt: now,
+	updatedAt: now,
+	banned: null,
+	banReason: null,
+	banExpires: null,
+};
+
+const mockRegisterCustomer = mock(
+	async (_body: { email: string; password: string }) => ({
+		user: mockCustomerUser,
+		profile: {
+			id: "prof-1",
+			userId: mockCustomerUser.id,
+			points: 0,
+			createdAt: now,
+		},
+		token: "mock-token-customer",
+	}),
+);
+
+const mockRegisterSeller = mock(
+	async (_body: { email: string; password: string }) => ({
+		user: mockSellerUser,
+		// Full raw seller-profile row, matching the RegisterSellerResult schema.
+		profile: {
+			id: "prof-2",
+			userId: mockSellerUser.id,
+			onboardingStatus: "pending_email",
+			firstName: null,
+			lastName: null,
+			citizenship: null,
+			birthCountry: null,
+			birthDate: null,
+			residenceCountry: null,
+			residenceMunicipalityId: null,
+			residenceAddress: null,
+			residenceZipCode: null,
+			documentType: null,
+			documentNumber: null,
+			documentExpiry: null,
+			documentIssuedMunicipalityId: null,
+			documentImageUrl: null,
+			vatChangeBlocked: false,
+			rejectionReason: null,
+			createdAt: now,
+		},
+		token: "mock-token-seller",
+	}),
+);
+
+const mockSignIn = mock(async (_body: { email: string; password: string }) => ({
+	user: mockCustomerUser,
+	profiles: {
+		customer: {
+			id: "prof-1",
+			userId: mockCustomerUser.id,
+			points: 0,
+			createdAt: now,
+		},
+		seller: null,
+	},
+	organization: null,
+	token: "mock-token-signin",
+}));
+
+mock.module("@/modules/registration/services/registration", () => ({
+	registerCustomer: mockRegisterCustomer,
+	registerSeller: mockRegisterSeller,
+	signIn: mockSignIn,
+}));
+
+// ── Test app ──────────────────────────────────────────────────────────────────
+
+import { __clearRateLimitStores } from "@/http/middleware/rate-limit";
+import {
+	EmailAlreadyRegisteredError,
+	PendingVerificationError,
+	ServiceError,
+} from "@/lib/errors";
+import { registrationApp } from "@/modules/registration";
+import { testRequest } from "../../../helpers/hono-app";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+// La sub-app Hono è montata su /register in src/index.ts: il mount toglie il
+// prefisso, qui lo si toglie a mano.
+function post(path: string, body: unknown) {
+	return testRequest(registrationApp, path.replace(/^\/register/, ""), {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	});
+}
+
+async function json(res: Response) {
+	return res.json() as Promise<Record<string, unknown>>;
+}
+
+// Each test starts with fresh rate-limit buckets so the per-route limiter never
+// makes assertions depend on how many prior cases hit the same endpoint/email.
+beforeEach(() => {
+	__clearRateLimitStores();
+});
+
+// ── Tests: POST /register/customer ───────────────────────────────────────────
+
+describe("POST /register/customer — validation", () => {
+	it("rejects invalid email format → 422", async () => {
+		const res = await post("/register/customer", {
+			email: "not-an-email",
+			password: "password123",
+		});
+		expect(res.status).toBe(422);
+	});
+
+	it("rejects password shorter than 8 chars → 422", async () => {
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "short",
+		});
+		expect(res.status).toBe(422);
+	});
+
+	it("rejects password longer than 128 chars → 422", async () => {
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "x".repeat(129),
+		});
+		expect(res.status).toBe(422);
+	});
+
+	it("rejects missing body fields → 422", async () => {
+		const res = await post("/register/customer", {});
+		expect(res.status).toBe(422);
+	});
+});
+
+describe("POST /register/customer — success", () => {
+	it("returns 200 with success:true on valid input", async () => {
+		mockRegisterCustomer.mockClear();
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(200);
+		const body = await json(res);
+		expect(body.success).toBe(true);
+		expect((body.data as Record<string, unknown>).user).toBeDefined();
+	});
+
+	it("calls registerCustomer service once with the request body", async () => {
+		mockRegisterCustomer.mockClear();
+		await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(mockRegisterCustomer).toHaveBeenCalledTimes(1);
+	});
+
+	it("response contains user email and token", async () => {
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		const body = await json(res);
+		const data = body.data as Record<string, unknown>;
+		expect((data.user as Record<string, unknown>).email).toBe(
+			"mario@example.it",
+		);
+		expect(data.token).toBe("mock-token-customer");
+	});
+});
+
+describe("POST /register/customer — service errors", () => {
+	it("returns 409 when service throws ServiceError(409)", async () => {
+		mockRegisterCustomer.mockImplementationOnce(async () => {
+			throw new ServiceError(409, "Email già registrata");
+		});
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.success).toBe(false);
+		expect(body.error).toBe("CONFLICT");
+	});
+
+	it("returns 500 when service throws an unexpected error", async () => {
+		mockRegisterCustomer.mockImplementationOnce(async () => {
+			throw new Error("Database connection lost");
+		});
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(500);
+		const body = await json(res);
+		expect(body.error).toBe("INTERNAL_ERROR");
+	});
+});
+
+// ── Tests: POST /register/seller ─────────────────────────────────────────────
+
+describe("POST /register/seller — validation", () => {
+	it("rejects invalid email format → 422", async () => {
+		const res = await post("/register/seller", {
+			email: "not-email",
+			password: "password123",
+		});
+		expect(res.status).toBe(422);
+	});
+
+	it("rejects password shorter than 8 chars → 422", async () => {
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "123",
+		});
+		expect(res.status).toBe(422);
+	});
+});
+
+describe("POST /register/seller — success", () => {
+	it("returns 200 with success:true on valid input", async () => {
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(200);
+		const body = await json(res);
+		expect(body.success).toBe(true);
+		const data = body.data as Record<string, unknown>;
+		expect((data.user as Record<string, unknown>).role).toBe("seller");
+	});
+
+	it("returns 409 when service throws ServiceError(409)", async () => {
+		mockRegisterSeller.mockImplementationOnce(async () => {
+			throw new ServiceError(409, "Email già registrata");
+		});
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+	});
+});
+
+// ── Tests: POST /register/sign-in ────────────────────────────────────────────
+
+describe("POST /register/sign-in — validation", () => {
+	it("rejects invalid email format → 422", async () => {
+		const res = await post("/register/sign-in", {
+			email: "not-an-email",
+			password: "password123",
+		});
+		expect(res.status).toBe(422);
+	});
+
+	it("rejects missing password → 422", async () => {
+		const res = await post("/register/sign-in", { email: "mario@example.it" });
+		expect(res.status).toBe(422);
+	});
+});
+
+describe("POST /register/sign-in — success", () => {
+	it("returns 200 with user and profiles on valid credentials", async () => {
+		const res = await post("/register/sign-in", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(200);
+		const body = await json(res);
+		expect(body.success).toBe(true);
+		const data = body.data as Record<string, unknown>;
+		expect(data.user).toBeDefined();
+		expect(data.profiles).toBeDefined();
+	});
+
+	it("returns 401 when service throws ServiceError(401)", async () => {
+		mockSignIn.mockImplementationOnce(async () => {
+			throw new ServiceError(401, "Invalid credentials");
+		});
+		const res = await post("/register/sign-in", {
+			email: "mario@example.it",
+			password: "wrong",
+		});
+		expect(res.status).toBe(401);
+		const body = await json(res);
+		expect(body.error).toBe("UNAUTHORIZED");
+	});
+});
+
+// ── Tests: pending email scenarios (subclassed 409 errors) ───────────────────
+
+describe("POST /register/seller — pending email scenarios", () => {
+	it("returns 409 EMAIL_ALREADY_REGISTERED when service throws EmailAlreadyRegisteredError", async () => {
+		mockRegisterSeller.mockImplementationOnce(async () => {
+			throw new EmailAlreadyRegisteredError();
+		});
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.success).toBe(false);
+		expect(body.error).toBe("EMAIL_ALREADY_REGISTERED");
+		expect(body.message).toBe("Email già registrata");
+	});
+
+	it("returns 409 EMAIL_PENDING_VERIFICATION with resentAt when service throws PendingVerificationError", async () => {
+		const fakeResentAt = "2026-05-25T13:00:00.000Z";
+		mockRegisterSeller.mockImplementationOnce(async () => {
+			throw new PendingVerificationError(fakeResentAt);
+		});
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.success).toBe(false);
+		expect(body.error).toBe("EMAIL_PENDING_VERIFICATION");
+		expect(body.resentAt).toBe(fakeResentAt);
+	});
+
+	it("plain ServiceError(409) still gets default code 'CONFLICT' (back-compat)", async () => {
+		mockRegisterSeller.mockImplementationOnce(async () => {
+			throw new ServiceError(409, "Email già registrata");
+		});
+		const res = await post("/register/seller", {
+			email: "luca@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.error).toBe("CONFLICT");
+		expect(body.resentAt).toBeUndefined();
+	});
+});
+
+describe("POST /register/customer — pending email scenarios", () => {
+	it("returns 409 EMAIL_PENDING_VERIFICATION with resentAt for customer flow", async () => {
+		const fakeResentAt = "2026-05-25T13:30:00.000Z";
+		mockRegisterCustomer.mockImplementationOnce(async () => {
+			throw new PendingVerificationError(fakeResentAt);
+		});
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.error).toBe("EMAIL_PENDING_VERIFICATION");
+		expect(body.resentAt).toBe(fakeResentAt);
+	});
+
+	it("returns 409 EMAIL_ALREADY_REGISTERED for customer flow", async () => {
+		mockRegisterCustomer.mockImplementationOnce(async () => {
+			throw new EmailAlreadyRegisteredError();
+		});
+		const res = await post("/register/customer", {
+			email: "mario@example.it",
+			password: "password123",
+		});
+		expect(res.status).toBe(409);
+		const body = await json(res);
+		expect(body.error).toBe("EMAIL_ALREADY_REGISTERED");
+	});
+});
+
+// ── acceptInvite storeEmployeeStores propagation ─────────────────────────────
+// Covered in tests/integration/modules/registration/registration-accept-invite.test.ts: this file
+// stubs the registration services at the route level, so acceptInvite — which
+// calls better-auth's auth.api.signUpEmail internally — needs a migrated
+// database instead. See tests/integration/infra/auth-email-password.test.ts for the
+// better-auth/schema contract itself.

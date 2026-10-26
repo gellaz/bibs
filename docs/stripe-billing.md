@@ -295,13 +295,13 @@ via testcontainers:
 ```bash
 cd apps/api
 bun run test:image                                                 # once: builds the PostGIS test image
-bun test tests/integration/stripe-webhook-scaffold.test.ts        # signature + idempotency wiring
-bun test tests/integration/seller-stores-checkout.test.ts
-bun test tests/integration/stripe-webhook-checkout-completed.test.ts
-bun test tests/integration/stripe-webhook-subscription-lifecycle.test.ts
-bun test tests/integration/stripe-webhook-invoice.test.ts
-bun test tests/integration/stripe-webhook-billing-emails.test.ts   # dunning emails
-bun test tests/integration/seller-stores-reactivation.test.ts      # canceled → active
+bun test tests/integration/modules/webhooks/stripe-webhook-scaffold.test.ts        # signature + idempotency wiring
+bun test tests/integration/modules/seller/seller-stores-checkout.test.ts
+bun test tests/integration/modules/webhooks/stripe-webhook-checkout-completed.test.ts
+bun test tests/integration/modules/webhooks/stripe-webhook-subscription-lifecycle.test.ts
+bun test tests/integration/modules/webhooks/stripe-webhook-invoice.test.ts
+bun test tests/integration/modules/webhooks/stripe-webhook-billing-emails.test.ts   # dunning emails
+bun test tests/integration/modules/seller/seller-stores-reactivation.test.ts      # canceled → active
 ```
 
 The mock does not exercise real signature verification — that's what `stripe listen`

@@ -20,7 +20,7 @@ export function testRequest(
  * La sub-app con le variabili già risolte a monte (`user`; dalle unità seller
  * anche il contesto venditore): `requireAuth` e i middleware di ruolo non
  * rileggono la sessione. È il resolve finto degli harness di prima, per i test
- * senza DB (es. `tests/modules/seller-*-owner-only.test.ts`).
+ * senza DB (es. `tests/unit/modules/seller/seller-*-owner-only.test.ts`).
  */
 export function withVars(
 	app: Hono<any, any, any>,

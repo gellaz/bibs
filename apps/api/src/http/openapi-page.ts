@@ -1,6 +1,6 @@
 // La pagina di /openapi: lo stesso HTML (Scalar dal CDN, stessi colori e
 // stessa configurazione) che serviva l'API prima della migrazione (atteso in
-// `tests/http/golden/app-*.json`), con `_integration` di Scalar a "hono".
+// `tests/unit/http/golden/app-*.json`), con `_integration` di Scalar a "hono".
 // Provenienza e licenza (MIT) in `THIRD_PARTY_NOTICES.md`.
 export const OPENAPI_PAGE = `<!doctype html>
 <html>

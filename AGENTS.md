@@ -387,7 +387,7 @@ When adding a route under `apps/api/src/`, follow the existing pattern (a compac
    `/openapi`.
 8. **Strip test:** every module has one proving that an unknown (nested) field in the body or query never
    reaches the service and that an extra field returned by the service never leaves the response (e.g.
-   `tests/modules/locations-registration-strip.test.ts`). Requests in tests go through `app.request()` or
+   `tests/unit/http/locations-registration-strip.test.ts`). Requests in tests go through `app.request()` or
    `testRequest()` / `withVars()` / `signIn()` of `tests/helpers/hono-app.ts`.
 9. **Clients:** the frontends call the route through the `hc` client of that sub-tree
    (`sellerApi.brands.$get({ query })`, `src/lib/api.ts`) and read it with `unwrapJson()`. JSON has no

@@ -4,7 +4,7 @@ import { zInteger, zString } from "./t";
 
 // Query di /locations (fino a U2 scritte nella route): qui, senza
 // effetti all'import, perché le usano anche i casi di parità
-// (`tests/http/parity-cases.ts`).
+// (`tests/unit/http/parity-cases.ts`).
 
 export const ProvincesQuery = z.object({
 	regionId: z

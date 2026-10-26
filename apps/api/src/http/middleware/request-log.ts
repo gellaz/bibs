@@ -6,7 +6,7 @@ import { logRequestToFile } from "@/infra/logger";
 // {ip}"`, `{ip}` vuoto), stessi testi e stessi colori: su console.info,
 // console.warn o console.error secondo lo status, colorata solo su un
 // terminale. Più la riga JSON in `logs/app.log`. Attesi in
-// `tests/http/golden/app-*.json` e `tests/lib/logger.test.ts`. Formato e colori
+// `tests/unit/http/golden/app-*.json` e `tests/unit/infra/logger.test.ts`. Formato e colori
 // del plugin di prima (MIT): `THIRD_PARTY_NOTICES.md`.
 
 type Level = "INFO" | "WARNING" | "ERROR";
