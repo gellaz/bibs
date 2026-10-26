@@ -37,7 +37,7 @@ export function issueMeta(root: z.ZodType, path: PropertyKey[]) {
 export function zodValidationMessage(issue: Issue, root: z.ZodType): string {
 	const meta = issueMeta(root, issue.path);
 	if (typeof meta.error === "string") return meta.error;
-	const rule = ruleText(issueRule(issue, nodeAt(root, issue.path)));
+	const rule = ruleText(issueRule(issue));
 	// Errore della decodifica di Elysia (coercizione, t.Integer, t.Date): il
 	// nome del campo è perso, resta la regola.
 	if (ruleParams(issue)?.decode)

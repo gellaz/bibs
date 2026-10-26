@@ -1,5 +1,6 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 /**
@@ -10,11 +11,11 @@ export function useStores({ enabled = true }: { enabled?: boolean } = {}) {
 	return useQuery({
 		queryKey: ["stores"],
 		queryFn: async () => {
-			const response = await api().seller.stores.get({
+			const response = await sellerApi.stores.$get({
 				query: { page: 1, limit: 100 },
 			});
 
-			return unwrap(response, m.store_list_load_error()).data;
+			return (await unwrapJson(response, m.store_list_load_error())).data;
 		},
 		enabled,
 	});

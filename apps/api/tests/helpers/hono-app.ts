@@ -16,19 +16,24 @@ export function testRequest(
 	return Promise.resolve(app.request(`http://localhost${path}`, init));
 }
 
+type Vars = Record<string, unknown>;
+
 /**
  * La sub-app con le variabili già risolte a monte (`user`; dalle unità seller
  * anche il contesto venditore): `requireAuth` e i middleware di ruolo non
  * rileggono la sessione. È il resolve finto degli harness Elysia, per i test
- * senza DB (es. `tests/modules/seller-*-owner-only.test.ts`).
+ * senza DB (es. `tests/modules/seller-*-owner-only.test.ts`); una funzione
+ * della richiesta per quelli che lo leggono da un header di test (es.
+ * `tests/integration/seller-dashboard.test.ts`).
  */
 export function withVars(
 	app: Hono<any, any, any>,
-	vars: Record<string, unknown>,
+	vars: Vars | ((request: Request) => Promise<Vars>),
 ) {
 	return moduleApp()
 		.use(async (c, next) => {
-			for (const [key, value] of Object.entries(vars))
+			const values = typeof vars === "function" ? await vars(c.req.raw) : vars;
+			for (const [key, value] of Object.entries(values))
 				c.set(key as never, value as never);
 			await next();
 		})

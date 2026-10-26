@@ -24,20 +24,8 @@ export function ruleParams(issue: Issue): RuleParams | undefined {
 
 const isDecode = (issue: Issue) => !!ruleParams(issue)?.decode;
 
-// `Type.Integer` (gemello `z.int()`): un non numero è «deve essere un numero
-// intero», ma Zod dice solo `expected: "number"`.
-function isInt(node: z.ZodType | undefined) {
-	if (!node) return false;
-	const def = unwrap(node).node._zod.def as Record<string, any>;
-	const formats = [def, ...(def.checks ?? []).map((c: any) => c._zod.def)];
-	return def.type === "number" && formats.some((f) => f.format === "safeint");
-}
-
-/**
- * La regola violata, come `validationRule` sull'errore TypeBox equivalente;
- * `node` è lo schema che ha prodotto l'issue (per `z.int()`).
- */
-export function issueRule(issue: Issue, node?: z.ZodType): ValidationRule {
+/** La regola violata, come `validationRule` sull'errore TypeBox equivalente. */
+export function issueRule(issue: Issue): ValidationRule {
 	const custom = ruleParams(issue);
 	if (custom) return custom.rule;
 	if (issue.input === undefined) return { kind: "required" };
@@ -47,7 +35,7 @@ export function issueRule(issue: Issue, node?: z.ZodType): ValidationRule {
 				case "string":
 					return { kind: "string" };
 				case "number":
-					return isInt(node) ? { kind: "integer" } : { kind: "number" };
+					return { kind: "number" };
 				case "int":
 					return { kind: "integer" };
 				case "boolean":
@@ -243,10 +231,10 @@ function collapse(issues: Issue[], checked: Checked) {
 				schema: def.innerType,
 				value: input,
 			});
-			rule = issueRule(
-				{ ...first, input: valueAt(input, first.path) } as Issue,
-				nodeAt(def.innerType, first.path),
-			);
+			rule = issueRule({
+				...first,
+				input: valueAt(input, first.path),
+			} as Issue);
 		}
 		const params: RuleParams = { rule };
 		return { code: "custom", path: at, input, message: "", params } as Issue;

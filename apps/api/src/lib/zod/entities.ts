@@ -18,6 +18,37 @@ const PointXY = z.object({
 });
 
 // ────────────────────────────────────────────
+// Reusable body field groups (for route input schemas)
+// ────────────────────────────────────────────
+
+export const LocationField = z
+	.object({
+		x: z.number().min(-180).max(180).meta(d("Longitudine")),
+		y: z.number().min(-90).max(90).meta(d("Latitudine")),
+	})
+	.meta(d("Coordinate geografiche (PostGIS point)"))
+	.optional();
+
+/** Optional address fields for update/patch operations. */
+export const AddressFieldsOptional = {
+	addressLine1: z
+		.string()
+		.min(1)
+		.max(200)
+		.meta(d("Indirizzo (riga 1)"))
+		.optional(),
+	addressLine2: z.string().max(200).meta(d("Indirizzo (riga 2)")).optional(),
+	municipalityId: z.string().min(1).meta(d("ID del comune")).optional(),
+	zipCode: z
+		.string()
+		.regex(/^\d{5}$/)
+		.meta(d("CAP italiano (5 cifre)"))
+		.optional(),
+	country: z.string().min(2).max(2).meta(d("Codice paese")).optional(),
+	location: LocationField,
+};
+
+// ────────────────────────────────────────────
 // Entity schemas
 // ────────────────────────────────────────────
 
@@ -33,6 +64,13 @@ export const UserSchema = z.object({
 	banned: z.boolean().nullable(),
 	banReason: z.string().nullable(),
 	banExpires: zDate().nullable(),
+});
+
+export const UserSummarySchema = UserSchema.pick({
+	id: true,
+	name: true,
+	email: true,
+	image: true,
 });
 
 /** Le aliquote IVA (%), nell'ordine dello schema TypeBox. */
@@ -179,6 +217,37 @@ export const OrganizationSchema = z.object({
 	updatedAt: zDate(),
 });
 
+export const StoreCategorySchema = z.object({
+	id: z.string(),
+	macroCategoryId: z
+		.string()
+		.meta(d("ID della macro categoria di appartenenza")),
+	name: z.string().meta(d("Nome della categoria negozio")),
+	createdAt: zDate(),
+	updatedAt: zDate(),
+});
+
+export const StoreImageSchema = z.object({
+	id: z.string(),
+	storeId: z.string(),
+	url: z.string().meta(d("URL pubblico dell'immagine")),
+	key: z.string().meta(d("Chiave S3")),
+	position: z.number().min(0).meta(d("Posizione di ordinamento")),
+	createdAt: zDate(),
+});
+
+export const OnlinePaymentsSchema = z.object({
+	status: z
+		.enum(["none", "incomplete", "in_review", "enabled"])
+		.meta(
+			d(
+				"Stato dei pagamenti online: none (da attivare), incomplete (onboarding da completare), in_review (in verifica da Stripe), enabled (attivi)",
+			),
+		),
+	chargesEnabled: z.boolean(),
+	payoutsEnabled: z.boolean(),
+});
+
 export const StoreSchema = z.object({
 	id: z.string(),
 	sellerProfileId: z.string(),
@@ -313,6 +382,18 @@ export const ProductImageSchema = z.object({
 	createdAt: zDate(),
 });
 
+export const StorePhoneNumberSchema = z.object({
+	id: z.string(),
+	storeId: z.string(),
+	label: z
+		.string()
+		.meta(d("Etichetta (es. 'Principale', 'WhatsApp')"))
+		.nullable(),
+	number: z.string().meta(d("Numero di telefono")),
+	position: z.number().min(0).meta(d("Posizione di ordinamento")),
+	createdAt: zDate(),
+});
+
 const csvRow = (message: string) =>
 	z.object({
 		row: z.number().meta(d("Numero di riga nel CSV (partendo da 2)")),
@@ -390,11 +471,35 @@ export const StoreProductSchema = z.object({
 	stock: z.number().min(0).meta(d("Quantità disponibile in magazzino")),
 });
 
+export const EmployeeSchema = z.object({
+	id: z.string(),
+	sellerProfileId: z.string(),
+	userId: z.string(),
+	status: z
+		.enum(["active", "banned", "removed"])
+		.meta(d("Stato del dipendente")),
+	createdAt: zDate(),
+});
+
 export const CustomerProfileSchema = z.object({
 	id: z.string(),
 	userId: z.string(),
 	points: z.number().min(0).meta({ description: "Saldo punti fedeltà" }),
 	createdAt: zDate(),
+});
+
+export const EmployeeInvitationSchema = z.object({
+	id: z.string(),
+	sellerProfileId: z.string(),
+	email: z.string().meta(d("Email del collaboratore invitato")),
+	status: z
+		.enum(["pending", "accepted", "expired"])
+		.meta(d("Stato dell'invito")),
+	expiresAt: zDate({ description: "Scadenza dell'invito" }),
+	createdAt: zDate(),
+	storeIds: z
+		.array(z.string())
+		.meta(d("ID dei negozi preselezionati per l'invito")),
 });
 
 // ────────────────────────────────────────────
@@ -435,4 +540,55 @@ export const MunicipalitySchema = z.object({
 	provinceId: z.string(),
 	createdAt: zDate(),
 	updatedAt: zDate(),
+});
+
+export const SellerProfileChangeSchema = z.object({
+	id: z.string(),
+	sellerProfileId: z.string(),
+	changeType: z.enum(["vat", "document"]).meta(d("Tipo di modifica richiesta")),
+	changeData: z.unknown().meta(d("Dati della modifica (JSON)")),
+	status: z
+		.enum(["pending", "approved", "rejected", "cancelled"])
+		.meta(d("Stato della richiesta")),
+	reviewedBy: z.string().nullable(),
+	reviewedAt: zDate().nullable(),
+	rejectionReason: z.string().nullable(),
+	createdAt: zDate(),
+});
+
+const storeOrderType = () => z.enum(["reserve_pickup", "pay_pickup"]);
+
+export const ReservationDeadlineSchema = z.object({
+	hours: zInteger({
+		description: "Ore entro cui ritirare una prenotazione nel negozio",
+	}),
+	expiresAt: zDate({
+		description: "Scadenza di una prenotazione fatta adesso",
+	}),
+	clock: z
+		.enum(["opening", "calendar"])
+		.meta(
+			d(
+				"opening = contate le ore di apertura; calendar = negozio senza orari, ore di calendario",
+			),
+		),
+});
+
+export const StoreOrderTypesSchema = z.object({
+	orderTypes: z
+		.array(storeOrderType())
+		.meta(d("Tipologie configurate dal negozio")),
+	offeredOrderTypes: z
+		.array(storeOrderType())
+		.meta(d("Tipologie che i clienti vedono al checkout")),
+	chargesEnabled: z
+		.boolean()
+		.meta(d("Il venditore può incassare online (Stripe Connect)")),
+	vatChangeBlocked: z
+		.boolean()
+		.meta(
+			d(
+				"Cambio partita IVA in attesa: gli ordini sono bloccati finché l'admin non decide",
+			),
+		),
 });

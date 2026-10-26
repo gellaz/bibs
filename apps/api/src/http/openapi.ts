@@ -25,6 +25,11 @@ export interface RouteDoc {
 	detail?: RouteDetail;
 	/** Risposte per status, come la `response` di Elysia. */
 	response?: Record<number, z.ZodType>;
+	/**
+	 * Il path in /openapi, se Elysia lo documenta diverso da come si registra
+	 * (D8: `GET /seller/settings/` si registra senza lo slash finale).
+	 */
+	path?: string;
 }
 
 /** Metadati OpenAPI di una route: middleware che non fa niente. */
@@ -35,7 +40,6 @@ export function doc(meta: RouteDoc): MiddlewareHandler {
 
 // ── Zod → JSON Schema come lo scrive TypeBox ────────────────────────────────
 
-const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const defOf = (schema: z.ZodType) => schema._zod.def as Json;
 
 function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
@@ -65,9 +69,6 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 		delete json.type;
 		json.anyOf = values.map((value) => ({ const: value, type: typeof value }));
 	}
-	// z.int() aggiunge i limiti dei safe integer, che Type.Integer non ha.
-	if (json.minimum === -MAX_SAFE) delete json.minimum;
-	if (json.maximum === MAX_SAFE) delete json.maximum;
 }
 
 // Dopo gli override Zod compatta `anyOf: [{type: a}, {type: b}]` in
@@ -227,7 +228,8 @@ export function operations(app: Hono<any, any, any>, prefix = ""): Operation[] {
 			[VALIDATES]?: Validates;
 		};
 		const meta = handler[DOC];
-		if (meta) Object.assign(op, meta);
+		if (meta)
+			Object.assign(op, meta, meta.path && { path: `${prefix}${meta.path}` });
 		const validates = handler[VALIDATES];
 		if (validates) {
 			const slot =

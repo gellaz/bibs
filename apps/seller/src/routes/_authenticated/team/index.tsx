@@ -38,6 +38,7 @@ import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { UserAvatar } from "@bibs/ui/custom/user-avatar";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { formatDate } from "@bibs/ui/lib/date";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
@@ -62,7 +63,7 @@ import { SellerRoleBadge } from "@/components/seller-role-badge";
 import { EmployeeStoresDialog } from "@/features/team/components/employee-stores-dialog";
 import { StoreChips } from "@/features/team/components/store-chips";
 import { useStores } from "@/hooks/use-stores";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import {
 	dataTableFooterLabels,
@@ -83,10 +84,10 @@ function useEmployees(page: number, limit: number) {
 	return useQuery({
 		queryKey: ["employees", page, limit],
 		queryFn: async () => {
-			const response = await api().seller.employees.get({
+			const response = await sellerApi.employees.$get({
 				query: { page, limit },
 			});
-			return unwrap(response, m.team_load_error());
+			return unwrapJson(response, m.team_load_error());
 		},
 	});
 }
@@ -95,8 +96,8 @@ function useInvitations(enabled: boolean) {
 	return useQuery({
 		queryKey: ["employee-invitations"],
 		queryFn: async () => {
-			const response = await api().seller.employees.invitations.get();
-			return unwrap(response, m.team_invitations_load_error());
+			const response = await sellerApi.employees.invitations.$get();
+			return unwrapJson(response, m.team_invitations_load_error());
 		},
 		enabled,
 	});
@@ -106,8 +107,10 @@ function useInviteEmployee() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (params: { email: string; storeIds: string[] }) => {
-			const response = await api().seller.employees.invite.post(params);
-			return unwrap(response, m.team_invite_error());
+			const response = await sellerApi.employees.invite.$post({
+				json: params,
+			});
+			return unwrapJson(response, m.team_invite_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
@@ -121,10 +124,10 @@ function useResendInvitation() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (invitationId: string) => {
-			const response = await api()
-				.seller.employees.invitations({ invitationId })
-				.resend.post();
-			return unwrap(response, m.team_resend_error());
+			const response = await sellerApi.employees.invitations[
+				":invitationId"
+			].resend.$post({ param: { invitationId } });
+			return unwrapJson(response, m.team_resend_error());
 		},
 		onSuccess: ({ data: invitation }) => {
 			toast.success(m.team_resent({ email: invitation.email }));
@@ -142,10 +145,10 @@ function useCancelInvitation() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (invitationId: string) => {
-			const response = await api()
-				.seller.employees.invitations({ invitationId })
-				.delete();
-			return unwrap(response, m.team_cancel_invite_error());
+			const response = await sellerApi.employees.invitations[
+				":invitationId"
+			].$delete({ param: { invitationId } });
+			return unwrapJson(response, m.team_cancel_invite_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
@@ -164,8 +167,10 @@ function useBanEmployee() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (employeeId: string) => {
-			const response = await api().seller.employees({ employeeId }).ban.patch();
-			return unwrap(response, m.team_ban_error());
+			const response = await sellerApi.employees[":employeeId"].ban.$patch({
+				param: { employeeId },
+			});
+			return unwrapJson(response, m.team_ban_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -177,10 +182,10 @@ function useUnbanEmployee() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (employeeId: string) => {
-			const response = await api()
-				.seller.employees({ employeeId })
-				.unban.patch();
-			return unwrap(response, m.team_unban_error());
+			const response = await sellerApi.employees[":employeeId"].unban.$patch({
+				param: { employeeId },
+			});
+			return unwrapJson(response, m.team_unban_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -192,8 +197,10 @@ function useRemoveEmployee() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (employeeId: string) => {
-			const response = await api().seller.employees({ employeeId }).delete();
-			return unwrap(response, m.team_remove_error());
+			const response = await sellerApi.employees[":employeeId"].$delete({
+				param: { employeeId },
+			});
+			return unwrapJson(response, m.team_remove_error());
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -510,9 +517,7 @@ type EmployeeRow = {
 	kind: "employee";
 	id: string;
 	employee: NonNullable<
-		Awaited<
-			ReturnType<ReturnType<typeof api>["seller"]["employees"]["get"]>
-		>["data"]
+		ReturnType<typeof useEmployees>["data"]
 	>["data"][number];
 	isSelf: boolean;
 };
@@ -520,11 +525,7 @@ type InvitationRow = {
 	kind: "invitation";
 	id: string;
 	invitation: NonNullable<
-		Awaited<
-			ReturnType<
-				ReturnType<typeof api>["seller"]["employees"]["invitations"]["get"]
-			>
-		>["data"]
+		ReturnType<typeof useInvitations>["data"]
 	>["data"][number];
 };
 type TeamRow = OwnerRow | EmployeeRow | InvitationRow;

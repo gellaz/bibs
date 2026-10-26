@@ -12,9 +12,10 @@ import {
 import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { StatusBadge } from "@bibs/ui/custom/status-badge";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Clock } from "lucide-react";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface Props {
@@ -29,10 +30,10 @@ export function PendingVatChange({ change, canCancel }: Props) {
 
 	const cancel = useMutation({
 		mutationFn: async () => {
-			const r = await api()
-				.seller.settings.changes({ changeId: change.id })
-				.cancel.patch();
-			return unwrap(r, m.profile_vat_request_error());
+			const r = await sellerApi.settings.changes[":changeId"].cancel.$patch({
+				param: { changeId: change.id },
+			});
+			return unwrapJson(r, m.profile_vat_request_error());
 		},
 		onSuccess: () => toast.success(m.profile_vat_cancelled()),
 		onError: (e: Error) => toast.error(e.message),

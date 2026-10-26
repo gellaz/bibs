@@ -17,7 +17,7 @@ import { firstIssue, type Issue, issueRule, type RuleParams } from "./issues";
 // normale (`z.string().min(1)`, `z.object`, `z.enum`, `.nullable()`, …) e i
 // metadati con `.meta({ title, description, error })`. Corrispondenze da
 // tenere: `t.Integer` di Elysia → `zInteger` (accetta "5"), `Type.Integer` di
-// TypeBox → `z.int()` (non accetta stringhe); `t.Union` di oggetti →
+// TypeBox → `zInt` (non accetta stringhe); `t.Union` di oggetti →
 // `z.union`, mai `z.discriminatedUnion` (dà errori che TypeBox non dà).
 
 type Json = Record<string, unknown>;
@@ -171,6 +171,29 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 	};
 	register(schema, json);
 	return withDefault<typeof schema, O>(schema, defaultValue, json);
+}
+
+/**
+ * `Type.Integer` di TypeBox (form condivisi: `dayOfWeek` degli orari,
+ * `position` dei telefoni): solo un numero intero, niente stringhe. Non è
+ * `z.int()`, che aggiunge i limiti dei safe integer: `1e21` passa e oltre
+ * 2^53 l'errore cita il massimo dello schema, come in TypeBox.
+ */
+export function zInt(options: NumberOptions = {}) {
+	const inner = numberChecks(z.number(), options);
+	const schema = z
+		.custom<number>(() => true)
+		.transform((value, ctx) => {
+			const rule =
+				typeof value === "number" && Number.isInteger(value)
+					? parseRule(inner, value)
+					: value === undefined
+						? ({ kind: "required" } as const)
+						: ({ kind: "integer" } as const);
+			return rule ? fail(ctx, value, rule) : value;
+		})
+		.meta(metaOf(options));
+	return register(schema, { type: "integer", ...options });
 }
 
 /** Query e params: `t.Number` diventa il `Numeric` di Elysia. */

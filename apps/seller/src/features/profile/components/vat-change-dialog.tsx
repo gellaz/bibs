@@ -12,9 +12,10 @@ import {
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export function VatChangeDialog({ currentVat }: { currentVat: string }) {
@@ -25,8 +26,10 @@ export function VatChangeDialog({ currentVat }: { currentVat: string }) {
 
 	const mut = useMutation({
 		mutationFn: async () => {
-			const r = await api().seller.settings.vat.patch({ vatNumber: vat });
-			return unwrap(r, m.profile_vat_request_error());
+			const r = await sellerApi.settings.vat.$patch({
+				json: { vatNumber: vat },
+			});
+			return unwrapJson(r, m.profile_vat_request_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });

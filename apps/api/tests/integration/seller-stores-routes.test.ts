@@ -34,13 +34,10 @@ mock.module("@/lib/s3", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
 import { storeEmployee, storeEmployeeStores } from "@/db/schemas/employee";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import * as settingsService from "@/modules/seller/services/settings";
-import { errorHandler } from "@/plugins/error-handler";
-import { normalize } from "@/plugins/normalize";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestMunicipality,
@@ -48,35 +45,21 @@ import {
 	createTestStore,
 	createTestStoreImage,
 } from "../helpers/fixtures";
-import { signIn } from "../helpers/hono-app";
+import { signIn, testRequest } from "../helpers/hono-app";
 
 // Le route di U6 (negozi, immagini dei negozi, chiusure, impostazioni, team,
 // onboarding, profilo; la dashboard ha il suo test) con sessioni better-auth
 // vere: le due guardie (ruolo seller per profilo e onboarding, contesto
 // seller per il resto) dopo la validazione, scritture, multipart, strip in
 // ingresso e in uscita. Nato contro `sellerModule` (Elysia, prima della
-// migrazione a Hono): da allora cambia solo `call()`.
+// migrazione a Hono, commit 2da62a0e, verde): da allora cambia solo `call()`.
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-let app: { handle: (req: Request) => Promise<Response> };
+let sellerApp: typeof import("@/modules/seller").sellerApp;
 
 beforeAll(async () => {
 	await setupTestContainer();
 	// dinamico: @/lib/auth cattura `db` alla valutazione
-	const { sellerModule } = await import("@/modules/seller");
-	app = new Elysia()
-		.state("pino", noopPino)
-		.use(errorHandler)
-		.use(normalize)
-		.use(sellerModule);
+	({ sellerApp } = await import("@/modules/seller"));
 }, 180_000);
 
 afterAll(async () => {
@@ -91,7 +74,7 @@ beforeEach(async () => {
 
 /** Una richiesta a /seller<path>. */
 function call(path: string, init: RequestInit = {}) {
-	return app.handle(new Request(`http://localhost/seller${path}`, init));
+	return testRequest(sellerApp, path, init);
 }
 
 const json = (method: string, body: unknown, cookie?: string) => ({
@@ -840,11 +823,8 @@ describe("strip: campi sconosciuti in ingresso e in uscita", () => {
 		spyOn(settingsService, "getSellerSettings").mockImplementation(
 			async (params) => {
 				const data = await real(params);
-				return {
-					...data,
-					stripeAccountId: "acct_secret",
-					profile: { ...data.profile, documentImageKey: "seller/doc.png" },
-				} as typeof data;
+				Object.assign(data.profile, { documentImageKey: "seller/doc.png" });
+				return Object.assign(data, { stripeAccountId: "acct_secret" });
 			},
 		);
 		const settings = await call("/settings", as(o.cookie));

@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
-import { requireAuth, requireSeller } from "@/http/auth";
+import { requireAuth, requireSeller, requireSellerRole } from "@/http/auth";
 import { doc } from "@/http/openapi";
 import { assertRoutes, guard, publicRoute, routeProblems } from "@/http/routes";
 import { v } from "@/http/validator";
@@ -167,12 +167,6 @@ describe("requireAuth con l'utente già messo a monte (harness dei test)", () =>
 // U5: le guardie del seller si controllano route per route (`sellerGuards`),
 // e le guardie di ruolo leggono la sessione da sé (l'ordine non conta).
 describe("guardie seller", () => {
-	// Come sarà `requireSellerRole` in U6 (D9): ruolo seller, niente partita IVA.
-	const requireSellerRole = guard(
-		createMiddleware(async (_c, next) => next()),
-		"sellerRole",
-	);
-
 	it("il modulo seller è a posto", () => {
 		expect(routeProblems(sellerApp, sellerGuards)).toEqual([]);
 		expect(() => assertRoutes(sellerApp, sellerGuards)).not.toThrow();
@@ -226,5 +220,37 @@ describe("guardie seller", () => {
 			seller: { sellerProfile: { id: "sp1" }, isOwner: true },
 		}).request("/x");
 		expect(await res.json()).toEqual({ profile: "sp1" });
+	});
+
+	// U6: profilo e onboarding (ruolo seller, partita IVA non ancora verificata).
+	it("requireSellerRole: 401 per l'anonimo, 403 per chi non è seller, dopo i validatori", async () => {
+		const app = moduleApp().get(
+			"/onboarding/x",
+			v("query", Query),
+			requireSellerRole,
+			(c) => c.json({ id: c.var.user.id }),
+		);
+		const anonymous = await app.request("/onboarding/x?q=a");
+		expect(anonymous.status).toBe(401);
+		expect(await anonymous.json()).toEqual({
+			success: false,
+			error: "UNAUTHORIZED",
+			message: "Devi accedere per continuare",
+		});
+		for (const role of ["customer", "employee", null]) {
+			const other = withVars(app, { user: { id: "u1", role } });
+			const res = await other.request("/onboarding/x?q=a");
+			expect(res.status).toBe(403);
+			expect(await res.json()).toEqual({
+				success: false,
+				error: "FORBIDDEN",
+				message: "Accesso riservato ai venditori",
+			});
+			expect((await other.request("/onboarding/x")).status).toBe(422);
+		}
+		const seller = withVars(app, { user: { id: "u1", role: "seller" } });
+		expect(await (await seller.request("/onboarding/x?q=a")).json()).toEqual({
+			id: "u1",
+		});
 	});
 });

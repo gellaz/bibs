@@ -166,25 +166,6 @@ export function requireOwner(isOwner: boolean) {
 }
 
 /**
- * Context injected by the auth macro for profile routes.
- * Used for routes that need authentication but not VAT verification.
- */
-export interface SellerAuthContext {
-	user: {
-		id: string;
-		name: string;
-		email: string;
-		role: string | null;
-		[key: string]: unknown;
-	};
-}
-
-/** Type-safe context helper for profile routes (no VAT verification). */
-export function withSellerAuth<T>(ctx: T) {
-	return ctx as T & SellerAuthContext;
-}
-
-/**
  * The seller guard's resolve: who is calling and which seller they act for.
  * Owners and employees must both belong to a seller whose onboarding is
  * active. Extracted from the module so it can be tested against the DB.

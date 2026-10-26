@@ -23,6 +23,7 @@ import { zDate, zInteger } from "@/lib/zod/t";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
+import { sellerApp, sellerGuards } from "@/modules/seller";
 import { type Case, cases } from "./parity-cases";
 
 // D11 del piano Hono: il generatore nel repo produce per le route Hono lo
@@ -167,6 +168,17 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 		const paths = honoPaths(meApp, "/me", ["auth"]);
 		expect(Object.keys(paths)).toEqual(["/me/avatar"]);
 		expect(paths["/me/avatar"]).toEqual(expected["/me/avatar"]);
+	});
+
+	// /seller è ancora in parte Elysia (U7): ogni path della sub-app è quello
+	// della baseline, compreso `GET /seller/settings/` (`doc({ path })`, U6).
+	it("/seller: ogni path della sub-app identico a baseline/openapi.json", async () => {
+		const { paths: expected } = await baseline();
+		const paths = honoPaths(sellerApp, "/seller", sellerGuards);
+		expect(paths["/seller/settings/"]).toBeDefined();
+		expect(paths["/seller/settings"]).toBeUndefined();
+		for (const path of Object.keys(paths))
+			expect(paths[path]).toEqual(expected[path]);
 	});
 
 	const modules = [

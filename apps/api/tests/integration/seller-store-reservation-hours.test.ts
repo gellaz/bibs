@@ -22,16 +22,15 @@ mock.module("@/db", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
 import { holidayDefinition } from "@/db/schemas/holiday-definition";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { reservationDeadline } from "@/lib/holidays";
 import { resolveReservationDeadlines } from "@/lib/store-open-status";
 import { storesRoutes } from "@/modules/seller/routes/stores";
-import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestSeller, createTestStore } from "../helpers/fixtures";
+import { withVars } from "../helpers/hono-app";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -43,32 +42,22 @@ beforeEach(async () => {
 	await truncateAll(getTestDb());
 });
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
 // Il guard del seller è sostituito da una resolve di test: `x-seller` è l'id
 // del profilo, `x-owner: 0` simula un dipendente.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.resolve(async ({ request }) => {
-		const id = request.headers.get("x-seller") ?? "";
-		const sp = await getTestDb().query.sellerProfile.findFirst({
-			where: eq(sellerProfile.id, id),
-		});
-		if (!sp) throw new Error("test seller missing");
-		return {
+const app = withVars(storesRoutes, async (request) => {
+	const id = request.headers.get("x-seller") ?? "";
+	const sp = await getTestDb().query.sellerProfile.findFirst({
+		where: eq(sellerProfile.id, id),
+	});
+	if (!sp) throw new Error("test seller missing");
+	return {
+		user: { id: sp.userId },
+		seller: {
 			sellerProfile: sp,
 			isOwner: request.headers.get("x-owner") !== "0",
-		};
-	})
-	.use(storesRoutes);
+		},
+	};
+});
 
 const openingHours = Array.from({ length: 7 }, (_, i) => ({
 	dayOfWeek: i,
@@ -89,7 +78,7 @@ const patch = (
 	body: object,
 	owner = true,
 ) =>
-	app.handle(
+	app.request(
 		new Request(`http://localhost/stores/${s.storeId}`, {
 			method: "PATCH",
 			headers: {
@@ -106,7 +95,7 @@ const preview = (
 	hours: string,
 	owner = true,
 ) =>
-	app.handle(
+	app.request(
 		new Request(
 			`http://localhost/stores/${s.storeId}/reservation-preview?hours=${hours}`,
 			{

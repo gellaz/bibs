@@ -1,59 +1,66 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ok } from "@/lib/responses";
-import {
-	okRes,
-	PutClosuresBody,
-	SellerClosuresResponse,
-	withErrors,
-} from "@/lib/schemas";
-import { requireOwner, withSeller } from "../context";
+import { PutClosuresBody, SellerClosuresResponse } from "@/lib/zod/holidays";
+import { okRes, withErrors } from "@/lib/zod/responses";
+import { requireOwner } from "../context";
 import { getStoreClosures, putStoreClosures } from "../services/closures";
 
-export const closuresRoutes = new Elysia()
+const storeId = z.object({
+	storeId: z.string().meta({ description: "ID del negozio" }),
+});
+
+const ClosuresRes = okRes(SellerClosuresResponse);
+
+export const closuresRoutes = new Hono()
 	.get(
 		"/stores/:storeId/closures",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
-			requireOwner(isOwner);
-			const data = await getStoreClosures(params.storeId, sp.id);
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			response: withErrors({ 200: okRes(SellerClosuresResponse) }),
+		doc({
+			response: withErrors({ 200: ClosuresRes }),
 			detail: {
 				summary: "Chiusure negozio",
 				description:
 					"Festività osservate (con flag observed) e chiusure custom del negozio.",
 				tags: ["Seller - Stores"],
+				security: [{ bearerAuth: [] }],
 			},
+		}),
+		v("param", storeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const data = await getStoreClosures(c.req.valid("param").storeId, sp.id);
+			return send(c, ClosuresRes, ok(data));
 		},
 	)
 	.put(
 		"/stores/:storeId/closures",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params, body } = withSeller(ctx);
-			requireOwner(isOwner);
-			const data = await putStoreClosures({
-				storeId: params.storeId,
-				sellerProfileId: sp.id,
-				...body,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			body: PutClosuresBody,
-			response: withErrors({ 200: okRes(SellerClosuresResponse) }),
+		doc({
+			response: withErrors({ 200: ClosuresRes }),
 			detail: {
 				summary: "Aggiorna chiusure negozio",
 				description:
 					"Sostituisce per intero gli opt-out festività e le chiusure custom del negozio.",
 				tags: ["Seller - Stores"],
+				security: [{ bearerAuth: [] }],
 			},
+		}),
+		v("param", storeId),
+		v("json", PutClosuresBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const data = await putStoreClosures({
+				storeId: c.req.valid("param").storeId,
+				sellerProfileId: sp.id,
+				...c.req.valid("json"),
+			});
+			return send(c, ClosuresRes, ok(data));
 		},
 	);

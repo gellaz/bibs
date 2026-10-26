@@ -1,6 +1,7 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { TabNav, tabId } from "@bibs/ui/custom/tab-nav";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { StoreIcon } from "lucide-react";
@@ -21,7 +22,7 @@ import { saveStoreProfile } from "@/features/stores/lib/save-store-profile";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export type StoreSection = "profilo" | "orari" | "vendita";
@@ -82,10 +83,10 @@ function StoreSettingsPage() {
 		queryKey: ["store", storeId],
 		queryFn: async () => {
 			if (!storeId) throw new Error(m.store_no_active());
-			const response = await api().seller.stores.get({
+			const response = await sellerApi.stores.$get({
 				query: { page: 1, limit: 100 },
 			});
-			const data = unwrap(response, m.store_load_error());
+			const data = await unwrapJson(response, m.store_load_error());
 			const found = data.data.find((s) => s.id === storeId);
 			if (!found) throw new Error(m.store_not_found());
 			return found;
@@ -111,11 +112,10 @@ function StoreSettingsPage() {
 	const deleteImageMutation = useMutation({
 		mutationFn: async (imageId: string) => {
 			if (!storeId) throw new Error(m.store_no_active());
-			const response = await api()
-				.seller.stores({ storeId })
-				.images({ imageId })
-				.delete();
-			if (response.error) throw new Error(m.store_image_delete_error());
+			const response = await sellerApi.stores[":storeId"].images[
+				":imageId"
+			].$delete({ param: { storeId, imageId } });
+			if (!response.ok) throw new Error(m.store_image_delete_error());
 		},
 		onSuccess: (_data, imageId) => {
 			setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
@@ -129,15 +129,19 @@ function StoreSettingsPage() {
 			if (!storeId) throw new Error(m.store_no_active());
 			const { store, uploaded } = await saveStoreProfile({
 				save: async () =>
-					unwrap(
-						await api().seller.stores({ storeId }).patch(formData),
+					unwrapJson(
+						await sellerApi.stores[":storeId"].$patch({
+							param: { storeId },
+							json: formData,
+						}),
 						m.store_update_error(),
 					),
 				upload: async (files) => {
-					const r = await api()
-						.seller.stores({ storeId })
-						.images.post({ files });
-					return r.error ? null : r.data.data;
+					const r = await sellerApi.stores[":storeId"].images.$post({
+						param: { storeId },
+						form: { files },
+					});
+					return r.ok ? (await r.json()).data : null;
 				},
 				files: newFiles,
 			});

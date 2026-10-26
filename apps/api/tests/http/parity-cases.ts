@@ -13,13 +13,27 @@ import {
 	DiscountListQuery as TbDiscountListQuery,
 	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
-import { AcceptInviteBody as TbAcceptInviteBody } from "@/lib/schemas/forms/onboarding";
+import {
+	AcceptInviteBody as TbAcceptInviteBody,
+	CompanyBody as TbCompanyBody,
+	DocumentBody as TbDocumentBody,
+	PersonalInfoBody as TbPersonalInfoBody,
+	TeamInviteBody as TbTeamInviteBody,
+} from "@/lib/schemas/forms/onboarding";
 import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
 import {
 	CharacteristicValuesField as TbCharacteristicValuesField,
 	CreateProductBody as TbCreateProductBody,
 } from "@/lib/schemas/forms/products";
-import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/lib/schemas/holidays";
+import {
+	CompanySettingsBody as TbCompanySettingsBody,
+	VatChangeBody as TbVatChangeBody,
+} from "@/lib/schemas/forms/settings";
+import { CreateStoreBody as TbCreateStoreBody } from "@/lib/schemas/forms/stores";
+import {
+	CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody,
+	PutClosuresBody as TbPutClosuresBody,
+} from "@/lib/schemas/holidays";
 import {
 	StockAdjustBody as TbStockAdjustBody,
 	StockBulkAdjustBody as TbStockBulkAdjustBody,
@@ -29,16 +43,26 @@ import {
 	BulkStatusBody,
 	ProductStatusBody,
 } from "@/lib/zod/entities";
-import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
+import {
+	AcceptInviteBody,
+	CompanyBody,
+	DocumentBody,
+	PersonalInfoBody,
+	TeamInviteBody,
+} from "@/lib/zod/forms/onboarding";
+import { OpeningHoursSchema } from "@/lib/zod/forms/opening-hours";
 import {
 	CharacteristicValuesField,
 	CreateProductBody,
 } from "@/lib/zod/forms/products";
+import { CompanySettingsBody, VatChangeBody } from "@/lib/zod/forms/settings";
+import { CreateStoreBody } from "@/lib/zod/forms/stores";
+import { PutClosuresBody } from "@/lib/zod/holidays";
 import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
 import { PaginationQuery } from "@/lib/zod/pagination";
 import { RegisterBody, SignInBody } from "@/lib/zod/registration";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
-import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
+import { zDate, zFile, zFiles, zFormat, zInt, zInteger } from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 
@@ -284,34 +308,9 @@ const ProductSearchQuery = PaginationQuery.extend({
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
-// Gemello di `OpeningHoursSchema` (`lib/schemas/forms/opening-hours.ts`):
-// `Type.Integer` di TypeBox è `z.int()`, il `t.Integer` di Elysia è `zInteger`.
-const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
-const slotTime = (description: string) =>
-	z
-		.string()
-		.regex(HHMM)
-		.meta({ description, error: "Formato orario non valido (HH:mm)" });
-const OpeningHours = z
-	.array(
-		z.object({
-			dayOfWeek: z.int().min(0).max(6).meta({
-				description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
-			}),
-			slots: z
-				.array(
-					z.object({
-						open: slotTime("Orario di apertura (HH:mm)"),
-						close: slotTime("Orario di chiusura (HH:mm)"),
-					}),
-				)
-				.min(1)
-				.max(4)
-				.meta({ description: "Fasce orarie del giorno" }),
-		}),
-	)
-	.max(7)
-	.meta({ description: "Orari di apertura del negozio" });
+// `OpeningHoursSchema` è in `lib/zod/forms/opening-hours.ts` da U6:
+// `Type.Integer` di TypeBox è `zInt`, il `t.Integer` di Elysia è `zInteger`.
+const OpeningHours = OpeningHoursSchema;
 
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
 // (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
@@ -457,6 +456,38 @@ const formWithFile = [
 	}),
 ] as const;
 const png = () => new File([PNG], "a.png", { type: "image/png" });
+// Body validi dei form di U6, da cui i casi tolgono o rompono un campo.
+const STORE = {
+	name: "Bottega",
+	addressLine1: "Via Roma 1",
+	municipalityId: "m",
+	zipCode: "40100",
+	location: { x: 11.34, y: 44.49 },
+};
+const PERSONAL = {
+	firstName: "Mario",
+	lastName: "Rossi",
+	citizenship: "IT",
+	birthCountry: "IT",
+	birthDate: "1990-05-01",
+	residenceCountry: "IT",
+	residenceMunicipalityId: "m",
+	residenceAddress: "Via Roma 1",
+	residenceZipCode: "40100",
+};
+const DOCUMENT = {
+	documentType: "identity_card",
+	documentNumber: "CA12345AB",
+	documentExpiry: "2030-01-01",
+	documentIssuedMunicipalityId: "m",
+};
+const COMPANY = {
+	businessName: "Rossi SRL",
+	legalForm: "SRL",
+	addressLine1: "Via Roma 1",
+	municipalityId: "m",
+	zipCode: "40100",
+};
 
 export const cases: Case[] = [
 	// tests/lib/validation-message.test.ts, stesse stringhe
@@ -1659,8 +1690,34 @@ export const cases: Case[] = [
 	body(
 		"Type.Integer: una stringa è «deve essere un numero intero»",
 		t.Object({ n: Type.Integer({ minimum: 0 }) }),
-		z.object({ n: z.int().min(0) }),
+		z.object({ n: zInt({ minimum: 0 }) }),
 		{ n: "1" },
+		422,
+		fail("n: deve essere un numero intero"),
+	),
+	// `zInt` non ha i limiti dei safe integer di `z.int()` (U6).
+	{
+		name: "Type.Integer: oltre i safe integer cita il massimo dello schema",
+		target: "json",
+		tb: t.Object({ n: Type.Integer({ minimum: 0, maximum: 6 }) }),
+		zod: z.object({ n: zInt({ minimum: 0, maximum: 6 }) }),
+		req: { raw: '{"n":9007199254740993}', contentType: "application/json" },
+		status: 422,
+		body: fail("n: deve essere al massimo 6"),
+	},
+	body(
+		"Type.Integer: 1e21 senza massimo passa, 2.5 no",
+		t.Object({ n: Type.Integer({ minimum: 0 }) }),
+		z.object({ n: zInt({ minimum: 0 }) }),
+		{ n: 1e21 },
+		200,
+		{ ok: { n: 1e21 } },
+	),
+	body(
+		"Type.Integer: 2.5 è «deve essere un numero intero»",
+		t.Object({ n: Type.Integer({ minimum: 0 }) }),
+		z.object({ n: zInt({ minimum: 0 }) }),
+		{ n: 2.5 },
 		422,
 		fail("n: deve essere un numero intero"),
 	),
@@ -1979,6 +2036,189 @@ export const cases: Case[] = [
 		status: 422,
 		body: fail("Variazione di scorta: deve essere un numero intero"),
 	},
+	// ── gemelli di U6: negozi, impostazioni, team, onboarding, chiusure ──
+	body(
+		"negozio: body vuoto (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"negozio: posizione mancante (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, location: undefined },
+		422,
+		fail("La posizione del negozio sulla mappa è obbligatoria"),
+	),
+	body(
+		"negozio: posizione del telefono come stringa (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, phoneNumbers: [{ number: "051123456", position: "1" }] },
+		422,
+		fail("Posizione (riga 1): deve essere un numero intero"),
+	),
+	{
+		name: "negozio: giorno oltre i safe integer (CreateStoreBody)",
+		target: "json",
+		tb: TbCreateStoreBody,
+		zod: CreateStoreBody,
+		req: {
+			raw: JSON.stringify({ ...STORE, openingHours: "@" }).replace(
+				'"@"',
+				'[{"dayOfWeek":9007199254740993,"slots":[{"open":"09:00","close":"13:00"}]}]',
+			),
+			contentType: "application/json",
+		},
+		status: 422,
+		body: fail("openingHours: deve essere al massimo 6"),
+	},
+	body(
+		"negozio: valido, con sito null, orari null e campi ignoti (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			...STORE,
+			name: "  Bottega  ",
+			websiteUrl: null,
+			openingHours: null,
+			phoneNumbers: [{ number: "051123456", position: 1e21, extra: 1 }],
+			sellerProfileId: "x",
+		},
+		200,
+		{
+			ok: {
+				...STORE,
+				name: "Bottega",
+				websiteUrl: null,
+				openingHours: null,
+				phoneNumbers: [{ number: "051123456", position: 1e21 }],
+			},
+		},
+	),
+	body(
+		"negozio: sito non valido (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, websiteUrl: "not a url" },
+		422,
+		fail("Sito web: indirizzo web non valido"),
+	),
+	body(
+		"anagrafica: body vuoto (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"anagrafica: data che non esiste (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{ ...PERSONAL, birthDate: "1990-02-30" },
+		422,
+		fail("Data non valida (AAAA-MM-GG)"),
+	),
+	body(
+		"anagrafica: valida (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{ ...PERSONAL, firstName: " Mario " },
+		200,
+		{ ok: PERSONAL },
+	),
+	body(
+		"documento: tipo non ammesso (DocumentBody)",
+		TbDocumentBody,
+		DocumentBody,
+		{ ...DOCUMENT, documentType: "badge" },
+		422,
+		fail("Seleziona il tipo di documento"),
+	),
+	body(
+		"documento: scadenza nel formato sbagliato (DocumentBody)",
+		TbDocumentBody,
+		DocumentBody,
+		{ ...DOCUMENT, documentExpiry: "01/01/2030" },
+		422,
+		fail("Data non valida (AAAA-MM-GG)"),
+	),
+	body(
+		"azienda: body vuoto (CompanyBody)",
+		TbCompanyBody,
+		CompanyBody,
+		{},
+		422,
+		fail("La ragione sociale è obbligatoria"),
+	),
+	body(
+		"azienda: partita IVA corta (CompanyBody)",
+		TbCompanyBody,
+		CompanyBody,
+		{ ...COMPANY, vatNumber: "1" },
+		422,
+		fail("La partita IVA deve essere di 11 cifre"),
+	),
+	body(
+		"impostazioni azienda: la partita IVA è un campo ignoto (CompanySettingsBody)",
+		TbCompanySettingsBody,
+		CompanySettingsBody,
+		{ ...COMPANY, vatNumber: "12345678901" },
+		200,
+		{ ok: COMPANY },
+	),
+	body(
+		"partita IVA: nel formato sbagliato (VatChangeBody)",
+		TbVatChangeBody,
+		VatChangeBody,
+		{ vatNumber: "123" },
+		422,
+		fail("La partita IVA deve essere di 11 cifre"),
+	),
+	body(
+		"invito: email non valida (TeamInviteBody)",
+		TbTeamInviteBody,
+		TeamInviteBody,
+		{ email: "bad", storeIds: ["a"] },
+		422,
+		fail("Inserisci un indirizzo email valido"),
+	),
+	body(
+		"invito: nessun negozio (TeamInviteBody)",
+		TbTeamInviteBody,
+		TeamInviteBody,
+		{ email: " a@b.it ", storeIds: [] },
+		422,
+		fail("Seleziona almeno un negozio"),
+	),
+	body(
+		"chiusure: data nel formato sbagliato (PutClosuresBody)",
+		TbPutClosuresBody,
+		PutClosuresBody,
+		{ optOutIds: [], customClosures: [{ startDate: "2026-1-1" }] },
+		422,
+		fail("Data di inizio (riga 1): formato non valido"),
+	),
+	body(
+		"chiusure: valide, con la nota trimmata (PutClosuresBody)",
+		TbPutClosuresBody,
+		PutClosuresBody,
+		{
+			optOutIds: ["h"],
+			customClosures: [{ startDate: "2026-12-24", note: " Ferie ", x: 1 }],
+		},
+		200,
+		{
+			ok: {
+				optOutIds: ["h"],
+				customClosures: [{ startDate: "2026-12-24", note: "Ferie" }],
+			},
+		},
+	),
 	body(
 		"t.Integer: 1e21 come numero e come stringa",
 		t.Object({ n: t.Integer({ minimum: 0 }), s: t.Integer({ minimum: 0 }) }),

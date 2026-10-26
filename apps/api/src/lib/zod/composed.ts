@@ -2,20 +2,45 @@ import { z } from "zod";
 import {
 	BrandSchema,
 	CustomerProfileSchema,
+	EmployeeSchema,
+	OnlinePaymentsSchema,
 	OrganizationSchema,
 	ProductCategoryWithMacroSchema,
 	ProductCharacteristicValueSchema,
 	ProductImageSchema,
 	ProductSchema,
+	SellerProfileChangeSchema,
 	SellerProfileSchema,
+	StoreCategorySchema,
+	StoreImageSchema,
+	StorePhoneNumberSchema,
 	StoreProductSchema,
 	StoreSchema,
 	UserSchema,
+	UserSummarySchema,
 } from "./entities";
+import { OpenStatusSchema } from "./holidays";
 import { zInteger } from "./t";
 
 // Gemelli Zod di `lib/schemas/composed.ts` (D3 del piano Hono), stessi nomi e
 // stesso ordine; si aggiungono quando una route migrata li usa.
+
+// Store + phone numbers + category + images
+export const StoreWithPhonesSchema = StoreSchema.extend({
+	lowStockThreshold: zInteger({
+		minimum: 0,
+		description:
+			"Soglia di scorta bassa del negozio (0 = avviso spento). Solo lato venditore",
+	}),
+	reservationHours: zInteger({
+		description:
+			"Ore di apertura entro cui ritirare una prenotazione. Solo lato venditore",
+	}),
+	phoneNumbers: z.array(StorePhoneNumberSchema),
+	category: StoreCategorySchema.nullable(),
+	images: z.array(StoreImageSchema),
+	openStatus: OpenStatusSchema.nullable().optional(),
+});
 
 // ── Auth: registration / sign-in success payloads ──────────
 // These endpoints return RAW DB rows: seller profiles without the joined
@@ -51,6 +76,14 @@ export const SignInResult = z.object({
 	token: AuthToken,
 });
 
+// Employee + user
+export const EmployeeWithUserSchema = EmployeeSchema.extend({
+	user: UserSummarySchema,
+	storeIds: z.array(z.string()).meta({
+		description: "ID dei negozi a cui il dipendente è assegnato",
+	}),
+});
+
 // StoreProduct + store (location excluded — PostGIS EWKB fails in nested relational queries)
 const StoreProductWithStore = StoreProductSchema.extend({
 	store: StoreSchema.omit({ location: true }),
@@ -82,4 +115,16 @@ export const AppliedDiscountSchema = z.object({
 // (null when none).
 export const SellerProductListItemSchema = ProductWithRelationsSchema.extend({
 	appliedDiscount: AppliedDiscountSchema.nullable(),
+});
+
+// Seller settings (profile + org + online payments + pending changes)
+export const SellerSettingsSchema = z.object({
+	profile: SellerProfileSchema,
+	organization: OrganizationSchema.nullable(),
+	onlinePayments: OnlinePaymentsSchema.nullable(),
+	pendingChanges: z.array(SellerProfileChangeSchema),
+	assignedStoreIds: z.union([z.array(z.string()), z.null()]).meta({
+		description:
+			"Lista storeId assegnati all'employee, o null se owner (= tutti)",
+	}),
 });
