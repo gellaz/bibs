@@ -1,6 +1,7 @@
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export type ProductStatusFilter = "active" | "disabled" | "trashed";
@@ -15,10 +16,10 @@ export function ProductStatusTabs({ storeId, value, onChange }: Props) {
 	const { data } = useQuery({
 		queryKey: ["product-status-counts", storeId],
 		queryFn: async () => {
-			const res = await api().seller.products["status-counts"].get({
+			const res = await sellerApi.products["status-counts"].$get({
 				query: { storeId },
 			});
-			return unwrap(res, m.products_counts_load_error()).data;
+			return (await unwrapJson(res, m.products_counts_load_error())).data;
 		},
 		enabled: !!storeId,
 	});

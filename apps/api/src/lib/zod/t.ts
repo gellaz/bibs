@@ -14,10 +14,12 @@ import { firstIssue, type Issue, issueRule, type RuleParams } from "./issues";
 // `t.Date`, `t.File`, `t.Files`, la coercizione di query e params, i formati):
 // accettano e rifiutano gli stessi valori, danno la stessa regola nel 422 e lo
 // stesso JSON Schema in /openapi. Per tutto il resto i gemelli usano Zod
-// normale (`z.string().min(1)`, `z.object`, `z.enum`, `.nullable()`, …) e i
+// normale (`z.string().regex()`, `z.object`, `z.enum`, `.nullable()`, …) e i
 // metadati con `.meta({ title, description, error })`. Corrispondenze da
 // tenere: `t.Integer` di Elysia → `zInteger` (accetta "5"), `Type.Integer` di
-// TypeBox → `z.int()` (non accetta stringhe); `t.Union` di oggetti →
+// TypeBox → `zInt()` (non accetta stringhe; mai `z.int()`: vedi
+// `integerCheck`); `t.String({ minLength, maxLength })` → `zString` (mai
+// `z.string().min/max`: contano i code point); `t.Union` di oggetti →
 // `z.union`, mai `z.discriminatedUnion` (dà errori che TypeBox non dà).
 
 type Json = Record<string, unknown>;
@@ -102,6 +104,48 @@ function withDefault<S extends z.ZodType, O>(
 export const zFormat = (format: FormatName) =>
 	z.stringFormat(format, FORMATS[format]);
 
+// ── testi ───────────────────────────────────────────────────────────────────
+
+export interface StringOptions extends Meta {
+	minLength?: number;
+	maxLength?: number;
+	pattern?: string;
+}
+
+/**
+ * `t.String` con `minLength`/`maxLength` (e `pattern`): TypeBox conta le unità
+ * UTF-16 (`value.length`), `z.string().min/max` di Zod 4.6 i code point
+ * («😀» è lungo 2 per TypeBox, 1 per Zod). Le issue sono le `too_small` e
+ * `too_big` di Zod: stessa regola e stesso ordine nel 422 (`issues.ts`).
+ */
+export function zString(options: StringOptions = {}) {
+	const { minLength, maxLength, pattern } = options;
+	let schema = z.string().check((ctx) => {
+		const input = ctx.value;
+		if (minLength !== undefined && input.length < minLength)
+			ctx.issues.push({
+				code: "too_small",
+				origin: "string",
+				minimum: minLength,
+				inclusive: true,
+				input,
+			});
+		if (maxLength !== undefined && input.length > maxLength)
+			ctx.issues.push({
+				code: "too_big",
+				origin: "string",
+				maximum: maxLength,
+				inclusive: true,
+				input,
+			});
+	});
+	if (pattern !== undefined) schema = schema.regex(new RegExp(pattern));
+	return register(schema.meta(metaOf(options)), {
+		...options,
+		type: "string",
+	});
+}
+
 // ── numeri ──────────────────────────────────────────────────────────────────
 
 export interface NumberOptions extends Meta {
@@ -111,6 +155,24 @@ export interface NumberOptions extends Meta {
 	exclusiveMaximum?: number;
 	multipleOf?: number;
 }
+
+/**
+ * Intero come per TypeBox (`Number.isInteger`). `z.int()` e
+ * `z.number().int()` di Zod 4.6 controllano anche i limiti dei safe integer:
+ * `page=9007199254740993` o `1e20` sarebbero 422, e con un massimo il primo
+ * errore diventerebbe «al massimo 9007199254740991».
+ */
+export const integerCheck = z.check<number>((ctx) => {
+	if (!Number.isInteger(ctx.value))
+		ctx.issues.push({
+			code: "invalid_type",
+			expected: "int",
+			input: ctx.value,
+		});
+});
+
+/** `Type.Integer` di TypeBox (form condivisi): intero, niente stringhe. */
+export const zInt = () => z.number().check(integerCheck);
 
 function numberChecks<S extends z.ZodNumber>(schema: S, o: NumberOptions) {
 	let s: z.ZodNumber = schema;
@@ -137,24 +199,22 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 	options: O = {} as O,
 ) {
 	const { default: defaultValue, ...o } = options;
-	const inner = numberChecks(z.number(), o);
-	// TypeBox controlla `Number.isInteger`, senza i limiti safe-int di `.int()`.
-	const intRule = (n: number) =>
-		Number.isInteger(n) ? parseRule(inner, n) : ({ kind: "integer" } as const);
+	const inner = numberChecks(zInt(), o);
 	const schema = z
 		.custom<number | string>(() => true)
 		.transform((value, ctx) => {
 			if (typeof value === "string" && isIntegerString(value)) {
 				if (encoding) return value as unknown as number;
 				const n = +value;
-				const rule = intRule(n);
+				const rule = parseRule(inner, n);
 				return rule ? fail(ctx, n, rule, true) : n;
 			}
-			// TypeBox rivalida sul ramo Integer: tutto ciò che non è un numero è
-			// «deve essere un numero intero».
+			// TypeBox rivalida sul ramo Integer: tutto ciò che non è un numero
+			// finito (anche `1e400` del JSON, Infinity) è «deve essere un numero
+			// intero»; Zod direbbe «deve essere un numero».
 			const rule =
-				typeof value === "number"
-					? intRule(value)
+				typeof value === "number" && Number.isFinite(value)
+					? parseRule(inner, value)
 					: value === undefined
 						? ({ kind: "required" } as const)
 						: ({ kind: "integer" } as const);

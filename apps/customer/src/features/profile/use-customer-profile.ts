@@ -1,10 +1,10 @@
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 
 async function fetchCustomerProfile() {
-	const res = await api().customer.profile.get();
-	return unwrap(res, "profile").data;
+	const res = await customerApi.profile.$get();
+	return (await unwrapJson(res, "profile")).data;
 }
 
 /** Punti fedeltà + data di iscrizione. I dati anagrafici stanno in better-auth. */

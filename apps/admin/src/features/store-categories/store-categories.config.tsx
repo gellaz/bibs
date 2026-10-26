@@ -1,4 +1,5 @@
 import { SelectCombobox } from "@bibs/ui/custom/select-combobox";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useQuery } from "@tanstack/react-query";
 import type {
@@ -8,7 +9,7 @@ import type {
 import type { CsvImportResult } from "@/features/csv-import/components/csv-import-dialog";
 import { StoreCategoryForm } from "@/features/store-categories/components/store-category-form";
 import type { StoreCategoryFormData } from "@/features/store-categories/schemas/store-category";
-import { api } from "@/lib/api";
+import { adminApi, catalogApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface MacroCategory {
@@ -31,14 +32,10 @@ function useMacros() {
 	const { data, isLoading } = useQuery({
 		queryKey: ["store-macro-categories", "all"],
 		queryFn: async () => {
-			const res = await api()["store-macro-categories"].get({
+			const res = await catalogApi["store-macro-categories"].$get({
 				query: { limit: 100, sortBy: "name", sortOrder: "asc" },
 			});
-			if (res.error)
-				throw new Error(
-					res.error.value?.message || m.categories_macros_load_error(),
-				);
-			return res.data;
+			return unwrapJson(res, m.categories_macros_load_error());
 		},
 		staleTime: 5 * 60 * 1000,
 	});
@@ -94,28 +91,31 @@ export const storeCategoriesConfig: CategoryCrudConfig<
 	extraInvalidate: [["admin-configurations-counts"]],
 
 	list: (q) =>
-		api()["store-categories"].get({
+		catalogApi["store-categories"].$get({
 			query: {
 				page: q.page,
 				limit: q.limit,
 				...(q.search ? { search: q.search } : {}),
 				...(q.macroCategoryId
-					? { macroCategoryId: q.macroCategoryId as string }
+					? { macroCategoryId: String(q.macroCategoryId) }
 					: {}),
 				sortBy: q.sortBy,
 				sortOrder: q.sortOrder,
 			},
 		}),
 	create: (form) =>
-		api().admin["store-categories"].post({
-			name: form.name,
-			macroCategoryId: form.macroCategoryId,
+		adminApi["store-categories"].$post({
+			json: { name: form.name, macroCategoryId: form.macroCategoryId },
 		}),
 	update: (id, form) =>
-		api()
-			.admin["store-categories"]({ categoryId: id })
-			.patch({ name: form.name, macroCategoryId: form.macroCategoryId }),
-	remove: (id) => api().admin["store-categories"]({ categoryId: id }).delete(),
+		adminApi["store-categories"][":categoryId"].$patch({
+			param: { categoryId: id },
+			json: { name: form.name, macroCategoryId: form.macroCategoryId },
+		}),
+	remove: (id) =>
+		adminApi["store-categories"][":categoryId"].$delete({
+			param: { categoryId: id },
+		}),
 
 	extraColumns: () => [macroColumn()],
 
@@ -126,12 +126,10 @@ export const storeCategoriesConfig: CategoryCrudConfig<
 
 	csvImport: {
 		onImport: async (file): Promise<CsvImportResult> => {
-			const res = await api().admin["store-categories"].import.post({ file });
-			if (res.error)
-				throw new Error(res.error.value?.message || m.common_import_error());
-			const data = res.data?.data;
-			if (!data) throw new Error(m.csv_invalid_response());
-			return data;
+			const res = await adminApi["store-categories"].import.$post({
+				form: { file },
+			});
+			return (await unwrapJson(res, m.common_import_error())).data;
 		},
 		labels: () => ({
 			title: m.categories_store_import_title(),
