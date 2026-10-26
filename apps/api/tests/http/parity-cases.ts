@@ -8,7 +8,12 @@ import "@/lib/schemas/forms/formats";
 import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
 import { PaginationQuery as TbPaginationQuery } from "@/lib/pagination";
-import { ProductSearchQuery as TbProductSearchQuery } from "@/lib/queries";
+import {
+	CategoryListQuery as TbCategoryListQuery,
+	CharacteristicListQuery as TbCharacteristicListQuery,
+	ProductCategoryListQuery as TbProductCategoryListQuery,
+	ProductSearchQuery as TbProductSearchQuery,
+} from "@/lib/queries";
 import {
 	BulkDeleteBody as TbBulkDeleteBody,
 	BulkStatusBody as TbBulkStatusBody,
@@ -16,6 +21,7 @@ import {
 	DiscountListQuery as TbDiscountListQuery,
 	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
+import { VatRateSchema as TbVatRateSchema } from "@/lib/schemas/forms";
 import {
 	AcceptInviteBody as TbAcceptInviteBody,
 	CompanyBody as TbCompanyBody,
@@ -36,6 +42,7 @@ import { CreateStoreBody as TbCreateStoreBody } from "@/lib/schemas/forms/stores
 import {
 	CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody,
 	PutClosuresBody as TbPutClosuresBody,
+	UpdateHolidayDefinitionBody as TbUpdateHolidayDefinitionBody,
 } from "@/lib/schemas/holidays";
 import {
 	StockAdjustBody as TbStockAdjustBody,
@@ -60,10 +67,19 @@ import {
 } from "@/lib/zod/forms/products";
 import { CompanySettingsBody, VatChangeBody } from "@/lib/zod/forms/settings";
 import { CreateStoreBody } from "@/lib/zod/forms/stores";
-import { PutClosuresBody } from "@/lib/zod/holidays";
+import {
+	CreateHolidayDefinitionBody,
+	PutClosuresBody,
+	UpdateHolidayDefinitionBody,
+} from "@/lib/zod/holidays";
 import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
 import { PaginationQuery } from "@/lib/zod/pagination";
-import { ProductSearchQuery } from "@/lib/zod/queries";
+import {
+	CategoryListQuery,
+	CharacteristicListQuery,
+	ProductCategoryListQuery,
+	ProductSearchQuery,
+} from "@/lib/zod/queries";
 import { RegisterBody, SignInBody } from "@/lib/zod/registration";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
 import {
@@ -75,6 +91,17 @@ import {
 	zInteger,
 	zString,
 } from "@/lib/zod/t";
+import {
+	RemoveCategoryCharacteristicBody,
+	SetCategoryCharacteristicBody,
+} from "@/modules/admin/routes/category-characteristics";
+import { HolidayPreviewQuery } from "@/modules/admin/routes/holiday-definitions";
+import {
+	CreateProductCharacteristicBody,
+	DeleteProductCharacteristicBody,
+	UpdateProductCharacteristicBody,
+} from "@/modules/admin/routes/product-characteristics";
+import { CreateProductMacroCategoryBody } from "@/modules/admin/routes/product-macro-categories";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 
@@ -274,36 +301,104 @@ const OpeningHours = OpeningHoursSchema;
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
 // (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
 // `StockBulkAdjustBody` è in `lib/zod/stock.ts` da U5.
-const holidayName = zString({
-	minLength: 1,
-	maxLength: 100,
-	description: "Nome festività",
-});
-const CreateHolidayDefinitionBody = z.union([
-	z.object({
-		type: z.literal("fixed"),
-		name: holidayName,
-		month: zInteger({ minimum: 1, maximum: 12, description: "Mese (1-12)" }),
-		day: zInteger({ minimum: 1, maximum: 31, description: "Giorno (1-31)" }),
+// `CreateHolidayDefinitionBody` è in `lib/zod/holidays.ts` da U8.
+
+// Gli schemi TypeBox delle route di U8 (catalogo e admin 1) che stavano dentro
+// le route Elysia, copiati da lì: il confronto dal vivo resta fino a U11.
+const tbOptions = t.Array(
+	t.Object({
+		id: t.Optional(
+			t.String({
+				description:
+					"ID di un'opzione esistente: tenerlo permette di rinominarla senza perdere i valori dei prodotti",
+			}),
+		),
+		value: t.String({ maxLength: 100, description: "Valore ammesso" }),
 	}),
-	z.object({
-		type: z.literal("easter_relative"),
-		name: holidayName,
-		easterOffsetDays: zInteger({
-			minimum: -60,
-			maximum: 60,
-			description: "Offset dalla Pasqua (Pasqua=0, Pasquetta=1)",
+	{ description: "Opzioni della lista chiusa, nell'ordine di presentazione" },
+);
+const tbUnit = t.Optional(
+	t.Nullable(
+		t.String({
+			maxLength: 20,
+			description: "Unità di misura, solo per il tipo number",
 		}),
+	),
+);
+const tbDataType = t.Union(
+	[
+		t.Literal("text"),
+		t.Literal("number"),
+		t.Literal("boolean"),
+		t.Literal("enum"),
+	],
+	{
+		description:
+			"Tipo di dato: text (testo libero), number (numero, con unità facoltativa), boolean (sì/no), enum (lista chiusa di opzioni)",
+	},
+);
+const TbCreateProductCharacteristicBody = t.Object({
+	name: t.String({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nome della caratteristica, univoco nel dizionario",
 	}),
-	z.object({
-		type: z.literal("one_off"),
-		name: holidayName,
-		oneOffDate: z
-			.string()
-			.regex(/^\d{4}-\d{2}-\d{2}$/)
-			.meta({ description: "Data YYYY-MM-DD" }),
+	dataType: tbDataType,
+	unit: tbUnit,
+	options: t.Optional(tbOptions),
+});
+const TbUpdateProductCharacteristicBody = t.Object({
+	name: t.Optional(
+		t.String({
+			minLength: 1,
+			maxLength: 100,
+			description: "Nuovo nome della caratteristica",
+		}),
+	),
+	dataType: t.Optional(tbDataType),
+	unit: tbUnit,
+	options: t.Optional(tbOptions),
+	confirmAffected: t.Optional(
+		t.Integer({
+			minimum: 0,
+			default: 0,
+			description:
+				"Numero di prodotti con un valore che l'interfaccia ha mostrato nella conferma. Serve quando la modifica rimuove opzioni in uso o cambia il tipo: se i prodotti coinvolti sono di più, 409 e nulla cambia.",
+		}),
+	),
+});
+const TbDeleteProductCharacteristicBody = t.Object({
+	confirmAffected: t.Integer({
+		minimum: 0,
+		description:
+			"Numero di prodotti con un valore che l'interfaccia ha mostrato nella conferma. Se i prodotti coinvolti sono di più, la richiesta è respinta con 409 e nulla viene cancellato.",
 	}),
-]);
+});
+const TbRemoveCategoryCharacteristicBody = t.Object({
+	confirmAffected: t.Integer({
+		minimum: 0,
+		description:
+			"Numero di prodotti della sotto-categoria con un valore che l'interfaccia ha mostrato nella conferma. Se sono di più, 409 e nulla viene cancellato.",
+	}),
+});
+const TbSetCategoryCharacteristicBody = t.Object({
+	required: t.Boolean({ description: "Il venditore deve compilarla" }),
+});
+const TbCreateProductMacroCategoryBody = t.Object({
+	name: t.String({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nome della macro categoria",
+	}),
+	suggestedVatRate: t.Optional(TbVatRateSchema),
+});
+const TbHolidayPreviewQuery = t.Object({
+	year: t.Integer({
+		minimum: 2000,
+		maximum: 2100,
+		description: "Anno da risolvere",
+	}),
+});
 
 const body = (
 	name: string,
@@ -2411,6 +2506,251 @@ export const cases: Case[] = [
 		"?ids=a,b&q=x%20y#z&ids=c#d",
 		200,
 		{ ok: { q: "x y#z", ids: ["a", "b", "c#d"] } },
+	),
+
+	// U8: catalogo pubblico e admin 1 (attesi catturati su Elysia nel batch
+	// `baseline/hono-batch-admin-1.jsonl`).
+	query(
+		"U8 categorie: default",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		"",
+		200,
+		{
+			ok: { page: 1, limit: 20, sortBy: "name", sortOrder: "asc" },
+		},
+	),
+	query(
+		"U8 categorie: page oltre i safe-int (t.Integer non li limita)",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		"?page=9007199254740992",
+		200,
+		{
+			ok: {
+				page: 9007199254740992,
+				limit: 20,
+				sortBy: "name",
+				sortOrder: "asc",
+			},
+		},
+	),
+	query(
+		"U8 categorie: ordinamento non ammesso",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		"?sortBy=foo",
+		422,
+		fail("sortBy: valore non ammesso"),
+	),
+	query(
+		"U8 categorie: ricerca troppo lunga",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		`?search=${"x".repeat(101)}`,
+		422,
+		fail("Ricerca: al massimo 100 caratteri"),
+	),
+	query(
+		"U8 sotto-categorie: filtro macro e campi ignoti",
+		TbProductCategoryListQuery,
+		ProductCategoryListQuery,
+		"?macroCategoryId=m&foo=1&sortOrder=desc",
+		200,
+		{
+			ok: {
+				page: 1,
+				limit: 20,
+				sortBy: "name",
+				sortOrder: "desc",
+				macroCategoryId: "m",
+			},
+		},
+	),
+	query(
+		"U8 caratteristiche: tipo non ammesso",
+		TbCharacteristicListQuery,
+		CharacteristicListQuery,
+		"?dataType=foo",
+		422,
+		fail("dataType: valore non ammesso"),
+	),
+	query(
+		"U8 anteprima festività: anno mancante",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"",
+		422,
+		fail("year: campo obbligatorio"),
+	),
+	query(
+		"U8 anteprima festività: anno decimale",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"?year=2026.5",
+		422,
+		fail("year: deve essere un numero intero"),
+	),
+	query(
+		"U8 anteprima festività: anno fuori limite",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"?year=1999",
+		422,
+		fail("Valore non valido: deve essere almeno 2000"),
+	),
+	query(
+		"U8 anteprima festività: anno valido",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"?year=2026",
+		200,
+		{ ok: { year: 2026 } },
+	),
+	body(
+		"U8 macro prodotto: aliquota di default anche se assente",
+		TbCreateProductMacroCategoryBody,
+		CreateProductMacroCategoryBody,
+		{ name: " x " },
+		200,
+		{ ok: { name: "x", suggestedVatRate: "22" } },
+	),
+	body(
+		"U8 macro prodotto: aliquota non ammessa",
+		TbCreateProductMacroCategoryBody,
+		CreateProductMacroCategoryBody,
+		{ name: "x", suggestedVatRate: "7" },
+		422,
+		fail("suggestedVatRate: valore non ammesso"),
+	),
+	body(
+		"U8 caratteristica: id opzione non testo",
+		TbCreateProductCharacteristicBody,
+		CreateProductCharacteristicBody,
+		{
+			name: "x",
+			dataType: "enum",
+			options: [{ value: "a" }, { id: 1, value: "b" }],
+		},
+		422,
+		fail("options.1.id: deve essere un testo"),
+	),
+	body(
+		"U8 caratteristica: campi ignoti tolti, unità null",
+		TbCreateProductCharacteristicBody,
+		CreateProductCharacteristicBody,
+		{
+			name: " x ",
+			dataType: "enum",
+			unit: null,
+			options: [{ value: "a", extra: 1 }],
+			extra: 2,
+		},
+		200,
+		{
+			ok: {
+				name: "x",
+				dataType: "enum",
+				unit: null,
+				options: [{ value: "a" }],
+			},
+		},
+	),
+	body(
+		"U8 caratteristica: confirmAffected di default",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{},
+		200,
+		{ ok: { confirmAffected: 0 } },
+	),
+	body(
+		"U8 caratteristica: confirmAffected negativo come stringa",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{ confirmAffected: "-1" },
+		422,
+		fail("Valore non valido: deve essere almeno 0"),
+	),
+	body(
+		"U8 caratteristica: unità troppo lunga",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{ unit: "x".repeat(21) },
+		422,
+		fail("unit: al massimo 20 caratteri"),
+	),
+	body(
+		"U8 elimina caratteristica: confirmAffected mancante",
+		TbDeleteProductCharacteristicBody,
+		DeleteProductCharacteristicBody,
+		{},
+		422,
+		fail("confirmAffected: campo obbligatorio"),
+	),
+	body(
+		"U8 elimina caratteristica: confirmAffected decimale",
+		TbDeleteProductCharacteristicBody,
+		DeleteProductCharacteristicBody,
+		{ confirmAffected: 1.5 },
+		422,
+		fail("confirmAffected: deve essere un numero intero"),
+	),
+	body(
+		"U8 elimina caratteristica: confirmAffected oltre i safe-int",
+		TbDeleteProductCharacteristicBody,
+		DeleteProductCharacteristicBody,
+		{ confirmAffected: 1e20 },
+		200,
+		{ ok: { confirmAffected: 1e20 } },
+	),
+	body(
+		"U8 caratteristica: confirmAffected come stringa oltre i safe-int",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{ confirmAffected: "9007199254740993" },
+		200,
+		{ ok: { confirmAffected: 9007199254740992 } },
+	),
+	body(
+		"U8 togli caratteristica: confirmAffected negativo",
+		TbRemoveCategoryCharacteristicBody,
+		RemoveCategoryCharacteristicBody,
+		{ confirmAffected: -1 },
+		422,
+		fail("confirmAffected: deve essere almeno 0"),
+	),
+	body(
+		"U8 assegna caratteristica: required non booleano",
+		TbSetCategoryCharacteristicBody,
+		SetCategoryCharacteristicBody,
+		{ required: "yes" },
+		422,
+		fail("required: deve essere vero o falso"),
+	),
+	body(
+		"U8 festività: attivo non booleano",
+		TbUpdateHolidayDefinitionBody,
+		UpdateHolidayDefinitionBody,
+		{ isActive: "no" },
+		422,
+		fail("Attivo: deve essere vero o falso"),
+	),
+	body(
+		"U8 festività: trim e campi ignoti",
+		TbUpdateHolidayDefinitionBody,
+		UpdateHolidayDefinitionBody,
+		{ name: "  y  ", isActive: false, extra: 1 },
+		200,
+		{ ok: { name: "y", isActive: false } },
+	),
+	body(
+		"U8 caratteristica: nome di 51 emoji (TypeBox conta le unità UTF-16)",
+		TbCreateProductCharacteristicBody,
+		CreateProductCharacteristicBody,
+		{ name: "😀".repeat(51), dataType: "text" },
+		422,
+		fail("Nome: al massimo 100 caratteri"),
 	),
 ];
 

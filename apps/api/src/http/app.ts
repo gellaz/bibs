@@ -14,7 +14,9 @@ function rawPath(request: Request) {
 	// Solo `?`, come Elysia: `/brands#x` resta un path che non esiste (404).
 	const end = url.indexOf("?", start);
 	const path = end === -1 ? url.slice(start) : url.slice(start, end);
-	return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+	// «//» resta com'è: sotto un mount è `/prefisso//`, 404 in Elysia; tolto
+	// uno slash arriverebbe alla route "/" della sub-app.
+	return path.length > 2 && path.endsWith("/") ? path.slice(0, -1) : path;
 }
 
 /**

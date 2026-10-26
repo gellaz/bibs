@@ -1,34 +1,60 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAdmin } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import {
-	OkMessage,
-	okRes,
-	ProductMacroCategorySchema,
-	withConflictErrors,
-} from "@/lib/schemas";
-import { VatRateSchema } from "@/lib/schemas/forms";
-import { withAdmin } from "../context";
+import { ProductMacroCategorySchema } from "@/lib/zod/entities";
+import { VatRateSchema } from "@/lib/zod/forms/products";
+import { OkMessage, okRes, withConflictErrors } from "@/lib/zod/responses";
+import { zString } from "@/lib/zod/t";
+import { adminDetail } from "../context";
 import {
 	createProductMacroCategory,
 	deleteProductMacroCategory,
 	updateProductMacroCategory,
 } from "../services/product-macro-categories";
 
-export const productMacroCategoriesWriteRoutes = new Elysia()
+const ProductMacroCategoryResponse = okRes(ProductMacroCategorySchema);
+
+const Params = z.object({
+	macroCategoryId: z
+		.string()
+		.meta({ description: "ID della macro categoria prodotto" }),
+});
+
+const macroName = (description: string) =>
+	zString({ minLength: 1, maxLength: 100, description });
+
+export const CreateProductMacroCategoryBody = z.object({
+	name: macroName("Nome della macro categoria"),
+	suggestedVatRate: VatRateSchema.optional(),
+});
+
+export const productMacroCategoriesWriteRoutes = new Hono()
 	.post(
 		"/product-macro-categories",
-		async (ctx) => {
-			const { body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: ProductMacroCategoryResponse }),
+			detail: adminDetail(
+				"Crea macro categoria prodotto",
+				"Crea una nuova macro categoria prodotto. Il nome deve essere univoco.",
+			),
+		}),
+		v("json", CreateProductMacroCategoryBody),
+		requireAdmin,
+		async (c) => {
+			const body = c.req.valid("json");
 			const data = await createProductMacroCategory({
 				name: body.name,
 				suggestedVatRate: body.suggestedVatRate,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					macroCategoryId: data.id,
 					macroCategoryName: data.name,
 					action: "product_macro_category_created",
@@ -36,40 +62,38 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria prodotto creata",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome della macro categoria",
-				}),
-				suggestedVatRate: t.Optional(VatRateSchema),
-			}),
-			response: withConflictErrors({ 200: okRes(ProductMacroCategorySchema) }),
-			detail: {
-				summary: "Crea macro categoria prodotto",
-				description:
-					"Crea una nuova macro categoria prodotto. Il nome deve essere univoco.",
-				tags: ["Admin"],
-			},
+			return send(c, ProductMacroCategoryResponse, ok(data));
 		},
 	)
 	.patch(
 		"/product-macro-categories/:macroCategoryId",
-		async (ctx) => {
-			const { params, body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: ProductMacroCategoryResponse }),
+			detail: adminDetail(
+				"Aggiorna macro categoria prodotto",
+				"Aggiorna il nome di una macro categoria prodotto esistente.",
+			),
+		}),
+		v("param", Params),
+		v(
+			"json",
+			z.object({
+				name: macroName("Nuovo nome della macro categoria"),
+				suggestedVatRate: VatRateSchema.optional(),
+			}),
+		),
+		requireAdmin,
+		async (c) => {
+			const body = c.req.valid("json");
 			const data = await updateProductMacroCategory({
-				macroCategoryId: params.macroCategoryId,
+				macroCategoryId: c.req.valid("param").macroCategoryId,
 				name: body.name,
 				suggestedVatRate: body.suggestedVatRate,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					macroCategoryId: data.id,
 					newName: data.name,
 					action: "product_macro_category_updated",
@@ -77,41 +101,28 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria prodotto aggiornata",
 			);
 
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				macroCategoryId: t.String({
-					description: "ID della macro categoria prodotto",
-				}),
-			}),
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nuovo nome della macro categoria",
-				}),
-				suggestedVatRate: t.Optional(VatRateSchema),
-			}),
-			response: withConflictErrors({ 200: okRes(ProductMacroCategorySchema) }),
-			detail: {
-				summary: "Aggiorna macro categoria prodotto",
-				description:
-					"Aggiorna il nome di una macro categoria prodotto esistente.",
-				tags: ["Admin"],
-			},
+			return send(c, ProductMacroCategoryResponse, ok(data));
 		},
 	)
 	.delete(
 		"/product-macro-categories/:macroCategoryId",
-		async (ctx) => {
-			const { params, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
-			const deleted = await deleteProductMacroCategory(params.macroCategoryId);
+		doc({
+			response: withConflictErrors({ 200: OkMessage }),
+			detail: adminDetail(
+				"Elimina macro categoria prodotto",
+				"Elimina una macro categoria prodotto. Fallisce con 409 se ci sono sotto-categorie collegate.",
+			),
+		}),
+		v("param", Params),
+		requireAdmin,
+		async (c) => {
+			const deleted = await deleteProductMacroCategory(
+				c.req.valid("param").macroCategoryId,
+			);
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					macroCategoryId: deleted.id,
 					macroCategoryName: deleted.name,
 					action: "product_macro_category_deleted",
@@ -119,20 +130,10 @@ export const productMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria prodotto eliminata",
 			);
 
-			return okMessage("Macro categoria prodotto eliminata");
-		},
-		{
-			params: t.Object({
-				macroCategoryId: t.String({
-					description: "ID della macro categoria prodotto",
-				}),
-			}),
-			response: withConflictErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Elimina macro categoria prodotto",
-				description:
-					"Elimina una macro categoria prodotto. Fallisce con 409 se ci sono sotto-categorie collegate.",
-				tags: ["Admin"],
-			},
+			return send(
+				c,
+				OkMessage,
+				okMessage("Macro categoria prodotto eliminata"),
+			);
 		},
 	);

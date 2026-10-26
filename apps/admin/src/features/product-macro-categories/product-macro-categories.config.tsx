@@ -2,7 +2,7 @@ import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import { ProductMacroCategoryForm } from "@/features/product-macro-categories/components/product-macro-category-form";
 import type { ProductMacroCategoryFormData } from "@/features/product-macro-categories/schemas/product-macro-category";
-import { api } from "@/lib/api";
+import { adminApi, catalogApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface ProductMacroCategory {
@@ -31,7 +31,7 @@ export const productMacroCategoriesConfig: CategoryCrudConfig<
 	extraInvalidate: [["product-categories"], ["admin-configurations-counts"]],
 
 	list: (q) =>
-		api()["product-macro-categories"].get({
+		catalogApi["product-macro-categories"].$get({
 			query: {
 				page: q.page,
 				limit: q.limit,
@@ -41,16 +41,18 @@ export const productMacroCategoriesConfig: CategoryCrudConfig<
 			},
 		}),
 	create: (form) =>
-		api().admin["product-macro-categories"].post({
-			name: form.name,
-			suggestedVatRate: form.suggestedVatRate,
+		adminApi["product-macro-categories"].$post({
+			json: { name: form.name, suggestedVatRate: form.suggestedVatRate },
 		}),
 	update: (id, form) =>
-		api()
-			.admin["product-macro-categories"]({ macroCategoryId: id })
-			.patch({ name: form.name, suggestedVatRate: form.suggestedVatRate }),
+		adminApi["product-macro-categories"][":macroCategoryId"].$patch({
+			param: { macroCategoryId: id },
+			json: { name: form.name, suggestedVatRate: form.suggestedVatRate },
+		}),
 	remove: (id) =>
-		api().admin["product-macro-categories"]({ macroCategoryId: id }).delete(),
+		adminApi["product-macro-categories"][":macroCategoryId"].$delete({
+			param: { macroCategoryId: id },
+		}),
 
 	extraColumns: () => [vatColumn()],
 
