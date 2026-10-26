@@ -7,17 +7,37 @@ import { type Target, v } from "@/http/validator";
 import { PaginationQuery as TbPaginationQuery } from "@/lib/pagination";
 import { ProductSearchQuery as TbProductSearchQuery } from "@/lib/queries";
 import {
+	BulkDeleteBody as TbBulkDeleteBody,
+	BulkStatusBody as TbBulkStatusBody,
 	DiscountCreateBody as TbDiscountCreateBody,
 	DiscountListQuery as TbDiscountListQuery,
+	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
 import { AcceptInviteBody as TbAcceptInviteBody } from "@/lib/schemas/forms/onboarding";
 import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
+import {
+	CharacteristicValuesField as TbCharacteristicValuesField,
+	CreateProductBody as TbCreateProductBody,
+} from "@/lib/schemas/forms/products";
 import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/lib/schemas/holidays";
-import { StockBulkAdjustBody as TbStockBulkAdjustBody } from "@/lib/schemas/stock";
+import {
+	StockAdjustBody as TbStockAdjustBody,
+	StockBulkAdjustBody as TbStockBulkAdjustBody,
+} from "@/lib/schemas/stock";
+import {
+	BulkDeleteBody,
+	BulkStatusBody,
+	ProductStatusBody,
+} from "@/lib/zod/entities";
 import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+} from "@/lib/zod/forms/products";
 import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
 import { PaginationQuery } from "@/lib/zod/pagination";
 import { RegisterBody, SignInBody } from "@/lib/zod/registration";
+import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
 import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
@@ -295,41 +315,7 @@ const OpeningHours = z
 
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
 // (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
-const bulkStoreId = z
-	.string()
-	.meta({ description: "ID negozio attivo del chiamante" });
-const bulkProductIds = z
-	.array(z.string())
-	.min(1)
-	.max(100)
-	.meta({ description: "ID dei prodotti su cui applicare l'operazione" });
-const StockBulkAdjustBody = z.union([
-	z.object({
-		storeId: bulkStoreId,
-		mode: z
-			.literal("delta")
-			.meta({ description: "Somma algebrica di `value` allo stock corrente" }),
-		value: zInteger({
-			minimum: -1000,
-			maximum: 1000,
-			description: "Variazione (segno + per aumentare, - per diminuire).",
-		}),
-		productIds: bulkProductIds,
-	}),
-	z.object({
-		storeId: bulkStoreId,
-		mode: z
-			.literal("set")
-			.meta({ description: "Imposta lo stock a `value` per ogni prodotto" }),
-		value: zInteger({
-			minimum: 0,
-			maximum: 100000,
-			description: "Valore assoluto da impostare.",
-		}),
-		productIds: bulkProductIds,
-	}),
-]);
-
+// `StockBulkAdjustBody` è in `lib/zod/stock.ts` da U5.
 const holidayName = z
 	.string()
 	.min(1)
@@ -1796,5 +1782,234 @@ export const cases: Case[] = [
 		{ l: [{}, {}] },
 		422,
 		fail("l: al massimo 1 elemento"),
+	),
+
+	// U5: gemelli dei form e dei body seller condivisi (prodotti, stock). Gli
+	// schemi in linea nelle route li copre il batch catturato su Elysia
+	// (`baseline/hono-batch-seller-products.jsonl`).
+	body(
+		"prodotti: body vuoto (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"prodotti: nome di soli spazi (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "   ", price: "1.00", storeId: "s" },
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"prodotti: prezzo senza decimali (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "X", price: "1", storeId: "s" },
+		422,
+		fail("Il prezzo deve essere nel formato 0.00"),
+	),
+	body(
+		"prodotti: aliquota non ammessa (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "X", price: "1.00", storeId: "s", vatRate: "7" },
+		422,
+		fail("Aliquota IVA: valore non ammesso"),
+	),
+	body(
+		"prodotti: EAN di 12 cifre (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "X", price: "1.00", storeId: "s", ean: "123456789012" },
+		422,
+		fail("EAN deve essere 8 o 13 cifre"),
+	),
+	body(
+		"prodotti: valore di caratteristica non valido (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{
+			name: "X",
+			price: "1.00",
+			storeId: "s",
+			characteristicValues: [{ characteristicId: "c", value: {} }],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
+	),
+	// Unione con più rami non nulli: Zod dà solo l'errore del ramo che combacia
+	// col tipo (stringa troppo lunga), TypeBox «valore non valido».
+	body(
+		"prodotti: valore di caratteristica oltre 2000 caratteri (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{
+			name: "X",
+			price: "1.00",
+			storeId: "s",
+			characteristicValues: [
+				{ characteristicId: "c", value: "y".repeat(2001) },
+			],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
+	),
+	body(
+		"prodotti: valore oltre 2000 caratteri nella riga 2 (campo del PATCH)",
+		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
+		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
+		{
+			characteristicValues: [
+				{ characteristicId: "c", value: "x" },
+				{ characteristicId: "d", value: "y".repeat(2001) },
+			],
+		},
+		422,
+		fail("Valore (riga 2): valore non valido"),
+	),
+	body(
+		"prodotti: default IVA, trim, campi ignoti tolti (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{
+			name: " Pane ",
+			price: "1.00",
+			storeId: "s",
+			ean: "",
+			productCategoryId: null,
+			characteristicValues: [
+				{ characteristicId: "c", value: " x ", extra: 1 },
+				{ characteristicId: "d", value: 5 },
+				{ characteristicId: "e", value: null },
+			],
+			sellerProfileId: "altro",
+		},
+		200,
+		{
+			ok: {
+				name: "Pane",
+				price: "1.00",
+				vatRate: "22",
+				productCategoryId: null,
+				ean: "",
+				characteristicValues: [
+					{ characteristicId: "c", value: "x" },
+					{ characteristicId: "d", value: 5 },
+					{ characteristicId: "e", value: null },
+				],
+				storeId: "s",
+			},
+		},
+	),
+	body(
+		"prodotti: stato mancante (ProductStatusBody)",
+		TbProductStatusBody,
+		ProductStatusBody,
+		{},
+		422,
+		fail("Stato: campo obbligatorio"),
+	),
+	body(
+		"prodotti: stato non ammesso (ProductStatusBody)",
+		TbProductStatusBody,
+		ProductStatusBody,
+		{ status: "deleted" },
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	body(
+		"prodotti: lista vuota (BulkStatusBody)",
+		TbBulkStatusBody,
+		BulkStatusBody,
+		{ productIds: [], status: "active" },
+		422,
+		fail("Prodotti: almeno 1 elemento"),
+	),
+	body(
+		"prodotti: più di 100 ID (BulkDeleteBody)",
+		TbBulkDeleteBody,
+		BulkDeleteBody,
+		{ productIds: Array.from({ length: 101 }, (_, i) => `p${i}`) },
+		422,
+		fail("Prodotti: al massimo 100 elementi"),
+	),
+	body(
+		"stock: delta mancante (StockAdjustBody)",
+		TbStockAdjustBody,
+		StockAdjustBody,
+		{},
+		422,
+		fail("Variazione di scorta: campo obbligatorio"),
+	),
+	body(
+		"stock: delta come stringa oltre il massimo (StockAdjustBody)",
+		TbStockAdjustBody,
+		StockAdjustBody,
+		{ delta: "5000" },
+		422,
+		fail("Valore non valido: deve essere al massimo 1000"),
+	),
+	body(
+		"stock: delta come stringa valido (StockAdjustBody)",
+		TbStockAdjustBody,
+		StockAdjustBody,
+		{ delta: "-3" },
+		200,
+		{ ok: { delta: -3 } },
+	),
+	// t.Integer non ha i limiti dei safe integer di `z.number().int()`.
+	{
+		name: "stock: delta oltre i safe integer (StockAdjustBody)",
+		target: "json",
+		tb: TbStockAdjustBody,
+		zod: StockAdjustBody,
+		req: { raw: '{"delta":9007199254740993}', contentType: "application/json" },
+		status: 422,
+		body: fail("Variazione di scorta: deve essere al massimo 1000"),
+	},
+	{
+		name: "stock: delta infinito (StockAdjustBody)",
+		target: "json",
+		tb: TbStockAdjustBody,
+		zod: StockAdjustBody,
+		req: { raw: '{"delta":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Variazione di scorta: deve essere un numero intero"),
+	},
+	body(
+		"t.Integer: 1e21 come numero e come stringa",
+		t.Object({ n: t.Integer({ minimum: 0 }), s: t.Integer({ minimum: 0 }) }),
+		z.object({ n: zInteger({ minimum: 0 }), s: zInteger({ minimum: 0 }) }),
+		{ n: 1e21, s: "1e21" },
+		200,
+		{ ok: { n: 1e21, s: 1e21 } },
+	),
+	query(
+		"paginazione: pagina oltre i safe integer (PaginationQuery)",
+		TbPaginationQuery,
+		PaginationQuery,
+		"?page=9007199254740993",
+		200,
+		{ ok: { page: 9007199254740992, limit: 20 } },
+	),
+	query(
+		"paginazione: limite oltre i safe integer (PaginationQuery)",
+		TbPaginationQuery,
+		PaginationQuery,
+		"?limit=9007199254740993",
+		422,
+		fail("Valore non valido: deve essere al massimo 100"),
+	),
+	// Elysia non taglia il frammento: il `#` resta nell'ultimo valore.
+	query(
+		"query: il # resta nel valore, anche negli array",
+		t.Object({ q: t.String(), ids: t.Array(t.String()) }),
+		z.object({ q: z.string(), ids: z.array(z.string()) }),
+		"?ids=a,b&q=x%20y#z&ids=c#d",
+		200,
+		{ ok: { q: "x y#z", ids: ["a", "b", "c#d"] } },
 	),
 ];

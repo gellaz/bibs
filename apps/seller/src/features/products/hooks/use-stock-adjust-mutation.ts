@@ -1,6 +1,8 @@
 // apps/seller/src/features/products/hooks/use-stock-adjust-mutation.ts
+
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface AdjustParams {
@@ -66,22 +68,23 @@ export function useStockAdjustMutation() {
 
 	const adjust = useMutation({
 		mutationFn: async ({ productId, storeId, delta }: AdjustParams) => {
-			const response = await api()
-				.seller.products({ productId })
-				.stores({ storeId })
-				["stock-adjust"].post({ delta });
-			return unwrap(response, m.products_stock_error()).data as StoreProduct;
+			const response = await sellerApi.products[":productId"].stores[
+				":storeId"
+			]["stock-adjust"].$post({
+				param: { productId, storeId },
+				json: { delta },
+			});
+			return (await unwrapJson(response, m.products_stock_error())).data;
 		},
 		onSuccess: (data) => patchCache(data),
 	});
 
 	const set = useMutation({
 		mutationFn: async ({ productId, storeId, stock }: SetParams) => {
-			const response = await api()
-				.seller.products({ productId })
-				.stores({ storeId })
-				.patch({ stock });
-			return unwrap(response, m.products_stock_error()).data as StoreProduct;
+			const response = await sellerApi.products[":productId"].stores[
+				":storeId"
+			].$patch({ param: { productId, storeId }, json: { stock } });
+			return (await unwrapJson(response, m.products_stock_error())).data;
 		},
 		onSuccess: (data) => patchCache(data),
 	});

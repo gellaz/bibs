@@ -15,7 +15,7 @@ import { customerModule } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
-import { sellerModule } from "@/modules/seller";
+import { sellerApp, sellerGuards, sellerModule } from "@/modules/seller";
 import { stripeWebhookRoutes } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
@@ -157,6 +157,7 @@ const app = new Elysia()
 					...honoPaths(meApp, "/me", ["auth"]),
 					...honoPaths(registrationApp, "/register", ["publicRoute"]),
 					...honoPaths(locationsApp, "/locations", ["auth", "publicRoute"]),
+					...honoPaths(sellerApp, "/seller", sellerGuards),
 				},
 			},
 		}),
@@ -171,6 +172,8 @@ const app = new Elysia()
 	.mount("/me", meApp.fetch)
 	.mount("/register", registrationApp.fetch)
 	.mount("/locations", locationsApp.fetch)
+	// Seller in parte: le route ancora in `sellerModule` vincono sul mount.
+	.mount("/seller", sellerApp.fetch)
 	.use(cronJobs)
 	.use(health);
 

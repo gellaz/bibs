@@ -216,10 +216,21 @@ function collapse(issues: Issue[], checked: Checked) {
 		const { at, issues: inner } = item;
 		// ObjectString/ArrayString dei body con file: due rami non nulli.
 		const coerced = at.length === 1 && checked.anyOfKeys?.has(String(at[0]));
-		if (!coerced && inner.length === 1 && inner[0].path.length === at.length)
-			return inner[0];
 		const node = unwrap(nodeAt(schema, at) as z.ZodType).node;
 		const def = node._zod.def as Record<string, any>;
+		// Zod dà l'errore dell'unico ramo che combacia col tipo (stringa troppo
+		// lunga); TypeBox, con più rami non nulli, «valore non valido».
+		const manyBranches =
+			def.type === "union" &&
+			def.options.filter((o: z.ZodType) => o._zod.def.type !== "null").length >
+				1;
+		if (
+			!coerced &&
+			inner.length === 1 &&
+			inner[0].path.length === at.length &&
+			!(manyBranches && inner[0].code !== "invalid_union")
+		)
+			return inner[0];
 		const input = valueAt(value, at);
 		let rule: ValidationRule =
 			input === undefined ? { kind: "required" } : { kind: "invalid" };

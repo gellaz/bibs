@@ -12,6 +12,7 @@ import { ServiceError } from "@/lib/errors";
 import { pinoOptions } from "@/lib/logger";
 import { errorBody } from "@/lib/responses";
 import { meApp } from "@/modules/me";
+import { sellerApp, sellerModule } from "@/modules/seller";
 import { betterAuth } from "@/plugins/better-auth";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
@@ -309,6 +310,8 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 		["GET", "/p/a%2Fb"],
 		["GET", "/p/a%20b?x=1"],
 		["GET", "/%70/x"],
+		["DELETE", "/avatar#x"],
+		["GET", "/p/a#b"],
 	])
 		it(`${method} ${path}`, async () => {
 			const init = { method };
@@ -329,6 +332,55 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 			errorBody("NOT_FOUND", "Risorsa non trovata"),
 		);
 	});
+});
+
+// U5: /seller è in parte Hono (prodotti, brand, immagini, caratteristiche,
+// stock) e in parte ancora Elysia (U6, U7), come in `src/index.ts`.
+describe("mount — modulo migrato in parte (/seller)", () => {
+	const hits: string[] = [];
+	const partial = new Elysia()
+		.state("pino", noopPino)
+		.use(errorHandler)
+		.use(sellerModule)
+		.mount("/seller", (request) => {
+			hits.push(`${request.method} ${new URL(request.url).pathname}`);
+			return sellerApp.fetch(request);
+		});
+	const send = (method: string, path: string) =>
+		partial.handle(new Request(`http://localhost${path}`, { method }));
+	const unauthorized = errorBody(
+		"UNAUTHORIZED",
+		"Devi accedere per continuare",
+	);
+
+	for (const [method, path] of [
+		["GET", "/seller/stores"],
+		["DELETE", "/seller/stores/s1"],
+		["DELETE", "/seller/stores/s1/images/i1"],
+		["GET", "/seller/discounts/d1/products"],
+	])
+		it(`${method} ${path}: risponde Elysia, Hono non la vede`, async () => {
+			hits.length = 0;
+			const res = await send(method, path);
+			expect(res.status).toBe(401);
+			expect(await res.json()).toEqual(unauthorized);
+			expect(hits).toEqual([]);
+		});
+
+	for (const [method, path, status] of [
+		["GET", "/seller/products", 401],
+		["GET", "/seller/products/p1", 401],
+		["DELETE", "/seller/products/p1/images/i1", 401],
+		["PATCH", "/seller/products/p1/stores/s1", 422],
+		["GET", "/seller/product-categories/c1/characteristics", 401],
+		["GET", "/seller/nope", 404],
+	] as const)
+		it(`${method} ${path}: arriva a Hono senza prefisso`, async () => {
+			hits.length = 0;
+			const res = await send(method, path);
+			expect(res.status).toBe(status);
+			expect(hits).toEqual([`${method} ${path.replace("/seller", "")}`]);
+		});
 });
 
 describe("better-auth su Hono (strada di U11)", () => {

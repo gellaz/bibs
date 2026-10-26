@@ -10,3 +10,4 @@ export type { auth } from "./lib/auth";
 export type { LocationsApp } from "./modules/locations";
 export type { MeApp } from "./modules/me";
 export type { RegistrationApp } from "./modules/registration";
+export type { SellerApp } from "./modules/seller";
