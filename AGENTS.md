@@ -352,7 +352,7 @@ change and the Eden clients still typecheck from root. Drizzle schema changes:
 
 When adding a route under `apps/api/src/`, follow the existing pattern:
 
-1. Schema in `apps/api/src/lib/schemas/` (TypeBox, Italian `description`), re-exported from `index.ts`.
+1. Schema in `apps/api/src/lib/schemas/` (Zod, Italian `description`), re-exported from `index.ts`.
 2. Response via `okRes()` / `okPageRes()` helpers (see `responses.ts`).
 3. Errors via `withErrors()` / `withConflictErrors()`, with `ServiceError` for business errors. Let the global `errorHandler` do its job — don't try/catch for envelope shaping.
 4. Auth: set `{ auth: true }` on the route config and use the `auth` macro instead of reading headers manually.
@@ -364,7 +364,7 @@ When adding a route under `apps/api/src/`, follow the existing pattern:
 - File-based routing in `src/routes/`. Auth-guarded routes go under `_authenticated/`.
 - i18n via Paraglide — add strings to `messages/*.json`, never hard-code user-facing copy.
 - Data fetching via Eden Treaty + TanStack Query (`src/lib/api.ts`). Types come from the API — no manual DTOs.
-- Forms: `react-hook-form` + `@hookform/resolvers` + Zod (or TypeBox through the shared schemas).
+- Forms: `react-hook-form` + `@hookform/resolvers` + Zod (the seller forms on the shared `@bibs/api/schemas` use `schemaResolver`).
 - UI primitives from `@bibs/ui` (`~/` alias), not raw Base UI or hand-rolled shadcn copies.
 
 ## Commit Conventions

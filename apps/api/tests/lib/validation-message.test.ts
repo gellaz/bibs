@@ -7,7 +7,7 @@ import { zDate, zFormat, zInteger, zString } from "@/lib/schemas/t";
 
 // Il messaggio del 422 passa davvero dal validatore (`v()`): i dettagli
 // dell'errore (tipo, path, rami di zInteger/nullable) sono quelli che produce
-// sulle issue di Zod. Gli schemi sono i gemelli di quelli TypeBox che il test
+// sulle issue di Zod. Gli schemi sono i gemelli di quelli di prima che il test
 // usava fino a U11 (gli stessi dei casi «vm:» di `tests/http/parity-cases.ts`);
 // le stringhe attese sono le stesse.
 async function bodyMessage(schema: z.ZodType, body: unknown): Promise<string> {

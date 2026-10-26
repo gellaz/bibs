@@ -4,14 +4,14 @@ import { nodeAt } from "@/lib/schemas/mirror";
 import { fieldLabel, INVALID, ruleText } from "@/lib/validation-message";
 
 // Il messaggio italiano del 422 per un'issue di Zod, con le stesse regole di
-// `lib/validation-message.ts` sugli errori TypeBox (D6 del piano Hono):
+// `lib/validation-message.ts` usate prima (D6 del piano Hono):
 // `error` dello schema, poi «Richiesta non valida» per la radice, poi
 // «Etichetta: regola» (etichetta da `title`, dal dizionario o dal path).
 
 type Def = z.core.$ZodTypeDef & Record<string, any>;
 const defOf = (schema: z.ZodType) => schema._zod.def as Def;
 
-// Optional e default stanno nello stesso nodo TypeBox: i loro metadati valgono.
+// Optional e default sono lo stesso campo, come prima: i loro metadati valgono.
 function sameNode(schema: z.ZodType): z.ZodType[] {
 	const chain = [schema];
 	for (let s = schema; ; ) {

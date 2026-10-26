@@ -14,6 +14,8 @@ import {
 	ReservationDeadlineSchema,
 	StoreOrderTypesSchema,
 } from "@/lib/schemas/entities";
+import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
+import { CreateStoreBody } from "@/lib/schemas/forms/stores";
 import { PaginationQuery } from "@/lib/schemas/pagination";
 import {
 	okPageRes,
@@ -28,8 +30,6 @@ import {
 	zInteger,
 	zString,
 } from "@/lib/schemas/t";
-import { OpeningHoursSchema } from "@/lib/zod/forms/opening-hours";
-import { CreateStoreBody } from "@/lib/zod/forms/stores";
 import { ensureStoreAccess, requireOwner } from "../context";
 import {
 	getStoreOrderTypes,
@@ -101,7 +101,7 @@ const UpdateStoreBody = z.object({
 		description:
 			"Soglia di scorta bassa: sotto questo stock (escluso) un prodotto attivo è segnalato nella home. 0 spegne l'avviso",
 	}).optional(),
-	// `.max()` per /openapi, `utf16Length` per contare come TypeBox (vedi forms/stores.ts).
+	// `.max()` per /openapi, `utf16Length` per contare le unità UTF-16 come prima (vedi forms/stores.ts).
 	websiteUrl: zFormat("uri")
 		.max(500)
 		.check(utf16Length({ maxLength: 500 }))

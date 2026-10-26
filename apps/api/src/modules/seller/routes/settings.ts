@@ -13,14 +13,14 @@ import {
 	SellerProfileChangeSchema,
 	SellerProfileSchema,
 } from "@/lib/schemas/entities";
-import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
-import { zFile } from "@/lib/schemas/t";
 import {
 	CompanySettingsBody,
 	DocumentChangeBody,
 	PersonalSettingsBody,
 	VatChangeBody,
-} from "@/lib/zod/forms/settings";
+} from "@/lib/schemas/forms/settings";
+import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
+import { zFile } from "@/lib/schemas/t";
 import {
 	createOnboardingLink,
 	syncOnlinePayments,

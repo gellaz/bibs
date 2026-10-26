@@ -26,12 +26,11 @@ import {
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import type { Static } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { UploadIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import type { z } from "zod";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import {
 	municipalitiesQueryOptions,
@@ -39,11 +38,10 @@ import {
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateDocument } from "@/hooks/use-onboarding";
-import { typeboxResolver } from "@/lib/typebox-resolver";
+import { schemaResolver } from "@/lib/schema-errors";
 import { m } from "@/paraglide/messages";
 
-type DocumentFormData = Static<typeof DocumentBody>;
-const compiledSchema = TypeCompiler.Compile(DocumentBody);
+type DocumentFormData = z.infer<typeof DocumentBody>;
 
 const DOCUMENT_TYPE_LABEL: Record<IdentityDocumentType, () => string> = {
 	identity_card: m.onboarding_document_type_identity_card,
@@ -91,7 +89,7 @@ function DocumentPage() {
 		watch,
 		formState: { errors, isSubmitting },
 	} = useForm<DocumentFormData>({
-		resolver: typeboxResolver(compiledSchema),
+		resolver: schemaResolver(DocumentBody),
 	});
 	const documentType = watch("documentType");
 

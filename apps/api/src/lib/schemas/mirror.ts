@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { typeboxJson } from "./t";
+import { schemaJson } from "./t";
 
 // Il valore che l'API di prima controllava davvero, per avere da Zod lo
-// stesso primo errore di TypeBox (D6 del piano Hono). Prima del controllo il
+// stesso primo errore di prima (D6 del piano Hono). Prima del controllo il
 // framework di prima (1.4.30, `compose`; vedi `THIRD_PARTY_NOTICES.md`) faceva
 // due passi:
 // 1. body con un `default` da qualche parte nello schema (`hasProperty`):
@@ -10,10 +10,10 @@ import { typeboxJson } from "./t";
 //    diventano un oggetto;
 // 2. la pulizia di exact-mirror 0.2.7 (`normalize`), che ricostruisce
 //    l'oggetto campo per campo: un campo obbligatorio «semplice» diventa una
-//    chiave propria anche se manca (TypeBox lo segnala al suo posto
+//    chiave propria anche se manca (il controllo lo segnala al suo posto
 //    nell'ordine dello schema), uno Optional o anyOf (t.Integer, t.Date,
 //    t.Nullable, unioni; vedi anche `coercedKeys`) sparisce se
-//    manca (TypeBox lo segnala per primo); un'unione (anche t.Nullable) si
+//    manca (il controllo lo segnala per primo); un'unione (anche t.Nullable) si
 //    pulisce col primo ramo che accetta il valore, o col primo ramo che
 //    accetta il valore pulito (`openingHours: ""` diventa `[]`). Se legge un
 //    campo di un valore nullo lancia, e si controlla il body com'era.
@@ -24,7 +24,7 @@ const defOf = (schema: z.ZodType) => schema._zod.def as Def;
 const isZod = (node: unknown): node is z.ZodType =>
 	!!node && typeof node === "object" && "_zod" in node;
 
-/** Optional e default sono modificatori dello stesso nodo TypeBox. */
+/** Optional e default sono modificatori dello stesso campo, come prima. */
 export function unwrap(schema: z.ZodType) {
 	let node = schema;
 	let optional = false;
@@ -32,7 +32,7 @@ export function unwrap(schema: z.ZodType) {
 	for (;;) {
 		const def = defOf(node);
 		if (def.type === "default") hasDefault = true;
-		if (typeboxJson.has(def)) break;
+		if (schemaJson.has(def)) break;
 		if (def.type === "optional") optional = true;
 		else if (def.type !== "default") break;
 		node = def.innerType;
@@ -40,14 +40,14 @@ export function unwrap(schema: z.ZodType) {
 	return { node, optional, hasDefault };
 }
 
-/** Il nodo è un anyOf nel JSON di TypeBox: t.Integer, t.Date, t.Nullable, unioni. */
+/** Il nodo era un anyOf nel JSON di prima: t.Integer, t.Date, t.Nullable, unioni. */
 export function isAnyOf(node: z.ZodType) {
 	const def = defOf(node);
 	return (
 		def.type === "nullable" ||
 		def.type === "union" ||
 		def.type === "enum" ||
-		Array.isArray(typeboxJson.get(def)?.anyOf)
+		Array.isArray(schemaJson.get(def)?.anyOf)
 	);
 }
 
@@ -86,7 +86,7 @@ export function nodeAt(root: z.ZodType, path: PropertyKey[]) {
 
 // ── 1. default della radice ─────────────────────────────────────────────────
 
-/** La vista TypeBox di un nodo per `hasProperty("default")` (framework di prima). */
+/** Il JSON di prima di un nodo, per `hasProperty("default")` (framework di prima). */
 function view(node: z.ZodType | Json): {
 	hasDefault: boolean;
 	anyOf?: (z.ZodType | Json)[];
@@ -99,7 +99,7 @@ function view(node: z.ZodType | Json): {
 			shape: node.type === "object" ? node.properties : undefined,
 		};
 	const { node: inner, hasDefault } = unwrap(node);
-	const json = typeboxJson.get(defOf(inner));
+	const json = schemaJson.get(defOf(inner));
 	if (json) {
 		const v = view(json);
 		return { ...v, hasDefault: hasDefault || v.hasDefault };
@@ -135,7 +135,7 @@ function hasDefaultDeep(node: z.ZodType | Json): boolean {
 }
 
 const isFile = (node: z.ZodType) => {
-	const json = typeboxJson.get(defOf(unwrap(node).node));
+	const json = schemaJson.get(defOf(unwrap(node).node));
 	return json?.default === "File" || json?.default === "Files";
 };
 
@@ -154,7 +154,7 @@ function hasFile(node: z.ZodType): boolean {
  * I campi di primo livello che diventano unioni prima del controllo, come prima:
  * in query t.Number, t.Boolean e t.Array (Numeric, BooleanString,
  * ArrayQuery); nei body con un file t.Object e t.Array (ObjectString,
- * ArrayString, `coerceFormData`). Per TypeBox sono anyOf.
+ * ArrayString, `coerceFormData`). Prima erano anyOf.
  */
 export function coercedKeys(schema: z.ZodType, target: "body" | "query") {
 	const def = defOf(unwrap(schema).node);
@@ -205,13 +205,13 @@ const NULL = z.null();
  * pulisce; se nessuno lo accetta, vince il primo ramo che accetta il valore
  * pulito da lui; se no il valore com'è. t.Integer, t.Date e le unioni di
  * letterali hanno solo rami primitivi: il valore resta com'è.
- * ponytail: «accetta» è il safeParse di Zod, non il Check di TypeBox; si
+ * ponytail: «accetta» è il safeParse di Zod, non il controllo di prima; si
  * scostano solo coi default annidati in un ramo (gap noto, Trappole del piano).
  */
 function union(node: z.ZodType, value: unknown) {
 	const def = defOf(node);
 	const raw = plain(value);
-	const branches: z.ZodType[] | undefined = typeboxJson.has(def)
+	const branches: z.ZodType[] | undefined = schemaJson.has(def)
 		? undefined
 		: def.type === "nullable"
 			? [def.innerType, NULL]

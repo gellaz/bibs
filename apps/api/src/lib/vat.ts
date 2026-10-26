@@ -3,7 +3,7 @@ import { fromCents } from "@/lib/money";
 /**
  * Aliquote IVA italiane gestite, come stringhe percentuali. Default-first ("22").
  * Fonte di verità per l'enum colonna `products.vat_rate` /
- * `product_macro_categories.suggested_vat_rate` e per le union TypeBox.
+ * `product_macro_categories.suggested_vat_rate` e per le unioni degli schemi.
  */
 export const VAT_RATES = ["22", "10", "5", "4", "0"] as const;
 export type VatRate = (typeof VAT_RATES)[number];

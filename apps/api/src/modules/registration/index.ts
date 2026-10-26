@@ -11,6 +11,7 @@ import {
 	RegisterSellerResult,
 	SignInResult,
 } from "@/lib/schemas/composed";
+import { AcceptInviteBody } from "@/lib/schemas/forms/onboarding";
 import { RegisterBody, SignInBody } from "@/lib/schemas/registration";
 import {
 	OkMessage,
@@ -19,7 +20,6 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas/responses";
-import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
 import { rateLimit } from "@/plugins/rate-limit";
 import {
 	acceptInvite,

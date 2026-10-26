@@ -291,7 +291,7 @@
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: campo obbligatorio\"}"
 	},
-	"disc: mancante prima del tipo sbagliato (ordine di TypeBox)": {
+	"disc: mancante prima del tipo sbagliato (ordine di prima)": {
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: campo obbligatorio\"}"
 	},
@@ -1027,7 +1027,7 @@
 		"status": 200,
 		"body": "{\"ok\":{\"name\":\"y\",\"isActive\":false}}"
 	},
-	"U8 caratteristica: nome di 51 emoji (TypeBox conta le unità UTF-16)": {
+	"U8 caratteristica: nome di 51 emoji (si contano le unità UTF-16)": {
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: al massimo 100 caratteri\"}"
 	},

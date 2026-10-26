@@ -1,32 +1,32 @@
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
+import { zInt } from "../t";
 
-export const TimeSlotSchema = Type.Object({
-	open: Type.String({
-		pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
-		description: "Orario di apertura (HH:mm)",
-		error: "Formato orario non valido (HH:mm)",
-	}),
-	close: Type.String({
-		pattern: "^([01]\\d|2[0-3]):[0-5]\\d$",
-		description: "Orario di chiusura (HH:mm)",
-		error: "Formato orario non valido (HH:mm)",
-	}),
+// `dayOfWeek` è `zInt()`, non `zInteger`: un intero, niente stringhe.
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const time = (description: string) =>
+	z
+		.string()
+		.regex(HHMM)
+		.meta({ description, error: "Formato orario non valido (HH:mm)" });
+
+export const TimeSlotSchema = z.object({
+	open: time("Orario di apertura (HH:mm)"),
+	close: time("Orario di chiusura (HH:mm)"),
 });
 
-export const DayScheduleSchema = Type.Object({
-	dayOfWeek: Type.Integer({
-		minimum: 0,
-		maximum: 6,
+export const DayScheduleSchema = z.object({
+	dayOfWeek: zInt().min(0).max(6).meta({
 		description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
 	}),
-	slots: Type.Array(TimeSlotSchema, {
-		minItems: 1,
-		maxItems: 4,
-		description: "Fasce orarie del giorno",
-	}),
+	slots: z
+		.array(TimeSlotSchema)
+		.min(1)
+		.max(4)
+		.meta({ description: "Fasce orarie del giorno" }),
 });
 
-export const OpeningHoursSchema = Type.Array(DayScheduleSchema, {
-	maxItems: 7,
-	description: "Orari di apertura del negozio",
-});
+export const OpeningHoursSchema = z
+	.array(DayScheduleSchema)
+	.max(7)
+	.meta({ description: "Orari di apertura del negozio" });

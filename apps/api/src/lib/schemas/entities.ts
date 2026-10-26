@@ -3,7 +3,7 @@ import { OpenStatusSchema } from "./holidays";
 import { zDate, zInteger, zString } from "./t";
 
 // Gli schemi delle entità (D3 del piano Hono: fino a U11 gemelli Zod dei file
-// TypeBox, con gli stessi nomi e lo stesso ordine). I `t.Integer` e `t.Date`
+// di prima, con gli stessi nomi e lo stesso ordine). I `t.Integer` e `t.Date`
 // di prima → `zInteger` e `zDate`, `t.String` con
 // `minLength`/`maxLength` → `zString`, `t.Nullable` → `.nullable()`.
 // Un'unione di letterali numerici (aliquote IVA) è `z.union` di `z.literal`:
@@ -109,7 +109,7 @@ export const UserSummarySchema = UserSchema.pick({
 	image: true,
 });
 
-/** Le aliquote IVA (%), nell'ordine dello schema TypeBox. */
+/** Le aliquote IVA (%), nell'ordine dello schema di prima. */
 const vatRates = () =>
 	z.union([
 		z.literal("22"),
@@ -360,7 +360,7 @@ export const ProductSchema = z.object({
 	vatRate: vatRates().meta(
 		d("Aliquota IVA del prodotto (%): 22, 10, 5, 4 o 0"),
 	),
-	// `default` solo nel JSON Schema, come in TypeBox: una risposta non riceve default.
+	// `default` solo nel JSON Schema, come prima: una risposta non riceve default.
 	status: productStatus().meta({
 		description:
 			"Stato del prodotto: 'active' (visibile), 'disabled' (nascosto al customer), 'trashed' (in cestino, eliminabile fisicamente)",
@@ -483,7 +483,7 @@ export const ProductCsvImportResultSchema = CsvImportResultSchema.extend({
 });
 
 // Import della matrice categoria-caratteristiche: solo additivo, con `missing`
-// per segnalare la divergenza (vedi lo schema TypeBox).
+// per segnalare la divergenza.
 export const CsvImportWithMissingResultSchema = CsvImportResultSchema.extend({
 	missing: z
 		.array(

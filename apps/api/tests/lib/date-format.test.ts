@@ -1,11 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 // Deliberately no API app import: this is the seller form's path, which
-// compiles the shared schemas with TypeCompiler and never loads the API's formats.
+// validates the shared schemas on their own, without the API app.
 import { DocumentBody, PersonalInfoBody } from "@/lib/schemas/forms";
-
-const personal = TypeCompiler.Compile(PersonalInfoBody);
-const document = TypeCompiler.Compile(DocumentBody);
 
 const PERSONAL = {
 	firstName: "Mario",
@@ -32,15 +28,23 @@ const REAL = ["2024-02-29", "1980-12-31", "2000-02-29"];
 describe("calendar dates in the onboarding schemas", () => {
 	for (const d of IMPOSSIBLE) {
 		it(`rejects ${d}`, () => {
-			expect(personal.Check({ ...PERSONAL, birthDate: d })).toBe(false);
-			expect(document.Check({ ...DOCUMENT, documentExpiry: d })).toBe(false);
+			expect(
+				PersonalInfoBody.safeParse({ ...PERSONAL, birthDate: d }).success,
+			).toBe(false);
+			expect(
+				DocumentBody.safeParse({ ...DOCUMENT, documentExpiry: d }).success,
+			).toBe(false);
 		});
 	}
 
 	for (const d of REAL) {
 		it(`accepts ${d}`, () => {
-			expect(personal.Check({ ...PERSONAL, birthDate: d })).toBe(true);
-			expect(document.Check({ ...DOCUMENT, documentExpiry: d })).toBe(true);
+			expect(
+				PersonalInfoBody.safeParse({ ...PERSONAL, birthDate: d }).success,
+			).toBe(true);
+			expect(
+				DocumentBody.safeParse({ ...DOCUMENT, documentExpiry: d }).success,
+			).toBe(true);
 		});
 	}
 });

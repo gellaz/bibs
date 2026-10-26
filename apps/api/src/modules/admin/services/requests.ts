@@ -1,5 +1,5 @@
-import type { Static } from "@sinclair/typebox";
 import { and, eq } from "drizzle-orm";
+import type { z } from "zod";
 import { db } from "@/db";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
@@ -9,7 +9,7 @@ import type { DocumentChangeBody } from "@/lib/schemas/forms";
 
 export type RequestType = "all" | "candidature" | "vat" | "document";
 
-type DocumentChangeData = Static<typeof DocumentChangeBody> & {
+type DocumentChangeData = z.infer<typeof DocumentChangeBody> & {
 	documentImageUrl?: string;
 };
 

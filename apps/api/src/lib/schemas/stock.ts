@@ -22,7 +22,7 @@ const bulkProductIds = z
 	.max(100)
 	.meta({ description: "ID dei prodotti su cui applicare l'operazione" });
 
-// `z.union`, mai `z.discriminatedUnion`: stessi errori di TypeBox (Trappole).
+// `z.union`, mai `z.discriminatedUnion`: stessi errori di prima (Trappole).
 export const StockBulkAdjustBody = z.union([
 	z.object({
 		storeId: bulkStoreId,

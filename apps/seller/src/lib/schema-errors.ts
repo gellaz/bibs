@@ -1,23 +1,21 @@
-import { validationRule } from "@bibs/api/validation-rule";
-import {
-	type ErrorFunctionParameter,
-	SetErrorFunction,
-	ValueErrorType,
-} from "@sinclair/typebox/errors";
+import { issueRule } from "@bibs/api/validation-rule";
+import type { FieldValues } from "react-hook-form";
+import { type core, z } from "zod";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 import { ruleMessage } from "./rule-message";
+import { zodResolver } from "./zod-resolver";
 
-// Messaggi di TypeBox per i form con `typeboxResolver`: il resolver mostra
-// `error.message`, che TypeBox costruisce a ogni validazione con la funzione
-// d'errore definita qui (registrata da `typebox-resolver.ts`), quindi nella
-// lingua corrente, anche dopo un cambio senza reload. Sotto il campo c'è già
-// l'etichetta: il messaggio dice solo la regola.
+// Messaggi dei form sugli schemi condivisi con l'API (`@bibs/api/schemas`):
+// l'error map della singola validazione (`schemaResolver`), che zod chiama a
+// ogni validazione, quindi nella lingua corrente anche dopo un cambio senza
+// reload. Sotto il campo c'è già l'etichetta: il messaggio dice solo la
+// regola, quella dei 422 dell'API (`issueRule`).
 
 /**
- * Gli `error:` scritti sugli schemi condivisi con l'API sono in italiano (sono
+ * Gli `error` scritti sugli schemi condivisi con l'API sono in italiano (sono
  * anche i messaggi dei 422). Qui la loro traduzione; un test controlla che
- * ogni `error:` degli schemi dei form abbia la sua voce.
+ * ogni `error` degli schemi dei form abbia la sua voce.
  */
 const SCHEMA_ERRORS: Record<string, () => string> = {
 	"Il nome è obbligatorio": m.validation_schema_name_required,
@@ -51,33 +49,34 @@ const SCHEMA_ERRORS: Record<string, () => string> = {
 };
 
 /**
- * Funzione d'errore di TypeBox. L'`error:` dello schema vince, come nei 422
- * dell'API: tradotto se ha una voce, altrimenti così com'è in italiano e con
- * la regola tradotta nelle altre lingue (meglio generico che in italiano).
- * Tranne sulla lunghezza massima: gli `error:` sono scritti per il campo vuoto
- * o il formato («Il nome è obbligatorio»), e su un testo troppo lungo
- * direbbero il falso.
+ * Il messaggio di un'issue. L'`error` dello schema che l'ha data (nei
+ * metadati) vince, come nei 422 dell'API: tradotto se ha una voce, altrimenti
+ * così com'è in italiano e con la regola tradotta nelle altre lingue (meglio
+ * generico che in italiano). Tranne sulla lunghezza massima: gli `error` sono
+ * scritti per il campo vuoto o il formato («Il nome è obbligatorio»), e su un
+ * testo troppo lungo direbbero il falso.
  */
-export function typeboxErrorMessage(error: ErrorFunctionParameter): string {
-	const custom: unknown = error.schema.error;
-	if (
-		typeof custom === "string" &&
-		error.errorType !== ValueErrorType.StringMaxLength
-	) {
+export function schemaErrorMessage(issue: core.$ZodRawIssue): string {
+	const custom = issue.schema && z.globalRegistry.get(issue.schema)?.error;
+	const tooLong = issue.code === "too_big" && issue.origin === "string";
+	if (typeof custom === "string" && !tooLong) {
 		const translated = SCHEMA_ERRORS[custom];
 		if (translated) return translated();
 		if (getLocale() === "it") return custom;
 	}
 	return ruleMessage(
-		validationRule({
-			type: error.errorType,
-			schema: error.schema,
-			value: error.value,
-		}),
+		issueRule(
+			issue as Parameters<typeof issueRule>[0],
+			issue.schema as z.ZodType | undefined,
+		),
 	);
 }
 
-/** Registra la funzione d'errore per tutti i TypeCompiler/Value.Errors dell'app. */
-export function registerTypeboxErrors(): void {
-	SetErrorFunction(typeboxErrorMessage);
-}
+/**
+ * Resolver dei form sugli schemi condivisi: i messaggi di `schemaErrorMessage`
+ * e, al submit, i valori del form così come sono (`raw`), non quelli ripuliti
+ * da zod.
+ */
+export const schemaResolver = <T extends FieldValues>(
+	schema: z.ZodType<unknown, T>,
+) => zodResolver(schema, { error: schemaErrorMessage }, { raw: true });
