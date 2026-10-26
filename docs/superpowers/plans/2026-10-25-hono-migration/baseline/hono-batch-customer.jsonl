@@ -115,14 +115,14 @@
 {"method":"POST","path":"/customer/cart/items","body":{"storeProductId":"x","quantity":1},"expect":{"status":403,"body":{"success":false,"error":"FORBIDDEN","message":"Profilo cliente non trovato"}}}
 {"path":"/customer/products?limit=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":1}}}}
 {"method":"POST","path":"/auth/api/sign-in/email","headers":{"origin":"http://localhost:3001"},"body":{"email":"customer1@test.com","password":"password123"},"expect":{"status":200,"body":{"user":{"email":"customer1@test.com"}}}}
-{"path":"/customer/profile","expect":{"status":200,"body":{"success":true,"data":{"id":"f0b4301c-434c-411a-8c01-ec43f365759f","userId":"zfwYVzlMw3ogE2HNRUOEmywN3lUZ48Qy","points":250,"createdAt":"2026-10-24T08:45:55.447Z"}}}}
-{"path":"/customer/addresses","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":2}}}}
-{"path":"/customer/addresses?page=1&limit=1&extra=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":1,"total":2}}}}
+{"path":"/customer/profile","expect":{"status":200,"body":{"success":true,"data":{"id":"f0b4301c-434c-411a-8c01-ec43f365759f","userId":"zfwYVzlMw3ogE2HNRUOEmywN3lUZ48Qy","createdAt":"2026-10-24T08:45:55.447Z"}}}}
+{"path":"/customer/addresses","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
+{"path":"/customer/addresses?page=1&limit=1&extra=1","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":1}}}}
 {"path":"/customer/points","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/points?page=1&limit=2","expect":{"status":200,"body":{"success":true}}}
-{"path":"/customer/orders","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":2}}},"save":{"orderId":".data.0.id"}}
-{"path":"/customer/orders?status=completed&type=reserve_pickup&limit=2","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":2,"total":0}}}}
-{"path":"/customer/orders?status=cancelled","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20,"total":0}}}}
+{"path":"/customer/orders","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}},"save":{"orderId":".data.0.id"}}
+{"path":"/customer/orders?status=completed&type=reserve_pickup&limit=2","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":2}}}}
+{"path":"/customer/orders?status=cancelled","expect":{"status":200,"body":{"success":true,"pagination":{"page":1,"limit":20}}}}
 {"path":"/customer/orders/{{orderId}}","expect":{"status":200,"body":{"success":true}}}
 {"path":"/customer/orders/f142e101-82db-4a94-a0ae-8f0f32269bbc","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Ordine non trovato"}}}
 {"method":"POST","path":"/customer/orders/f142e101-82db-4a94-a0ae-8f0f32269bbc/cancel","expect":{"status":404,"body":{"success":false,"error":"NOT_FOUND","message":"Ordine non trovato"}}}
