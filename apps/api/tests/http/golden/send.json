@@ -1,0 +1,22 @@
+{
+	"t.Integer dato come stringa": {
+		"status": 200,
+		"body": "{\"n\":\"5\"}"
+	},
+	"t.Integer oltre il massimo come stringa": {
+		"status": 200,
+		"body": "{\"n\":\"5\"}"
+	},
+	"t.Integer oltre il massimo": {
+		"status": 500,
+		"body": "{\"success\":false,\"error\":\"INTERNAL_ERROR\",\"message\":\"Errore interno del server\"}"
+	},
+	"t.Date dato come numero": {
+		"status": 500,
+		"body": "{\"success\":false,\"error\":\"INTERNAL_ERROR\",\"message\":\"Errore interno del server\"}"
+	},
+	"t.Date dato come stringa": {
+		"status": 200,
+		"body": "{\"d\":\"2026-10-25T00:00:00.000Z\"}"
+	}
+}

@@ -1,23 +1,22 @@
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
 import { CompanyBody, DocumentBody, PersonalInfoBody } from "./onboarding";
 
 // ── Livello 1: Modifica libera ──────────────
 
-// Identical to onboarding's PersonalInfoBody / DocumentBody — re-exported under
-// the settings-domain names that the seller settings routes import.
 export const PersonalSettingsBody = PersonalInfoBody;
 export const DocumentChangeBody = DocumentBody;
 
-// Same as onboarding's CompanyBody minus vatNumber: VAT changes go through the
-// admin-approval flow (VatChangeBody) below, not free editing.
-export const CompanySettingsBody = Type.Omit(CompanyBody, ["vatNumber"]);
+// La partita IVA si cambia solo con la richiesta all'admin (VatChangeBody).
+export const CompanySettingsBody = CompanyBody.omit({ vatNumber: true });
 
 // ── Livello 2: Richiesta approvazione admin ─
 
-export const VatChangeBody = Type.Object({
-	vatNumber: Type.String({
-		pattern: "^[0-9]{11}$",
-		description: "Nuova partita IVA italiana (11 cifre)",
-		error: "La partita IVA deve essere di 11 cifre",
-	}),
+export const VatChangeBody = z.object({
+	vatNumber: z
+		.string()
+		.regex(/^[0-9]{11}$/)
+		.meta({
+			description: "Nuova partita IVA italiana (11 cifre)",
+			error: "La partita IVA deve essere di 11 cifre",
+		}),
 });

@@ -21,11 +21,12 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-import { Value } from "@sinclair/typebox/value";
+import type { z } from "zod";
 import {
 	CustomerOrderWithRelationsSchema,
 	SellerOrderWithRelationsSchema,
-} from "@/lib/schemas";
+} from "@/lib/schemas/composed";
+import { asResponse } from "@/lib/schemas/t";
 import {
 	createOrder,
 	getCustomerOrder,
@@ -81,6 +82,10 @@ async function seedOrderOnLocatedStore() {
 	return { store, customer, created };
 }
 
+/** Il dato rispetta lo schema di risposta, come lo controlla `send()`. */
+const matches = (schema: z.ZodType, data: unknown) =>
+	asResponse(() => schema.safeParse(data)).success;
+
 describe("letture ordini su un negozio con coordinate", () => {
 	it("listSellerOrders e getSellerOrder rispettano lo schema", async () => {
 		const { store, created } = await seedOrderOnLocatedStore();
@@ -91,13 +96,13 @@ describe("letture ordini su un negozio con coordinate", () => {
 			limit: 20,
 		});
 		expect(data).toHaveLength(1);
-		expect(Value.Check(SellerOrderWithRelationsSchema, data[0])).toBe(true);
+		expect(matches(SellerOrderWithRelationsSchema, data[0])).toBe(true);
 
 		const detail = await getSellerOrder({
 			orderId: created.id,
 			storeIds: [store.id],
 		});
-		expect(Value.Check(SellerOrderWithRelationsSchema, detail)).toBe(true);
+		expect(matches(SellerOrderWithRelationsSchema, detail)).toBe(true);
 	});
 
 	it("listCustomerOrders e getCustomerOrder rispettano lo schema", async () => {
@@ -109,12 +114,12 @@ describe("letture ordini su un negozio con coordinate", () => {
 			limit: 20,
 		});
 		expect(data).toHaveLength(1);
-		expect(Value.Check(CustomerOrderWithRelationsSchema, data[0])).toBe(true);
+		expect(matches(CustomerOrderWithRelationsSchema, data[0])).toBe(true);
 
 		const detail = await getCustomerOrder({
 			orderId: created.id,
 			customerProfileId: customer.profile.id,
 		});
-		expect(Value.Check(CustomerOrderWithRelationsSchema, detail)).toBe(true);
+		expect(matches(CustomerOrderWithRelationsSchema, detail)).toBe(true);
 	});
 });

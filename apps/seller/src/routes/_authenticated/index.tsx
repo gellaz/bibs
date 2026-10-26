@@ -1,5 +1,6 @@
 import { buttonVariants } from "@bibs/ui/components/button";
 import { formatPriceEur } from "@bibs/ui/custom/price";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { cn } from "@bibs/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -23,7 +24,7 @@ import {
 } from "@/features/dashboard/dashboard-actions";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useStores } from "@/hooks/use-stores";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -53,10 +54,28 @@ function useSellerDashboard(storeId: string | undefined) {
 		queryKey: ["seller", "dashboard", storeId],
 		queryFn: async () => {
 			if (!storeId) throw new Error("No active store");
-			const response = await api().seller.dashboard.get({
-				query: { storeId },
-			});
-			return unwrap(response, m.dashboard_actions_error()).data;
+			const response = await sellerApi.dashboard.$get({ query: { storeId } });
+			const { data } = await unwrapJson(response, m.dashboard_actions_error());
+			// `hc` lascia le date ISO come stringhe: le azioni le confrontano con `now`.
+			const { ordersToPrepare, expiringPromotions } = data.actions;
+			const { oldestCreatedAt } = ordersToPrepare;
+			return {
+				...data,
+				actions: {
+					...data.actions,
+					ordersToPrepare: {
+						...ordersToPrepare,
+						oldestCreatedAt: oldestCreatedAt ? new Date(oldestCreatedAt) : null,
+					},
+					expiringPromotions: {
+						...expiringPromotions,
+						first: expiringPromotions.first && {
+							...expiringPromotions.first,
+							endsAt: new Date(expiringPromotions.first.endsAt),
+						},
+					},
+				},
+			};
 		},
 		enabled: !!storeId,
 	});

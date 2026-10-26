@@ -64,7 +64,6 @@
 	"csv_file": "CSV file",
 	"csv_import": "Import",
 	"csv_importing": "Importing...",
-	"csv_invalid_response": "Invalid response from the server",
 	"categories_macro_column": "Macro Category",
 	"categories_macro_filter_aria": "Filter by macro category",
 	"categories_macro_filter_all": "All macro categories",

@@ -22,7 +22,6 @@ mock.module("@/db", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
 import { user as userTable } from "@/db/schemas/auth";
 import { cartItem } from "@/db/schemas/cart";
 import { checkout } from "@/db/schemas/checkout";
@@ -38,7 +37,6 @@ import {
 	createCheckout,
 	getCheckout,
 } from "@/modules/customer/services/checkout";
-import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCartItem,
@@ -49,6 +47,7 @@ import {
 	createTestStoreProduct,
 	createTestStoreSubscription,
 } from "../helpers/fixtures";
+import { withResolve } from "../helpers/hono-app";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -60,30 +59,17 @@ beforeEach(async () => {
 	await truncateAll(getTestDb());
 });
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
 // Stessa forma della resolve del modulo customer, con l'utente da un header.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.resolve(async ({ request }) => {
-		const id = request.headers.get("x-test-user") ?? "";
-		const db = getTestDb();
-		const u = await db.query.user.findFirst({ where: eq(userTable.id, id) });
-		const cp = await db.query.customerProfile.findFirst({
-			where: eq(customerProfileTable.userId, id),
-		});
-		if (!u || !cp) throw new Error("test customer missing");
-		return { user: u, customerProfile: cp };
-	})
-	.use(checkoutRoutes);
+const app = withResolve(checkoutRoutes, async (request) => {
+	const id = request.headers.get("x-test-user") ?? "";
+	const db = getTestDb();
+	const u = await db.query.user.findFirst({ where: eq(userTable.id, id) });
+	const cp = await db.query.customerProfile.findFirst({
+		where: eq(customerProfileTable.userId, id),
+	});
+	if (!u || !cp) throw new Error("test customer missing");
+	return { user: u, customerProfile: cp };
+});
 
 async function sellable(sellerProfileId: string, storeName: string, stock = 5) {
 	const db = getTestDb();
@@ -379,7 +365,7 @@ describe("POST /checkout", () => {
 		const a = await sellable(seller.profile.id, "Negozio A");
 		await createTestCartItem(db, customer.profile.id, a.sp.id, { quantity: 1 });
 
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/checkout", {
 				method: "POST",
 				headers: {
@@ -400,7 +386,7 @@ describe("POST /checkout", () => {
 	it("body senza negozi → 422", async () => {
 		const db = getTestDb();
 		const customer = await createTestCustomer(db);
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/checkout", {
 				method: "POST",
 				headers: {
@@ -464,7 +450,7 @@ describe("createCheckout — scadenza della prenotazione", () => {
 
 describe("GET /checkout/reservation-deadlines", () => {
 	const get = (customerUserId: string, storeIds: string[]) =>
-		app.handle(
+		app.request(
 			new Request(
 				`http://localhost/checkout/reservation-deadlines?storeIds=${storeIds.join(",")}`,
 				{ headers: { "x-test-user": customerUserId } },

@@ -1,16 +1,21 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 import { MAX_CART_ITEM_QUANTITY } from "@/db/schemas/cart";
-import { getLogger } from "@/lib/logger";
+import { requireCustomer } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
+import { CartItemMutationSchema, CartSchema } from "@/lib/schemas/entities";
 import {
-	CartItemMutationSchema,
-	CartSchema,
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { withCustomer } from "../context";
+} from "@/lib/schemas/responses";
+import { zInteger } from "@/lib/schemas/t";
+import { customerSecurity } from "../context";
 import {
 	addCartItem,
 	getCart,
@@ -18,37 +23,63 @@ import {
 	setCartItemQuantity,
 } from "../services/cart";
 
-export const cartRoutes = new Elysia()
+const CartResponse = okRes(CartSchema);
+const MutationResponse = okRes(CartItemMutationSchema);
+const ItemParams = z.object({
+	id: z.string().meta({ description: "ID della riga di carrello" }),
+});
+
+export const cartRoutes = new Hono()
 	.get(
 		"/cart",
-		async (ctx) => {
-			const { customerProfile: cp } = withCustomer(ctx);
-			return ok(await getCart(cp.id));
-		},
-		{
-			response: withErrors({ 200: okRes(CartSchema) }),
+		doc({
+			response: withErrors({ 200: CartResponse }),
 			detail: {
 				summary: "Carrello",
 				description:
 					"Restituisce il carrello del cliente, raggruppato per negozio. Prezzi e sconti sono letti al momento della richiesta. Le righe non più acquistabili vengono annotate, non rimosse.",
 				tags: ["Customer - Cart"],
+				...customerSecurity,
 			},
-		},
+		}),
+		requireCustomer,
+		async (c) =>
+			send(c, CartResponse, ok(await getCart(c.var.customerProfile.id))),
 	)
 	.post(
 		"/cart/items",
-		async (ctx) => {
-			const { customerProfile: cp, body, store, user } = withCustomer(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: MutationResponse }),
+			detail: {
+				summary: "Aggiungi al carrello",
+				description:
+					"Aggiunge un prodotto al carrello. Se il prodotto è già presente, la quantità viene sommata. Rifiuta se il negozio non è pubblicamente visibile, se il prodotto non è attivo, o se si supera la disponibilità.",
+				tags: ["Customer - Cart"],
+				...customerSecurity,
+			},
+		}),
+		v(
+			"json",
+			z.object({
+				storeProductId: z.string().meta({
+					description: "ID della riga store_products da aggiungere",
+				}),
+				quantity: zInteger({
+					minimum: 1,
+					maximum: MAX_CART_ITEM_QUANTITY,
+					description: "Quantità da aggiungere a quella già presente",
+				}),
+			}),
+		),
+		requireCustomer,
+		async (c) => {
+			const cp = c.var.customerProfile;
+			const body = c.req.valid("json");
+			const data = await addCartItem({ customerProfileId: cp.id, ...body });
 
-			const data = await addCartItem({
-				customerProfileId: cp.id,
-				...body,
-			});
-
-			pino.info(
+			logger.info(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					customerProfileId: cp.id,
 					cartItemId: data.id,
 					storeProductId: body.storeProductId,
@@ -58,78 +89,60 @@ export const cartRoutes = new Elysia()
 				"Prodotto aggiunto al carrello",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				storeProductId: t.String({
-					description: "ID della riga store_products da aggiungere",
-				}),
-				quantity: t.Integer({
-					minimum: 1,
-					maximum: MAX_CART_ITEM_QUANTITY,
-					description: "Quantità da aggiungere a quella già presente",
-				}),
-			}),
-			response: withConflictErrors({ 200: okRes(CartItemMutationSchema) }),
-			detail: {
-				summary: "Aggiungi al carrello",
-				description:
-					"Aggiunge un prodotto al carrello. Se il prodotto è già presente, la quantità viene sommata. Rifiuta se il negozio non è pubblicamente visibile, se il prodotto non è attivo, o se si supera la disponibilità.",
-				tags: ["Customer - Cart"],
-			},
+			return send(c, MutationResponse, ok(data));
 		},
 	)
 	.patch(
 		"/cart/items/:id",
-		async (ctx) => {
-			const { customerProfile: cp, params, body } = withCustomer(ctx);
-			const data = await setCartItemQuantity({
-				cartItemId: params.id,
-				customerProfileId: cp.id,
-				...body,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				id: t.String({ description: "ID della riga di carrello" }),
-			}),
-			body: t.Object({
-				quantity: t.Integer({
-					minimum: 1,
-					maximum: MAX_CART_ITEM_QUANTITY,
-					description: "Nuova quantità (valore assoluto)",
-				}),
-			}),
-			response: withErrors({ 200: okRes(CartItemMutationSchema) }),
+		doc({
+			response: withErrors({ 200: MutationResponse }),
 			detail: {
 				summary: "Aggiorna quantità",
 				description:
 					"Imposta la quantità di una riga del carrello. Per rimuoverla usa DELETE: la quantità minima è 1.",
 				tags: ["Customer - Cart"],
+				...customerSecurity,
 			},
+		}),
+		v("param", ItemParams),
+		v(
+			"json",
+			z.object({
+				quantity: zInteger({
+					minimum: 1,
+					maximum: MAX_CART_ITEM_QUANTITY,
+					description: "Nuova quantità (valore assoluto)",
+				}),
+			}),
+		),
+		requireCustomer,
+		async (c) => {
+			const data = await setCartItemQuantity({
+				cartItemId: c.req.valid("param").id,
+				customerProfileId: c.var.customerProfile.id,
+				...c.req.valid("json"),
+			});
+			return send(c, MutationResponse, ok(data));
 		},
 	)
 	.delete(
 		"/cart/items/:id",
-		async (ctx) => {
-			const { customerProfile: cp, params } = withCustomer(ctx);
-			await removeCartItem({
-				cartItemId: params.id,
-				customerProfileId: cp.id,
-			});
-			return okMessage("Prodotto rimosso dal carrello");
-		},
-		{
-			params: t.Object({
-				id: t.String({ description: "ID della riga di carrello" }),
-			}),
+		doc({
 			response: withErrors({ 200: OkMessage }),
 			detail: {
 				summary: "Rimuovi dal carrello",
 				description: "Rimuove una riga dal carrello del cliente.",
 				tags: ["Customer - Cart"],
+				...customerSecurity,
 			},
+		}),
+		v("param", ItemParams),
+		requireCustomer,
+		async (c) => {
+			await removeCartItem({
+				cartItemId: c.req.valid("param").id,
+				customerProfileId: c.var.customerProfile.id,
+			});
+			return send(c, OkMessage, okMessage("Prodotto rimosso dal carrello"));
 		},
 	);

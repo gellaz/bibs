@@ -1,41 +1,37 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAuth } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { okMessage } from "@/lib/responses";
-import { OkMessage, okRes, withErrors } from "@/lib/schemas";
+import { OkMessage, okRes, withErrors } from "@/lib/schemas/responses";
+import { zFile } from "@/lib/schemas/t";
 import { deleteUserAvatar, uploadUserAvatar } from "../services/avatar";
 
-const AvatarResponse = t.Object({
-	image: t.String({ description: "URL pubblica della nuova immagine profilo" }),
+export const AvatarResponse = okRes(
+	z.object({
+		image: z
+			.string()
+			.meta({ description: "URL pubblica della nuova immagine profilo" }),
+	}),
+);
+
+export const AvatarBody = z.object({
+	file: zFile({
+		type: "image",
+		maxSize: "5m",
+		description: "Immagine (max 5MB, formati image/*)",
+	}),
 });
 
-export const avatarRoutes = new Elysia()
+// Route relative: il modulo è montato su /me (`src/app.ts`).
+export const avatarRoutes = new Hono()
 	.post(
 		"/avatar",
-		async (ctx) => {
-			const { user, body, store } = ctx as typeof ctx & {
-				user: { id: string };
-			};
-			const pino = getLogger(store);
-			const result = await uploadUserAvatar({
-				userId: user.id,
-				file: body.file,
-			});
-			pino.info(
-				{ userId: user.id, action: "user_avatar_uploaded", key: result.key },
-				"Immagine profilo aggiornata",
-			);
-			return { success: true as const, data: { image: result.url } };
-		},
-		{
-			auth: true,
-			body: t.Object({
-				file: t.File({
-					type: "image",
-					maxSize: "5m",
-					description: "Immagine (max 5MB, formati image/*)",
-				}),
-			}),
-			response: withErrors({ 200: okRes(AvatarResponse) }),
+		doc({
+			response: withErrors({ 200: AvatarResponse }),
 			detail: {
 				summary: "Carica immagine profilo",
 				description:
@@ -43,22 +39,28 @@ export const avatarRoutes = new Elysia()
 				tags: ["Me"],
 				security: [{ bearerAuth: [] }],
 			},
+		}),
+		v("form", AvatarBody),
+		requireAuth,
+		async (c) => {
+			const user = c.var.user;
+			const result = await uploadUserAvatar({
+				userId: user.id,
+				file: c.req.valid("form").file,
+			});
+			logger.info(
+				{ userId: user.id, action: "user_avatar_uploaded", key: result.key },
+				"Immagine profilo aggiornata",
+			);
+			return send(c, AvatarResponse, {
+				success: true,
+				data: { image: result.url },
+			});
 		},
 	)
 	.delete(
 		"/avatar",
-		async (ctx) => {
-			const { user, store } = ctx as typeof ctx & { user: { id: string } };
-			const pino = getLogger(store);
-			await deleteUserAvatar({ userId: user.id });
-			pino.info(
-				{ userId: user.id, action: "user_avatar_deleted" },
-				"Immagine profilo rimossa",
-			);
-			return okMessage("Avatar rimosso");
-		},
-		{
-			auth: true,
+		doc({
 			response: withErrors({ 200: OkMessage }),
 			detail: {
 				summary: "Rimuovi immagine profilo",
@@ -67,5 +69,15 @@ export const avatarRoutes = new Elysia()
 				tags: ["Me"],
 				security: [{ bearerAuth: [] }],
 			},
+		}),
+		requireAuth,
+		async (c) => {
+			const user = c.var.user;
+			await deleteUserAvatar({ userId: user.id });
+			logger.info(
+				{ userId: user.id, action: "user_avatar_deleted" },
+				"Immagine profilo rimossa",
+			);
+			return send(c, OkMessage, okMessage("Avatar rimosso"));
 		},
 	);

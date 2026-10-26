@@ -1,18 +1,25 @@
-import { Elysia, t } from "elysia";
-import { PaginationQuery } from "@/lib/pagination";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ok, okMessage, okPage } from "@/lib/responses";
+import { EmployeeWithUserSchema } from "@/lib/schemas/composed";
 import {
 	EmployeeInvitationSchema,
 	EmployeeSchema,
-	EmployeeWithUserSchema,
 	MunicipalityCompactSchema,
+} from "@/lib/schemas/entities";
+import { TeamInviteBody } from "@/lib/schemas/forms/onboarding";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import {
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { TeamInviteBody } from "@/lib/schemas/forms";
-import { requireOwner, withSeller } from "../context";
+} from "@/lib/schemas/responses";
+import { requireOwner } from "../context";
 import {
 	banEmployee,
 	cancelInvitation,
@@ -26,261 +33,266 @@ import {
 	unbanEmployee,
 } from "../services/employees";
 
-const StoreMinimalSchema = t.Object({
-	id: t.String(),
-	name: t.String(),
-	municipalityId: t.String(),
+const StoreMinimalSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	municipalityId: z.string(),
 	municipality: MunicipalityCompactSchema,
 });
 
-const EmployeesListResponse = t.Object({
-	success: t.Literal(true),
-	data: t.Array(EmployeeWithUserSchema),
-	pagination: t.Object({
-		page: t.Number(),
-		limit: t.Number(),
-		total: t.Number(),
+const EmployeesListResponse = z.object({
+	success: z.literal(true),
+	data: z.array(EmployeeWithUserSchema),
+	pagination: z.object({
+		page: z.number(),
+		limit: z.number(),
+		total: z.number(),
 	}),
-	owner: t.Nullable(
-		t.Object({
-			id: t.String(),
-			name: t.String(),
-			email: t.String(),
-		}),
-	),
+	owner: z
+		.object({
+			id: z.string(),
+			name: z.string(),
+			email: z.string(),
+		})
+		.nullable(),
 });
 
-export const employeesRoutes = new Elysia()
+const invitationId = z.object({
+	invitationId: z.string().meta({ description: "ID dell'invito" }),
+});
+const employeeId = z.object({
+	employeeId: z.string().meta({ description: "ID del dipendente" }),
+});
+
+const InvitationRes = okRes(EmployeeInvitationSchema);
+const InvitationsRes = okRes(z.array(EmployeeInvitationSchema));
+const EmployeeRes = okRes(EmployeeSchema);
+const StoresRes = okRes(z.array(StoreMinimalSchema));
+
+const detail = (summary: string, description: string) => ({
+	summary,
+	description,
+	tags: ["Seller - Employees"],
+	security: [{ bearerAuth: [] }],
+});
+
+export const employeesRoutes = new Hono()
 	.get(
 		"/employees",
-		async (ctx) => {
-			const { sellerProfile: sp, query } = withSeller(ctx);
-			const result = await listEmployees({ sellerProfileId: sp.id, ...query });
-			return {
+		doc({
+			response: withErrors({ 200: EmployeesListResponse }),
+			detail: detail(
+				"Lista dipendenti",
+				"Restituisce la lista paginata dei dipendenti del venditore con i dati utente e le informazioni del titolare.",
+			),
+		}),
+		v("query", PaginationQuery),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp } = c.var.seller;
+			const result = await listEmployees({
+				sellerProfileId: sp.id,
+				...c.req.valid("query"),
+			});
+			return send(c, EmployeesListResponse, {
 				...okPage(result.data, result.pagination),
 				owner: result.owner,
-			};
-		},
-		{
-			query: PaginationQuery,
-			response: withErrors({ 200: EmployeesListResponse }),
-			detail: {
-				summary: "Lista dipendenti",
-				description:
-					"Restituisce la lista paginata dei dipendenti del venditore con i dati utente e le informazioni del titolare.",
-				tags: ["Seller - Employees"],
-			},
+			});
 		},
 	)
 	.post(
 		"/employees/invite",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, body } = withSeller(ctx);
+		doc({
+			response: withConflictErrors({ 200: InvitationRes }),
+			detail: detail(
+				"Invita collaboratore",
+				"Invia un invito email a un collaboratore. L'invitato riceverà un link per creare la password e accedere al pannello seller.",
+			),
+		}),
+		v("json", TeamInviteBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
+			const body = c.req.valid("json");
 			const data = await inviteEmployee(sp.id, body.email, body.storeIds);
-			return ok(data);
-		},
-		{
-			body: TeamInviteBody,
-			response: withConflictErrors({
-				200: okRes(EmployeeInvitationSchema),
-			}),
-			detail: {
-				summary: "Invita collaboratore",
-				description:
-					"Invia un invito email a un collaboratore. L'invitato riceverà un link per creare la password e accedere al pannello seller.",
-				tags: ["Seller - Employees"],
-			},
+			return send(c, InvitationRes, ok(data));
 		},
 	)
 	.get(
 		"/employees/invitations",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: InvitationsRes }),
+			detail: detail(
+				"Lista inviti",
+				"Restituisce la lista degli inviti inviati ai collaboratori.",
+			),
+		}),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
 			const data = await listEmployeeInvitations(sp.id);
-			return ok(data);
-		},
-		{
-			response: withErrors({
-				200: okRes(t.Array(EmployeeInvitationSchema)),
-			}),
-			detail: {
-				summary: "Lista inviti",
-				description:
-					"Restituisce la lista degli inviti inviati ai collaboratori.",
-				tags: ["Seller - Employees"],
-			},
+			return send(c, InvitationsRes, ok(data));
 		},
 	)
 	.delete(
 		"/employees/invitations/:invitationId",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: InvitationRes }),
+			detail: detail(
+				"Annulla invito",
+				"Annulla un invito in stato 'pending'. L'invito viene impostato come 'expired'.",
+			),
+		}),
+		v("param", invitationId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
-			const data = await cancelInvitation(sp.id, params.invitationId);
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				invitationId: t.String({ description: "ID dell'invito" }),
-			}),
-			response: withErrors({ 200: okRes(EmployeeInvitationSchema) }),
-			detail: {
-				summary: "Annulla invito",
-				description:
-					"Annulla un invito in stato 'pending'. L'invito viene impostato come 'expired'.",
-				tags: ["Seller - Employees"],
-			},
+			const data = await cancelInvitation(
+				sp.id,
+				c.req.valid("param").invitationId,
+			);
+			return send(c, InvitationRes, ok(data));
 		},
 	)
 	.post(
 		"/employees/invitations/:invitationId/resend",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: InvitationRes }),
+			detail: detail(
+				"Reinvia invito",
+				"Reinvia l'email di un invito in stato 'pending' (stesso link) e ne sposta la scadenza a 7 giorni da adesso, anche se era già scaduto. 404 se l'invito non è pending, 502 se l'email non parte.",
+			),
+		}),
+		v("param", invitationId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
-			const data = await resendInvitation(sp.id, params.invitationId);
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				invitationId: t.String({ description: "ID dell'invito" }),
-			}),
-			response: withErrors({ 200: okRes(EmployeeInvitationSchema) }),
-			detail: {
-				summary: "Reinvia invito",
-				description:
-					"Reinvia l'email di un invito in stato 'pending' (stesso link) e ne sposta la scadenza a 7 giorni da adesso, anche se era già scaduto. 404 se l'invito non è pending, 502 se l'email non parte.",
-				tags: ["Seller - Employees"],
-			},
+			const data = await resendInvitation(
+				sp.id,
+				c.req.valid("param").invitationId,
+			);
+			return send(c, InvitationRes, ok(data));
 		},
 	)
 	.patch(
 		"/employees/:employeeId/ban",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: EmployeeRes }),
+			detail: detail(
+				"Banna dipendente",
+				"Imposta lo stato del dipendente a 'banned'. Il dipendente non potrà più accedere.",
+			),
+		}),
+		v("param", employeeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await banEmployee({
-				employeeId: params.employeeId,
+				employeeId: c.req.valid("param").employeeId,
 				sellerProfileId: sp.id,
 			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				employeeId: t.String({ description: "ID del dipendente" }),
-			}),
-			response: withErrors({ 200: okRes(EmployeeSchema) }),
-			detail: {
-				summary: "Banna dipendente",
-				description:
-					"Imposta lo stato del dipendente a 'banned'. Il dipendente non potrà più accedere.",
-				tags: ["Seller - Employees"],
-			},
+			return send(c, EmployeeRes, ok(data));
 		},
 	)
 	.patch(
 		"/employees/:employeeId/unban",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: EmployeeRes }),
+			detail: detail(
+				"Riabilita dipendente",
+				"Riporta lo stato del dipendente a 'active' dopo un ban.",
+			),
+		}),
+		v("param", employeeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await unbanEmployee({
-				employeeId: params.employeeId,
+				employeeId: c.req.valid("param").employeeId,
 				sellerProfileId: sp.id,
 			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				employeeId: t.String({ description: "ID del dipendente" }),
-			}),
-			response: withErrors({ 200: okRes(EmployeeSchema) }),
-			detail: {
-				summary: "Riabilita dipendente",
-				description: "Riporta lo stato del dipendente a 'active' dopo un ban.",
-				tags: ["Seller - Employees"],
-			},
+			return send(c, EmployeeRes, ok(data));
 		},
 	)
 	.delete(
 		"/employees/:employeeId",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: OkMessage }),
+			detail: detail(
+				"Rimuovi dipendente",
+				"Imposta lo stato del dipendente a 'removed'. L'operazione è un soft-delete.",
+			),
+		}),
+		v("param", employeeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			await removeEmployee({
-				employeeId: params.employeeId,
+				employeeId: c.req.valid("param").employeeId,
 				sellerProfileId: sp.id,
 			});
-			return okMessage("Dipendente rimosso");
-		},
-		{
-			params: t.Object({
-				employeeId: t.String({ description: "ID del dipendente" }),
-			}),
-			response: withErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Rimuovi dipendente",
-				description:
-					"Imposta lo stato del dipendente a 'removed'. L'operazione è un soft-delete.",
-				tags: ["Seller - Employees"],
-			},
+			return send(c, OkMessage, okMessage("Dipendente rimosso"));
 		},
 	)
 	.get(
 		"/employees/:employeeId/stores",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: StoresRes }),
+			detail: detail(
+				"Negozi assegnati al dipendente",
+				"Restituisce la lista dei negozi a cui il dipendente è assegnato. Solo titolare.",
+			),
+		}),
+		v("param", employeeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await getEmployeeStores({
 				sellerProfileId: sp.id,
-				employeeId: params.employeeId,
+				employeeId: c.req.valid("param").employeeId,
 			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				employeeId: t.String({ description: "ID del dipendente" }),
-			}),
-			response: withErrors({ 200: okRes(t.Array(StoreMinimalSchema)) }),
-			detail: {
-				summary: "Negozi assegnati al dipendente",
-				description:
-					"Restituisce la lista dei negozi a cui il dipendente è assegnato. Solo titolare.",
-				tags: ["Seller - Employees"],
-			},
+			return send(c, StoresRes, ok(data));
 		},
 	)
 	.put(
 		"/employees/:employeeId/stores",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params, body } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: StoresRes }),
+			detail: detail(
+				"Aggiorna assegnazione negozi",
+				"Sostituisce l'insieme di negozi assegnati al dipendente (idempotente). Solo titolare.",
+			),
+		}),
+		v("param", employeeId),
+		v(
+			"json",
+			z.object({
+				storeIds: z
+					.array(z.string())
+					.meta({ description: "ID dei negozi (replace idempotente)" }),
+			}),
+		),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await setEmployeeStores({
 				sellerProfileId: sp.id,
-				employeeId: params.employeeId,
-				storeIds: body.storeIds,
+				employeeId: c.req.valid("param").employeeId,
+				storeIds: c.req.valid("json").storeIds,
 			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				employeeId: t.String({ description: "ID del dipendente" }),
-			}),
-			body: t.Object({
-				storeIds: t.Array(t.String(), {
-					description: "ID dei negozi (replace idempotente)",
-				}),
-			}),
-			response: withErrors({ 200: okRes(t.Array(StoreMinimalSchema)) }),
-			detail: {
-				summary: "Aggiorna assegnazione negozi",
-				description:
-					"Sostituisce l'insieme di negozi assegnati al dipendente (idempotente). Solo titolare.",
-				tags: ["Seller - Employees"],
-			},
+			return send(c, StoresRes, ok(data));
 		},
 	);

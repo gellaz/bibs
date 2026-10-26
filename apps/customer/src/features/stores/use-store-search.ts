@@ -1,7 +1,7 @@
 import { toYMD } from "@bibs/ui/lib/date";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/location/coords";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 import type { OpenStatusView } from "./open-status";
 
 export interface StoreCardView {
@@ -57,7 +57,7 @@ export function useStoreSearch({
 		staleTime: 60_000,
 		initialPageParam: 1,
 		queryFn: async ({ pageParam }) => {
-			const { data, error } = await api().customer.stores.get({
+			const res = await customerApi.stores.$get({
 				query: {
 					page: pageParam,
 					limit,
@@ -69,10 +69,9 @@ export function useStoreSearch({
 					...(openNow ? { openNow } : {}),
 				},
 			});
-			if (error) {
-				throw new Error(`Ricerca negozi non riuscita (${error.status})`);
-			}
-			return data;
+			if (!res.ok)
+				throw new Error(`Ricerca negozi non riuscita (${res.status})`);
+			return res.json();
 		},
 		getNextPageParam: (lastPage) => {
 			const { page, limit: lim, total } = lastPage.pagination;

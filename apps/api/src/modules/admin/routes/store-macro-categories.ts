@@ -1,30 +1,50 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAdmin } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import {
-	OkMessage,
-	okRes,
-	StoreMacroCategorySchema,
-	withConflictErrors,
-} from "@/lib/schemas";
-import { withAdmin } from "../context";
+import { StoreMacroCategorySchema } from "@/lib/schemas/entities";
+import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas/responses";
+import { zString } from "@/lib/schemas/t";
+import { adminDetail } from "../context";
 import {
 	createStoreMacroCategory,
 	deleteStoreMacroCategory,
 	updateStoreMacroCategory,
 } from "../services/store-macro-categories";
 
-export const storeMacroCategoriesWriteRoutes = new Elysia()
+const StoreMacroCategoryResponse = okRes(StoreMacroCategorySchema);
+
+const Params = z.object({
+	macroCategoryId: z
+		.string()
+		.meta({ description: "ID della macro categoria negozio" }),
+});
+
+const macroName = (description: string) =>
+	z.object({ name: zString({ minLength: 1, maxLength: 100, description }) });
+
+export const storeMacroCategoriesWriteRoutes = new Hono()
 	.post(
 		"/store-macro-categories",
-		async (ctx) => {
-			const { body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
-			const data = await createStoreMacroCategory(body.name);
+		doc({
+			response: withConflictErrors({ 200: StoreMacroCategoryResponse }),
+			detail: adminDetail(
+				"Crea macro categoria negozio",
+				"Crea una nuova macro categoria negozio. Il nome deve essere univoco.",
+			),
+		}),
+		v("json", macroName("Nome della macro categoria negozio")),
+		requireAdmin,
+		async (c) => {
+			const data = await createStoreMacroCategory(c.req.valid("json").name);
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					macroCategoryId: data.id,
 					macroCategoryName: data.name,
 					action: "store_macro_category_created",
@@ -32,38 +52,30 @@ export const storeMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria negozio creata",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome della macro categoria negozio",
-				}),
-			}),
-			response: withConflictErrors({ 200: okRes(StoreMacroCategorySchema) }),
-			detail: {
-				summary: "Crea macro categoria negozio",
-				description:
-					"Crea una nuova macro categoria negozio. Il nome deve essere univoco.",
-				tags: ["Admin"],
-			},
+			return send(c, StoreMacroCategoryResponse, ok(data));
 		},
 	)
 	.patch(
 		"/store-macro-categories/:macroCategoryId",
-		async (ctx) => {
-			const { params, body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: StoreMacroCategoryResponse }),
+			detail: adminDetail(
+				"Aggiorna macro categoria negozio",
+				"Aggiorna il nome di una macro categoria negozio esistente.",
+			),
+		}),
+		v("param", Params),
+		v("json", macroName("Nuovo nome della macro categoria negozio")),
+		requireAdmin,
+		async (c) => {
 			const data = await updateStoreMacroCategory({
-				macroCategoryId: params.macroCategoryId,
-				name: body.name,
+				macroCategoryId: c.req.valid("param").macroCategoryId,
+				name: c.req.valid("json").name,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					macroCategoryId: data.id,
 					newName: data.name,
 					action: "store_macro_category_updated",
@@ -71,40 +83,28 @@ export const storeMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria negozio aggiornata",
 			);
 
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				macroCategoryId: t.String({
-					description: "ID della macro categoria negozio",
-				}),
-			}),
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nuovo nome della macro categoria negozio",
-				}),
-			}),
-			response: withConflictErrors({ 200: okRes(StoreMacroCategorySchema) }),
-			detail: {
-				summary: "Aggiorna macro categoria negozio",
-				description:
-					"Aggiorna il nome di una macro categoria negozio esistente.",
-				tags: ["Admin"],
-			},
+			return send(c, StoreMacroCategoryResponse, ok(data));
 		},
 	)
 	.delete(
 		"/store-macro-categories/:macroCategoryId",
-		async (ctx) => {
-			const { params, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
-			const deleted = await deleteStoreMacroCategory(params.macroCategoryId);
+		doc({
+			response: withConflictErrors({ 200: OkMessage }),
+			detail: adminDetail(
+				"Elimina macro categoria negozio",
+				"Elimina una macro categoria negozio. Fallisce con 409 se ha ancora categorie collegate.",
+			),
+		}),
+		v("param", Params),
+		requireAdmin,
+		async (c) => {
+			const deleted = await deleteStoreMacroCategory(
+				c.req.valid("param").macroCategoryId,
+			);
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					macroCategoryId: deleted.id,
 					macroCategoryName: deleted.name,
 					action: "store_macro_category_deleted",
@@ -112,20 +112,6 @@ export const storeMacroCategoriesWriteRoutes = new Elysia()
 				"Macro categoria negozio eliminata",
 			);
 
-			return okMessage("Macro categoria negozio eliminata");
-		},
-		{
-			params: t.Object({
-				macroCategoryId: t.String({
-					description: "ID della macro categoria negozio",
-				}),
-			}),
-			response: withConflictErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Elimina macro categoria negozio",
-				description:
-					"Elimina una macro categoria negozio. Fallisce con 409 se ha ancora categorie collegate.",
-				tags: ["Admin"],
-			},
+			return send(c, OkMessage, okMessage("Macro categoria negozio eliminata"));
 		},
 	);

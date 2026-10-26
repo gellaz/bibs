@@ -44,7 +44,7 @@ export function closedNoteOpensAt(input: {
 	const s = input.openStatus;
 	if (!input.open || !s?.opensAt) return null;
 	if (s.status !== "closed" && s.status !== "closed_holiday") return null;
-	// Eden idrata in Date anche le date "YYYY-MM-DD".
+	// Il client di prima idratava in Date anche le date "YYYY-MM-DD".
 	const date = toYMD(s.opensAt.date);
 	const opens = `${date} ${s.opensAt.time}`;
 	return opens < romeStamp(input.expiresAt)

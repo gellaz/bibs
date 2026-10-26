@@ -1,7 +1,8 @@
 import type { DocumentBody } from "@bibs/api/schemas";
-import type { Static } from "@sinclair/typebox";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import type { z } from "zod";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 /**
@@ -16,9 +17,10 @@ export function useOnboardingStatus({
 	return useQuery({
 		queryKey: ["seller", "onboarding", "status"],
 		queryFn: async () => {
-			const response = await api().seller.onboarding.status.get();
+			const response = await sellerApi.onboarding.status.$get();
 
-			return unwrap(response, m.onboarding_status_load_error()).data;
+			return (await unwrapJson(response, m.onboarding_status_load_error()))
+				.data;
 		},
 		enabled,
 	});
@@ -59,9 +61,10 @@ export function useUpdatePersonalInfo() {
 			residenceAddress: string;
 			residenceZipCode: string;
 		}) => {
-			const response =
-				await api().seller.onboarding["personal-info"].patch(params);
-			return unwrap(response, m.onboarding_personal_save_error());
+			const response = await sellerApi.onboarding["personal-info"].$patch({
+				json: params,
+			});
+			return unwrapJson(response, m.onboarding_personal_save_error());
 		},
 	);
 }
@@ -71,9 +74,11 @@ export function useUpdatePersonalInfo() {
  */
 export function useUpdateDocument() {
 	return useOnboardingMutation(
-		async (params: Static<typeof DocumentBody> & { documentImage: File }) => {
-			const response = await api().seller.onboarding.document.patch(params);
-			return unwrap(response, m.onboarding_document_save_error());
+		async (params: z.infer<typeof DocumentBody> & { documentImage: File }) => {
+			const response = await sellerApi.onboarding.document.$patch({
+				form: params,
+			});
+			return unwrapJson(response, m.onboarding_document_save_error());
 		},
 	);
 }
@@ -92,8 +97,10 @@ export function useUpdateCompany() {
 			municipalityId: string;
 			zipCode: string;
 		}) => {
-			const response = await api().seller.onboarding.company.patch(params);
-			return unwrap(response, m.onboarding_company_save_error());
+			const response = await sellerApi.onboarding.company.$patch({
+				json: params,
+			});
+			return unwrapJson(response, m.onboarding_company_save_error());
 		},
 	);
 }
@@ -103,7 +110,7 @@ export function useUpdateCompany() {
  */
 export function useGoBack() {
 	return useOnboardingMutation(async () => {
-		const response = await api().seller.onboarding["go-back"].post();
-		return unwrap(response, m.onboarding_go_back_error());
+		const response = await sellerApi.onboarding["go-back"].$post();
+		return unwrapJson(response, m.onboarding_go_back_error());
 	});
 }

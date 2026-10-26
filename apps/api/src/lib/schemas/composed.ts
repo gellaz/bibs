@@ -1,4 +1,4 @@
-import { t } from "elysia";
+import { z } from "zod";
 import {
 	BrandSchema,
 	CustomerAddressSchema,
@@ -23,372 +23,345 @@ import {
 	UserSummarySchema,
 } from "./entities";
 import { OpenStatusSchema } from "./holidays";
+import { zDate, zInteger } from "./t";
 
-// ────────────────────────────────────────────
-// Composed schemas (nested relations)
-// ────────────────────────────────────────────
+// Gemelli Zod di `lib/schemas/composed.ts` (D3 del piano Hono), stessi nomi e
+// stesso ordine; si aggiungono quando una route migrata li usa.
+
+const d = (description: string) => ({ description });
 
 // Store + phone numbers + category + images
-export const StoreWithPhonesSchema = t.Object({
-	...StoreSchema.properties,
-	lowStockThreshold: t.Integer({
+export const StoreWithPhonesSchema = StoreSchema.extend({
+	lowStockThreshold: zInteger({
 		minimum: 0,
 		description:
 			"Soglia di scorta bassa del negozio (0 = avviso spento). Solo lato venditore",
 	}),
-	reservationHours: t.Integer({
+	reservationHours: zInteger({
 		description:
 			"Ore di apertura entro cui ritirare una prenotazione. Solo lato venditore",
 	}),
-	phoneNumbers: t.Array(StorePhoneNumberSchema),
-	category: t.Nullable(StoreCategorySchema),
-	images: t.Array(StoreImageSchema),
-	openStatus: t.Optional(t.Nullable(OpenStatusSchema)),
+	phoneNumbers: z.array(StorePhoneNumberSchema),
+	category: StoreCategorySchema.nullable(),
+	images: z.array(StoreImageSchema),
+	openStatus: OpenStatusSchema.nullable().optional(),
 });
 
 // Seller profile + user + organization (admin pending list)
-export const SellerProfileWithUserSchema = t.Object({
-	...SellerProfileSchema.properties,
-	updatedAt: t.Date({
+export const SellerProfileWithUserSchema = SellerProfileSchema.extend({
+	updatedAt: zDate({
 		description:
 			"Versione della candidatura: da rimandare in verify/reject come expectedUpdatedAt",
 	}),
 	user: UserSchema,
-	organization: t.Nullable(OrganizationSchema),
+	organization: OrganizationSchema.nullable(),
 });
 
 // ── Auth: registration / sign-in success payloads ──────────
 // These endpoints return RAW DB rows: seller profiles without the joined
 // municipality objects, and organizations without the joined municipality.
-const RawSellerProfileSchema = t.Omit(SellerProfileSchema, [
-	"residenceMunicipality",
-	"documentIssuedMunicipality",
-]);
-const RawOrganizationSchema = t.Omit(OrganizationSchema, ["municipality"]);
+const RawSellerProfileSchema = SellerProfileSchema.omit({
+	residenceMunicipality: true,
+	documentIssuedMunicipality: true,
+});
+const RawOrganizationSchema = OrganizationSchema.omit({ municipality: true });
 
 // `token` may be absent/null when email verification is required (no session).
-const AuthToken = t.Optional(t.Nullable(t.String()));
+const AuthToken = z.string().nullable().optional();
 
-export const RegisterCustomerResult = t.Object({
+export const RegisterCustomerResult = z.object({
 	user: UserSchema,
 	profile: CustomerProfileSchema,
 	token: AuthToken,
 });
 
-export const RegisterSellerResult = t.Object({
+export const RegisterSellerResult = z.object({
 	user: UserSchema,
 	profile: RawSellerProfileSchema,
 	token: AuthToken,
 });
 
-export const SignInResult = t.Object({
+export const SignInResult = z.object({
 	user: UserSchema,
-	profiles: t.Object({
-		customer: t.Nullable(CustomerProfileSchema),
-		seller: t.Nullable(RawSellerProfileSchema),
+	profiles: z.object({
+		customer: CustomerProfileSchema.nullable(),
+		seller: RawSellerProfileSchema.nullable(),
 	}),
-	organization: t.Nullable(RawOrganizationSchema),
+	organization: RawOrganizationSchema.nullable(),
 	token: AuthToken,
 });
 
 // Employee + user
-export const EmployeeWithUserSchema = t.Object({
-	...EmployeeSchema.properties,
+export const EmployeeWithUserSchema = EmployeeSchema.extend({
 	user: UserSummarySchema,
-	storeIds: t.Array(t.String(), {
+	storeIds: z.array(z.string()).meta({
 		description: "ID dei negozi a cui il dipendente è assegnato",
 	}),
 });
 
 // StoreProduct + store (location excluded — PostGIS EWKB fails in nested relational queries)
-const StoreProductWithStore = t.Object({
-	...StoreProductSchema.properties,
-	store: t.Omit(StoreSchema, ["location"]),
+const StoreProductWithStore = StoreProductSchema.extend({
+	store: StoreSchema.omit({ location: true }),
 });
 
 // Product with full relations (seller product list)
-export const ProductWithRelationsSchema = t.Object({
-	...ProductSchema.properties,
-	productCategory: t.Nullable(ProductCategoryWithMacroSchema),
-	storeProducts: t.Array(StoreProductWithStore),
-	images: t.Array(ProductImageSchema),
-	brand: t.Nullable(BrandSchema),
+export const ProductWithRelationsSchema = ProductSchema.extend({
+	productCategory: ProductCategoryWithMacroSchema.nullable(),
+	storeProducts: z.array(StoreProductWithStore),
+	images: z.array(ProductImageSchema),
+	brand: BrandSchema.nullable(),
 });
 
-export const SellerProductDetailSchema = t.Object({
-	...ProductWithRelationsSchema.properties,
-	characteristicValues: t.Array(ProductCharacteristicValueSchema, {
+export const SellerProductDetailSchema = ProductWithRelationsSchema.extend({
+	characteristicValues: z.array(ProductCharacteristicValueSchema).meta({
 		description: "Valori compilati delle caratteristiche, ordinati per nome",
 	}),
 });
 
-export const AppliedDiscountSchema = t.Object({
-	percent: t.Integer({ minimum: 1, maximum: 99 }),
-	discountedPrice: t.String({ description: "Prezzo scontato (numeric.2)" }),
-	title: t.String(),
+export const AppliedDiscountSchema = z.object({
+	percent: zInteger({ minimum: 1, maximum: 99 }),
+	discountedPrice: z
+		.string()
+		.meta({ description: "Prezzo scontato (numeric.2)" }),
+	title: z.string(),
 });
 
 // Seller product list item = product with relations + the best running discount
-// (null when none). Separate from ProductWithRelationsSchema so the single-product
-// GET that also uses it stays unchanged.
-export const SellerProductListItemSchema = t.Object({
-	...ProductWithRelationsSchema.properties,
-	appliedDiscount: t.Nullable(AppliedDiscountSchema),
+// (null when none).
+export const SellerProductListItemSchema = ProductWithRelationsSchema.extend({
+	appliedDiscount: AppliedDiscountSchema.nullable(),
 });
 
 // StoreProduct + product (for order items)
-const StoreProductWithProduct = t.Object({
-	...StoreProductSchema.properties,
+const StoreProductWithProduct = z.object({
+	...StoreProductSchema.shape,
 	product: ProductSchema,
 });
 
 // OrderItem + storeProduct with product (storeProduct nullable: FK is set null on hard delete)
-const OrderItemWithProduct = t.Object({
-	...OrderItemSchema.properties,
-	storeProduct: t.Nullable(StoreProductWithProduct),
+const OrderItemWithProduct = z.object({
+	...OrderItemSchema.shape,
+	storeProduct: StoreProductWithProduct.nullable(),
 });
 
 // Cliente visto dal seller sull'ordine: niente saldo punti né dati di account
-const SellerOrderCustomer = t.Object({
-	id: t.String(),
+const SellerOrderCustomer = z.object({
+	id: z.string(),
 	user: UserSummarySchema,
 });
 
 // Order with relations — seller view
-export const SellerOrderWithRelationsSchema = t.Object({
-	...OrderSchema.properties,
-	items: t.Array(OrderItemWithProduct),
+export const SellerOrderWithRelationsSchema = z.object({
+	...OrderSchema.shape,
+	items: z.array(OrderItemWithProduct),
 	customerProfile: SellerOrderCustomer,
 	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
-	store: t.Omit(StoreSchema, ["location"]),
+	store: StoreSchema.omit({ location: true }),
 });
 
 // Order with relations — customer view
-export const CustomerOrderWithRelationsSchema = t.Object({
-	...OrderSchema.properties,
-	items: t.Array(OrderItemWithProduct),
+export const CustomerOrderWithRelationsSchema = z.object({
+	...OrderSchema.shape,
+	items: z.array(OrderItemWithProduct),
 	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
-	store: t.Object({
-		...t.Omit(StoreSchema, ["location"]).properties,
-		openStatus: t.Optional(
-			t.Nullable(OpenStatusSchema, {
-				description:
+	store: z.object({
+		...StoreSchema.omit({ location: true }).shape,
+		openStatus: OpenStatusSchema.nullable()
+			.meta(
+				d(
 					"Stato di apertura adesso: nel dettaglio ordine e nel checkout, non nella lista",
-			}),
-		),
+				),
+			)
+			.optional(),
 	}),
-	shippingAddress: t.Nullable(CustomerAddressSchema),
+	shippingAddress: CustomerAddressSchema.nullable(),
 });
 
 // Checkout — conferma del cliente con gli ordini che ha prodotto
-export const CheckoutSchema = t.Object({
-	id: t.String(),
-	createdAt: t.Date(),
-	amountDueOnline: t.String({
-		description: "Importo da pagare online (somma degli ordini Paga e ritira)",
-	}),
-	payment: t.Nullable(
-		t.Object(
-			{
-				clientSecret: t.String({
-					description: "Per il Payment Element di Stripe",
-				}),
-			},
-			{
-				description:
-					"Presente finché c'è un ordine Paga e ritira in attesa di pagamento e il pagamento è ancora possibile",
-			},
-		),
-	),
-	orders: t.Array(CustomerOrderWithRelationsSchema),
+export const CheckoutSchema = z.object({
+	id: z.string(),
+	createdAt: zDate(),
+	amountDueOnline: z
+		.string()
+		.meta(d("Importo da pagare online (somma degli ordini Paga e ritira)")),
+	payment: z
+		.object({
+			clientSecret: z.string().meta(d("Per il Payment Element di Stripe")),
+		})
+		.meta(
+			d(
+				"Presente finché c'è un ordine Paga e ritira in attesa di pagamento e il pagamento è ancora possibile",
+			),
+		)
+		.nullable(),
+	orders: z.array(CustomerOrderWithRelationsSchema),
 });
 
-export const CheckoutPreviewSchema = t.Object({
-	balance: t.Number({ minimum: 0, description: "Saldo punti del cliente" }),
-	minAmountOnline: t.String({
-		description:
-			"Minimo incassabile online (limite Stripe in EUR): sotto, solo 0 €",
-	}),
-	payInStore: t.String({
-		description: "Somma degli ordini Prenota e paga in negozio",
-	}),
-	withoutPoints: t.Object({
-		amountDueOnline: t.String({ description: "Da pagare online senza punti" }),
-		belowMinimum: t.Boolean({
-			description:
-				"Importo online tra 0,01 € e minAmountOnline: senza punti la conferma risponde 400",
-		}),
-	}),
-	withPoints: t.Nullable(
-		t.Object(
-			{
-				pointsSpent: t.Number({ minimum: 0 }),
-				discount: t.String({ description: "Sconto punti totale in euro" }),
-				amountDueOnline: t.String({
-					description: "Da pagare online con i punti: 0 oppure almeno 0,50",
-				}),
-				perStore: t.Array(
-					t.Object({
-						storeId: t.String(),
-						pointsSpent: t.Number({ minimum: 0 }),
-						discount: t.String(),
-					}),
-				),
-			},
-			{
-				description:
-					"Null se non ci sono ordini Paga e ritira o i punti non danno sconto",
-			},
+export const CheckoutPreviewSchema = z.object({
+	balance: z.number().min(0).meta(d("Saldo punti del cliente")),
+	minAmountOnline: z
+		.string()
+		.meta(
+			d("Minimo incassabile online (limite Stripe in EUR): sotto, solo 0 €"),
 		),
-	),
+	payInStore: z
+		.string()
+		.meta(d("Somma degli ordini Prenota e paga in negozio")),
+	withoutPoints: z.object({
+		amountDueOnline: z.string().meta(d("Da pagare online senza punti")),
+		belowMinimum: z
+			.boolean()
+			.meta(
+				d(
+					"Importo online tra 0,01 € e minAmountOnline: senza punti la conferma risponde 400",
+				),
+			),
+	}),
+	withPoints: z
+		.object({
+			pointsSpent: z.number().min(0),
+			discount: z.string().meta(d("Sconto punti totale in euro")),
+			amountDueOnline: z
+				.string()
+				.meta(d("Da pagare online con i punti: 0 oppure almeno 0,50")),
+			perStore: z.array(
+				z.object({
+					storeId: z.string(),
+					pointsSpent: z.number().min(0),
+					discount: z.string(),
+				}),
+			),
+		})
+		.meta(
+			d("Null se non ci sono ordini Paga e ritira o i punti non danno sconto"),
+		)
+		.nullable(),
 });
 
 // Seller settings (profile + org + online payments + pending changes)
-export const SellerSettingsSchema = t.Object({
+export const SellerSettingsSchema = z.object({
 	profile: SellerProfileSchema,
-	organization: t.Nullable(OrganizationSchema),
-	onlinePayments: t.Nullable(OnlinePaymentsSchema),
-	pendingChanges: t.Array(SellerProfileChangeSchema),
-	assignedStoreIds: t.Union([t.Array(t.String()), t.Null()], {
+	organization: OrganizationSchema.nullable(),
+	onlinePayments: OnlinePaymentsSchema.nullable(),
+	pendingChanges: z.array(SellerProfileChangeSchema),
+	assignedStoreIds: z.union([z.array(z.string()), z.null()]).meta({
 		description:
 			"Lista storeId assegnati all'employee, o null se owner (= tutti)",
 	}),
 });
 
 // Change request with seller profile + user (admin view)
-export const SellerProfileChangeWithSellerSchema = t.Object({
-	...SellerProfileChangeSchema.properties,
-	sellerProfile: t.Object({
-		...SellerProfileSchema.properties,
-		user: UserSchema,
-		organization: t.Nullable(OrganizationSchema),
-	}),
-});
+export const SellerProfileChangeWithSellerSchema =
+	SellerProfileChangeSchema.extend({
+		sellerProfile: SellerProfileSchema.extend({
+			user: UserSchema,
+			organization: OrganizationSchema.nullable(),
+		}),
+	});
 
 // ── Customer: facet di ricerca negozi (sidebar filtri) ─────
-const StoreCategoryFacetSchema = t.Object({
-	id: t.String(),
-	name: t.String({ description: "Nome della categoria negozio" }),
-	storeCount: t.Number({
-		description: "Negozi che restano applicando questa categoria",
-	}),
+const StoreCategoryFacetSchema = z.object({
+	id: z.string(),
+	name: z.string().meta(d("Nome della categoria negozio")),
+	storeCount: z
+		.number()
+		.meta(d("Negozi che restano applicando questa categoria")),
 });
 
-export const StoreFacetsSchema = t.Object({
-	total: t.Number({
-		description: "Negozi che corrispondono a testo e raggio, senza categoria",
-	}),
-	openNowTotal: t.Number({
-		description:
-			"Negozi aperti adesso fra quelli che corrispondono a testo e raggio",
-	}),
-	macros: t.Array(
-		t.Object({
-			id: t.String(),
-			name: t.String({ description: "Nome della macro categoria" }),
-			storeCount: t.Number({
-				description: "Negozi che restano applicando questa macro",
-			}),
-			categories: t.Array(StoreCategoryFacetSchema),
+export const StoreFacetsSchema = z.object({
+	total: z
+		.number()
+		.meta(d("Negozi che corrispondono a testo e raggio, senza categoria")),
+	openNowTotal: z
+		.number()
+		.meta(
+			d("Negozi aperti adesso fra quelli che corrispondono a testo e raggio"),
+		),
+	macros: z.array(
+		z.object({
+			id: z.string(),
+			name: z.string().meta(d("Nome della macro categoria")),
+			storeCount: z
+				.number()
+				.meta(d("Negozi che restano applicando questa macro")),
+			categories: z.array(StoreCategoryFacetSchema),
 		}),
 	),
 });
 
-export const AdminStoreListItemSchema = t.Object(
-	{
-		id: t.String({ description: "ID del negozio" }),
-		name: t.String({ description: "Nome del negozio" }),
-		sellerProfileId: t.String({
-			description: "ID del profilo venditore titolare",
+const subscriptionStatus = () =>
+	z.enum(["active", "past_due", "canceling", "suspended", "canceled"]);
+
+export const AdminStoreListItemSchema = z
+	.object({
+		id: z.string().meta(d("ID del negozio")),
+		name: z.string().meta(d("Nome del negozio")),
+		sellerProfileId: z.string().meta(d("ID del profilo venditore titolare")),
+		businessName: z
+			.string()
+			.meta(d("Ragione sociale del venditore"))
+			.nullable(),
+		categoryName: z.string().meta(d("Categoria del negozio")).nullable(),
+		municipality: z.object({
+			name: z.string().meta(d("Nome del comune")),
+			provinceAcronym: z.string().meta(d("Sigla della provincia")),
 		}),
-		businessName: t.Nullable(
-			t.String({ description: "Ragione sociale del venditore" }),
-		),
-		categoryName: t.Nullable(
-			t.String({ description: "Categoria del negozio" }),
-		),
-		municipality: t.Object({
-			name: t.String({ description: "Nome del comune" }),
-			provinceAcronym: t.String({ description: "Sigla della provincia" }),
-		}),
-		subscriptionStatus: t.Nullable(
-			t.Union(
-				[
-					t.Literal("active"),
-					t.Literal("past_due"),
-					t.Literal("canceling"),
-					t.Literal("suspended"),
-					t.Literal("canceled"),
-				],
-				{ description: "Stato dell'abbonamento; null se mai sottoscritto" },
-			),
-		),
-		createdAt: t.Date({ description: "Data di creazione" }),
-		deletedAt: t.Nullable(t.Date({ description: "Data di eliminazione" })),
-	},
-	{
-		description:
+		subscriptionStatus: subscriptionStatus()
+			.meta(d("Stato dell'abbonamento; null se mai sottoscritto"))
+			.nullable(),
+		createdAt: zDate({ description: "Data di creazione" }),
+		deletedAt: zDate({ description: "Data di eliminazione" }).nullable(),
+	})
+	.meta(
+		d(
 			"Negozio nella lista admin, con venditore, comune e stato dell'abbonamento",
-	},
-);
+		),
+	);
 
 // ── Admin: pagina «Richieste» ──────────────
-export const AdminRequestRowSchema = t.Object({
-	kind: t.Union([
-		t.Literal("candidature"),
-		t.Literal("vat"),
-		t.Literal("document"),
-	]),
-	id: t.String({
-		description: "ID della richiesta; per le candidature il sellerProfileId",
-	}),
-	sellerProfileId: t.String(),
-	seller: t.Object({ name: t.Nullable(t.String()), email: t.String() }),
-	businessName: t.Nullable(t.String()),
-	currentValue: t.Nullable(t.String()),
-	requestedValue: t.Nullable(t.String()),
-	submittedAt: t.Date(),
+export const AdminRequestRowSchema = z.object({
+	kind: z.enum(["candidature", "vat", "document"]),
+	id: z
+		.string()
+		.meta(d("ID della richiesta; per le candidature il sellerProfileId")),
+	sellerProfileId: z.string(),
+	seller: z.object({ name: z.string().nullable(), email: z.string() }),
+	businessName: z.string().nullable(),
+	currentValue: z.string().nullable(),
+	requestedValue: z.string().nullable(),
+	submittedAt: zDate(),
 });
 
-const DocumentSnapshotSchema = t.Object({
-	documentType: t.Nullable(
-		t.Union([
-			t.Literal("identity_card"),
-			t.Literal("driving_license"),
-			t.Literal("passport"),
-		]),
-	),
-	documentNumber: t.Nullable(t.String()),
-	documentExpiry: t.Nullable(t.String()),
-	issuedMunicipality: t.Nullable(
-		t.Object({ name: t.String(), provinceAcronym: t.String() }),
-	),
-	imageUrl: t.Nullable(t.String()),
+const DocumentSnapshotSchema = z.object({
+	documentType: z
+		.enum(["identity_card", "driving_license", "passport"])
+		.nullable(),
+	documentNumber: z.string().nullable(),
+	documentExpiry: z.string().nullable(),
+	issuedMunicipality: z
+		.object({ name: z.string(), provinceAcronym: z.string() })
+		.nullable(),
+	imageUrl: z.string().nullable(),
 });
 
-export const AdminChangeDetailSchema = t.Object({
-	id: t.String(),
-	changeType: t.Union([t.Literal("vat"), t.Literal("document")]),
-	status: t.Union([
-		t.Literal("pending"),
-		t.Literal("approved"),
-		t.Literal("rejected"),
-		t.Literal("cancelled"),
-	]),
-	createdAt: t.Date(),
-	seller: t.Object({
-		id: t.String(),
-		name: t.Nullable(t.String()),
-		email: t.String(),
-		businessName: t.Nullable(t.String()),
+export const AdminChangeDetailSchema = z.object({
+	id: z.string(),
+	changeType: z.enum(["vat", "document"]),
+	status: z.enum(["pending", "approved", "rejected", "cancelled"]),
+	createdAt: zDate(),
+	seller: z.object({
+		id: z.string(),
+		name: z.string().nullable(),
+		email: z.string(),
+		businessName: z.string().nullable(),
 	}),
-	vat: t.Nullable(
-		t.Object({ current: t.Nullable(t.String()), requested: t.String() }),
-	),
-	document: t.Nullable(
-		t.Object({
+	vat: z
+		.object({ current: z.string().nullable(), requested: z.string() })
+		.nullable(),
+	document: z
+		.object({
 			current: DocumentSnapshotSchema,
 			requested: DocumentSnapshotSchema,
-		}),
-	),
+		})
+		.nullable(),
 });

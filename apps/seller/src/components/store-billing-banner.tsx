@@ -1,11 +1,12 @@
 import { Alert, AlertDescription, AlertTitle } from "@bibs/ui/components/alert";
 import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangleIcon, CalendarIcon, LockIcon } from "lucide-react";
 import { type Subscription, useActiveStore } from "@/hooks/use-active-store";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
@@ -15,8 +16,8 @@ export function StoreBillingBanner() {
 
 	const portalMutation = useMutation({
 		mutationFn: async () => {
-			const r = await api().seller.billing.portal.post();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.billing.portal.$post();
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;
@@ -27,10 +28,10 @@ export function StoreBillingBanner() {
 	const reactivateMutation = useMutation({
 		mutationFn: async () => {
 			if (!activeStore) throw new Error(m.store_no_active());
-			const r = await api()
-				.seller.stores({ storeId: activeStore.id })
-				.reactivate.post();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.stores[":storeId"].reactivate.$post({
+				param: { storeId: activeStore.id },
+			});
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: () => {
 			// Optimistically flip the local subscription cache to 'active' so the banner

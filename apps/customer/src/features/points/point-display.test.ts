@@ -62,7 +62,7 @@ describe("toPointRow", () => {
 		expect(manual.orderId).toBeNull();
 		expect(manual.note).toBe("Bonus di benvenuto");
 	});
-	it("accetta la data già idratata da Eden", () => {
+	it("accetta la data già idratata in Date", () => {
 		const at = new Date("2026-09-25T10:00:00.000Z");
 		expect(
 			toPointRow({ ...base, type: "earned", amount: 1, createdAt: at })

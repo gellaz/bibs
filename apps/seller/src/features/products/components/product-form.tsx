@@ -11,13 +11,13 @@ import {
 import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
-import { api, unwrap } from "@/lib/api";
-import { typeboxResolver } from "@/lib/typebox-resolver";
+import { sellerApi } from "@/lib/api";
+import { schemaResolver } from "@/lib/schema-errors";
 import { m } from "@/paraglide/messages";
 import { useCategoryCharacteristics } from "../hooks/use-category-characteristics";
 import {
@@ -44,8 +44,6 @@ import {
 	type ExistingImage,
 	ProductImageDropzone,
 } from "./product-image-dropzone";
-
-const compiledSchema = TypeCompiler.Compile(CreateProductFormBody);
 
 export type { ExistingImage };
 
@@ -110,7 +108,7 @@ export function ProductForm({
 		control,
 		formState: { errors, isDirty },
 	} = useForm<ProductFormData>({
-		resolver: typeboxResolver(compiledSchema),
+		resolver: schemaResolver(CreateProductFormBody),
 		defaultValues: {
 			name: defaultValues?.name ?? "",
 			description: defaultValues?.description ?? "",
@@ -185,10 +183,11 @@ export function ProductForm({
 	const eanLookup = useQuery({
 		queryKey: ["ean-lookup", eanValue],
 		queryFn: async () => {
-			const response = await api().seller.products.lookup.get({
+			const response = await sellerApi.products.lookup.$get({
 				query: { ean: eanValue },
 			});
-			return unwrap(response, m.products_form_ean_lookup_error()).data;
+			return (await unwrapJson(response, m.products_form_ean_lookup_error()))
+				.data;
 		},
 		enabled: eanLookupEnabled,
 		staleTime: Number.POSITIVE_INFINITY,

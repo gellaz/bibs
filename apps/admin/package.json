@@ -21,7 +21,6 @@
 	"dependencies": {
 		"@bibs/api": "workspace:*",
 		"@bibs/ui": "workspace:*",
-		"@elysiajs/eden": "catalog:",
 		"@hookform/resolvers": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"@tailwindcss/vite": "catalog:",
@@ -35,6 +34,7 @@
 		"@tanstack/react-table": "catalog:",
 		"@tanstack/router-plugin": "catalog:",
 		"better-auth": "catalog:",
+		"hono": "catalog:",
 		"lucide-react": "catalog:",
 		"react": "catalog:",
 		"react-dom": "catalog:",

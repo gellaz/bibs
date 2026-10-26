@@ -1,31 +1,55 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
-import { StoreSearchQuery } from "@/lib/queries";
+import { Hono } from "hono";
+import { z } from "zod";
+import { doc } from "@/http/openapi";
+import { publicRoute } from "@/http/routes";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
+import { StoreFacetsSchema } from "@/lib/schemas/composed";
 import {
-	okPageRes,
-	okRes,
 	StoreCardSchema,
 	StoreDetailSchema,
-	StoreFacetsSchema,
 	StoreMapSchema,
 	StoreProductCardSchema,
-	withErrors,
-} from "@/lib/schemas";
+} from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import { StoreSearchQuery } from "@/lib/schemas/queries";
+import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
 import { getStoreDetail } from "../services/store-detail";
 import { searchStores } from "../services/store-discovery";
 import { getStoreFacets } from "../services/store-facets";
 import { getStoreMapPins } from "../services/store-map";
 import { getStoreProducts } from "../services/store-products";
 
-export const storesRoutes = new Elysia()
+const StorePage = okPageRes(StoreCardSchema);
+const FacetsResponse = okRes(StoreFacetsSchema);
+const MapResponse = okRes(StoreMapSchema);
+const DetailResponse = okRes(StoreDetailSchema);
+const ProductPage = okPageRes(StoreProductCardSchema);
+const StoreParams = z.object({
+	id: z.string().meta({ description: "ID del negozio" }),
+});
+
+// Route relative e pubbliche: il modulo è montato su /customer (`src/app.ts`).
+export const storesRoutes = new Hono()
 	.get(
 		"/stores",
-		async ({ query, store }) => {
-			const pino = getLogger(store);
+		doc({
+			response: withErrors({ 200: StorePage }),
+			detail: {
+				summary: "Ricerca negozi",
+				description:
+					"Ricerca pubblica di negozi per vicinanza (PostGIS) con ricerca testuale opzionale su nome e comune. Senza testo restituisce tutti i negozi visibili. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		}),
+		publicRoute,
+		v("query", StoreSearchQuery),
+		async (c) => {
+			const query = c.req.valid("query");
 			const result = await searchStores(query);
-			pino.info(
+			logger.info(
 				{
 					searchQuery: query.q,
 					categoryId: query.categoryId,
@@ -38,25 +62,34 @@ export const storesRoutes = new Elysia()
 				},
 				"Ricerca negozi eseguita",
 			);
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: StoreSearchQuery,
-			response: withErrors({ 200: okPageRes(StoreCardSchema) }),
-			detail: {
-				summary: "Ricerca negozi",
-				description:
-					"Ricerca pubblica di negozi per vicinanza (PostGIS) con ricerca testuale opzionale su nome e comune. Senza testo restituisce tutti i negozi visibili. Non richiede autenticazione.",
-				tags: ["Customer - Search"],
-			},
+			return send(c, StorePage, okPage(result.data, result.pagination));
 		},
 	)
 	.get(
 		"/stores/facets",
-		async ({ query, store }) => {
-			const pino = getLogger(store);
+		doc({
+			response: withErrors({ 200: FacetsResponse }),
+			detail: {
+				summary: "Facet di ricerca negozi",
+				description:
+					"Conteggi per macro categoria e categoria sui negozi che corrispondono a testo e raggio. Le categorie senza negozi non vengono restituite. Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		}),
+		publicRoute,
+		v(
+			"query",
+			StoreSearchQuery.omit({
+				page: true,
+				limit: true,
+				categoryId: true,
+				macroCategoryId: true,
+			}),
+		),
+		async (c) => {
+			const query = c.req.valid("query");
 			const facets = await getStoreFacets(query);
-			pino.info(
+			logger.info(
 				{
 					searchQuery: query.q,
 					hasGeoFilter: query.lat !== undefined && query.lng !== undefined,
@@ -67,30 +100,26 @@ export const storesRoutes = new Elysia()
 				},
 				"Facet di ricerca negozi richiesti",
 			);
-			return ok(facets);
-		},
-		{
-			query: t.Omit(StoreSearchQuery, [
-				"page",
-				"limit",
-				"categoryId",
-				"macroCategoryId",
-			]),
-			response: withErrors({ 200: okRes(StoreFacetsSchema) }),
-			detail: {
-				summary: "Facet di ricerca negozi",
-				description:
-					"Conteggi per macro categoria e categoria sui negozi che corrispondono a testo e raggio. Le categorie senza negozi non vengono restituite. Non richiede autenticazione.",
-				tags: ["Customer - Search"],
-			},
+			return send(c, FacetsResponse, ok(facets));
 		},
 	)
 	.get(
 		"/stores/map",
-		async ({ query, store }) => {
-			const pino = getLogger(store);
+		doc({
+			response: withErrors({ 200: MapResponse }),
+			detail: {
+				summary: "Pin mappa negozi",
+				description:
+					"Tutti i negozi che corrispondono ai filtri, con le coordinate, per la vista mappa. Non paginato: una mappa non si scorre a pagine. Restituisce al massimo 500 pin (`truncated: true` oltre quella soglia) ordinati per distanza quando `lat`/`lng` sono presenti, altrimenti per nome. `total` conta anche i negozi senza posizione, che non compaiono fra i pin; `mappable` è quanti di quei `total` hanno effettivamente una posizione e possono quindi comparire fra i pin (`pins.length` = `min(mappable, 500)`). Non richiede autenticazione.",
+				tags: ["Customer - Search"],
+			},
+		}),
+		publicRoute,
+		v("query", StoreSearchQuery.omit({ page: true, limit: true })),
+		async (c) => {
+			const query = c.req.valid("query");
 			const result = await getStoreMapPins(query);
-			pino.info(
+			logger.info(
 				{
 					searchQuery: query.q,
 					categoryId: query.categoryId,
@@ -105,65 +134,57 @@ export const storesRoutes = new Elysia()
 				},
 				"Pin mappa negozi richiesti",
 			);
-			return ok(result);
-		},
-		{
-			query: t.Omit(StoreSearchQuery, ["page", "limit"]),
-			response: withErrors({ 200: okRes(StoreMapSchema) }),
-			detail: {
-				summary: "Pin mappa negozi",
-				description:
-					"Tutti i negozi che corrispondono ai filtri, con le coordinate, per la vista mappa. Non paginato: una mappa non si scorre a pagine. Restituisce al massimo 500 pin (`truncated: true` oltre quella soglia) ordinati per distanza quando `lat`/`lng` sono presenti, altrimenti per nome. `total` conta anche i negozi senza posizione, che non compaiono fra i pin; `mappable` è quanti di quei `total` hanno effettivamente una posizione e possono quindi comparire fra i pin (`pins.length` = `min(mappable, 500)`). Non richiede autenticazione.",
-				tags: ["Customer - Search"],
-			},
+			return send(c, MapResponse, ok(result));
 		},
 	)
 	.get(
 		"/stores/:id",
-		async ({ params, store }) => {
-			const pino = getLogger(store);
-			const detail = await getStoreDetail(params.id);
-			pino.info(
-				{ storeId: params.id, action: "store_detail" },
-				"Dettaglio negozio richiesto",
-			);
-			return ok(detail);
-		},
-		{
-			params: t.Object({ id: t.String({ description: "ID del negozio" }) }),
-			response: withErrors({ 200: okRes(StoreDetailSchema) }),
+		doc({
+			response: withErrors({ 200: DetailResponse }),
 			detail: {
 				summary: "Dettaglio negozio",
 				description:
 					"Scheda pubblica di un negozio visibile. Restituisce 404 se il negozio non esiste o non è pubblicamente visibile (sospeso/cancellato/senza abbonamento). Non richiede autenticazione.",
 				tags: ["Customer - Search"],
 			},
+		}),
+		publicRoute,
+		v("param", StoreParams),
+		async (c) => {
+			const { id } = c.req.valid("param");
+			const detail = await getStoreDetail(id);
+			logger.info(
+				{ storeId: id, action: "store_detail" },
+				"Dettaglio negozio richiesto",
+			);
+			return send(c, DetailResponse, ok(detail));
 		},
 	)
 	.get(
 		"/stores/:id/products",
-		async ({ params, query, store }) => {
-			const pino = getLogger(store);
-			const result = await getStoreProducts(params.id, query);
-			pino.info(
-				{
-					storeId: params.id,
-					resultCount: result.data.length,
-					action: "store_products",
-				},
-				"Catalogo negozio richiesto",
-			);
-			return okPage(result.data, result.pagination);
-		},
-		{
-			params: t.Object({ id: t.String({ description: "ID del negozio" }) }),
-			query: PaginationQuery,
-			response: withErrors({ 200: okPageRes(StoreProductCardSchema) }),
+		doc({
+			response: withErrors({ 200: ProductPage }),
 			detail: {
 				summary: "Catalogo prodotti del negozio",
 				description:
 					"Prodotti attivi e disponibili (stock > 0) di un negozio pubblicamente visibile, ordinati per novità. Restituisce 404 se il negozio non esiste o non è visibile (sospeso/cancellato/senza abbonamento). Non richiede autenticazione.",
 				tags: ["Customer - Search"],
 			},
+		}),
+		publicRoute,
+		v("param", StoreParams),
+		v("query", PaginationQuery),
+		async (c) => {
+			const { id } = c.req.valid("param");
+			const result = await getStoreProducts(id, c.req.valid("query"));
+			logger.info(
+				{
+					storeId: id,
+					resultCount: result.data.length,
+					action: "store_products",
+				},
+				"Catalogo negozio richiesto",
+			);
+			return send(c, ProductPage, okPage(result.data, result.pagination));
 		},
 	);

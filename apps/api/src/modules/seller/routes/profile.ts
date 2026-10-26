@@ -1,18 +1,33 @@
-import { Elysia } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { requireSellerRole } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { logger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
-import { okRes, SellerProfileSchema, withErrors } from "@/lib/schemas";
-import { withSellerAuth } from "../context";
+import { SellerProfileSchema } from "@/lib/schemas/entities";
+import { okRes, withErrors } from "@/lib/schemas/responses";
 import { getSellerProfile } from "../services/profile";
 
-export const profileRoutes = new Elysia().get(
+const ProfileRes = okRes(SellerProfileSchema);
+
+export const profileRoutes = new Hono().get(
 	"/profile",
-	async (ctx) => {
-		const { user, store } = withSellerAuth(ctx);
-		const pino = getLogger(store);
+	doc({
+		response: withErrors({ 200: ProfileRes }),
+		detail: {
+			summary: "Profilo venditore",
+			description:
+				"Restituisce il profilo del venditore autenticato, incluso lo stato di verifica della partita IVA. Non richiede che la partita IVA sia già verificata.",
+			tags: ["Seller - Profile"],
+			security: [{ bearerAuth: [] }],
+		},
+	}),
+	requireSellerRole,
+	async (c) => {
+		const user = c.var.user;
 		const profile = await getSellerProfile(user.id);
 
-		pino.info(
+		logger.info(
 			{
 				userId: user.id,
 				onboardingStatus: profile.onboardingStatus,
@@ -21,15 +36,6 @@ export const profileRoutes = new Elysia().get(
 			"Seller profile retrieved",
 		);
 
-		return ok(profile);
-	},
-	{
-		response: withErrors({ 200: okRes(SellerProfileSchema) }),
-		detail: {
-			summary: "Profilo venditore",
-			description:
-				"Restituisce il profilo del venditore autenticato, incluso lo stato di verifica della partita IVA. Non richiede che la partita IVA sia già verificata.",
-			tags: ["Seller - Profile"],
-		},
+		return send(c, ProfileRes, ok(profile));
 	},
 );

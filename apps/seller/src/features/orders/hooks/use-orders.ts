@@ -1,5 +1,6 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import type { OrderStatus, OrderType } from "../order-labels";
 
@@ -17,10 +18,10 @@ export function useOrdersList(params: {
 		queryKey: [...ORDERS_KEY, "list", storeId, rest],
 		queryFn: async () => {
 			if (!storeId) throw new Error("missing store");
-			const res = await api().seller.orders.get({
+			const res = await sellerApi.orders.$get({
 				query: { storeId, ...rest },
 			});
-			return unwrap(res, m.orders_load_error());
+			return unwrapJson(res, m.orders_load_error());
 		},
 		enabled: !!storeId,
 	});
@@ -32,10 +33,10 @@ export function useOrderCounts(params: { storeId?: string; type?: OrderType }) {
 		queryKey: [...ORDERS_KEY, "counts", storeId, type],
 		queryFn: async () => {
 			if (!storeId) throw new Error("missing store");
-			const res = await api().seller.orders.counts.get({
+			const res = await sellerApi.orders.counts.$get({
 				query: { storeId, type },
 			});
-			return unwrap(res, m.orders_counts_load_error()).data;
+			return (await unwrapJson(res, m.orders_counts_load_error())).data;
 		},
 		enabled: !!storeId,
 	});
@@ -45,8 +46,10 @@ export function useOrder(orderId: string) {
 	return useQuery({
 		queryKey: [...ORDERS_KEY, "detail", orderId],
 		queryFn: async () => {
-			const res = await api().seller.orders({ orderId }).get();
-			return unwrap(res, m.orders_detail_load_error()).data;
+			const res = await sellerApi.orders[":orderId"].$get({
+				param: { orderId },
+			});
+			return (await unwrapJson(res, m.orders_detail_load_error())).data;
 		},
 	});
 }
@@ -65,24 +68,26 @@ function useOrderTransition(call: (orderId: string) => Promise<unknown>) {
 
 export function useMarkReady() {
 	return useOrderTransition(async (orderId) =>
-		unwrap(
-			await api().seller.orders({ orderId }).ready.patch(),
+		unwrapJson(
+			await sellerApi.orders[":orderId"].ready.$patch({ param: { orderId } }),
 			m.common_error(),
 		),
 	);
 }
 export function useMarkPickedUp() {
 	return useOrderTransition(async (orderId) =>
-		unwrap(
-			await api().seller.orders({ orderId }).complete.patch(),
+		unwrapJson(
+			await sellerApi.orders[":orderId"].complete.$patch({
+				param: { orderId },
+			}),
 			m.common_error(),
 		),
 	);
 }
 export function useCancelOrder() {
 	return useOrderTransition(async (orderId) =>
-		unwrap(
-			await api().seller.orders({ orderId }).cancel.patch(),
+		unwrapJson(
+			await sellerApi.orders[":orderId"].cancel.$patch({ param: { orderId } }),
 			m.common_error(),
 		),
 	);

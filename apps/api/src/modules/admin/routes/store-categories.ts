@@ -1,34 +1,66 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAdmin } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
+import { StoreCategorySchema } from "@/lib/schemas/entities";
 import {
 	OkMessage,
 	okRes,
-	StoreCategorySchema,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { withAdmin } from "../context";
+} from "@/lib/schemas/responses";
+import { zString } from "@/lib/schemas/t";
+import { adminDetail } from "../context";
 import {
 	createStoreCategory,
 	deleteStoreCategory,
 	updateStoreCategory,
 } from "../services/store-categories";
 
-export const storeCategoriesWriteRoutes = new Elysia()
+const StoreCategoryResponse = okRes(StoreCategorySchema);
+
+const Params = z.object({
+	categoryId: z.string().meta({ description: "ID della categoria negozio" }),
+});
+
+export const storeCategoriesWriteRoutes = new Hono()
 	.post(
 		"/store-categories",
-		async (ctx) => {
-			const { body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: StoreCategoryResponse }),
+			detail: adminDetail(
+				"Crea categoria negozio",
+				"Crea una nuova categoria negozio. Il nome deve essere univoco.",
+			),
+		}),
+		v(
+			"json",
+			z.object({
+				name: zString({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nome della categoria negozio",
+				}),
+				macroCategoryId: z
+					.string()
+					.meta({ description: "ID della macro categoria di appartenenza" }),
+			}),
+		),
+		requireAdmin,
+		async (c) => {
+			const body = c.req.valid("json");
 			const data = await createStoreCategory({
 				name: body.name,
 				macroCategoryId: body.macroCategoryId,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					storeCategoryId: data.id,
 					storeCategoryName: data.name,
 					macroCategoryId: data.macroCategoryId,
@@ -37,42 +69,45 @@ export const storeCategoriesWriteRoutes = new Elysia()
 				"Categoria negozio creata",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				name: t.String({
-					minLength: 1,
-					maxLength: 100,
-					description: "Nome della categoria negozio",
-				}),
-				macroCategoryId: t.String({
-					description: "ID della macro categoria di appartenenza",
-				}),
-			}),
-			response: withConflictErrors({ 200: okRes(StoreCategorySchema) }),
-			detail: {
-				summary: "Crea categoria negozio",
-				description:
-					"Crea una nuova categoria negozio. Il nome deve essere univoco.",
-				tags: ["Admin"],
-			},
+			return send(c, StoreCategoryResponse, ok(data));
 		},
 	)
 	.patch(
 		"/store-categories/:categoryId",
-		async (ctx) => {
-			const { params, body, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: StoreCategoryResponse }),
+			detail: adminDetail(
+				"Aggiorna categoria negozio",
+				"Aggiorna nome e/o macro categoria di una categoria negozio esistente.",
+			),
+		}),
+		v("param", Params),
+		v(
+			"json",
+			z.object({
+				name: zString({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nuovo nome della categoria negozio",
+				}).optional(),
+				macroCategoryId: z
+					.string()
+					.meta({ description: "Nuova macro categoria di appartenenza" })
+					.optional(),
+			}),
+		),
+		requireAdmin,
+		async (c) => {
+			const body = c.req.valid("json");
 			const data = await updateStoreCategory({
-				categoryId: params.categoryId,
+				categoryId: c.req.valid("param").categoryId,
 				name: body.name,
 				macroCategoryId: body.macroCategoryId,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					storeCategoryId: data.id,
 					newName: data.name,
 					newMacroCategoryId: data.macroCategoryId,
@@ -81,43 +116,28 @@ export const storeCategoriesWriteRoutes = new Elysia()
 				"Categoria negozio aggiornata",
 			);
 
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				categoryId: t.String({ description: "ID della categoria negozio" }),
-			}),
-			body: t.Object({
-				name: t.Optional(
-					t.String({
-						minLength: 1,
-						maxLength: 100,
-						description: "Nuovo nome della categoria negozio",
-					}),
-				),
-				macroCategoryId: t.Optional(
-					t.String({ description: "Nuova macro categoria di appartenenza" }),
-				),
-			}),
-			response: withConflictErrors({ 200: okRes(StoreCategorySchema) }),
-			detail: {
-				summary: "Aggiorna categoria negozio",
-				description:
-					"Aggiorna nome e/o macro categoria di una categoria negozio esistente.",
-				tags: ["Admin"],
-			},
+			return send(c, StoreCategoryResponse, ok(data));
 		},
 	)
 	.delete(
 		"/store-categories/:categoryId",
-		async (ctx) => {
-			const { params, store, user } = withAdmin(ctx);
-			const pino = getLogger(store);
-			const deleted = await deleteStoreCategory(params.categoryId);
+		doc({
+			response: withErrors({ 200: OkMessage }),
+			detail: adminDetail(
+				"Elimina categoria negozio",
+				"Elimina una categoria negozio. Fallisce se la categoria non esiste.",
+			),
+		}),
+		v("param", Params),
+		requireAdmin,
+		async (c) => {
+			const deleted = await deleteStoreCategory(
+				c.req.valid("param").categoryId,
+			);
 
-			pino.info(
+			logger.info(
 				{
-					adminId: user.id,
+					adminId: c.var.user.id,
 					storeCategoryId: deleted.id,
 					storeCategoryName: deleted.name,
 					action: "store_category_deleted",
@@ -125,18 +145,6 @@ export const storeCategoriesWriteRoutes = new Elysia()
 				"Categoria negozio eliminata",
 			);
 
-			return okMessage("Categoria negozio eliminata");
-		},
-		{
-			params: t.Object({
-				categoryId: t.String({ description: "ID della categoria negozio" }),
-			}),
-			response: withErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Elimina categoria negozio",
-				description:
-					"Elimina una categoria negozio. Fallisce se la categoria non esiste.",
-				tags: ["Admin"],
-			},
+			return send(c, OkMessage, okMessage("Categoria negozio eliminata"));
 		},
 	);

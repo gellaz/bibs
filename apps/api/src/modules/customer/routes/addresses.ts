@@ -1,18 +1,26 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireCustomer } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
 	AddressFieldsOptional,
 	AddressFieldsRequired,
 	CustomerAddressSchema,
+} from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { withCustomer } from "../context";
+} from "@/lib/schemas/responses";
+import { zString } from "@/lib/schemas/t";
+import { customerSecurity } from "../context";
 import {
 	createAddress,
 	deleteAddress,
@@ -22,48 +30,85 @@ import {
 
 /**
  * Opzionale, ma se c'è almeno 5 caratteri. La stringa vuota lo cancella (il
- * service la salva come `null`): una union con `t.Null()` nel body
- * collasserebbe l'inference di Eden.
+ * service la salva come `null`).
  */
-const AddressPhone = t.String({
+const AddressPhone = zString({
 	maxLength: 30,
 	pattern: "^(.{5,})?$",
 	description: "Numero di telefono; stringa vuota per rimuoverlo",
 });
 
-export const addressesRoutes = new Elysia()
+const AddressPage = okPageRes(CustomerAddressSchema);
+const AddressResponse = okRes(CustomerAddressSchema);
+const AddressParams = z.object({
+	addressId: z.string().meta({ description: "ID dell'indirizzo" }),
+});
+
+export const addressesRoutes = new Hono()
 	.get(
 		"/addresses",
-		async (ctx) => {
-			const { customerProfile: cp, query } = withCustomer(ctx);
-			const result = await listAddresses({
-				customerProfileId: cp.id,
-				...query,
-			});
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: PaginationQuery,
-			response: withErrors({ 200: okPageRes(CustomerAddressSchema) }),
+		doc({
+			response: withErrors({ 200: AddressPage }),
 			detail: {
 				summary: "Lista indirizzi",
 				description:
 					"Restituisce la lista paginata degli indirizzi di spedizione del cliente.",
 				tags: ["Customer - Addresses"],
+				...customerSecurity,
 			},
+		}),
+		v("query", PaginationQuery),
+		requireCustomer,
+		async (c) => {
+			const result = await listAddresses({
+				customerProfileId: c.var.customerProfile.id,
+				...c.req.valid("query"),
+			});
+			return send(c, AddressPage, okPage(result.data, result.pagination));
 		},
 	)
 	.post(
 		"/addresses",
-		async (ctx) => {
-			const { customerProfile: cp, body, store, user } = withCustomer(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: AddressResponse }),
+			detail: {
+				summary: "Crea indirizzo",
+				description:
+					"Aggiunge un nuovo indirizzo di spedizione. Se isDefault=true, gli altri indirizzi vengono impostati come non predefiniti.",
+				tags: ["Customer - Addresses"],
+				...customerSecurity,
+			},
+		}),
+		v(
+			"json",
+			z.object({
+				label: zString({
+					maxLength: 50,
+					description: "Etichetta (es. 'Casa', 'Ufficio')",
+				}).optional(),
+				recipientName: zString({
+					maxLength: 100,
+					description: "Nome del destinatario",
+				}).optional(),
+				phone: AddressPhone.optional(),
+				...AddressFieldsRequired,
+				isDefault: z
+					.boolean()
+					.meta({ description: "Imposta come indirizzo predefinito" })
+					.optional(),
+			}),
+		),
+		requireCustomer,
+		async (c) => {
+			const cp = c.var.customerProfile;
+			const data = await createAddress({
+				customerProfileId: cp.id,
+				...c.req.valid("json"),
+			});
 
-			const data = await createAddress({ customerProfileId: cp.id, ...body });
-
-			pino.info(
+			logger.info(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					customerProfileId: cp.id,
 					addressId: data.id,
 					municipalityId: data.municipalityId,
@@ -73,90 +118,66 @@ export const addressesRoutes = new Elysia()
 				"Nuovo indirizzo cliente creato",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				label: t.Optional(
-					t.String({
-						maxLength: 50,
-						description: "Etichetta (es. 'Casa', 'Ufficio')",
-					}),
-				),
-				recipientName: t.Optional(
-					t.String({ maxLength: 100, description: "Nome del destinatario" }),
-				),
-				phone: t.Optional(AddressPhone),
-				...AddressFieldsRequired,
-				isDefault: t.Optional(
-					t.Boolean({ description: "Imposta come indirizzo predefinito" }),
-				),
-			}),
-			response: withConflictErrors({ 200: okRes(CustomerAddressSchema) }),
-			detail: {
-				summary: "Crea indirizzo",
-				description:
-					"Aggiunge un nuovo indirizzo di spedizione. Se isDefault=true, gli altri indirizzi vengono impostati come non predefiniti.",
-				tags: ["Customer - Addresses"],
-			},
+			return send(c, AddressResponse, ok(data));
 		},
 	)
 	.patch(
 		"/addresses/:addressId",
-		async (ctx) => {
-			const { customerProfile: cp, params, body } = withCustomer(ctx);
-			const data = await updateAddress({
-				addressId: params.addressId,
-				customerProfileId: cp.id,
-				...body,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				addressId: t.String({ description: "ID dell'indirizzo" }),
-			}),
-			body: t.Object({
-				label: t.Optional(
-					t.String({ maxLength: 50, description: "Etichetta" }),
-				),
-				recipientName: t.Optional(
-					t.String({ maxLength: 100, description: "Nome del destinatario" }),
-				),
-				phone: t.Optional(AddressPhone),
-				...AddressFieldsOptional,
-				isDefault: t.Optional(
-					t.Boolean({ description: "Imposta come predefinito" }),
-				),
-			}),
-			response: withConflictErrors({ 200: okRes(CustomerAddressSchema) }),
+		doc({
+			response: withConflictErrors({ 200: AddressResponse }),
 			detail: {
 				summary: "Aggiorna indirizzo",
 				description:
 					"Aggiorna un indirizzo esistente. Se isDefault=true, gli altri vengono impostati come non predefiniti.",
 				tags: ["Customer - Addresses"],
+				...customerSecurity,
 			},
+		}),
+		v("param", AddressParams),
+		v(
+			"json",
+			z.object({
+				label: zString({ maxLength: 50, description: "Etichetta" }).optional(),
+				recipientName: zString({
+					maxLength: 100,
+					description: "Nome del destinatario",
+				}).optional(),
+				phone: AddressPhone.optional(),
+				...AddressFieldsOptional,
+				isDefault: z
+					.boolean()
+					.meta({ description: "Imposta come predefinito" })
+					.optional(),
+			}),
+		),
+		requireCustomer,
+		async (c) => {
+			const data = await updateAddress({
+				addressId: c.req.valid("param").addressId,
+				customerProfileId: c.var.customerProfile.id,
+				...c.req.valid("json"),
+			});
+			return send(c, AddressResponse, ok(data));
 		},
 	)
 	.delete(
 		"/addresses/:addressId",
-		async (ctx) => {
-			const { customerProfile: cp, params } = withCustomer(ctx);
-			await deleteAddress({
-				addressId: params.addressId,
-				customerProfileId: cp.id,
-			});
-			return okMessage("Indirizzo eliminato");
-		},
-		{
-			params: t.Object({
-				addressId: t.String({ description: "ID dell'indirizzo" }),
-			}),
+		doc({
 			response: withErrors({ 200: OkMessage }),
 			detail: {
 				summary: "Elimina indirizzo",
 				description: "Elimina un indirizzo di spedizione del cliente.",
 				tags: ["Customer - Addresses"],
+				...customerSecurity,
 			},
+		}),
+		v("param", AddressParams),
+		requireCustomer,
+		async (c) => {
+			await deleteAddress({
+				addressId: c.req.valid("param").addressId,
+				customerProfileId: c.var.customerProfile.id,
+			});
+			return send(c, OkMessage, okMessage("Indirizzo eliminato"));
 		},
 	);

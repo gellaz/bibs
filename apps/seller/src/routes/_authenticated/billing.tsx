@@ -24,6 +24,7 @@ import {
 } from "@bibs/ui/components/table";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { StatusBadge } from "@bibs/ui/custom/status-badge";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -34,7 +35,7 @@ import { CancelStoreDialog } from "@/features/billing/components/cancel-store-di
 import { invoiceStatusBadge } from "@/features/billing/invoice-status";
 import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
@@ -116,8 +117,8 @@ function BillingPage() {
 		queryKey: ["seller", "billing", "summary"],
 		enabled: isOwner,
 		queryFn: async () => {
-			const r = await api().seller.billing.summary.get();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.billing.summary.$get();
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 	});
 
@@ -125,8 +126,8 @@ function BillingPage() {
 		queryKey: ["seller", "billing", "subscriptions"],
 		enabled: isOwner,
 		queryFn: async () => {
-			const r = await api().seller.billing.subscriptions.get();
-			return unwrap(r, m.common_error()).data ?? [];
+			const r = await sellerApi.billing.subscriptions.$get();
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 	});
 
@@ -134,17 +135,17 @@ function BillingPage() {
 		queryKey: ["seller", "billing", "invoices"],
 		enabled: isOwner,
 		queryFn: async () => {
-			const r = await api().seller.billing.invoices.get({
+			const r = await sellerApi.billing.invoices.$get({
 				query: { limit: 25 },
 			});
-			return unwrap(r, m.common_error()).data;
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 	});
 
 	const portalMutation = useMutation({
 		mutationFn: async () => {
-			const r = await api().seller.billing.portal.post();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.billing.portal.$post();
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;
@@ -154,8 +155,10 @@ function BillingPage() {
 
 	const reactivateMutation = useMutation({
 		mutationFn: async (storeId: string) => {
-			const r = await api().seller.stores({ storeId }).reactivate.post();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.stores[":storeId"].reactivate.$post({
+				param: { storeId },
+			});
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["seller", "billing"] });

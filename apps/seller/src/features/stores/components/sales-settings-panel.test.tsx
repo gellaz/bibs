@@ -21,24 +21,39 @@ const calls = vi.hoisted(() => ({
 	syncPost: vi.fn(),
 }));
 
-vi.mock("@/lib/api", async (importOriginal) => ({
-	...(await importOriginal<typeof import("@/lib/api")>()),
-	api: () => ({
-		seller: {
-			stores: () => ({
-				patch: calls.patch,
-				"order-types": { get: calls.typesGet },
-			}),
+vi.mock("@/lib/api", async (importOriginal) => {
+	// Finto client `hc`: le risposte dei test restano { data, error } come col
+	// client di prima e diventano risposte HTTP (ok, status, json) per `unwrapJson`.
+	const http = async (
+		pending: Promise<{
+			data: unknown;
+			error: { status: number; value: unknown } | null;
+		}>,
+	) => {
+		const { data, error } = await pending;
+		return error
+			? { ok: false, status: error.status, json: async () => error.value }
+			: { ok: true, status: 200, json: async () => data };
+	};
+	return {
+		...(await importOriginal<typeof import("@/lib/api")>()),
+		sellerApi: {
+			stores: {
+				":storeId": {
+					$patch: ({ json }: { json: unknown }) => http(calls.patch(json)),
+					"order-types": { $get: () => http(calls.typesGet()) },
+				},
+			},
 			settings: {
-				get: calls.settingsGet,
+				$get: () => http(calls.settingsGet()),
 				payments: {
-					onboarding: { post: calls.onboardingPost },
-					sync: { post: calls.syncPost },
+					onboarding: { $post: () => http(calls.onboardingPost()) },
+					sync: { $post: () => http(calls.syncPost()) },
 				},
 			},
 		},
-	}),
-}));
+	};
+});
 
 // I link verso Orari e Pagamenti vogliono il router: qui basta un'ancora.
 vi.mock("@tanstack/react-router", () => ({

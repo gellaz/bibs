@@ -1,4 +1,5 @@
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -7,7 +8,7 @@ import {
 	DiscountForm,
 	type DiscountFormValues,
 } from "@/features/promotions/components/discount-form";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/promotions/new")({
@@ -21,14 +22,17 @@ function NewPromotionPage() {
 
 	const createMutation = useMutation({
 		mutationFn: async (values: DiscountFormValues) => {
-			const res = await api().seller.discounts.post({
-				title: values.title,
-				percent: values.percent,
-				startsAt: new Date(values.startsAt),
-				endsAt:
-					values.noEndDate || !values.endsAt ? null : new Date(values.endsAt),
+			// Le `Date` escono come stringhe ISO (JSON.stringify), come prima.
+			const res = await sellerApi.discounts.$post({
+				json: {
+					title: values.title,
+					percent: values.percent,
+					startsAt: new Date(values.startsAt),
+					endsAt:
+						values.noEndDate || !values.endsAt ? null : new Date(values.endsAt),
+				},
 			});
-			return unwrap(res, m.common_error()).data;
+			return (await unwrapJson(res, m.common_error())).data;
 		},
 		onSuccess: (d) => {
 			toast.success(m.promotions_toast_created());

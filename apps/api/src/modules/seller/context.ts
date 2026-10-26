@@ -1,4 +1,3 @@
-import type { InferSelectModel } from "drizzle-orm";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { storeEmployee } from "@/db/schemas/employee";
@@ -7,33 +6,6 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
 import { ServiceError } from "@/lib/errors";
 import { getEmployeeAssignedStoreIds } from "./services/access";
-
-/**
- * Context injected by the seller guard's `.resolve()` and auth macro.
- * Used as a type assertion in sub-route handlers.
- */
-export interface SellerResolvedContext {
-	sellerProfile: InferSelectModel<typeof sellerProfile>;
-	isOwner: boolean;
-	/** The caller's access triple, assembled by the seller guard's resolve. */
-	accessCtx: AccessCtx;
-	/** Lazy getter — only queries DB on first call, caches the result. */
-	getStoreIds: () => Promise<string[]>;
-	/** Lazy: tutti gli store accessibili al chiamante (owner: tutti; employee: solo assegnati). */
-	getAccessibleStoreIds: () => Promise<string[]>;
-	user: {
-		id: string;
-		name: string;
-		email: string;
-		role: string | null;
-		[key: string]: unknown;
-	};
-}
-
-/** Type-safe context helper for seller sub-route handlers. */
-export function withSeller<T>(ctx: T) {
-	return ctx as T & SellerResolvedContext;
-}
 
 /**
  * Returns the IDs of all active (non-deleted) stores for a seller.
@@ -163,25 +135,6 @@ export function requireOwner(isOwner: boolean) {
 			403,
 			"Solo il titolare può eseguire questa operazione",
 		);
-}
-
-/**
- * Context injected by the auth macro for profile routes.
- * Used for routes that need authentication but not VAT verification.
- */
-export interface SellerAuthContext {
-	user: {
-		id: string;
-		name: string;
-		email: string;
-		role: string | null;
-		[key: string]: unknown;
-	};
-}
-
-/** Type-safe context helper for profile routes (no VAT verification). */
-export function withSellerAuth<T>(ctx: T) {
-	return ctx as T & SellerAuthContext;
 }
 
 /**

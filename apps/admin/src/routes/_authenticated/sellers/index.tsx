@@ -6,6 +6,7 @@ import { PageHeader } from "@bibs/ui/custom/page-header";
 import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { formatDate } from "@bibs/ui/lib/date";
 import { displayName } from "@bibs/ui/lib/display-name";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
@@ -19,7 +20,7 @@ import {
 	SellerModerationDialog,
 	useSellerModeration,
 } from "@/components/seller-moderation-dialog";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import {
 	dataTableFooterLabels,
 	tableColumnsToggleLabels,
@@ -65,7 +66,8 @@ interface Seller {
 	firstName: string | null;
 	lastName: string | null;
 	createdAt: string | Date;
-	updatedAt: Date;
+	/** ISO: torna come `expectedUpdatedAt` (`new Date(...)` nel target). */
+	updatedAt: string;
 	user: {
 		id: string;
 		name: string;
@@ -119,34 +121,28 @@ function SellersPage() {
 	const { data: countsData } = useQuery({
 		queryKey: ["admin-sellers-counts"],
 		queryFn: async () => {
-			const response = await api().admin.sellers.counts.get();
-			if (response.error) return null;
-			return response.data?.data ?? null;
+			const response = await adminApi.sellers.counts.$get();
+			if (!response.ok) return null;
+			return (await response.json()).data;
 		},
 	});
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin-sellers", status, page, limit, search, sortBy, sortOrder],
-		queryFn: async () => {
-			const response = await api().admin.sellers.get({
-				query: {
-					page,
-					limit,
-					...(status ? { status: status as SellerStatus } : {}),
-					...(search ? { search } : {}),
-					sortBy,
-					sortOrder,
-				},
-			});
-
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m.sellers_load_error(),
-				);
-			}
-
-			return response.data;
-		},
+		queryFn: async () =>
+			unwrapJson(
+				await adminApi.sellers.$get({
+					query: {
+						page,
+						limit,
+						...(status ? { status: status as SellerStatus } : {}),
+						...(search ? { search } : {}),
+						sortBy,
+						sortOrder,
+					},
+				}),
+				m.sellers_load_error(),
+			),
 	});
 
 	const handleTabChange = (value: string) => {
@@ -177,7 +173,7 @@ function SellersPage() {
 					: null,
 	}));
 
-	const rows = useMemo<Seller[]>(() => (data?.data as Seller[]) ?? [], [data]);
+	const rows = useMemo<Seller[]>(() => data?.data ?? [], [data]);
 
 	const columns = useMemo<DataTableColumnDef<Seller>[]>(() => {
 		const cols: DataTableColumnDef<Seller>[] = [
@@ -257,6 +253,8 @@ function SellersPage() {
 			id: "createdAt",
 			accessorKey: "createdAt",
 			enableSorting: true,
+			// Con le Date del client di prima TanStack partiva da desc; la stringa ISO di `hc` partirebbe da asc.
+			sortDescFirst: true,
 			meta: {
 				menuLabel: m.common_registered_at(),
 				cellClassName: "text-muted-foreground text-sm",
@@ -298,7 +296,7 @@ function SellersPage() {
 										sellerId: s.id,
 										sellerName:
 											s.organization?.businessName ?? displayName(s.user),
-										updatedAt: s.updatedAt,
+										updatedAt: new Date(s.updatedAt),
 									})
 								}
 							>
@@ -314,7 +312,7 @@ function SellersPage() {
 										sellerId: s.id,
 										sellerName:
 											s.organization?.businessName ?? displayName(s.user),
-										updatedAt: s.updatedAt,
+										updatedAt: new Date(s.updatedAt),
 									})
 								}
 							>

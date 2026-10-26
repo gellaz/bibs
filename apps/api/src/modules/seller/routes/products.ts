@@ -1,33 +1,43 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
-import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { logger } from "@/lib/logger";
 import { ok, okMessage, okPage } from "@/lib/responses";
+import {
+	SellerProductDetailSchema,
+	SellerProductListItemSchema,
+} from "@/lib/schemas/composed";
 import {
 	BulkDeleteBody,
 	BulkDeleteResult,
 	BulkStatusBody,
 	BulkStatusResult,
 	EanLookupResultSchema,
-	OkMessage,
-	okPageRes,
-	okRes,
 	ProductCategoryWithMacroSchema,
 	ProductCsvImportResultSchema,
 	ProductSchema,
 	ProductStatusBody,
 	ProductStatusCounts,
-	SellerProductDetailSchema,
-	SellerProductListItemSchema,
-	withConflictErrors,
-	withErrors,
-} from "@/lib/schemas";
+} from "@/lib/schemas/entities";
 import {
 	CharacteristicValuesField,
 	CreateProductBody,
 	VatRateSchema,
-} from "@/lib/schemas/forms";
-import { ensureStoreAccess, withSeller } from "../context";
+} from "@/lib/schemas/forms/products";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import {
+	OkMessage,
+	okPageRes,
+	okRes,
+	withConflictErrors,
+	withErrors,
+} from "@/lib/schemas/responses";
+import { zFile, zInteger, zString } from "@/lib/schemas/t";
+import { ensureStoreAccess } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
 	bulkDeletePermanent,
@@ -43,17 +53,189 @@ import {
 	updateProductStatus,
 } from "../services/products";
 
-export const productsRoutes = new Elysia()
+const d = (description: string) => ({ description });
+const security = [{ bearerAuth: [] }];
+const tags = ["Seller - Products"];
+
+const price = (description: string) =>
+	z
+		.string()
+		.regex(/^\d+(\.\d{1,2})?$/)
+		.meta(d(description))
+		.optional();
+
+const ListQuery = PaginationQuery.extend({
+	storeId: z
+		.string()
+		.meta(d("ID del negozio attivo (se assente: seller-wide)"))
+		.optional(),
+	statusFilter: z
+		.enum(["active", "disabled", "trashed"])
+		.meta(d("Filtra per stato. Default 'active'."))
+		.default("active")
+		.optional(),
+	brandId: z.string().meta(d("Filtra per marca")).optional(),
+	productCategoryIds: z
+		.array(z.string())
+		.meta(
+			d(
+				"Filtra per una o più categorie foglia. Repeated query param: `?productCategoryIds=a&productCategoryIds=b`. AND fra dimensioni, OR fra le categorie passate.",
+			),
+		)
+		.optional(),
+	productMacroCategoryId: z
+		.string()
+		.meta(d("Filtra per macro-categoria"))
+		.optional(),
+	minPrice: price("Prezzo minimo"),
+	maxPrice: price("Prezzo massimo"),
+	inStock: z.boolean().meta(d("Solo prodotti con stock>0")).optional(),
+	excludeDiscountId: z
+		.string()
+		.meta(d("Escludi prodotti già in questa promo"))
+		.optional(),
+	q: zString({
+		maxLength: 100,
+		description:
+			"Ricerca testuale su nome, descrizione, EAN e brand. Full-text con prefix matching e fuzzy (typo) tolerance. Minimo 2 caratteri effettivi.",
+	}).optional(),
+	sort: z
+		.enum(["name", "price", "ean", "stock", "createdAt", "updatedAt"])
+		.meta(
+			d(
+				"Campo di ordinamento. `stock` richiede `storeId`. Ignorato quando `q` è attivo (vince la rilevanza). Default: createdAt.",
+			),
+		)
+		.optional(),
+	order: z
+		.enum(["asc", "desc"])
+		.meta(d("Direzione di ordinamento. Default: desc."))
+		.optional(),
+});
+
+const LookupQuery = z.object({
+	ean: z
+		.string()
+		.regex(/^(\d{8}|\d{13})$/)
+		.meta(d("Codice EAN-8 o EAN-13")),
+});
+
+const CategoriesInUseQuery = z.object({
+	storeId: z
+		.string()
+		.meta(d("Restringe al negozio specificato; assente = seller-wide."))
+		.optional(),
+	statusFilter: z
+		.enum(["active", "disabled", "trashed"])
+		.meta(
+			d(
+				"Restringe ai prodotti dello stato indicato. Assente = qualunque status.",
+			),
+		)
+		.optional(),
+});
+
+const StatusCountsQuery = z.object({
+	storeId: z.string().meta(d("ID del negozio attivo")),
+});
+
+const ProductParams = z.object({
+	productId: z.string().meta(d("ID del prodotto")),
+});
+
+const UpdateProductBody = z.object({
+	productCategoryId: z
+		.union([z.string(), z.null()])
+		.meta(d("ID della sotto-categoria del prodotto. null per rimuoverla."))
+		.optional(),
+	name: zString({
+		minLength: 1,
+		maxLength: 200,
+		description: "Nome del prodotto",
+	}).optional(),
+	description: zString({
+		maxLength: 2000,
+		description: "Descrizione del prodotto",
+	}).optional(),
+	price: z
+		.string()
+		.regex(/^\d+\.\d{2}$/)
+		.meta(d("Prezzo (formato decimale, es. '9.99')"))
+		.optional(),
+	vatRate: VatRateSchema.optional(),
+	imageOrder: z
+		.array(z.string())
+		.meta(
+			d(
+				"IDs delle immagini esistenti nell'ordine desiderato. La prima diventa l'immagine di default.",
+			),
+		)
+		.optional(),
+	ean: z
+		.union([z.string().regex(/^$|^(\d{8}|\d{13})$/), z.null()])
+		.meta(d("Codice EAN (null o stringa vuota per cancellarlo)"))
+		.optional(),
+	brandId: z
+		.union([z.string(), z.null()])
+		.meta(d("ID brand esistente (null per rimuovere)"))
+		.optional(),
+	brandName: zString({
+		minLength: 1,
+		maxLength: 120,
+		description: "Nome brand da creare (ignorato se brandId valorizzato)",
+	}).optional(),
+	characteristicValues: CharacteristicValuesField.optional(),
+	confirmAffected: zInteger({
+		minimum: 0,
+		description:
+			"Solo al cambio di sotto-categoria: quanti valori già salvati, fuori dalla nuova matrice, l'interfaccia ha mostrato nella conferma. Se se ne perdono di più, 409 e nulla cambia. Assente vale 0.",
+	}).optional(),
+});
+
+const ImportBody = z.object({
+	file: zFile({
+		type: "text/csv",
+		description: "File CSV con i prodotti da importare",
+	}),
+	storeId: z.string().meta(d("ID del negozio attivo")),
+});
+
+const ProductListRes = okPageRes(SellerProductListItemSchema);
+const LookupRes = okRes(z.union([EanLookupResultSchema, z.null()]));
+const CategoriesInUseRes = okRes(z.array(ProductCategoryWithMacroSchema));
+const StatusCountsRes = okRes(ProductStatusCounts);
+const ProductDetailRes = okRes(SellerProductDetailSchema);
+const ProductRes = okRes(ProductSchema);
+const ImportRes = okRes(ProductCsvImportResultSchema);
+const BulkStatusRes = okRes(BulkStatusResult);
+const BulkDeleteRes = okRes(BulkDeleteResult);
+
+// Route relative: il modulo è montato su /seller (`src/app.ts`). Le route
+// statiche (`/products/lookup`, …) prima di `/products/:productId`: in Hono
+// risponde la prima registrata.
+export const productsRoutes = new Hono()
 	.get(
 		"/products",
-		async (ctx) => {
+		doc({
+			response: withErrors({ 200: ProductListRes }),
+			detail: {
+				summary: "Lista prodotti del venditore",
+				description:
+					"Restituisce i prodotti del venditore filtrati per stato e filtri opzionali. Senza storeId, lista seller-wide. Con `q` attiva ricerca testuale ordinata per rilevanza.",
+				tags,
+				security,
+			},
+		}),
+		v("query", ListQuery),
+		requireSeller,
+		async (c) => {
 			const {
 				sellerProfile: sp,
-				query,
 				isOwner,
 				accessCtx,
 				getAccessibleStoreIds,
-			} = withSeller(ctx);
+			} = c.var.seller;
+			const query = c.req.valid("query");
 			if (query.storeId) {
 				await ensureStoreAccess(query.storeId, accessCtx);
 			}
@@ -79,134 +261,50 @@ export const productsRoutes = new Elysia()
 				sort: query.sort,
 				order: query.order,
 			});
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: t.Composite([
-				PaginationQuery,
-				t.Object({
-					storeId: t.Optional(
-						t.String({
-							description: "ID del negozio attivo (se assente: seller-wide)",
-						}),
-					),
-					statusFilter: t.Optional(
-						t.Union(
-							[
-								t.Literal("active"),
-								t.Literal("disabled"),
-								t.Literal("trashed"),
-							],
-							{
-								description: "Filtra per stato. Default 'active'.",
-								default: "active",
-							},
-						),
-					),
-					brandId: t.Optional(t.String({ description: "Filtra per marca" })),
-					productCategoryIds: t.Optional(
-						t.Array(t.String(), {
-							description:
-								"Filtra per una o più categorie foglia. Repeated query param: `?productCategoryIds=a&productCategoryIds=b`. AND fra dimensioni, OR fra le categorie passate.",
-						}),
-					),
-					productMacroCategoryId: t.Optional(
-						t.String({ description: "Filtra per macro-categoria" }),
-					),
-					minPrice: t.Optional(
-						t.String({
-							pattern: "^\\d+(\\.\\d{1,2})?$",
-							description: "Prezzo minimo",
-						}),
-					),
-					maxPrice: t.Optional(
-						t.String({
-							pattern: "^\\d+(\\.\\d{1,2})?$",
-							description: "Prezzo massimo",
-						}),
-					),
-					inStock: t.Optional(
-						t.Boolean({ description: "Solo prodotti con stock>0" }),
-					),
-					excludeDiscountId: t.Optional(
-						t.String({
-							description: "Escludi prodotti già in questa promo",
-						}),
-					),
-					q: t.Optional(
-						t.String({
-							maxLength: 100,
-							description:
-								"Ricerca testuale su nome, descrizione, EAN e brand. Full-text con prefix matching e fuzzy (typo) tolerance. Minimo 2 caratteri effettivi.",
-						}),
-					),
-					sort: t.Optional(
-						t.Union(
-							[
-								t.Literal("name"),
-								t.Literal("price"),
-								t.Literal("ean"),
-								t.Literal("stock"),
-								t.Literal("createdAt"),
-								t.Literal("updatedAt"),
-							],
-							{
-								description:
-									"Campo di ordinamento. `stock` richiede `storeId`. Ignorato quando `q` è attivo (vince la rilevanza). Default: createdAt.",
-							},
-						),
-					),
-					order: t.Optional(
-						t.Union([t.Literal("asc"), t.Literal("desc")], {
-							description: "Direzione di ordinamento. Default: desc.",
-						}),
-					),
-				}),
-			]),
-			response: withErrors({ 200: okPageRes(SellerProductListItemSchema) }),
-			detail: {
-				summary: "Lista prodotti del venditore",
-				description:
-					"Restituisce i prodotti del venditore filtrati per stato e filtri opzionali. Senza storeId, lista seller-wide. Con `q` attiva ricerca testuale ordinata per rilevanza.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, ProductListRes, okPage(result.data, result.pagination));
 		},
 	)
 	.get(
 		"/products/lookup",
-		async ({ query }) => {
-			const data = await lookupProductByEan({ ean: query.ean });
-			return ok(data);
-		},
-		{
-			query: t.Object({
-				ean: t.String({
-					pattern: "^(\\d{8}|\\d{13})$",
-					description: "Codice EAN-8 o EAN-13",
-				}),
-			}),
-			auth: true,
-			response: withErrors({
-				200: okRes(t.Union([EanLookupResultSchema, t.Null()])),
-			}),
+		doc({
+			response: withErrors({ 200: LookupRes }),
 			detail: {
 				summary: "Lookup prodotto per EAN",
 				description:
 					"Restituisce i dati pre-compilabili dell'ultimo prodotto attivo con questo EAN presente in un negozio visibile al pubblico (tra venditori: solo dati già pubblici sul sito). Esclude prezzo e immagini. Ritorna null se nessun prodotto matcha.",
-				tags: ["Seller - Products"],
+				tags,
+				security,
 			},
+		}),
+		v("query", LookupQuery),
+		requireSeller,
+		async (c) => {
+			const data = await lookupProductByEan({ ean: c.req.valid("query").ean });
+			return send(c, LookupRes, ok(data));
 		},
 	)
 	.get(
 		"/products/categories-in-use",
-		async (ctx) => {
+		doc({
+			response: withErrors({ 200: CategoriesInUseRes }),
+			detail: {
+				summary: "Categorie usate dal seller",
+				description:
+					"Restituisce le sotto-categorie con almeno un prodotto del seller. Filtrabile per negozio e/o status. Pensato per popolare il filtro categoria nella lista prodotti senza mostrare l'intero catalogo globale.",
+				tags,
+				security,
+			},
+		}),
+		v("query", CategoriesInUseQuery),
+		requireSeller,
+		async (c) => {
 			const {
 				sellerProfile: sp,
-				query,
 				isOwner,
 				accessCtx,
 				getAccessibleStoreIds,
-			} = withSeller(ctx);
+			} = c.var.seller;
+			const query = c.req.valid("query");
 			if (query.storeId) {
 				await ensureStoreAccess(query.storeId, accessCtx);
 			}
@@ -218,105 +316,81 @@ export const productsRoutes = new Elysia()
 				statusFilter: query.statusFilter,
 				restrictToStoreIds,
 			});
-			return ok(data);
-		},
-		{
-			query: t.Object({
-				storeId: t.Optional(
-					t.String({
-						description:
-							"Restringe al negozio specificato; assente = seller-wide.",
-					}),
-				),
-				statusFilter: t.Optional(
-					t.Union(
-						[t.Literal("active"), t.Literal("disabled"), t.Literal("trashed")],
-						{
-							description:
-								"Restringe ai prodotti dello stato indicato. Assente = qualunque status.",
-						},
-					),
-				),
-			}),
-			response: withErrors({
-				200: okRes(t.Array(ProductCategoryWithMacroSchema)),
-			}),
-			detail: {
-				summary: "Categorie usate dal seller",
-				description:
-					"Restituisce le sotto-categorie con almeno un prodotto del seller. Filtrabile per negozio e/o status. Pensato per popolare il filtro categoria nella lista prodotti senza mostrare l'intero catalogo globale.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, CategoriesInUseRes, ok(data));
 		},
 	)
 	.get(
 		"/products/status-counts",
-		async (ctx) => {
-			const { sellerProfile: sp, query, accessCtx } = withSeller(ctx);
-			await ensureStoreAccess(query.storeId, accessCtx);
-
-			const counts = await getProductStatusCounts({
-				sellerProfileId: sp.id,
-				storeId: query.storeId,
-			});
-			return ok(counts);
-		},
-		{
-			query: t.Object({
-				storeId: t.String({ description: "ID del negozio attivo" }),
-			}),
-			response: withErrors({ 200: okRes(ProductStatusCounts) }),
+		doc({
+			response: withErrors({ 200: StatusCountsRes }),
 			detail: {
 				summary: "Conta prodotti per stato",
 				description:
 					"Ritorna il numero di prodotti per ciascun stato (active/disabled/trashed) nel negozio specificato.",
-				tags: ["Seller - Products"],
+				tags,
+				security,
 			},
+		}),
+		v("query", StatusCountsQuery),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, accessCtx } = c.var.seller;
+			const { storeId } = c.req.valid("query");
+			await ensureStoreAccess(storeId, accessCtx);
+			const counts = await getProductStatusCounts({
+				sellerProfileId: sp.id,
+				storeId,
+			});
+			return send(c, StatusCountsRes, ok(counts));
 		},
 	)
 	.get(
 		"/products/:productId",
-		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params } = sellerCtx;
-			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
-			const data = await getProduct({
-				productId: params.productId,
-				sellerProfileId: sp.id,
-				accessibleStoreIds,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				productId: t.String({ description: "ID del prodotto" }),
-			}),
-			response: withErrors({ 200: okRes(SellerProductDetailSchema) }),
+		doc({
+			response: withErrors({ 200: ProductDetailRes }),
 			detail: {
 				summary: "Dettaglio prodotto",
 				description:
 					"Restituisce un singolo prodotto con la sua sotto-categoria, disponibilità per negozio, immagini e i valori delle caratteristiche.",
-				tags: ["Seller - Products"],
+				tags,
+				security,
 			},
+		}),
+		v("param", ProductParams),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
+			const data = await getProduct({
+				productId: c.req.valid("param").productId,
+				sellerProfileId: sp.id,
+				accessibleStoreIds: await getAccessibleStoreIds(),
+			});
+			return send(c, ProductDetailRes, ok(data));
 		},
 	)
 	.post(
 		"/products",
-		async (ctx) => {
-			const {
-				sellerProfile: sp,
-				body,
-				user,
-				store,
-				accessCtx,
-			} = withSeller(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({ 200: ProductRes }),
+			detail: {
+				summary: "Crea prodotto",
+				description:
+					"Crea un nuovo prodotto e lo associa alla sotto-categoria indicata. Il prodotto è attivo di default. Salva anche i valori delle caratteristiche: le obbligatorie della sotto-categoria vanno tutte compilate.",
+				tags,
+				security,
+			},
+		}),
+		v("json", CreateProductBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, accessCtx } = c.var.seller;
+			const body = c.req.valid("json");
 			await ensureStoreAccess(body.storeId, accessCtx);
 			const data = await createProduct({ sellerProfileId: sp.id, ...body });
 
-			pino.info(
+			logger.info(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					sellerProfileId: sp.id,
 					productId: data.id,
 					productName: data.name,
@@ -329,120 +403,55 @@ export const productsRoutes = new Elysia()
 				"Nuovo prodotto creato",
 			);
 
-			return ok(data);
-		},
-		{
-			body: CreateProductBody,
-			response: withConflictErrors({ 200: okRes(ProductSchema) }),
-			detail: {
-				summary: "Crea prodotto",
-				description:
-					"Crea un nuovo prodotto e lo associa alla sotto-categoria indicata. Il prodotto è attivo di default. Salva anche i valori delle caratteristiche: le obbligatorie della sotto-categoria vanno tutte compilate.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, ProductRes, ok(data));
 		},
 	)
 	.patch(
 		"/products/:productId",
-		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params, body } = sellerCtx;
-			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
-			const data = await updateProduct({
-				productId: params.productId,
-				sellerProfileId: sp.id,
-				accessibleStoreIds,
-				...body,
-			});
-
-			if (!data) throw new ServiceError(404, "Prodotto non trovato");
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				productId: t.String({ description: "ID del prodotto" }),
-			}),
-			body: t.Object({
-				productCategoryId: t.Optional(
-					t.Union([t.String(), t.Null()], {
-						description:
-							"ID della sotto-categoria del prodotto. null per rimuoverla.",
-					}),
-				),
-				name: t.Optional(
-					t.String({
-						minLength: 1,
-						maxLength: 200,
-						description: "Nome del prodotto",
-					}),
-				),
-				description: t.Optional(
-					t.String({
-						maxLength: 2000,
-						description: "Descrizione del prodotto",
-					}),
-				),
-				price: t.Optional(
-					t.String({
-						pattern: "^\\d+\\.\\d{2}$",
-						description: "Prezzo (formato decimale, es. '9.99')",
-					}),
-				),
-				vatRate: t.Optional(VatRateSchema),
-				imageOrder: t.Optional(
-					t.Array(t.String(), {
-						description:
-							"IDs delle immagini esistenti nell'ordine desiderato. La prima diventa l'immagine di default.",
-					}),
-				),
-				ean: t.Optional(
-					t.Union([t.String({ pattern: "^$|^(\\d{8}|\\d{13})$" }), t.Null()], {
-						description: "Codice EAN (null o stringa vuota per cancellarlo)",
-					}),
-				),
-				brandId: t.Optional(
-					t.Union([t.String(), t.Null()], {
-						description: "ID brand esistente (null per rimuovere)",
-					}),
-				),
-				brandName: t.Optional(
-					t.String({
-						minLength: 1,
-						maxLength: 120,
-						description:
-							"Nome brand da creare (ignorato se brandId valorizzato)",
-					}),
-				),
-				characteristicValues: t.Optional(CharacteristicValuesField),
-				confirmAffected: t.Optional(
-					t.Integer({
-						minimum: 0,
-						description:
-							"Solo al cambio di sotto-categoria: quanti valori già salvati, fuori dalla nuova matrice, l'interfaccia ha mostrato nella conferma. Se se ne perdono di più, 409 e nulla cambia. Assente vale 0.",
-					}),
-				),
-			}),
-			response: withConflictErrors({ 200: okRes(ProductSchema) }),
+		doc({
+			response: withConflictErrors({ 200: ProductRes }),
 			detail: {
 				summary: "Aggiorna prodotto",
 				description:
 					"Aggiorna i dati di un prodotto. Se viene fornita productCategoryId, la classificazione viene sostituita; null la rimuove. Salva i valori delle caratteristiche; un'obbligatoria già compilata non si può svuotare. Cambiando sotto-categoria si perdono i valori fuori dalla nuova matrice, dietro confirmAffected, e le nuove obbligatorie vanno compilate.",
-				tags: ["Seller - Products"],
+				tags,
+				security,
 			},
+		}),
+		v("param", ProductParams),
+		v("json", UpdateProductBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
+			const data = await updateProduct({
+				productId: c.req.valid("param").productId,
+				sellerProfileId: sp.id,
+				accessibleStoreIds: await getAccessibleStoreIds(),
+				...c.req.valid("json"),
+			});
+
+			if (!data) throw new ServiceError(404, "Prodotto non trovato");
+			return send(c, ProductRes, ok(data));
 		},
 	)
 	.post(
 		"/products/import",
-		async (ctx) => {
-			const {
-				sellerProfile: sp,
-				body,
-				user,
-				store,
-				accessCtx,
-			} = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: ImportRes }),
+			detail: {
+				summary: "Importa prodotti da CSV",
+				description:
+					"Importa prodotti in blocco da un file CSV. Colonne attese: name, description, price, categories (una o più categorie separate da ';'; il prodotto tiene solo la prima, le altre sono riportate in `warnings`). Colonne opzionali: ean (8 o 13 cifre), brand (match-or-create per venditore). Restituisce il numero di prodotti creati, le righe saltate per EAN duplicato, gli errori per riga (`failed` conta solo questi) e gli avvisi per riga.",
+				tags,
+				security,
+			},
+		}),
+		v("form", ImportBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, accessCtx } = c.var.seller;
+			const body = c.req.valid("form");
 			await ensureStoreAccess(body.storeId, accessCtx);
-			const pino = getLogger(store);
 			const csvText = await body.file.text();
 			const result = await importProductsFromCsv({
 				sellerProfileId: sp.id,
@@ -450,9 +459,9 @@ export const productsRoutes = new Elysia()
 				csvText,
 			});
 
-			pino.info(
+			logger.info(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					sellerProfileId: sp.id,
 					created: result.created,
 					failed: result.failed,
@@ -462,42 +471,36 @@ export const productsRoutes = new Elysia()
 				"Importazione prodotti da CSV completata",
 			);
 
-			return ok(result);
-		},
-		{
-			body: t.Object({
-				file: t.File({
-					type: "text/csv",
-					description: "File CSV con i prodotti da importare",
-				}),
-				storeId: t.String({ description: "ID del negozio attivo" }),
-			}),
-			response: withErrors({ 200: okRes(ProductCsvImportResultSchema) }),
-			detail: {
-				summary: "Importa prodotti da CSV",
-				description:
-					"Importa prodotti in blocco da un file CSV. Colonne attese: name, description, price, categories (una o più categorie separate da ';'; il prodotto tiene solo la prima, le altre sono riportate in `warnings`). Colonne opzionali: ean (8 o 13 cifre), brand (match-or-create per venditore). Restituisce il numero di prodotti creati, le righe saltate per EAN duplicato, gli errori per riga (`failed` conta solo questi) e gli avvisi per riga.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, ImportRes, ok(result));
 		},
 	)
 	.patch(
 		"/products/:productId/status",
-		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params, body, user, store } = sellerCtx;
-			const pino = getLogger(store);
-			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
-
+		doc({
+			response: withConflictErrors({ 200: ProductRes }),
+			detail: {
+				summary: "Aggiorna stato prodotto",
+				description:
+					"Cambia lo stato del prodotto (active/disabled/trashed). Scrive un'entry sull'audit log se lo stato cambia. No-op se lo stato è già quello richiesto.",
+				tags,
+				security,
+			},
+		}),
+		v("param", ProductParams),
+		v("json", ProductStatusBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
+			const user = c.var.user;
 			const updated = await updateProductStatus({
-				productId: params.productId,
+				productId: c.req.valid("param").productId,
 				sellerProfileId: sp.id,
-				accessibleStoreIds,
+				accessibleStoreIds: await getAccessibleStoreIds(),
 				actorUserId: user.id,
-				status: body.status,
+				status: c.req.valid("json").status,
 			});
 
-			pino.info(
+			logger.info(
 				{
 					userId: user.id,
 					sellerProfileId: sp.id,
@@ -508,39 +511,36 @@ export const productsRoutes = new Elysia()
 				"Stato prodotto aggiornato",
 			);
 
-			return ok(updated);
-		},
-		{
-			params: t.Object({
-				productId: t.String({ description: "ID del prodotto" }),
-			}),
-			body: ProductStatusBody,
-			response: withConflictErrors({ 200: okRes(ProductSchema) }),
-			detail: {
-				summary: "Aggiorna stato prodotto",
-				description:
-					"Cambia lo stato del prodotto (active/disabled/trashed). Scrive un'entry sull'audit log se lo stato cambia. No-op se lo stato è già quello richiesto.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, ProductRes, ok(updated));
 		},
 	)
 	.post(
 		"/products/bulk/status",
-		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, body, user, store } = sellerCtx;
-			const pino = getLogger(store);
-			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
-
+		doc({
+			response: withErrors({ 200: BulkStatusRes }),
+			detail: {
+				summary: "Cambia stato di più prodotti",
+				description:
+					"Imposta lo stato (active/disabled/trashed) di più prodotti in un'unica chiamata. Best-effort: gli ID inaccessibili o non trovati finiscono in 'failed' con la reason. Limite: 100 ID per chiamata.",
+				tags,
+				security,
+			},
+		}),
+		v("json", BulkStatusBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
+			const user = c.var.user;
+			const body = c.req.valid("json");
 			const result = await bulkUpdateProductStatus({
 				sellerProfileId: sp.id,
-				accessibleStoreIds,
+				accessibleStoreIds: await getAccessibleStoreIds(),
 				actorUserId: user.id,
 				productIds: body.productIds,
 				status: body.status,
 			});
 
-			pino.info(
+			logger.info(
 				{
 					userId: user.id,
 					sellerProfileId: sp.id,
@@ -553,38 +553,37 @@ export const productsRoutes = new Elysia()
 				"Bulk update di stato prodotti",
 			);
 
-			return ok(result);
-		},
-		{
-			body: BulkStatusBody,
-			response: withErrors({ 200: okRes(BulkStatusResult) }),
-			detail: {
-				summary: "Cambia stato di più prodotti",
-				description:
-					"Imposta lo stato (active/disabled/trashed) di più prodotti in un'unica chiamata. Best-effort: gli ID inaccessibili o non trovati finiscono in 'failed' con la reason. Limite: 100 ID per chiamata.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, BulkStatusRes, ok(result));
 		},
 	)
 	.post(
 		"/products/bulk/delete-permanent",
-		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, body, user, store } = sellerCtx;
-			const pino = getLogger(store);
-			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
-
+		doc({
+			response: withErrors({ 200: BulkDeleteRes }),
+			detail: {
+				summary: "Elimina definitivamente più prodotti",
+				description:
+					"Elimina fisicamente più prodotti dal cestino in un'unica chiamata. Solo i prodotti con status='trashed' vengono eliminati; gli altri finiscono in 'failed'. Limite: 100 ID per chiamata.",
+				tags,
+				security,
+			},
+		}),
+		v("json", BulkDeleteBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
+			const { productIds } = c.req.valid("json");
 			const result = await bulkDeletePermanent({
 				sellerProfileId: sp.id,
-				accessibleStoreIds,
-				productIds: body.productIds,
+				accessibleStoreIds: await getAccessibleStoreIds(),
+				productIds,
 			});
 
-			pino.warn(
+			logger.warn(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					sellerProfileId: sp.id,
-					requested: body.productIds.length,
+					requested: productIds.length,
 					succeeded: result.succeeded.length,
 					failed: result.failed.length,
 					action: "products_bulk_deleted_permanently",
@@ -592,36 +591,34 @@ export const productsRoutes = new Elysia()
 				"Bulk delete fisico prodotti",
 			);
 
-			return ok(result);
-		},
-		{
-			body: BulkDeleteBody,
-			response: withErrors({ 200: okRes(BulkDeleteResult) }),
-			detail: {
-				summary: "Elimina definitivamente più prodotti",
-				description:
-					"Elimina fisicamente più prodotti dal cestino in un'unica chiamata. Solo i prodotti con status='trashed' vengono eliminati; gli altri finiscono in 'failed'. Limite: 100 ID per chiamata.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, BulkDeleteRes, ok(result));
 		},
 	)
 	.delete(
 		"/products/:productId",
-		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, params, user, store } = sellerCtx;
-			const pino = getLogger(store);
-			const accessibleStoreIds = await sellerCtx.getAccessibleStoreIds();
-
+		doc({
+			response: withConflictErrors({ 200: OkMessage }),
+			detail: {
+				summary: "Elimina prodotto definitivamente",
+				description:
+					"Elimina fisicamente un prodotto e tutti i dati associati (immagini, stock, classificazioni). Richiede che il prodotto sia in cestino (status='trashed'); altrimenti restituisce 409. Per nascondere un prodotto senza eliminarlo, usa PATCH /:id/status con status='disabled' o 'trashed'.",
+				tags,
+				security,
+			},
+		}),
+		v("param", ProductParams),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
 			const deleted = await deleteProduct({
-				productId: params.productId,
+				productId: c.req.valid("param").productId,
 				sellerProfileId: sp.id,
-				accessibleStoreIds,
+				accessibleStoreIds: await getAccessibleStoreIds(),
 			});
 
-			pino.warn(
+			logger.warn(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					sellerProfileId: sp.id,
 					productId: deleted.id,
 					productName: deleted.name,
@@ -630,18 +627,6 @@ export const productsRoutes = new Elysia()
 				"Prodotto eliminato",
 			);
 
-			return okMessage("Prodotto eliminato");
-		},
-		{
-			params: t.Object({
-				productId: t.String({ description: "ID del prodotto" }),
-			}),
-			response: withConflictErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Elimina prodotto definitivamente",
-				description:
-					"Elimina fisicamente un prodotto e tutti i dati associati (immagini, stock, classificazioni). Richiede che il prodotto sia in cestino (status='trashed'); altrimenti restituisce 409. Per nascondere un prodotto senza eliminarlo, usa PATCH /:id/status con status='disabled' o 'trashed'.",
-				tags: ["Seller - Products"],
-			},
+			return send(c, OkMessage, okMessage("Prodotto eliminato"));
 		},
 	);

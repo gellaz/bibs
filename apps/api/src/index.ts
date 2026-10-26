@@ -1,186 +1,35 @@
-import { cors } from "@elysiajs/cors";
-import { openapi } from "@elysiajs/openapi";
-import { Elysia } from "elysia";
-import logixlysia from "logixlysia";
+import { app } from "@/app";
 import { db } from "@/db";
-import { OpenAPI } from "@/lib/auth";
-import { isOriginAllowed } from "@/lib/cors";
 import { env } from "@/lib/env";
-import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
-import { adminModule } from "@/modules/admin";
-import { catalogModule } from "@/modules/catalog";
-import { customerModule } from "@/modules/customer";
-import { locationsModule } from "@/modules/locations";
-import { meModule } from "@/modules/me";
-import { registration } from "@/modules/registration";
-import { sellerModule } from "@/modules/seller";
-import { stripeWebhookRoutes } from "@/modules/webhooks";
-import { betterAuth } from "@/plugins/better-auth";
-import { cronJobs } from "@/plugins/cron";
-import { errorHandler } from "@/plugins/error-handler";
-import { health } from "@/plugins/health";
-import { normalize } from "@/plugins/normalize";
-import { requestId } from "@/plugins/request-id";
+import { startCronJobs } from "@/plugins/cron";
 
-const app = new Elysia()
-	.use(
-		logixlysia({
-			config: {
-				showStartupMessage: true,
-				startupMessageFormat: "banner",
-				customLogFormat:
-					"{now} {level} {duration} {method} {pathname} {status} {ip}",
-				disableFileLogging: true,
-				transports: [fileTransport],
-				pino: pinoOptions,
-			},
-		}),
-	)
-	.use(
-		cors({
-			origin: (request) =>
-				isOriginAllowed(request.headers.get("origin"), {
-					nodeEnv: env.NODE_ENV,
-					allowedOrigins: env.ALLOWED_ORIGINS,
-				}),
-			methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-			credentials: true,
-			allowedHeaders: ["Content-Type", "Authorization"],
-			exposeHeaders: ["Content-Length", "X-Request-Id"],
-			maxAge: 86400, // 24 ore
-		}),
-	)
-	.use(errorHandler)
-	.use(requestId)
-	.use(normalize)
-	.use(
-		openapi({
-			documentation: {
-				info: {
-					title: "bibs API",
-					description: "API per il marketplace di commercio locale bibs",
-					version: "1.0.0",
-				},
-				tags: [
-					{ name: "Auth", description: "Autenticazione e sessione utente" },
-					{
-						name: "Registration",
-						description: "Registrazione clienti e venditori",
-					},
-					{
-						name: "Product Categories",
-						description: "Categorie prodotto (lettura pubblica)",
-					},
-					{
-						name: "Store Categories",
-						description: "Categorie negozio (lettura pubblica)",
-					},
-					{
-						name: "Admin",
-						description: "Gestione categorie e verifica venditori",
-					},
-					{
-						name: "Admin - Billing",
-						description: "Billing aggregato lato admin",
-					},
-					{
-						name: "Seller - Billing",
-						description: "Billing, abbonamenti e Customer Portal",
-					},
-					{
-						name: "Seller - Stores",
-						description: "Gestione negozi del venditore",
-					},
-					{
-						name: "Seller - Products",
-						description: "Gestione prodotti e catalogo",
-					},
-					{
-						name: "Seller - Product Images",
-						description: "Upload e gestione immagini prodotto",
-					},
-					{
-						name: "Seller - Stock",
-						description: "Assegnazione prodotti ai negozi e gestione stock",
-					},
-					{
-						name: "Seller - Orders",
-						description: "Gestione ordini lato venditore",
-					},
-					{
-						name: "Seller - Dashboard",
-						description: "Riepilogo della home venditore",
-					},
-					{
-						name: "Seller - Employees",
-						description: "Gestione dipendenti del venditore",
-					},
-					{
-						name: "Seller - Profile",
-						description: "Profilo venditore e gestione partita IVA",
-					},
-					{
-						name: "Customer - Search",
-						description: "Ricerca prodotti (pubblica)",
-					},
-					{
-						name: "Customer - Addresses",
-						description: "Gestione indirizzi di spedizione",
-					},
-					{
-						name: "Customer - Points",
-						description: "Programma fedeltà e punti",
-					},
-					{ name: "Customer - Orders", description: "Ordini del cliente" },
-					{
-						name: "Locations",
-						description: "Regioni, province e comuni italiani",
-					},
-					{ name: "Me", description: "Profilo dell'utente corrente" },
-					{ name: "System", description: "Health check e stato del servizio" },
-				],
-				components: {
-					...(await OpenAPI.components),
-					securitySchemes: {
-						bearerAuth: {
-							type: "http",
-							scheme: "bearer",
-							description: "Token di sessione better-auth",
-						},
-					},
-				},
-				paths: await OpenAPI.getPaths(),
-			},
-		}),
-	)
-	.use(stripeWebhookRoutes)
-	.use(betterAuth)
-	.use(registration)
-	.use(adminModule)
-	.use(catalogModule)
-	.use(locationsModule)
-	.use(sellerModule)
-	.use(customerModule)
-	.use(meModule)
-	.use(cronJobs)
-	.use(health);
+// The server entry: the only module with side effects (S3, listen, cron,
+// signals). The app itself lives in `src/app.ts`.
 
 // ── Startup sequence ────────────────────────────────
+// Cron first, as before (they were scheduled when the app was built, before
+// the bucket check and listen): a slow S3 at boot does not delay them.
+startCronJobs();
 await ensureBucket();
 
-const port = parseInt(env.PORT, 10);
-app.listen(port);
+// Same Bun.serve options the API had before Hono. Bun passes the server as
+// the second fetch argument: Hono's `c.env`, read for the socket IP.
+const server = Bun.serve({
+	port: parseInt(env.PORT, 10),
+	development: env.NODE_ENV !== "production",
+	reusePort: true,
+	idleTimeout: 30,
+	fetch: app.fetch,
+});
+console.log(`bibs API in ascolto su ${server.url}`);
 
 // ── Graceful shutdown ───────────────────────────────
 const shutdown = async () => {
 	console.log("\n🛑 Shutting down...");
-	app.stop();
+	server.stop();
 	await db.$client.end();
 	process.exit(0);
 };
 process.on("SIGTERM", shutdown);
 process.on("SIGINT", shutdown);
-
-// Export type for Eden Treaty (frontend type-safety)
-export type App = typeof app;

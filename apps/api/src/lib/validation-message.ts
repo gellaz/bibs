@@ -1,6 +1,4 @@
-import type { ValueError } from "@sinclair/typebox/errors";
-import type { ValidationError } from "elysia";
-import { validationRule } from "./validation-rule";
+import type { ValidationRule } from "./validation-rule";
 
 // Etichette italiane per i campi di input che arrivano dai form, sull'ultimo
 // segmento del path. I campi assenti restano col path tecnico: utile al debug
@@ -95,15 +93,17 @@ const FORMAT_RULES: Record<string, string> = {
 };
 
 const REQUIRED = "campo obbligatorio";
-const INVALID = "valore non valido";
+export const INVALID = "valore non valido";
 
 function items(n: number): string {
 	return n === 1 ? "1 elemento" : `${n} elementi`;
 }
 
-/** La regola violata, in italiano, senza il nome del campo. */
-function describeRule(error: ValueError): string {
-	const rule = validationRule(error);
+/**
+ * La regola violata, in italiano, senza il nome del campo. La usa il
+ * validatore (`src/http/validation-message.ts`) sulle issue di Zod.
+ */
+export function ruleText(rule: ValidationRule): string {
 	switch (rule.kind) {
 		case "required":
 			return REQUIRED;
@@ -151,7 +151,7 @@ function describeRule(error: ValueError): string {
 }
 
 /** «Quantità (riga 2)» per `/items/1/quantity`, path tecnico se non in dizionario. */
-function fieldLabel(path: string): string {
+export function fieldLabel(path: string): string {
 	const segments = path.split("/").slice(1);
 	const last = segments.at(-1) ?? "";
 	const label = FIELD_LABELS[last];
@@ -162,36 +162,8 @@ function fieldLabel(path: string): string {
 		: label;
 }
 
-/**
- * Messaggio italiano per un 422 di validazione, sul primo errore: un toast ne
- * mostra uno solo. L'`error:` scritto sullo schema vince; altrimenti
- * «Etichetta: regola».
- */
-export function validationMessage(
-	error: Pick<ValidationError, "customError" | "valueError" | "type">,
-): string {
-	if (typeof error.customError === "string") return error.customError;
-
-	const valueError = error.valueError;
-	if (!valueError) return "Richiesta non valida";
-
-	const rule = describeRule(valueError);
-	if (valueError.path === "") {
-		// Errori dei Decode di Elysia (coercizione in query, t.Date): il nome del
-		// campo è perso, resta la regola.
-		if (error.type === "property") {
-			return rule === INVALID
-				? "Valore non valido"
-				: `Valore non valido: ${rule}`;
-		}
-		return "Richiesta non valida";
-	}
-	const label = valueError.schema.title ?? fieldLabel(valueError.path);
-	return `${label}: ${rule}`;
-}
-
-/** 422 di Elysia per un file il cui contenuto non corrisponde al tipo ammesso. */
+/** 422 per un file il cui contenuto non corrisponde al tipo ammesso. */
 export function invalidFileTypeMessage(property: string): string {
-	// Elysia lo dà come `body.file`: l'etichetta viene dall'ultimo segmento.
+	// `property` è `body.file`: l'etichetta viene dall'ultimo segmento.
 	return `${fieldLabel(`/${property.replaceAll(".", "/")}`)}: tipo di file non ammesso`;
 }

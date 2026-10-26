@@ -1,80 +1,94 @@
-import { Elysia, t } from "elysia";
-import { PaginationQuery } from "@/lib/pagination";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAdmin } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ok, okPage } from "@/lib/responses";
-import { okPageRes, okRes, withErrors } from "@/lib/schemas";
 import {
 	AdminChangeDetailSchema,
 	AdminRequestRowSchema,
 } from "@/lib/schemas/composed";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
+import { adminDetail } from "../context";
 import {
 	countRequests,
 	getChangeDetail,
 	listRequests,
 } from "../services/requests";
 
-export const requestsRoutes = new Elysia({ prefix: "/requests" })
+const RequestPageResponse = okPageRes(AdminRequestRowSchema);
+const RequestCountsResponse = okRes(
+	z.object({
+		total: z.number(),
+		candidature: z.number(),
+		vat: z.number(),
+		document: z.number(),
+	}),
+);
+const ChangeDetailResponse = okRes(AdminChangeDetailSchema);
+
+export const RequestListQuery = PaginationQuery.extend({
+	type: z
+		.enum(["all", "candidature", "vat", "document"])
+		.default("all")
+		.meta({ description: "Filtra per tipo di richiesta" })
+		.optional(),
+});
+
+const Params = z.object({
+	changeId: z.string().meta({ description: "ID della richiesta di modifica" }),
+});
+
+export const requestsRoutes = new Hono()
 	.get(
-		"/",
-		async ({ query }) => {
-			const result = await listRequests(query);
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: t.Composite([
-				PaginationQuery,
-				t.Object({
-					type: t.Optional(
-						t.Union(
-							[
-								t.Literal("all"),
-								t.Literal("candidature"),
-								t.Literal("vat"),
-								t.Literal("document"),
-							],
-							{ default: "all", description: "Filtra per tipo di richiesta" },
-						),
-					),
-				}),
-			]),
-			response: withErrors({ 200: okPageRes(AdminRequestRowSchema) }),
-			detail: {
-				summary: "Richieste in attesa",
-				description:
-					"Candidature venditore in revisione e richieste di modifica (P.IVA, documento) in attesa, dalla più vecchia.",
-				tags: ["Admin"],
-			},
-		},
-	)
-	.get("/counts", async () => ok(await countRequests()), {
-		response: withErrors({
-			200: okRes(
-				t.Object({
-					total: t.Number(),
-					candidature: t.Number(),
-					vat: t.Number(),
-					document: t.Number(),
-				}),
+		// Prima di Hono era `/requests/` (prefisso + "/"), chiamato senza slash (D8).
+		"/requests",
+		doc({
+			path: "/requests/",
+			response: withErrors({ 200: RequestPageResponse }),
+			detail: adminDetail(
+				"Richieste in attesa",
+				"Candidature venditore in revisione e richieste di modifica (P.IVA, documento) in attesa, dalla più vecchia.",
 			),
 		}),
-		detail: {
-			summary: "Conteggi richieste in attesa",
-			description: "Totale e per tipo, per il badge della sidebar.",
-			tags: ["Admin"],
+		v("query", RequestListQuery),
+		requireAdmin,
+		async (c) => {
+			const result = await listRequests(c.req.valid("query"));
+			return send(
+				c,
+				RequestPageResponse,
+				okPage(result.data, result.pagination),
+			);
 		},
-	})
+	)
 	.get(
-		"/changes/:changeId",
-		async ({ params }) => ok(await getChangeDetail(params.changeId)),
-		{
-			params: t.Object({
-				changeId: t.String({ description: "ID della richiesta di modifica" }),
-			}),
-			response: withErrors({ 200: okRes(AdminChangeDetailSchema) }),
-			detail: {
-				summary: "Dettaglio richiesta di modifica",
-				description:
-					"Valori attuali e richiesti di una richiesta di modifica, anche se non più in attesa.",
-				tags: ["Admin"],
-			},
+		"/requests/counts",
+		doc({
+			response: withErrors({ 200: RequestCountsResponse }),
+			detail: adminDetail(
+				"Conteggi richieste in attesa",
+				"Totale e per tipo, per il badge della sidebar.",
+			),
+		}),
+		requireAdmin,
+		async (c) => send(c, RequestCountsResponse, ok(await countRequests())),
+	)
+	.get(
+		"/requests/changes/:changeId",
+		doc({
+			response: withErrors({ 200: ChangeDetailResponse }),
+			detail: adminDetail(
+				"Dettaglio richiesta di modifica",
+				"Valori attuali e richiesti di una richiesta di modifica, anche se non più in attesa.",
+			),
+		}),
+		v("param", Params),
+		requireAdmin,
+		async (c) => {
+			const data = await getChangeDetail(c.req.valid("param").changeId);
+			return send(c, ChangeDetailResponse, ok(data));
 		},
 	);

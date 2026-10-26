@@ -1,9 +1,4 @@
-import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
-import { db } from "@/db";
-import { customerProfile } from "@/db/schemas/customer";
-import { ServiceError } from "@/lib/errors";
-import { betterAuth } from "@/plugins/better-auth";
+import { moduleApp } from "@/http/app";
 import { addressesRoutes } from "./routes/addresses";
 import { cartRoutes } from "./routes/cart";
 import { checkoutRoutes } from "./routes/checkout";
@@ -13,35 +8,20 @@ import { productsRoutes } from "./routes/products";
 import { profileRoutes } from "./routes/profile";
 import { storesRoutes } from "./routes/stores";
 
-export const customerModule = new Elysia({ prefix: "/customer" })
-	.use(betterAuth)
-	// Product search is public (no auth required)
-	.use(productsRoutes)
-	// Store discovery is public (no auth required)
-	.use(storesRoutes)
-	// Authenticated customer routes
-	.guard(
-		{
-			auth: true,
-			detail: {
-				security: [{ bearerAuth: [] }],
-			},
-		},
-		(app) =>
-			app
-				.resolve(async ({ user }) => {
-					const profile = await db.query.customerProfile.findFirst({
-						where: eq(customerProfile.userId, user.id),
-					});
+/**
+ * Sub-app Hono del modulo, montata su /customer in `src/app.ts`. Prodotti e
+ * negozi sono pubblici (`publicRoute`); il resto ha `requireCustomer` in ogni
+ * route, dopo i suoi `v(...)`.
+ */
+export const customerApp = moduleApp()
+	.route("/", productsRoutes)
+	.route("/", storesRoutes)
+	.route("/", profileRoutes)
+	.route("/", addressesRoutes)
+	.route("/", pointsRoutes)
+	.route("/", ordersRoutes)
+	.route("/", cartRoutes)
+	.route("/", checkoutRoutes);
 
-					if (!profile)
-						throw new ServiceError(403, "Profilo cliente non trovato");
-					return { customerProfile: profile };
-				})
-				.use(profileRoutes)
-				.use(addressesRoutes)
-				.use(pointsRoutes)
-				.use(ordersRoutes)
-				.use(cartRoutes)
-				.use(checkoutRoutes),
-	);
+/** Tipo per il client `hc` dei frontend (`hc<CustomerApp>(`${API_URL}/customer`)`). */
+export type CustomerApp = typeof customerApp;

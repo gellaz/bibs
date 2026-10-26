@@ -8,20 +8,20 @@ mock.module("@/modules/webhooks/services/dispatcher", () => ({
 	handleStripeWebhook,
 }));
 
-import { stripeWebhookRoutes } from "@/modules/webhooks/routes/stripe";
+import { webhooksApp } from "@/modules/webhooks";
+import { testRequest } from "../helpers/hono-app";
 
 function post(
 	body: string,
 	headers: Record<string, string> = { "stripe-signature": "sig" },
 	path = "/webhooks/stripe",
 ): Promise<Response> {
-	return stripeWebhookRoutes.handle(
-		new Request(`http://localhost${path}`, {
-			method: "POST",
-			headers,
-			body,
-		}),
-	);
+	// La sub-app è montata su /webhooks (`src/index.ts`): vede il path senza prefisso.
+	return testRequest(webhooksApp, path.replace(/^\/webhooks/, ""), {
+		method: "POST",
+		headers,
+		body,
+	});
 }
 
 afterEach(() => {
@@ -145,5 +145,72 @@ describe("dispatcher scope", () => {
 			signature: "sig",
 			scope: "platform",
 		});
+	});
+});
+
+// Il «test di strip» del modulo (piano Hono, Verifica di ogni PR). Qui il
+// contratto è rovesciato: la firma Stripe copre i byte esatti, quindi in
+// ingresso niente strip né trim (campi ignoti annidati compresi); in uscita
+// solo i corpi fissi della route, niente di ciò che arriva dal servizio.
+describe("webhook su Hono: body grezzo in ingresso, corpi fissi in uscita", () => {
+	const raw =
+		'{\n  "id" : "evt_1",\n  "type":"x",  "data": { "object": { "ignoto": { "annidato": "  spazi  è " } } },\n  "extra": [1, 2] }\n';
+
+	it("il payload arriva al dispatcher identico al byte, anche JSON con campi ignoti", async () => {
+		const res = await post(raw, {
+			"stripe-signature": "sig",
+			"content-type": "application/json",
+		});
+		expect(res.status).toBe(200);
+		expect(handleStripeWebhook).toHaveBeenCalledWith({
+			payload: raw,
+			signature: "sig",
+			scope: "platform",
+		});
+
+		// Come una Request ricostruita da un mount: un BOM UTF-16LE
+		// resta byte da decodificare in UTF-8, come `request.text()` di prima.
+		const bom = new Uint8Array([0xff, 0xfe, 0x41, 0x00]);
+		const original = new Request("http://localhost/stripe", {
+			method: "POST",
+			headers: { "stripe-signature": "sig" },
+			body: bom,
+		});
+		await webhooksApp.request(new Request(original.url, original));
+		expect(handleStripeWebhook).toHaveBeenLastCalledWith({
+			payload: new TextDecoder().decode(bom),
+			signature: "sig",
+			scope: "platform",
+		});
+	});
+
+	it("le risposte sono solo i corpi fissi, col Content-Type di sempre", async () => {
+		const ok = await post(raw);
+		expect(ok.headers.get("content-type")).toBe(
+			"application/json;charset=utf-8",
+		);
+		expect(await ok.text()).toBe('{"received":true}');
+
+		handleStripeWebhook.mockImplementationOnce(async () => {
+			throw Object.assign(new Error("Invalid signature for cus_123"), {
+				stripeCustomerId: "cus_123",
+			});
+		});
+		const invalid = await post(raw);
+		expect(invalid.status).toBe(400);
+		expect(await invalid.text()).toBe('{"error":"invalid signature"}');
+
+		handleStripeWebhook.mockImplementationOnce(async () => {
+			throw Object.assign(new Error("db down: password=hunter2"), {
+				internal: true,
+			});
+		});
+		const failed = await post(raw);
+		expect(failed.status).toBe(500);
+		expect(await failed.text()).toBe('{"error":"internal error"}');
+
+		const missing = await post(raw, {});
+		expect(missing.status).toBe(400);
+		expect(await missing.text()).toBe('{"error":"missing signature"}');
 	});
 });

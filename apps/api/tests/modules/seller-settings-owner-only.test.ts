@@ -1,27 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
 import { settingsRoutes } from "@/modules/seller/routes/settings";
-import { errorHandler } from "@/plugins/error-handler";
+import { withVars } from "../helpers/hono-app";
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-// Mounted bare (no seller guard) → withSeller(ctx).isOwner is undefined,
+// Mounted with a resolved non-owner (withVars skips the seller guard),
 // so requireOwner must produce a 403 before the handler runs. Bodies are
 // valid on purpose: a 422 from validation would pass for the wrong reason.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(settingsRoutes);
+const app = withVars(settingsRoutes, {
+	user: { id: "u" },
+	seller: { isOwner: false },
+});
 
 async function call(method: string, path: string, body?: unknown) {
-	return app.handle(
+	return app.request(
 		new Request(`http://localhost${path}`, {
 			method,
 			...(body

@@ -1,6 +1,7 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PromotionState } from "@/features/promotions/components/promotion-state-tabs";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 const DISCOUNTS_KEY = ["discounts"] as const;
@@ -22,8 +23,8 @@ export function useDiscountsList(
 	return useQuery({
 		queryKey: [...DISCOUNTS_KEY, "list", params],
 		queryFn: async () => {
-			const res = await api().seller.discounts.get({ query: params });
-			return unwrap(res, m.common_load_error());
+			const res = await sellerApi.discounts.$get({ query: params });
+			return unwrapJson(res, m.common_load_error());
 		},
 		enabled: options?.enabled,
 	});
@@ -34,8 +35,10 @@ export function useDiscount(discountId: string | undefined) {
 		queryKey: [...DISCOUNTS_KEY, "detail", discountId],
 		queryFn: async () => {
 			if (!discountId) throw new Error("missing id");
-			const res = await api().seller.discounts({ discountId }).get();
-			return unwrap(res, m.common_load_error());
+			const res = await sellerApi.discounts[":discountId"].$get({
+				param: { discountId },
+			});
+			return unwrapJson(res, m.common_load_error());
 		},
 		enabled: !!discountId,
 	});
@@ -45,8 +48,10 @@ export function usePauseDiscount() {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: async (discountId: string) => {
-			const res = await api().seller.discounts({ discountId }).pause.post();
-			return unwrap(res, m.common_error());
+			const res = await sellerApi.discounts[":discountId"].pause.$post({
+				param: { discountId },
+			});
+			return unwrapJson(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -59,8 +64,10 @@ export function useArchiveDiscount() {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: async (discountId: string) => {
-			const res = await api().seller.discounts({ discountId }).archive.post();
-			return unwrap(res, m.common_error());
+			const res = await sellerApi.discounts[":discountId"].archive.$post({
+				param: { discountId },
+			});
+			return unwrapJson(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -72,14 +79,18 @@ export function useArchiveDiscount() {
 export function useUpdateDiscount(discountId: string) {
 	const qc = useQueryClient();
 	return useMutation({
+		// Le `Date` escono come stringhe ISO (JSON.stringify), come prima.
 		mutationFn: async (patch: {
 			title?: string;
 			percent?: number;
 			startsAt?: Date;
 			endsAt?: Date | null;
 		}) => {
-			const res = await api().seller.discounts({ discountId }).patch(patch);
-			return unwrap(res, m.common_error());
+			const res = await sellerApi.discounts[":discountId"].$patch({
+				param: { discountId },
+				json: patch,
+			});
+			return unwrapJson(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });
@@ -92,10 +103,11 @@ export function useRemoveDiscountProducts(discountId: string) {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: async (productIds: string[]) => {
-			const res = await api()
-				.seller.discounts({ discountId })
-				.products.delete({ productIds });
-			return unwrap(res, m.common_error());
+			const res = await sellerApi.discounts[":discountId"].products.$delete({
+				param: { discountId },
+				json: { productIds },
+			});
+			return unwrapJson(res, m.common_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({
@@ -113,10 +125,11 @@ export function useDiscountProducts(discountId: string, page = 1, limit = 20) {
 	return useQuery({
 		queryKey: [...DISCOUNTS_KEY, "products", discountId, page, limit],
 		queryFn: async () => {
-			const res = await api()
-				.seller.discounts({ discountId })
-				.products.get({ query: { page, limit } });
-			return unwrap(res, m.common_load_error());
+			const res = await sellerApi.discounts[":discountId"].products.$get({
+				param: { discountId },
+				query: { page, limit },
+			});
+			return unwrapJson(res, m.common_load_error());
 		},
 		enabled: !!discountId,
 	});
@@ -130,10 +143,11 @@ export function useApplyPromotionToProducts() {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: async (vars: { discountId: string; productIds: string[] }) => {
-			const res = await api()
-				.seller.discounts({ discountId: vars.discountId })
-				.products.post({ productIds: vars.productIds });
-			return unwrap(res, m.common_error());
+			const res = await sellerApi.discounts[":discountId"].products.$post({
+				param: { discountId: vars.discountId },
+				json: { productIds: vars.productIds },
+			});
+			return unwrapJson(res, m.common_error());
 		},
 		onSuccess: (_data, vars) => {
 			void qc.invalidateQueries({ queryKey: DISCOUNTS_KEY });

@@ -19,7 +19,7 @@ import { Input } from "@bibs/ui/components/input";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { formatPriceEur } from "@bibs/ui/custom/price";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
@@ -30,7 +30,7 @@ import {
 	type PricingValue,
 	parsePricingForm,
 } from "@/features/billing/pricing-form";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing/pricing")({
@@ -46,8 +46,8 @@ function PricingPage() {
 	} = useQuery({
 		queryKey: ["admin", "billing", "pricing", "current"],
 		queryFn: async () => {
-			const r = await api().admin.billing.pricing.current.get();
-			return unwrap(r, m.billing_pricing_load_error()).data;
+			const r = await adminApi.billing.pricing.current.$get();
+			return (await unwrapJson(r, m.billing_pricing_load_error())).data;
 		},
 	});
 
@@ -71,12 +71,11 @@ function PricingPage() {
 
 	const mutation = useMutation({
 		mutationFn: async (value: PricingValue) => {
-			const r = await api().admin.billing.pricing.put({
-				...value,
-				currency: "EUR",
+			const r = await adminApi.billing.pricing.$put({
+				json: { ...value, currency: "EUR" },
 			});
-			if (r.error) throw new Error(r.error.value?.message);
-			return r.data?.data;
+			// Senza ripiego, come prima: un errore senza messaggio dà un toast vuoto.
+			return (await unwrapJson(r, "")).data;
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["admin", "billing"] });

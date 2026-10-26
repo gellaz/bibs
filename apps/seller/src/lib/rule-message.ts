@@ -3,9 +3,10 @@ import { intlLocaleFor } from "@bibs/ui/lib/intl-locale";
 import { m } from "@/paraglide/messages";
 import { getLocale } from "@/paraglide/runtime";
 
-// La regola di validazione nella lingua corrente, per i form TypeBox
-// (`typebox-errors.ts`) e zod (`zod-errors.ts`). Niente TypeBox a runtime qui:
-// i form zod non devono trascinarlo nei loro chunk.
+// La regola di validazione nella lingua corrente, per i form sugli schemi
+// condivisi con l'API (`schema-errors.ts`) e per gli altri form zod
+// (`zod-errors.ts`). Solo un tipo dall'API: i form zod non devono trascinare
+// gli schemi condivisi nei loro chunk.
 
 const FORMAT_RULES: Record<string, () => string> = {
 	email: m.validation_format_email,

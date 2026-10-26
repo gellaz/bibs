@@ -1,0 +1,139 @@
+/admin/billing	4	{"admin":4}	
+    admin/src/routes/_authenticated/billing/index.tsx
+    admin/src/routes/_authenticated/billing/pricing.tsx
+    admin/src/routes/_authenticated/billing/subscriptions.tsx
+/admin/configurations	1	{"admin":1}	
+    admin/src/routes/_authenticated/configurations/index.tsx
+/admin/holiday-definitions	6	{"admin":6}	
+    admin/src/features/holidays/components/holidays-panel.tsx
+/admin/product-categories	6	{"admin":6}	
+    admin/src/features/product-categories/product-categories.config.tsx
+    admin/src/features/category-characteristics/hooks/use-category-characteristics.ts
+/admin/product-characteristics	5	{"admin":5}	
+    admin/src/features/product-characteristics/product-characteristics.config.tsx
+/admin/product-macro-categories	3	{"admin":3}	
+    admin/src/features/product-macro-categories/product-macro-categories.config.tsx
+/admin/requests	3	{"admin":3}	
+    admin/src/features/requests/use-request-counts.ts
+    admin/src/routes/_authenticated/requests/index.tsx
+    admin/src/routes/_authenticated/requests/$changeId.tsx
+/admin/sellers	6	{"admin":6}	
+    admin/src/components/seller-moderation-dialog.tsx
+    admin/src/routes/_authenticated/requests/$changeId.tsx
+    admin/src/routes/_authenticated/sellers/index.tsx
+    admin/src/routes/_authenticated/sellers/$sellerId.tsx
+/admin/store-categories	4	{"admin":4}	
+    admin/src/features/store-categories/store-categories.config.tsx
+/admin/store-macro-categories	3	{"admin":3}	
+    admin/src/features/store-macro-categories/store-macro-categories.config.tsx
+/admin/stores	2	{"admin":2}	
+    admin/src/routes/_authenticated/stores.tsx
+/customer/addresses	4	{"customer":4}	
+    customer/src/features/addresses/use-addresses.ts
+    customer/src/features/addresses/use-address-mutations.ts
+/customer/cart	4	{"customer":4}	
+    customer/src/features/cart/use-cart.ts
+/customer/checkout	3	{"customer":3}	
+    customer/src/features/checkout/use-checkout.ts
+/customer/checkouts	1	{"customer":1}	
+    customer/src/features/checkout/use-checkout.ts
+/customer/orders	3	{"customer":3}	
+    customer/src/features/orders/use-orders.ts
+/customer/points	1	{"customer":1}	
+    customer/src/features/points/use-points.ts
+/customer/products	5	{"customer":5}	noDates=1
+    customer/src/features/products/product-detail-api.test.ts
+    customer/src/features/products/product-detail-api.ts
+    customer/src/features/catalog/use-product-search.ts
+    customer/src/features/catalog/use-product-facets.ts
+    customer/src/features/discovery/use-nearby-products.ts
+/customer/profile	1	{"customer":1}	
+    customer/src/features/profile/use-customer-profile.ts
+/customer/stores	5	{"customer":5}	
+    customer/src/features/stores/use-store-detail.ts
+    customer/src/features/stores/use-store-search.ts
+    customer/src/features/stores/use-store-facets.ts
+    customer/src/features/stores/use-store-products.ts
+    customer/src/features/stores/use-store-map.ts
+/locations	5	{"customer":2,"seller":3}	
+    customer/src/features/addresses/use-geocode.ts
+    customer/src/features/addresses/use-municipalities.ts
+    seller/src/features/stores/hooks/use-geocode.ts
+    seller/src/hooks/use-countries.ts
+    seller/src/hooks/use-municipalities.ts
+/me	6	{"admin":2,"customer":2,"seller":2}	
+    admin/src/routes/_authenticated/profile.tsx
+    customer/src/features/profile/profile-identity.tsx
+    seller/src/features/profile/components/personal-info-card.tsx
+/register	3	{"customer":1,"seller":2}	
+    customer/src/routes/register.tsx
+    seller/src/routes/register.tsx
+    seller/src/routes/invite.$token.tsx
+/seller/billing	6	{"seller":6}	
+    seller/src/components/store-billing-banner.tsx
+    seller/src/hooks/use-active-store.tsx
+    seller/src/routes/_authenticated/billing.tsx
+/seller/brands	1	{"seller":1}	
+    seller/src/features/products/components/brand-combobox.tsx
+/seller/checkout-sessions	1	{"seller":1}	
+    seller/src/routes/_authenticated/store/new_.processing.tsx
+/seller/dashboard	1	{"seller":1}	
+    seller/src/routes/_authenticated/index.tsx
+/seller/discounts	9	{"seller":9}	
+    seller/src/features/promotions/hooks/use-discounts.ts
+    seller/src/routes/_authenticated/promotions/new.tsx
+/seller/employees	10	{"seller":10}	
+    seller/src/hooks/use-employee-stores.ts
+    seller/src/routes/_authenticated/team/index.tsx
+/seller/onboarding	5	{"seller":5}	
+    seller/src/hooks/use-onboarding.ts
+/seller/orders	8	{"seller":8}	
+    seller/src/features/orders/hooks/use-orders.ts
+    seller/src/features/orders/hooks/use-pickup.ts
+/seller/product-categories	1	{"seller":1}	
+    seller/src/features/products/hooks/use-category-characteristics.ts
+/seller/products	19	{"seller":19}	noDates=1
+    seller/src/features/products/components/product-status-tabs.tsx
+    seller/src/features/products/components/product-stock-manager.tsx
+    seller/src/features/products/components/product-form.tsx
+    seller/src/features/products/components/store-assignment-dialog.tsx
+    seller/src/features/products/hooks/use-seller-categories-in-use.ts
+    seller/src/features/products/hooks/use-stock-adjust-mutation.ts
+    seller/src/features/products/hooks/use-bulk-stock-adjust-mutation.ts
+    seller/src/features/products/hooks/use-product-mutations.ts
+    seller/src/routes/_authenticated/products/index.tsx
+    seller/src/routes/_authenticated/products/$productId.tsx
+    seller/src/routes/_authenticated/products/new.tsx
+/seller/settings	6	{"seller":6}	
+    seller/src/features/online-payments/hooks/use-online-payments.ts
+    seller/src/features/profile/components/business-info-card.tsx
+    seller/src/features/profile/components/pending-vat-change.tsx
+    seller/src/features/profile/components/vat-change-dialog.tsx
+    seller/src/hooks/use-seller-settings.ts
+/seller/stores	20	{"seller":20}	
+    seller/src/features/stores/components/reservation-hours-field.tsx
+    seller/src/features/stores/components/sales-settings-panel.tsx
+    seller/src/features/stores/components/hours-closures-panel.tsx
+    seller/src/features/stores/hooks/use-store-order-types.ts
+    seller/src/features/billing/components/cancel-store-dialog.tsx
+    seller/src/components/store-billing-banner.tsx
+    seller/src/hooks/use-first-store-onboarding.ts
+    seller/src/hooks/use-stores.ts
+    seller/src/routes/_authenticated/billing.tsx
+    seller/src/routes/_authenticated/store/index.tsx
+    seller/src/routes/_authenticated/store/archived.tsx
+    seller/src/routes/_authenticated/store/new.tsx
+public:/product-categories	1	{"seller":1}	
+    seller/src/features/products/components/product-category-picker.tsx
+public:/product-macro-categories	3	{"admin":2,"seller":1}	
+    admin/src/features/product-categories/product-categories.config.tsx
+    admin/src/features/product-macro-categories/product-macro-categories.config.tsx
+    seller/src/features/products/components/product-category-picker.tsx
+public:/store-categories	1	{"admin":1}	
+    admin/src/features/store-categories/store-categories.config.tsx
+public:/store-macro-categories	2	{"admin":2}	
+    admin/src/features/store-macro-categories/store-macro-categories.config.tsx
+    admin/src/features/store-categories/store-categories.config.tsx
+TOTAL 178 {"admin":50,"customer":32,"seller":96}
+FILES { admin: 19, customer: 21, seller: 47 }
+TOP {"public-catalog":7,"admin":43,"me":6,"customer":27,"locations":5,"register":3,"seller":87}

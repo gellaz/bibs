@@ -1,7 +1,7 @@
 import { toYMD } from "@bibs/ui/lib/date";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/location/coords";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 import type { OpenStatusView } from "./open-status";
 
 export interface StorePinView {
@@ -64,7 +64,7 @@ export function useStoreMap({
 		// arrivano.
 		placeholderData: keepPreviousData,
 		queryFn: async () => {
-			const { data, error } = await api().customer.stores.map.get({
+			const res = await customerApi.stores.map.$get({
 				query: {
 					...(q ? { q } : {}),
 					...(categoryId ? { categoryId } : {}),
@@ -74,10 +74,9 @@ export function useStoreMap({
 					...(openNow ? { openNow } : {}),
 				},
 			});
-			if (error) {
-				throw new Error(`Mappa negozi non disponibile (${error.status})`);
-			}
-			return data.data;
+			if (!res.ok)
+				throw new Error(`Mappa negozi non disponibile (${res.status})`);
+			return (await res.json()).data;
 		},
 	});
 
@@ -95,8 +94,7 @@ export function useStoreMap({
 			isOpen: p.openStatus.isOpen,
 			status: p.openStatus.status,
 			closesAt: p.openStatus.closesAt ?? undefined,
-			// Eden idrata le stringhe-data in Date: senza toYMD il confronto con
-			// "oggi" in describeOpensAt confronterebbe un Date con una stringa.
+			// describeOpensAt confronta stringhe YYYY-MM-DD con "oggi".
 			opensAt: p.openStatus.opensAt
 				? {
 						date: toYMD(p.openStatus.opensAt.date),

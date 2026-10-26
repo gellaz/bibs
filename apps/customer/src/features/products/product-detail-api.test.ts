@@ -1,14 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { api } from "@/lib/api";
 import { fetchProductDetail } from "./product-detail-api";
 
 /**
- * La prova di C8. Eden, con il default parseDate: true, trasforma in `Date`
+ * La prova di C8. Il client di prima, con parseDate: true, trasformava in `Date`
  * ogni stringa che somiglia a una data, dd/mm/yyyy compreso: «05/03/2027»
- * diventa il 3 maggio e il testo originale non si recupera più. Qui il JSON
- * passa dal client vero (createIsomorphicFn fuori da Start restituisce il
- * ramo server, cioè treaty con il fetch globale), quindi il test diventa
- * rosso se qualcuno rimette `api()` dentro fetchProductDetail.
+ * diventava il 3 maggio. Qui il JSON passa dal client vero (`hc` con il fetch
+ * globale): il testo deve restare testo.
  */
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -63,16 +60,6 @@ const detail = {
 };
 
 describe("fetchProductDetail", () => {
-	it("the default client turns a dd/mm/yyyy text into a Date", async () => {
-		serve({ success: true, data: detail });
-		const res = await api().customer.products({ id: "p1" }).get();
-		const value = (res.data as unknown as { data: typeof detail }).data
-			.characteristics[0].value as unknown;
-		// Se questo test si rompe, Eden ha cambiato comportamento: il test
-		// sotto resta la prova che conta.
-		expect(value).toBeInstanceOf(Date);
-	});
-
 	it("keeps date-like texts as strings", async () => {
 		serve({ success: true, data: detail });
 

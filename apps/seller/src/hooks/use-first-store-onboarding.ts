@@ -1,6 +1,7 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 /**
@@ -22,10 +23,10 @@ export function useFirstStoreOnboarding() {
 	const { data: archived, isLoading: archivedLoading } = useQuery({
 		queryKey: ["seller", "stores", "archived"],
 		queryFn: async () => {
-			const r = await api().seller.stores.archived.get({
+			const r = await sellerApi.stores.archived.$get({
 				query: { page: 1, limit: 50 },
 			});
-			return unwrap(r, m.common_error()).data;
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		enabled: noActiveStores,
 	});

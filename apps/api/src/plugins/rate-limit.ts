@@ -1,6 +1,8 @@
-import type { HTTPHeaders } from "elysia";
+import { createMiddleware } from "hono/factory";
+import { json } from "@/http/send";
 import { env } from "@/lib/env";
-import { getLogger } from "@/lib/logger";
+import { logger } from "@/lib/logger";
+import { errorBody } from "@/lib/responses";
 
 export interface RateLimitBucket {
 	count: number;
@@ -44,7 +46,7 @@ export function consume(
 	};
 }
 
-// ── Elysia beforeHandle factory ─────────────────────
+// ── Middleware Hono ─────────────────────────────────
 
 export interface RateLimitRule {
 	/** `ip` keys on the client IP; `email` keys on the request body's `email`. */
@@ -71,15 +73,6 @@ export interface RateLimitOptions {
 /** Minimal structural type for Bun's `server` (avoids its generic signature). */
 interface RequestIpResolver {
 	requestIP(request: Request): { address: string } | null;
-}
-
-/** Minimal slice of the Elysia context the limiter reads. */
-interface RateLimitContext {
-	request: Request;
-	body: unknown;
-	server: RequestIpResolver | null;
-	set: { status?: number | string; headers: HTTPHeaders };
-	store: unknown;
 }
 
 const SWEEP_INTERVAL_MS = 60_000;
@@ -114,11 +107,14 @@ function emailKey(body: unknown): string {
 }
 
 /**
- * Returns an Elysia `beforeHandle` hook that throttles a route. better-auth's own
- * rate limiter does not cover our server-side `auth.api.*` calls, so we guard the
- * registration / sign-in routes here. Each call gets its own in-memory store, so
- * limits reset on restart and are not shared across instances (acceptable for the
- * current single-instance dev stage; swap the store for Redis to scale out).
+ * Middleware Hono che limita una route (D12 del piano Hono). Va dopo i `v()` e
+ * dopo l'auth, come il `beforeHandle` di prima: un input non valido non
+ * consuma budget e la chiave `email` è quella del body validato (trimmato).
+ * better-auth's own rate limiter does not cover our server-side `auth.api.*`
+ * calls, so we guard the registration / sign-in routes here. Each call gets its
+ * own in-memory store, so limits reset on restart and are not shared across
+ * instances (acceptable for the current single-instance dev stage; swap the
+ * store for Redis to scale out).
  */
 export function rateLimit(options: RateLimitOptions) {
 	const store: RateLimitStore = new Map();
@@ -126,47 +122,54 @@ export function rateLimit(options: RateLimitOptions) {
 	const trustProxy = options.trustProxy ?? env.TRUST_PROXY === "true";
 	let lastSweep = 0;
 
-	return (ctx: RateLimitContext) => {
-		const now = Date.now();
+	return createMiddleware<any, string, { out: { json: { email?: unknown } } }>(
+		async (c, next) => {
+			const now = Date.now();
 
-		// Opportunistic, timer-free cleanup of expired buckets to bound memory.
-		// Also sweep when the store grows large, so a burst of distinct keys can't
-		// balloon memory between the 60s timed sweeps.
-		if (now - lastSweep >= SWEEP_INTERVAL_MS || store.size > 10_000) {
-			lastSweep = now;
-			for (const [key, bucket] of store) {
-				if (now >= bucket.resetAt) store.delete(key);
+			// Opportunistic, timer-free cleanup of expired buckets to bound memory.
+			// Also sweep when the store grows large, so a burst of distinct keys can't
+			// balloon memory between the 60s timed sweeps.
+			if (now - lastSweep >= SWEEP_INTERVAL_MS || store.size > 10_000) {
+				lastSweep = now;
+				for (const [key, bucket] of store) {
+					if (now >= bucket.resetAt) store.delete(key);
+				}
 			}
-		}
 
-		const ip = clientIp(ctx.request, ctx.server, trustProxy);
+			// Su un server vero (`Bun.serve({ fetch: app.fetch })`, src/index.ts)
+			// il server di Bun arriva come `env`: IP del socket. Senza socket
+			// (`app.request`, i test, la CLI) vale il primo x-forwarded-for.
+			const server: RequestIpResolver | null =
+				typeof c.env?.requestIP === "function" ? c.env : null;
+			const ip = clientIp(c.req.raw, server, trustProxy || !server);
 
-		for (const rule of options.limits) {
-			const identity = rule.by === "email" ? emailKey(ctx.body) : ip;
-			const key = `${options.name}:${rule.by}:${identity}`;
-			const result = consume(store, key, rule.window, rule.max, now);
+			for (const rule of options.limits) {
+				const identity =
+					rule.by === "email" ? emailKey(c.req.valid("json")) : ip;
+				const key = `${options.name}:${rule.by}:${identity}`;
+				const result = consume(store, key, rule.window, rule.max, now);
 
-			if (!result.allowed) {
-				getLogger(ctx.store)?.warn(
-					{
-						errorCode: "TOO_MANY_REQUESTS",
-						limiter: options.name,
-						by: rule.by,
-						ip,
-						retryAfter: result.retryAfter,
-					},
-					"Rate limit exceeded",
-				);
-				ctx.set.status = 429;
-				ctx.set.headers["retry-after"] = String(result.retryAfter);
-				return {
-					success: false as const,
-					error: "TOO_MANY_REQUESTS" as const,
-					message: options.message ?? DEFAULT_MESSAGE,
-				};
+				if (!result.allowed) {
+					logger.warn(
+						{
+							errorCode: "TOO_MANY_REQUESTS",
+							limiter: options.name,
+							by: rule.by,
+							ip,
+							retryAfter: result.retryAfter,
+						},
+						"Rate limit exceeded",
+					);
+					c.header("retry-after", String(result.retryAfter));
+					return json(
+						c,
+						errorBody("TOO_MANY_REQUESTS", options.message ?? DEFAULT_MESSAGE),
+						429,
+					);
+				}
 			}
-		}
 
-		return undefined;
-	};
+			return next();
+		},
+	);
 }

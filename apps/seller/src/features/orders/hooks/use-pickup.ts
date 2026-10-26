@@ -1,5 +1,6 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import { isCompletePickupCode } from "../pickup-code";
 
@@ -9,11 +10,12 @@ export function usePickupPreview(storeId: string | undefined, code: string) {
 		queryKey: ["orders", "pickup", storeId, code],
 		queryFn: async () => {
 			if (!storeId) throw new Error("missing store");
-			const res = await api()
-				.seller.orders.pickup({ code })
-				.get({ query: { storeId } });
-			if (res.error?.status === 404) throw new Error(m.pickup_not_found());
-			return unwrap(res, m.pickup_preview_failed()).data;
+			const res = await sellerApi.orders.pickup[":code"].$get({
+				param: { code },
+				query: { storeId },
+			});
+			if (res.status === 404) throw new Error(m.pickup_not_found());
+			return (await unwrapJson(res, m.pickup_preview_failed())).data;
 		},
 		enabled: !!storeId && isCompletePickupCode(code),
 		retry: false,
@@ -24,9 +26,9 @@ export function useConfirmPickup() {
 	const qc = useQueryClient();
 	return useMutation({
 		mutationFn: async (p: { storeId: string; code: string }) => {
-			const res = await api().seller.orders.pickup.post(p);
-			if (res.error?.status === 404) throw new Error(m.pickup_not_found());
-			return unwrap(res, m.pickup_confirm_failed()).data;
+			const res = await sellerApi.orders.pickup.$post({ json: p });
+			if (res.status === 404) throw new Error(m.pickup_not_found());
+			return (await unwrapJson(res, m.pickup_confirm_failed())).data;
 		},
 		// Dopo il successo l'anteprima di quel codice non esiste più: rifarla
 		// darebbe solo un 404. Sull'errore invece si riallinea tutto (una

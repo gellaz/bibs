@@ -6,7 +6,8 @@ import { ruleMessage } from "./rule-message";
 // lo schema non scrive un messaggio (quelli scritti vincono sempre), e la
 // chiama alla lettura delle issue, quindi Paraglide dà la lingua corrente anche
 // dopo un cambio senza reload. Sotto il campo c'è già l'etichetta: il
-// messaggio dice solo la regola, con le stesse voci dei form TypeBox.
+// messaggio dice solo la regola, con le stesse voci dei form sugli schemi
+// condivisi con l'API (`schema-errors.ts`).
 
 export function zodErrorMessage(issue: core.$ZodRawIssue): string {
 	return ruleMessage(zodIssueRule(issue));

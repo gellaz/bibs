@@ -4,7 +4,7 @@ import {
 	PersonalInfoCard as SharedPersonalInfoCard,
 } from "@bibs/ui/custom/personal-info-card";
 import { createFileRoute } from "@tanstack/react-router";
-import { api } from "@/lib/api";
+import { meApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-error";
 import { m } from "@/paraglide/messages";
@@ -75,15 +75,15 @@ function ProfilePage() {
 	};
 
 	const onUploadAvatar = async (file: File) => {
-		const res = await api().me.avatar.post({ file });
-		if (res.error) throw new Error(m.profile_avatar_upload_error());
+		const res = await meApi.avatar.$post({ form: { file } });
+		if (!res.ok) throw new Error(m.profile_avatar_upload_error());
 		await refetch();
 		toast.success(m.profile_avatar_updated());
 	};
 
 	const onRemoveAvatar = async () => {
-		const res = await api().me.avatar.delete();
-		if (res.error) throw new Error(m.common_error());
+		const res = await meApi.avatar.$delete();
+		if (!res.ok) throw new Error(m.common_error());
 		await refetch();
 		toast.success(m.profile_avatar_removed());
 	};

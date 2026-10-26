@@ -1,10 +1,11 @@
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { useDebouncedValue } from "@bibs/ui/hooks/use-debounced-value";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import {
 	parseReservationHours,
@@ -50,11 +51,14 @@ export function ReservationHoursField({
 		// Tiene l'esempio precedente mentre arriva il nuovo: il riquadro non sparisce.
 		placeholderData: keepPreviousData,
 		queryFn: async () =>
-			unwrap(
-				await api()
-					.seller.stores({ storeId })
-					["reservation-preview"].get({ query: { hours: hours as number } }),
-				m.store_reservation_hours_error(),
+			(
+				await unwrapJson(
+					await sellerApi.stores[":storeId"]["reservation-preview"].$get({
+						param: { storeId },
+						query: { hours: hours as number },
+					}),
+					m.store_reservation_hours_error(),
+				)
 			).data,
 	});
 

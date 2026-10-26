@@ -1,12 +1,13 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 async function fetchCategoryCharacteristics(productCategoryId: string) {
-	const res = await api()
-		.seller["product-categories"]({ productCategoryId })
-		.characteristics.get();
-	return unwrap(res, m.products_characteristics_load_error()).data;
+	const res = await sellerApi["product-categories"][
+		":productCategoryId"
+	].characteristics.$get({ param: { productCategoryId } });
+	return (await unwrapJson(res, m.products_characteristics_load_error())).data;
 }
 
 export type CategoryCharacteristic = Awaited<

@@ -1,6 +1,6 @@
 /**
  * Stato del form indirizzo, come funzioni pure. Nessun import: i tipi in
- * ingresso sono strutturali, così i tipi Eden delle query li soddisfano per
+ * ingresso sono strutturali, così i tipi `hc` delle query li soddisfano per
  * forma senza che questo file dipenda da loro.
  */
 

@@ -1,9 +1,11 @@
-// apps/api/src/lib/schemas/stock.ts
-import { t } from "elysia";
+import { z } from "zod";
 import { StoreProductSchema } from "./entities";
+import { zInteger } from "./t";
 
-export const StockAdjustBody = t.Object({
-	delta: t.Integer({
+// Gemelli Zod di `lib/schemas/stock.ts` (D3 del piano Hono).
+
+export const StockAdjustBody = z.object({
+	delta: zInteger({
 		minimum: -1000,
 		maximum: 1000,
 		description:
@@ -11,47 +13,49 @@ export const StockAdjustBody = t.Object({
 	}),
 });
 
-export const StockBulkAdjustBody = t.Union([
-	t.Object({
-		storeId: t.String({ description: "ID negozio attivo del chiamante" }),
-		mode: t.Literal("delta", {
-			description: "Somma algebrica di `value` allo stock corrente",
-		}),
-		value: t.Integer({
+const bulkStoreId = z
+	.string()
+	.meta({ description: "ID negozio attivo del chiamante" });
+const bulkProductIds = z
+	.array(z.string())
+	.min(1)
+	.max(100)
+	.meta({ description: "ID dei prodotti su cui applicare l'operazione" });
+
+// `z.union`, mai `z.discriminatedUnion`: stessi errori di prima (Trappole).
+export const StockBulkAdjustBody = z.union([
+	z.object({
+		storeId: bulkStoreId,
+		mode: z
+			.literal("delta")
+			.meta({ description: "Somma algebrica di `value` allo stock corrente" }),
+		value: zInteger({
 			minimum: -1000,
 			maximum: 1000,
 			description: "Variazione (segno + per aumentare, - per diminuire).",
 		}),
-		productIds: t.Array(t.String(), {
-			minItems: 1,
-			maxItems: 100,
-			description: "ID dei prodotti su cui applicare l'operazione",
-		}),
+		productIds: bulkProductIds,
 	}),
-	t.Object({
-		storeId: t.String({ description: "ID negozio attivo del chiamante" }),
-		mode: t.Literal("set", {
-			description: "Imposta lo stock a `value` per ogni prodotto",
-		}),
-		value: t.Integer({
+	z.object({
+		storeId: bulkStoreId,
+		mode: z
+			.literal("set")
+			.meta({ description: "Imposta lo stock a `value` per ogni prodotto" }),
+		value: zInteger({
 			minimum: 0,
 			maximum: 100000,
 			description: "Valore assoluto da impostare.",
 		}),
-		productIds: t.Array(t.String(), {
-			minItems: 1,
-			maxItems: 100,
-			description: "ID dei prodotti su cui applicare l'operazione",
-		}),
+		productIds: bulkProductIds,
 	}),
 ]);
 
-export const StockBulkAdjustResult = t.Object({
-	succeeded: t.Array(StoreProductSchema),
-	failed: t.Array(
-		t.Object({
-			productId: t.String(),
-			reason: t.Union([t.Literal("not_found"), t.Literal("would_go_negative")]),
+export const StockBulkAdjustResult = z.object({
+	succeeded: z.array(StoreProductSchema),
+	failed: z.array(
+		z.object({
+			productId: z.string(),
+			reason: z.enum(["not_found", "would_go_negative"]),
 		}),
 	),
 });

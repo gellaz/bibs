@@ -17,17 +17,35 @@ const calls = vi.hoisted(() => ({
 	patch: vi.fn(),
 }));
 
-vi.mock("@/lib/api", async (importOriginal) => ({
-	...(await importOriginal<typeof import("@/lib/api")>()),
-	api: () => ({
-		seller: {
-			stores: () => ({
-				patch: calls.patch,
-				closures: { get: calls.get, put: calls.put },
-			}),
+vi.mock("@/lib/api", async (importOriginal) => {
+	// Finto client `hc`: le risposte dei test restano { data, error } come col
+	// client di prima e diventano risposte HTTP (ok, status, json) per `unwrapJson`.
+	const http = async (
+		pending: Promise<{
+			data: unknown;
+			error: { status: number; value: unknown } | null;
+		}>,
+	) => {
+		const { data, error } = await pending;
+		return error
+			? { ok: false, status: error.status, json: async () => error.value }
+			: { ok: true, status: 200, json: async () => data };
+	};
+	return {
+		...(await importOriginal<typeof import("@/lib/api")>()),
+		sellerApi: {
+			stores: {
+				":storeId": {
+					$patch: ({ json }: { json: unknown }) => http(calls.patch(json)),
+					closures: {
+						$get: () => http(calls.get()),
+						$put: ({ json }: { json: unknown }) => http(calls.put(json)),
+					},
+				},
+			},
 		},
-	}),
-}));
+	};
+});
 
 const originalGetLocale = getLocale;
 

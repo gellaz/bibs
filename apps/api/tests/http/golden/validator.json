@@ -1,0 +1,1294 @@
+{
+	"vm: campo mancante nel body": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: campo obbligatorio\"}"
+	},
+	"vm: campo mancante in query": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Negozio: campo obbligatorio\"}"
+	},
+	"vm: testo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: deve essere un testo\"}"
+	},
+	"vm: numero": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prezzo: deve essere un numero\"}"
+	},
+	"vm: vero/falso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Attivo: deve essere vero o falso\"}"
+	},
+	"vm: t.Integer con un decimale": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere un numero intero\"}"
+	},
+	"vm: t.Integer sotto il minimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere almeno 1\"}"
+	},
+	"vm: t.Integer sopra il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere al massimo 99\"}"
+	},
+	"vm: exclusiveMinimum": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prezzo: deve essere maggiore di 0\"}"
+	},
+	"vm: minLength": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: almeno 2 caratteri\"}"
+	},
+	"vm: maxLength": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: al massimo 5 caratteri\"}"
+	},
+	"vm: minLength 1 su testo vuoto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: campo obbligatorio\"}"
+	},
+	"vm: pattern": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"CAP: formato non valido\"}"
+	},
+	"vm: email": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: indirizzo email non valido\"}"
+	},
+	"vm: uuid": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: identificativo non valido\"}"
+	},
+	"vm: email che solo il framework di prima, nudo, accettava (TLD di una lettera)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: indirizzo email non valido\"}"
+	},
+	"vm: uuid fuori da RFC 9562": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: identificativo non valido\"}"
+	},
+	"vm: uuid v4 maiuscolo": {
+		"status": 200,
+		"body": "{\"ok\":{\"x\":\"3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60\"}}"
+	},
+	"vm: calendar-date": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: data non valida (AAAA-MM-GG)\"}"
+	},
+	"vm: uri": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: indirizzo web non valido\"}"
+	},
+	"vm: date-time": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: data e ora non valide\"}"
+	},
+	"vm: union di letterali": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Tipo: valore non ammesso\"}"
+	},
+	"vm: letterale singolo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Tipo: valore non ammesso\"}"
+	},
+	"vm: t.Nullable, regola del ramo non nullo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Note: al massimo 3 caratteri\"}"
+	},
+	"vm: t.Date non valida": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"vm: t.Date con l'offset senza segno (il «+» di una query)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"vm: array minItems": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Negozi: almeno 1 elemento\"}"
+	},
+	"vm: array maxItems": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Negozi: al massimo 2 elementi\"}"
+	},
+	"vm: array uniqueItems": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Negozi: elementi duplicati\"}"
+	},
+	"vm: riga dell'array": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità (riga 2): deve essere almeno 1\"}"
+	},
+	"vm: path tecnico": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"location.zz: deve essere al massimo 90\"}"
+	},
+	"vm: il title vince": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Numero di suggerimenti: deve essere un numero intero\"}"
+	},
+	"vm: coercizione senza path": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}"
+	},
+	"vm: error: dello schema": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il nome è obbligatorio\"}"
+	},
+	"vm: body che non è un oggetto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"vm: regola non mappata": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"step: valore non valido\"}"
+	},
+	"reg-empty": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: campo obbligatorio\"}"
+	},
+	"reg-bad-email": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: indirizzo email non valido\"}"
+	},
+	"reg: email che solo il framework di prima, nudo, accettava": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: indirizzo email non valido\"}"
+	},
+	"reg-short-pw": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: almeno 8 caratteri\"}"
+	},
+	"reg-short-pw-en (cookie di lingua ignorato)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: almeno 8 caratteri\"}"
+	},
+	"reg-pw-number": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: deve essere un testo\"}"
+	},
+	"reg-malformed-json → 500": {
+		"status": 500,
+		"body": "{\"success\":false,\"error\":\"INTERNAL_ERROR\",\"message\":\"Errore interno del server\"}"
+	},
+	"reg-no-content-type": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"reg-text-plain": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: campo obbligatorio\"}"
+	},
+	"reg: email trimmata, campi ignoti tolti": {
+		"status": 200,
+		"body": "{\"ok\":{\"email\":\"a@b.it\",\"password\":\" 12345678 \"}}"
+	},
+	"sign-in: password mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: campo obbligatorio\"}"
+	},
+	"sign-in: vuoto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: campo obbligatorio\"}"
+	},
+	"accept-invite: vuoto → error dello schema": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Token mancante\"}"
+	},
+	"accept-invite: password corta": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"La password deve avere almeno 8 caratteri\"}"
+	},
+	"accept-invite: conferma corta": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"La conferma password deve avere almeno 8 caratteri\"}"
+	},
+	"accept-invite: valido, campi ignoti tolti": {
+		"status": 200,
+		"body": "{\"ok\":{\"token\":\"t\",\"password\":\"password123\",\"confirmPassword\":\"password456\"}}"
+	},
+	"geocode: limit frazionario (title dello schema)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Numero di suggerimenti: deve essere un numero intero\"}"
+	},
+	"geocode: q corta": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"q: almeno 3 caratteri\"}"
+	},
+	"geocode: q mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"q: campo obbligatorio\"}"
+	},
+	"geocode: lat non numerica": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Latitudine: valore non valido\"}"
+	},
+	"geocode: lat fuori intervallo (decodifica, etichetta persa)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 90\"}"
+	},
+	"geocode: limit oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 10\"}"
+	},
+	"geocode: default, coercizione, campi ignoti tolti": {
+		"status": 200,
+		"body": "{\"ok\":{\"q\":\" Via Roma\",\"limit\":5,\"lat\":45.4,\"lng\":9.1}}"
+	},
+	"municipalities: paginazione composta con provinceId": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":3,\"provinceId\":\"p\"}}"
+	},
+	"municipalities: page=0": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}"
+	},
+	"municipalities: page oltre i safe-int (t.Integer non li limita)": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":9007199254740992,\"limit\":20}}"
+	},
+	"municipalities: limit oltre i safe-int → massimo 100": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 100\"}"
+	},
+	"t.Integer: numero oltre i safe-int nel JSON": {
+		"status": 200,
+		"body": "{\"ok\":{\"quantity\":100000000000000000000}}"
+	},
+	"disc-empty-title (trim)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Titolo: campo obbligatorio\"}"
+	},
+	"disc-percent-150": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: deve essere al massimo 99\"}"
+	},
+	"disc-percent-float": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: deve essere un numero intero\"}"
+	},
+	"disc-percent-str": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: deve essere un numero intero\"}"
+	},
+	"disc-percent-numstr: intero come stringa accettato nel JSON": {
+		"status": 200,
+		"body": "{\"ok\":{\"title\":\"x\",\"percent\":5,\"startsAt\":\"2026-01-01T00:00:00.000Z\"}}"
+	},
+	"disc-percent-numstr fuori limite: campo perso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 99\"}"
+	},
+	"disc-bad-date": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"disc-bad-endsAt (nullable)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Fine: data non valida\"}"
+	},
+	"disc-missing-startsAt": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: campo obbligatorio\"}"
+	},
+	"disc: mancante prima del tipo sbagliato (ordine di prima)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: campo obbligatorio\"}"
+	},
+	"disc: date larghe di prima, null e epoch": {
+		"status": 200,
+		"body": "{\"ok\":{\"title\":\"x\",\"percent\":5,\"startsAt\":\"2026-01-01T00:00:00.000Z\",\"endsAt\":null,\"initialProductIds\":[\"a\",\"b\"]}}"
+	},
+	"disc: data gg/mm/aaaa": {
+		"status": 200,
+		"body": "{\"ok\":{\"title\":\"x\",\"percent\":5,\"startsAt\":\"2027-05-03T00:00:00.000Z\"}}"
+	},
+	"disc: inizio 2026-01-01T12:00:00 01:00 (offset senza segno)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"disc: inizio 2026-01-01T12:00 01:00 (offset senza segno)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"disc: inizio 2026-01-01T12:00:00.000 01:00 (offset senza segno)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"disc: fine con l'offset senza segno": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Fine: data non valida\"}"
+	},
+	"q-page-0": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}"
+	},
+	"q-page-abc": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Pagina: deve essere un numero intero\"}"
+	},
+	"q-limit-1000": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 100\"}"
+	},
+	"q-state-bad": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"state: valore non ammesso\"}"
+	},
+	"q-valid": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":2,\"limit\":10,\"state\":\"concluded\"}}"
+	},
+	"q-search-lat-bad": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Latitudine: valore non valido\"}"
+	},
+	"q-search-lat-200": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 90\"}"
+	},
+	"q-search-openNow-bad": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openNow: valore non valido\"}"
+	},
+	"q-search-openNow-1": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openNow: valore non valido\"}"
+	},
+	"q-search-radius-0": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere maggiore di 0\"}"
+	},
+	"q-search: numeri, booleani, default, chiave ignota tolta, nessun trim": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":20,\"q\":\" pane \",\"lat\":45.5,\"lng\":9,\"openNow\":true,\"onSale\":false}}"
+	},
+	"query: array da virgole e da chiavi ripetute": {
+		"status": 200,
+		"body": "{\"ok\":{\"ids\":[\"a\",\"b\",\"c\"]}}"
+	},
+	"query: chiave ripetuta, vince l'ultima": {
+		"status": 200,
+		"body": "{\"ok\":{\"q\":\"b\"}}"
+	},
+	"query: solo default": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":20}}"
+	},
+	"body: trim profondo tranne le password, campi ignoti tolti a ogni livello": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"x\",\"password\":\" p \",\"nested\":{\"b\":\"2\"},\"list\":[{\"c\":\"y\"}]}}"
+	},
+	"body: JSON array su schema oggetto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: campo obbligatorio\"}"
+	},
+	"body: JSON null su schema oggetto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"body: JSON numero su schema oggetto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: campo obbligatorio\"}"
+	},
+	"urlencoded: chiave ripetuta diventa un array": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: deve essere un testo\"}"
+	},
+	"multipart: oggetto come JSON, intero come stringa": {
+		"status": 200,
+		"body": "{\"ok\":{\"meta\":{\"a\":\"1\"},\"n\":3}}"
+	},
+	"file: mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"File: campo obbligatorio\"}"
+	},
+	"file: tipo dichiarato sbagliato": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"File: tipo di file non ammesso\"}"
+	},
+	"file: contenuto diverso dal tipo (magic byte)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"File: tipo di file non ammesso\"}"
+	},
+	"file: troppo grande": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"File: tipo di file non ammesso\"}"
+	},
+	"file: PNG valido": {
+		"status": 200,
+		"body": "{\"ok\":{\"file\":{}}}"
+	},
+	"file: stringa nel JSON": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"File: tipo di file non ammesso\"}"
+	},
+	"files: un file solo diventa un array": {
+		"status": 200,
+		"body": "{\"ok\":{\"files\":[{}]}}"
+	},
+	"files: troppi file": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"File: tipo di file non ammesso\"}"
+	},
+	"body: nessuna coercizione per number e boolean": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prezzo: deve essere un numero\"}"
+	},
+	"body: maxLength prima del formato": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: al massimo 5 caratteri\"}"
+	},
+	"body: Nullable(Integer) e Optional": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"b: indirizzo email non valido\"}"
+	},
+	"body: Nullable(Integer) con testo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"a: deve essere un numero intero\"}"
+	},
+	"body: oggetto annidato mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"location: campo obbligatorio\"}"
+	},
+	"body: unione di letterali numerici e stringhe": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"v: valore non ammesso\"}"
+	},
+	"query: t.Date": {
+		"status": 200,
+		"body": "{\"ok\":{\"from\":\"2026-01-01T00:00:00.000Z\"}}"
+	},
+	"query: t.Number senza vincoli e notazione esponenziale": {
+		"status": 200,
+		"body": "{\"ok\":{\"n\":1000}}"
+	},
+	"query: stringa vuota per un numero": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: valore non valido\"}"
+	},
+	"ordine: t.Integer e t.Date mancanti prima del titolo (DiscountCreateBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: campo obbligatorio\"}"
+	},
+	"ordine: JSON null su uno schema con default (DiscountCreateBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: campo obbligatorio\"}"
+	},
+	"ordine: JSON numero su uno schema con default (DiscountCreateBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: campo obbligatorio\"}"
+	},
+	"ordine: senza Content-Type su uno schema con default": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Percentuale: campo obbligatorio\"}"
+	},
+	"ordine: solo il titolo manca (DiscountCreateBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Titolo: campo obbligatorio\"}"
+	},
+	"ordine: unione di letterali mancante prima di una stringa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"state: campo obbligatorio\"}"
+	},
+	"ordine: t.Nullable mancante prima di una stringa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Note: campo obbligatorio\"}"
+	},
+	"ordine: stringa obbligatoria mancante dopo un campo non valido": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"a: almeno 3 caratteri\"}"
+	},
+	"ordine: oggetto Optional null diventa un oggetto vuoto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"o.p: campo obbligatorio\"}"
+	},
+	"ordine: numero su uno schema con oggetto annidato obbligatorio": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"ordine: JSON null con soli default di file": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"ordine: JSON null con un default oltre al file": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: campo obbligatorio\"}"
+	},
+	"ordine: in query un numero mancante prima di una stringa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: campo obbligatorio\"}"
+	},
+	"nullable: orario annidato non valido (openingHours)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: formato non valido\"}"
+	},
+	"nullable: fasce mancanti (openingHours)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: campo obbligatorio\"}"
+	},
+	"nullable: giorno fuori intervallo (openingHours)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere al massimo 6\"}"
+	},
+	"nullable: Type.Integer come stringa (openingHours)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere un numero intero\"}"
+	},
+	"nullable: orari validi, campi in più tolti (openingHours)": {
+		"status": 200,
+		"body": "{\"ok\":{\"openingHours\":[{\"dayOfWeek\":1,\"slots\":[{\"open\":\"09:00\",\"close\":\"10:00\"}]}]}}"
+	},
+	"unione pulita: una stringa vuota diventa [] (openingHours)": {
+		"status": 200,
+		"body": "{\"ok\":{\"openingHours\":[]}}"
+	},
+	"unione pulita: la pulizia lancia, primo errore sul body com'era": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"L'indirizzo è obbligatorio\"}"
+	},
+	"unione pulita: la pulizia lancia, un oggetto annidato resta com'era": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"location: valore non valido\"}"
+	},
+	"Type.Integer: una stringa è «deve essere un numero intero»": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: deve essere un numero intero\"}"
+	},
+	"Type.Integer: oltre i safe integer cita il massimo dello schema": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: deve essere al massimo 6\"}"
+	},
+	"Type.Integer: 1e21 senza massimo passa, 2.5 no": {
+		"status": 200,
+		"body": "{\"ok\":{\"n\":1e+21}}"
+	},
+	"Type.Integer: 2.5 è «deve essere un numero intero»": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: deve essere un numero intero\"}"
+	},
+	"unione: t.Integer come stringa oltre il massimo (StockBulkAdjustBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 1000\"}"
+	},
+	"unione: nessun ramo valido (StockBulkAdjustBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"unione: oggetto vuoto (StockBulkAdjustBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Richiesta non valida\"}"
+	},
+	"unione: intero come stringa valido (StockBulkAdjustBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"storeId\":\"s\",\"mode\":\"set\",\"value\":7,\"productIds\":[\"a\"]}}"
+	},
+	"unione: mese come stringa oltre il massimo (CreateHolidayDefinitionBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 12\"}"
+	},
+	"multipart con file: oggetto JSON non valido": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"meta: valore non valido\"}"
+	},
+	"multipart con file: oggetto JSON con un campo sbagliato": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"meta: valore non valido\"}"
+	},
+	"multipart con file: array come testo semplice": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"tags: valore non valido\"}"
+	},
+	"multipart con file: oggetto e array mancanti prima del nome": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"meta: campo obbligatorio\"}"
+	},
+	"ordine: in un oggetto annidato t.Date mancante prima della stringa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"o.d: campo obbligatorio\"}"
+	},
+	"ordine: array Optional di oggetti null (la pulizia lancia)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"a: almeno 3 caratteri\"}"
+	},
+	"nullable: maxItems prima degli elementi": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"l: al massimo 1 elemento\"}"
+	},
+	"zString: maxLength in unità UTF-16 (101 emoji = 202)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: al massimo 200 caratteri\"}"
+	},
+	"zString: 100 emoji = 200 unità, al limite": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀\"}}"
+	},
+	"zString: un emoji rispetta minLength 2 e maxLength 2": {
+		"status": 200,
+		"body": "{\"ok\":{\"country\":\"😀\"}}"
+	},
+	"zString: minLength con title": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Codice: almeno 2 caratteri\"}"
+	},
+	"zString: maxLength prima di pattern": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Telefono: al massimo 5 caratteri\"}"
+	},
+	"zString: pattern": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Telefono: formato non valido\"}"
+	},
+	"zString: nullable, regola del ramo non nullo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Note: al massimo 3 caratteri\"}"
+	},
+	"zString in query: maxLength in unità UTF-16": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Negozi: al massimo 4 caratteri\"}"
+	},
+	"t.Integer: 1e400 è «numero intero»": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere un numero intero\"}"
+	},
+	"t.Integer: -1e400 è «numero intero»": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere un numero intero\"}"
+	},
+	"t.Number: 1e400 nel body": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prezzo: deve essere un numero\"}"
+	},
+	"t.Number in query: 1e400": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere un numero\"}"
+	},
+	"t.Integer in query: 1e20": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":100000000000000000000}}"
+	},
+	"t.Integer in query: 2^53+1": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":9007199254740992}}"
+	},
+	"t.Integer in query: 20 cifre": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":100000000000000000000}}"
+	},
+	"t.Integer in query: -1e20": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}"
+	},
+	"t.Integer in query: 1e20 oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 99\"}"
+	},
+	"t.Integer in query: 2^53+1 oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 99\"}"
+	},
+	"t.Integer in query: -1e20 sotto il minimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}"
+	},
+	"t.Integer: 1e20 nel body": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":100000000000000000000}}"
+	},
+	"t.Integer: 2^53+1 nel body": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":9007199254740992}}"
+	},
+	"t.Integer: 20 cifre in stringa nel body": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":100000000000000000000}}"
+	},
+	"t.Integer: 1e20 oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere al massimo 99\"}"
+	},
+	"t.Integer: -1e20 sotto il minimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere almeno 1\"}"
+	},
+	"t.Integer: 2^53 oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere al massimo 99\"}"
+	},
+	"t.Integer: 20 cifre in stringa oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 99\"}"
+	},
+	"Type.Integer: 1e20 oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere al massimo 99\"}"
+	},
+	"Type.Integer: -1e20 sotto il minimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere almeno 1\"}"
+	},
+	"Type.Integer: 2^53+1 oltre il massimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere al massimo 99\"}"
+	},
+	"Type.Integer: 20 cifre in stringa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Quantità: deve essere un numero intero\"}"
+	},
+	"Type.Integer: 1e20 senza massimo": {
+		"status": 200,
+		"body": "{\"ok\":{\"n\":100000000000000000000}}"
+	},
+	"prodotti: body vuoto (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il nome è obbligatorio\"}"
+	},
+	"prodotti: nome di soli spazi (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il nome è obbligatorio\"}"
+	},
+	"prodotti: prezzo senza decimali (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il prezzo deve essere nel formato 0.00\"}"
+	},
+	"prodotti: aliquota non ammessa (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Aliquota IVA: valore non ammesso\"}"
+	},
+	"prodotti: EAN di 12 cifre (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"EAN deve essere 8 o 13 cifre\"}"
+	},
+	"prodotti: valore di caratteristica non valido (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore (riga 1): valore non valido\"}"
+	},
+	"prodotti: valore di caratteristica oltre 2000 caratteri (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore (riga 1): valore non valido\"}"
+	},
+	"prodotti: valore oltre 2000 caratteri nella riga 2 (campo del PATCH)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore (riga 2): valore non valido\"}"
+	},
+	"prodotti: default IVA, trim, campi ignoti tolti (CreateProductBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"Pane\",\"price\":\"1.00\",\"vatRate\":\"22\",\"productCategoryId\":null,\"ean\":\"\",\"characteristicValues\":[{\"characteristicId\":\"c\",\"value\":\"x\"},{\"characteristicId\":\"d\",\"value\":5},{\"characteristicId\":\"e\",\"value\":null}],\"storeId\":\"s\"}}"
+	},
+	"prodotti: stato mancante (ProductStatusBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Stato: campo obbligatorio\"}"
+	},
+	"prodotti: stato non ammesso (ProductStatusBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Stato: valore non ammesso\"}"
+	},
+	"prodotti: lista vuota (BulkStatusBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prodotti: almeno 1 elemento\"}"
+	},
+	"prodotti: più di 100 ID (BulkDeleteBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prodotti: al massimo 100 elementi\"}"
+	},
+	"stock: delta mancante (StockAdjustBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Variazione di scorta: campo obbligatorio\"}"
+	},
+	"stock: delta come stringa oltre il massimo (StockAdjustBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 1000\"}"
+	},
+	"stock: delta come stringa valido (StockAdjustBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"delta\":-3}}"
+	},
+	"stock: delta oltre i safe integer (StockAdjustBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Variazione di scorta: deve essere al massimo 1000\"}"
+	},
+	"stock: delta infinito (StockAdjustBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Variazione di scorta: deve essere un numero intero\"}"
+	},
+	"negozio: body vuoto (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il nome è obbligatorio\"}"
+	},
+	"negozio: posizione mancante (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"La posizione del negozio sulla mappa è obbligatoria\"}"
+	},
+	"negozio: posizione del telefono come stringa (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Posizione (riga 1): deve essere un numero intero\"}"
+	},
+	"negozio: giorno oltre i safe integer (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere al massimo 6\"}"
+	},
+	"negozio: giorno come stringa e orario sbagliato (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere un numero intero\"}"
+	},
+	"negozio: sito oltre 500 unità UTF-16 con emoji (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Sito web: al massimo 500 caratteri\"}"
+	},
+	"negozio: valido, con sito null, orari null e campi ignoti (CreateStoreBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"Bottega\",\"addressLine1\":\"Via Roma 1\",\"municipalityId\":\"m\",\"zipCode\":\"40100\",\"location\":{\"x\":11.34,\"y\":44.49},\"websiteUrl\":null,\"openingHours\":null,\"phoneNumbers\":[{\"number\":\"051123456\",\"position\":1e+21}]}}"
+	},
+	"negozio: sito non valido (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Sito web: indirizzo web non valido\"}"
+	},
+	"anagrafica: body vuoto (PersonalInfoBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il nome è obbligatorio\"}"
+	},
+	"anagrafica: data che non esiste (PersonalInfoBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Data non valida (AAAA-MM-GG)\"}"
+	},
+	"anagrafica: valida (PersonalInfoBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"firstName\":\"Mario\",\"lastName\":\"Rossi\",\"citizenship\":\"IT\",\"birthCountry\":\"IT\",\"birthDate\":\"1990-05-01\",\"residenceCountry\":\"IT\",\"residenceMunicipalityId\":\"m\",\"residenceAddress\":\"Via Roma 1\",\"residenceZipCode\":\"40100\"}}"
+	},
+	"documento: tipo non ammesso (DocumentBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Seleziona il tipo di documento\"}"
+	},
+	"documento: scadenza nel formato sbagliato (DocumentBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Data non valida (AAAA-MM-GG)\"}"
+	},
+	"azienda: body vuoto (CompanyBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"La ragione sociale è obbligatoria\"}"
+	},
+	"azienda: partita IVA corta (CompanyBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"La partita IVA deve essere di 11 cifre\"}"
+	},
+	"impostazioni azienda: la partita IVA è un campo ignoto (CompanySettingsBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"businessName\":\"Rossi SRL\",\"legalForm\":\"SRL\",\"addressLine1\":\"Via Roma 1\",\"municipalityId\":\"m\",\"zipCode\":\"40100\"}}"
+	},
+	"partita IVA: nel formato sbagliato (VatChangeBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"La partita IVA deve essere di 11 cifre\"}"
+	},
+	"invito: email non valida (TeamInviteBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inserisci un indirizzo email valido\"}"
+	},
+	"invito: a@b.c rifiutata come dall'app composta (TeamInviteBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inserisci un indirizzo email valido\"}"
+	},
+	"invito: mario#rossi@test.it rifiutata come dall'app composta (TeamInviteBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inserisci un indirizzo email valido\"}"
+	},
+	"invito: info@negozio.123 rifiutata come dall'app composta (TeamInviteBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inserisci un indirizzo email valido\"}"
+	},
+	"invito: x{y}@test.it rifiutata come dall'app composta (TeamInviteBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inserisci un indirizzo email valido\"}"
+	},
+	"invito: nessun negozio (TeamInviteBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Seleziona almeno un negozio\"}"
+	},
+	"chiusure: data nel formato sbagliato (PutClosuresBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Data di inizio (riga 1): formato non valido\"}"
+	},
+	"chiusure: valide, con la nota trimmata (PutClosuresBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"optOutIds\":[\"h\"],\"customClosures\":[{\"startDate\":\"2026-12-24\",\"note\":\"Ferie\"}]}}"
+	},
+	"t.Integer: 1e21 come numero e come stringa": {
+		"status": 200,
+		"body": "{\"ok\":{\"n\":1e+21,\"s\":1e+21}}"
+	},
+	"paginazione: pagina oltre i safe integer (PaginationQuery)": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":9007199254740992,\"limit\":20}}"
+	},
+	"paginazione: limite oltre i safe integer (PaginationQuery)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere al massimo 100\"}"
+	},
+	"query: il # resta nel valore, anche negli array": {
+		"status": 200,
+		"body": "{\"ok\":{\"q\":\"x y#z\",\"ids\":[\"a\",\"b\",\"c#d\"]}}"
+	},
+	"U8 categorie: default": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":20,\"sortBy\":\"name\",\"sortOrder\":\"asc\"}}"
+	},
+	"U8 categorie: page oltre i safe-int (t.Integer non li limita)": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":9007199254740992,\"limit\":20,\"sortBy\":\"name\",\"sortOrder\":\"asc\"}}"
+	},
+	"U8 categorie: ordinamento non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"sortBy: valore non ammesso\"}"
+	},
+	"U8 categorie: ricerca troppo lunga": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Ricerca: al massimo 100 caratteri\"}"
+	},
+	"U8 sotto-categorie: filtro macro e campi ignoti": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":20,\"sortBy\":\"name\",\"sortOrder\":\"desc\",\"macroCategoryId\":\"m\"}}"
+	},
+	"U8 caratteristiche: tipo non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"dataType: valore non ammesso\"}"
+	},
+	"U8 anteprima festività: anno mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"year: campo obbligatorio\"}"
+	},
+	"U8 anteprima festività: anno decimale": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"year: deve essere un numero intero\"}"
+	},
+	"U8 anteprima festività: anno fuori limite": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 2000\"}"
+	},
+	"U8 anteprima festività: anno valido": {
+		"status": 200,
+		"body": "{\"ok\":{\"year\":2026}}"
+	},
+	"U8 macro prodotto: aliquota di default anche se assente": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"x\",\"suggestedVatRate\":\"22\"}}"
+	},
+	"U8 macro prodotto: aliquota non ammessa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"suggestedVatRate: valore non ammesso\"}"
+	},
+	"U8 caratteristica: id opzione non testo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"options.1.id: deve essere un testo\"}"
+	},
+	"U8 caratteristica: campi ignoti tolti, unità null": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"x\",\"dataType\":\"enum\",\"unit\":null,\"options\":[{\"value\":\"a\"}]}}"
+	},
+	"U8 caratteristica: confirmAffected di default": {
+		"status": 200,
+		"body": "{\"ok\":{\"confirmAffected\":0}}"
+	},
+	"U8 caratteristica: confirmAffected negativo come stringa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 0\"}"
+	},
+	"U8 caratteristica: unità troppo lunga": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"unit: al massimo 20 caratteri\"}"
+	},
+	"U8 elimina caratteristica: confirmAffected mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"confirmAffected: campo obbligatorio\"}"
+	},
+	"U8 elimina caratteristica: confirmAffected decimale": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"confirmAffected: deve essere un numero intero\"}"
+	},
+	"U8 elimina caratteristica: confirmAffected oltre i safe-int": {
+		"status": 200,
+		"body": "{\"ok\":{\"confirmAffected\":100000000000000000000}}"
+	},
+	"U8 caratteristica: confirmAffected come stringa oltre i safe-int": {
+		"status": 200,
+		"body": "{\"ok\":{\"confirmAffected\":9007199254740992}}"
+	},
+	"U8 togli caratteristica: confirmAffected negativo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"confirmAffected: deve essere almeno 0\"}"
+	},
+	"U8 assegna caratteristica: required non booleano": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"required: deve essere vero o falso\"}"
+	},
+	"U8 festività: attivo non booleano": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Attivo: deve essere vero o falso\"}"
+	},
+	"U8 festività: trim e campi ignoti": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"y\",\"isActive\":false}}"
+	},
+	"U8 caratteristica: nome di 51 emoji (si contano le unità UTF-16)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Nome: al massimo 100 caratteri\"}"
+	},
+	"reg: password di 4 emoji = 8 unità UTF-16, accettata": {
+		"status": 200,
+		"body": "{\"ok\":{\"email\":\"a@b.it\",\"password\":\"😀😀😀😀\"}}"
+	},
+	"reg: password di 65 emoji = 130 unità UTF-16": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Password: al massimo 128 caratteri\"}"
+	},
+	"accept-invite: password di 4 emoji, accettata": {
+		"status": 200,
+		"body": "{\"ok\":{\"token\":\"t\",\"password\":\"😀😀😀😀\",\"confirmPassword\":\"😀😀😀😀\"}}"
+	},
+	"geocode: q di 2 emoji = 4 unità UTF-16, accettata": {
+		"status": 200,
+		"body": "{\"ok\":{\"q\":\"😀😀\",\"limit\":5}}"
+	},
+	"prodotti: nome di 101 emoji = 202 unità UTF-16 (CreateProductBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il nome è obbligatorio\"}"
+	},
+	"prodotti: valore di 1001 emoji = 2002 unità UTF-16": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore (riga 1): valore non valido\"}"
+	},
+	"U9 venditori: default": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":20,\"sortBy\":\"createdAt\",\"sortOrder\":\"desc\"}}"
+	},
+	"U9 venditori: stato non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Stato: valore non ammesso\"}"
+	},
+	"U9 venditori: ordinamento non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"sortBy: valore non ammesso\"}"
+	},
+	"U9 venditori: ricerca di 51 emoji (unità UTF-16)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Ricerca: al massimo 100 caratteri\"}"
+	},
+	"U9 venditori: ricerca non trimmata e campi ignoti": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":20,\"status\":\"active\",\"search\":\" x \",\"sortBy\":\"createdAt\",\"sortOrder\":\"desc\"}}"
+	},
+	"U9 negozi: default con il tab": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":20,\"status\":\"all\",\"sortBy\":\"createdAt\",\"sortOrder\":\"desc\"}}"
+	},
+	"U9 negozi: tab non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Stato: valore non ammesso\"}"
+	},
+	"U9 negozi: pagina non numerica": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Pagina: deve essere un numero intero\"}"
+	},
+	"U9 richieste: default del tipo (t.Composite)": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":1,\"limit\":2,\"type\":\"all\"}}"
+	},
+	"U9 richieste: tipo non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Tipo: valore non ammesso\"}"
+	},
+	"U9 abbonamenti: niente default": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":2,\"sellerEmail\":\"a\"}}"
+	},
+	"U9 abbonamenti: stato non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Stato: valore non ammesso\"}"
+	},
+	"U9 abbonamenti: limite a zero": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}"
+	},
+	"U9 prezzi: corpo vuoto": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"storeMonthlyFeeCents: campo obbligatorio\"}"
+	},
+	"U9 prezzi: prodotto Stripe non valido": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prodotto: formato non valido\"}"
+	},
+	"U9 prezzi: valuta di 4 lettere": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"currency: al massimo 3 caratteri\"}"
+	},
+	"U9 prezzi: giorni sotto il minimo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"suspendedAutoCancelDays: deve essere almeno 7\"}"
+	},
+	"U9 prezzi: ore decimali": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"pendingCreationExpiryHours: deve essere un numero intero\"}"
+	},
+	"U9 prezzi: intero in stringa, trim e campi ignoti": {
+		"status": 200,
+		"body": "{\"ok\":{\"storeMonthlyFeeCents\":2900,\"currency\":\"EUR\",\"suspendedAutoCancelDays\":60,\"pendingCreationExpiryHours\":24,\"productId\":\"prod_ABC123\"}}"
+	},
+	"U9 verifica: data mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"expectedUpdatedAt: campo obbligatorio\"}"
+	},
+	"U9 verifica: data gg/mm/aaaa": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"expectedUpdatedAt: data non valida\"}"
+	},
+	"U9 verifica: epoch": {
+		"status": 200,
+		"body": "{\"ok\":{\"expectedUpdatedAt\":\"1970-01-01T00:00:00.000Z\"}}"
+	},
+	"U9 rifiuto: corpo vuoto (prima il campo anyOf mancante)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"fixStep: campo obbligatorio\"}"
+	},
+	"U9 rifiuto: motivo di soli spazi": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Indica il motivo del rifiuto\"}"
+	},
+	"U9 rifiuto: motivo di 251 emoji (unità UTF-16)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Indica il motivo del rifiuto\"}"
+	},
+	"U9 rifiuto: step non ammesso": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"fixStep: valore non valido\"}"
+	},
+	"U9 rifiuto: step mancante": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"fixStep: campo obbligatorio\"}"
+	},
+	"U9 rifiuto: trim e data": {
+		"status": 200,
+		"body": "{\"ok\":{\"reason\":\"Documento illeggibile\",\"fixStep\":\"document\",\"expectedUpdatedAt\":\"2026-01-01T00:00:00.000Z\"}}"
+	},
+	"U9 modifica rifiutata: motivo facoltativo": {
+		"status": 200,
+		"body": "{\"ok\":{}}"
+	},
+	"U9 modifica rifiutata: motivo di 251 emoji (unità UTF-16)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Motivo: al massimo 500 caratteri\"}"
+	},
+	"U9 modifica rifiutata: motivo non testo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Motivo: deve essere un testo\"}"
+	},
+	"promozioni: PATCH vuoto (DiscountUpdateBody)": {
+		"status": 200,
+		"body": "{\"ok\":{}}"
+	},
+	"promozioni: PATCH con date, intero come stringa e campi ignoti": {
+		"status": 200,
+		"body": "{\"ok\":{\"percent\":10,\"startsAt\":\"2026-02-01T00:00:00.000Z\",\"endsAt\":null}}"
+	},
+	"promozioni: PATCH titolo vuoto (DiscountUpdateBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Titolo: campo obbligatorio\"}"
+	},
+	"promozioni: PATCH fine con l'offset senza segno (DiscountUpdateBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Fine: data non valida\"}"
+	},
+	"promozioni: PATCH inizio con l'offset senza segno (DiscountUpdateBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: data non valida\"}"
+	},
+	"promozioni: prodotti vuoti (DiscountProductsBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Prodotti: almeno 1 elemento\"}"
+	},
+	"ordini: stato e tipo (OrderListQuery)": {
+		"status": 200,
+		"body": "{\"ok\":{\"page\":2,\"limit\":20,\"status\":\"confirmed\",\"type\":\"reserve_pickup\"}}"
+	},
+	"ordini: stato non ammesso (OrderListQuery)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Stato: valore non ammesso\"}"
+	},
+	"negozio: vuoto (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Il nome è obbligatorio\"}"
+	},
+	"negozio: senza posizione (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"La posizione del negozio sulla mappa è obbligatoria\"}"
+	},
+	"negozio: posizione fuori intervallo (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"location.y: deve essere al massimo 90\"}"
+	},
+	"negozio: telefono con posizione negativa (CreateStoreBody)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Posizione (riga 1): deve essere almeno 0\"}"
+	},
+	"negozio: posizione del telefono come stringa (Type.Integer)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Posizione (riga 1): deve essere un numero intero\"}"
+	},
+	"negozio: valido, campi ignoti tolti, orari null (CreateStoreBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"Bottega\",\"addressLine1\":\"Via Roma 1\",\"municipalityId\":\"m1\",\"zipCode\":\"40100\",\"location\":{\"x\":11,\"y\":44},\"websiteUrl\":null,\"openingHours\":null,\"phoneNumbers\":[{\"number\":\"051123456\",\"position\":0}]}}"
+	},
+	"negozio: descrizione di emoji oltre il limite (zString)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Descrizione: al massimo 1000 caratteri\"}"
+	},
+	"negozio: giorno fuori intervallo (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere al massimo 6\"}"
+	},
+	"negozio: orario fuori formato in profondità (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: formato non valido\"}"
+	},
+	"negozio: orari come testo (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere un elenco\"}"
+	},
+	"negozio: sito troppo lungo (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Sito web: al massimo 500 caratteri\"}"
+	},
+	"negozio: orario non valido e sito non valido (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Sito web: indirizzo web non valido\"}"
+	},
+	"negozio: giorno come testo (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere un numero intero\"}"
+	},
+	"negozio: giorno come null (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere un numero intero\"}"
+	},
+	"negozio: giorno come booleano (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere un numero intero\"}"
+	},
+	"vm: intero o null alla radice, testo": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: deve essere un numero intero\"}"
+	},
+	"vm: intero o null alla radice, booleano": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"n: deve essere un numero intero\"}"
+	},
+	"negozio: sito di emoji oltre il limite (Type.Union con Null)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Sito web: al massimo 500 caratteri\"}"
+	},
+	"Type.Integer: giorno oltre i safe integer (OpeningHoursSchema)": {
+		"status": 422,
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"openingHours: deve essere al massimo 6\"}"
+	},
+	"Type.Integer: posizione oltre i safe integer (CreateStoreBody)": {
+		"status": 200,
+		"body": "{\"ok\":{\"name\":\"B\",\"addressLine1\":\"V\",\"municipalityId\":\"m\",\"zipCode\":\"40100\",\"location\":{\"x\":1,\"y\":2},\"phoneNumbers\":[{\"number\":\"051123456\",\"position\":9007199254740992}]}}"
+	}
+}

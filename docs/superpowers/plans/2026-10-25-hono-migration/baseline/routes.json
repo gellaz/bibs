@@ -1,0 +1,1047 @@
+[
+	{
+		"method": "OPTIONS",
+		"path": "/"
+	},
+	{
+		"method": "OPTIONS",
+		"path": "/*"
+	},
+	{
+		"method": "ALL",
+		"path": "/admin/auth",
+		"mount": "better-auth"
+	},
+	{
+		"method": "ALL",
+		"path": "/admin/auth/*",
+		"mount": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/billing/overview"
+	},
+	{
+		"method": "PUT",
+		"path": "/admin/billing/pricing"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/billing/pricing/current"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/billing/pricing/history"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/billing/subscriptions"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/configurations/counts"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/holiday-definitions"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/holiday-definitions"
+	},
+	{
+		"method": "DELETE",
+		"path": "/admin/holiday-definitions/:holidayId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/holiday-definitions/:holidayId"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/holiday-definitions/preview"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/product-categories"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/product-categories"
+	},
+	{
+		"method": "DELETE",
+		"path": "/admin/product-categories/:productCategoryId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/product-categories/:productCategoryId"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/product-categories/:productCategoryId/characteristics"
+	},
+	{
+		"method": "DELETE",
+		"path": "/admin/product-categories/:productCategoryId/characteristics/:characteristicId"
+	},
+	{
+		"method": "PUT",
+		"path": "/admin/product-categories/:productCategoryId/characteristics/:characteristicId"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/product-categories/import"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/product-category-characteristics/import"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/product-characteristics"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/product-characteristics"
+	},
+	{
+		"method": "DELETE",
+		"path": "/admin/product-characteristics/:characteristicId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/product-characteristics/:characteristicId"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/product-characteristics/import"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/product-macro-categories"
+	},
+	{
+		"method": "DELETE",
+		"path": "/admin/product-macro-categories/:macroCategoryId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/product-macro-categories/:macroCategoryId"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/requests/"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/requests/changes/:changeId"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/requests/counts"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/sellers"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/sellers/:sellerId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/sellers/:sellerId/reject"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/sellers/:sellerId/verify"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/sellers/changes/:changeId/approve"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/sellers/changes/:changeId/reject"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/sellers/changes/pending"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/sellers/counts"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/store-categories"
+	},
+	{
+		"method": "DELETE",
+		"path": "/admin/store-categories/:categoryId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/store-categories/:categoryId"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/store-categories/import"
+	},
+	{
+		"method": "POST",
+		"path": "/admin/store-macro-categories"
+	},
+	{
+		"method": "DELETE",
+		"path": "/admin/store-macro-categories/:macroCategoryId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/admin/store-macro-categories/:macroCategoryId"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/stores"
+	},
+	{
+		"method": "GET",
+		"path": "/admin/stores/counts"
+	},
+	{
+		"method": "ALL",
+		"path": "/auth",
+		"mount": "better-auth"
+	},
+	{
+		"method": "ALL",
+		"path": "/auth/*",
+		"mount": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/account-info",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/ban-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/create-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/admin/get-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/has-permission",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/impersonate-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/list-user-sessions",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/admin/list-users",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/remove-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/revoke-user-session",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/revoke-user-sessions",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/set-role",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/set-user-password",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/stop-impersonating",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/unban-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/admin/update-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/callback/:id",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/callback/:id",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/change-email",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/change-password",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/delete-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/delete-user/callback",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/error",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/get-access-token",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/get-session",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/get-session",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/link-social",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/list-accounts",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/list-sessions",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/ok",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/open-api/generate-schema",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/reference",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/refresh-token",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/request-password-reset",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/reset-password",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/reset-password/:token",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/revoke-other-sessions",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/revoke-session",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/revoke-sessions",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/send-verification-email",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/sign-in/email",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/sign-in/social",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/sign-out",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/sign-up/email",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/unlink-account",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/update-session",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/update-user",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/auth/api/verify-email",
+		"source": "better-auth"
+	},
+	{
+		"method": "POST",
+		"path": "/auth/api/verify-password",
+		"source": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/addresses"
+	},
+	{
+		"method": "POST",
+		"path": "/customer/addresses"
+	},
+	{
+		"method": "DELETE",
+		"path": "/customer/addresses/:addressId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/customer/addresses/:addressId"
+	},
+	{
+		"method": "ALL",
+		"path": "/customer/auth",
+		"mount": "better-auth"
+	},
+	{
+		"method": "ALL",
+		"path": "/customer/auth/*",
+		"mount": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/cart"
+	},
+	{
+		"method": "POST",
+		"path": "/customer/cart/items"
+	},
+	{
+		"method": "DELETE",
+		"path": "/customer/cart/items/:id"
+	},
+	{
+		"method": "PATCH",
+		"path": "/customer/cart/items/:id"
+	},
+	{
+		"method": "POST",
+		"path": "/customer/checkout"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/checkout/preview"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/checkout/reservation-deadlines"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/checkouts/:checkoutId"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/orders"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/orders/:orderId"
+	},
+	{
+		"method": "POST",
+		"path": "/customer/orders/:orderId/cancel"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/points"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/products"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/products/:id"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/products/facets"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/profile"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/stores"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/stores/:id"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/stores/:id/products"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/stores/facets"
+	},
+	{
+		"method": "GET",
+		"path": "/customer/stores/map"
+	},
+	{
+		"method": "GET",
+		"path": "/health"
+	},
+	{
+		"method": "ALL",
+		"path": "/locations/auth",
+		"mount": "better-auth"
+	},
+	{
+		"method": "ALL",
+		"path": "/locations/auth/*",
+		"mount": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/locations/countries"
+	},
+	{
+		"method": "GET",
+		"path": "/locations/geocode"
+	},
+	{
+		"method": "GET",
+		"path": "/locations/municipalities"
+	},
+	{
+		"method": "GET",
+		"path": "/locations/municipalities/all"
+	},
+	{
+		"method": "GET",
+		"path": "/locations/provinces"
+	},
+	{
+		"method": "GET",
+		"path": "/locations/regions"
+	},
+	{
+		"method": "ALL",
+		"path": "/me/auth",
+		"mount": "better-auth"
+	},
+	{
+		"method": "ALL",
+		"path": "/me/auth/*",
+		"mount": "better-auth"
+	},
+	{
+		"method": "DELETE",
+		"path": "/me/avatar"
+	},
+	{
+		"method": "POST",
+		"path": "/me/avatar"
+	},
+	{
+		"method": "GET",
+		"path": "/openapi"
+	},
+	{
+		"method": "GET",
+		"path": "/openapi/json"
+	},
+	{
+		"method": "GET",
+		"path": "/product-categories"
+	},
+	{
+		"method": "GET",
+		"path": "/product-macro-categories"
+	},
+	{
+		"method": "GET",
+		"path": "/ready"
+	},
+	{
+		"method": "POST",
+		"path": "/register/accept-invite"
+	},
+	{
+		"method": "POST",
+		"path": "/register/customer"
+	},
+	{
+		"method": "POST",
+		"path": "/register/seller"
+	},
+	{
+		"method": "POST",
+		"path": "/register/sign-in"
+	},
+	{
+		"method": "ALL",
+		"path": "/seller/auth",
+		"mount": "better-auth"
+	},
+	{
+		"method": "ALL",
+		"path": "/seller/auth/*",
+		"mount": "better-auth"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/billing/invoices"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/billing/portal"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/billing/subscriptions"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/billing/summary"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/brands"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/brands"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/checkout-sessions/:sessionId/status"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/dashboard"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/discounts"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/discounts"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/discounts/:discountId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/discounts/:discountId"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/discounts/:discountId/archive"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/discounts/:discountId/pause"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/discounts/:discountId/products"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/discounts/:discountId/products"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/discounts/:discountId/products"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/discounts/:discountId/products/:productId"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/employees"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/employees/:employeeId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/employees/:employeeId/ban"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/employees/:employeeId/stores"
+	},
+	{
+		"method": "PUT",
+		"path": "/seller/employees/:employeeId/stores"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/employees/:employeeId/unban"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/employees/invitations"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/employees/invitations/:invitationId"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/employees/invitations/:invitationId/resend"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/employees/invite"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/onboarding/company"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/onboarding/document"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/onboarding/go-back"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/onboarding/personal-info"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/onboarding/status"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/orders"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/orders/:orderId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/orders/:orderId/cancel"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/orders/:orderId/complete"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/orders/:orderId/ready"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/orders/:orderId/ship"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/orders/counts"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/orders/pickup"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/orders/pickup/:code"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/product-categories/:productCategoryId/characteristics"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/products"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/products/:productId"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/products/:productId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/products/:productId"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products/:productId/images"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/products/:productId/images/:imageId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/products/:productId/status"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products/:productId/stores"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/products/:productId/stores/:storeId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/products/:productId/stores/:storeId"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products/:productId/stores/:storeId/stock-adjust"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products/bulk/delete-permanent"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products/bulk/status"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products/bulk/stock-adjust"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/products/categories-in-use"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/products/import"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/products/lookup"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/products/status-counts"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/profile"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/settings/"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/settings/changes/:changeId/cancel"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/settings/company"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/settings/document"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/settings/payments/onboarding"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/settings/payments/sync"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/settings/personal"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/settings/vat"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/stores"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/stores"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/stores/:storeId"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/stores/:storeId"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/stores/:storeId/closures"
+	},
+	{
+		"method": "PUT",
+		"path": "/seller/stores/:storeId/closures"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/stores/:storeId/images"
+	},
+	{
+		"method": "DELETE",
+		"path": "/seller/stores/:storeId/images/:imageId"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/stores/:storeId/order-types"
+	},
+	{
+		"method": "PATCH",
+		"path": "/seller/stores/:storeId/order-types"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/stores/:storeId/reactivate"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/stores/:storeId/reactivation-checkout"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/stores/:storeId/reservation-preview"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/stores/archived"
+	},
+	{
+		"method": "POST",
+		"path": "/seller/stores/checkout"
+	},
+	{
+		"method": "GET",
+		"path": "/seller/stores/checkout/:pendingId"
+	},
+	{
+		"method": "GET",
+		"path": "/store-categories"
+	},
+	{
+		"method": "GET",
+		"path": "/store-macro-categories"
+	},
+	{
+		"method": "POST",
+		"path": "/webhooks/stripe"
+	},
+	{
+		"method": "POST",
+		"path": "/webhooks/stripe/connect"
+	},
+	{
+		"method": "POST",
+		"path": "/webhooks/stripe/thin"
+	}
+]

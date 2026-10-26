@@ -1,22 +1,36 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { config } from "@/lib/config";
-import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
+import { StoreWithPhonesSchema } from "@/lib/schemas/composed";
 import {
 	AddressFieldsOptional,
 	MunicipalityCompactSchema,
-	okPageRes,
-	okRes,
 	ReservationDeadlineSchema,
 	StoreOrderTypesSchema,
-	StoreWithPhonesSchema,
+} from "@/lib/schemas/entities";
+import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
+import { CreateStoreBody } from "@/lib/schemas/forms/stores";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import {
+	okPageRes,
+	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { CreateStoreBody } from "@/lib/schemas/forms";
-import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
-import { ensureStoreAccess, requireOwner, withSeller } from "../context";
+} from "@/lib/schemas/responses";
+import {
+	utf16Length,
+	zDate,
+	zFormat,
+	zInteger,
+	zString,
+} from "@/lib/schemas/t";
+import { ensureStoreAccess, requireOwner } from "../context";
 import {
 	getStoreOrderTypes,
 	previewReservationDeadline,
@@ -31,64 +45,193 @@ import {
 	updateStore,
 } from "../services/stores";
 
-const ArchivedStoreSchema = t.Object({
-	id: t.String(),
-	name: t.String(),
-	addressLine1: t.String(),
-	municipalityId: t.String(),
+const ArchivedStoreSchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	addressLine1: z.string(),
+	municipalityId: z.string(),
 	municipality: MunicipalityCompactSchema,
-	createdAt: t.Date(),
-	deletedAt: t.Nullable(t.Date()),
-	canceledAt: t.Nullable(t.Date()),
-	cancelReason: t.Nullable(t.String()),
-	subscriptionStatus: t.Nullable(
-		t.String({
+	createdAt: zDate(),
+	deletedAt: zDate().nullable(),
+	canceledAt: zDate().nullable(),
+	cancelReason: z.string().nullable(),
+	subscriptionStatus: z
+		.string()
+		.meta({
 			description:
 				"Stato dell'abbonamento; 'canceled' = riattivabile con POST /stores/:storeId/reactivation-checkout",
-		}),
-	),
+		})
+		.nullable(),
 });
 
-export const storesRoutes = new Elysia()
+const storeId = z.object({
+	storeId: z.string().meta({ description: "ID del negozio" }),
+});
+
+const reservationHours = (description: string) =>
+	zInteger({
+		minimum: config.reservationHours.min,
+		maximum: config.reservationHours.max,
+		description,
+	});
+
+const UpdateStoreBody = z.object({
+	name: zString({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nome del negozio",
+	}).optional(),
+	description: zString({
+		maxLength: 1000,
+		description: "Descrizione",
+	}).optional(),
+	...AddressFieldsOptional,
+	categoryId: z
+		.string()
+		.meta({ description: "ID categoria negozio" })
+		.nullable()
+		.optional(),
+	openingHours: OpeningHoursSchema.nullable().optional(),
+	reservationHours: reservationHours(
+		"Ore di apertura entro cui il cliente ritira una prenotazione (Prenota e paga in negozio)",
+	).optional(),
+	lowStockThreshold: zInteger({
+		minimum: 0,
+		maximum: 9999,
+		description:
+			"Soglia di scorta bassa: sotto questo stock (escluso) un prodotto attivo è segnalato nella home. 0 spegne l'avviso",
+	}).optional(),
+	// `.max()` per /openapi, `utf16Length` per contare le unità UTF-16 come prima (vedi forms/stores.ts).
+	websiteUrl: zFormat("uri")
+		.max(500)
+		.check(utf16Length({ maxLength: 500 }))
+		.meta({ description: "URL del sito web. null per rimuoverlo" })
+		.nullable()
+		.optional(),
+	phoneNumbers: z
+		.array(
+			z.object({
+				label: zString({
+					maxLength: 50,
+					description: "Etichetta (es. 'Principale')",
+				}).optional(),
+				number: zString({
+					minLength: 5,
+					maxLength: 30,
+					description: "Numero di telefono",
+				}),
+				position: zInteger({
+					minimum: 0,
+					description: "Posizione di ordinamento",
+				}).optional(),
+			}),
+		)
+		.meta({ description: "Numeri di telefono del negozio" })
+		.optional(),
+});
+
+const OrderTypesBody = z.object({
+	orderTypes: z
+		.array(z.enum(["reserve_pickup", "pay_pickup"]))
+		.min(1)
+		.refine((types) => new Set(types).size === types.length, {
+			params: { rule: { kind: "uniqueItems" } },
+		})
+		.meta({
+			uniqueItems: true,
+			description: "Tipologie d'acquisto accettate dal negozio",
+		}),
+});
+
+const ArchivedQuery = z.object({
+	page: zInteger({ minimum: 1 }).optional(),
+	limit: zInteger({ minimum: 1, maximum: 100 }).optional(),
+});
+
+const StoreRes = okRes(StoreWithPhonesSchema);
+const StorePage = okPageRes(StoreWithPhonesSchema);
+const DeadlineRes = okRes(ReservationDeadlineSchema);
+const OrderTypesRes = okRes(StoreOrderTypesSchema);
+const CancelRes = okRes(
+	z.object({
+		status: z.enum(["canceling", "canceled"]),
+		effectiveAt: zDate(),
+	}),
+);
+const ReactivateRes = okRes(z.object({ status: z.literal("active") }));
+const ArchivedRes = okRes(
+	z.object({
+		data: z.array(ArchivedStoreSchema),
+		pagination: z.object({
+			page: zInteger(),
+			limit: zInteger(),
+			total: zInteger(),
+		}),
+	}),
+);
+
+const detail = (summary: string, description: string) => ({
+	summary,
+	description,
+	tags: ["Seller - Stores"],
+	security: [{ bearerAuth: [] }],
+});
+
+export const storesRoutes = new Hono()
 	.get(
 		"/stores",
-		async (ctx) => {
-			const sellerCtx = withSeller(ctx);
-			const { sellerProfile: sp, isOwner, query } = sellerCtx;
+		doc({
+			response: withErrors({ 200: StorePage }),
+			detail: detail(
+				"Lista negozi",
+				"Restituisce la lista paginata dei negozi del venditore.",
+			),
+		}),
+		v("query", PaginationQuery),
+		requireSeller,
+		async (c) => {
+			const {
+				sellerProfile: sp,
+				isOwner,
+				getAccessibleStoreIds,
+			} = c.var.seller;
+			const query = c.req.valid("query");
 			// Owner: undefined filter = all stores. Employee: explicit list = only assigned stores (may be empty).
 			const filterStoreIds = isOwner
 				? undefined
-				: await sellerCtx.getAccessibleStoreIds();
+				: await getAccessibleStoreIds();
 			const result = await listStores({
 				sellerProfileId: sp.id,
 				filterStoreIds,
 				page: query.page,
 				limit: query.limit,
 			});
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: PaginationQuery,
-			response: withErrors({ 200: okPageRes(StoreWithPhonesSchema) }),
-			detail: {
-				summary: "Lista negozi",
-				description: "Restituisce la lista paginata dei negozi del venditore.",
-				tags: ["Seller - Stores"],
-			},
+			return send(c, StorePage, okPage(result.data, result.pagination));
 		},
 	)
 	.post(
 		"/stores",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, body, user, store } = withSeller(ctx);
-			const pino = getLogger(store);
+		doc({
+			response: withErrors({ 200: StoreRes }),
+			detail: detail(
+				"Crea negozio",
+				"Crea un nuovo negozio per il venditore. Solo il proprietario può creare negozi.",
+			),
+		}),
+		v("json", CreateStoreBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
-			const data = await createStore({ sellerProfileId: sp.id, ...body });
+			const data = await createStore({
+				sellerProfileId: sp.id,
+				...c.req.valid("json"),
+			});
 
-			pino.info(
+			logger.info(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					sellerProfileId: sp.id,
 					storeId: data.id,
 					storeName: data.name,
@@ -97,297 +240,172 @@ export const storesRoutes = new Elysia()
 				"Nuovo negozio creato",
 			);
 
-			return ok(data);
-		},
-		{
-			body: CreateStoreBody,
-			response: withErrors({ 200: okRes(StoreWithPhonesSchema) }),
-			detail: {
-				summary: "Crea negozio",
-				description:
-					"Crea un nuovo negozio per il venditore. Solo il proprietario può creare negozi.",
-				tags: ["Seller - Stores"],
-			},
+			return send(c, StoreRes, ok(data));
 		},
 	)
 	.patch(
 		"/stores/:storeId",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params, body } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: StoreRes }),
+			detail: detail(
+				"Aggiorna negozio",
+				"Aggiorna i dati di un negozio esistente. Solo il proprietario può modificare negozi.",
+			),
+		}),
+		v("param", storeId),
+		v("json", UpdateStoreBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
 			const data = await updateStore({
-				storeId: params.storeId,
+				storeId: c.req.valid("param").storeId,
 				sellerProfileId: sp.id,
-				...body,
+				...c.req.valid("json"),
 			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			body: t.Object({
-				name: t.Optional(
-					t.String({
-						minLength: 1,
-						maxLength: 100,
-						description: "Nome del negozio",
-					}),
-				),
-				description: t.Optional(
-					t.String({ maxLength: 1000, description: "Descrizione" }),
-				),
-				...AddressFieldsOptional,
-				categoryId: t.Optional(
-					t.Nullable(t.String({ description: "ID categoria negozio" })),
-				),
-				openingHours: t.Optional(t.Nullable(OpeningHoursSchema)),
-				reservationHours: t.Optional(
-					t.Integer({
-						minimum: config.reservationHours.min,
-						maximum: config.reservationHours.max,
-						description:
-							"Ore di apertura entro cui il cliente ritira una prenotazione (Prenota e paga in negozio)",
-					}),
-				),
-				lowStockThreshold: t.Optional(
-					t.Integer({
-						minimum: 0,
-						maximum: 9999,
-						description:
-							"Soglia di scorta bassa: sotto questo stock (escluso) un prodotto attivo è segnalato nella home. 0 spegne l'avviso",
-					}),
-				),
-				websiteUrl: t.Optional(
-					t.Nullable(
-						t.String({
-							format: "uri",
-							maxLength: 500,
-							description: "URL del sito web. null per rimuoverlo",
-						}),
-					),
-				),
-				phoneNumbers: t.Optional(
-					t.Array(
-						t.Object({
-							label: t.Optional(
-								t.String({
-									maxLength: 50,
-									description: "Etichetta (es. 'Principale')",
-								}),
-							),
-							number: t.String({
-								minLength: 5,
-								maxLength: 30,
-								description: "Numero di telefono",
-							}),
-							position: t.Optional(
-								t.Integer({
-									minimum: 0,
-									description: "Posizione di ordinamento",
-								}),
-							),
-						}),
-						{ description: "Numeri di telefono del negozio" },
-					),
-				),
-			}),
-			response: withErrors({ 200: okRes(StoreWithPhonesSchema) }),
-			detail: {
-				summary: "Aggiorna negozio",
-				description:
-					"Aggiorna i dati di un negozio esistente. Solo il proprietario può modificare negozi.",
-				tags: ["Seller - Stores"],
-			},
+			return send(c, StoreRes, ok(data));
 		},
 	)
 	.get(
 		"/stores/:storeId/reservation-preview",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params, query } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: DeadlineRes }),
+			detail: detail(
+				"Anteprima della scadenza di una prenotazione",
+				"Scadenza che avrebbe una prenotazione fatta adesso con queste ore, contate sulle ore di apertura del negozio (calendario se il negozio non ha orari). Non salva nulla. Solo il titolare.",
+			),
+		}),
+		v("param", storeId),
+		v(
+			"query",
+			z.object({
+				hours: reservationHours(
+					"Ore di apertura da provare, anche non ancora salvate",
+				),
+			}),
+		),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			return ok(
-				await previewReservationDeadline({
-					sellerProfileId: sp.id,
-					storeId: params.storeId,
-					hours: query.hours,
-				}),
-			);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			query: t.Object({
-				hours: t.Integer({
-					minimum: config.reservationHours.min,
-					maximum: config.reservationHours.max,
-					description: "Ore di apertura da provare, anche non ancora salvate",
-				}),
-			}),
-			response: withErrors({ 200: okRes(ReservationDeadlineSchema) }),
-			detail: {
-				summary: "Anteprima della scadenza di una prenotazione",
-				description:
-					"Scadenza che avrebbe una prenotazione fatta adesso con queste ore, contate sulle ore di apertura del negozio (calendario se il negozio non ha orari). Non salva nulla. Solo il titolare.",
-				tags: ["Seller - Stores"],
-			},
+			const data = await previewReservationDeadline({
+				sellerProfileId: sp.id,
+				storeId: c.req.valid("param").storeId,
+				hours: c.req.valid("query").hours,
+			});
+			return send(c, DeadlineRes, ok(data));
 		},
 	)
 	.get(
 		"/stores/:storeId/order-types",
-		async (ctx) => {
-			const { sellerProfile: sp, accessCtx, params } = withSeller(ctx);
-			await ensureStoreAccess(params.storeId, accessCtx);
-			return ok(
-				await getStoreOrderTypes({
-					sellerProfileId: sp.id,
-					storeId: params.storeId,
-				}),
-			);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			response: withErrors({ 200: okRes(StoreOrderTypesSchema) }),
-			detail: {
-				summary: "Tipologie d'acquisto del negozio",
-				description:
-					"Tipologie configurate, quelle offerte davvero ai clienti e se il venditore può incassare online. Titolare e dipendenti assegnati al negozio.",
-				tags: ["Seller - Stores"],
-			},
+		doc({
+			response: withErrors({ 200: OrderTypesRes }),
+			detail: detail(
+				"Tipologie d'acquisto del negozio",
+				"Tipologie configurate, quelle offerte davvero ai clienti e se il venditore può incassare online. Titolare e dipendenti assegnati al negozio.",
+			),
+		}),
+		v("param", storeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, accessCtx } = c.var.seller;
+			const id = c.req.valid("param").storeId;
+			await ensureStoreAccess(id, accessCtx);
+			const data = await getStoreOrderTypes({
+				sellerProfileId: sp.id,
+				storeId: id,
+			});
+			return send(c, OrderTypesRes, ok(data));
 		},
 	)
 	.patch(
 		"/stores/:storeId/order-types",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params, body } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: OrderTypesRes }),
+			detail: detail(
+				"Aggiorna tipologie d'acquisto",
+				"«Paga e ritira» si attiva solo con i pagamenti online abilitati; deve restare almeno una tipologia offerta ai clienti. Solo il titolare.",
+			),
+		}),
+		v("param", storeId),
+		v("json", OrderTypesBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			return ok(
-				await updateStoreOrderTypes({
-					sellerProfileId: sp.id,
-					storeId: params.storeId,
-					orderTypes: body.orderTypes,
-				}),
-			);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			body: t.Object({
-				orderTypes: t.Array(
-					t.Union([t.Literal("reserve_pickup"), t.Literal("pay_pickup")]),
-					{
-						minItems: 1,
-						uniqueItems: true,
-						description: "Tipologie d'acquisto accettate dal negozio",
-					},
-				),
-			}),
-			response: withErrors({ 200: okRes(StoreOrderTypesSchema) }),
-			detail: {
-				summary: "Aggiorna tipologie d'acquisto",
-				description:
-					"«Paga e ritira» si attiva solo con i pagamenti online abilitati; deve restare almeno una tipologia offerta ai clienti. Solo il titolare.",
-				tags: ["Seller - Stores"],
-			},
+			const data = await updateStoreOrderTypes({
+				sellerProfileId: sp.id,
+				storeId: c.req.valid("param").storeId,
+				orderTypes: c.req.valid("json").orderTypes,
+			});
+			return send(c, OrderTypesRes, ok(data));
 		},
 	)
 	.delete(
 		"/stores/:storeId",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: CancelRes }),
+			detail: detail(
+				"Cancella subscription negozio",
+				"Cancel at period end per active/past_due (idempotente su canceling). Cancel immediato per suspended.",
+			),
+		}),
+		v("param", storeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
 			const data = await cancelStoreSubscription({
 				sellerProfileId: sp.id,
-				storeId: params.storeId,
+				storeId: c.req.valid("param").storeId,
 			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			response: withErrors({
-				200: okRes(
-					t.Object({
-						status: t.Union([t.Literal("canceling"), t.Literal("canceled")]),
-						effectiveAt: t.Date(),
-					}),
-				),
-			}),
-			detail: {
-				summary: "Cancella subscription negozio",
-				description:
-					"Cancel at period end per active/past_due (idempotente su canceling). Cancel immediato per suspended.",
-				tags: ["Seller - Stores"],
-			},
+			return send(c, CancelRes, ok(data));
 		},
 	)
 	.post(
 		"/stores/:storeId/reactivate",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, params } = withSeller(ctx);
+		doc({
+			response: withConflictErrors({ 200: ReactivateRes }),
+			detail: detail(
+				"Annulla la cancellazione in corso",
+				"Solo per status='canceling' prima del period end.",
+			),
+		}),
+		v("param", storeId),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 
 			const data = await reactivateStoreSubscription({
 				sellerProfileId: sp.id,
-				storeId: params.storeId,
+				storeId: c.req.valid("param").storeId,
 			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			response: withConflictErrors({
-				200: okRes(t.Object({ status: t.Literal("active") })),
-			}),
-			detail: {
-				summary: "Annulla la cancellazione in corso",
-				description: "Solo per status='canceling' prima del period end.",
-				tags: ["Seller - Stores"],
-			},
+			return send(c, ReactivateRes, ok(data));
 		},
 	)
 	.get(
 		"/stores/archived",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner, query } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: ArchivedRes }),
+			detail: detail(
+				"Lista negozi archiviati del seller",
+				"Negozi con deletedAt impostato. Include canceledAt e cancelReason via join su store_subscriptions.",
+			),
+		}),
+		v("query", ArchivedQuery),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
+			const query = c.req.valid("query");
 			const data = await listArchivedStores({
 				sellerProfileId: sp.id,
 				page: query.page ?? 1,
 				limit: query.limit ?? 25,
 			});
-			return ok(data);
-		},
-		{
-			query: t.Object({
-				page: t.Optional(t.Integer({ minimum: 1 })),
-				limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
-			}),
-			response: withErrors({
-				200: okRes(
-					t.Object({
-						data: t.Array(ArchivedStoreSchema),
-						pagination: t.Object({
-							page: t.Integer(),
-							limit: t.Integer(),
-							total: t.Integer(),
-						}),
-					}),
-				),
-			}),
-			detail: {
-				summary: "Lista negozi archiviati del seller",
-				description:
-					"Negozi con deletedAt impostato. Include canceledAt e cancelReason via join su store_subscriptions.",
-				tags: ["Seller - Stores"],
-			},
+			return send(c, ArchivedRes, ok(data));
 		},
 	);

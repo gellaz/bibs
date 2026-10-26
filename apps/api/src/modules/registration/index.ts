@@ -1,18 +1,25 @@
-import { Elysia, t } from "elysia";
+import { moduleApp } from "@/http/app";
+import { doc } from "@/http/openapi";
+import { publicRoute } from "@/http/routes";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
-import { getLogger } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
 import {
-	OkMessage,
-	okRes,
 	RegisterCustomerResult,
 	RegisterSellerResult,
 	SignInResult,
+} from "@/lib/schemas/composed";
+import { AcceptInviteBody } from "@/lib/schemas/forms/onboarding";
+import { RegisterBody, SignInBody } from "@/lib/schemas/registration";
+import {
+	OkMessage,
+	okRes,
 	TooManyRequestsError,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { AcceptInviteBody } from "@/lib/schemas/forms";
+} from "@/lib/schemas/responses";
 import { rateLimit } from "@/plugins/rate-limit";
 import {
 	acceptInvite,
@@ -24,17 +31,44 @@ import {
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 
-export const registration = new Elysia({
-	prefix: "/register",
-	tags: ["Registration"],
-})
+export const RegisterCustomerResponse = okRes(RegisterCustomerResult);
+export const RegisterSellerResponse = okRes(RegisterSellerResult);
+export const SignInResponse = okRes(SignInResult);
+
+/**
+ * Sub-app Hono del modulo, montata su /register in `src/app.ts`: quattro
+ * POST pubblici, ognuno col suo rate limit dopo la validazione.
+ */
+export const registrationApp = moduleApp()
 	.post(
 		"/customer",
-		async ({ body, store }) => {
-			const pino = getLogger(store);
-			const data = await registerCustomer(body, pino);
+		doc({
+			response: withConflictErrors({
+				200: RegisterCustomerResponse,
+				429: TooManyRequestsError,
+			}),
+			detail: {
+				summary: "Registrazione cliente",
+				description:
+					"Crea un nuovo account cliente con profilo e saldo punti inizializzato a zero. Errori 409: `EMAIL_ALREADY_REGISTERED` se l'email è già verificata; `EMAIL_PENDING_VERIFICATION` se l'email esiste ma è in attesa di verifica (entro 7gg) — il backend re-invia il link automaticamente e il body contiene `resentAt`.",
+				tags: ["Registration"],
+			},
+		}),
+		v("json", RegisterBody),
+		publicRoute,
+		rateLimit({
+			name: "register-customer",
+			limits: [
+				{ by: "ip", window: HOUR, max: 10 },
+				// Bound verification-email resends per target address, even if the
+				// source IP rotates.
+				{ by: "email", window: HOUR, max: 3 },
+			],
+		}),
+		async (c) => {
+			const data = await registerCustomer(c.req.valid("json"), logger);
 
-			pino.info(
+			logger.info(
 				{
 					userId: data.user.id,
 					email: data.user.email,
@@ -43,44 +77,36 @@ export const registration = new Elysia({
 				"Nuovo cliente registrato",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				email: t.String({ format: "email", description: "Indirizzo email" }),
-				password: t.String({
-					minLength: 8,
-					maxLength: 128,
-					description: "Password (minimo 8, massimo 128 caratteri)",
-				}),
-			}),
-			beforeHandle: rateLimit({
-				name: "register-customer",
-				limits: [
-					{ by: "ip", window: HOUR, max: 10 },
-					// Bound verification-email resends per target address, even if the
-					// source IP rotates.
-					{ by: "email", window: HOUR, max: 3 },
-				],
-			}),
-			response: withConflictErrors({
-				200: okRes(RegisterCustomerResult),
-				429: TooManyRequestsError,
-			}),
-			detail: {
-				summary: "Registrazione cliente",
-				description:
-					"Crea un nuovo account cliente con profilo e saldo punti inizializzato a zero. Errori 409: `EMAIL_ALREADY_REGISTERED` se l'email è già verificata; `EMAIL_PENDING_VERIFICATION` se l'email esiste ma è in attesa di verifica (entro 7gg) — il backend re-invia il link automaticamente e il body contiene `resentAt`.",
-			},
+			return send(c, RegisterCustomerResponse, ok(data));
 		},
 	)
 	.post(
 		"/seller",
-		async ({ body, store }) => {
-			const pino = getLogger(store);
-			const data = await registerSeller(body, pino);
+		doc({
+			response: withConflictErrors({
+				200: RegisterSellerResponse,
+				429: TooManyRequestsError,
+			}),
+			detail: {
+				summary: "Registrazione venditore",
+				description:
+					"Crea un nuovo account venditore. Dopo la verifica email, il venditore dovrà completare l'onboarding (dati personali, documento, azienda, negozio, pagamento). Errori 409: `EMAIL_ALREADY_REGISTERED` se l'email è già verificata; `EMAIL_PENDING_VERIFICATION` se l'email esiste ma è in attesa di verifica (entro 7gg) — il backend re-invia il link automaticamente e il body contiene `resentAt`.",
+				tags: ["Registration"],
+			},
+		}),
+		v("json", RegisterBody),
+		publicRoute,
+		rateLimit({
+			name: "register-seller",
+			limits: [
+				{ by: "ip", window: HOUR, max: 10 },
+				{ by: "email", window: HOUR, max: 3 },
+			],
+		}),
+		async (c) => {
+			const data = await registerSeller(c.req.valid("json"), logger);
 
-			pino.info(
+			logger.info(
 				{
 					userId: data.user.id,
 					email: data.user.email,
@@ -89,39 +115,31 @@ export const registration = new Elysia({
 				"Nuovo venditore registrato (onboarding in corso)",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				email: t.String({ format: "email", description: "Indirizzo email" }),
-				password: t.String({
-					minLength: 8,
-					maxLength: 128,
-					description: "Password (minimo 8, massimo 128 caratteri)",
-				}),
-			}),
-			beforeHandle: rateLimit({
-				name: "register-seller",
-				limits: [
-					{ by: "ip", window: HOUR, max: 10 },
-					{ by: "email", window: HOUR, max: 3 },
-				],
-			}),
-			response: withConflictErrors({
-				200: okRes(RegisterSellerResult),
-				429: TooManyRequestsError,
-			}),
-			detail: {
-				summary: "Registrazione venditore",
-				description:
-					"Crea un nuovo account venditore. Dopo la verifica email, il venditore dovrà completare l'onboarding (dati personali, documento, azienda, negozio, pagamento). Errori 409: `EMAIL_ALREADY_REGISTERED` se l'email è già verificata; `EMAIL_PENDING_VERIFICATION` se l'email esiste ma è in attesa di verifica (entro 7gg) — il backend re-invia il link automaticamente e il body contiene `resentAt`.",
-			},
+			return send(c, RegisterSellerResponse, ok(data));
 		},
 	)
 	.post(
 		"/accept-invite",
-		async ({ body, store }) => {
-			const pino = getLogger(store);
+		doc({
+			response: withConflictErrors({
+				200: OkMessage,
+				429: TooManyRequestsError,
+			}),
+			detail: {
+				summary: "Accetta invito dipendente",
+				description:
+					"Accetta un invito di collaborazione. Crea l'account dipendente con la password fornita. Non richiede autenticazione.",
+				tags: ["Registration"],
+			},
+		}),
+		v("json", AcceptInviteBody),
+		publicRoute,
+		rateLimit({
+			name: "accept-invite",
+			limits: [{ by: "ip", window: HOUR, max: 20 }],
+		}),
+		async (c) => {
+			const body = c.req.valid("json");
 
 			if (body.password !== body.confirmPassword) {
 				throw new ServiceError(400, "Le password non coincidono");
@@ -132,40 +150,44 @@ export const registration = new Elysia({
 					token: body.token,
 					password: body.password,
 				},
-				pino,
+				logger,
 			);
 
-			pino.info(
+			logger.info(
 				{ token: body.token, action: "employee_invite_accepted" },
 				"Employee accepted invitation",
 			);
 
-			return okMessage(result.message);
-		},
-		{
-			beforeHandle: rateLimit({
-				name: "accept-invite",
-				limits: [{ by: "ip", window: HOUR, max: 20 }],
-			}),
-			body: AcceptInviteBody,
-			response: withConflictErrors({
-				200: OkMessage,
-				429: TooManyRequestsError,
-			}),
-			detail: {
-				summary: "Accetta invito dipendente",
-				description:
-					"Accetta un invito di collaborazione. Crea l'account dipendente con la password fornita. Non richiede autenticazione.",
-			},
+			return send(c, OkMessage, okMessage(result.message));
 		},
 	)
 	.post(
 		"/sign-in",
-		async ({ body, store }) => {
-			const pino = getLogger(store);
-			const data = await signIn(body);
+		doc({
+			response: withErrors({
+				200: SignInResponse,
+				429: TooManyRequestsError,
+			}),
+			detail: {
+				summary: "Login",
+				description:
+					"Autentica un utente e restituisce i dati utente, entrambi i profili (customer e seller se esistenti) e token di sessione. Il campo 'role' indica il ruolo primario.",
+				tags: ["Auth"],
+			},
+		}),
+		v("json", SignInBody),
+		publicRoute,
+		rateLimit({
+			name: "sign-in",
+			limits: [
+				{ by: "ip", window: 15 * MINUTE, max: 30 },
+				{ by: "email", window: 15 * MINUTE, max: 10 },
+			],
+		}),
+		async (c) => {
+			const data = await signIn(c.req.valid("json"));
 
-			pino.info(
+			logger.info(
 				{
 					userId: data.user.id,
 					email: data.user.email,
@@ -177,29 +199,9 @@ export const registration = new Elysia({
 				"Utente autenticato",
 			);
 
-			return ok(data);
-		},
-		{
-			beforeHandle: rateLimit({
-				name: "sign-in",
-				limits: [
-					{ by: "ip", window: 15 * MINUTE, max: 30 },
-					{ by: "email", window: 15 * MINUTE, max: 10 },
-				],
-			}),
-			body: t.Object({
-				email: t.String({ format: "email", description: "Indirizzo email" }),
-				password: t.String({ description: "Password" }),
-			}),
-			response: withErrors({
-				200: okRes(SignInResult),
-				429: TooManyRequestsError,
-			}),
-			detail: {
-				summary: "Login",
-				description:
-					"Autentica un utente e restituisce i dati utente, entrambi i profili (customer e seller se esistenti) e token di sessione. Il campo 'role' indica il ruolo primario.",
-				tags: ["Auth"],
-			},
+			return send(c, SignInResponse, ok(data));
 		},
 	);
+
+/** Tipo per il client `hc` dei frontend (`hc<RegistrationApp>(`${API_URL}/register`)`). */
+export type RegistrationApp = typeof registrationApp;

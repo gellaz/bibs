@@ -10,10 +10,11 @@ import {
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useStores } from "@/hooks/use-stores";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface Props {
@@ -44,13 +45,15 @@ export function StoreAssignmentDialog({
 	const assignMutation = useMutation({
 		mutationFn: async () => {
 			const stock = Number.parseInt(initialStock, 10);
-			const response = await api()
-				.seller.products({ productId })
-				.stores.post({
+			const response = await sellerApi.products[":productId"].stores.$post({
+				param: { productId },
+				json: {
 					storeIds: Array.from(selected),
 					stock: Number.isNaN(stock) ? 0 : stock,
-				});
-			return unwrap(response, m.products_store_assignment_error()).data;
+				},
+			});
+			return (await unwrapJson(response, m.products_store_assignment_error()))
+				.data;
 		},
 		onSuccess: (data) => {
 			void queryClient.invalidateQueries({ queryKey: ["product", productId] });

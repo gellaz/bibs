@@ -1,29 +1,19 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
 import { storesRoutes } from "@/modules/seller/routes/stores";
-import { errorHandler } from "@/plugins/error-handler";
+import { withVars } from "../helpers/hono-app";
 
-// storesRoutes carries no auth itself (the guard is applied when mounted in
-// sellerModule), so we can mount it bare and exercise request-body validation,
+// storesRoutes is mounted with the seller context already resolved
+// (withVars skips the seller guard), so we exercise request-body validation,
 // which runs before the handler. A well-formed body passes validation and
-// reaches the handler, which throws 403 via requireOwner (no resolved owner in
-// this bare context) — i.e. anything that is NOT 422 means validation passed.
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(storesRoutes);
+// reaches the handler, which throws 403 via requireOwner (the resolved caller
+// is not the owner) — i.e. anything that is NOT 422 means validation passed.
+const app = withVars(storesRoutes, {
+	user: { id: "u" },
+	seller: { isOwner: false },
+});
 
 function patchStore(body: unknown) {
-	return app.handle(
+	return app.request(
 		new Request("http://localhost/stores/some-id", {
 			method: "PATCH",
 			headers: { "content-type": "application/json" },
@@ -71,5 +61,17 @@ describe("PATCH /stores — openingHours validation", () => {
 	it("accepts openingHours: null on PATCH (clear hours)", async () => {
 		const res = await patchStore({ openingHours: null });
 		expect(res.status).not.toBe(422);
+	});
+});
+
+describe("PATCH /stores — websiteUrl maxLength in unità UTF-16", () => {
+	it("501 unità (257 code point): 422 sulla lunghezza, non sul formato", async () => {
+		const res = await patchStore({
+			websiteUrl: `https://x.it/${"😀".repeat(244)}`,
+		});
+		expect(res.status).toBe(422);
+		expect((await res.json()).message).toBe(
+			"Sito web: al massimo 500 caratteri",
+		);
 	});
 });

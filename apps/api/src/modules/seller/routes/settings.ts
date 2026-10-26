@@ -1,27 +1,31 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
+import { SellerSettingsSchema } from "@/lib/schemas/composed";
 import {
 	OnlinePaymentsSchema,
 	OrganizationSchema,
-	okRes,
 	SellerProfileChangeSchema,
 	SellerProfileSchema,
-	withConflictErrors,
-	withErrors,
-} from "@/lib/schemas";
-import { SellerSettingsSchema } from "@/lib/schemas/composed";
+} from "@/lib/schemas/entities";
 import {
 	CompanySettingsBody,
 	DocumentChangeBody,
 	PersonalSettingsBody,
 	VatChangeBody,
-} from "@/lib/schemas/forms";
+} from "@/lib/schemas/forms/settings";
+import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
+import { zFile } from "@/lib/schemas/t";
 import {
 	createOnboardingLink,
 	syncOnlinePayments,
 } from "@/modules/billing/services/connect-account";
-import { requireOwner, withSeller } from "../context";
+import { requireOwner } from "../context";
 import {
 	cancelSellerChange,
 	getSellerSettings,
@@ -31,183 +35,193 @@ import {
 	updatePersonalSettings,
 } from "../services/settings";
 
-export const settingsRoutes = new Elysia({ prefix: "/settings" })
+const SettingsRes = okRes(SellerSettingsSchema);
+const ProfileRes = okRes(SellerProfileSchema);
+const OrganizationRes = okRes(OrganizationSchema);
+const ChangeRes = okRes(SellerProfileChangeSchema);
+const LinkRes = okRes(z.object({ url: z.string() }));
+const PaymentsRes = okRes(OnlinePaymentsSchema);
+
+const detail = (summary: string, description: string) => ({
+	summary,
+	description,
+	tags: ["Seller - Settings"],
+	security: [{ bearerAuth: [] }],
+});
+
+export const settingsRoutes = new Hono()
 	.get(
-		"/",
-		async (ctx) => {
-			const { sellerProfile, store, isOwner, user } = withSeller(ctx);
-			const pino = getLogger(store);
+		"/settings",
+		doc({
+			// Prima di Hono era `/settings/` (prefisso + "/"): /openapi resta quello.
+			path: "/settings/",
+			response: withErrors({ 200: SettingsRes }),
+			detail: detail(
+				"Impostazioni venditore",
+				"Restituisce il profilo completo del venditore con organizzazione, stato dei pagamenti online e richieste di modifica in attesa.",
+			),
+		}),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile, isOwner } = c.var.seller;
 			const data = await getSellerSettings({
 				sellerProfileId: sellerProfile.id,
-				userId: user.id,
+				userId: c.var.user.id,
 				isOwner,
 			});
 
-			pino.info(
+			logger.info(
 				{ sellerId: sellerProfile.id, action: "get_seller_settings" },
 				"Seller settings retrieved",
 			);
 
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(SellerSettingsSchema) }),
-			detail: {
-				summary: "Impostazioni venditore",
-				description:
-					"Restituisce il profilo completo del venditore con organizzazione, stato dei pagamenti online e richieste di modifica in attesa.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, SettingsRes, ok(data));
 		},
 	)
 	.patch(
-		"/personal",
-		async (ctx) => {
-			const { sellerProfile: sp, user, store, isOwner } = withSeller(ctx);
+		"/settings/personal",
+		doc({
+			response: withErrors({ 200: ProfileRes }),
+			detail: detail(
+				"Aggiorna dati anagrafici",
+				"Aggiorna i dati anagrafici del venditore (modifica libera, nessuna approvazione richiesta). Solo il titolare può modificare.",
+			),
+		}),
+		v("json", PersonalSettingsBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			const pino = getLogger(store);
 			const data = await updatePersonalSettings({
 				sellerProfileId: sp.id,
-				userId: user.id,
-				...ctx.body,
+				userId: c.var.user.id,
+				...c.req.valid("json"),
 			});
 
-			pino.info(
+			logger.info(
 				{ sellerId: sp.id, action: "update_personal_settings" },
 				"Seller personal settings updated",
 			);
 
-			return ok(data);
-		},
-		{
-			body: PersonalSettingsBody,
-			response: withErrors({ 200: okRes(SellerProfileSchema) }),
-			detail: {
-				summary: "Aggiorna dati anagrafici",
-				description:
-					"Aggiorna i dati anagrafici del venditore (modifica libera, nessuna approvazione richiesta). Solo il titolare può modificare.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, ProfileRes, ok(data));
 		},
 	)
 	.patch(
-		"/company",
-		async (ctx) => {
-			const { sellerProfile: sp, store, isOwner } = withSeller(ctx);
+		"/settings/company",
+		doc({
+			response: withErrors({ 200: OrganizationRes }),
+			detail: detail(
+				"Aggiorna dati aziendali",
+				"Aggiorna i dati aziendali (ragione sociale, forma giuridica, indirizzo sede). La partita IVA non è modificabile da qui. Solo il titolare può modificare.",
+			),
+		}),
+		v("json", CompanySettingsBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			const pino = getLogger(store);
 			const data = await updateCompanySettings({
 				sellerProfileId: sp.id,
-				...ctx.body,
+				...c.req.valid("json"),
 			});
 
-			pino.info(
+			logger.info(
 				{ sellerId: sp.id, action: "update_company_settings" },
 				"Seller company settings updated",
 			);
 
-			return ok(data);
-		},
-		{
-			body: CompanySettingsBody,
-			response: withErrors({ 200: okRes(OrganizationSchema) }),
-			detail: {
-				summary: "Aggiorna dati aziendali",
-				description:
-					"Aggiorna i dati aziendali (ragione sociale, forma giuridica, indirizzo sede). La partita IVA non è modificabile da qui. Solo il titolare può modificare.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, OrganizationRes, ok(data));
 		},
 	)
 	.patch(
-		"/vat",
-		async (ctx) => {
-			const { sellerProfile: sp, store, isOwner } = withSeller(ctx);
+		"/settings/vat",
+		doc({
+			response: withConflictErrors({ 200: ChangeRes }),
+			detail: detail(
+				"Richiedi cambio partita IVA",
+				"Crea una richiesta di modifica della partita IVA. Richiede approvazione admin. Durante la review il seller non può ricevere nuovi ordini. Solo il titolare può richiedere.",
+			),
+		}),
+		v("json", VatChangeBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			const pino = getLogger(store);
-			const data = await requestVatChange({
-				sellerProfileId: sp.id,
-				...ctx.body,
-			});
+			const body = c.req.valid("json");
+			const data = await requestVatChange({ sellerProfileId: sp.id, ...body });
 
-			pino.info(
+			logger.info(
 				{
 					sellerId: sp.id,
-					newVatNumber: ctx.body.vatNumber,
+					newVatNumber: body.vatNumber,
 					action: "request_vat_change",
 				},
 				"Seller VAT change requested",
 			);
 
-			return ok(data);
-		},
-		{
-			body: VatChangeBody,
-			response: withConflictErrors({
-				200: okRes(SellerProfileChangeSchema),
-			}),
-			detail: {
-				summary: "Richiedi cambio partita IVA",
-				description:
-					"Crea una richiesta di modifica della partita IVA. Richiede approvazione admin. Durante la review il seller non può ricevere nuovi ordini. Solo il titolare può richiedere.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, ChangeRes, ok(data));
 		},
 	)
 	.patch(
-		"/document",
-		async (ctx) => {
-			const { sellerProfile: sp, store, isOwner } = withSeller(ctx);
+		"/settings/document",
+		doc({
+			response: withConflictErrors({ 200: ChangeRes }),
+			detail: detail(
+				"Richiedi aggiornamento documento",
+				"Crea una richiesta di aggiornamento del documento di identità. Richiede approvazione admin. L'operatività del negozio non viene interrotta. Solo il titolare può richiedere.",
+			),
+		}),
+		v(
+			"form",
+			DocumentChangeBody.extend({
+				documentImage: zFile({
+					type: "image",
+					description: "Nuova foto del documento d'identità",
+				}).optional(),
+			}),
+		),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			const pino = getLogger(store);
+			const body = c.req.valid("form");
 			const data = await requestDocumentChange({
 				sellerProfileId: sp.id,
-				documentType: ctx.body.documentType,
-				documentNumber: ctx.body.documentNumber,
-				documentExpiry: ctx.body.documentExpiry,
-				documentIssuedMunicipalityId: ctx.body.documentIssuedMunicipalityId,
-				documentImage: (ctx as any).body?.documentImage,
+				documentType: body.documentType,
+				documentNumber: body.documentNumber,
+				documentExpiry: body.documentExpiry,
+				documentIssuedMunicipalityId: body.documentIssuedMunicipalityId,
+				documentImage: body.documentImage,
 			});
 
-			pino.info(
+			logger.info(
 				{ sellerId: sp.id, action: "request_document_change" },
 				"Seller document change requested",
 			);
 
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				...DocumentChangeBody.properties,
-				documentImage: t.Optional(
-					t.File({
-						type: "image",
-						description: "Nuova foto del documento d'identità",
-					}),
-				),
-			}),
-			response: withConflictErrors({
-				200: okRes(SellerProfileChangeSchema),
-			}),
-			detail: {
-				summary: "Richiedi aggiornamento documento",
-				description:
-					"Crea una richiesta di aggiornamento del documento di identità. Richiede approvazione admin. L'operatività del negozio non viene interrotta. Solo il titolare può richiedere.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, ChangeRes, ok(data));
 		},
 	)
 	.patch(
-		"/changes/:changeId/cancel",
-		async (ctx) => {
-			const { sellerProfile: sp, store, isOwner } = withSeller(ctx);
+		"/settings/changes/:changeId/cancel",
+		doc({
+			response: withErrors({ 200: ChangeRes }),
+			detail: detail(
+				"Annulla richiesta di modifica",
+				"Annulla una richiesta di modifica ancora in attesa. Per la partita IVA toglie anche il blocco dei nuovi ordini. Solo il titolare.",
+			),
+		}),
+		v("param", z.object({ changeId: z.string() })),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await cancelSellerChange({
 				sellerProfileId: sp.id,
-				changeId: ctx.params.changeId,
+				changeId: c.req.valid("param").changeId,
 			});
 
-			getLogger(store).info(
+			logger.info(
 				{
 					sellerId: sp.id,
 					changeId: data.id,
@@ -216,58 +230,46 @@ export const settingsRoutes = new Elysia({ prefix: "/settings" })
 				"Seller change request cancelled",
 			);
 
-			return ok(data);
-		},
-		{
-			params: t.Object({ changeId: t.String() }),
-			response: withErrors({ 200: okRes(SellerProfileChangeSchema) }),
-			detail: {
-				summary: "Annulla richiesta di modifica",
-				description:
-					"Annulla una richiesta di modifica ancora in attesa. Per la partita IVA toglie anche il blocco dei nuovi ordini. Solo il titolare.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, ChangeRes, ok(data));
 		},
 	)
 	.post(
-		"/payments/onboarding",
-		async (ctx) => {
-			const { sellerProfile: sp, store, isOwner, user } = withSeller(ctx);
+		"/settings/payments/onboarding",
+		doc({
+			response: withErrors({ 200: LinkRes }),
+			detail: detail(
+				"Link di attivazione pagamenti online",
+				"Crea il conto Stripe Connect del venditore se manca e restituisce il link all'onboarding ospitato da Stripe. Il link scade in pochi minuti. Solo il titolare.",
+			),
+		}),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await createOnboardingLink({
 				sellerProfileId: sp.id,
-				email: user.email,
+				email: c.var.user.email,
 			});
-			getLogger(store).info(
+			logger.info(
 				{ sellerId: sp.id, action: "connect_onboarding_link" },
 				"Connect onboarding link created",
 			);
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(t.Object({ url: t.String() })) }),
-			detail: {
-				summary: "Link di attivazione pagamenti online",
-				description:
-					"Crea il conto Stripe Connect del venditore se manca e restituisce il link all'onboarding ospitato da Stripe. Il link scade in pochi minuti. Solo il titolare.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, LinkRes, ok(data));
 		},
 	)
 	.post(
-		"/payments/sync",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+		"/settings/payments/sync",
+		doc({
+			response: withErrors({ 200: PaymentsRes }),
+			detail: detail(
+				"Aggiorna stato pagamenti online",
+				"Rilegge il conto Stripe Connect e aggiorna lo stato salvato. Da chiamare al ritorno dall'onboarding. Solo il titolare.",
+			),
+		}),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			return ok(await syncOnlinePayments(sp.id));
-		},
-		{
-			response: withErrors({ 200: okRes(OnlinePaymentsSchema) }),
-			detail: {
-				summary: "Aggiorna stato pagamenti online",
-				description:
-					"Rilegge il conto Stripe Connect e aggiorna lo stato salvato. Da chiamare al ritorno dall'onboarding. Solo il titolare.",
-				tags: ["Seller - Settings"],
-			},
+			return send(c, PaymentsRes, ok(await syncOnlinePayments(sp.id)));
 		},
 	);
