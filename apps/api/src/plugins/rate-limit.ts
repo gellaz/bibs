@@ -108,7 +108,7 @@ function emailKey(body: unknown): string {
 
 /**
  * Middleware Hono che limita una route (D12 del piano Hono). Va dopo i `v()` e
- * dopo l'auth, come il `beforeHandle` di Elysia: un input non valido non
+ * dopo l'auth, come il `beforeHandle` di prima: un input non valido non
  * consuma budget e la chiave `email` è quella del body validato (trimmato).
  * better-auth's own rate limiter does not cover our server-side `auth.api.*`
  * calls, so we guard the registration / sign-in routes here. Each call gets its
@@ -136,10 +136,9 @@ export function rateLimit(options: RateLimitOptions) {
 				}
 			}
 
-			// Sotto il mount di Elysia (strangler) il server di Bun non arriva a
-			// Hono, ma l'hook globale di `plugins/better-auth.ts` ha già scritto in
-			// x-forwarded-for l'IP del socket: si legge da lì. Con `Bun.serve` (U11)
-			// il server arriva come `env`.
+			// Su un server vero (`Bun.serve({ fetch: app.fetch })`, src/index.ts)
+			// il server di Bun arriva come `env`: IP del socket. Senza socket
+			// (`app.request`, i test, la CLI) vale il primo x-forwarded-for.
 			const server: RequestIpResolver | null =
 				typeof c.env?.requestIP === "function" ? c.env : null;
 			const ip = clientIp(c.req.raw, server, trustProxy || !server);

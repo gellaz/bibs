@@ -8,7 +8,7 @@ import { type Target, VALIDATES, type Validates } from "./validator";
 // una guardia o `publicRoute`) ogni route deve avere una guardia del modulo
 // (es. `requireAdmin` per /admin: `requireAuth` non basta) o `publicRoute`, se
 // il modulo dichiara `"publicRoute"`; i `v()` vengono prima dell'auth e
-// nell'ordine di Elysia: params, query, body.
+// nell'ordine di sempre: params, query, body.
 
 /** Le guardie di D9: `requireAuth` e i middleware di ruolo. */
 export type GuardTag = "auth" | "customer" | "seller" | "sellerRole" | "admin";

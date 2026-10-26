@@ -73,7 +73,7 @@ describe("hoursAction", () => {
 		}
 	});
 
-	it("chiuso adesso → low, con la riapertura (anche se Eden ha idratato una Date)", () => {
+	it("chiuso adesso → low, con la riapertura (anche con una Date già idratata)", () => {
 		const a = hoursAction({
 			isOpen: false,
 			status: "closed",

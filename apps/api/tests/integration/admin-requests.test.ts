@@ -42,7 +42,7 @@ import {
 import { testRequest, withVars } from "../helpers/hono-app";
 
 // Utente admin già risolto a monte (D13 del piano Hono): `requireAdmin` non
-// rilegge la sessione, come le route nude dell'harness Elysia di prima.
+// rilegge la sessione, come le route nude dell'harness di prima.
 const app = withVars(requestsRoutes, {
 	user: { id: "admin-1", role: "admin" },
 });

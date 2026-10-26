@@ -27,10 +27,10 @@ import { truncateAll } from "../helpers/cleanup";
 import { signIn, testRequest } from "../helpers/hono-app";
 
 // Le route admin di U8 e il catalogo pubblico sulla sub-app Hono (con la sua
-// fabbrica, senza Elysia), con sessioni better-auth vere: guardia admin dopo
+// fabbrica, da sola), con sessioni better-auth vere: guardia admin dopo
 // la validazione (422 prima di 401/403), import CSV col FormData che
 // costruisce il client `hc`, DELETE con corpo JSON. Attesi catturati su
-// Elysia (`baseline/hono-batch-admin-1.jsonl`).
+// prima della migrazione (`baseline/hono-batch-admin-1.jsonl`).
 
 let adminApp: typeof import("@/modules/admin").adminApp;
 let catalog: typeof import("@/modules/catalog");
@@ -196,7 +196,7 @@ describe("import CSV col FormData del client hc", () => {
 });
 
 describe("scritture admin attraverso le route", () => {
-	it("PATCH di una macro senza aliquota la riporta al 22% (default di Elysia)", async () => {
+	it("PATCH di una macro senza aliquota la riporta al 22% (default di prima)", async () => {
 		const { cookie } = await signIn("admin-vat-u8@test.com", "admin");
 		const api = client(cookie);
 		const created = await api["product-macro-categories"].$post({

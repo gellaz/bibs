@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zFormat, zString } from "../t";
+import { zFormat, zString } from "@/lib/schemas/t";
 
 // Gemelli Zod di `lib/schemas/forms/onboarding.ts` (D3 del piano Hono), stessi
 // nomi; si aggiungono quando una route migrata li usa. In U11b prendono il

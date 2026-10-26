@@ -10,13 +10,13 @@ import {
 } from "./formats";
 import { firstIssue, type Issue, issueRule, type RuleParams } from "./issues";
 
-// Costruttori Zod con la semantica dei tipi propri di Elysia (`t.Integer`,
+// Costruttori Zod con la semantica dei tipi propri del framework di prima (`t.Integer`,
 // `t.Date`, `t.File`, `t.Files`, la coercizione di query e params, i formati):
 // accettano e rifiutano gli stessi valori, danno la stessa regola nel 422 e lo
 // stesso JSON Schema in /openapi. Per tutto il resto i gemelli usano Zod
 // normale (`z.string().regex()`, `z.object`, `z.enum`, `.nullable()`, …) e i
 // metadati con `.meta({ title, description, error })`. Corrispondenze da
-// tenere: `t.Integer` di Elysia → `zInteger` (accetta "5"), `Type.Integer` di
+// tenere: `t.Integer` di prima → `zInteger` (accetta "5"), `Type.Integer` di
 // TypeBox → `zInt()` (non accetta stringhe; mai `z.int()`: vedi
 // `integerCheck`); `t.String({ minLength, maxLength })` → `zString` (mai
 // `z.string().min/max`: contano i code point); `t.Union` di oggetti →
@@ -25,11 +25,11 @@ import { firstIssue, type Issue, issueRule, type RuleParams } from "./issues";
 type Json = Record<string, unknown>;
 
 /**
- * JSON Schema identico a quello che TypeBox scrive per il tipo di Elysia, per
+ * JSON Schema identico a quello che TypeBox scriveva per il tipo di prima, per
  * `/openapi` (vedi `src/http/openapi.ts`). Chiave: la `def`, che `.meta()` e i
  * cloni di Zod conservano.
  */
-export const elysiaJson = new WeakMap<object, Json>();
+export const typeboxJson = new WeakMap<object, Json>();
 
 /** Tipo di file ammesso (controllo dei magic byte dopo la validazione). */
 export const fileExtensions = new WeakMap<object, string | string[]>();
@@ -37,7 +37,7 @@ export const fileExtensions = new WeakMap<object, string | string[]>();
 const defOf = (schema: z.ZodType) => schema._zod.def as object;
 
 function register<S extends z.ZodType>(schema: S, json: Json): S {
-	elysiaJson.set(defOf(schema), json);
+	typeboxJson.set(defOf(schema), json);
 	return schema;
 }
 
@@ -65,12 +65,12 @@ function fail(ctx: Ctx, input: unknown, rule: ValidationRule, decode = false) {
 
 const ruleOf = (issues: Issue[]) => issueRule(firstIssue(issues));
 
-// Le risposte (`send()`) Elysia le controlla e poi le codifica, senza
+// Le risposte (`send()`) si controllano e poi si codificano, senza
 // decodificarle: «5» per un t.Integer esce com'è, un numero per un t.Date è
 // un 500 (l'Encode di t.Date vuole una data o una stringa).
 let encoding = false;
 
-/** Esegue `fn` (un parse sincrono) con la semantica di risposta di Elysia. */
+/** Esegue `fn` (un parse sincrono) con la semantica di risposta di prima. */
 export function asResponse<T>(fn: () => T): T {
 	encoding = true;
 	try {
@@ -100,7 +100,7 @@ function withDefault<S extends z.ZodType, O>(
 
 // ── formati ─────────────────────────────────────────────────────────────────
 
-/** `t.String({ format })` con il formato di Elysia (o il nostro calendar-date). */
+/** `t.String({ format })` con il formato di prima (o il nostro calendar-date). */
 export const zFormat = (format: FormatName) =>
 	z.stringFormat(format, FORMATS[format]);
 
@@ -110,7 +110,7 @@ export interface StringOptions extends Meta {
 	minLength?: number;
 	maxLength?: number;
 	pattern?: string;
-	/** Formato di Elysia (`t.String({ format, maxLength })`): issue di `zFormat`. */
+	/** Formato di prima (`t.String({ format, maxLength })`): issue di `zFormat`. */
 	format?: FormatName;
 }
 
@@ -207,10 +207,10 @@ const parseRule = (schema: z.ZodType, value: unknown) => {
 };
 
 /**
- * `t.Integer` di Elysia: intero, o stringa che rappresenta un intero (anche nel
+ * `t.Integer` di prima: intero, o stringa che rappresenta un intero (anche nel
  * body JSON e nel multipart). La stringa passa il controllo e si decodifica
  * dopo: se il numero non rispetta i vincoli, l'errore perde il campo
- * («Valore non valido: deve essere almeno 1»), come in Elysia.
+ * («Valore non valido: deve essere almeno 1»), come prima.
  */
 export function zInteger<O extends NumberOptions & { default?: number }>(
 	options: O = {} as O,
@@ -250,7 +250,7 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 	return withDefault<typeof schema, O>(schema, defaultValue, json);
 }
 
-/** Query e params: `t.Number` diventa il `Numeric` di Elysia. */
+/** Query e params: `t.Number` diventa il `Numeric` di prima. */
 export function zNumeric(inner: z.ZodType) {
 	return z
 		.custom<number | string>(() => true)
@@ -270,7 +270,7 @@ export function zNumeric(inner: z.ZodType) {
 		});
 }
 
-/** Query e params: `t.Boolean` diventa il `BooleanString` di Elysia. */
+/** Query e params: `t.Boolean` diventa il `BooleanString` di prima. */
 export function zBooleanString(inner: z.ZodType) {
 	return z
 		.custom<boolean | string>(() => true)
@@ -289,7 +289,7 @@ export function zBooleanString(inner: z.ZodType) {
 // ── date ────────────────────────────────────────────────────────────────────
 
 /**
- * `t.Date` di Elysia: `Date`, stringa `date-time` (largo, di Elysia) o `date`
+ * `t.Date` di prima: `Date`, stringa `date-time` (largo, come prima) o `date`
  * (ISO stretto, vedi `formats.ts`) o timestamp numerico, decodificati in `Date`. In risposta il `Date`
  * esce come stringa ISO con `JSON.stringify`.
  */
@@ -354,7 +354,7 @@ const fileSize = (size: number | string) =>
 				? +size.slice(0, -1) * 1048576
 				: +size;
 
-/** Il tipo dichiarato (o rilevato) rispetta `type`, come `checkFileExtension` di Elysia. */
+/** Il tipo dichiarato (o rilevato) rispetta `type`, come `checkFileExtension` di prima. */
 export const matchesFileType = (mime: string, type: string | string[]) =>
 	[type]
 		.flat()
@@ -373,7 +373,7 @@ function validFile(o: FileOptions, value: unknown) {
 	);
 }
 
-/** `t.File` di Elysia. */
+/** `t.File` di prima. */
 export function zFile(options: FileOptions = {}) {
 	const schema = z
 		.custom<File>(() => true)
@@ -394,7 +394,7 @@ export function zFile(options: FileOptions = {}) {
 	});
 }
 
-/** `t.Files` di Elysia: un file solo diventa un array di un elemento. */
+/** `t.Files` di prima: un file solo diventa un array di un elemento. */
 export function zFiles(
 	options: FileOptions & { minItems?: number; maxItems?: number } = {},
 ) {
@@ -415,7 +415,6 @@ export function zFiles(
 	if (options.type) fileExtensions.set(defOf(schema), options.type);
 	return register(schema, {
 		...options,
-		elysiaMeta: "Files",
 		default: "Files",
 		extension: options.type,
 		type: "array",

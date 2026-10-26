@@ -1,7 +1,7 @@
 /**
  * Recursively trims all string values in the given value, except under
  * password keys. Preserves File/Blob, Date, and other non-plain objects.
- * Used by the Elysia `normalize` plugin and by the Hono validator (`v()`).
+ * Used by the Hono validator (`v()`) on every JSON and form body.
  */
 export function deepTrim(value: unknown): unknown {
 	if (typeof value === "string") return value.trim();

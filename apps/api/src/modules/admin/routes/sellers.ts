@@ -6,17 +6,17 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
-import { SellerProfileWithUserSchema } from "@/lib/zod/composed";
-import { SellerProfileSchema } from "@/lib/zod/entities";
-import { RejectSellerBody } from "@/lib/zod/forms/seller-rejection";
-import { SellerListQuery } from "@/lib/zod/queries";
+import { SellerProfileWithUserSchema } from "@/lib/schemas/composed";
+import { SellerProfileSchema } from "@/lib/schemas/entities";
+import { SellerListQuery } from "@/lib/schemas/queries";
 import {
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { zDate } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import { zDate } from "@/lib/schemas/t";
+import { RejectSellerBody } from "@/lib/zod/forms/seller-rejection";
 import { adminDetail } from "../context";
 import {
 	countSellersByStatus,

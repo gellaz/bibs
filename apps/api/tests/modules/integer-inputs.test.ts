@@ -1,48 +1,34 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
 import { moduleApp } from "@/http/app";
 import { ordersRoutes } from "@/modules/customer/routes/orders";
 import { locationsApp } from "@/modules/locations";
 import { sellerApp } from "@/modules/seller";
-import { errorHandler } from "@/plugins/error-handler";
 import { testRequest } from "../helpers/hono-app";
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-// Mounted bare: validation runs before any guard or handler, so a fractional
-// value in an integer field must come back as a 422, never reach the DB
-// (22P02 → 500). Everything else in each request is valid on purpose.
-// Stock, product images, brands, stores and store images are on Hono (seller
-// sub-app, mounted at the root: the Elysia routes win, the rest reaches it);
-// there the guard sits in each route after its validators, so the 422 still
-// comes first.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.mount(sellerApp.fetch);
+// The seller sub-app on its own (paths relative to /seller): validation runs
+// before any guard or handler, so a fractional value in an integer field must
+// come back as a 422, never reach the DB (22P02 → 500). Everything else in
+// each request is valid on purpose. The guard sits in each route after its
+// validators, so the 422 still comes first.
+const app = sellerApp;
 
 // Modulo customer: sub-app Hono (piano Hono, U3).
 const customer = moduleApp().route("/", ordersRoutes);
 
 function json(method: string, path: string, body: unknown) {
-	return app.handle(
-		new Request(`http://localhost${path}`, {
-			method,
-			body: JSON.stringify(body),
-			headers: { "content-type": "application/json" },
-		}),
+	return Promise.resolve(
+		app.request(
+			new Request(`http://localhost${path}`, {
+				method,
+				body: JSON.stringify(body),
+				headers: { "content-type": "application/json" },
+			}),
+		),
 	);
 }
 
 function get(path: string) {
-	return app.handle(new Request(`http://localhost${path}`));
+	return Promise.resolve(app.request(new Request(`http://localhost${path}`)));
 }
 
 // /locations è una sub-app Hono (montata su /locations: path relativi).
@@ -62,8 +48,10 @@ function multipart(path: string, position: string) {
 	const form = new FormData();
 	form.append("files", new File([PNG], "a.png", { type: "image/png" }));
 	form.append("position", position);
-	return app.handle(
-		new Request(`http://localhost${path}`, { method: "POST", body: form }),
+	return Promise.resolve(
+		app.request(
+			new Request(`http://localhost${path}`, { method: "POST", body: form }),
+		),
 	);
 }
 

@@ -32,8 +32,9 @@ import { signIn, testRequest } from "../helpers/hono-app";
 // Le route admin di U9 sulla sub-app Hono con sessioni better-auth vere:
 // guardia admin dopo la validazione (422 prima di 401/403), moderazione con
 // `expectedUpdatedAt` preso dalla lista come fa il FE (stringa ISO, niente
-// `Date` di Eden) e 409 ottimistico, indice `/requests/` con e senza slash.
-// Attesi catturati su Elysia (`baseline/hono-batch-admin-2.jsonl`).
+// `Date` del client di prima) e 409 ottimistico, indice `/requests/` con e
+// senza slash. Attesi catturati prima della migrazione
+// (`baseline/hono-batch-admin-2.jsonl`).
 
 let adminApp: typeof import("@/modules/admin").adminApp;
 
@@ -200,7 +201,7 @@ describe("moderazione dal client hc", () => {
 });
 
 describe("richieste", () => {
-	it("l'indice risponde con e senza slash finale, come in Elysia", async () => {
+	it("l'indice risponde con e senza slash finale, come prima", async () => {
 		await pendingSeller("richiesta-u9@test.com");
 		const { cookie } = await signIn("admin3-u9@test.com", "admin");
 		for (const path of ["/requests", "/requests/"]) {

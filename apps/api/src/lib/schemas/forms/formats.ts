@@ -2,7 +2,8 @@ import { FormatRegistry } from "@sinclair/typebox";
 
 /**
  * `format: "calendar-date"`: an RFC 3339 full-date (YYYY-MM-DD) that exists on
- * the calendar. Not Elysia's `date`: that one is lenient (`2024-02-30` passes,
+ * the calendar. Not the `date` of the API's previous framework: that one is
+ * lenient (`2024-02-30` passes,
  * because `new Date()` rolls it over to 1 March), and it is registered
  * first-come, so a stricter `date` of ours would silently lose on the API.
  * A name of our own is set unconditionally and means the same thing on the

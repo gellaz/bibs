@@ -77,7 +77,7 @@ export const auth = betterAuth({
 		revokeSessionsOnPasswordReset: true,
 		sendResetPassword: async ({ user, url }) => {
 			// better-auth generates URLs using basePath "/api", but the handler
-			// is mounted at "/auth" in Elysia, so the public path is "/auth/api/..."
+			// is mounted at "/auth" (src/app.ts), so the public path is "/auth/api/..."
 			const fixed = new URL(url);
 			fixed.pathname = `/auth${fixed.pathname}`;
 			const resetUrl = fixed.toString();
@@ -115,7 +115,7 @@ export const auth = betterAuth({
 		sendOnSignUp: false,
 		sendVerificationEmail: async ({ user, url }) => {
 			// better-auth generates URLs using basePath "/api", but the handler
-			// is mounted at "/auth" in Elysia, so the public path is "/auth/api/..."
+			// is mounted at "/auth" (src/app.ts), so the public path is "/auth/api/..."
 			const fixed = new URL(url);
 			fixed.pathname = `/auth${fixed.pathname}`;
 			const verifyUrl = fixed.toString();

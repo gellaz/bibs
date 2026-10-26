@@ -42,7 +42,7 @@ import { signIn, testRequest } from "../helpers/hono-app";
 
 // Le route di U7 (ordini, promozioni, checkout negozio, billing) sulla
 // sub-app Hono, con sessioni better-auth vere: guardia seller, solo titolare,
-// scritture e corpi delle risposte. Le risposte sono quelle di Elysia prima
+// scritture e corpi delle risposte. Le risposte sono quelle dell'API di prima
 // della migrazione: il file è nato contro `sellerModule` (commit 0642ef27,
 // verde) e da allora cambia solo `call()`.
 

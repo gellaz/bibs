@@ -36,7 +36,6 @@
 	},
 	"catalog": {
 		"@aws-sdk/client-s3": "^3.1156.0",
-		"@elysiajs/eden": "^1.4.9",
 		"@hookform/resolvers": "^5.9.2",
 		"@inlang/paraglide-js": "^2.29.1",
 		"@rolldown/plugin-babel": "^0.2.4",
@@ -65,7 +64,6 @@
 		"@vitejs/plugin-react": "^6.1.2",
 		"babel-plugin-react-compiler": "^1.0.0",
 		"better-auth": "1.7.12",
-		"elysia": "1.4.30",
 		"hono": "5.0.0-rc.1",
 		"jsdom": "^29.1.1",
 		"leaflet": "^1.9.4",

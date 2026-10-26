@@ -72,8 +72,8 @@ describe("seller employee management is owner-only", () => {
 	});
 });
 
-// L'email la controlla il FormatRegistry dell'app composta (`@elysiajs/openapi`
-// sovrascrive quello di Elysia): «a@b.c» è un 422, prima del 401 e del 403.
+// L'email la controlla il formato dell'app composta di prima (`FORMATS`,
+// `lib/schemas/formats.ts`): «a@b.c» è un 422, prima del 401 e del 403.
 describe("POST /employees/invite — email rifiutata dall'app composta", () => {
 	const body = JSON.stringify({ email: "a@b.c", storeIds: ["some-store"] });
 	const invalid = "Inserisci un indirizzo email valido";

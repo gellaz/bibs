@@ -50,7 +50,7 @@ import { signIn, testRequest } from "../helpers/hono-app";
 // Le route di U5 (prodotti, brand, immagini, caratteristiche, stock) sulla
 // sub-app Hono, con sessioni better-auth vere: guardia seller (i quattro 403
 // di `resolveSellerAccess`), scritture, multipart, strip in ingresso e in
-// uscita. Le risposte sono quelle di Elysia prima della migrazione: il file è
+// uscita. Le risposte sono quelle dell'API prima della migrazione: il file è
 // nato contro `sellerModule` (commit eba68c30, verde) e da allora cambia solo
 // `call()`.
 

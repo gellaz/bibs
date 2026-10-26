@@ -1,11 +1,26 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
-import { normalize } from "@/plugins/normalize";
+import { z } from "zod";
+import { moduleApp } from "@/http/app";
+import { v } from "@/http/validator";
 
-const app = new Elysia().use(normalize).post("/", ({ body }) => body);
+// Il trim dei body (`lib/deep-trim.ts`): fino a U11 lo faceva il plugin
+// `normalize` dell'app di prima, oggi lo fa `v()` prima della validazione.
+const app = moduleApp().post(
+	"/",
+	v(
+		"json",
+		z.object({
+			email: z.string().optional(),
+			org: z.object({ name: z.string() }).optional(),
+			password: z.string().optional(),
+			confirmPassword: z.string().optional(),
+		}),
+	),
+	(c) => c.json(c.req.valid("json")),
+);
 
 async function post(body: unknown) {
-	const res = await app.handle(
+	const res = await app.request(
 		new Request("http://localhost/", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
@@ -23,7 +38,7 @@ describe("normalize", () => {
 		});
 	});
 
-	// Il login passa da better-auth, dove il plugin non agisce: una password
+	// Il login passa da better-auth, dove il trim non agisce: una password
 	// trimmata solo in registrazione non coinciderebbe più al login.
 	it("leaves password fields untouched", async () => {
 		expect(

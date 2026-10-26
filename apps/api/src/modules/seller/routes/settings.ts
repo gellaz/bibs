@@ -6,21 +6,21 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
-import { SellerSettingsSchema } from "@/lib/zod/composed";
+import { SellerSettingsSchema } from "@/lib/schemas/composed";
 import {
 	OnlinePaymentsSchema,
 	OrganizationSchema,
 	SellerProfileChangeSchema,
 	SellerProfileSchema,
-} from "@/lib/zod/entities";
+} from "@/lib/schemas/entities";
+import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
+import { zFile } from "@/lib/schemas/t";
 import {
 	CompanySettingsBody,
 	DocumentChangeBody,
 	PersonalSettingsBody,
 	VatChangeBody,
 } from "@/lib/zod/forms/settings";
-import { okRes, withConflictErrors, withErrors } from "@/lib/zod/responses";
-import { zFile } from "@/lib/zod/t";
 import {
 	createOnboardingLink,
 	syncOnlinePayments,
@@ -53,7 +53,7 @@ export const settingsRoutes = new Hono()
 	.get(
 		"/settings",
 		doc({
-			// In Elysia è `/settings/` (prefisso + "/"): /openapi resta quello.
+			// Prima di Hono era `/settings/` (prefisso + "/"): /openapi resta quello.
 			path: "/settings/",
 			response: withErrors({ 200: SettingsRes }),
 			detail: detail(

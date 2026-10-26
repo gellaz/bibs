@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
-// Deliberately no Elysia import: this is the seller form's path, which compiles
-// the shared schemas with TypeCompiler and never loads Elysia's formats.
+// Deliberately no API app import: this is the seller form's path, which
+// compiles the shared schemas with TypeCompiler and never loads the API's formats.
 import { DocumentBody, PersonalInfoBody } from "@/lib/schemas/forms";
 
 const personal = TypeCompiler.Compile(PersonalInfoBody);

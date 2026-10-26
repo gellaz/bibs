@@ -19,11 +19,11 @@ import { storeImagesRoutes } from "./routes/store-images";
 import { storesRoutes } from "./routes/stores";
 
 /**
- * Sub-app Hono del modulo, montata su /seller in `src/index.ts`. Ogni route
+ * Sub-app Hono del modulo, montata su /seller in `src/app.ts`. Ogni route
  * porta la sua guardia: `requireSellerRole` per profilo e onboarding,
  * `requireSeller` per il resto. In Hono risponde la prima route registrata:
  * il checkout (`/stores/checkout`, `/stores/checkout/:pendingId`) sta prima
- * delle route `/stores/:storeId/…`, come la precedenza statica di Elysia.
+ * delle route `/stores/:storeId/…`, come la precedenza statica di prima.
  */
 export const sellerApp = moduleApp()
 	.route("/", productsRoutes)
@@ -48,7 +48,7 @@ export const sellerApp = moduleApp()
 export type SellerApp = typeof sellerApp;
 
 /**
- * Le guardie del modulo route per route (`honoPaths` in `src/index.ts`, D9):
+ * Le guardie del modulo route per route (`honoPaths` in `src/app.ts`, D9):
  * profilo e onboarding accettano anche chi non ha la partita IVA verificata
  * (`requireSellerRole`), il resto vuole `requireSeller`. Così una route
  * operativa con la sola `requireSellerRole` ferma l'avvio.

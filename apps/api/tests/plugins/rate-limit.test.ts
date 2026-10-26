@@ -1,9 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
 import { z } from "zod";
+import { rootApp } from "@/app";
 import { moduleApp } from "@/http/app";
 import { v } from "@/http/validator";
-import { betterAuth } from "@/plugins/better-auth";
 import { clientIp, rateLimit } from "@/plugins/rate-limit";
 
 // Tests simulate being behind a trusted proxy so X-Forwarded-For is honoured.
@@ -160,11 +159,11 @@ describe("clientIp", () => {
 	});
 });
 
-// D12 del piano Hono: sotto il mount di Elysia Hono non riceve il server di
-// Bun, quindi l'IP è l'x-forwarded-for che l'hook globale di better-auth ha già
-// riscritto con l'IP del socket. Senza, tutti i client finirebbero nel bucket
-// "unknown"; fidandosi del valore del client, ognuno se ne farebbe uno nuovo.
-describe("rateLimit — sotto il mount di Elysia (strangler)", () => {
+// D12 del piano Hono. Su un server vero (`Bun.serve({ fetch: app.fetch })`)
+// il server di Bun arriva a Hono come `env` e l'IP è quello del socket; senza
+// socket (`app.request`, i test, la CLI) vale il primo `x-forwarded-for`, così
+// due client diversi non finiscono nello stesso bucket "unknown".
+describe("rateLimit — IP dal socket, e senza socket", () => {
 	const limited = () =>
 		moduleApp().get(
 			"/limited",
@@ -186,11 +185,9 @@ describe("rateLimit — sotto il mount di Elysia (strangler)", () => {
 	});
 
 	it("su un socket vero un x-forwarded-for falsificato non apre un bucket nuovo", async () => {
-		const app = new Elysia()
-			.use(betterAuth)
-			.mount("/rl", limited().fetch)
-			.listen(0);
-		const url = `http://localhost:${app.server?.port}/rl/limited`;
+		const app = rootApp().route("/rl", limited());
+		const server = Bun.serve({ port: 0, fetch: app.fetch });
+		const url = `http://localhost:${server.port}/rl/limited`;
 		const spoofed = (ip: string) =>
 			fetch(url, { headers: { "x-forwarded-for": ip } });
 		try {
@@ -198,13 +195,13 @@ describe("rateLimit — sotto il mount di Elysia (strangler)", () => {
 			expect((await spoofed("2.2.2.2")).status).toBe(200);
 			expect((await spoofed("3.3.3.3")).status).toBe(429);
 			// Il bucket pieno è quello del socket, non "unknown": senza socket
-			// (app.handle, nessun x-forwarded-for) la richiesta passa.
-			const noSocket = await app.handle(
+			// (app.request, nessun x-forwarded-for) la richiesta passa.
+			const noSocket = await app.request(
 				new Request("http://localhost/rl/limited"),
 			);
 			expect(noSocket.status).toBe(200);
 		} finally {
-			await app.stop();
+			await server.stop(true);
 		}
 	});
 });

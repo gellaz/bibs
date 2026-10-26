@@ -10,7 +10,7 @@ import { ok, okMessage, okPage } from "@/lib/responses";
 import {
 	SellerProductDetailSchema,
 	SellerProductListItemSchema,
-} from "@/lib/zod/composed";
+} from "@/lib/schemas/composed";
 import {
 	BulkDeleteBody,
 	BulkDeleteResult,
@@ -22,21 +22,21 @@ import {
 	ProductSchema,
 	ProductStatusBody,
 	ProductStatusCounts,
-} from "@/lib/zod/entities";
-import {
-	CharacteristicValuesField,
-	CreateProductBody,
-	VatRateSchema,
-} from "@/lib/zod/forms/products";
-import { PaginationQuery } from "@/lib/zod/pagination";
+} from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
 import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { zFile, zInteger, zString } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import { zFile, zInteger, zString } from "@/lib/schemas/t";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+	VatRateSchema,
+} from "@/lib/zod/forms/products";
 import { ensureStoreAccess } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
@@ -210,7 +210,7 @@ const ImportRes = okRes(ProductCsvImportResultSchema);
 const BulkStatusRes = okRes(BulkStatusResult);
 const BulkDeleteRes = okRes(BulkDeleteResult);
 
-// Route relative: il modulo è montato su /seller (`src/index.ts`). Le route
+// Route relative: il modulo è montato su /seller (`src/app.ts`). Le route
 // statiche (`/products/lookup`, …) prima di `/products/:productId`: in Hono
 // risponde la prima registrata.
 export const productsRoutes = new Hono()

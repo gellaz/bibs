@@ -1,6 +1,4 @@
-import type { ValueError } from "@sinclair/typebox/errors";
-import type { ValidationError } from "elysia";
-import { type ValidationRule, validationRule } from "./validation-rule";
+import type { ValidationRule } from "./validation-rule";
 
 // Etichette italiane per i campi di input che arrivano dai form, sull'ultimo
 // segmento del path. I campi assenti restano col path tecnico: utile al debug
@@ -101,13 +99,9 @@ function items(n: number): string {
 	return n === 1 ? "1 elemento" : `${n} elementi`;
 }
 
-function describeRule(error: ValueError): string {
-	return ruleText(validationRule(error));
-}
-
 /**
- * La regola violata, in italiano, senza il nome del campo. La usa anche il
- * validatore Hono (`src/http/validation-message.ts`) sulle issue di Zod.
+ * La regola violata, in italiano, senza il nome del campo. La usa il
+ * validatore (`src/http/validation-message.ts`) sulle issue di Zod.
  */
 export function ruleText(rule: ValidationRule): string {
 	switch (rule.kind) {
@@ -168,36 +162,8 @@ export function fieldLabel(path: string): string {
 		: label;
 }
 
-/**
- * Messaggio italiano per un 422 di validazione, sul primo errore: un toast ne
- * mostra uno solo. L'`error:` scritto sullo schema vince; altrimenti
- * «Etichetta: regola».
- */
-export function validationMessage(
-	error: Pick<ValidationError, "customError" | "valueError" | "type">,
-): string {
-	if (typeof error.customError === "string") return error.customError;
-
-	const valueError = error.valueError;
-	if (!valueError) return "Richiesta non valida";
-
-	const rule = describeRule(valueError);
-	if (valueError.path === "") {
-		// Errori dei Decode di Elysia (coercizione in query, t.Date): il nome del
-		// campo è perso, resta la regola.
-		if (error.type === "property") {
-			return rule === INVALID
-				? "Valore non valido"
-				: `Valore non valido: ${rule}`;
-		}
-		return "Richiesta non valida";
-	}
-	const label = valueError.schema.title ?? fieldLabel(valueError.path);
-	return `${label}: ${rule}`;
-}
-
-/** 422 di Elysia per un file il cui contenuto non corrisponde al tipo ammesso. */
+/** 422 per un file il cui contenuto non corrisponde al tipo ammesso. */
 export function invalidFileTypeMessage(property: string): string {
-	// Elysia lo dà come `body.file`: l'etichetta viene dall'ultimo segmento.
+	// `property` è `body.file`: l'etichetta viene dall'ultimo segmento.
 	return `${fieldLabel(`/${property.replaceAll(".", "/")}`)}: tipo di file non ammesso`;
 }

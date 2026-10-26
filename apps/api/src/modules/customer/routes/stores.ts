@@ -6,16 +6,16 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
-import { StoreFacetsSchema } from "@/lib/zod/composed";
+import { StoreFacetsSchema } from "@/lib/schemas/composed";
 import {
 	StoreCardSchema,
 	StoreDetailSchema,
 	StoreMapSchema,
 	StoreProductCardSchema,
-} from "@/lib/zod/entities";
-import { PaginationQuery } from "@/lib/zod/pagination";
-import { StoreSearchQuery } from "@/lib/zod/queries";
-import { okPageRes, okRes, withErrors } from "@/lib/zod/responses";
+} from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import { StoreSearchQuery } from "@/lib/schemas/queries";
+import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
 import { getStoreDetail } from "../services/store-detail";
 import { searchStores } from "../services/store-discovery";
 import { getStoreFacets } from "../services/store-facets";
@@ -31,7 +31,7 @@ const StoreParams = z.object({
 	id: z.string().meta({ description: "ID del negozio" }),
 });
 
-// Route relative e pubbliche: il modulo è montato su /customer (`src/index.ts`).
+// Route relative e pubbliche: il modulo è montato su /customer (`src/app.ts`).
 export const storesRoutes = new Hono()
 	.get(
 		"/stores",

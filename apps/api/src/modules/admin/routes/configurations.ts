@@ -4,7 +4,7 @@ import { requireAdmin } from "@/http/auth";
 import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { ok } from "@/lib/responses";
-import { okRes, withErrors } from "@/lib/zod/responses";
+import { okRes, withErrors } from "@/lib/schemas/responses";
 import { adminDetail } from "../context";
 import { countConfigurations } from "../services/configurations";
 

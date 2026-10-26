@@ -2,7 +2,7 @@ import { z } from "zod";
 import { PaginationQuery } from "./pagination";
 import { zInteger, zString } from "./t";
 
-// Query di /locations (in Elysia erano scritte nella route): qui, senza
+// Query di /locations (fino a U2 scritte nella route): qui, senza
 // effetti all'import, perché le usano anche i casi di parità
 // (`tests/http/parity-cases.ts`).
 

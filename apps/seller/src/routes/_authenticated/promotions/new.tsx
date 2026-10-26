@@ -22,7 +22,7 @@ function NewPromotionPage() {
 
 	const createMutation = useMutation({
 		mutationFn: async (values: DiscountFormValues) => {
-			// Le `Date` escono come stringhe ISO (JSON.stringify), come con Eden.
+			// Le `Date` escono come stringhe ISO (JSON.stringify), come prima.
 			const res = await sellerApi.discounts.$post({
 				json: {
 					title: values.title,

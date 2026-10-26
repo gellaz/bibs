@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zInt } from "../t";
+import { zInt } from "@/lib/schemas/t";
 
 // Gemello Zod di `lib/schemas/forms/opening-hours.ts` (D3 del piano Hono).
 // `Type.Integer` di TypeBox è `zInt()`, non `zInteger` (niente stringhe).

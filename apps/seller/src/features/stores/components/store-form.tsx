@@ -241,11 +241,11 @@ export function StoreForm({
 			...data,
 			description: data.description || undefined,
 			addressLine2: data.addressLine2 || undefined,
-			// null (non undefined): Eden non serializza undefined e il clear del
+			// null (non undefined): undefined non viaggia nel JSON e il clear del
 			// sito non arriverebbe mai al server — stessa classe di bug degli orari.
 			websiteUrl: data.websiteUrl || null,
-			// [] (tutti i giorni chiusi) deve viaggiare come null: Eden non
-			// serializza undefined e il PATCH non vedrebbe mai il clear. Con
+			// [] (tutti i giorni chiusi) deve viaggiare come null: undefined
+			// non viaggia nel JSON e il PATCH non vedrebbe mai il clear. Con
 			// hideHours gli orari li salva un altro pannello: qui non viaggiano.
 			openingHours: hideHours
 				? undefined

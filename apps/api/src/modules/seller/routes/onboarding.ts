@@ -6,14 +6,14 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
-import { SellerProfileSchema } from "@/lib/zod/entities";
+import { SellerProfileSchema } from "@/lib/schemas/entities";
+import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
+import { zFile } from "@/lib/schemas/t";
 import {
 	CompanyBody,
 	DocumentBody,
 	PersonalInfoBody,
 } from "@/lib/zod/forms/onboarding";
-import { okRes, withConflictErrors, withErrors } from "@/lib/zod/responses";
-import { zFile } from "@/lib/zod/t";
 import {
 	getOnboardingStatus,
 	goBack,

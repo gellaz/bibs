@@ -4,7 +4,7 @@ import { sellerApp } from "@/modules/seller";
 import * as checkout from "@/modules/seller/services/checkout";
 import { testRequest, withVars } from "../helpers/hono-app";
 
-// In Elysia la route statica vince: `GET /seller/stores/checkout/closures` è il
+// Prima di Hono la route statica vinceva: `GET /seller/stores/checkout/closures` è il
 // form in sospeso con id «closures», non le chiusure del negozio «checkout».
 // In Hono vince la prima registrata, quindi in `sellerApp` il checkout deve
 // stare prima delle route `/stores/:storeId/…` di U6 (anche dopo il merge).

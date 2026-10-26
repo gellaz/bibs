@@ -7,23 +7,29 @@ import { v } from "@/http/validator";
 import { config } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
-import { StoreWithPhonesSchema } from "@/lib/zod/composed";
+import { StoreWithPhonesSchema } from "@/lib/schemas/composed";
 import {
 	AddressFieldsOptional,
 	MunicipalityCompactSchema,
 	ReservationDeadlineSchema,
 	StoreOrderTypesSchema,
-} from "@/lib/zod/entities";
-import { OpeningHoursSchema } from "@/lib/zod/forms/opening-hours";
-import { CreateStoreBody } from "@/lib/zod/forms/stores";
-import { PaginationQuery } from "@/lib/zod/pagination";
+} from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
 import {
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { utf16Length, zDate, zFormat, zInteger, zString } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import {
+	utf16Length,
+	zDate,
+	zFormat,
+	zInteger,
+	zString,
+} from "@/lib/schemas/t";
+import { OpeningHoursSchema } from "@/lib/zod/forms/opening-hours";
+import { CreateStoreBody } from "@/lib/zod/forms/stores";
 import { ensureStoreAccess, requireOwner } from "../context";
 import {
 	getStoreOrderTypes,

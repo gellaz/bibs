@@ -10,8 +10,8 @@ import { hc } from "hono/client";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// Client `hc` per sotto-albero (dalla U7 il seller non usa più Eden). Le date
-// arrivano come stringhe ISO e i testi restano testi (niente revival di Eden).
+// Client `hc` per sotto-albero dell'API. Le date arrivano come stringhe ISO e
+// i testi restano testi (`hc` non le converte).
 const init = { credentials: "include" } satisfies RequestInit;
 export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });
 export const locationsApi = hc<WithErrors<LocationsApp>>(

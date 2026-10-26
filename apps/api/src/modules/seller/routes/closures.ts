@@ -5,8 +5,11 @@ import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ok } from "@/lib/responses";
-import { PutClosuresBody, SellerClosuresResponse } from "@/lib/zod/holidays";
-import { okRes, withErrors } from "@/lib/zod/responses";
+import {
+	PutClosuresBody,
+	SellerClosuresResponse,
+} from "@/lib/schemas/holidays";
+import { okRes, withErrors } from "@/lib/schemas/responses";
 import { requireOwner } from "../context";
 import { getStoreClosures, putStoreClosures } from "../services/closures";
 

@@ -51,7 +51,7 @@ import { signIn, testRequest } from "../helpers/hono-app";
 // onboarding, profilo; la dashboard ha il suo test) con sessioni better-auth
 // vere: le due guardie (ruolo seller per profilo e onboarding, contesto
 // seller per il resto) dopo la validazione, scritture, multipart, strip in
-// ingresso e in uscita. Nato contro `sellerModule` (Elysia, prima della
+// ingresso e in uscita. Nato contro `sellerModule` (il modulo di prima della
 // migrazione a Hono, commit 2da62a0e, verde): da allora cambia solo `call()`.
 
 let sellerApp: typeof import("@/modules/seller").sellerApp;

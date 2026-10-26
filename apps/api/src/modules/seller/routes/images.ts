@@ -6,9 +6,9 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { ProductImageSchema } from "@/lib/zod/entities";
-import { OkMessage, okRes, withErrors } from "@/lib/zod/responses";
-import { zFiles, zInteger } from "@/lib/zod/t";
+import { ProductImageSchema } from "@/lib/schemas/entities";
+import { OkMessage, okRes, withErrors } from "@/lib/schemas/responses";
+import { zFiles, zInteger } from "@/lib/schemas/t";
 import { deleteProductImage, uploadProductImages } from "../services/images";
 
 const productId = z.string().meta({ description: "ID del prodotto" });

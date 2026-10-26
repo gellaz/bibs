@@ -6,8 +6,8 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { okMessage } from "@/lib/responses";
-import { OkMessage, okRes, withErrors } from "@/lib/zod/responses";
-import { zFile } from "@/lib/zod/t";
+import { OkMessage, okRes, withErrors } from "@/lib/schemas/responses";
+import { zFile } from "@/lib/schemas/t";
 import { deleteUserAvatar, uploadUserAvatar } from "../services/avatar";
 
 export const AvatarResponse = okRes(
@@ -26,7 +26,7 @@ export const AvatarBody = z.object({
 	}),
 });
 
-// Route relative: il modulo è montato su /me (`src/index.ts`).
+// Route relative: il modulo è montato su /me (`src/app.ts`).
 export const avatarRoutes = new Hono()
 	.post(
 		"/avatar",

@@ -1,121 +1,92 @@
-import type { TSchema } from "@sinclair/typebox";
-import { t } from "elysia";
+import { z } from "zod";
+import { zFormat } from "./t";
 
-// ────────────────────────────────────────────
-// Response envelope helpers
-// ────────────────────────────────────────────
+// Gemelli Zod di `lib/schemas/responses.ts` (D3 del piano Hono), nello stesso
+// ordine e con gli stessi nomi: inviluppi di successo e risposte di errore
+// per status, che finiscono in /openapi.
 
-const PaginationSchema = t.Object({
-	page: t.Number(),
-	limit: t.Number(),
-	total: t.Number(),
+const PaginationSchema = z.object({
+	page: z.number(),
+	limit: z.number(),
+	total: z.number(),
 });
 
-export function okRes<T extends TSchema>(dataSchema: T) {
-	return t.Object({
-		success: t.Literal(true),
+export function okRes<T extends z.ZodType>(dataSchema: T) {
+	return z.object({
+		success: z.literal(true),
 		data: dataSchema,
 	});
 }
 
-export function okPageRes<T extends TSchema>(itemSchema: T) {
-	return t.Object({
-		success: t.Literal(true),
-		data: t.Array(itemSchema),
+export function okPageRes<T extends z.ZodType>(itemSchema: T) {
+	return z.object({
+		success: z.literal(true),
+		data: z.array(itemSchema),
 		pagination: PaginationSchema,
 	});
 }
 
-export const OkMessage = t.Object({
-	success: t.Literal(true),
-	data: t.Null(),
-	message: t.String(),
+export const OkMessage = z.object({
+	success: z.literal(true),
+	data: z.null(),
+	message: z.string(),
 });
 
 // ────────────────────────────────────────────
 // Error response schemas (specific per status code)
 // ────────────────────────────────────────────
 
-export const BadRequestError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("BAD_REQUEST"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
+const message = z
+	.string()
+	.meta({ description: "Messaggio di errore leggibile" });
 
-export const UnauthorizedError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("UNAUTHORIZED"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
+const errorOf = <C extends string>(code: C) =>
+	z.object({
+		success: z.literal(false),
+		error: z.literal(code),
+		message,
+	});
 
-export const ForbiddenError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("FORBIDDEN"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
+export const BadRequestError = errorOf("BAD_REQUEST");
+export const UnauthorizedError = errorOf("UNAUTHORIZED");
+export const ForbiddenError = errorOf("FORBIDDEN");
+export const NotFoundError = errorOf("NOT_FOUND");
 
-export const NotFoundError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("NOT_FOUND"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
-
-export const ConflictError = t.Object({
-	success: t.Literal(false),
-	error: t.Union(
-		[
-			t.Literal("CONFLICT"),
-			t.Literal("EMAIL_ALREADY_REGISTERED"),
-			t.Literal("EMAIL_PENDING_VERIFICATION"),
-		],
-		{ description: "Discriminator dell'errore 409 specifico" },
-	),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
+export const ConflictError = z.object({
+	success: z.literal(false),
+	error: z
+		.enum([
+			"CONFLICT",
+			"EMAIL_ALREADY_REGISTERED",
+			"EMAIL_PENDING_VERIFICATION",
+		])
+		.meta({ description: "Discriminator dell'errore 409 specifico" }),
+	message,
 	// Presente solo quando error === "EMAIL_PENDING_VERIFICATION".
-	resentAt: t.Optional(
-		t.String({
-			format: "date-time",
+	resentAt: z.optional(
+		zFormat("date-time").meta({
 			description:
 				"ISO timestamp dell'invio del link di verifica appena rispedito",
 		}),
 	),
 });
 
-export const ValidationError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("VALIDATION_ERROR"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
+export const ValidationError = errorOf("VALIDATION_ERROR");
+export const TooManyRequestsError = errorOf("TOO_MANY_REQUESTS");
+export const ServiceUnavailableError = errorOf("SERVICE_UNAVAILABLE");
+export const InternalError = errorOf("INTERNAL_ERROR");
 
-export const TooManyRequestsError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("TOO_MANY_REQUESTS"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
+/** Corpo di ogni errore dell'API (`errorBody` in `lib/responses.ts`). */
+export interface ErrorBody {
+	success: false;
+	error: string;
+	message: string;
+	resentAt?: string;
+}
 
-export const ServiceUnavailableError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("SERVICE_UNAVAILABLE"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
-
-export const InternalError = t.Object({
-	success: t.Literal(false),
-	error: t.Literal("INTERNAL_ERROR"),
-	message: t.String({ description: "Messaggio di errore leggibile" }),
-});
-
-// Helper to add common error responses with specific types
-export function withErrors<T extends Record<number, any>>(
+export function withErrors<T extends Record<number, z.ZodType>>(
 	successResponses: T,
-): T & {
-	400: typeof BadRequestError;
-	401: typeof UnauthorizedError;
-	403: typeof ForbiddenError;
-	404: typeof NotFoundError;
-	422: typeof ValidationError;
-	500: typeof InternalError;
-} {
+) {
 	return {
 		...successResponses,
 		400: BadRequestError,
@@ -127,26 +98,11 @@ export function withErrors<T extends Record<number, any>>(
 	};
 }
 
-// Helper to add all error responses including conflict (409)
-export function withConflictErrors<T extends Record<number, any>>(
+export function withConflictErrors<T extends Record<number, z.ZodType>>(
 	successResponses: T,
-): T & {
-	400: typeof BadRequestError;
-	401: typeof UnauthorizedError;
-	403: typeof ForbiddenError;
-	404: typeof NotFoundError;
-	409: typeof ConflictError;
-	422: typeof ValidationError;
-	500: typeof InternalError;
-} {
+) {
 	return {
-		...successResponses,
-		400: BadRequestError,
-		401: UnauthorizedError,
-		403: ForbiddenError,
-		404: NotFoundError,
+		...withErrors(successResponses),
 		409: ConflictError,
-		422: ValidationError,
-		500: InternalError,
 	};
 }

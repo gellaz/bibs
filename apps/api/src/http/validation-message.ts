@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { type Issue, issueRule, ruleParams } from "@/lib/schemas/issues";
+import { nodeAt } from "@/lib/schemas/mirror";
 import { fieldLabel, INVALID, ruleText } from "@/lib/validation-message";
-import { type Issue, issueRule, ruleParams } from "@/lib/zod/issues";
-import { nodeAt } from "@/lib/zod/mirror";
 
 // Il messaggio italiano del 422 per un'issue di Zod, con le stesse regole di
 // `lib/validation-message.ts` sugli errori TypeBox (D6 del piano Hono):
@@ -38,7 +38,7 @@ export function zodValidationMessage(issue: Issue, root: z.ZodType): string {
 	const meta = issueMeta(root, issue.path);
 	if (typeof meta.error === "string") return meta.error;
 	const rule = ruleText(issueRule(issue, nodeAt(root, issue.path)));
-	// Errore della decodifica di Elysia (coercizione, t.Integer, t.Date): il
+	// Errore della decodifica (coercizione, t.Integer, t.Date): il
 	// nome del campo è perso, resta la regola.
 	if (ruleParams(issue)?.decode)
 		return rule === INVALID

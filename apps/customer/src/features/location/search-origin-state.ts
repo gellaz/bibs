@@ -22,7 +22,7 @@ export type SearchOrigin =
 
 /**
  * La parte di un indirizzo che serve qui. Strutturale di proposito: il tipo
- * Eden di `useAddresses` la soddisfa per forma, e il dominio resta testabile
+ * `hc` di `useAddresses` la soddisfa per forma, e il dominio resta testabile
  * senza il client API (stesso patto di `features/addresses/address-form-state.ts`).
  */
 export interface OriginAddress {

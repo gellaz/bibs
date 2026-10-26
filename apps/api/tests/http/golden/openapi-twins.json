@@ -618,7 +618,7 @@
 			},
 			"operationId": "postX"
 		},
-		"json: vm: email che solo Elysia nudo accetta (TLD di una lettera)": {
+		"json: vm: email che solo il framework di prima, nudo, accettava (TLD di una lettera)": {
 			"summary": "x",
 			"tags": ["T"],
 			"requestBody": {

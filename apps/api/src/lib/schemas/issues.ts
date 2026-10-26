@@ -4,7 +4,7 @@ import { isAnyOf, nodeAt, unwrap } from "./mirror";
 import { integerCheck } from "./t";
 
 // Dalle issue di Zod alla regola di `validation-rule.ts` e all'errore che
-// TypeBox (quindi Elysia) avrebbe dato per primo: i 422 restano identici al
+// TypeBox (quindi l'API di prima) avrebbe dato per primo: i 422 restano identici al
 // byte (D6 del piano Hono). Zod raccoglie tutte le issue; TypeBox ne dà una
 // sola, nel suo ordine di visita, che qui si ricostruisce.
 
@@ -13,7 +13,7 @@ export type Issue = z.core.$ZodIssue;
 /** Parametri delle issue `custom` dei costruttori di `t.ts`: regola già decisa. */
 export interface RuleParams {
 	rule: ValidationRule;
-	/** Errore della decodifica (coercizione di Elysia): il campo si perde. */
+	/** Errore della decodifica (coercizione): il campo si perde, come prima. */
 	decode?: boolean;
 }
 
@@ -281,19 +281,19 @@ function collapse(issues: Issue[], checked: Checked) {
 
 const NO_VALUE = Symbol("no-value");
 
-/** Lo schema e il valore che Elysia ha controllato (`lib/zod/mirror.ts`). */
+/** Lo schema e il valore che si controlla davvero (`lib/schemas/mirror.ts`). */
 export interface Checked {
 	schema: z.ZodType;
 	value: unknown;
-	/** Body con file: campi oggetto e array che Elysia rende unioni (`coercedKeys`). */
+	/** Body con file: campi oggetto e array resi unioni, come prima (`coercedKeys`). */
 	anyOfKeys?: Set<string>;
 }
 
 /**
  * L'issue che TypeBox avrebbe dato per prima (`Errors(value).First()`): prima
- * i controlli, poi la decodifica (Elysia decodifica solo un valore valido);
+ * i controlli, poi la decodifica (si decodifica solo un valore valido);
  * in un oggetto, prima le chiavi obbligatorie che non ci sono (nel valore
- * ripulito come Elysia, `mirror.ts`), poi i campi nell'ordine dello schema;
+ * ripulito come prima, `mirror.ts`), poi i campi nell'ordine dello schema;
  * sullo stesso valore, l'ordine dei controlli. Senza `checked` (schema e
  * valore controllato) una chiave manca se il suo input è undefined.
  */

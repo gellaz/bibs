@@ -10,16 +10,16 @@ import {
 	AdminProductCharacteristicSchema,
 	CharacteristicDataTypeSchema,
 	ProductCharacteristicSchema,
-} from "@/lib/zod/entities";
-import { CharacteristicListQuery } from "@/lib/zod/queries";
+} from "@/lib/schemas/entities";
+import { CharacteristicListQuery } from "@/lib/schemas/queries";
 import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { zInteger, zString } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import { zInteger, zString } from "@/lib/schemas/t";
 import { adminDetail } from "../context";
 import {
 	createProductCharacteristic,

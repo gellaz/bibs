@@ -16,7 +16,7 @@ import { storeMacroCategoriesWriteRoutes } from "./routes/store-macro-categories
 import { storesRoutes } from "./routes/stores";
 
 /**
- * Sub-app Hono del modulo, montata su /admin in `src/index.ts`: configurazioni,
+ * Sub-app Hono del modulo, montata su /admin in `src/app.ts`: configurazioni,
  * tassonomia, caratteristiche, festività e import CSV (U8 del piano Hono);
  * venditori, modifiche del profilo, negozi, richieste e billing (U9).
  * Ogni route ha `requireAdmin` dopo i suoi `v(...)`.

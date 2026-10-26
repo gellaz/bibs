@@ -1,25 +1,20 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { APIError } from "better-auth";
-import { Elysia, t } from "elysia";
-import logixlysia from "logixlysia";
+import { z } from "zod";
+import { rootApp } from "@/app";
+import { moduleApp } from "@/http/app";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
-import { pinoOptions } from "@/lib/logger";
-import { errorHandler } from "@/plugins/error-handler";
+import { logger } from "@/lib/logger";
+import { zFile, zInteger } from "@/lib/schemas/t";
 import { requestId } from "@/plugins/request-id";
 
-// Provides store.pino, which logixlysia normally injects in production.
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
+// La mappatura errore → risposta (`toErrorResponse`, D7 del piano Hono) come
+// la applicano le app Hono (`moduleApp()` e l'app radice). Fino a U11 lo
+// stesso test passava dal plugin di errori dell'app di prima.
 
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
+const app = moduleApp()
 	.use(requestId)
 	.get("/service-error-404", () => {
 		throw new ServiceError(404, "Resource not found");
@@ -105,7 +100,7 @@ const app = new Elysia()
 			message: "leaky internal detail",
 		});
 	})
-	.get("/ok", () => ({ success: true, data: "ok" }));
+	.get("/ok", (c) => c.json({ success: true, data: "ok" }));
 
 async function json(res: Response) {
 	return res.json() as Promise<Record<string, unknown>>;
@@ -113,7 +108,7 @@ async function json(res: Response) {
 
 describe("errorHandler — ServiceError", () => {
 	it("returns 404 for ServiceError(404)", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/service-error-404"),
 		);
 		expect(res.status).toBe(404);
@@ -124,7 +119,7 @@ describe("errorHandler — ServiceError", () => {
 	});
 
 	it("returns 403 for ServiceError(403)", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/service-error-403"),
 		);
 		expect(res.status).toBe(403);
@@ -135,7 +130,7 @@ describe("errorHandler — ServiceError", () => {
 	});
 
 	it("returns 400 for ServiceError(400)", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/service-error-400"),
 		);
 		expect(res.status).toBe(400);
@@ -144,7 +139,7 @@ describe("errorHandler — ServiceError", () => {
 	});
 
 	it("returns 500 for ServiceError(500)", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/service-error-500"),
 		);
 		expect(res.status).toBe(500);
@@ -156,7 +151,7 @@ describe("errorHandler — ServiceError", () => {
 
 describe("errorHandler — unhandled errors", () => {
 	it("returns 500 for an unhandled Error", async () => {
-		const res = await app.handle(new Request("http://localhost/unhandled"));
+		const res = await app.request(new Request("http://localhost/unhandled"));
 		expect(res.status).toBe(500);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -165,7 +160,7 @@ describe("errorHandler — unhandled errors", () => {
 	});
 
 	it("returns 409 for a PostgreSQL unique violation (code 23505)", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/unique-violation"),
 		);
 		expect(res.status).toBe(409);
@@ -176,7 +171,7 @@ describe("errorHandler — unhandled errors", () => {
 	});
 
 	it("uses a targeted message for a known unique constraint", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/unique-violation-holiday"),
 		);
 		expect(res.status).toBe(409);
@@ -187,7 +182,7 @@ describe("errorHandler — unhandled errors", () => {
 
 describe("errorHandler — pg constraint violations", () => {
 	it("maps a foreign key violation on a missing reference to 400", async () => {
-		const res = await app.handle(new Request("http://localhost/fk-missing"));
+		const res = await app.request(new Request("http://localhost/fk-missing"));
 		expect(res.status).toBe(400);
 		const body = await json(res);
 		expect(body.success).toBe(false);
@@ -195,21 +190,23 @@ describe("errorHandler — pg constraint violations", () => {
 	});
 
 	it("maps a foreign key violation on a still-referenced row to 409", async () => {
-		const res = await app.handle(new Request("http://localhost/fk-referenced"));
+		const res = await app.request(
+			new Request("http://localhost/fk-referenced"),
+		);
 		expect(res.status).toBe(409);
 		const body = await json(res);
 		expect(body.error).toBe("CONFLICT");
 	});
 
 	it("unwraps a DrizzleQueryError-wrapped FK violation (400)", async () => {
-		const res = await app.handle(new Request("http://localhost/fk-wrapped"));
+		const res = await app.request(new Request("http://localhost/fk-wrapped"));
 		expect(res.status).toBe(400);
 		const body = await json(res);
 		expect(body.error).toBe("BAD_REQUEST");
 	});
 
 	it("maps a check constraint violation to 400", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/check-violation"),
 		);
 		expect(res.status).toBe(400);
@@ -220,7 +217,7 @@ describe("errorHandler — pg constraint violations", () => {
 
 describe("errorHandler — better-auth APIError", () => {
 	it("maps an unverified-email APIError to 403 with an actionable message (not 500)", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/api-error-unverified"),
 		);
 		expect(res.status).toBe(403);
@@ -233,7 +230,7 @@ describe("errorHandler — better-auth APIError", () => {
 	});
 
 	it("maps an invalid-credentials APIError to 401 (not 500)", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/api-error-bad-credentials"),
 		);
 		expect(res.status).toBe(401);
@@ -243,7 +240,7 @@ describe("errorHandler — better-auth APIError", () => {
 	});
 
 	it("maps a 5xx APIError to 500 without leaking the internal message", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/api-error-internal"),
 		);
 		expect(res.status).toBe(500);
@@ -256,29 +253,35 @@ describe("errorHandler — better-auth APIError", () => {
 describe("errorHandler — validation errors", () => {
 	const warnings: unknown[][] = [];
 	const errors: unknown[][] = [];
-	const capturingPino = {
-		...noopPino,
-		warn: (...args: unknown[]) => warnings.push(args),
-		error: (...args: unknown[]) => errors.push(args),
-	};
-	const validating = new Elysia()
-		.state("pino", capturingPino)
-		.use(errorHandler)
-		.post("/cart", () => ({ success: true }), {
-			body: t.Object({
-				password: t.String(),
-				quantity: t.Integer({ minimum: 1 }),
-			}),
-		})
-		.get("/bad-response", () => ({ count: "nope" }) as never, {
-			response: { 200: t.Object({ count: t.Integer() }) },
-		})
-		.post("/upload", () => ({ success: true }), {
-			body: t.Object({ file: t.File({ type: "image/*" }) }),
-		});
+	spyOn(logger, "warn").mockImplementation(((...args: unknown[]) => {
+		warnings.push(args);
+	}) as never);
+	spyOn(logger, "error").mockImplementation(((...args: unknown[]) => {
+		errors.push(args);
+	}) as never);
+	const validating = moduleApp()
+		.post(
+			"/cart",
+			v(
+				"json",
+				z.object({
+					password: z.string(),
+					quantity: zInteger({ minimum: 1 }),
+				}),
+			),
+			(c) => c.json({ success: true }),
+		)
+		.get("/bad-response", (c) =>
+			send(c, z.object({ count: zInteger() }), { count: "nope" } as never),
+		)
+		.post(
+			"/upload",
+			v("form", z.object({ file: zFile({ type: "image/*" }) })),
+			(c) => c.json({ success: true }),
+		);
 
 	const postCart = (body: unknown) =>
-		validating.handle(
+		validating.request(
 			new Request("http://localhost/cart", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
@@ -312,7 +315,7 @@ describe("errorHandler — validation errors", () => {
 
 	it("treats an invalid response as a 500 bug, not a 422", async () => {
 		errors.length = 0;
-		const res = await validating.handle(
+		const res = await validating.request(
 			new Request("http://localhost/bad-response"),
 		);
 
@@ -324,7 +327,7 @@ describe("errorHandler — validation errors", () => {
 	it("returns 422 for a file of the wrong type", async () => {
 		const form = new FormData();
 		form.append("file", new File(["hello"], "a.txt", { type: "text/plain" }));
-		const res = await validating.handle(
+		const res = await validating.request(
 			new Request("http://localhost/upload", { method: "POST", body: form }),
 		);
 
@@ -339,7 +342,7 @@ describe("errorHandler — validation errors", () => {
 	it("returns 422 for a file whose content does not match its type", async () => {
 		const form = new FormData();
 		form.append("file", new File(["hello"], "a.png", { type: "image/png" }));
-		const res = await validating.handle(
+		const res = await validating.request(
 			new Request("http://localhost/upload", { method: "POST", body: form }),
 		);
 
@@ -354,7 +357,7 @@ describe("errorHandler — validation errors", () => {
 
 describe("errorHandler — route not found", () => {
 	it("returns 404 with NOT_FOUND for an unknown route", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/does-not-exist"),
 		);
 		expect(res.status).toBe(404);
@@ -366,7 +369,7 @@ describe("errorHandler — route not found", () => {
 
 describe("errorHandler — response structure", () => {
 	it("error responses have success, error, and message fields", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/service-error-404"),
 		);
 		const body = await json(res);
@@ -376,44 +379,37 @@ describe("errorHandler — response structure", () => {
 	});
 
 	it("success responses are passed through unchanged", async () => {
-		const res = await app.handle(new Request("http://localhost/ok"));
+		const res = await app.request(new Request("http://localhost/ok"));
 		expect(res.status).toBe(200);
 		const body = await json(res);
 		expect(body.success).toBe(true);
 	});
 
 	it("sets X-Request-Id header on error responses", async () => {
-		const res = await app.handle(
+		const res = await app.request(
 			new Request("http://localhost/service-error-404"),
 		);
 		expect(res.headers.get("x-request-id")).toBeString();
 	});
 });
 
-// Regression: the app above stubs `store.pino` by hand. Mounted the way
-// src/index.ts mounts it — on top of the real logixlysia plugin — the handler
-// used to crash while logging, turning every API error into an opaque 500.
-describe("errorHandler — mounted on the real logixlysia plugin", () => {
-	const logged = new Elysia()
-		.use(
-			logixlysia({
-				config: {
-					showStartupMessage: false,
-					disableFileLogging: true,
-					pino: pinoOptions,
-				},
+// Regression: mounted the way src/app.ts mounts the modules — under the real
+// root app with its request log — the handler used to crash while logging,
+// turning every API error into an opaque 500.
+describe("errorHandler — under the real root app (request log)", () => {
+	const logged = rootApp().route(
+		"/",
+		moduleApp()
+			.get("/unhandled", () => {
+				throw new Error("Unexpected crash");
+			})
+			.get("/service-error-404", () => {
+				throw new ServiceError(404, "Resource not found");
 			}),
-		)
-		.use(errorHandler)
-		.get("/unhandled", () => {
-			throw new Error("Unexpected crash");
-		})
-		.get("/service-error-404", () => {
-			throw new ServiceError(404, "Resource not found");
-		});
+	);
 
 	it("returns the JSON envelope for an unhandled error", async () => {
-		const res = await logged.handle(new Request("http://localhost/unhandled"));
+		const res = await logged.request(new Request("http://localhost/unhandled"));
 
 		expect(res.status).toBe(500);
 		expect(await json(res)).toMatchObject({
@@ -423,7 +419,7 @@ describe("errorHandler — mounted on the real logixlysia plugin", () => {
 	});
 
 	it("returns the JSON envelope for a ServiceError", async () => {
-		const res = await logged.handle(
+		const res = await logged.request(
 			new Request("http://localhost/service-error-404"),
 		);
 
@@ -435,7 +431,7 @@ describe("errorHandler — mounted on the real logixlysia plugin", () => {
 	});
 
 	it("returns the JSON envelope for an unknown route", async () => {
-		const res = await logged.handle(new Request("http://localhost/nope"));
+		const res = await logged.request(new Request("http://localhost/nope"));
 
 		expect(res.status).toBe(404);
 		expect(await json(res)).toMatchObject({

@@ -5,8 +5,8 @@ import { FormatRegistry } from "@sinclair/typebox";
  *
  * TypeBox does NOT provide built-in format validators — they must be
  * registered via FormatRegistry before TypeCompiler.Compile() is called.
- * Elysia registers its own formats on the server side, so this file
- * covers the frontend only.
+ * The API has its own formats (`apps/api/src/lib/schemas/formats.ts`), so
+ * this file covers the frontend only.
  */
 
 if (!FormatRegistry.Has("uri")) {

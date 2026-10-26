@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { zFormat, zString } from "./t";
 
-// Body di /register (in Elysia erano scritti nella route): qui, senza effetti
+// Body di /register (fino a U4 scritti nella route): qui, senza effetti
 // all'import, perché li usano anche i casi di parità (`tests/http/parity-cases.ts`).
 
 export const RegisterBody = z.object({

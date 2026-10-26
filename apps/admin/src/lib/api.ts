@@ -4,7 +4,7 @@ import { hc } from "hono/client";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-// Client `hc` per sotto-albero (dalla U9 l'admin non usa più Eden).
+// Client `hc` per sotto-albero dell'API.
 const init = { credentials: "include" } satisfies RequestInit;
 export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });
 export const adminApi = hc<WithErrors<AdminApp>>(`${API_URL}/admin`, { init });

@@ -7,7 +7,7 @@ import { storeMacroCategoriesRoutes } from "./routes/store-macro-categories";
 
 // Liste pubbliche della tassonomia (senza auth); le scritture stanno in admin/.
 // Quattro path radice → quattro sub-app, ognuna montata sul suo path in
-// `src/index.ts` (il mount toglie il prefisso: la route è "/").
+// `src/app.ts` (con `.route()`: la route "/" risponde sul prefisso).
 
 export const productMacroCategoriesApp = moduleApp().route(
 	"/",

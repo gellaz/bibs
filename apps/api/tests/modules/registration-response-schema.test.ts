@@ -6,8 +6,8 @@ import {
 	RegisterCustomerResult,
 	RegisterSellerResult,
 	SignInResult,
-} from "@/lib/zod/composed";
-import { okRes } from "@/lib/zod/responses";
+} from "@/lib/schemas/composed";
+import { okRes } from "@/lib/schemas/responses";
 
 // The registration/sign-in handlers return RAW database rows (no joined
 // municipalities, plus columns like updatedAt / documentImageKey / stripeCustomerId).

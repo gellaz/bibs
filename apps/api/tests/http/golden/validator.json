@@ -59,7 +59,7 @@
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: identificativo non valido\"}"
 	},
-	"vm: email che solo Elysia nudo accetta (TLD di una lettera)": {
+	"vm: email che solo il framework di prima, nudo, accettava (TLD di una lettera)": {
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"x: indirizzo email non valido\"}"
 	},
@@ -151,7 +151,7 @@
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: indirizzo email non valido\"}"
 	},
-	"reg: email che solo Elysia nudo accetta": {
+	"reg: email che solo il framework di prima, nudo, accettava": {
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Email: indirizzo email non valido\"}"
 	},
@@ -295,7 +295,7 @@
 		"status": 422,
 		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Inizio: campo obbligatorio\"}"
 	},
-	"disc: date larghe di Elysia, null e epoch": {
+	"disc: date larghe di prima, null e epoch": {
 		"status": 200,
 		"body": "{\"ok\":{\"title\":\"x\",\"percent\":5,\"startsAt\":\"2026-01-01T00:00:00.000Z\",\"endsAt\":null,\"initialProductIds\":[\"a\",\"b\"]}}"
 	},
