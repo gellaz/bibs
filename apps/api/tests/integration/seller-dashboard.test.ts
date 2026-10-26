@@ -39,10 +39,10 @@ import {
 	createTestStore,
 	createTestStoreProduct,
 } from "../helpers/fixtures";
-import { withVars } from "../helpers/hono-app";
+import { withResolve } from "../helpers/hono-app";
 
 // Stessa resolve della guardia seller vera, utente da header.
-const app = withVars(dashboardRoutes, async (request) => {
+const app = withResolve(dashboardRoutes, async (request) => {
 	const id = request.headers.get("x-test-user") ?? "";
 	const u = await getTestDb().query.user.findFirst({
 		where: eq(userTable.id, id),

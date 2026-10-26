@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zString } from "./t";
 
 // Gemelli Zod di `lib/schemas/holidays.ts` (D3 del piano Hono), stessi nomi e
 // stesso ordine; ogni unità aggiunge quelli delle sue route.
@@ -17,7 +18,10 @@ export const CustomClosureSchema = z.object({
 		.regex(DATE)
 		.meta(d("Data fine (assente = giorno singolo)"))
 		.optional(),
-	note: z.string().max(200).meta(d("Nota (es. Ferie estive)")).optional(),
+	note: zString({
+		maxLength: 200,
+		...d("Nota (es. Ferie estive)"),
+	}).optional(),
 });
 
 export const OpenStatusSchema = z.object({

@@ -1,5 +1,8 @@
+import { eq, type InferSelectModel } from "drizzle-orm";
 import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
+import { db } from "@/db";
+import { customerProfile } from "@/db/schemas/customer";
 import { auth } from "@/lib/auth";
 import { ServiceError } from "@/lib/errors";
 import { resolveSellerAccess } from "@/modules/seller/context";
@@ -62,6 +65,35 @@ export const requireSellerRole = guard(
 		await next();
 	}),
 	"sellerRole",
+);
+
+/** Variabili delle route del cliente (oggi il resolve del guard di /customer). */
+export type CustomerEnv = {
+	Variables: AuthEnv["Variables"] & {
+		customerProfile: InferSelectModel<typeof customerProfile>;
+	};
+};
+
+/**
+ * Il guard di `/customer` (auth + resolve del profilo cliente): 401 senza
+ * sessione, 403 «Profilo cliente non trovato» per un utente senza profilo
+ * cliente. Legge da sé la sessione, quindi basta da solo: nessun ordine fra
+ * guardie da rispettare. Come `requireAuth`, dopo i `v(...)` della route e
+ * senza rileggere il profilo se un middleware a monte l'ha già messo (i test).
+ */
+export const requireCustomer = guard(
+	createMiddleware<CustomerEnv>(async (c, next) => {
+		if (!c.get("customerProfile")) {
+			await readSession(c);
+			const profile = await db.query.customerProfile.findFirst({
+				where: eq(customerProfile.userId, c.get("user").id),
+			});
+			if (!profile) throw new ServiceError(403, "Profilo cliente non trovato");
+			c.set("customerProfile", profile);
+		}
+		await next();
+	}),
+	"customer",
 );
 
 /** Chi chiama e per quale venditore agisce (`resolveSellerAccess`). */

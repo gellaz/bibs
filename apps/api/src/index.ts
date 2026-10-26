@@ -11,7 +11,7 @@ import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { catalogModule } from "@/modules/catalog";
-import { customerModule } from "@/modules/customer";
+import { customerApp } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
@@ -155,6 +155,7 @@ const app = new Elysia()
 				paths: {
 					...(await OpenAPI.getPaths()),
 					...honoPaths(meApp, "/me", ["auth"]),
+					...honoPaths(customerApp, "/customer", ["customer", "publicRoute"]),
 					...honoPaths(registrationApp, "/register", ["publicRoute"]),
 					...honoPaths(locationsApp, "/locations", ["auth", "publicRoute"]),
 					...honoPaths(sellerApp, "/seller", sellerGuards),
@@ -167,9 +168,9 @@ const app = new Elysia()
 	.use(adminModule)
 	.use(catalogModule)
 	.use(sellerModule)
-	.use(customerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
+	.mount("/customer", customerApp.fetch)
 	.mount("/register", registrationApp.fetch)
 	.mount("/locations", locationsApp.fetch)
 	// Seller in parte: le route ancora in `sellerModule` vincono sul mount.

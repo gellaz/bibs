@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/location/coords";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 
 export interface CategoryFacet {
 	id: string;
@@ -44,7 +44,7 @@ export function useStoreFacets({
 		// arrivano i nuovi, invece di ricadere nello skeleton.
 		placeholderData: keepPreviousData,
 		queryFn: async () => {
-			const { data, error } = await api().customer.stores.facets.get({
+			const res = await customerApi.stores.facets.$get({
 				query: {
 					...(q ? { q } : {}),
 					...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
@@ -52,8 +52,8 @@ export function useStoreFacets({
 					...(openNow ? { openNow } : {}),
 				},
 			});
-			if (error) throw new Error(`Filtri non disponibili (${error.status})`);
-			return data.data;
+			if (!res.ok) throw new Error(`Filtri non disponibili (${res.status})`);
+			return (await res.json()).data;
 		},
 	});
 

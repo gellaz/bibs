@@ -23,7 +23,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/zod/responses";
-import { zDate, zFormat, zInteger } from "@/lib/zod/t";
+import { zDate, zFormat, zInteger, zString } from "@/lib/zod/t";
 import { ensureStoreAccess, requireOwner } from "../context";
 import {
 	getStoreOrderTypes,
@@ -70,17 +70,15 @@ const reservationHours = (description: string) =>
 	});
 
 const UpdateStoreBody = z.object({
-	name: z
-		.string()
-		.min(1)
-		.max(100)
-		.meta({ description: "Nome del negozio" })
-		.optional(),
-	description: z
-		.string()
-		.max(1000)
-		.meta({ description: "Descrizione" })
-		.optional(),
+	name: zString({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nome del negozio",
+	}).optional(),
+	description: zString({
+		maxLength: 1000,
+		description: "Descrizione",
+	}).optional(),
 	...AddressFieldsOptional,
 	categoryId: z
 		.string()
@@ -97,6 +95,7 @@ const UpdateStoreBody = z.object({
 		description:
 			"Soglia di scorta bassa: sotto questo stock (escluso) un prodotto attivo è segnalato nella home. 0 spegne l'avviso",
 	}).optional(),
+	// ponytail: `.max()` conta i code point (TypeBox le unità UTF-16), vedi forms/stores.ts.
 	websiteUrl: zFormat("uri")
 		.max(500)
 		.meta({ description: "URL del sito web. null per rimuoverlo" })
@@ -105,16 +104,15 @@ const UpdateStoreBody = z.object({
 	phoneNumbers: z
 		.array(
 			z.object({
-				label: z
-					.string()
-					.max(50)
-					.meta({ description: "Etichetta (es. 'Principale')" })
-					.optional(),
-				number: z
-					.string()
-					.min(5)
-					.max(30)
-					.meta({ description: "Numero di telefono" }),
+				label: zString({
+					maxLength: 50,
+					description: "Etichetta (es. 'Principale')",
+				}).optional(),
+				number: zString({
+					minLength: 5,
+					maxLength: 30,
+					description: "Numero di telefono",
+				}),
 				position: zInteger({
 					minimum: 0,
 					description: "Posizione di ordinamento",

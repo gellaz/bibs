@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
+import { moduleApp } from "@/http/app";
 import { ordersRoutes } from "@/modules/customer/routes/orders";
 import { locationsApp } from "@/modules/locations";
 import { sellerApp } from "@/modules/seller";
@@ -25,8 +26,10 @@ const noopPino = {
 const app = new Elysia()
 	.state("pino", noopPino)
 	.use(errorHandler)
-	.use(ordersRoutes)
 	.mount(sellerApp.fetch);
+
+// Modulo customer: sub-app Hono (piano Hono, U3).
+const customer = moduleApp().route("/", ordersRoutes);
 
 function json(method: string, path: string, body: unknown) {
 	return app.handle(
@@ -105,7 +108,10 @@ describe("integer inputs reject fractions with 422", () => {
 		["GET /brands page", () => get("/brands?page=1.5")],
 		// The shared PaginationQuery, spread into ~19 routes.
 		["GET /stores (PaginationQuery) limit", () => get("/stores?limit=2.5")],
-		["GET /orders (PaginationQuery) page", () => get("/orders?page=1.5")],
+		[
+			"GET /orders (PaginationQuery) page",
+			() => testRequest(customer, "/orders?page=1.5"),
+		],
 		["GET /geocode limit", () => locations("/geocode?q=Via%20Roma&limit=2.5")],
 	];
 

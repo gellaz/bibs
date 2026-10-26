@@ -1,21 +1,21 @@
 import { toast } from "@bibs/ui/components/sonner";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const CART_KEY = ["cart"] as const;
 
-// `unwrap` (da @bibs/ui/lib/api-client) lancia il messaggio dell'API se c'è,
+// `unwrapJson` (da @bibs/ui/lib/api-client) lancia il messaggio dell'API se c'è,
 // altrimenti il fallback: è così che il testo specifico del server — "Ne
 // restano solo 3" — arriva intatto al toast. Non riscrivere quella logica.
 async function fetchCart() {
-	const res = await api().customer.cart.get();
-	return unwrap(res, m.cart_load_failed()).data;
+	const res = await customerApi.cart.$get();
+	return (await unwrapJson(res, m.cart_load_failed())).data;
 }
 
-// I tipi vengono dall'API via Eden: nessun DTO scritto a mano da tenere in sync.
+// I tipi vengono dall'API via `hc`: nessun DTO scritto a mano da tenere in sync.
 export type CartData = Awaited<ReturnType<typeof fetchCart>>;
 export type CartGroup = CartData["groups"][number];
 export type CartLine = CartGroup["items"][number];
@@ -49,8 +49,8 @@ export function useCart() {
 
 	const addItem = useMutation({
 		mutationFn: async (vars: { storeProductId: string; quantity: number }) => {
-			const res = await api().customer.cart.items.post(vars);
-			return unwrap(res, m.error_generic()).data;
+			const res = await customerApi.cart.items.$post({ json: vars });
+			return (await unwrapJson(res, m.error_generic())).data;
 		},
 		onSuccess: () => {
 			void invalidate();
@@ -61,10 +61,11 @@ export function useCart() {
 
 	const setQuantity = useMutation({
 		mutationFn: async (vars: { cartItemId: string; quantity: number }) => {
-			const res = await api()
-				.customer.cart.items({ id: vars.cartItemId })
-				.patch({ quantity: vars.quantity });
-			return unwrap(res, m.error_generic()).data;
+			const res = await customerApi.cart.items[":id"].$patch({
+				param: { id: vars.cartItemId },
+				json: { quantity: vars.quantity },
+			});
+			return (await unwrapJson(res, m.error_generic())).data;
 		},
 		onSuccess: () => void invalidate(),
 		onError: (e: Error) => toast.error(e.message),
@@ -72,8 +73,10 @@ export function useCart() {
 
 	const removeItem = useMutation({
 		mutationFn: async (cartItemId: string) => {
-			const res = await api().customer.cart.items({ id: cartItemId }).delete();
-			unwrap(res, m.error_generic());
+			const res = await customerApi.cart.items[":id"].$delete({
+				param: { id: cartItemId },
+			});
+			await unwrapJson(res, m.error_generic());
 		},
 		onSuccess: () => void invalidate(),
 		onError: (e: Error) => toast.error(e.message),

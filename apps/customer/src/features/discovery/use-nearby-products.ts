@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 
 export type { Coords } from "@/features/location/coords";
 
@@ -28,8 +28,8 @@ export interface NearbyProduct {
  * recency; con coordinate l'ordinamento passa alla distanza e ogni risultato
  * porta la propria distanza in metri.
  *
- * La mappatura disaccoppia la UI dal tipo inferito da Eden (incluse le date
- * idratate a `Date`), tenendo i tile su una forma stabile.
+ * La mappatura disaccoppia la UI dal tipo inferito dall'API, tenendo i tile
+ * su una forma stabile.
  */
 export function useNearbyProducts(coords: Coords | null, limit = 12) {
 	return useQuery({
@@ -41,7 +41,7 @@ export function useNearbyProducts(coords: Coords | null, limit = 12) {
 		],
 		staleTime: 60_000,
 		queryFn: async (): Promise<NearbyProduct[]> => {
-			const { data, error } = await api().customer.products.get({
+			const res = await customerApi.products.$get({
 				query: coords
 					? {
 							limit,
@@ -52,11 +52,11 @@ export function useNearbyProducts(coords: Coords | null, limit = 12) {
 					: { limit },
 			});
 
-			if (error) {
-				throw new Error(`Ricerca non riuscita (${error.status})`);
+			if (!res.ok) {
+				throw new Error(`Ricerca non riuscita (${res.status})`);
 			}
 
-			return data.data.map((p) => ({
+			return (await res.json()).data.map((p) => ({
 				id: p.id,
 				name: p.name,
 				description: p.description,

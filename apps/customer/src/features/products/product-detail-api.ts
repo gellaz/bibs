@@ -1,18 +1,16 @@
+import type { InferResponseType } from "hono/client";
 import type { Coords } from "@/features/location/coords";
-import { apiNoDates } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 
-type DetailResponse = Awaited<
-	ReturnType<
-		ReturnType<ReturnType<typeof apiNoDates>["customer"]["products"]>["get"]
-	>
->;
-export type ProductDetailView = NonNullable<DetailResponse["data"]>["data"];
+const detail = customerApi.products[":id"].$get;
+export type ProductDetailView = InferResponseType<typeof detail, 200>["data"];
 export type ProductCharacteristicView =
 	ProductDetailView["characteristics"][number];
 
 /**
- * La scheda di un prodotto, `null` se non è visibile (404). Passa da
- * `apiNoDates`, mai da `api`: vedi C8 nel piano PR 5.
+ * La scheda di un prodotto, `null` se non è visibile (404). Le
+ * caratteristiche di testo che somigliano a una data («05/03/2027») restano
+ * testo: `hc` non le trasforma in `Date` (vedi C8 nel piano PR 5).
  */
 export async function fetchProductDetail(
 	productId: string,
@@ -26,12 +24,9 @@ export async function fetchProductDetail(
 		query.lat = params.coords.lat;
 		query.lng = params.coords.lng;
 	}
-	const { data, error } = await apiNoDates()
-		.customer.products({ id: productId })
-		.get({ query });
-	if (error) {
-		if (error.status === 404) return null;
-		throw new Error(`Caricamento prodotto non riuscito (${error.status})`);
-	}
-	return data.data;
+	const res = await detail({ param: { id: productId }, query });
+	if (res.status === 404) return null;
+	if (!res.ok)
+		throw new Error(`Caricamento prodotto non riuscito (${res.status})`);
+	return (await res.json()).data;
 }

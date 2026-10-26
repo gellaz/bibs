@@ -172,7 +172,7 @@ verifica di ogni PR stanno nel piano
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
 immagini, caratteristiche, stock; U6: negozi, immagini dei negozi, chiusure,
 impostazioni, team, onboarding, profilo, dashboard; restano a Elysia ordini,
-promozioni, checkout e billing).
+promozioni, checkout e billing); `customer/` (U3).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
@@ -210,8 +210,9 @@ promozioni, checkout e billing).
   mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
   in `src/index.ts`, o una funzione del path quando cambiano da route a route
   (`sellerGuards`: `requireSellerRole` su profilo e onboarding, `requireSeller` sul
-  resto). Le guardie di ruolo leggono la sessione da sé (401 per l'anonimo), quindi
-  non serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
+  resto). Le guardie di ruolo (`requireCustomer`, `requireSeller`,
+  `requireSellerRole`) leggono la sessione da sé (401 per l'anonimo), quindi non
+  serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
   risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`),
   `requireSellerRole` vuole solo il ruolo seller (403 «Accesso riservato ai
   venditori»). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
@@ -232,11 +233,15 @@ promozioni, checkout e billing).
   (`registration.ts`, `locations.ts`), senza effetti all'import, così li usano
   anche i casi di parità. I tipi propri di
   Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zInt`, `zDate`,
-  `zFile`, `zFiles`, `zFormat`); per il resto Zod normale, con
+  `zFile`, `zFiles`, `zFormat`, `zString`); per il resto Zod normale, con
   `title`/`error`/`description` in `.meta()`. Regole per scrivere un gemello:
   - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
-    form condivisi) → `zInt` (non `z.int()`, che ha i limiti dei safe integer);
-    `t.Date` → `zDate`; `t.Nullable(x)` → `x.nullable()`, ma
+    form condivisi) → `zInt()`, mai `z.int()` né `z.number().int()` (Zod 4.6
+    rifiuta gli interi oltre ±2^53, TypeBox no: `page=9007199254740993` è 200
+    in Elysia); `t.String` con `minLength`/`maxLength` →
+    `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
+    unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
+    per Zod); `t.Date` → `zDate`; `t.Nullable(x)` → `x.nullable()`, ma
     `Type.Union([x, Type.Null()])` → `z.union([x, z.null()])` (solo il t.Nullable
     scrive `nullable: true` in /openapi); `uniqueItems` → `.refine` con la regola
     `uniqueItems` più `.meta({ uniqueItems: true })`; un `format` con `pattern` →
@@ -253,13 +258,14 @@ promozioni, checkout e billing).
     query, default annidati, chiavi multipart `a.b`/`a[0]`): nel piano, Trappole.
 - **Test delle sub-app.** `apps/api/tests/helpers/hono-app.ts`: `testRequest`,
   `signIn(email, role)` (utente e sessione better-auth veri sul DB di test) e
-  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB; anche
-  una funzione della richiesta, per i test che leggono l'utente da un header). I log
+  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB),
+  `withResolve(app, (request) => vars)` (variabili risolte a ogni richiesta, il
+  `.resolve` finto degli harness Elysia). I log
   degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
-  `src/types.ts` (`MeApp`, `LocationsApp`, `RegistrationApp`, `SellerApp`); ogni app
-  crea in `src/lib/api.ts` il client del
+  `src/types.ts` (`MeApp`, `CustomerApp`, `LocationsApp`, `RegistrationApp`,
+  `SellerApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

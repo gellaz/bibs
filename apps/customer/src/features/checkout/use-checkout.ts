@@ -1,8 +1,9 @@
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ClientResponse } from "hono/client";
 import { CART_KEY } from "@/features/cart/use-cart";
 import { POINTS_KEY } from "@/features/points/use-points";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import {
 	type CheckoutChoice,
@@ -23,14 +24,12 @@ export class CheckoutError extends Error {
 	}
 }
 
-/** Il messaggio che `unwrap` darebbe (testo dell'API o fallback). */
-function errorMessage(res: { data: unknown; error: unknown }) {
-	try {
-		unwrap(res, m.error_generic());
-	} catch (e) {
-		return (e as Error).message;
-	}
-	return m.error_generic();
+/** Il messaggio che `unwrapJson` darebbe (testo dell'API o fallback). */
+function errorMessage(res: ClientResponse<unknown, number>) {
+	return unwrapJson(res, m.error_generic()).then(
+		() => m.error_generic(),
+		(e: Error) => e.message,
+	);
 }
 
 export const ORDERS_KEY = ["customer", "orders"] as const;
@@ -43,8 +42,8 @@ export function useReservationDeadlines(storeIds: string[]) {
 		queryKey: ["customer", "reservation-deadlines", ids],
 		enabled: ids.length > 0,
 		queryFn: async () => {
-			const { data } = unwrap(
-				await api().customer.checkout["reservation-deadlines"].get({
+			const { data } = await unwrapJson(
+				await customerApi.checkout["reservation-deadlines"].$get({
 					query: { storeIds: ids.join(",") },
 				}),
 				m.error_generic(),
@@ -64,15 +63,11 @@ export function useCheckoutPreview(choice: CheckoutChoice, enabled: boolean) {
 		enabled: enabled && stores !== "",
 		retry: false,
 		queryFn: async () => {
-			const res = await api().customer.checkout.preview.get({
+			const res = await customerApi.checkout.preview.$get({
 				query: { stores },
 			});
-			if (res.error)
-				throw new CheckoutError(
-					errorMessage(res),
-					(res.error as { status?: number }).status,
-				);
-			return unwrap(res, m.error_generic()).data;
+			if (!res.ok) throw new CheckoutError(await errorMessage(res), res.status);
+			return (await res.json()).data;
 		},
 	});
 }
@@ -85,13 +80,9 @@ export function useCreateCheckout() {
 			stores: { storeId: string; type: CheckoutType }[];
 			usePoints: boolean;
 		}) => {
-			const res = await api().customer.checkout.post(body);
-			if (res.error)
-				throw new CheckoutError(
-					errorMessage(res),
-					(res.error as { status?: number }).status,
-				);
-			return unwrap(res, m.error_generic()).data;
+			const res = await customerApi.checkout.$post({ json: body });
+			if (!res.ok) throw new CheckoutError(await errorMessage(res), res.status);
+			return (await res.json()).data;
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: CART_KEY });
@@ -117,9 +108,13 @@ export function useCheckout(
 	return useQuery({
 		queryKey: ["customer", "checkout", checkoutId],
 		queryFn: async () =>
-			unwrap(
-				await api().customer.checkouts({ checkoutId }).get(),
-				m.checkout_not_found(),
+			(
+				await unwrapJson(
+					await customerApi.checkouts[":checkoutId"].$get({
+						param: { checkoutId },
+					}),
+					m.checkout_not_found(),
+				)
 			).data,
 		// Dopo il pagamento la conferma arriva dal webhook: si rilegge finché i
 		// PR2 escono da pending. Un PI ancora pagabile (payment != null) vuol dire

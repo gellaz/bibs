@@ -1,7 +1,7 @@
 import { toast } from "@bibs/ui/components/sonner";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import type { addressFormToBody } from "./address-form-state";
 import { ADDRESSES_KEY } from "./use-addresses";
@@ -19,8 +19,8 @@ export function useAddressMutations() {
 
 	const create = useMutation({
 		mutationFn: async (body: AddressBody) => {
-			const res = await api().customer.addresses.post(body);
-			return unwrap(res, m.error_generic()).data;
+			const res = await customerApi.addresses.$post({ json: body });
+			return (await unwrapJson(res, m.error_generic())).data;
 		},
 		onSuccess: () => {
 			void invalidate();
@@ -31,10 +31,11 @@ export function useAddressMutations() {
 
 	const update = useMutation({
 		mutationFn: async (vars: { addressId: string; body: AddressBody }) => {
-			const res = await api()
-				.customer.addresses({ addressId: vars.addressId })
-				.patch(vars.body);
-			return unwrap(res, m.error_generic()).data;
+			const res = await customerApi.addresses[":addressId"].$patch({
+				param: { addressId: vars.addressId },
+				json: vars.body,
+			});
+			return (await unwrapJson(res, m.error_generic())).data;
 		},
 		onSuccess: () => {
 			void invalidate();
@@ -45,8 +46,10 @@ export function useAddressMutations() {
 
 	const remove = useMutation({
 		mutationFn: async (addressId: string) => {
-			const res = await api().customer.addresses({ addressId }).delete();
-			return unwrap(res, m.error_generic());
+			const res = await customerApi.addresses[":addressId"].$delete({
+				param: { addressId },
+			});
+			return unwrapJson(res, m.error_generic());
 		},
 		onSuccess: () => {
 			void invalidate();

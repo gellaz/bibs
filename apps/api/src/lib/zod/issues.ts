@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { ValidationRule } from "@/lib/validation-rule";
 import { isAnyOf, nodeAt, unwrap } from "./mirror";
+import { integerCheck } from "./t";
 
 // Dalle issue di Zod alla regola di `validation-rule.ts` e all'errore che
 // TypeBox (quindi Elysia) avrebbe dato per primo: i 422 restano identici al
@@ -24,8 +25,19 @@ export function ruleParams(issue: Issue): RuleParams | undefined {
 
 const isDecode = (issue: Issue) => !!ruleParams(issue)?.decode;
 
-/** La regola violata, come `validationRule` sull'errore TypeBox equivalente. */
-export function issueRule(issue: Issue): ValidationRule {
+// `Type.Integer` (gemello `zInt()`): un non numero è «deve essere un numero
+// intero», ma Zod dice solo `expected: "number"`.
+function isInt(node: z.ZodType | undefined) {
+	if (!node) return false;
+	const def = unwrap(node).node._zod.def as Record<string, any>;
+	return def.type === "number" && !!def.checks?.includes(integerCheck);
+}
+
+/**
+ * La regola violata, come `validationRule` sull'errore TypeBox equivalente;
+ * `node` è lo schema che ha prodotto l'issue (per `zInt()`).
+ */
+export function issueRule(issue: Issue, node?: z.ZodType): ValidationRule {
 	const custom = ruleParams(issue);
 	if (custom) return custom.rule;
 	if (issue.input === undefined) return { kind: "required" };
@@ -35,7 +47,7 @@ export function issueRule(issue: Issue): ValidationRule {
 				case "string":
 					return { kind: "string" };
 				case "number":
-					return { kind: "number" };
+					return isInt(node) ? { kind: "integer" } : { kind: "number" };
 				case "int":
 					return { kind: "integer" };
 				case "boolean":
@@ -208,10 +220,20 @@ function collapse(issues: Issue[], checked: Checked) {
 		const def = node._zod.def as Record<string, any>;
 		// Zod dà l'errore dell'unico ramo che combacia col tipo (stringa troppo
 		// lunga); TypeBox, con più rami non nulli, «valore non valido».
-		const manyBranches =
-			def.type === "union" &&
-			def.options.filter((o: z.ZodType) => o._zod.def.type !== "null").length >
-				1;
+		const nonNull: z.ZodType[] =
+			def.type === "union"
+				? def.options.filter((o: z.ZodType) => o._zod.def.type !== "null")
+				: [];
+		const manyBranches = nonNull.length > 1;
+		// Il ramo non nullo di t.Nullable o di `Type.Union([X, Type.Null()])`
+		// (U6: gli orari di `CreateStoreBody`): TypeBox dà la regola del suo
+		// primo errore.
+		const branch =
+			def.type === "nullable"
+				? def.innerType
+				: nonNull.length === 1
+					? nonNull[0]
+					: undefined;
 		if (
 			!coerced &&
 			inner.length === 1 &&
@@ -222,19 +244,16 @@ function collapse(issues: Issue[], checked: Checked) {
 		const input = valueAt(value, at);
 		let rule: ValidationRule =
 			input === undefined ? { kind: "required" } : { kind: "invalid" };
-		if (!coerced && def.type === "nullable") {
+		if (!coerced && branch) {
 			const relative = inner.map((i) => ({
 				...i,
 				path: i.path.slice(at.length),
 			}));
-			const first = firstIssue(relative, {
-				schema: def.innerType,
-				value: input,
-			});
-			rule = issueRule({
-				...first,
-				input: valueAt(input, first.path),
-			} as Issue);
+			const first = firstIssue(relative, { schema: branch, value: input });
+			rule = issueRule(
+				{ ...first, input: valueAt(input, first.path) } as Issue,
+				nodeAt(branch, first.path),
+			);
 		}
 		const params: RuleParams = { rule };
 		return { code: "custom", path: at, input, message: "", params } as Issue;

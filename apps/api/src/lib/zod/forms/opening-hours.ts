@@ -2,7 +2,7 @@ import { z } from "zod";
 import { zInt } from "../t";
 
 // Gemello Zod di `lib/schemas/forms/opening-hours.ts` (D3 del piano Hono).
-// `Type.Integer` di TypeBox è `zInt`, non `zInteger` (niente stringhe).
+// `Type.Integer` di TypeBox è `zInt()`, non `zInteger` (niente stringhe).
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const time = (description: string) =>
@@ -17,9 +17,7 @@ export const TimeSlotSchema = z.object({
 });
 
 export const DayScheduleSchema = z.object({
-	dayOfWeek: zInt({
-		minimum: 0,
-		maximum: 6,
+	dayOfWeek: zInt().min(0).max(6).meta({
 		description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
 	}),
 	slots: z

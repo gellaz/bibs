@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zFormat } from "../t";
+import { zFormat, zString } from "../t";
 
 // Gemelli Zod di `lib/schemas/forms/onboarding.ts` (D3 del piano Hono), stessi
 // nomi; si aggiungono quando una route migrata li usa. In U11b prendono il
@@ -11,7 +11,7 @@ const VAT = /^[0-9]{11}$/;
 
 /** Testo obbligatorio con i limiti e il messaggio dello schema TypeBox. */
 const text = (min: number, max: number, description: string, error: string) =>
-	z.string().min(min).max(max).meta({ description, error });
+	zString({ minLength: min, maxLength: max, description, error });
 
 /**
  * `calendar-date` col pattern AAAA-MM-GG, come il `Type.String` TypeBox. Il
@@ -48,7 +48,8 @@ export const PersonalInfoBody = z.object({
 		"Paese di residenza (codice ISO alpha-2)",
 		"Seleziona il paese di residenza",
 	),
-	residenceMunicipalityId: z.string().min(1).meta({
+	residenceMunicipalityId: zString({
+		minLength: 1,
 		description: "ID del comune di residenza",
 		error: "Il comune di residenza è obbligatorio",
 	}),
@@ -79,7 +80,8 @@ export const DocumentBody = z.object({
 		"Il numero del documento deve avere tra 5 e 20 caratteri",
 	),
 	documentExpiry: calendarDate("Scadenza documento (YYYY-MM-DD)"),
-	documentIssuedMunicipalityId: z.string().min(1).meta({
+	documentIssuedMunicipalityId: zString({
+		minLength: 1,
 		description: "ID del comune di emissione del documento",
 		error: "Il comune di emissione è obbligatorio",
 	}),
@@ -110,13 +112,13 @@ export const CompanyBody = z.object({
 		"Indirizzo sede legale",
 		"L'indirizzo è obbligatorio",
 	),
-	country: z
-		.string()
-		.min(2)
-		.max(2)
-		.meta({ description: "Codice paese ISO alpha-2 (default: IT)" })
-		.optional(),
-	municipalityId: z.string().min(1).meta({
+	country: zString({
+		minLength: 2,
+		maxLength: 2,
+		description: "Codice paese ISO alpha-2 (default: IT)",
+	}).optional(),
+	municipalityId: zString({
+		minLength: 1,
 		description: "ID del comune della sede legale",
 		error: "Il comune è obbligatorio",
 	}),

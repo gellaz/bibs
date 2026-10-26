@@ -1,6 +1,6 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { z } from "zod";
-import { elysiaJson } from "@/lib/zod/t";
+import { elysiaJson, integerCheck } from "@/lib/zod/t";
 import { assertRoutes, DOC, type ModuleGuards } from "./routes";
 import { VALIDATES, type Validates } from "./validator";
 
@@ -69,6 +69,9 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 		delete json.type;
 		json.anyOf = values.map((value) => ({ const: value, type: typeof value }));
 	}
+	// zInt(): Zod lo vede come `number`, TypeBox scrive `integer`.
+	if (def.type === "number" && def.checks?.includes(integerCheck))
+		json.type = "integer";
 }
 
 // Dopo gli override Zod compatta `anyOf: [{type: a}, {type: b}]` in

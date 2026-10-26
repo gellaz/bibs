@@ -30,7 +30,7 @@ import { resolveReservationDeadlines } from "@/lib/store-open-status";
 import { storesRoutes } from "@/modules/seller/routes/stores";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestSeller, createTestStore } from "../helpers/fixtures";
-import { withVars } from "../helpers/hono-app";
+import { withResolve } from "../helpers/hono-app";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -44,7 +44,7 @@ beforeEach(async () => {
 
 // Il guard del seller è sostituito da una resolve di test: `x-seller` è l'id
 // del profilo, `x-owner: 0` simula un dipendente.
-const app = withVars(storesRoutes, async (request) => {
+const app = withResolve(storesRoutes, async (request) => {
 	const id = request.headers.get("x-seller") ?? "";
 	const sp = await getTestDb().query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, id),
