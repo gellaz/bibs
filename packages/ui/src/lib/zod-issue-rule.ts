@@ -4,7 +4,7 @@ import type { core } from "zod";
  * La regola violata da un'issue di zod, senza testo: ogni app la traduce con i
  * propri messaggi Paraglide (`packages/ui` non può importarli). Stessi `kind`
  * e stessi nomi di formato della `ValidationRule` dell'API, così il seller
- * riusa la traduzione dei form TypeBox.
+ * riusa la traduzione dei form sugli schemi condivisi con l'API.
  */
 export type ZodIssueRule =
 	| { kind: "required" }
@@ -27,7 +27,7 @@ export type ZodIssueRule =
 	| { kind: "maxItems"; limit: number }
 	| { kind: "invalid" };
 
-/** Formati di zod → nomi dei formati TypeBox; gli altri restano col nome di zod. */
+/** Formati di zod → nomi dei formati dell'API; gli altri restano col nome di zod. */
 const FORMATS: Record<string, string> = {
 	email: "email",
 	url: "uri",
@@ -62,7 +62,7 @@ function size(
 ): ZodIssueRule {
 	switch (origin) {
 		case "string":
-			// `min(1)` è il modo di zod di dire «obbligatorio»: come per TypeBox.
+			// `min(1)` è il modo di zod di dire «obbligatorio»: come nell'API.
 			if (side === "min" && limit === 1 && inclusive)
 				return { kind: "required" };
 			return side === "min"

@@ -4,8 +4,8 @@ import { isAnyOf, nodeAt, unwrap } from "./mirror";
 import { integerCheck } from "./t";
 
 // Dalle issue di Zod alla regola di `validation-rule.ts` e all'errore che
-// TypeBox (quindi l'API di prima) avrebbe dato per primo: i 422 restano identici al
-// byte (D6 del piano Hono). Zod raccoglie tutte le issue; TypeBox ne dà una
+// l'API di prima avrebbe dato per primo: i 422 restano identici al
+// byte (D6 del piano Hono). Zod raccoglie tutte le issue; prima ce n'era una
 // sola, nel suo ordine di visita, che qui si ricostruisce.
 
 export type Issue = z.core.$ZodIssue;
@@ -34,7 +34,7 @@ function isInt(node: z.ZodType | undefined) {
 }
 
 /**
- * La regola violata, come `validationRule` sull'errore TypeBox equivalente;
+ * La regola violata, come la dava l'API di prima sull'errore equivalente;
  * `node` è lo schema che ha prodotto l'issue (per `zInt()`).
  */
 export function issueRule(issue: Issue, node?: z.ZodType): ValidationRule {
@@ -98,6 +98,12 @@ function unionRule(issue: Extract<Issue, { code: "invalid_union" }>) {
 		branches.every((first) => first.code === "invalid_value")
 	)
 		return { kind: "notAllowed" } as const;
+	if (
+		branches.some(
+			(first) => first.code === "invalid_type" && first.expected === "date",
+		)
+	)
+		return { kind: "date" } as const;
 	const nonNull = branches.filter(
 		(first) => !(first.code === "invalid_type" && first.expected === "null"),
 	);
@@ -109,7 +115,7 @@ function unionRule(issue: Extract<Issue, { code: "invalid_union" }>) {
 		: ({ kind: "invalid" } as const);
 }
 
-// Ordine dei controlli di TypeBox sullo stesso valore (ValueErrors 0.34):
+// Ordine dei controlli di prima sullo stesso valore:
 // tipo, poi minLength < maxLength < pattern < format sulle stringhe,
 // exclusiveMaximum < exclusiveMinimum < maximum < minimum < multipleOf sui
 // numeri, minItems < maxItems sugli array (uniqueItems dopo gli elementi).
@@ -151,7 +157,7 @@ function valueAt(value: unknown, path: PropertyKey[]) {
 
 // ── unioni ──────────────────────────────────────────────────────────────────
 
-// Un'unione che TypeBox accetta al controllo (un ramo ha solo errori di
+// Un'unione che prima passava il controllo (un ramo ha solo errori di
 // decodifica: «5000» per un t.Integer con massimo 1000) fallisce nella
 // decodifica del primo ramo che passa il controllo: l'errore è il suo.
 function decodeOnly(issues: Issue[]): Issue[] | undefined {
@@ -188,8 +194,8 @@ function anyOfAt(checked: Checked, path: PropertyKey[]) {
 	return undefined;
 }
 
-// TypeBox segnala un errore dentro un anyOf (t.Nullable di un oggetto o di un
-// array) sul nodo dell'unione, con la regola del primo errore del ramo non
+// Prima un errore dentro un anyOf (t.Nullable di un oggetto o di un
+// array) stava sul nodo dell'unione, con la regola del primo errore del ramo non
 // nullo e senza i metadati annidati; Zod lo passa col path completo.
 function collapse(issues: Issue[], checked: Checked) {
 	const { schema, value } = checked;
@@ -220,7 +226,7 @@ function collapse(issues: Issue[], checked: Checked) {
 		const node = unwrap(nodeAt(schema, at) as z.ZodType).node;
 		const def = node._zod.def as Record<string, any>;
 		// t.Nullable o `Type.Union([X, Type.Null()])` dei form condivisi: per
-		// TypeBox sono lo stesso anyOf, la regola è quella del ramo non nullo.
+		// prima erano lo stesso anyOf, la regola è quella del ramo non nullo.
 		const nonNull =
 			def.type === "union"
 				? def.options.filter((o: z.ZodType) => o._zod.def.type !== "null")
@@ -248,7 +254,7 @@ function collapse(issues: Issue[], checked: Checked) {
 				def.options.indexOf(branch)
 			].map((i) => ({ ...i, path: [...at, ...i.path] }) as Issue);
 		// Zod dà l'errore dell'unico ramo che combacia col tipo (stringa troppo
-		// lunga); TypeBox, con più rami non nulli, «valore non valido».
+		// lunga); prima, con più rami non nulli, «valore non valido».
 		const manyBranches = nonNull.length > 1;
 		if (
 			!coerced &&
@@ -277,7 +283,7 @@ function collapse(issues: Issue[], checked: Checked) {
 	});
 }
 
-// ── ordine di TypeBox ───────────────────────────────────────────────────────
+// ── ordine di prima ─────────────────────────────────────────────────────────
 
 const NO_VALUE = Symbol("no-value");
 
@@ -290,7 +296,7 @@ export interface Checked {
 }
 
 /**
- * L'issue che TypeBox avrebbe dato per prima (`Errors(value).First()`): prima
+ * L'issue che l'API di prima avrebbe dato per prima: prima
  * i controlli, poi la decodifica (si decodifica solo un valore valido);
  * in un oggetto, prima le chiavi obbligatorie che non ci sono (nel valore
  * ripulito come prima, `mirror.ts`), poi i campi nell'ordine dello schema;
@@ -311,7 +317,7 @@ export function firstIssue(issues: Issue[], checked?: Checked): Issue {
 function isMissing(issue: Issue, parent: unknown) {
 	if (isDecode(issue)) return false;
 	if (parent === NO_VALUE) return issue.input === undefined;
-	// Come TypeBox: `Object.getOwnPropertyNames(value).includes(key)`.
+	// Come prima: `Object.getOwnPropertyNames(value).includes(key)`.
 	return (
 		!!parent &&
 		typeof parent === "object" &&

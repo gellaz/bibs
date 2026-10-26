@@ -1,5 +1,3 @@
-import { type Static, Type } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 import {
 	and,
 	asc,
@@ -12,6 +10,7 @@ import {
 	or,
 	sql,
 } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { organization, type VatStatus } from "@/db/schemas/organization";
@@ -302,7 +301,7 @@ const REJECTION_OUTCOMES: Record<
 export async function rejectSeller(
 	sellerId: string,
 	expectedUpdatedAt: Date,
-	{ reason, fixStep }: Static<typeof RejectSellerBody>,
+	{ reason, fixStep }: z.infer<typeof RejectSellerBody>,
 ) {
 	const rejectionReason = reason.trim();
 	const updated = await decideReview(sellerId, expectedUpdatedAt, {
@@ -513,25 +512,22 @@ export async function listPendingChanges(params: ListPendingChangesParams) {
 // changeData is JSON written by the seller settings routes. Approval re-checks
 // it against the same schema those routes validate, so a row that drifted
 // (older shape, manual edit) can't write garbage into live seller data.
-const StoredDocumentChange = Type.Composite([
-	DocumentChangeBody,
-	Type.Object({
-		documentImageKey: Type.Optional(Type.String()),
-		documentImageUrl: Type.Optional(Type.String()),
-	}),
-]);
+const StoredDocumentChange = DocumentChangeBody.extend({
+	documentImageKey: z.string().optional(),
+	documentImageUrl: z.string().optional(),
+});
 
-const changeDataCheckers = {
-	vat: TypeCompiler.Compile(VatChangeBody),
-	document: TypeCompiler.Compile(StoredDocumentChange),
+const changeDataSchemas = {
+	vat: VatChangeBody,
+	document: StoredDocumentChange,
 };
 
 function isValidChangeData(type: "vat" | "document", data: unknown): boolean {
-	if (!changeDataCheckers[type].Check(data)) return false;
+	if (!changeDataSchemas[type].safeParse(data).success) return false;
 	if (type === "vat") return true;
 	// La chiave S3 e l'URL pubblico del documento viaggiano insieme: con uno
 	// solo l'approvazione scriverebbe un documento a metà.
-	const { documentImageKey, documentImageUrl } = data as Static<
+	const { documentImageKey, documentImageUrl } = data as z.infer<
 		typeof StoredDocumentChange
 	>;
 	return (documentImageKey === undefined) === (documentImageUrl === undefined);
@@ -580,7 +576,7 @@ export async function approveChange(changeId: string, adminUserId: string) {
 
 		// Apply the change based on type
 		if (change.changeType === "vat") {
-			const { vatNumber } = changeData as Static<typeof VatChangeBody>;
+			const { vatNumber } = changeData as z.infer<typeof VatChangeBody>;
 			// Un altro venditore può averla registrata dopo la richiesta: il 409
 			// annulla anche il passaggio a "approved" (stessa transazione).
 			const takenBy = await tx.query.organization.findFirst({
@@ -624,7 +620,7 @@ export async function approveChange(changeId: string, adminUserId: string) {
 
 		let replacedImageKey: string | null = null;
 		if (change.changeType === "document") {
-			const doc = changeData as Static<typeof StoredDocumentChange>;
+			const doc = changeData as z.infer<typeof StoredDocumentChange>;
 			if (doc.documentImageKey) {
 				const current = await tx.query.sellerProfile.findFirst({
 					where: eq(sellerProfile.id, change.sellerProfileId),

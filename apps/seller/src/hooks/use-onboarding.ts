@@ -1,7 +1,7 @@
 import type { DocumentBody } from "@bibs/api/schemas";
 import { unwrapJson } from "@bibs/ui/lib/api-client";
-import type { Static } from "@sinclair/typebox";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { z } from "zod";
 import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
@@ -74,7 +74,7 @@ export function useUpdatePersonalInfo() {
  */
 export function useUpdateDocument() {
 	return useOnboardingMutation(
-		async (params: Static<typeof DocumentBody> & { documentImage: File }) => {
+		async (params: z.infer<typeof DocumentBody> & { documentImage: File }) => {
 			const response = await sellerApi.onboarding.document.$patch({
 				form: params,
 			});

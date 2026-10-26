@@ -1,31 +1,26 @@
-import { readFileSync, writeFileSync } from "node:fs";
-import {
-	CompanyBody,
-	CreateStoreBody,
-	DocumentBody,
-	PersonalInfoBody,
-} from "@bibs/api/schemas";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
+import { readFileSync } from "node:fs";
+import { CompanyBody, DocumentBody, PersonalInfoBody } from "@bibs/api/schemas";
 import type { Resolver } from "react-hook-form";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { CreateProductFormBody } from "@/features/products/lib/product-form-schema";
-import "@/lib/typebox-formats";
+import { storeFormSchema } from "@/features/stores/components/store-form";
 import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
-import { typeboxResolver } from "./typebox-resolver";
+import { schemaResolver } from "./schema-errors";
 
 // I messaggi d'errore dei cinque form sugli schemi condivisi con l'API
 // (prodotto, negozio, anagrafica, documento, azienda), campo per campo, in
-// italiano e in inglese. L'atteso `form-errors.fixture.json` è generato dai
-// resolver di prima (FORM_ERRORS_FIXTURE=write) e non si tocca: il cambio di
-// resolver deve dare gli stessi messaggi sugli stessi campi.
+// italiano e in inglese. L'atteso `form-errors.fixture.json` è stato generato
+// dai resolver di prima (commit «atteso dei messaggi d'errore dei form
+// condivisi») e non si tocca: i resolver di oggi danno gli stessi messaggi
+// sugli stessi campi.
 
 /** Il resolver di ogni form, costruito come nel form. */
 const RESOLVERS: Record<string, Resolver<any>> = {
-	product: typeboxResolver(TypeCompiler.Compile(CreateProductFormBody)),
-	store: typeboxResolver(TypeCompiler.Compile(CreateStoreBody)),
-	personalInfo: typeboxResolver(TypeCompiler.Compile(PersonalInfoBody)),
-	document: typeboxResolver(TypeCompiler.Compile(DocumentBody)),
-	company: typeboxResolver(TypeCompiler.Compile(CompanyBody)),
+	product: schemaResolver(CreateProductFormBody),
+	store: schemaResolver(storeFormSchema),
+	personalInfo: schemaResolver(PersonalInfoBody),
+	document: schemaResolver(DocumentBody),
+	company: schemaResolver(CompanyBody),
 };
 
 /** Chiave tolta dal valore (campo mai toccato), diversa da `undefined`. */
@@ -420,20 +415,13 @@ type Fixture = Record<
 	Record<string, Record<string, Record<string, string>>>
 >;
 
-const FIXTURE_URL = new URL("./form-errors.fixture.json", import.meta.url);
-const write = process.env.FORM_ERRORS_FIXTURE === "write";
-const fixture: Fixture = write
-	? {}
-	: JSON.parse(readFileSync(FIXTURE_URL, "utf8"));
+const fixture: Fixture = JSON.parse(
+	readFileSync(new URL("./form-errors.fixture.json", import.meta.url), "utf8"),
+);
 
 const originalGetLocale = getLocale;
 afterEach(() => {
 	overwriteGetLocale(originalGetLocale);
-});
-
-afterAll(() => {
-	if (write)
-		writeFileSync(FIXTURE_URL, `${JSON.stringify(fixture, null, "\t")}\n`);
 });
 
 describe("messaggi d'errore dei form sugli schemi condivisi", () => {
@@ -445,7 +433,6 @@ describe("messaggi d'errore dei form sugli schemi condivisi", () => {
 					it: await messages(form, patch, "it"),
 					en: await messages(form, patch, "en"),
 				};
-			if (write) fixture[form] = actual;
 			expect(actual).toEqual(fixture[form]);
 		});
 	}

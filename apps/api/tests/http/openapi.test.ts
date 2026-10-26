@@ -26,7 +26,7 @@ import { cases } from "./parity-cases";
 // /openapi/json dell'app radice (contro `baseline/openapi.json`) e, schema per
 // schema, sui casi di `parity-cases.ts` più alcune risposte: le operazioni
 // attese stanno in `golden/openapi-twins.json`, scritte dal generatore di
-// prima per lo schema TypeBox di ogni caso (catturate prima di U11).
+// prima per lo schema di prima di ogni caso (catturate prima di U11).
 
 const detail = { summary: "x", tags: ["T"] };
 
@@ -36,7 +36,7 @@ const golden: { twins: Record<string, Json>; responses: Record<string, Json> } =
 
 /**
  * Delta 15 del registro: `elysiaMeta: "Files"`, chiave interna che lo schema
- * TypeBox di un array di file portava in /openapi, non esce più; il resto è
+ * di prima di un array di file portava in /openapi, non esce più; il resto è
  * identico.
  */
 function withoutFilesMeta(value: unknown): unknown {
@@ -101,7 +101,7 @@ describe("OpenAPI — gemelli Zod contro l'OpenAPI di prima", () => {
 		],
 		[
 			// U7: conteggi ordini per stato; Zod scrive propertyNames +
-			// additionalProperties, TypeBox patternProperties.
+			// additionalProperties, prima patternProperties.
 			"t.Record in risposta",
 			{
 				200: z

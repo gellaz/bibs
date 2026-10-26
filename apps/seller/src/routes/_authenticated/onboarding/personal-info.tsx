@@ -10,11 +10,10 @@ import {
 	SelectValue,
 } from "@bibs/ui/components/select";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import type { Static } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import type { z } from "zod";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import { useCountries } from "@/hooks/use-countries";
 import {
@@ -23,11 +22,10 @@ import {
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useUpdatePersonalInfo } from "@/hooks/use-onboarding";
-import { typeboxResolver } from "@/lib/typebox-resolver";
+import { schemaResolver } from "@/lib/schema-errors";
 import { m } from "@/paraglide/messages";
 
-type PersonalInfoFormData = Static<typeof PersonalInfoBody>;
-const compiledSchema = TypeCompiler.Compile(PersonalInfoBody);
+type PersonalInfoFormData = z.infer<typeof PersonalInfoBody>;
 
 export const Route = createFileRoute(
 	"/_authenticated/onboarding/personal-info",
@@ -54,7 +52,7 @@ function PersonalInfoPage() {
 		control,
 		formState: { errors, isSubmitting },
 	} = useForm<PersonalInfoFormData>({
-		resolver: typeboxResolver(compiledSchema),
+		resolver: schemaResolver(PersonalInfoBody),
 	});
 
 	const onSubmit: SubmitHandler<PersonalInfoFormData> = async (data) => {

@@ -7,9 +7,9 @@ import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
 import { ProductMacroCategorySchema } from "@/lib/schemas/entities";
+import { VatRateSchema } from "@/lib/schemas/forms/products";
 import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas/responses";
 import { zString } from "@/lib/schemas/t";
-import { VatRateSchema } from "@/lib/zod/forms/products";
 import { adminDetail } from "../context";
 import {
 	createProductMacroCategory,

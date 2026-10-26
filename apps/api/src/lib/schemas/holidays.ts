@@ -36,7 +36,7 @@ export const HolidayPreviewSchema = z.object({
 });
 
 // Unione alla radice: `z.union`, non `z.discriminatedUnion` (che sceglie il
-// ramo dal discriminante e dà errori che TypeBox non dà).
+// ramo dal discriminante e dà errori che prima non c'erano).
 const holidayName = zString({
 	minLength: 1,
 	maxLength: 100,

@@ -23,7 +23,7 @@ The defining property of the stack is **one type flow with no code generation**:
 ```text
 Drizzle table definitions (apps/api/src/db/schemas/)
         ↓ inform
-TypeBox schemas (apps/api/src/lib/schemas/) — validation + OpenAPI
+Zod schemas (apps/api/src/lib/schemas/) — validation + OpenAPI
         ↓ typed into
 Elysia routes → exported `App` type (apps/api/src/types.ts)
         ↓ inferred by
@@ -39,13 +39,13 @@ after any API change.
 ### Request lifecycle and response contract
 
 Every route returns the same envelope. There are two layers of helpers in
-`src/lib/responses.ts` (runtime) and `src/lib/schemas/responses.ts` (TypeBox schemas
+`src/lib/responses.ts` (runtime) and `src/lib/schemas/responses.ts` (Zod schemas
 for OpenAPI):
 
 - `ok(data)` / `okPage(data, pagination)` (`src/lib/responses.ts`) — runtime envelope
   builders
 - `okRes(schema)` / `okPageRes(schema)` / `withErrors()` / `withConflictErrors()`
-  (`src/lib/schemas/responses.ts`) — TypeBox schema helpers used in route definitions
+  (`src/lib/schemas/responses.ts`) — Zod schema helpers used in route definitions
   so OpenAPI stays accurate
 - Success shape: `{ success: true, data }` or `{ success: true, data: [...], pagination: { page, limit, total } }`
   (page `limit` is capped at 100 — request more and you get a `422 VALIDATION_ERROR`)
@@ -235,7 +235,7 @@ billing; l'app admin non usa più Eden); `webhooks/` (U10).
   valido non consuma budget; la chiave `email` è quella del body validato). Sotto
   il mount l'IP è l'`x-forwarded-for` che Elysia ha già riscritto con l'IP del
   socket.
-- **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
+- **Schemi Zod.** I gemelli degli schemi di prima stavano in `apps/api/src/lib/zod/`
   (stessi nomi di `lib/schemas/`), scritti modulo per modulo; gli input che in
   Elysia erano scritti nella route stanno in `lib/zod/<modulo>.ts`
   (`registration.ts`, `locations.ts`), senza effetti all'import, così li usano
@@ -243,14 +243,14 @@ billing; l'app admin non usa più Eden); `webhooks/` (U10).
   Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zInt`, `zDate`,
   `zFile`, `zFiles`, `zFormat`, `zString`); per il resto Zod normale, con
   `title`/`error`/`description` in `.meta()`. Regole per scrivere un gemello:
-  - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
-    form condivisi) → `zInt()`, mai `z.int()` né `z.number().int()` (Zod 4.6
-    rifiuta gli interi oltre ±2^53, TypeBox no: `page=9007199254740993` è 200
+  - `t.Integer` di Elysia → `zInteger`; l'intero dei form condivisi →
+    `zInt()`, mai `z.int()` né `z.number().int()` (Zod 4.6
+    rifiuta gli interi oltre ±2^53, il validatore di prima no: `page=9007199254740993` è 200
     in Elysia); `t.String` con `minLength`/`maxLength` →
-    `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
-    unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
-    per Zod), anche con un formato (`zString({ format: "uri", maxLength })`:
-    lunghezze, pattern e formato nell'ordine di TypeBox; `utf16Length` per uno
+    `zString({ minLength, maxLength, pattern, description })` (prima si contavano
+    le unità UTF-16, `z.string().min/max` conta i code point: «😀» valeva 2
+    prima, 1 per Zod), anche con un formato (`zString({ format: "uri", maxLength })`:
+    lunghezze, pattern e formato nell'ordine di prima; `utf16Length` per uno
     schema scritto a mano); `t.String({ format })` → `zFormat(f)`, mai i formati
     di Zod: `FORMATS` (`lib/zod/formats.ts`) copia il FormatRegistry dell'app
     composta, dove `@elysiajs/openapi` sovrascrive `email`, `uuid` e `date` di
@@ -265,7 +265,7 @@ billing; l'app admin non usa più Eden); `webhooks/` (U10).
     chiavi numeriche in /openapi); `t.Union` di oggetti →
     `z.union`, mai `z.discriminatedUnion`;
   - ogni gemello nuovo entra in `apps/api/tests/http/parity-cases.ts` con lo schema
-    TypeBox e l'atteso: il test confronta dal vivo con Elysia status, corpo del 422
+    di prima e l'atteso: il test confronta dal vivo con Elysia status, corpo del 422
     e OpenAPI. I casi coprono anche l'ordine del primo errore, i t.Nullable di
     oggetti e array, le unioni alla radice e i body multipart con file;
   - differenze note che nessuna route di oggi tocca (coercizione annidata in

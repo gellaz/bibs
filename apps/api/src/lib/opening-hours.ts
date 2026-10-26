@@ -10,7 +10,7 @@ interface DaySchedule {
 
 /**
  * Valida la coerenza semantica degli orari di apertura (il FORMATO HH:mm e i
- * range di dayOfWeek sono già garantiti dallo schema TypeBox a monte):
+ * range di dayOfWeek sono già garantiti dallo schema a monte):
  * - chiusura strettamente successiva all'apertura per ogni fascia;
  * - nessuna sovrapposizione tra fasce dello stesso giorno (il confine
  *   close == open della successiva è ammesso: close è esclusivo in getOpenStatus);

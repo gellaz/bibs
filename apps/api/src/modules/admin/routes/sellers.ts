@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
 import { SellerProfileWithUserSchema } from "@/lib/schemas/composed";
 import { SellerProfileSchema } from "@/lib/schemas/entities";
+import { RejectSellerBody } from "@/lib/schemas/forms/seller-rejection";
 import { SellerListQuery } from "@/lib/schemas/queries";
 import {
 	okPageRes,
@@ -16,7 +17,6 @@ import {
 	withErrors,
 } from "@/lib/schemas/responses";
 import { zDate } from "@/lib/schemas/t";
-import { RejectSellerBody } from "@/lib/zod/forms/seller-rejection";
 import { adminDetail } from "../context";
 import {
 	countSellersByStatus,

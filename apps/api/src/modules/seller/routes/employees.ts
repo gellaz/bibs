@@ -11,6 +11,7 @@ import {
 	EmployeeSchema,
 	MunicipalityCompactSchema,
 } from "@/lib/schemas/entities";
+import { TeamInviteBody } from "@/lib/schemas/forms/onboarding";
 import { PaginationQuery } from "@/lib/schemas/pagination";
 import {
 	OkMessage,
@@ -18,7 +19,6 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas/responses";
-import { TeamInviteBody } from "@/lib/zod/forms/onboarding";
 import { requireOwner } from "../context";
 import {
 	banEmployee,

@@ -16,20 +16,20 @@ import { firstIssue, type Issue, issueRule, type RuleParams } from "./issues";
 // stesso JSON Schema in /openapi. Per tutto il resto i gemelli usano Zod
 // normale (`z.string().regex()`, `z.object`, `z.enum`, `.nullable()`, …) e i
 // metadati con `.meta({ title, description, error })`. Corrispondenze da
-// tenere: `t.Integer` di prima → `zInteger` (accetta "5"), `Type.Integer` di
-// TypeBox → `zInt()` (non accetta stringhe; mai `z.int()`: vedi
+// tenere: `t.Integer` di prima → `zInteger` (accetta "5"), l'intero dei form
+// condivisi → `zInt()` (non accetta stringhe; mai `z.int()`: vedi
 // `integerCheck`); `t.String({ minLength, maxLength })` → `zString` (mai
 // `z.string().min/max`: contano i code point); `t.Union` di oggetti →
-// `z.union`, mai `z.discriminatedUnion` (dà errori che TypeBox non dà).
+// `z.union`, mai `z.discriminatedUnion` (dà errori che prima non c'erano).
 
 type Json = Record<string, unknown>;
 
 /**
- * JSON Schema identico a quello che TypeBox scriveva per il tipo di prima, per
+ * JSON Schema identico a quello che l'API di prima scriveva per il tipo, per
  * `/openapi` (vedi `src/http/openapi.ts`). Chiave: la `def`, che `.meta()` e i
  * cloni di Zod conservano.
  */
-export const typeboxJson = new WeakMap<object, Json>();
+export const schemaJson = new WeakMap<object, Json>();
 
 /** Tipo di file ammesso (controllo dei magic byte dopo la validazione). */
 export const fileExtensions = new WeakMap<object, string | string[]>();
@@ -37,11 +37,11 @@ export const fileExtensions = new WeakMap<object, string | string[]>();
 const defOf = (schema: z.ZodType) => schema._zod.def as object;
 
 function register<S extends z.ZodType>(schema: S, json: Json): S {
-	typeboxJson.set(defOf(schema), json);
+	schemaJson.set(defOf(schema), json);
 	return schema;
 }
 
-/** Metadati che TypeBox tiene nello schema: `title` e `error` arrivano al 422. */
+/** Metadati dello schema, come prima: `title` e `error` arrivano al 422. */
 export interface Meta {
 	title?: string;
 	description?: string;
@@ -80,7 +80,7 @@ export function asResponse<T>(fn: () => T): T {
 	}
 }
 
-// Con `default` nelle opzioni (come in TypeBox) il campo diventa facoltativo in
+// Con `default` nelle opzioni (come prima) il campo diventa facoltativo in
 // ingresso; senza, il tipo resta quello del costruttore.
 type WithDefault<S extends z.ZodType, O> = O extends { default: unknown }
 	? z.ZodDefault<S>
@@ -115,9 +115,9 @@ export interface StringOptions extends Meta {
 }
 
 /**
- * `minLength`/`maxLength` di TypeBox: conta le unità UTF-16 (`value.length`),
- * `z.string().min/max` di Zod 4.6 i code point («😀» è lungo 2 per TypeBox, 1
- * per Zod). Le issue sono le `too_small` e `too_big` di Zod: stessa regola e
+ * `minLength`/`maxLength` come prima: conta le unità UTF-16 (`value.length`),
+ * `z.string().min/max` di Zod 4.6 i code point («😀» è lungo 2 qui, 1 per
+ * Zod). Le issue sono le `too_small` e `too_big` di Zod: stessa regola e
  * stesso ordine nel 422 (`issues.ts`).
  */
 export const utf16Length = ({
@@ -146,7 +146,7 @@ export const utf16Length = ({
 
 /**
  * `t.String` con `minLength`/`maxLength` (vedi `utf16Length`), `pattern` e
- * `format`, controllati nell'ordine di TypeBox: lunghezze, pattern, formato.
+ * `format`, controllati nell'ordine di prima: lunghezze, pattern, formato.
  */
 export function zString(options: StringOptions = {}) {
 	const { pattern, format } = options;
@@ -174,7 +174,7 @@ export interface NumberOptions extends Meta {
 }
 
 /**
- * Intero come per TypeBox (`Number.isInteger`). `z.int()` e
+ * Intero come prima (`Number.isInteger`). `z.int()` e
  * `z.number().int()` di Zod 4.6 controllano anche i limiti dei safe integer:
  * `page=9007199254740993` o `1e20` sarebbero 422, e con un massimo il primo
  * errore diventerebbe «al massimo 9007199254740991».
@@ -188,7 +188,7 @@ export const integerCheck = z.check<number>((ctx) => {
 		});
 });
 
-/** `Type.Integer` di TypeBox (form condivisi): intero, niente stringhe. */
+/** Intero dei form condivisi: niente stringhe. */
 export const zInt = () => z.number().check(integerCheck);
 
 function numberChecks<S extends z.ZodNumber>(schema: S, o: NumberOptions) {
@@ -226,7 +226,7 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 				const rule = parseRule(inner, n);
 				return rule ? fail(ctx, n, rule, true) : n;
 			}
-			// TypeBox rivalida sul ramo Integer: tutto ciò che non è un numero
+			// Prima si rivalidava sul ramo intero: tutto ciò che non è un numero
 			// finito (anche `1e400` del JSON, Infinity) è «deve essere un numero
 			// intero»; Zod direbbe «deve essere un numero».
 			const rule =
@@ -261,7 +261,7 @@ export function zNumeric(inner: z.ZodType) {
 				return rule ? fail(ctx, n, rule, true) : n;
 			}
 			if (typeof value === "number" && !parseRule(inner, value)) return value;
-			// Unione di due rami (stringa numerica, numero): TypeBox non sa quale.
+			// Unione di due rami (stringa numerica, numero): prima non si sapeva quale.
 			return fail(
 				ctx,
 				value,

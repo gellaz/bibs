@@ -12,13 +12,12 @@ import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { formatPriceEur, scorporoDisplay } from "@bibs/ui/custom/price";
 import { unwrapJson } from "@bibs/ui/lib/api-client";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
 import { FormSection } from "@/components/form-section";
 import { sellerApi } from "@/lib/api";
-import { typeboxResolver } from "@/lib/typebox-resolver";
+import { schemaResolver } from "@/lib/schema-errors";
 import { m } from "@/paraglide/messages";
 import { useCategoryCharacteristics } from "../hooks/use-category-characteristics";
 import {
@@ -45,8 +44,6 @@ import {
 	type ExistingImage,
 	ProductImageDropzone,
 } from "./product-image-dropzone";
-
-const compiledSchema = TypeCompiler.Compile(CreateProductFormBody);
 
 export type { ExistingImage };
 
@@ -111,7 +108,7 @@ export function ProductForm({
 		control,
 		formState: { errors, isDirty },
 	} = useForm<ProductFormData>({
-		resolver: typeboxResolver(compiledSchema),
+		resolver: schemaResolver(CreateProductFormBody),
 		defaultValues: {
 			name: defaultValues?.name ?? "",
 			description: defaultValues?.description ?? "",

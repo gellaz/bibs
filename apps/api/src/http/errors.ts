@@ -17,7 +17,7 @@ export class RequestValidationError extends Error {
 		readonly validationMessage: string,
 		/** Path del primo errore (`/quantity`), per il log. */
 		readonly field?: string,
-		/** Tipo di errore (TypeBox o codice dell'issue Zod), per il log. */
+		/** Tipo di errore (codice dell'issue Zod), per il log. */
 		readonly errorType?: unknown,
 	) {
 		super("Validation error");

@@ -89,7 +89,7 @@ Test data can be seeded separately via `bun run db:seed` (see `src/db/seed/`).
 
 ### Schemas — `src/lib/schemas/`
 
-TypeBox schemas split into submodules (all re-exported from `src/lib/schemas/index.ts`, import as `@/lib/schemas`):
+Zod schemas split into submodules (all re-exported from `src/lib/schemas/index.ts`, import as `@/lib/schemas`):
 
 - **`entities.ts`** — entity schemas (`UserSchema`, `CategorySchema`, `ProductSchema`, `OrderSchema`, etc.) with full
   type definitions, plus shared field groups (`LocationField`, `AddressFieldsRequired`, `AddressFieldsOptional`)
@@ -101,7 +101,7 @@ TypeBox schemas split into submodules (all re-exported from `src/lib/schemas/ind
 
 ### Environment — `src/lib/env.ts`
 
-Validates all environment variables at startup using TypeBox. If any required variable is missing, the server exits
+Validates all environment variables at startup using Zod. If any required variable is missing, the server exits
 immediately with a clear error listing the missing variables. Always import `env` from this module instead of using
 `process.env` directly.
 
@@ -188,7 +188,7 @@ status, so concurrent runs are idempotent.
 
 Reusable pagination utilities:
 
-- `PaginationQuery` — TypeBox schema for `page` and `limit` query params (use in route definitions)
+- `PaginationQuery` — Zod schema for `page` and `limit` query params (use in route definitions)
 - `parsePagination(query)` — returns `{ page, limit, offset }` from parsed query params
 
 ### Auth & Permissions — `src/lib/auth.ts`, `src/lib/permissions.ts`
@@ -503,7 +503,7 @@ Bun's native S3Client configured for SeaweedFS (local S3-compatible storage). Us
 
 This is the step-by-step process. Use the admin categories module (`src/modules/admin/`) as reference.
 
-### 1. Define TypeBox schema (if new entity)
+### 1. Define the Zod schema (if new entity)
 
 Add the entity schema to `src/lib/schemas/entities.ts`:
 
@@ -630,7 +630,7 @@ In `src/index.ts`, import and `.use()` the module. If it introduces a new OpenAP
 ### Checklist
 
 - Service function in `services/` with proper error handling (`ServiceError`)
-- Route file in `routes/` with TypeBox schemas, `withErrors()`, and `detail` for OpenAPI
+- Route file in `routes/` with Zod schemas, `withErrors()`, and `detail` for OpenAPI
 - Context helper imported and used (e.g. `withAdmin(ctx)`, `withSeller(ctx)`) instead of inline type assertions
 - Route registered in module `index.ts`
 - Module registered in `src/index.ts` (if new module)
@@ -675,7 +675,7 @@ return {error: "not found"};
 The global error handler (`src/plugins/error-handler.ts`) catches `ServiceError` and converts it to the standard
 response envelope.
 
-Validation errors (422) are translated centrally by `src/lib/validation-message.ts` from the TypeBox error type:
+Validation errors (422) are translated centrally by `src/http/validation-message.ts` from the Zod issue (labels and rules in `src/lib/validation-message.ts`):
 `«Etichetta: regola»` on the first error (e.g. «Quantità (riga 2): deve essere un numero intero»). Don't add `error:`
 to schemas just to translate them; use it only for a message more specific than the generic rule. A new input field
 gets its Italian label in `FIELD_LABELS` (fields not listed fall back to the technical path); a `title` on the schema wins, for names whose meaning changes between routes (e.g. geocode `limit`). The log carries
@@ -873,7 +873,7 @@ The verification link can be extracted from the `HTML` field of the message resp
 Full OpenAPI 3.0 spec available at `/openapi` with:
 
 - Every module's endpoints, fully documented (the spec is the authoritative route inventory)
-- Request/response schemas with TypeBox (runtime validation + types + restrictive input validation)
+- Request/response schemas with Zod (runtime validation + types + restrictive input validation)
 - Error responses (400, 401, 403, 404, 409, 422, 500) for all endpoints
 - Better-auth endpoints merged under "Better Auth" tag
 - Scalar UI for interactive documentation

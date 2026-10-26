@@ -1,6 +1,6 @@
 export type HolidayType = "fixed" | "easter_relative" | "one_off";
 
-/** Domain view of a holiday definition (decoupled from the DB row / TypeBox). */
+/** Domain view of a holiday definition (decoupled from the DB row / schemas). */
 export interface HolidayDef {
 	id: string;
 	type: HolidayType;

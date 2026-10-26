@@ -1,32 +1,32 @@
 import { describe, expect, it } from "bun:test";
-import { Value } from "@sinclair/typebox/value";
 import { RejectSellerBody } from "@/lib/schemas/forms";
 
 describe("RejectSellerBody", () => {
 	it("rifiuta motivo vuoto, di soli spazi o troppo lungo", () => {
-		expect(Value.Check(RejectSellerBody, { reason: "", fixStep: null })).toBe(
-			false,
-		);
 		expect(
-			Value.Check(RejectSellerBody, { reason: "   ", fixStep: null }),
+			RejectSellerBody.safeParse({ reason: "", fixStep: null }).success,
 		).toBe(false);
 		expect(
-			Value.Check(RejectSellerBody, {
+			RejectSellerBody.safeParse({ reason: "   ", fixStep: null }).success,
+		).toBe(false);
+		expect(
+			RejectSellerBody.safeParse({
 				reason: "x".repeat(501),
 				fixStep: null,
-			}),
+			}).success,
 		).toBe(false);
 	});
 
 	it("accetta motivo + fixStep validi, rifiuta step sconosciuti", () => {
 		expect(
-			Value.Check(RejectSellerBody, {
+			RejectSellerBody.safeParse({
 				reason: "Documento illeggibile",
 				fixStep: "document",
-			}),
+			}).success,
 		).toBe(true);
 		expect(
-			Value.Check(RejectSellerBody, { reason: "Altro", fixStep: "shipping" }),
+			RejectSellerBody.safeParse({ reason: "Altro", fixStep: "shipping" })
+				.success,
 		).toBe(false);
 	});
 });

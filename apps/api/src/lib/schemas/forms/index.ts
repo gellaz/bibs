@@ -1,6 +1,3 @@
-// Side effect: registers `format: "calendar-date"` for TypeCompiler users (seller forms).
-import "./formats";
-
 export {
 	DOCUMENT_NUMBER_EXAMPLES,
 	IDENTITY_DOCUMENT_TYPES,

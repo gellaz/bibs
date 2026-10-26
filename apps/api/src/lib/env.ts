@@ -1,41 +1,40 @@
-import { Type as t } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
+import { z } from "zod";
 
-const EnvSchema = t.Object({
-	DATABASE_URL: t.String(),
-	DATABASE_POOL_MAX: t.Optional(t.String()),
-	DATABASE_IDLE_TIMEOUT_MS: t.Optional(t.String()),
-	DATABASE_CONNECTION_TIMEOUT_MS: t.Optional(t.String()),
-	BETTER_AUTH_SECRET: t.String(),
-	BETTER_AUTH_URL: t.String(),
-	S3_ENDPOINT: t.String(),
-	S3_ACCESS_KEY: t.String(),
-	S3_SECRET_KEY: t.String(),
-	S3_BUCKET: t.String(),
-	PORT: t.Optional(t.String()),
-	ALLOWED_ORIGINS: t.Optional(t.String()),
-	NODE_ENV: t.Optional(t.String()),
-	TRUST_PROXY: t.Optional(t.String()),
-	RESEND_API_KEY: t.Optional(t.String()),
-	EMAIL_FROM: t.Optional(t.String()),
-	SUPPORT_EMAIL: t.Optional(t.String()),
-	MAILPIT_URL: t.Optional(t.String()),
-	CUSTOMER_APP_URL: t.Optional(t.String()),
-	SELLER_APP_URL: t.Optional(t.String()),
-	ADMIN_APP_URL: t.Optional(t.String()),
-	STRIPE_SECRET_KEY: t.String(),
-	STRIPE_WEBHOOK_SECRET: t.Optional(t.String()),
-	STRIPE_CONNECT_WEBHOOK_SECRET: t.Optional(t.String()),
-	STRIPE_THIN_WEBHOOK_SECRET: t.Optional(t.String()),
-	STRIPE_DEV_PRICE_ID: t.Optional(t.String()),
-	GEOCODING_PROVIDER: t.Optional(t.String()),
-	PHOTON_URL: t.Optional(t.String()),
-	GEOCODING_USER_AGENT: t.Optional(t.String()),
+const EnvSchema = z.object({
+	DATABASE_URL: z.string(),
+	DATABASE_POOL_MAX: z.string().optional(),
+	DATABASE_IDLE_TIMEOUT_MS: z.string().optional(),
+	DATABASE_CONNECTION_TIMEOUT_MS: z.string().optional(),
+	BETTER_AUTH_SECRET: z.string(),
+	BETTER_AUTH_URL: z.string(),
+	S3_ENDPOINT: z.string(),
+	S3_ACCESS_KEY: z.string(),
+	S3_SECRET_KEY: z.string(),
+	S3_BUCKET: z.string(),
+	PORT: z.string().optional(),
+	ALLOWED_ORIGINS: z.string().optional(),
+	NODE_ENV: z.string().optional(),
+	TRUST_PROXY: z.string().optional(),
+	RESEND_API_KEY: z.string().optional(),
+	EMAIL_FROM: z.string().optional(),
+	SUPPORT_EMAIL: z.string().optional(),
+	MAILPIT_URL: z.string().optional(),
+	CUSTOMER_APP_URL: z.string().optional(),
+	SELLER_APP_URL: z.string().optional(),
+	ADMIN_APP_URL: z.string().optional(),
+	STRIPE_SECRET_KEY: z.string(),
+	STRIPE_WEBHOOK_SECRET: z.string().optional(),
+	STRIPE_CONNECT_WEBHOOK_SECRET: z.string().optional(),
+	STRIPE_THIN_WEBHOOK_SECRET: z.string().optional(),
+	STRIPE_DEV_PRICE_ID: z.string().optional(),
+	GEOCODING_PROVIDER: z.string().optional(),
+	PHOTON_URL: z.string().optional(),
+	GEOCODING_USER_AGENT: z.string().optional(),
 });
 
-if (!Value.Check(EnvSchema, process.env)) {
-	const errors = [...Value.Errors(EnvSchema, process.env)];
-	const missing = errors.map((e) => e.path.replace("/", "")).join(", ");
+const checked = EnvSchema.safeParse(process.env);
+if (!checked.success) {
+	const missing = checked.error.issues.map((e) => e.path.join(".")).join(", ");
 	console.error(`❌ Missing or invalid env vars: ${missing}`);
 	process.exit(1);
 }

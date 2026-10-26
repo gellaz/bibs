@@ -1,5 +1,5 @@
-import type { Static } from "@sinclair/typebox";
 import { and, count, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import type { z } from "zod";
 import { db } from "@/db";
 import {
 	municipality as municipalityTable,
@@ -23,7 +23,7 @@ import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
 import { resolveOpenStatuses } from "@/lib/store-open-status";
 import { stripe } from "@/lib/stripe";
 
-type OpeningHours = Static<typeof OpeningHoursSchema>;
+type OpeningHours = z.infer<typeof OpeningHoursSchema>;
 
 interface ListStoresParams {
 	sellerProfileId: string;

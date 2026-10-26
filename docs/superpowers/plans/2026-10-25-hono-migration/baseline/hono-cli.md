@@ -216,3 +216,6 @@ or for `hono diff`. What still blocks, as of this baseline:
 
 Until then, keep `hono-entry.ts` (it loads `src/` at runtime through Bun, outside the CLI's bundle) and the
 regenerate-and-`diff` step.
+
+U11b (2026-10-26, same env, after the TypeBox exit): the same 1,164 steps, 0 failed; `routes` 207 rows; the
+snapshot as sets unchanged (184 rows, only the registered deltas and the dev-DB UUID lines).

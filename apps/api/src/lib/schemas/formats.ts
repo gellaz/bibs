@@ -1,9 +1,7 @@
-import { isCalendarDate } from "@/lib/schemas/forms/formats";
-
-// I formati di stringa che l'app composta di prima controllava nel
-// FormatRegistry di TypeBox, copiati così come sono: gli schemi Zod accettano
-// e rifiutano le stesse stringhe (D5 del piano Hono; esiti in
-// `tests/http/golden/formats.json`). `uri` e `date-time` vengono dal framework
+// I formati di stringa che l'app composta di prima controllava, copiati così
+// come sono: gli schemi Zod accettano e rifiutano le stesse stringhe (D5 del
+// piano Hono; esiti in `tests/http/golden/formats.json`). `uri` e
+// `date-time` vengono dal framework
 // di prima (1.4.30), regex da ajv-formats; `email`, `uuid` e `date` dallo Zod
 // 4.4.3 che il suo plugin OpenAPI (1.4.16) registrava al load. Provenienza e
 // licenze (MIT) in `apps/api/THIRD_PARTY_NOTICES.md`. I formati Zod del repo
@@ -92,6 +90,15 @@ function lenientDateTime(value: string) {
 		return !Number.isNaN(new Date(temp).getTime());
 	return false;
 }
+
+/**
+ * `format: "calendar-date"`: una data AAAA-MM-GG che esiste nel calendario,
+ * cioè la data stretta di RFC 3339 (`strictDate`). Non il `date` del
+ * framework di prima, che era largo (`2024-02-30` passava, perché `new Date()`
+ * lo porta al 1° marzo): un nome nostro vale uguale sull'API e nei form del
+ * seller.
+ */
+export const isCalendarDate = strictDate;
 
 export const FORMATS = {
 	email: (value: string) => EMAIL.test(value),
