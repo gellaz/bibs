@@ -172,7 +172,7 @@ verifica di ogni PR stanno nel piano
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
 immagini, caratteristiche, stock); `customer/` (U3); catalogo pubblico e admin 1
 (U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; il resto
-di /admin resta Elysia fino a U9 e vince sul mount).
+di /admin resta Elysia fino a U9 e vince sul mount); `webhooks/` (U10).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
