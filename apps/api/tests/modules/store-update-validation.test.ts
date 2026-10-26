@@ -63,3 +63,15 @@ describe("PATCH /stores — openingHours validation", () => {
 		expect(res.status).not.toBe(422);
 	});
 });
+
+describe("PATCH /stores — websiteUrl maxLength in unità UTF-16", () => {
+	it("501 unità (257 code point): 422 sulla lunghezza, non sul formato", async () => {
+		const res = await patchStore({
+			websiteUrl: `https://x.it/${"😀".repeat(244)}`,
+		});
+		expect(res.status).toBe(422);
+		expect((await res.json()).message).toBe(
+			"Sito web: al massimo 500 caratteri",
+		);
+	});
+});

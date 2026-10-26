@@ -241,7 +241,11 @@ promozioni, checkout e billing); `customer/` (U3).
     in Elysia); `t.String` con `minLength`/`maxLength` →
     `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
     unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
-    per Zod); `t.Date` → `zDate`; `t.Nullable(x)` → `x.nullable()`, ma
+    per Zod; con un formato `zFormat(f).max(n).check(utf16Length({ maxLength: n }))`);
+    `t.String({ format })` → `zFormat(f)`, mai i formati di Zod: `FORMATS`
+    (`lib/zod/formats.ts`) copia il FormatRegistry dell'app composta, dove
+    `@elysiajs/openapi` sovrascrive `email`, `uuid` e `date` di Elysia
+    (`tests/http/formats.test.ts`); `t.Date` → `zDate`; `t.Nullable(x)` → `x.nullable()`, ma
     `Type.Union([x, Type.Null()])` → `z.union([x, z.null()])` (solo il t.Nullable
     scrive `nullable: true` in /openapi); `uniqueItems` → `.refine` con la regola
     `uniqueItems` più `.meta({ uniqueItems: true })`; un `format` con `pattern` →

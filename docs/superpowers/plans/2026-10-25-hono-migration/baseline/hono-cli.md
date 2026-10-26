@@ -85,7 +85,10 @@ Reading the results:
   store made 7/113 seller-products steps fail, on list lengths and totals only; 113/113 again once it was deleted). The U6 file keeps
   only the clock-free part of the bodies (no `openStatus` of the stores, no `expiresAt` of the
   reservation preview, no holiday `nextDate`, only `success` for the dashboard) and signs out
-  (`POST /auth/api/sign-out`) after each user, so a replay leaves no session behind.
+  (`POST /auth/api/sign-out`) after each user, so a replay leaves no session behind. Its last 10
+  lines come from U6's review round 1, captured on `e85d6094`: invitations to emails that only bare
+  Elysia accepts (`a@b.c`, …) and a 501-UTF-16-unit `websiteUrl`, anonymous and as
+  `employee1@test.com`: all 422, so nothing reaches a handler even on a regression.
 - Trap the snapshot already shows: unauthenticated GETs with a missing required query answer **422
   before 401** (`/seller/orders`, `/seller/orders/counts`, `/seller/dashboard`,
   `/seller/products/status-counts`, ...): Elysia validates the query before the `auth` macro resolves.

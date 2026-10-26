@@ -1,6 +1,9 @@
 import { CloneType, Type } from "@sinclair/typebox";
 import { Elysia, type TSchema, t } from "elysia";
 import { z } from "zod";
+// Come `src/index.ts`: al load sovrascrive email, uuid e date nel FormatRegistry
+// di TypeBox. Senza, il lato Elysia avrebbe i formati di Elysia nudo.
+import "@elysiajs/openapi";
 import "@/lib/schemas/forms/formats";
 import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
@@ -590,6 +593,27 @@ export const cases: Case[] = [
 		fail("x: identificativo non valido"),
 	),
 	body(
+		"vm: email che solo Elysia nudo accetta (TLD di una lettera)",
+		...fmt("email", zFormat("email")),
+		{ x: "a@b.c" },
+		422,
+		fail("x: indirizzo email non valido"),
+	),
+	body(
+		"vm: uuid fuori da RFC 9562",
+		...fmt("uuid", zFormat("uuid")),
+		{ x: "11111111-1111-1111-1111-111111111111" },
+		422,
+		fail("x: identificativo non valido"),
+	),
+	body(
+		"vm: uuid v4 maiuscolo",
+		...fmt("uuid", zFormat("uuid")),
+		{ x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" },
+		200,
+		{ ok: { x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" } },
+	),
+	body(
 		"vm: calendar-date",
 		...fmt("calendar-date", zFormat("calendar-date")),
 		{ x: "2024-02-31" },
@@ -638,6 +662,14 @@ export const cases: Case[] = [
 		t.Object({ startsAt: t.Date() }),
 		z.object({ startsAt: zDate() }),
 		{ startsAt: "nope" },
+		422,
+		fail("Inizio: data non valida"),
+	),
+	body(
+		"vm: t.Date con l'offset senza segno (il «+» di una query)",
+		t.Object({ startsAt: t.Date() }),
+		z.object({ startsAt: zDate() }),
+		{ startsAt: "2026-01-01T12:00:00 01:00" },
 		422,
 		fail("Inizio: data non valida"),
 	),
@@ -745,6 +777,14 @@ export const cases: Case[] = [
 		TbRegister,
 		Register,
 		{ email: "nope", password: "12345678" },
+		422,
+		fail("Email: indirizzo email non valido"),
+	),
+	body(
+		"reg: email che solo Elysia nudo accetta",
+		TbRegister,
+		Register,
+		{ email: "mario#rossi@test.it", password: "12345678" },
 		422,
 		fail("Email: indirizzo email non valido"),
 	),
@@ -2176,6 +2216,15 @@ export const cases: Case[] = [
 		422,
 		fail("openingHours: deve essere un numero intero"),
 	),
+	// 501 unità UTF-16 ma 257 code point: TypeBox controlla maxLength prima del formato.
+	body(
+		"negozio: sito oltre 500 unità UTF-16 con emoji (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, websiteUrl: `https://x.it/${"😀".repeat(244)}` },
+		422,
+		fail("Sito web: al massimo 500 caratteri"),
+	),
 	body(
 		"negozio: valido, con sito null, orari null e campi ignoti (CreateStoreBody)",
 		TbCreateStoreBody,
@@ -2286,6 +2335,17 @@ export const cases: Case[] = [
 		{ email: "bad", storeIds: ["a"] },
 		422,
 		fail("Inserisci un indirizzo email valido"),
+	),
+	...["a@b.c", "mario#rossi@test.it", "info@negozio.123", "x{y}@test.it"].map(
+		(email) =>
+			body(
+				`invito: ${email} rifiutata come dall'app composta (TeamInviteBody)`,
+				TbTeamInviteBody,
+				TeamInviteBody,
+				{ email, storeIds: ["a"] },
+				422,
+				fail("Inserisci un indirizzo email valido"),
+			),
 	),
 	body(
 		"invito: nessun negozio (TeamInviteBody)",

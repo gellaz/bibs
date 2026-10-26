@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { sellerApp } from "@/modules/seller";
 import { employeesRoutes } from "@/modules/seller/routes/employees";
 import { withVars } from "../helpers/hono-app";
 
@@ -68,5 +69,28 @@ describe("seller employee management is owner-only", () => {
 			storeIds: ["some-store"],
 		});
 		expect(res.status).toBe(403);
+	});
+});
+
+// L'email la controlla il FormatRegistry dell'app composta (`@elysiajs/openapi`
+// sovrascrive quello di Elysia): «a@b.c» è un 422, prima del 401 e del 403.
+describe("POST /employees/invite — email rifiutata dall'app composta", () => {
+	const body = JSON.stringify({ email: "a@b.c", storeIds: ["some-store"] });
+	const invalid = "Inserisci un indirizzo email valido";
+
+	it("anonimo → 422 prima del 401", async () => {
+		const res = await sellerApp.request("/employees/invite", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body,
+		});
+		expect(res.status).toBe(422);
+		expect((await res.json()).message).toBe(invalid);
+	});
+
+	it("non titolare → 422 prima del 403", async () => {
+		const res = await call("POST", "/employees/invite", JSON.parse(body));
+		expect(res.status).toBe(422);
+		expect((await res.json()).message).toBe(invalid);
 	});
 });

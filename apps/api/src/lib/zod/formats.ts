@@ -1,14 +1,21 @@
 import { isCalendarDate } from "@/lib/schemas/forms/formats";
 
-// I formati di stringa che Elysia 1.4.30 registra nel FormatRegistry di TypeBox
-// (`elysia/dist/type-system/format.mjs`, regex da ajv-formats, MIT © 2020
-// Evgeny Poberezkin), copiati così come sono: i gemelli Zod devono accettare e
-// rifiutare le stesse stringhe dello schema TypeBox (D5 del piano Hono). I
-// formati Zod predefiniti (`z.email()`, `z.uuid()`, `z.iso.datetime()`)
-// accettano cose diverse e non si usano.
+// I formati di stringa che l'app composta controlla nel FormatRegistry di
+// TypeBox, copiati così come sono: i gemelli Zod devono accettare e rifiutare
+// le stesse stringhe dello schema TypeBox (D5 del piano Hono). `uri` e
+// `date-time` sono quelli di Elysia 1.4.30 (`elysia/dist/type-system/format.mjs`,
+// regex da ajv-formats, MIT © 2020 Evgeny Poberezkin). `email`, `uuid` e `date`
+// no: Elysia li registra solo se mancano, e `@elysiajs/openapi` 1.4.16 (caricato
+// da `src/index.ts`) li sovrascrive al load con `z.string().email()/.uuid()/
+// .date()` dello Zod 4.4.3 che porta nel bundle (`dist/index.mjs`, regex da
+// `zod/v4/core/regexes.js`, MIT © 2025 Colin McDonnell). I formati Zod del repo
+// (4.6) hanno altre regex e non si usano.
 const EMAIL =
-	/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
-const UUID = /^(?:urn:uuid:)?[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+	/^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/;
+const UUID =
+	/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/;
+const ISO_DATE =
+	/^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$/;
 const URI =
 	/^(?:[a-z][a-z0-9+\-.]*:)(?:\/?\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:]|%[0-9a-f]{2})*@)?(?:\[(?:(?:(?:(?:[0-9a-f]{1,4}:){6}|::(?:[0-9a-f]{1,4}:){5}|(?:[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){4}|(?:(?:[0-9a-f]{1,4}:){0,1}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){3}|(?:(?:[0-9a-f]{1,4}:){0,2}[0-9a-f]{1,4})?::(?:[0-9a-f]{1,4}:){2}|(?:(?:[0-9a-f]{1,4}:){0,3}[0-9a-f]{1,4})?::[0-9a-f]{1,4}:|(?:(?:[0-9a-f]{1,4}:){0,4}[0-9a-f]{1,4})?::)(?:[0-9a-f]{1,4}:[0-9a-f]{1,4}|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?))|(?:(?:[0-9a-f]{1,4}:){0,5}[0-9a-f]{1,4})?::[0-9a-f]{1,4}|(?:(?:[0-9a-f]{1,4}:){0,6}[0-9a-f]{1,4})?::)|[Vv][0-9a-f]+\.[a-z0-9\-._~!$&'()*+,;=:]+)\]|(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)|(?:[a-z0-9\-._~!$&'()*+,;=]|%[0-9a-f]{2})*)(?::\d*)?(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*|\/(?:(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)?|(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})+(?:\/(?:[a-z0-9\-._~!$&'()*+,;=:@]|%[0-9a-f]{2})*)*)(?:\?(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?(?:#(?:[a-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9a-f]{2})*)?$/i;
 const ISO_8601 =
@@ -74,31 +81,26 @@ export function parseDateTimeEmptySpace(value: string): string {
 		: value;
 }
 
-// Il `date` e il `date-time` di Elysia sono larghi: ISO, data «formale» di
-// `Date.toString()`, gg/mm/aaaa, oltre al formato RFC 3339 stretto.
-function lenientDate(strict: (value: string) => boolean, emptySpace: boolean) {
-	return (value: string) => {
-		const temp = (emptySpace ? parseDateTimeEmptySpace(value) : value).replace(
-			/"/g,
-			"",
-		);
-		if (
-			ISO_8601.test(temp) ||
-			FORMAL_DATE.test(temp) ||
-			SHORTEN_DATE.test(temp) ||
-			strict(temp)
-		)
-			return !Number.isNaN(new Date(temp).getTime());
-		return false;
-	};
+// Il `date-time` di Elysia è largo: ISO, data «formale» di `Date.toString()`,
+// gg/mm/aaaa, oltre al formato RFC 3339 stretto.
+function lenientDateTime(value: string) {
+	const temp = value.replace(/"/g, "");
+	if (
+		ISO_8601.test(temp) ||
+		FORMAL_DATE.test(temp) ||
+		SHORTEN_DATE.test(temp) ||
+		strictDateTime(temp)
+	)
+		return !Number.isNaN(new Date(temp).getTime());
+	return false;
 }
 
 export const FORMATS = {
 	email: (value: string) => EMAIL.test(value),
 	uuid: (value: string) => UUID.test(value),
 	uri: (value: string) => NOT_URI_FRAGMENT.test(value) && URI.test(value),
-	date: lenientDate(strictDate, true),
-	"date-time": lenientDate(strictDateTime, false),
+	date: (value: string) => ISO_DATE.test(value),
+	"date-time": lenientDateTime,
 	"calendar-date": isCalendarDate,
 } satisfies Record<string, (value: string) => boolean>;
 

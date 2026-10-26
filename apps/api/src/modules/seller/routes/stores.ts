@@ -23,7 +23,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/zod/responses";
-import { zDate, zFormat, zInteger, zString } from "@/lib/zod/t";
+import { utf16Length, zDate, zFormat, zInteger, zString } from "@/lib/zod/t";
 import { ensureStoreAccess, requireOwner } from "../context";
 import {
 	getStoreOrderTypes,
@@ -95,9 +95,10 @@ const UpdateStoreBody = z.object({
 		description:
 			"Soglia di scorta bassa: sotto questo stock (escluso) un prodotto attivo è segnalato nella home. 0 spegne l'avviso",
 	}).optional(),
-	// ponytail: `.max()` conta i code point (TypeBox le unità UTF-16), vedi forms/stores.ts.
+	// `.max()` per /openapi, `utf16Length` per contare come TypeBox (vedi forms/stores.ts).
 	websiteUrl: zFormat("uri")
 		.max(500)
+		.check(utf16Length({ maxLength: 500 }))
 		.meta({ description: "URL del sito web. null per rimuoverlo" })
 		.nullable()
 		.optional(),
