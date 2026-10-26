@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { decideExistingUser } from "@/modules/registration/services";
+import { decideExistingUser } from "@/modules/registration/services/registration";
 
 const NOW = Date.parse("2026-05-25T12:00:00.000Z");
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;

@@ -42,7 +42,7 @@ import { truncateAll } from "../helpers/cleanup";
  * the 409 shape at the route level with the services mocked; neither shows
  * what the service does to the database and to the outbox.
  *
- * `@/modules/registration/services` is imported dynamically inside each test:
+ * `@/modules/registration/services/registration` is imported dynamically inside each test:
  * it imports `@/lib/auth`, whose drizzleAdapter captures `db` at module
  * evaluation, before `mock.module("@/db")` would take effect for a static
  * import. See auth-email-password.test.ts.
@@ -77,7 +77,7 @@ async function usersWithEmail() {
 describe("registration with an email pending verification", () => {
 	it("re-sends the link and answers 409 PENDING, without a second user", async () => {
 		const { registerCustomer } = await import(
-			"@/modules/registration/services"
+			"@/modules/registration/services/registration"
 		);
 		await registerCustomer({ email: EMAIL, password: "password123" });
 		const [first] = await usersWithEmail();
@@ -105,7 +105,7 @@ describe("registration with an email pending verification", () => {
 
 	it("replaces an abandoned signup older than 7 days with a new one", async () => {
 		const { registerCustomer } = await import(
-			"@/modules/registration/services"
+			"@/modules/registration/services/registration"
 		);
 		const db = getTestDb();
 		await registerCustomer({ email: EMAIL, password: "password123" });
@@ -134,7 +134,7 @@ describe("registration with an email pending verification", () => {
 
 	it("a verified email is a hard conflict and sends nothing", async () => {
 		const { registerCustomer } = await import(
-			"@/modules/registration/services"
+			"@/modules/registration/services/registration"
 		);
 		await registerCustomer({ email: EMAIL, password: "password123" });
 		await getTestDb()

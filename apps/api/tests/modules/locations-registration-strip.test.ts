@@ -3,7 +3,7 @@ import { __clearRateLimitStores } from "@/http/middleware/rate-limit";
 import { locationsApp } from "@/modules/locations";
 import * as locations from "@/modules/locations/services/locations";
 import { registrationApp } from "@/modules/registration";
-import * as registration from "@/modules/registration/services";
+import * as registration from "@/modules/registration/services/registration";
 import { testRequest } from "../helpers/hono-app";
 
 // Trappola `normalize` (D4 del piano Hono) sulle route vere di /locations e
