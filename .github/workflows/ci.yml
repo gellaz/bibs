@@ -126,6 +126,11 @@ jobs:
           done
           echo "API did not become ready" >&2
           exit 1
+      # In production every request is one JSON line on the container's stdout.
+      - name: Request log on stdout
+        run: |
+          docker logs api > api-stdout.log 2>/dev/null
+          grep -q '"type":"request"' api-stdout.log
       # bun build inlines NODE_ENV: a bundle built without it stays
       # "development" (log-only emails, credentialed localhost CORS) even with
       # NODE_ENV=production at runtime.

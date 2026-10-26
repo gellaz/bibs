@@ -5,11 +5,6 @@ import { env } from "@/infra/env";
 
 // ── Shared pino options (standalone logger and request file log) ──
 
-const LOG_DIR = path.resolve("logs");
-fs.mkdirSync(LOG_DIR, { recursive: true });
-
-const LOG_FILE = path.join(LOG_DIR, "app.log");
-
 /** Base pino options shared across all loggers. */
 export const pinoOptions: pino.LoggerOptions = {
 	// Pinned explicitly: a logger rebuilt from these options with
@@ -25,10 +20,35 @@ export const pinoOptions: pino.LoggerOptions = {
 	redact: ["password", "token", "apiKey", "secret", "authorization"],
 };
 
-// ── Request log file (one pino JSON line per request, with its timestamp) ──
+// ── Destinations ────────────────────────────────────
 
-const fileDest = pino.destination({ dest: LOG_FILE, sync: false });
-const fileLogger = pino(pinoOptions, fileDest);
+/**
+ * Outside production every log also goes to `logs/app.log` (single file, no
+ * rotation). In production the platform collects stdout: no file, no `logs/`.
+ */
+function openLogFile() {
+	const dir = path.resolve("logs");
+	fs.mkdirSync(dir, { recursive: true });
+	return pino.destination({ dest: path.join(dir, "app.log"), sync: false });
+}
+const fileDest = env.NODE_ENV === "production" ? undefined : openLogFile();
+
+/**
+ * Standalone logger for every context (handlers, cron jobs, startup, timers):
+ * stdout, plus the log file outside production.
+ */
+export const logger = pino(
+	pinoOptions,
+	fileDest
+		? pino.multistream([{ stream: process.stdout }, { stream: fileDest }])
+		: process.stdout,
+);
+
+// ── Request log (one pino JSON line per request, with its timestamp) ──
+
+// Only in the file outside production (stdout has the coloured line of
+// `http/middleware/request-log.ts`); on stdout in production.
+const requestLogger = fileDest ? pino(pinoOptions, fileDest) : logger;
 
 export interface RequestLogEntry {
 	method: string;
@@ -37,12 +57,12 @@ export interface RequestLogEntry {
 	durationMs: number;
 }
 
-/** The request line in `logs/app.log`, written by `http/middleware/request-log.ts`. */
-export function logRequestToFile(
+/** The JSON request line, written by `http/middleware/request-log.ts`. */
+export function logRequest(
 	level: "info" | "warn" | "error",
 	{ method, path, status, durationMs }: RequestLogEntry,
 ) {
-	fileLogger[level](
+	requestLogger[level](
 		{
 			type: "request" as const,
 			method,
@@ -53,14 +73,3 @@ export function logRequestToFile(
 		`${method} ${path}`,
 	);
 }
-
-// ── Helpers ─────────────────────────────────────────
-
-/**
- * Standalone logger for every context (handlers, cron jobs, startup, timers).
- * Writes to both stdout and the log file.
- */
-export const logger = pino(
-	pinoOptions,
-	pino.multistream([{ stream: process.stdout }, { stream: fileDest }]),
-);

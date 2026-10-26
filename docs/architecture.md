@@ -65,7 +65,7 @@ after any API change.
 
 A request goes through the root app in this order:
 
-1. `requestLog` starts the clock (one line per request on stdout, a JSON line in `logs/app.log`);
+1. `requestLog` starts the clock (one line per request on stdout, a JSON line in `logs/app.log`; in production only the JSON line, on stdout);
 2. `cors` answers every `OPTIONS` as a 204 preflight, and adds the CORS headers to every other response;
 3. `requestId` sets `X-Request-Id` (the client's if it looks like an id, otherwise a UUID);
 4. `socketIpAsForwardedFor` overwrites `x-forwarded-for` with the socket IP, so better-auth's rate limit cannot be
@@ -154,7 +154,7 @@ Background jobs (`src/jobs/`, scheduled by `src/jobs/scheduler.ts` with `croner`
   orders whose payment never arrived)
 - **Store transfer retry** (`retryStoreTransfers`) — runs hourly at :30 (completes the transfers to the stores'
   Stripe accounts still missing after a paid checkout)
-- **Suspend auto-cancel** (`autoCancelSuspendedStores`) — runs daily at 03:00 server time (cancels subscriptions that have been suspended past the grace threshold)
+- **Suspend auto-cancel** (`autoCancelSuspendedStores`) — runs daily at 03:00 Rome time (cancels subscriptions that have been suspended past the grace threshold)
 - **Pending store creation expiry** (`expirePendingStoreCreations`) — runs hourly (cleans up store checkouts that were never completed)
 
 ### Writing schemas
