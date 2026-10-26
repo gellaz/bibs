@@ -1,83 +1,103 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
-import { OrderListQuery } from "@/lib/queries";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireCustomer } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
+import { CustomerOrderWithRelationsSchema } from "@/lib/zod/composed";
+import { OrderSchema } from "@/lib/zod/entities";
+import { OrderListQuery } from "@/lib/zod/queries";
 import {
-	CustomerOrderWithRelationsSchema,
-	OrderSchema,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { withCustomer } from "../context";
+} from "@/lib/zod/responses";
+import { customerSecurity } from "../context";
 import {
 	cancelOrder,
 	getCustomerOrder,
 	listCustomerOrders,
 } from "../services/orders";
 
-export const ordersRoutes = new Elysia()
+const OrderPage = okPageRes(CustomerOrderWithRelationsSchema);
+const OrderResponse = okRes(CustomerOrderWithRelationsSchema);
+const CancelResponse = okRes(OrderSchema);
+const OrderParams = z.object({
+	orderId: z.string().meta({ description: "ID dell'ordine" }),
+});
+
+export const ordersRoutes = new Hono()
 	.get(
 		"/orders",
-		async (ctx) => {
-			const { customerProfile: cp, query } = withCustomer(ctx);
-			const result = await listCustomerOrders({
-				customerProfileId: cp.id,
-				...query,
-			});
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: OrderListQuery,
-			response: withErrors({
-				200: okPageRes(CustomerOrderWithRelationsSchema),
-			}),
+		doc({
+			response: withErrors({ 200: OrderPage }),
 			detail: {
 				summary: "Lista ordini cliente",
 				description:
 					"Restituisce gli ordini del cliente ordinati per data decrescente, con articoli, negozio e indirizzo di spedizione. Filtrabile per stato e tipo.",
 				tags: ["Customer - Orders"],
+				...customerSecurity,
 			},
+		}),
+		v("query", OrderListQuery),
+		requireCustomer,
+		async (c) => {
+			const result = await listCustomerOrders({
+				customerProfileId: c.var.customerProfile.id,
+				...c.req.valid("query"),
+			});
+			return send(c, OrderPage, okPage(result.data, result.pagination));
 		},
 	)
 	.get(
 		"/orders/:orderId",
-		async (ctx) => {
-			const { customerProfile: cp, params } = withCustomer(ctx);
-			const data = await getCustomerOrder({
-				orderId: params.orderId,
-				customerProfileId: cp.id,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				orderId: t.String({ description: "ID dell'ordine" }),
-			}),
-			response: withErrors({ 200: okRes(CustomerOrderWithRelationsSchema) }),
+		doc({
+			response: withErrors({ 200: OrderResponse }),
 			detail: {
 				summary: "Dettaglio ordine",
 				description:
 					"Restituisce i dettagli completi di un singolo ordine del cliente.",
 				tags: ["Customer - Orders"],
+				...customerSecurity,
 			},
+		}),
+		v("param", OrderParams),
+		requireCustomer,
+		async (c) => {
+			const data = await getCustomerOrder({
+				orderId: c.req.valid("param").orderId,
+				customerProfileId: c.var.customerProfile.id,
+			});
+			return send(c, OrderResponse, ok(data));
 		},
 	)
 	.post(
 		"/orders/:orderId/cancel",
-		async (ctx) => {
-			const { customerProfile: cp, params, store, user } = withCustomer(ctx);
-			const pino = getLogger(store);
-
+		doc({
+			response: withConflictErrors({ 200: CancelResponse }),
+			detail: {
+				summary: "Annulla ordine",
+				description:
+					"Annulla un ordine. Lo stock torna disponibile e i punti spesi vengono restituiti; un ordine pagato online viene rimborsato. 409 se è in attesa di pagamento.",
+				tags: ["Customer - Orders"],
+				...customerSecurity,
+			},
+		}),
+		v("param", OrderParams),
+		requireCustomer,
+		async (c) => {
+			const cp = c.var.customerProfile;
 			const data = await cancelOrder({
-				orderId: params.orderId,
+				orderId: c.req.valid("param").orderId,
 				customerProfileId: cp.id,
 			});
 
-			pino.warn(
+			logger.warn(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					customerProfileId: cp.id,
 					orderId: data.id,
 					orderType: data.type,
@@ -86,18 +106,6 @@ export const ordersRoutes = new Elysia()
 				"Ordine annullato dal cliente",
 			);
 
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				orderId: t.String({ description: "ID dell'ordine" }),
-			}),
-			response: withConflictErrors({ 200: okRes(OrderSchema) }),
-			detail: {
-				summary: "Annulla ordine",
-				description:
-					"Annulla un ordine. Lo stock torna disponibile e i punti spesi vengono restituiti; un ordine pagato online viene rimborsato. 409 se è in attesa di pagamento.",
-				tags: ["Customer - Orders"],
-			},
+			return send(c, CancelResponse, ok(data));
 		},
 	);

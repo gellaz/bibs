@@ -1,6 +1,6 @@
 import { toYMD } from "@bibs/ui/lib/date";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 import type { OpeningHoursDayInput } from "./format-opening-hours";
 import type { OpenStatusView } from "./open-status";
 
@@ -28,14 +28,13 @@ export function useStoreDetail(storeId: string) {
 		queryKey: ["store-detail", storeId],
 		staleTime: 60_000,
 		queryFn: async (): Promise<StoreDetailView | null> => {
-			const { data, error } = await api()
-				.customer.stores({ id: storeId })
-				.get();
-			if (error) {
-				if (error.status === 404) return null;
-				throw new Error(`Caricamento negozio non riuscito (${error.status})`);
-			}
-			const s = data.data;
+			const res = await customerApi.stores[":id"].$get({
+				param: { id: storeId },
+			});
+			if (res.status === 404) return null;
+			if (!res.ok)
+				throw new Error(`Caricamento negozio non riuscito (${res.status})`);
+			const s = (await res.json()).data;
 			return {
 				id: s.id,
 				name: s.name,
