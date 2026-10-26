@@ -35,6 +35,16 @@ export const UserSchema = z.object({
 	banExpires: zDate().nullable(),
 });
 
+// Utente visto da un altro ruolo non admin (cliente al seller, dipendente al
+// titolare): solo ciò che si mostra. Mai moderazione (role/ban*) né date
+// dell'account.
+export const UserSummarySchema = UserSchema.pick({
+	id: true,
+	name: true,
+	email: true,
+	image: true,
+});
+
 /** Le aliquote IVA (%), nell'ordine dello schema TypeBox. */
 const vatRates = () =>
 	z.union([
@@ -388,6 +398,145 @@ export const StoreProductSchema = z.object({
 	productId: z.string(),
 	storeId: z.string(),
 	stock: z.number().min(0).meta(d("Quantità disponibile in magazzino")),
+});
+
+export const OrderSchema = z.object({
+	id: z.string(),
+	customerProfileId: z.string(),
+	storeId: z.string(),
+	type: z
+		.enum(["direct", "reserve_pickup", "pay_pickup", "pay_deliver"])
+		.meta(d("Tipo di ordine")),
+	status: z
+		.enum([
+			"pending",
+			"confirmed",
+			"ready_for_pickup",
+			"shipped",
+			"delivered",
+			"completed",
+			"cancelled",
+			"expired",
+		])
+		.meta(d("Stato dell'ordine")),
+	total: z.string().meta(d("Totale in formato decimale")),
+	shippingAddressId: z.string().nullable(),
+	checkoutId: z.string().meta(d("Checkout che ha creato l'ordine")).nullable(),
+	pickupCode: z
+		.string()
+		.meta(d("Codice di ritiro al banco (solo ordini da ritirare)"))
+		.nullable(),
+	shippingAddressSnapshot: z
+		.object({
+			recipientName: z.string().nullable(),
+			phone: z.string().nullable(),
+			addressLine1: z.string(),
+			addressLine2: z.string().nullable(),
+			zipCode: z.string(),
+			municipalityName: z.string(),
+			provinceAcronym: z.string(),
+			country: z.string(),
+		})
+		.meta(
+			d(
+				"Copia dell'indirizzo di spedizione al momento dell'ordine. NULL per ordini senza spedizione o storici",
+			),
+		)
+		.nullable(),
+	shippingCost: z
+		.string()
+		.meta(d("Costo di spedizione in formato decimale"))
+		.nullable(),
+	vatBreakdown: z
+		.array(
+			z.object({
+				rate: z.number().meta(d("Aliquota IVA (%)")),
+				taxableAmount: z.string().meta(d("Imponibile (netto)")),
+				taxAmount: z.string().meta(d("Imposta (IVA)")),
+			}),
+		)
+		.meta(d("Castelletto IVA per aliquota. NULL per ordini storici"))
+		.nullable(),
+	reservationExpiresAt: zDate({
+		description: "Scadenza della prenotazione per reserve_pickup",
+	}).nullable(),
+	paymentExpiresAt: zDate({
+		description:
+			"Solo ordini da pagare online: oltre questa data un ordine ancora in attesa di pagamento si annulla",
+	}).nullable(),
+	pointsEarned: z.number().min(0).meta(d("Punti fedeltà guadagnati")),
+	pointsSpent: z.number().min(0).meta(d("Punti fedeltà spesi")),
+	pointsDiscount: z
+		.string()
+		.meta(d("Sconto punti in euro, coperto da bibs (0 se nessun punto)")),
+	createdAt: zDate(),
+	updatedAt: zDate(),
+});
+
+export const OrderItemSchema = z.object({
+	id: z.string(),
+	orderId: z.string(),
+	storeProductId: z
+		.string()
+		.meta(
+			d(
+				"FK al store_product. NULL se il prodotto è stato rimosso dopo l'ordine",
+			),
+		)
+		.nullable(),
+	productId: z
+		.string()
+		.meta(d("FK al product. NULL se il prodotto è stato rimosso dopo l'ordine"))
+		.nullable(),
+	productName: z
+		.string()
+		.meta(d("Snapshot del nome prodotto al momento dell'ordine")),
+	productEan: z
+		.string()
+		.meta(d("Snapshot EAN al momento dell'ordine"))
+		.nullable(),
+	brandName: z
+		.string()
+		.meta(d("Snapshot nome brand al momento dell'ordine"))
+		.nullable(),
+	productImageUrl: z
+		.string()
+		.meta(d("Snapshot URL prima immagine al momento dell'ordine"))
+		.nullable(),
+	quantity: z.number().min(1).meta(d("Quantità ordinata")),
+	unitPrice: z
+		.string()
+		.meta(
+			d(
+				"Prezzo unitario effettivamente addebitato al momento dell'ordine (già scontato se uno sconto era attivo)",
+			),
+		),
+	listPrice: z
+		.string()
+		.meta(
+			d(
+				"Snapshot prezzo di listino al momento dell'ordine. NULL per ordini storici",
+			),
+		)
+		.nullable(),
+	discountPercent: z
+		.number()
+		.min(1)
+		.max(99)
+		.meta(
+			d(
+				"Percentuale sconto venditore applicata alla riga. NULL se nessuno sconto era attivo",
+			),
+		)
+		.nullable(),
+	vatRate: z
+		.string()
+		.meta(d("Snapshot aliquota IVA applicata (%). NULL per ordini storici"))
+		.nullable(),
+	vatAmount: z
+		.string()
+		.meta(d("IVA della riga (display). NULL per ordini storici"))
+		.nullable(),
 });
 
 export const CustomerProfileSchema = z.object({

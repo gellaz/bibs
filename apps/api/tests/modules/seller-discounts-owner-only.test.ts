@@ -1,27 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
 import { discountsRoutes } from "@/modules/seller/routes/discounts";
-import { errorHandler } from "@/plugins/error-handler";
+import { testRequest, withVars } from "../helpers/hono-app";
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-// Mounted bare (no seller guard) → withSeller(ctx).isOwner is undefined, i.e. a
-// non-owner caller. requireOwner must turn that into a 403 before the handler
-// does anything else.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(discountsRoutes);
+// Mounted with a non-owner seller context (`withVars`, no session read), i.e.
+// a non-owner caller. requireOwner must turn that into a 403 before the
+// handler does anything else.
+const app = withVars(discountsRoutes, {
+	user: { id: "u1" },
+	seller: { isOwner: false },
+});
 
 async function call(method: string, path: string) {
-	return app.handle(new Request(`http://localhost${path}`, { method }));
+	return testRequest(app, path, { method });
 }
 
 describe("discounts module is owner-only", () => {

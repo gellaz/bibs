@@ -13,6 +13,7 @@ import {
 	withConflictErrors as tbWithConflictErrors,
 	withErrors as tbWithErrors,
 } from "@/lib/schemas";
+import { DiscountSchema } from "@/lib/zod/discount";
 import {
 	OkMessage,
 	okPageRes,
@@ -77,26 +78,6 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 		});
 	}
 
-	const DiscountSchema = z.object({
-		id: z.string(),
-		sellerProfileId: z.string(),
-		title: z.string().meta({ description: "Titolo della promozione" }),
-		percent: zInteger({
-			minimum: 1,
-			maximum: 99,
-			description: "Percentuale di sconto (1-99)",
-		}),
-		startsAt: zDate({ description: "Data di inizio" }),
-		endsAt: zDate({
-			description: "Data di fine (null = senza scadenza)",
-		}).nullable(),
-		status: z
-			.enum(["active", "paused", "archived"])
-			.meta({ description: "Stato persistito della promozione" }),
-		createdAt: zDate(),
-		updatedAt: zDate(),
-	});
-
 	// Gli schemi di risposta veri (`withErrors`, `DiscountSchema`) sono
 	// condivisi col resto di test:unit: un file che li compila in Elysia
 	// (`mount.test.ts` dalla U5, con `sellerModule`) li renderebbe non più «a
@@ -141,6 +122,21 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 						.meta({ description: "x" }),
 					n: z.union([z.string(), z.null()]),
 				}),
+			},
+		],
+		[
+			// U7: conteggi ordini per stato; Zod scrive propertyNames +
+			// additionalProperties, TypeBox patternProperties.
+			"t.Record in risposta",
+			{
+				200: t.Record(t.String(), t.Integer({ minimum: 0 }), {
+					description: "x",
+				}),
+			},
+			{
+				200: z
+					.record(z.string(), zInteger({ minimum: 0 }))
+					.meta({ description: "x" }),
 			},
 		],
 	];

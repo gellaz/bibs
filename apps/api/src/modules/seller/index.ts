@@ -24,15 +24,22 @@ import { storesRoutes } from "./routes/stores";
 
 /**
  * Sub-app Hono del modulo, montata su /seller in `src/index.ts` (strangler,
- * migrazione Hono): le route seller ancora Elysia (`sellerModule`, U6 e U7)
+ * migrazione Hono): le route seller ancora Elysia (`sellerModule`, U6)
  * vincono sul mount. Ogni route porta la sua guardia (`requireSeller`).
+ * In Hono risponde la prima route registrata: il checkout (`/stores/checkout`,
+ * `/stores/checkout/:pendingId`) sta prima delle route `/stores/:storeId/…`
+ * di U6, come la precedenza statica di Elysia.
  */
 export const sellerApp = moduleApp()
 	.route("/", productsRoutes)
 	.route("/", productCharacteristicsRoutes)
 	.route("/", brandsRoutes)
 	.route("/", imagesRoutes)
-	.route("/", stockRoutes);
+	.route("/", stockRoutes)
+	.route("/", billingRoutes)
+	.route("/", checkoutRoutes)
+	.route("/", ordersRoutes)
+	.route("/", discountsRoutes);
 
 /** Tipo per il client `hc` del seller (`hc<SellerApp>(`${API_URL}/seller`)`). */
 export type SellerApp = typeof sellerApp;
@@ -81,15 +88,12 @@ export const sellerModule = new Elysia({ prefix: "/seller" })
 			app
 				.resolve(({ user: u }) => resolveSellerAccess(u))
 				// Mount all sub-route plugins (products, brands, images,
-				// product-characteristics and stock are on Hono: `sellerApp`)
-				.use(billingRoutes)
+				// product-characteristics, stock, billing, checkout, orders and
+				// discounts are on Hono: `sellerApp`)
 				.use(storesRoutes)
 				.use(closuresRoutes)
-				.use(checkoutRoutes)
 				.use(storeImagesRoutes)
-				.use(ordersRoutes)
 				.use(dashboardRoutes)
 				.use(employeesRoutes)
-				.use(settingsRoutes)
-				.use(discountsRoutes),
+				.use(settingsRoutes),
 	);

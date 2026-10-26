@@ -173,6 +173,30 @@ export function zInteger<O extends NumberOptions & { default?: number }>(
 	return withDefault<typeof schema, O>(schema, defaultValue, json);
 }
 
+/**
+ * `Type.Integer` di TypeBox (form condivisi: `dayOfWeek` degli orari,
+ * `position` dei telefoni): solo numeri, mai stringhe (a differenza di
+ * `zInteger`), e `Number.isInteger` senza i limiti safe-int di `z.int()`
+ * (con `maximum: 6`, `9007199254740993` è «al massimo 6», non «al massimo
+ * 9007199254740991»).
+ */
+export function zInt(options: NumberOptions = {}) {
+	const inner = numberChecks(z.number(), options);
+	const schema = z
+		.custom<number>(() => true)
+		.transform((value, ctx) => {
+			const rule =
+				value === undefined
+					? ({ kind: "required" } as const)
+					: typeof value === "number" && Number.isInteger(value)
+						? parseRule(inner, value)
+						: ({ kind: "integer" } as const);
+			return rule ? fail(ctx, value, rule) : value;
+		})
+		.meta(metaOf(options));
+	return register(schema, { type: "integer", ...options });
+}
+
 /** Query e params: `t.Number` diventa il `Numeric` di Elysia. */
 export function zNumeric(inner: z.ZodType) {
 	return z

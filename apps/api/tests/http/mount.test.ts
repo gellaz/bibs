@@ -335,7 +335,8 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 });
 
 // U5: /seller è in parte Hono (prodotti, brand, immagini, caratteristiche,
-// stock) e in parte ancora Elysia (U6, U7), come in `src/index.ts`.
+// stock; da U7 anche ordini, promozioni, checkout e billing) e in parte
+// ancora Elysia (U6), come in `src/index.ts`.
 describe("mount — modulo migrato in parte (/seller)", () => {
 	const hits: string[] = [];
 	const partial = new Elysia()
@@ -357,7 +358,7 @@ describe("mount — modulo migrato in parte (/seller)", () => {
 		["GET", "/seller/stores"],
 		["DELETE", "/seller/stores/s1"],
 		["DELETE", "/seller/stores/s1/images/i1"],
-		["GET", "/seller/discounts/d1/products"],
+		["GET", "/seller/employees/e1/stores"],
 	])
 		it(`${method} ${path}: risponde Elysia, Hono non la vede`, async () => {
 			hits.length = 0;
@@ -373,6 +374,7 @@ describe("mount — modulo migrato in parte (/seller)", () => {
 		["DELETE", "/seller/products/p1/images/i1", 401],
 		["PATCH", "/seller/products/p1/stores/s1", 422],
 		["GET", "/seller/product-categories/c1/characteristics", 401],
+		["GET", "/seller/discounts/d1/products", 401],
 		["GET", "/seller/nope", 404],
 	] as const)
 		it(`${method} ${path}: arriva a Hono senza prefisso`, async () => {

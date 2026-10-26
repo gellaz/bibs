@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
 	BrandSchema,
 	CustomerProfileSchema,
+	OrderItemSchema,
+	OrderSchema,
 	OrganizationSchema,
 	ProductCategoryWithMacroSchema,
 	ProductCharacteristicValueSchema,
@@ -11,6 +13,7 @@ import {
 	StoreProductSchema,
 	StoreSchema,
 	UserSchema,
+	UserSummarySchema,
 } from "./entities";
 import { zInteger } from "./t";
 
@@ -82,4 +85,28 @@ export const AppliedDiscountSchema = z.object({
 // (null when none).
 export const SellerProductListItemSchema = ProductWithRelationsSchema.extend({
 	appliedDiscount: AppliedDiscountSchema.nullable(),
+});
+
+// StoreProduct + product (for order items)
+const StoreProductWithProduct = StoreProductSchema.extend({
+	product: ProductSchema,
+});
+
+// OrderItem + storeProduct with product (storeProduct nullable: FK is set null on hard delete)
+const OrderItemWithProduct = OrderItemSchema.extend({
+	storeProduct: StoreProductWithProduct.nullable(),
+});
+
+// Cliente visto dal seller sull'ordine: niente saldo punti né dati di account
+const SellerOrderCustomer = z.object({
+	id: z.string(),
+	user: UserSummarySchema,
+});
+
+// Order with relations — seller view
+export const SellerOrderWithRelationsSchema = OrderSchema.extend({
+	items: z.array(OrderItemWithProduct),
+	customerProfile: SellerOrderCustomer,
+	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
+	store: StoreSchema.omit({ location: true }),
 });

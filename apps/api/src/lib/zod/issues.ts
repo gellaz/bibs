@@ -234,18 +234,27 @@ function collapse(issues: Issue[], checked: Checked) {
 		const input = valueAt(value, at);
 		let rule: ValidationRule =
 			input === undefined ? { kind: "required" } : { kind: "invalid" };
-		if (!coerced && def.type === "nullable") {
+		// t.Nullable o `Type.Union([X, Type.Null()])` dei form condivisi: per
+		// TypeBox sono lo stesso anyOf, la regola è quella del ramo non nullo.
+		const nonNull =
+			def.type === "union"
+				? def.options.filter((o: z.ZodType) => o._zod.def.type !== "null")
+				: [];
+		const branch: z.ZodType | undefined =
+			def.type === "nullable"
+				? def.innerType
+				: nonNull.length === 1
+					? nonNull[0]
+					: undefined;
+		if (!coerced && branch) {
 			const relative = inner.map((i) => ({
 				...i,
 				path: i.path.slice(at.length),
 			}));
-			const first = firstIssue(relative, {
-				schema: def.innerType,
-				value: input,
-			});
+			const first = firstIssue(relative, { schema: branch, value: input });
 			rule = issueRule(
 				{ ...first, input: valueAt(input, first.path) } as Issue,
-				nodeAt(def.innerType, first.path),
+				nodeAt(branch, first.path),
 			);
 		}
 		const params: RuleParams = { rule };

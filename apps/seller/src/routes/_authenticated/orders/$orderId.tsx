@@ -76,12 +76,15 @@ function OrderDetailPage() {
 		);
 
 	const summary = orderSummaryCents(order);
-	const openReservation =
+	// Stringa ISO dall'API (`hc` non converte le date).
+	const reservationExpiresAt =
 		order.type === "reserve_pickup" &&
-		order.reservationExpiresAt &&
-		(order.status === "confirmed" || order.status === "ready_for_pickup");
-	const left = openReservation
-		? reservationTimeLeft(order.reservationExpiresAt as Date)
+		(order.status === "confirmed" || order.status === "ready_for_pickup")
+			? order.reservationExpiresAt
+			: null;
+	const openReservation = !!reservationExpiresAt;
+	const left = reservationExpiresAt
+		? reservationTimeLeft(reservationExpiresAt)
 		: null;
 	const address = order.shippingAddressSnapshot;
 	const hasActions =
@@ -106,7 +109,7 @@ function OrderDetailPage() {
 
 			{(openReservation || hasActions) && (
 				<div className="flex flex-wrap items-center justify-between gap-3">
-					{openReservation && left ? (
+					{reservationExpiresAt && left ? (
 						<p
 							className={cn(
 								"text-sm",
@@ -114,9 +117,10 @@ function OrderDetailPage() {
 							)}
 						>
 							{m.orders_detail_deadline({
-								date: new Date(
-									order.reservationExpiresAt as Date,
-								).toLocaleString(intlLocale(), DATETIME_FMT),
+								date: new Date(reservationExpiresAt).toLocaleString(
+									intlLocale(),
+									DATETIME_FMT,
+								),
 							})}{" "}
 							<span className="text-muted-foreground">({left.label})</span>
 						</p>
