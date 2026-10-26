@@ -16,6 +16,17 @@ mock.module("@/db", () => ({
 
 import { runExclusive } from "@/jobs/lock";
 
+// Il pool ridà la stessa connessione e un advisory lock di sessione è
+// rientrante: per sapere se è stato rilasciato si guarda il catalogo, non si
+// riprova a prenderlo.
+async function heldLocks(key: number): Promise<number> {
+	const { rows } = await getTestDb().$client.query<{ n: number }>(
+		"SELECT count(*)::int AS n FROM pg_locks WHERE locktype = 'advisory' AND objid = $1",
+		[key],
+	);
+	return rows[0]?.n ?? 0;
+}
+
 beforeAll(async () => {
 	await setupTestContainer();
 }, 120_000);
@@ -42,12 +53,15 @@ describe("runExclusive", () => {
 			}),
 		).toBe(false);
 		expect(secondRan).toBe(false);
+		expect(await heldLocks(9999)).toBe(1);
 		gate.resolve();
 		expect(await first).toBe(true);
+		expect(await heldLocks(9999)).toBe(0);
 	});
 
 	it("a job finito il lock è libero", async () => {
 		expect(await runExclusive(9999, async () => {})).toBe(true);
+		expect(await heldLocks(9999)).toBe(0);
 	});
 
 	it("un job che lancia libera il lock", async () => {
@@ -56,7 +70,7 @@ describe("runExclusive", () => {
 				throw new Error("boom");
 			}),
 		).rejects.toThrow("boom");
-		expect(await runExclusive(9999, async () => {})).toBe(true);
+		expect(await heldLocks(9999)).toBe(0);
 	});
 
 	it("chiavi diverse non si bloccano", async () => {
