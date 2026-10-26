@@ -22,7 +22,6 @@ mock.module("@/db", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
 import { sellerProfile } from "@/db/schemas/seller";
 import {
 	type ChangeStatus,
@@ -34,30 +33,21 @@ import {
 	getChangeDetail,
 	listRequests,
 } from "@/modules/admin/services/requests";
-import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestMunicipality,
 	createTestOrganization,
 	createTestSeller,
 } from "../helpers/fixtures";
+import { testRequest, withVars } from "../helpers/hono-app";
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
+// Utente admin già risolto a monte (D13 del piano Hono): `requireAdmin` non
+// rilegge la sessione, come le route nude dell'harness Elysia di prima.
+const app = withVars(requestsRoutes, {
+	user: { id: "admin-1", role: "admin" },
+});
 
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(new Elysia({ prefix: "/admin" }).use(requestsRoutes));
-
-const get = (path: string) =>
-	app.handle(new Request(`http://localhost/admin${path}`));
+const get = (path: string) => testRequest(app, path);
 
 beforeAll(async () => {
 	await setupTestContainer();

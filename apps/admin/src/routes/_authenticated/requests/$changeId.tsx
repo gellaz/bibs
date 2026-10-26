@@ -12,14 +12,14 @@ import {
 import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { RejectChangeDialog } from "@/features/requests/reject-change-dialog";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/requests/$changeId")({
@@ -52,19 +52,22 @@ function ChangeDetailPage() {
 	const { data, isLoading, error } = useQuery({
 		queryKey: detailKey,
 		queryFn: async () => {
-			const response = await api().admin.requests.changes({ changeId }).get();
-			return unwrap(response, m.request_detail_not_found()).data;
+			const response = await adminApi.requests.changes[":changeId"].$get({
+				param: { changeId },
+			});
+			return (await unwrapJson(response, m.request_detail_not_found())).data;
 		},
 	});
 
 	const decide = useMutation({
 		mutationFn: async (reason: string | null) => {
-			const change = api().admin.sellers.changes({ changeId });
+			const change = adminApi.sellers.changes[":changeId"];
+			const param = { changeId };
 			const response =
 				reason === null
-					? await change.approve.patch()
-					: await change.reject.patch({ reason });
-			unwrap(response, m.request_detail_action_error());
+					? await change.approve.$patch({ param })
+					: await change.reject.$patch({ param, json: { reason } });
+			await unwrapJson(response, m.request_detail_action_error());
 			return reason === null;
 		},
 		onSuccess: (approved) => {

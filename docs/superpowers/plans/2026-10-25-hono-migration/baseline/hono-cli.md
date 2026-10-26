@@ -77,6 +77,13 @@ Reading the results:
   The 409 holds for 7 days from that user's creation (2026-10-25): after that the API deletes the
   stale account and registers it again (200, the step fails). Before replaying later, check the user
   or drop that line; never point it at a seed user.
+  `hono-batch-admin-2.jsonl` (U9, captured on `a2a7e044`) reads the dev DB as it was on 2026-10-26:
+  seller and store counts, the first rows of the lists and the decided VAT change
+  `c1392aa5-…` (its approve/reject answer 400 «non più in attesa» without writing). Its two 409 steps
+  send a stale `expectedUpdatedAt` to a pending (`seller146@test.com`) and an active seller: the
+  compare-and-set UPDATE matches no row, so nothing is written. A new seller, store or subscription
+  in the dev DB shifts counts and first rows: replay it on the base commit too before reading a
+  failure as a regression.
 - Trap the snapshot already shows: unauthenticated GETs with a missing required query answer **422
   before 401** (`/seller/orders`, `/seller/orders/counts`, `/seller/dashboard`,
   `/seller/products/status-counts`, ...): Elysia validates the query before the `auth` macro resolves.

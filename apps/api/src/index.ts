@@ -9,7 +9,7 @@ import { isOriginAllowed } from "@/lib/cors";
 import { env } from "@/lib/env";
 import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
-import { adminApp, adminModule } from "@/modules/admin";
+import { adminApp } from "@/modules/admin";
 import {
 	productCategoriesApp,
 	productMacroCategoriesApp,
@@ -183,7 +183,6 @@ const app = new Elysia()
 	)
 	.use(stripeWebhookRoutes)
 	.use(betterAuth)
-	.use(adminModule)
 	.use(sellerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
@@ -192,7 +191,6 @@ const app = new Elysia()
 	.mount("/locations", locationsApp.fetch)
 	// Seller in parte: le route ancora in `sellerModule` vincono sul mount.
 	.mount("/seller", sellerApp.fetch)
-	// Admin in parte: le route di U9 ancora in `adminModule` vincono sul mount.
 	.mount("/admin", adminApp.fetch)
 	.mount("/product-macro-categories", productMacroCategoriesApp.fetch)
 	.mount("/product-categories", productCategoriesApp.fetch)

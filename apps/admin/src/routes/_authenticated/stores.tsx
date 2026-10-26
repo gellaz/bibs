@@ -6,6 +6,7 @@ import { SearchInput } from "@bibs/ui/custom/search-input";
 import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { formatDate } from "@bibs/ui/lib/date";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
@@ -14,7 +15,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import {
 	dataTableFooterLabels,
 	tableColumnsToggleLabels,
@@ -106,28 +107,27 @@ function StoresPage() {
 	const { data: counts } = useQuery({
 		queryKey: ["admin-stores-counts"],
 		queryFn: async () => {
-			const res = await api().admin.stores.counts.get();
-			return res.error ? null : (res.data?.data ?? null);
+			const res = await adminApi.stores.counts.$get();
+			return res.ok ? (await res.json()).data : null;
 		},
 	});
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin-stores", status, page, limit, q, sort, order],
-		queryFn: async () => {
-			const res = await api().admin.stores.get({
-				query: {
-					page,
-					limit,
-					status,
-					...(q ? { search: q } : {}),
-					sortBy: sort ?? "createdAt",
-					sortOrder: order ?? "desc",
-				},
-			});
-			if (res.error)
-				throw new Error(res.error.value?.message || m.stores_load_error());
-			return res.data;
-		},
+		queryFn: async () =>
+			unwrapJson(
+				await adminApi.stores.$get({
+					query: {
+						page,
+						limit,
+						status,
+						...(q ? { search: q } : {}),
+						sortBy: sort ?? "createdAt",
+						sortOrder: order ?? "desc",
+					},
+				}),
+				m.stores_load_error(),
+			),
 	});
 
 	type Row = NonNullable<typeof data>["data"][number];

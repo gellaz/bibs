@@ -20,6 +20,7 @@ import {
 	withErrors,
 } from "@/lib/zod/responses";
 import { zDate, zInteger } from "@/lib/zod/t";
+import { adminApp } from "@/modules/admin";
 import { customerApp } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
@@ -223,9 +224,12 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 			expect(paths[path]).toEqual(baselinePaths[path]);
 	});
 
+	// /admin dalla U9 è tutto Hono, compreso `GET /admin/requests/`
+	// (`doc({ path })`): ogni path della baseline sotto /admin.
 	const modules = [
 		["/locations", locationsApp, ["auth", "publicRoute"]],
 		["/register", registrationApp, ["publicRoute"]],
+		["/admin", adminApp, ["admin"]],
 	] as const;
 	for (const [prefix, app, guards] of modules) {
 		it(`${prefix}: ogni path identico a baseline/openapi.json`, async () => {

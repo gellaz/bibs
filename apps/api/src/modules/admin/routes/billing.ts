@@ -1,7 +1,13 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAdmin } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ok } from "@/lib/responses";
-import { okRes, withConflictErrors, withErrors } from "@/lib/schemas";
-import { withAdmin } from "../context";
+import { okRes, withConflictErrors, withErrors } from "@/lib/zod/responses";
+import { zDate, zInteger, zString } from "@/lib/zod/t";
+import { adminDetail } from "../context";
 import {
 	getBillingOverview,
 	getCurrentPricing,
@@ -10,151 +16,161 @@ import {
 	updatePricing,
 } from "../services/billing";
 
-const StatusUnion = t.Union([
-	t.Literal("active"),
-	t.Literal("past_due"),
-	t.Literal("canceling"),
-	t.Literal("suspended"),
-	t.Literal("canceled"),
-]);
-
-const SubRowSchema = t.Object({
-	id: t.String(),
-	storeId: t.String(),
-	storeName: t.String(),
-	sellerEmail: t.String(),
-	status: StatusUnion,
-	feeAmountCents: t.Integer(),
-	currentPeriodEnd: t.Date(),
-	createdAt: t.Date(),
-	cancelReason: t.Nullable(t.String()),
+const detail = (summary: string, description: string) => ({
+	...adminDetail(summary, description),
+	tags: ["Admin - Billing"],
 });
 
-const SubsPageSchema = t.Object({
-	data: t.Array(SubRowSchema),
-	pagination: t.Object({
-		page: t.Integer(),
-		limit: t.Integer(),
-		total: t.Integer(),
+const StatusUnion = z.enum([
+	"active",
+	"past_due",
+	"canceling",
+	"suspended",
+	"canceled",
+]);
+
+const SubRowSchema = z.object({
+	id: z.string(),
+	storeId: z.string(),
+	storeName: z.string(),
+	sellerEmail: z.string(),
+	status: StatusUnion,
+	feeAmountCents: zInteger(),
+	currentPeriodEnd: zDate(),
+	createdAt: zDate(),
+	cancelReason: z.string().nullable(),
+});
+
+const SubsPageSchema = z.object({
+	data: z.array(SubRowSchema),
+	pagination: z.object({
+		page: zInteger(),
+		limit: zInteger(),
+		total: zInteger(),
 	}),
 });
 
-const OverviewSchema = t.Object({
-	mrrCents: t.Integer(),
-	atRiskCents: t.Integer({
+const OverviewSchema = z.object({
+	mrrCents: zInteger(),
+	atRiskCents: zInteger({
 		description:
 			"Somma fee di subscription past_due + canceling: revenue mensile a rischio, esclusa dall'MRR",
 	}),
-	activeStoresCount: t.Integer(),
-	pastDueCount: t.Integer(),
-	cancelingCount: t.Integer(),
-	suspendedCount: t.Integer(),
+	activeStoresCount: zInteger(),
+	pastDueCount: zInteger(),
+	cancelingCount: zInteger(),
+	suspendedCount: zInteger(),
 });
 
-const PricingSchema = t.Object({
-	id: t.String(),
-	storeMonthlyFeeCents: t.Integer(),
-	currency: t.String(),
-	stripePriceId: t.String(),
-	stripeProductId: t.Nullable(t.String()),
-	suspendedAutoCancelDays: t.Integer(),
-	pendingCreationExpiryHours: t.Integer(),
-	isActive: t.Boolean(),
-	createdAt: t.Date(),
-	createdByUserId: t.Nullable(t.String()),
+const PricingSchema = z.object({
+	id: z.string(),
+	storeMonthlyFeeCents: zInteger(),
+	currency: z.string(),
+	stripePriceId: z.string(),
+	stripeProductId: z.string().nullable(),
+	suspendedAutoCancelDays: zInteger(),
+	pendingCreationExpiryHours: zInteger(),
+	isActive: z.boolean(),
+	createdAt: zDate(),
+	createdByUserId: z.string().nullable(),
 });
 
-export const adminBillingRoutes = new Elysia({ prefix: "/billing" })
+const OverviewResponse = okRes(OverviewSchema);
+const PricingResponse = okRes(PricingSchema);
+const PricingHistoryResponse = okRes(z.array(PricingSchema));
+const UpdatePricingResponse = okRes(z.object({ newPriceId: z.string() }));
+const SubscriptionsResponse = okRes(SubsPageSchema);
+
+export const UpdatePricingBody = z.object({
+	storeMonthlyFeeCents: zInteger({ minimum: 100 }),
+	currency: zString({ minLength: 3, maxLength: 3 }),
+	suspendedAutoCancelDays: zInteger({ minimum: 7, maximum: 365 }),
+	pendingCreationExpiryHours: zInteger({ minimum: 1, maximum: 168 }),
+	productId: zString({
+		pattern: "^prod_[A-Za-z0-9]+$",
+		description:
+			"ID del prodotto Stripe (prod_…) a cui agganciare il nuovo prezzo",
+	}),
+});
+
+export const SubscriptionsQuery = z.object({
+	page: zInteger({ minimum: 1 }).optional(),
+	limit: zInteger({ minimum: 1, maximum: 100 }).optional(),
+	status: StatusUnion.optional(),
+	sellerEmail: z.string().optional(),
+	storeName: z.string().optional(),
+});
+
+export const adminBillingRoutes = new Hono()
 	.get(
-		"/overview",
-		async () => {
-			const data = await getBillingOverview();
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(OverviewSchema) }),
-			detail: {
-				summary: "Overview billing (MRR + counts)",
-				description:
-					"MRR aggregato e conteggi per stato dei store_subscriptions.",
-				tags: ["Admin - Billing"],
-			},
-		},
+		"/billing/overview",
+		doc({
+			response: withErrors({ 200: OverviewResponse }),
+			detail: detail(
+				"Overview billing (MRR + counts)",
+				"MRR aggregato e conteggi per stato dei store_subscriptions.",
+			),
+		}),
+		requireAdmin,
+		async (c) => send(c, OverviewResponse, ok(await getBillingOverview())),
 	)
 	.get(
-		"/pricing/current",
-		async () => {
-			const data = await getCurrentPricing();
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(PricingSchema) }),
-			detail: {
-				summary: "Pricing config attivo",
-				description: "Restituisce la riga pricing_config con is_active=true.",
-				tags: ["Admin - Billing"],
-			},
-		},
+		"/billing/pricing/current",
+		doc({
+			response: withErrors({ 200: PricingResponse }),
+			detail: detail(
+				"Pricing config attivo",
+				"Restituisce la riga pricing_config con is_active=true.",
+			),
+		}),
+		requireAdmin,
+		async (c) => send(c, PricingResponse, ok(await getCurrentPricing())),
 	)
 	.get(
-		"/pricing/history",
-		async () => {
-			const data = await listPricingHistory();
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(t.Array(PricingSchema)) }),
-			detail: {
-				summary: "Storico configurazioni pricing",
-				description: "Tutte le righe pricing_config in ordine decrescente.",
-				tags: ["Admin - Billing"],
-			},
-		},
+		"/billing/pricing/history",
+		doc({
+			response: withErrors({ 200: PricingHistoryResponse }),
+			detail: detail(
+				"Storico configurazioni pricing",
+				"Tutte le righe pricing_config in ordine decrescente.",
+			),
+		}),
+		requireAdmin,
+		async (c) =>
+			send(c, PricingHistoryResponse, ok(await listPricingHistory())),
 	)
 	.put(
-		"/pricing",
-		async (ctx) => {
-			const { user, body } = withAdmin(ctx) as ReturnType<typeof withAdmin> & {
-				body: {
-					storeMonthlyFeeCents: number;
-					currency: string;
-					suspendedAutoCancelDays: number;
-					pendingCreationExpiryHours: number;
-					productId: string;
-				};
-			};
+		"/billing/pricing",
+		doc({
+			response: withConflictErrors({ 200: UpdatePricingResponse }),
+			detail: detail(
+				"Aggiorna pricing",
+				"Crea un nuovo Stripe Price e flip is_active sulla nuova riga pricing_config.",
+			),
+		}),
+		v("json", UpdatePricingBody),
+		requireAdmin,
+		async (c) => {
 			const data = await updatePricing({
-				...body,
-				adminUserId: user.id,
+				...c.req.valid("json"),
+				adminUserId: c.var.user.id,
 			});
-			return ok(data);
-		},
-		{
-			body: t.Object({
-				storeMonthlyFeeCents: t.Integer({ minimum: 100 }),
-				currency: t.String({ minLength: 3, maxLength: 3 }),
-				suspendedAutoCancelDays: t.Integer({ minimum: 7, maximum: 365 }),
-				pendingCreationExpiryHours: t.Integer({ minimum: 1, maximum: 168 }),
-				productId: t.String({
-					pattern: "^prod_[A-Za-z0-9]+$",
-					description:
-						"ID del prodotto Stripe (prod_…) a cui agganciare il nuovo prezzo",
-				}),
-			}),
-			response: withConflictErrors({
-				200: okRes(t.Object({ newPriceId: t.String() })),
-			}),
-			detail: {
-				summary: "Aggiorna pricing",
-				description:
-					"Crea un nuovo Stripe Price e flip is_active sulla nuova riga pricing_config.",
-				tags: ["Admin - Billing"],
-			},
+			return send(c, UpdatePricingResponse, ok(data));
 		},
 	)
 	.get(
-		"/subscriptions",
-		async ({ query }) => {
+		"/billing/subscriptions",
+		doc({
+			response: withErrors({ 200: SubscriptionsResponse }),
+			detail: detail(
+				"Lista subscription (admin)",
+				"Tutti gli store_subscriptions con join su store + seller. Filtri opzionali per stato, email, nome.",
+			),
+		}),
+		v("query", SubscriptionsQuery),
+		requireAdmin,
+		async (c) => {
+			const query = c.req.valid("query");
 			const data = await listAllSubscriptions({
 				page: query.page ?? 1,
 				limit: query.limit ?? 25,
@@ -162,22 +178,6 @@ export const adminBillingRoutes = new Elysia({ prefix: "/billing" })
 				sellerEmail: query.sellerEmail,
 				storeName: query.storeName,
 			});
-			return ok(data);
-		},
-		{
-			query: t.Object({
-				page: t.Optional(t.Integer({ minimum: 1 })),
-				limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
-				status: t.Optional(StatusUnion),
-				sellerEmail: t.Optional(t.String()),
-				storeName: t.Optional(t.String()),
-			}),
-			response: withErrors({ 200: okRes(SubsPageSchema) }),
-			detail: {
-				summary: "Lista subscription (admin)",
-				description:
-					"Tutti gli store_subscriptions con join su store + seller. Filtri opzionali per stato, email, nome.",
-				tags: ["Admin - Billing"],
-			},
+			return send(c, SubscriptionsResponse, ok(data));
 		},
 	);

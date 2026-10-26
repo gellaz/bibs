@@ -3,7 +3,7 @@ import { DataTableFooter } from "@bibs/ui/custom/data-table-footer";
 import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { PageHeader } from "@bibs/ui/custom/page-header";
 import { TabNav, type TabNavItem } from "@bibs/ui/custom/tab-nav";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
@@ -11,7 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { requestCountsQuery } from "@/features/requests/use-request-counts";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { dataTableFooterLabels } from "@/lib/ui-labels";
 import { m } from "@/paraglide/messages";
 
@@ -92,12 +92,11 @@ function RequestsPage() {
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin-requests", type, page, limit],
-		queryFn: async () => {
-			const response = await api().admin.requests.get({
-				query: { type, page, limit },
-			});
-			return unwrap(response, m.requests_load_error());
-		},
+		queryFn: async () =>
+			unwrapJson(
+				await adminApi.requests.$get({ query: { type, page, limit } }),
+				m.requests_load_error(),
+			),
 	});
 
 	const tabs: TabNavItem[] = TABS.map((tab) => ({
@@ -111,10 +110,7 @@ function RequestsPage() {
 			: null,
 	}));
 
-	const rows = useMemo<RequestRow[]>(
-		() => (data?.data as RequestRow[]) ?? [],
-		[data],
-	);
+	const rows = useMemo<RequestRow[]>(() => data?.data ?? [], [data]);
 
 	const columns = useMemo<DataTableColumnDef<RequestRow>[]>(
 		() => [
