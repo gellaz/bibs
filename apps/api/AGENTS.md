@@ -96,11 +96,12 @@ Plain Hono middleware and route groups:
 1. **`request-log.ts`** — `requestLog`: one line per request on stdout (time, level, duration, method, path, status;
    `INFO`/`WARNING`/`ERROR` by status, colours only on a terminal) and a JSON line in `logs/app.log` (single file,
    no rotation).
-2. **`cors.ts`** — `cors`: CORS for the React frontends, with credentials. Localhost is accepted automatically in
-   development and test, `ALLOWED_ORIGINS` in production. Every `OPTIONS` is answered as a 204 preflight before any
-   route (not `hono/cors`, which formats the headers differently).
-3. **`request-id.ts`** — `requestId`: `X-Request-Id` on every response except the preflight (the client's id when it
-   matches `^[A-Za-z0-9._:-]{1,128}$`, otherwise a fresh UUID), also in `c.var.requestId`.
+2. **`cors.ts`** — `cors`: `hono/cors` for the React frontends, with credentials. Localhost is accepted automatically
+   in development and test, `ALLOWED_ORIGINS` in production (`lib/cors.ts`). Every `OPTIONS` is answered as a 204
+   preflight before any route.
+3. **`X-Request-Id`** — `hono/request-id`, registered in `src/app.ts`: on every response except the preflight (the
+   client's id when it is letters, digits, `_`, `-` or `=` and at most 255 characters, otherwise a fresh UUID), also
+   in `c.var.requestId`.
 4. **`better-auth.ts`** — `socketIpAsForwardedFor` overwrites `x-forwarded-for` with the socket IP and drops
    `x-real-ip`, so a client cannot dodge better-auth's rate limit (no-op without a socket, e.g. `app.request()` in
    tests); `authHandler` mounts better-auth's handler on `/auth/*` (`hono/mount`), so its endpoints live at

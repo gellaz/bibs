@@ -8,7 +8,6 @@ ported into `apps/api/src` (the packages themselves are no longer dependencies):
 |---|---|---|---|
 | elysia | 1.4.30 | Copyright 2022 saltyAom | `src/http/validator.ts` (body, multipart, urlencoded and query parsing), `src/http/app.ts` (raw path), `src/lib/schemas/t.ts` (integer, date and file checks, response encoding), `src/lib/schemas/formats.ts` (`date-time`, numeric/integer/boolean strings), `src/lib/schemas/mirror.ts` (`hasProperty`, `hasType`, root defaults) |
 | @elysiajs/openapi | 1.4.16 | Copyright 2022 saltyAom | `src/http/openapi.ts` (operation ids, enum and nullable transforms), `src/http/openapi-page.ts` (Scalar page and CSS) |
-| @elysiajs/cors | 1.4.2 | Copyright 2022 saltyAom | `src/plugins/cors.ts` (response and preflight headers) |
 | exact-mirror | 0.2.7 | Copyright 2022 saltyAom | `src/lib/schemas/mirror.ts` (clean-up of the validated value) |
 | logixlysia | 6.10.3 | Copyright (c) 2023 PunGrumpy | `src/plugins/request-log.ts` (request line format and colours) |
 | ajv-formats | via elysia | Copyright (c) 2020 Evgeny Poberezkin | `src/lib/schemas/formats.ts` (`uri`, `date-time` regexes) |

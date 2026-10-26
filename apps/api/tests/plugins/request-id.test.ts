@@ -1,10 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { Hono } from "hono";
-import { type RequestIdEnv, requestId } from "@/plugins/request-id";
+import { rootApp } from "@/app";
 
-const app = new Hono<RequestIdEnv>()
-	.use(requestId)
-	.get("/", (c) => c.text(c.var.requestId));
+// `hono/request-id` come lo registra l'app radice.
+const app = rootApp().get("/", (c) => c.text(c.var.requestId));
 
 async function call(header?: string) {
 	const res = await app.request(
@@ -23,13 +21,13 @@ describe("requestId", () => {
 	});
 
 	it("keeps a well-formed inbound id", async () => {
-		const { header, body } = await call("edge-abc_123.4");
-		expect(header).toBe("edge-abc_123.4");
-		expect(body).toBe("edge-abc_123.4");
+		const { header, body } = await call("edge-abc_123=");
+		expect(header).toBe("edge-abc_123=");
+		expect(body).toBe("edge-abc_123=");
 	});
 
 	it("replaces an inbound id that is not id-shaped", async () => {
-		for (const bad of ["has space", "x".repeat(129), ""]) {
+		for (const bad of ["has space", "edge.1", "x".repeat(256), ""]) {
 			const { header } = await call(bad);
 			expect(header).not.toBe(bad);
 			expect(header).toMatch(/^[0-9a-f-]{36}$/);
