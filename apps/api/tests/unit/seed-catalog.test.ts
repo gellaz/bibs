@@ -12,7 +12,7 @@ import {
 	HOUSE_MADE_PREFIXES,
 } from "@/db/seed/fixtures/catalog";
 import { bolognaPrefixes, businessPrefixes } from "@/db/seed/fixtures/utils";
-import { parseCsv } from "@/lib/utils/csv";
+import { parseCsv } from "@/lib/csv";
 
 const readData = (file: string) =>
 	parseCsv(

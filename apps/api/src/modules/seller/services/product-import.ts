@@ -2,8 +2,8 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { product, storeProduct } from "@/db/schemas/product";
 import { config } from "@/lib/config";
+import { parseCsv } from "@/lib/csv";
 import { ServiceError } from "@/lib/errors";
-import { parseCsv } from "@/lib/utils/csv";
 
 const PRICE_REGEX = /^\d+\.\d{2}$/;
 const EAN_REGEX = /^(\d{8}|\d{13})$/;

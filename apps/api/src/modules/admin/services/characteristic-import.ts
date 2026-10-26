@@ -14,8 +14,8 @@ import {
 	countValuesByOption,
 	sumCounts,
 } from "@/domain/catalog/characteristic-impact";
+import { parseCsv } from "@/lib/csv";
 import { ServiceError } from "@/lib/errors";
-import { parseCsv } from "@/lib/utils/csv";
 
 const CHARACTERISTIC_HEADERS = ["name", "data_type", "unit", "options"];
 

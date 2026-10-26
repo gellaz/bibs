@@ -3,8 +3,8 @@ import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeMacroCategory } from "@/db/schemas/store-macro-category";
+import { parseCsv } from "@/lib/csv";
 import { ServiceError } from "@/lib/errors";
-import { parseCsv } from "@/lib/utils/csv";
 
 interface ImportError {
 	row: number;
