@@ -1,4 +1,74 @@
-# Hono CLI on the Elysia app
+# Hono CLI on the API
+
+## Since U11 (2026-10-26): the root app is Hono
+
+`apps/api/src/app.ts` exports the root Hono app (named `app` and, for the CLI, as the default export)
+with no import side effects: server, cron and `ensureBucket()` live in `src/index.ts`. **The CLI runs
+directly on `src/app.ts`** (since the U11 ship, 2026-10-26) with two externals:
+
+- `-e bun`: `src/lib/s3.ts` imports `S3Client` from `bun`; the CLI bundles the entry with esbuild and
+  imports the bundle from a `data:` URL, and only Bun (the CLI file run with `bun`) resolves that import
+  there;
+- `-e @bibs/emails`: the CLI's esbuild forces `jsxImportSource: "hono/jsx"`, which would compile the
+  react-email templates for the wrong runtime; as an external the package is loaded by Bun as it is.
+
+Same rules as before: run the CLI file with Bun from `apps/api` (`bunx hono` runs it on Node, where
+`bun` does not resolve), with the env of `apps/api` (`.env`/`.env.local`, or `bun --env-file=<file>`),
+infra up (`bun run infra:up`). `tools/hono-entry.ts` (a runtime re-export of the app) is gone: it was
+only there because the CLI could not bundle `src/app.ts` without the two externals.
+
+```bash
+cd apps/api
+# zsh does not split "$HONO" into words: use a function
+hono() { bun node_modules/@hono/cli/dist/cli.js "$@"; }   # or: bun --env-file=<env> node_modules/...
+APP="src/app.ts -e bun -e @bibs/emails"                    # in zsh: ${=APP}, or write it out
+BASE=../../docs/superpowers/plans/2026-10-25-hono-migration/baseline
+
+hono routes src/app.ts -e bun -e @bibs/emails             # 207 rows: 183 routes + @ERROR/@NOT_FOUND of the root and the 11 sub-apps
+hono request /health src/app.ts -e bun -e @bibs/emails    # one request, in process
+
+# every baseline batch file (bodies captured before each module moved) — each must print failed: 0
+for f in $BASE/hono-batch-*.jsonl; do
+  echo "$(basename $f) $(hono batch $f src/app.ts -e bun -e @bibs/emails --compact 2>/dev/null | grep -o '{"ok".*' | tail -1 | jq -c .data.summary)"
+done
+grep '"expect"' $BASE/hono-snapshot.jsonl > /tmp/hono-expect.jsonl
+hono batch /tmp/hono-expect.jsonl src/app.ts -e bun -e @bibs/emails --compact 2>/dev/null | grep -o '{"ok".*' | tail -1 | jq -e '.data.summary.failed == 0'
+
+# snapshot diff: compare as sorted sets (the route order follows src/app.ts, not the old table)
+hono snapshot --status-only src/app.ts -e bun -e @bibs/emails 2>/dev/null | grep '^{"\(path\|method\)"' | sort > /tmp/hono-snapshot.sorted
+sort $BASE/hono-snapshot.jsonl | diff - /tmp/hono-snapshot.sorted
+```
+
+`grep -o '{"ok".*' | tail -1` and not `grep '^{"ok"'`: a step whose error is logged with a stack (the
+webhook signature steps) prints the bundle's `data:` URL into the output, and the summary can end up
+on the same line.
+
+U11 results (2026-10-26, `@hono/cli` 1.0.0-rc.8, env with the compose defaults of `compose.yml` and a
+placeholder `STRIPE_WEBHOOK_SECRET`): every batch file passes on the base commit (`c4d4ba5b`, old
+entry) and on U11 — admin-1 171/171, admin-2 135/135, customer 140/140, locations 35/35, me 18/18,
+registration 31/31, seller-orders 204/204, seller-products 113/113, seller-stores 230/230,
+webhooks 21/21 (without a webhook secret the 7 signature steps answer 500 on both sides), snapshot
+expectations 66/66. Snapshot as sets: only the rows of the registered deltas (the dead
+`/<module>/auth` copies and `ALL /auth`, `ALL /auth/*`, `OPTIONS /`, `OPTIONS /*`, the trailing
+slash of `/seller/settings/` and `/admin/requests/`) and the dev-DB UUID lines.
+
+U11 fix round 1 (2026-10-26, same env): the same numbers on every batch file and on the snapshot
+expectations (1,164 steps, 0 failed), `routes` 207 rows, the snapshot as sets unchanged.
+
+U11 ship (2026-10-26, same env): the same 1,164 steps, 0 failed, three ways — through the old
+`tools/hono-entry.ts`, through a scratch entry that statically re-exported the app, and directly on
+`src/app.ts` with the commands above; `routes` 207 rows; snapshot as sets (184 rows, 66 with `expect`)
+unchanged.
+
+**`hono diff` does not work for this repo, and cannot without a CLI change** (`hono diff --base
+origin/feat/hono-migration`, tried again at the U11 ship: `SNAPSHOT_FAILED`). It takes neither an
+entry file nor `-e`: it runs `hono snapshot` on the default entry (`src/index.ts`, `.tsx`, `.js`,
+`.jsx`) in two temporary worktrees. Here `src/index.ts` is the server (cron, `ensureBucket()`,
+`Bun.serve`), not a default-exported app, and without `-e` the bundle fails on `bun` and
+`hono/jsx/jsx-runtime` (and, against a base before U11, on the old framework's packages, no longer
+installed). Use the batch files and the sorted snapshot diff above.
+
+## Until U11: the CLI on the old app
 
 Tried on 2026-10-25 at `e4be2926` with `@hono/cli` 1.0.0-rc.8 (devDependency of `apps/api`) and
 `hono` 4.13.14 installed **temporarily** with `bun add -d hono@4.13.14 --no-save` in `apps/api`
@@ -9,9 +79,9 @@ Tried on 2026-10-25 at `e4be2926` with `@hono/cli` 1.0.0-rc.8 (devDependency of 
 GET plus the 404 probe with its body), replayed with `batch`: 66/66 passed, and a second snapshot was
 identical.
 
-## How it loads
+### How it loaded
 
-Entry: [`../tools/hono-entry.ts`](../tools/hono-entry.ts). It takes the real app from
+Entry: `tools/hono-entry.ts` (deleted at the U11 ship, see above; in the git history). It took the real app from
 [`../tools/load-app.ts`](../tools/load-app.ts) (no listen, no cron, `ensureBucket()` stubbed) and puts
 it behind `new Hono()`: every Elysia route is registered on Hono with a handler that forwards the
 untouched request to the same `app.fetch`, and a `hono/mount` middleware on `/*` stays as the fallback
@@ -30,7 +100,7 @@ $HONO routes $ENTRY                     # 197 routes: the Elysia table as Hono s
 $HONO request /health $ENTRY            # one request, in process
 ```
 
-## Parity net for each PR
+### Parity net for each PR (until U11)
 
 Needs `bun run infra:up` (requests hit the dev DB, GETs only, and `/ready` checks DB + S3) and the env
 files. The app's pino logs share stdout with the CLI, hence the `grep`s. The CLI exits 0 even when steps
@@ -115,7 +185,7 @@ Reading the results:
   A Hono port that puts auth middleware first turns them into 401.
 - Speed: a snapshot takes ~31 s wall (1.3 s CPU; the rest is the process waiting on open handles).
 
-## What does not work, and why
+### What does not work, and why
 
 | Attempt | Result |
 |---|---|
@@ -131,7 +201,7 @@ Reading the results:
 `src/index.ts` exports only `type App`, not the instance: `load-app.ts` captures the app by stubbing the
 Bun adapter's `listen` (Elysia's `listen` is an instance field, so `Elysia.prototype` cannot be patched).
 
-## Before relying on the CLI's own entry (cutover)
+### Before relying on the CLI's own entry (cutover)
 
 Making `src/index.ts` a Hono default export is not enough for `bunx hono … ` without `hono-entry.ts`
 or for `hono diff`. What still blocks, as of this baseline:

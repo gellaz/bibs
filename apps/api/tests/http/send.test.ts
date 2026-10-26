@@ -1,16 +1,14 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia, t } from "elysia";
+import { join } from "node:path";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
 import { send } from "@/http/send";
-import { okRes } from "@/lib/zod/responses";
-import { zDate, zInteger } from "@/lib/zod/t";
-import { errorHandler } from "@/plugins/error-handler";
-import { noopPino } from "./parity-cases";
+import { okRes } from "@/lib/schemas/responses";
+import { zDate, zInteger } from "@/lib/schemas/t";
 
-// `send()` fa quello che la `response` di Elysia fa oggi (D4 del piano Hono):
-// toglie i campi fuori schema a ogni profondità, i Date escono ISO, un dato
-// fuori schema è un 500.
+// `send()` fa quello che la `response` delle route faceva prima di Hono (D4
+// del piano Hono): toglie i campi fuori schema a ogni profondità, i Date
+// escono ISO, un dato fuori schema è un 500.
 
 const Row = okRes(
 	z.object({
@@ -73,54 +71,34 @@ describe("send()", () => {
 	});
 });
 
-// La `response` di Elysia controlla e codifica, senza decodificare: t.Integer
-// lascia la stringa intera com'è, t.Date rifiuta un numero.
-describe("send() — codifica come la response di Elysia", () => {
-	const cases: [string, unknown, z.ZodType, unknown][] = [
-		[
-			"t.Integer dato come stringa",
-			t.Object({ n: t.Integer() }),
-			z.object({ n: zInteger() }),
-			{ n: "5" },
-		],
+// La `response` di prima controllava e codificava, senza decodificare:
+// t.Integer lascia la stringa intera com'è, t.Date rifiuta un numero. Gli esiti
+// di prima sono in `golden/send.json` (catturati prima di U11).
+const golden: Record<string, { status: number; body: string }> = await Bun.file(
+	join(import.meta.dir, "golden/send.json"),
+).json();
+
+describe("send() — codifica come la response di prima", () => {
+	const cases: [string, z.ZodType, unknown][] = [
+		["t.Integer dato come stringa", z.object({ n: zInteger() }), { n: "5" }],
 		[
 			"t.Integer oltre il massimo come stringa",
-			t.Object({ n: t.Integer({ maximum: 3 }) }),
 			z.object({ n: zInteger({ maximum: 3 }) }),
 			{ n: "5" },
 		],
 		[
 			"t.Integer oltre il massimo",
-			t.Object({ n: t.Integer({ maximum: 3 }) }),
 			z.object({ n: zInteger({ maximum: 3 }) }),
 			{ n: 5 },
 		],
-		[
-			"t.Date dato come numero",
-			t.Object({ d: t.Date() }),
-			z.object({ d: zDate() }),
-			{ d: 1761386400000 },
-		],
-		[
-			"t.Date dato come stringa",
-			t.Object({ d: t.Date() }),
-			z.object({ d: zDate() }),
-			{ d: "2026-10-25" },
-		],
+		["t.Date dato come numero", z.object({ d: zDate() }), { d: 1761386400000 }],
+		["t.Date dato come stringa", z.object({ d: zDate() }), { d: "2026-10-25" }],
 	];
-	for (const [name, tb, zod, data] of cases)
+	for (const [name, zod, data] of cases)
 		it(name, async () => {
-			const e = await new Elysia()
-				.state("pino", noopPino)
-				.use(errorHandler)
-				.get("/", () => data as never, { response: { 200: tb as never } })
-				.handle(new Request("http://localhost/"));
 			const h = await moduleApp()
 				.get("/", (c) => send(c, zod, data as never))
 				.request("/");
-			expect({ status: h.status, body: await h.text() }).toEqual({
-				status: e.status,
-				body: await e.text(),
-			});
+			expect({ status: h.status, body: await h.text() }).toEqual(golden[name]);
 		});
 });

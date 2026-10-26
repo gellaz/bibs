@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { fetchProductDetail } from "./product-detail-api";
 
 /**
- * La prova di C8. Eden, con il default parseDate: true, trasformava in `Date`
+ * La prova di C8. Il client di prima, con parseDate: true, trasformava in `Date`
  * ogni stringa che somiglia a una data, dd/mm/yyyy compreso: «05/03/2027»
  * diventava il 3 maggio. Qui il JSON passa dal client vero (`hc` con il fetch
  * globale): il testo deve restare testo.

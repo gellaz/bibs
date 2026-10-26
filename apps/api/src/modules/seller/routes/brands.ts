@@ -5,9 +5,9 @@ import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ok, okPage } from "@/lib/responses";
-import { BrandSchema } from "@/lib/zod/entities";
-import { okPageRes, okRes, withErrors } from "@/lib/zod/responses";
-import { zInteger, zString } from "@/lib/zod/t";
+import { BrandSchema } from "@/lib/schemas/entities";
+import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
+import { zInteger, zString } from "@/lib/schemas/t";
 import { findOrCreateBrandByName, listBrands } from "../services/brands";
 
 const ListBrandsQuery = z.object({

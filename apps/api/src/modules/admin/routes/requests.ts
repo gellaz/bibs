@@ -8,9 +8,9 @@ import { ok, okPage } from "@/lib/responses";
 import {
 	AdminChangeDetailSchema,
 	AdminRequestRowSchema,
-} from "@/lib/zod/composed";
-import { PaginationQuery } from "@/lib/zod/pagination";
-import { okPageRes, okRes, withErrors } from "@/lib/zod/responses";
+} from "@/lib/schemas/composed";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
 import { adminDetail } from "../context";
 import {
 	countRequests,
@@ -43,7 +43,7 @@ const Params = z.object({
 
 export const requestsRoutes = new Hono()
 	.get(
-		// In Elysia è `/requests/` (prefisso + "/"), chiamato senza slash (D8).
+		// Prima di Hono era `/requests/` (prefisso + "/"), chiamato senza slash (D8).
 		"/requests",
 		doc({
 			path: "/requests/",

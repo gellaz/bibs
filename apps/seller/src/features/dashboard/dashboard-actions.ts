@@ -29,7 +29,7 @@ export interface ActionItem {
 export interface OpenStatusLike {
 	isOpen: boolean;
 	status: "open" | "closed" | "closed_holiday" | "unknown";
-	// Eden idrata le date ISO in Date anche dove lo schema dice stringa.
+	// Il client di prima idratava le date ISO in Date anche dove lo schema dice stringa.
 	opensAt?: { date: string | Date; time: string };
 }
 

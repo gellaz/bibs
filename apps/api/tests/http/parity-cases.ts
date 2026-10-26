@@ -1,70 +1,44 @@
-import { CloneType, Type } from "@sinclair/typebox";
-import { Elysia, type TSchema, t } from "elysia";
 import { z } from "zod";
-// Come `src/index.ts`: al load sovrascrive email, uuid e date nel FormatRegistry
-// di TypeBox. Senza, il lato Elysia avrebbe i formati di Elysia nudo.
-import "@elysiajs/openapi";
-import "@/lib/schemas/forms/formats";
 import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
-import { PaginationQuery as TbPaginationQuery } from "@/lib/pagination";
-import {
-	CategoryListQuery as TbCategoryListQuery,
-	CharacteristicListQuery as TbCharacteristicListQuery,
-	OrderListQuery as TbOrderListQuery,
-	ProductCategoryListQuery as TbProductCategoryListQuery,
-	ProductSearchQuery as TbProductSearchQuery,
-	SellerListQuery as TbSellerListQuery,
-	StoreListQuery as TbStoreListQuery,
-} from "@/lib/queries";
-import {
-	BulkDeleteBody as TbBulkDeleteBody,
-	BulkStatusBody as TbBulkStatusBody,
-	DiscountCreateBody as TbDiscountCreateBody,
-	DiscountListQuery as TbDiscountListQuery,
-	DiscountProductsBody as TbDiscountProductsBody,
-	DiscountUpdateBody as TbDiscountUpdateBody,
-	ProductStatusBody as TbProductStatusBody,
-} from "@/lib/schemas";
-import { VatRateSchema as TbVatRateSchema } from "@/lib/schemas/forms";
-import {
-	AcceptInviteBody as TbAcceptInviteBody,
-	CompanyBody as TbCompanyBody,
-	DocumentBody as TbDocumentBody,
-	PersonalInfoBody as TbPersonalInfoBody,
-	TeamInviteBody as TbTeamInviteBody,
-} from "@/lib/schemas/forms/onboarding";
-import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
-import {
-	CharacteristicValuesField as TbCharacteristicValuesField,
-	CreateProductBody as TbCreateProductBody,
-} from "@/lib/schemas/forms/products";
-import { RejectSellerBody as TbRejectSellerBody } from "@/lib/schemas/forms/seller-rejection";
-import {
-	CompanySettingsBody as TbCompanySettingsBody,
-	VatChangeBody as TbVatChangeBody,
-} from "@/lib/schemas/forms/settings";
-import { CreateStoreBody as TbCreateStoreBody } from "@/lib/schemas/forms/stores";
-import {
-	CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody,
-	PutClosuresBody as TbPutClosuresBody,
-	UpdateHolidayDefinitionBody as TbUpdateHolidayDefinitionBody,
-} from "@/lib/schemas/holidays";
-import {
-	StockAdjustBody as TbStockAdjustBody,
-	StockBulkAdjustBody as TbStockBulkAdjustBody,
-} from "@/lib/schemas/stock";
 import {
 	DiscountCreateBody,
 	DiscountListQuery,
 	DiscountProductsBody,
 	DiscountUpdateBody,
-} from "@/lib/zod/discount";
+} from "@/lib/schemas/discount";
 import {
 	BulkDeleteBody,
 	BulkStatusBody,
 	ProductStatusBody,
-} from "@/lib/zod/entities";
+} from "@/lib/schemas/entities";
+import {
+	CreateHolidayDefinitionBody,
+	PutClosuresBody,
+	UpdateHolidayDefinitionBody,
+} from "@/lib/schemas/holidays";
+import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/schemas/locations";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import {
+	CategoryListQuery,
+	CharacteristicListQuery,
+	OrderListQuery,
+	ProductCategoryListQuery,
+	ProductSearchQuery,
+	SellerListQuery,
+	StoreListQuery,
+} from "@/lib/schemas/queries";
+import { RegisterBody, SignInBody } from "@/lib/schemas/registration";
+import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/schemas/stock";
+import {
+	zDate,
+	zFile,
+	zFiles,
+	zFormat,
+	zInt,
+	zInteger,
+	zString,
+} from "@/lib/schemas/t";
 import {
 	AcceptInviteBody,
 	CompanyBody,
@@ -79,33 +53,6 @@ import {
 } from "@/lib/zod/forms/products";
 import { CompanySettingsBody, VatChangeBody } from "@/lib/zod/forms/settings";
 import { CreateStoreBody } from "@/lib/zod/forms/stores";
-import {
-	CreateHolidayDefinitionBody,
-	PutClosuresBody,
-	UpdateHolidayDefinitionBody,
-} from "@/lib/zod/holidays";
-import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
-import { PaginationQuery } from "@/lib/zod/pagination";
-import {
-	CategoryListQuery,
-	CharacteristicListQuery,
-	OrderListQuery,
-	ProductCategoryListQuery,
-	ProductSearchQuery,
-	SellerListQuery,
-	StoreListQuery,
-} from "@/lib/zod/queries";
-import { RegisterBody, SignInBody } from "@/lib/zod/registration";
-import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
-import {
-	zDate,
-	zFile,
-	zFiles,
-	zFormat,
-	zInt,
-	zInteger,
-	zString,
-} from "@/lib/zod/t";
 import {
 	SubscriptionsQuery,
 	UpdatePricingBody,
@@ -127,27 +74,15 @@ import {
 	RejectSellerRouteBody,
 	VerifySellerBody,
 } from "@/modules/admin/routes/sellers";
-import { errorHandler } from "@/plugins/error-handler";
-import { normalize } from "@/plugins/normalize";
 
-// Il validatore Hono (`v()`, schemi Zod) contro Elysia (schemi TypeBox): per
-// ogni caso stesso status e stesso corpo, al byte per gli errori (D2, D5, D6
-// del piano Hono). Ogni riga porta lo schema TypeBox, il gemello Zod e il
-// risultato atteso scritto per esteso: i casi di
-// `tests/lib/validation-message.test.ts` con le stesse stringhe, il corpus
-// della sonda (`notes/prototypes/validation/before.json`) sugli schemi veri, la
-// coercizione di query e multipart, il trim, i campi sconosciuti, i file.
-// In U11 (via Elysia) la colonna TypeBox e il confronto dal vivo spariscono e
-// restano gemello e atteso.
-
-export const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
+// I casi del validatore (`v()`, schemi Zod): per ogni caso lo status e il
+// corpo attesi, scritti per esteso, e quelli che l'API dava prima di Hono
+// (`golden/validator.json`, al byte per gli errori; D2, D5, D6 del piano
+// Hono). Sono i casi di `tests/lib/validation-message.test.ts` con le stesse
+// stringhe, il corpus della sonda (`notes/prototypes/validation/before.json`)
+// sugli schemi veri, la coercizione di query e multipart, il trim, i campi
+// sconosciuti, i file. Fino a U11 ogni riga portava anche lo schema TypeBox e
+// il test lo confrontava dal vivo: gli esiti di allora sono nei file golden.
 
 export interface Req {
 	search?: string;
@@ -161,7 +96,6 @@ export interface Req {
 export interface Case {
 	name: string;
 	target: Target;
-	tb: TSchema;
 	zod: z.ZodType;
 	req: Req;
 	status: number;
@@ -204,19 +138,6 @@ export function request(target: Target, r: Req): Request {
 	});
 }
 
-export function elysiaApp(c: Case) {
-	const app = new Elysia()
-		.state("pino", noopPino)
-		.use(errorHandler)
-		.use(normalize);
-	// Una copia: compilando, Elysia scrive `additionalProperties: false` nello
-	// schema, e `openapi.test.ts` (stesso processo) vuole la spec «a freddo».
-	const tb = CloneType(c.tb);
-	return c.target === "query"
-		? app.get("/", ({ query }) => ({ ok: query }), { query: tb })
-		: app.post("/", ({ body }) => ({ ok: body }), { body: tb });
-}
-
 export function honoApp(c: Case) {
 	const app = moduleApp();
 	return c.target === "query"
@@ -228,239 +149,20 @@ export function honoApp(c: Case) {
 			);
 }
 
-// ── schemi veri e loro gemelli ──────────────────────────────────────────────
+// ── schemi veri ─────────────────────────────────────────────────────────────
 
 // POST /register/customer
-const TbRegister = t.Object({
-	email: t.String({ format: "email", description: "Indirizzo email" }),
-	password: t.String({
-		minLength: 8,
-		maxLength: 128,
-		description: "Password (minimo 8, massimo 128 caratteri)",
-	}),
-});
 const Register = RegisterBody;
-
-// POST /register/sign-in
-const TbSignIn = t.Object({
-	email: t.String({ format: "email", description: "Indirizzo email" }),
-	password: t.String({ description: "Password" }),
-});
-
-// GET /locations/geocode, /locations/municipalities (query scritte nella route)
-const TbGeocodeQuery = t.Object({
-	q: t.String({
-		minLength: 3,
-		maxLength: 200,
-		description: "Testo dell'indirizzo da cercare",
-	}),
-	limit: t.Optional(
-		t.Integer({
-			minimum: 1,
-			maximum: 10,
-			default: 5,
-			title: "Numero di suggerimenti",
-			description: "Numero massimo di suggerimenti (default 5)",
-		}),
-	),
-	lat: t.Optional(
-		t.Number({
-			minimum: -90,
-			maximum: 90,
-			description:
-				"Latitudine da cui cercare: i risultati vicini vengono primi",
-		}),
-	),
-	lng: t.Optional(
-		t.Number({
-			minimum: -180,
-			maximum: 180,
-			description: "Longitudine da cui cercare",
-		}),
-	),
-});
-const TbMunicipalitiesQuery = t.Composite([
-	TbPaginationQuery,
-	t.Object({
-		provinceId: t.Optional(
-			t.String({ description: "Filtra per ID provincia" }),
-		),
-	}),
-]);
-
-// `DiscountCreateBody` e `DiscountListQuery` sono in `lib/zod/discount.ts` da U7.
-
-// Gemello di `ProductSearchQuery`: `lib/zod/queries.ts` (U3).
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
-// `OpeningHoursSchema` è in `lib/zod/forms/opening-hours.ts` da U6 e
-// `CreateStoreBody` in `lib/zod/forms/stores.ts` da U7: `Type.Integer` di
-// TypeBox è `zInt`, il `t.Integer` di Elysia è `zInteger`.
+// `Type.Integer` di TypeBox (form condivisi) è `zInt`, il `t.Integer` di
+// prima della migrazione è `zInteger` (`lib/schemas/t.ts`).
 const OpeningHours = OpeningHoursSchema;
 
-// Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
-// (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
-// `StockBulkAdjustBody` è in `lib/zod/stock.ts` da U5.
-// `CreateHolidayDefinitionBody` è in `lib/zod/holidays.ts` da U8.
+// Unioni alla radice: `z.union`, non `z.discriminatedUnion` (che sceglie il
+// ramo dal discriminante e dà errori che la baseline non dà).
 
-// Gli schemi TypeBox delle route di U8 (catalogo e admin 1) che stavano dentro
-// le route Elysia, copiati da lì: il confronto dal vivo resta fino a U11.
-const tbOptions = t.Array(
-	t.Object({
-		id: t.Optional(
-			t.String({
-				description:
-					"ID di un'opzione esistente: tenerlo permette di rinominarla senza perdere i valori dei prodotti",
-			}),
-		),
-		value: t.String({ maxLength: 100, description: "Valore ammesso" }),
-	}),
-	{ description: "Opzioni della lista chiusa, nell'ordine di presentazione" },
-);
-const tbUnit = t.Optional(
-	t.Nullable(
-		t.String({
-			maxLength: 20,
-			description: "Unità di misura, solo per il tipo number",
-		}),
-	),
-);
-const tbDataType = t.Union(
-	[
-		t.Literal("text"),
-		t.Literal("number"),
-		t.Literal("boolean"),
-		t.Literal("enum"),
-	],
-	{
-		description:
-			"Tipo di dato: text (testo libero), number (numero, con unità facoltativa), boolean (sì/no), enum (lista chiusa di opzioni)",
-	},
-);
-const TbCreateProductCharacteristicBody = t.Object({
-	name: t.String({
-		minLength: 1,
-		maxLength: 100,
-		description: "Nome della caratteristica, univoco nel dizionario",
-	}),
-	dataType: tbDataType,
-	unit: tbUnit,
-	options: t.Optional(tbOptions),
-});
-const TbUpdateProductCharacteristicBody = t.Object({
-	name: t.Optional(
-		t.String({
-			minLength: 1,
-			maxLength: 100,
-			description: "Nuovo nome della caratteristica",
-		}),
-	),
-	dataType: t.Optional(tbDataType),
-	unit: tbUnit,
-	options: t.Optional(tbOptions),
-	confirmAffected: t.Optional(
-		t.Integer({
-			minimum: 0,
-			default: 0,
-			description:
-				"Numero di prodotti con un valore che l'interfaccia ha mostrato nella conferma. Serve quando la modifica rimuove opzioni in uso o cambia il tipo: se i prodotti coinvolti sono di più, 409 e nulla cambia.",
-		}),
-	),
-});
-const TbDeleteProductCharacteristicBody = t.Object({
-	confirmAffected: t.Integer({
-		minimum: 0,
-		description:
-			"Numero di prodotti con un valore che l'interfaccia ha mostrato nella conferma. Se i prodotti coinvolti sono di più, la richiesta è respinta con 409 e nulla viene cancellato.",
-	}),
-});
-const TbRemoveCategoryCharacteristicBody = t.Object({
-	confirmAffected: t.Integer({
-		minimum: 0,
-		description:
-			"Numero di prodotti della sotto-categoria con un valore che l'interfaccia ha mostrato nella conferma. Se sono di più, 409 e nulla viene cancellato.",
-	}),
-});
-const TbSetCategoryCharacteristicBody = t.Object({
-	required: t.Boolean({ description: "Il venditore deve compilarla" }),
-});
-const TbCreateProductMacroCategoryBody = t.Object({
-	name: t.String({
-		minLength: 1,
-		maxLength: 100,
-		description: "Nome della macro categoria",
-	}),
-	suggestedVatRate: t.Optional(TbVatRateSchema),
-});
-const TbHolidayPreviewQuery = t.Object({
-	year: t.Integer({
-		minimum: 2000,
-		maximum: 2100,
-		description: "Anno da risolvere",
-	}),
-});
-
-// U9 (admin 2): gli schemi TypeBox scritti dentro le route Elysia di
-// sellers, seller-changes, requests e billing, copiati da lì.
-const TbExpectedUpdatedAt = t.Date({
-	description:
-		"`updatedAt` del venditore come l'admin l'ha visto: 409 se nel frattempo la candidatura è cambiata (es. reinvio dopo un rifiuto)",
-});
-const TbVerifySellerBody = t.Object({ expectedUpdatedAt: TbExpectedUpdatedAt });
-const TbRejectSellerRouteBody = t.Object({
-	...TbRejectSellerBody.properties,
-	expectedUpdatedAt: TbExpectedUpdatedAt,
-});
-const TbRejectChangeBody = t.Object({
-	reason: t.Optional(
-		t.String({
-			maxLength: 500,
-			description: "Motivo del rifiuto",
-		}),
-	),
-});
-const TbRequestListQuery = t.Composite([
-	TbPaginationQuery,
-	t.Object({
-		type: t.Optional(
-			t.Union(
-				[
-					t.Literal("all"),
-					t.Literal("candidature"),
-					t.Literal("vat"),
-					t.Literal("document"),
-				],
-				{ default: "all", description: "Filtra per tipo di richiesta" },
-			),
-		),
-	}),
-]);
-const TbSubscriptionStatus = t.Union([
-	t.Literal("active"),
-	t.Literal("past_due"),
-	t.Literal("canceling"),
-	t.Literal("suspended"),
-	t.Literal("canceled"),
-]);
-const TbSubscriptionsQuery = t.Object({
-	page: t.Optional(t.Integer({ minimum: 1 })),
-	limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
-	status: t.Optional(TbSubscriptionStatus),
-	sellerEmail: t.Optional(t.String()),
-	storeName: t.Optional(t.String()),
-});
-const TbUpdatePricingBody = t.Object({
-	storeMonthlyFeeCents: t.Integer({ minimum: 100 }),
-	currency: t.String({ minLength: 3, maxLength: 3 }),
-	suspendedAutoCancelDays: t.Integer({ minimum: 7, maximum: 365 }),
-	pendingCreationExpiryHours: t.Integer({ minimum: 1, maximum: 168 }),
-	productId: t.String({
-		pattern: "^prod_[A-Za-z0-9]+$",
-		description:
-			"ID del prodotto Stripe (prod_…) a cui agganciare il nuovo prezzo",
-	}),
-});
 const pricing = {
 	storeMonthlyFeeCents: 2900,
 	currency: "EUR",
@@ -472,7 +174,6 @@ const stale = "2026-01-01T00:00:00.000Z";
 
 const body = (
 	name: string,
-	tb: TSchema,
 	zod: z.ZodType,
 	json: unknown,
 	status: number,
@@ -480,7 +181,6 @@ const body = (
 ): Case => ({
 	name,
 	target: "json",
-	tb,
 	zod,
 	req: { json },
 	status,
@@ -489,7 +189,6 @@ const body = (
 
 const query = (
 	name: string,
-	tb: TSchema,
 	zod: z.ZodType,
 	search: string,
 	status: number,
@@ -497,116 +196,60 @@ const query = (
 ): Case => ({
 	name,
 	target: "query",
-	tb,
 	zod,
 	req: { search },
 	status,
 	body: expected,
 });
 
-const fmt = (format: string, zod: z.ZodType) =>
-	[t.Object({ x: t.String({ format }) }), z.object({ x: zod })] as const;
+const fmt = (_format: string, zod: z.ZodType) => z.object({ x: zod });
 
-const nameMin25 = [
-	t.Object({ name: t.String({ minLength: 2, maxLength: 5 }) }),
-	z.object({ name: z.string().min(2).max(5) }),
-] as const;
-const quantity199 = [
-	t.Object({ quantity: t.Integer({ minimum: 1, maximum: 99 }) }),
-	z.object({ quantity: zInteger({ minimum: 1, maximum: 99 }) }),
-] as const;
-const quantity1e20 = [
-	t.Object({ quantity: t.Integer() }),
-	z.object({ quantity: zInteger() }),
-] as const;
-const storeIds = [
-	t.Object({
-		storeIds: t.Array(t.String(), {
-			minItems: 1,
-			maxItems: 2,
-			uniqueItems: true,
-		}),
+const nameMin25 = z.object({ name: z.string().min(2).max(5) });
+const quantity199 = z.object({
+	quantity: zInteger({ minimum: 1, maximum: 99 }),
+});
+const quantity1e20 = z.object({ quantity: zInteger() });
+const storeIds = z.object({
+	storeIds: z
+		.array(z.string())
+		.min(1)
+		.max(2)
+		.refine((ids) => new Set(ids).size === ids.length, {
+			params: { rule: { kind: "uniqueItems" } },
+		})
+		.meta({ uniqueItems: true }),
+});
+const literalType = z.object({ type: z.enum(["a", "b"]) });
+const file = z.object({ file: zFile({ type: "image", maxSize: "1k" }) });
+const enumAfterString = z.object({
+	name: z.string(),
+	state: z.enum(["a", "b"]),
+});
+const nullableAfterString = z.object({
+	name: z.string(),
+	note: z.string().nullable(),
+});
+const plainOrder = z.object({ a: z.string().min(3), b: z.string() });
+const openingHours = z.object({
+	openingHours: OpeningHours.nullable().optional(),
+});
+const formWithFile = z.object({
+	name: z.string(),
+	meta: z.object({ a: z.string() }),
+	tags: z.array(z.string()),
+	file: zFile(),
+});
+const name200 = z.object({ name: zString({ maxLength: 200 }) });
+const country2 = z.object({
+	country: zString({ minLength: 2, maxLength: 2, title: "Codice" }),
+});
+const phone = z.object({
+	phone: zString({
+		maxLength: 5,
+		pattern: "^(.{2,})?$",
+		description: "Telefono",
 	}),
-	z.object({
-		storeIds: z
-			.array(z.string())
-			.min(1)
-			.max(2)
-			.refine((ids) => new Set(ids).size === ids.length, {
-				params: { rule: { kind: "uniqueItems" } },
-			})
-			.meta({ uniqueItems: true }),
-	}),
-] as const;
-const literalType = [
-	t.Object({ type: t.Union([t.Literal("a"), t.Literal("b")]) }),
-	z.object({ type: z.enum(["a", "b"]) }),
-] as const;
-const file = [
-	t.Object({ file: t.File({ type: "image", maxSize: "1k" }) }),
-	z.object({ file: zFile({ type: "image", maxSize: "1k" }) }),
-] as const;
-const enumAfterString = [
-	t.Object({
-		name: t.String(),
-		state: t.Union([t.Literal("a"), t.Literal("b")]),
-	}),
-	z.object({ name: z.string(), state: z.enum(["a", "b"]) }),
-] as const;
-const nullableAfterString = [
-	t.Object({ name: t.String(), note: t.Nullable(t.String()) }),
-	z.object({ name: z.string(), note: z.string().nullable() }),
-] as const;
-const plainOrder = [
-	t.Object({ a: t.String({ minLength: 3 }), b: t.String() }),
-	z.object({ a: z.string().min(3), b: z.string() }),
-] as const;
-const openingHours = [
-	t.Object({ openingHours: t.Optional(t.Nullable(TbOpeningHours)) }),
-	z.object({ openingHours: OpeningHours.nullable().optional() }),
-] as const;
-const formWithFile = [
-	t.Object({
-		name: t.String(),
-		meta: t.Object({ a: t.String() }),
-		tags: t.Array(t.String()),
-		file: t.File(),
-	}),
-	z.object({
-		name: z.string(),
-		meta: z.object({ a: z.string() }),
-		tags: z.array(z.string()),
-		file: zFile(),
-	}),
-] as const;
-const name200 = [
-	t.Object({ name: t.String({ maxLength: 200 }) }),
-	z.object({ name: zString({ maxLength: 200 }) }),
-] as const;
-const country2 = [
-	t.Object({
-		country: t.String({ minLength: 2, maxLength: 2, title: "Codice" }),
-	}),
-	z.object({
-		country: zString({ minLength: 2, maxLength: 2, title: "Codice" }),
-	}),
-] as const;
-const phone = [
-	t.Object({
-		phone: t.String({
-			maxLength: 5,
-			pattern: "^(.{2,})?$",
-			description: "Telefono",
-		}),
-	}),
-	z.object({
-		phone: zString({
-			maxLength: 5,
-			pattern: "^(.{2,})?$",
-			description: "Telefono",
-		}),
-	}),
-] as const;
+});
 const png = () => new File([PNG], "a.png", { type: "image/png" });
 // Body validi dei form di U6, da cui i casi tolgono o rompono un campo.
 const STORE = {
@@ -645,7 +288,6 @@ export const cases: Case[] = [
 	// tests/lib/validation-message.test.ts, stesse stringhe
 	body(
 		"vm: campo mancante nel body",
-		t.Object({ name: t.String() }),
 		z.object({ name: z.string() }),
 		{},
 		422,
@@ -653,7 +295,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"vm: campo mancante in query",
-		t.Object({ storeId: t.String() }),
 		z.object({ storeId: z.string() }),
 		"?other=1",
 		422,
@@ -661,7 +302,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: testo",
-		t.Object({ name: t.String() }),
 		z.object({ name: z.string() }),
 		{ name: 3 },
 		422,
@@ -669,7 +309,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: numero",
-		t.Object({ price: t.Number() }),
 		z.object({ price: z.number() }),
 		{ price: "x" },
 		422,
@@ -677,7 +316,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: vero/falso",
-		t.Object({ isActive: t.Boolean() }),
 		z.object({ isActive: z.boolean() }),
 		{ isActive: "x" },
 		422,
@@ -685,7 +323,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: t.Integer con un decimale",
-		t.Object({ quantity: t.Integer() }),
 		z.object({ quantity: zInteger() }),
 		{ quantity: 1.5 },
 		422,
@@ -693,21 +330,20 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: t.Integer sotto il minimo",
-		...quantity199,
+		quantity199,
 		{ quantity: 0 },
 		422,
 		fail("Quantità: deve essere almeno 1"),
 	),
 	body(
 		"vm: t.Integer sopra il massimo",
-		...quantity199,
+		quantity199,
 		{ quantity: 100 },
 		422,
 		fail("Quantità: deve essere al massimo 99"),
 	),
 	body(
 		"vm: exclusiveMinimum",
-		t.Object({ price: t.Number({ exclusiveMinimum: 0 }) }),
 		z.object({ price: z.number().gt(0) }),
 		{ price: 0 },
 		422,
@@ -715,21 +351,20 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: minLength",
-		...nameMin25,
+		nameMin25,
 		{ name: "a" },
 		422,
 		fail("Nome: almeno 2 caratteri"),
 	),
 	body(
 		"vm: maxLength",
-		...nameMin25,
+		nameMin25,
 		{ name: "abcdef" },
 		422,
 		fail("Nome: al massimo 5 caratteri"),
 	),
 	body(
 		"vm: minLength 1 su testo vuoto",
-		t.Object({ name: t.String({ minLength: 1 }) }),
 		z.object({ name: z.string().min(1) }),
 		{ name: "" },
 		422,
@@ -737,7 +372,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: pattern",
-		t.Object({ zipCode: t.String({ pattern: "^\\d{5}$" }) }),
 		z.object({ zipCode: z.string().regex(/^\d{5}$/) }),
 		{ zipCode: "ab" },
 		422,
@@ -745,70 +379,69 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: email",
-		...fmt("email", zFormat("email")),
+		fmt("email", zFormat("email")),
 		{ x: "no" },
 		422,
 		fail("x: indirizzo email non valido"),
 	),
 	body(
 		"vm: uuid",
-		...fmt("uuid", zFormat("uuid")),
+		fmt("uuid", zFormat("uuid")),
 		{ x: "no" },
 		422,
 		fail("x: identificativo non valido"),
 	),
 	body(
-		"vm: email che solo Elysia nudo accetta (TLD di una lettera)",
-		...fmt("email", zFormat("email")),
+		"vm: email che solo il framework di prima, nudo, accettava (TLD di una lettera)",
+		fmt("email", zFormat("email")),
 		{ x: "a@b.c" },
 		422,
 		fail("x: indirizzo email non valido"),
 	),
 	body(
 		"vm: uuid fuori da RFC 9562",
-		...fmt("uuid", zFormat("uuid")),
+		fmt("uuid", zFormat("uuid")),
 		{ x: "11111111-1111-1111-1111-111111111111" },
 		422,
 		fail("x: identificativo non valido"),
 	),
 	body(
 		"vm: uuid v4 maiuscolo",
-		...fmt("uuid", zFormat("uuid")),
+		fmt("uuid", zFormat("uuid")),
 		{ x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" },
 		200,
 		{ ok: { x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" } },
 	),
 	body(
 		"vm: calendar-date",
-		...fmt("calendar-date", zFormat("calendar-date")),
+		fmt("calendar-date", zFormat("calendar-date")),
 		{ x: "2024-02-31" },
 		422,
 		fail("x: data non valida (AAAA-MM-GG)"),
 	),
 	body(
 		"vm: uri",
-		...fmt("uri", zFormat("uri")),
+		fmt("uri", zFormat("uri")),
 		{ x: "no" },
 		422,
 		fail("x: indirizzo web non valido"),
 	),
 	body(
 		"vm: date-time",
-		...fmt("date-time", zFormat("date-time")),
+		fmt("date-time", zFormat("date-time")),
 		{ x: "no" },
 		422,
 		fail("x: data e ora non valide"),
 	),
 	body(
 		"vm: union di letterali",
-		...literalType,
+		literalType,
 		{ type: "c" },
 		422,
 		fail("Tipo: valore non ammesso"),
 	),
 	body(
 		"vm: letterale singolo",
-		t.Object({ type: t.Literal("a") }),
 		z.object({ type: z.literal("a") }),
 		{ type: "c" },
 		422,
@@ -816,7 +449,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: t.Nullable, regola del ramo non nullo",
-		t.Object({ note: t.Nullable(t.String({ maxLength: 3 })) }),
 		z.object({ note: z.string().max(3).nullable() }),
 		{ note: "abcd" },
 		422,
@@ -824,7 +456,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: t.Date non valida",
-		t.Object({ startsAt: t.Date() }),
 		z.object({ startsAt: zDate() }),
 		{ startsAt: "nope" },
 		422,
@@ -832,7 +463,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: t.Date con l'offset senza segno (il «+» di una query)",
-		t.Object({ startsAt: t.Date() }),
 		z.object({ startsAt: zDate() }),
 		{ startsAt: "2026-01-01T12:00:00 01:00" },
 		422,
@@ -840,30 +470,27 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: array minItems",
-		...storeIds,
+		storeIds,
 		{ storeIds: [] },
 		422,
 		fail("Negozi: almeno 1 elemento"),
 	),
 	body(
 		"vm: array maxItems",
-		...storeIds,
+		storeIds,
 		{ storeIds: ["a", "b", "c"] },
 		422,
 		fail("Negozi: al massimo 2 elementi"),
 	),
 	body(
 		"vm: array uniqueItems",
-		...storeIds,
+		storeIds,
 		{ storeIds: ["a", "a"] },
 		422,
 		fail("Negozi: elementi duplicati"),
 	),
 	body(
 		"vm: riga dell'array",
-		t.Object({
-			items: t.Array(t.Object({ quantity: t.Integer({ minimum: 1 }) })),
-		}),
 		z.object({
 			items: z.array(z.object({ quantity: zInteger({ minimum: 1 }) })),
 		}),
@@ -873,7 +500,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: path tecnico",
-		t.Object({ location: t.Object({ zz: t.Number({ maximum: 90 }) }) }),
 		z.object({ location: z.object({ zz: z.number().max(90) }) }),
 		{ location: { zz: 91 } },
 		422,
@@ -881,9 +507,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"vm: il title vince",
-		t.Object({
-			limit: t.Integer({ maximum: 10, title: "Numero di suggerimenti" }),
-		}),
 		z.object({
 			limit: zInteger({ maximum: 10, title: "Numero di suggerimenti" }),
 		}),
@@ -893,7 +516,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"vm: coercizione senza path",
-		t.Object({ page: t.Integer({ minimum: 1 }) }),
 		z.object({ page: zInteger({ minimum: 1 }) }),
 		"?page=0",
 		422,
@@ -901,9 +523,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: error: dello schema",
-		t.Object({
-			name: t.String({ minLength: 1, error: "Il nome è obbligatorio" }),
-		}),
 		z.object({
 			name: z.string().min(1).meta({ error: "Il nome è obbligatorio" }),
 		}),
@@ -913,7 +532,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: body che non è un oggetto",
-		t.Array(t.String()),
 		z.array(z.string()),
 		{ a: 1 },
 		422,
@@ -921,7 +539,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"vm: regola non mappata",
-		t.Object({ step: t.Integer({ multipleOf: 5 }) }),
 		z.object({ step: zInteger({ multipleOf: 5 }) }),
 		{ step: 3 },
 		422,
@@ -929,25 +546,16 @@ export const cases: Case[] = [
 	),
 
 	// corpus della sonda (before.json), sugli schemi veri
-	body(
-		"reg-empty",
-		TbRegister,
-		Register,
-		{},
-		422,
-		fail("Email: campo obbligatorio"),
-	),
+	body("reg-empty", Register, {}, 422, fail("Email: campo obbligatorio")),
 	body(
 		"reg-bad-email",
-		TbRegister,
 		Register,
 		{ email: "nope", password: "12345678" },
 		422,
 		fail("Email: indirizzo email non valido"),
 	),
 	body(
-		"reg: email che solo Elysia nudo accetta",
-		TbRegister,
+		"reg: email che solo il framework di prima, nudo, accettava",
 		Register,
 		{ email: "mario#rossi@test.it", password: "12345678" },
 		422,
@@ -955,7 +563,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"reg-short-pw",
-		TbRegister,
 		Register,
 		{ email: "a@b.it", password: "123" },
 		422,
@@ -964,7 +571,6 @@ export const cases: Case[] = [
 	{
 		name: "reg-short-pw-en (cookie di lingua ignorato)",
 		target: "json",
-		tb: TbRegister,
 		zod: Register,
 		req: {
 			json: { email: "a@b.it", password: "123" },
@@ -975,7 +581,6 @@ export const cases: Case[] = [
 	},
 	body(
 		"reg-pw-number",
-		TbRegister,
 		Register,
 		{ email: "a@b.it", password: 12345678 },
 		422,
@@ -984,7 +589,6 @@ export const cases: Case[] = [
 	{
 		name: "reg-malformed-json → 500",
 		target: "json",
-		tb: TbRegister,
 		zod: Register,
 		req: { raw: "{bad", contentType: "application/json" },
 		status: 500,
@@ -997,7 +601,6 @@ export const cases: Case[] = [
 	{
 		name: "reg-no-content-type",
 		target: "json",
-		tb: TbRegister,
 		zod: Register,
 		req: { raw: '{"email":"nope","password":"12345678"}' },
 		status: 422,
@@ -1006,7 +609,6 @@ export const cases: Case[] = [
 	{
 		name: "reg-text-plain",
 		target: "json",
-		tb: TbRegister,
 		zod: Register,
 		req: {
 			raw: '{"email":"nope","password":"12345678"}',
@@ -1017,7 +619,6 @@ export const cases: Case[] = [
 	},
 	body(
 		"reg: email trimmata, campi ignoti tolti",
-		TbRegister,
 		Register,
 		{
 			email: " a@b.it ",
@@ -1031,7 +632,6 @@ export const cases: Case[] = [
 	// U4: sign-in e accept-invite
 	body(
 		"sign-in: password mancante",
-		TbSignIn,
 		SignInBody,
 		{ email: "mario@example.it" },
 		422,
@@ -1039,7 +639,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"sign-in: vuoto",
-		TbSignIn,
 		SignInBody,
 		{},
 		422,
@@ -1047,7 +646,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"accept-invite: vuoto → error dello schema",
-		TbAcceptInviteBody,
 		AcceptInviteBody,
 		{},
 		422,
@@ -1055,7 +653,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"accept-invite: password corta",
-		TbAcceptInviteBody,
 		AcceptInviteBody,
 		{ token: "x", password: "short", confirmPassword: "short" },
 		422,
@@ -1063,7 +660,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"accept-invite: conferma corta",
-		TbAcceptInviteBody,
 		AcceptInviteBody,
 		{ token: "x", password: "password123", confirmPassword: "short" },
 		422,
@@ -1071,7 +667,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"accept-invite: valido, campi ignoti tolti",
-		TbAcceptInviteBody,
 		AcceptInviteBody,
 		{
 			token: " t ",
@@ -1091,7 +686,6 @@ export const cases: Case[] = [
 	// U2: query di /locations
 	query(
 		"geocode: limit frazionario (title dello schema)",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		"?q=Via%20Roma&limit=2.5",
 		422,
@@ -1099,7 +693,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"geocode: q corta",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		"?q=ab",
 		422,
@@ -1107,7 +700,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"geocode: q mancante",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		"",
 		422,
@@ -1115,7 +707,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"geocode: lat non numerica",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		"?q=Via%20Roma&lat=abc",
 		422,
@@ -1123,7 +714,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"geocode: lat fuori intervallo (decodifica, etichetta persa)",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		"?q=Via%20Roma&lat=100",
 		422,
@@ -1131,7 +721,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"geocode: limit oltre il massimo",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		"?q=Via%20Roma&limit=11",
 		422,
@@ -1139,7 +728,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"geocode: default, coercizione, campi ignoti tolti",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		"?q=%20Via%20Roma&lat=45.4&lng=9.1&x=1",
 		200,
@@ -1147,7 +735,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"municipalities: paginazione composta con provinceId",
-		TbMunicipalitiesQuery,
 		MunicipalitiesQuery,
 		"?page=2&limit=3&page=1&provinceId=p&x=1",
 		200,
@@ -1155,7 +742,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"municipalities: page=0",
-		TbMunicipalitiesQuery,
 		MunicipalitiesQuery,
 		"?page=0",
 		422,
@@ -1163,7 +749,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"municipalities: page oltre i safe-int (t.Integer non li limita)",
-		TbMunicipalitiesQuery,
 		MunicipalitiesQuery,
 		"?page=9007199254740993",
 		200,
@@ -1171,7 +756,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"municipalities: limit oltre i safe-int → massimo 100",
-		TbMunicipalitiesQuery,
 		MunicipalitiesQuery,
 		"?limit=9007199254740993",
 		422,
@@ -1179,14 +763,13 @@ export const cases: Case[] = [
 	),
 	body(
 		"t.Integer: numero oltre i safe-int nel JSON",
-		...quantity1e20,
+		quantity1e20,
 		{ quantity: 1e20 },
 		200,
 		{ ok: { quantity: 1e20 } },
 	),
 	body(
 		"disc-empty-title (trim)",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "   ", percent: 5, startsAt: "2026-01-01" },
 		422,
@@ -1194,7 +777,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-percent-150",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: 150, startsAt: "2026-01-01" },
 		422,
@@ -1202,7 +784,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-percent-float",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: 5.5, startsAt: "2026-01-01" },
 		422,
@@ -1210,7 +791,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-percent-str",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: "abc", startsAt: "2026-01-01" },
 		422,
@@ -1218,7 +798,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-percent-numstr: intero come stringa accettato nel JSON",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: " x ", percent: "5", startsAt: "2026-01-01", extra: 1 },
 		200,
@@ -1228,7 +807,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-percent-numstr fuori limite: campo perso",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: "150", startsAt: "2026-01-01" },
 		422,
@@ -1236,7 +814,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-bad-date",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: 5, startsAt: "not-a-date" },
 		422,
@@ -1244,7 +821,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-bad-endsAt (nullable)",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: 5, startsAt: "2026-01-01", endsAt: "bad" },
 		422,
@@ -1252,7 +828,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc-missing-startsAt",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: 5 },
 		422,
@@ -1260,15 +835,13 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc: mancante prima del tipo sbagliato (ordine di TypeBox)",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: 3, percent: 5 },
 		422,
 		fail("Inizio: campo obbligatorio"),
 	),
 	body(
-		"disc: date larghe di Elysia, null e epoch",
-		TbDiscountCreateBody,
+		"disc: date larghe di prima, null e epoch",
 		DiscountCreateBody,
 		{
 			title: "x",
@@ -1290,14 +863,14 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc: data gg/mm/aaaa",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ title: "x", percent: 5, startsAt: "05/03/2027" },
 		200,
 		{ ok: { title: "x", percent: 5, startsAt: "2027-05-03T00:00:00.000Z" } },
 	),
-	// Offset senza segno: Elysia nudo lo accettava come `date`, l'app composta
-	// (formato `date` di @elysiajs/openapi) no. Giro di correzioni 2 di U7.
+	// Offset senza segno: il framework di prima, nudo, lo accettava come
+	// `date`, l'app composta (formato `date` del suo plugin OpenAPI) no. Giro
+	// di correzioni 2 di U7.
 	...[
 		"2026-01-01T12:00:00 01:00",
 		"2026-01-01T12:00 01:00",
@@ -1305,7 +878,6 @@ export const cases: Case[] = [
 	].map((startsAt) =>
 		body(
 			`disc: inizio ${startsAt} (offset senza segno)`,
-			TbDiscountCreateBody,
 			DiscountCreateBody,
 			{ title: "x", percent: 5, startsAt },
 			422,
@@ -1314,7 +886,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"disc: fine con l'offset senza segno",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{
 			title: "x",
@@ -1327,7 +898,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-page-0",
-		TbDiscountListQuery,
 		DiscountListQuery,
 		"?page=0",
 		422,
@@ -1335,7 +905,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-page-abc",
-		TbDiscountListQuery,
 		DiscountListQuery,
 		"?page=abc",
 		422,
@@ -1343,7 +912,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-limit-1000",
-		TbDiscountListQuery,
 		DiscountListQuery,
 		"?limit=1000",
 		422,
@@ -1351,23 +919,16 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-state-bad",
-		TbDiscountListQuery,
 		DiscountListQuery,
 		"?state=foo",
 		422,
 		fail("state: valore non ammesso"),
 	),
-	query(
-		"q-valid",
-		TbDiscountListQuery,
-		DiscountListQuery,
-		"?page=2&limit=10&state=concluded",
-		200,
-		{ ok: { page: 2, limit: 10, state: "concluded" } },
-	),
+	query("q-valid", DiscountListQuery, "?page=2&limit=10&state=concluded", 200, {
+		ok: { page: 2, limit: 10, state: "concluded" },
+	}),
 	query(
 		"q-search-lat-bad",
-		TbProductSearchQuery,
 		ProductSearchQuery,
 		"?lat=abc",
 		422,
@@ -1375,7 +936,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-search-lat-200",
-		TbProductSearchQuery,
 		ProductSearchQuery,
 		"?lat=200",
 		422,
@@ -1383,7 +943,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-search-openNow-bad",
-		TbProductSearchQuery,
 		ProductSearchQuery,
 		"?openNow=maybe",
 		422,
@@ -1391,7 +950,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-search-openNow-1",
-		TbProductSearchQuery,
 		ProductSearchQuery,
 		"?openNow=1",
 		422,
@@ -1399,7 +957,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-search-radius-0",
-		TbProductSearchQuery,
 		ProductSearchQuery,
 		"?radius=0",
 		422,
@@ -1407,7 +964,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"q-search: numeri, booleani, default, chiave ignota tolta, nessun trim",
-		TbProductSearchQuery,
 		ProductSearchQuery,
 		"?lat=45.5&lng=9&openNow=true&onSale=false&q=%20pane%20&zzz=1",
 		200,
@@ -1427,7 +983,6 @@ export const cases: Case[] = [
 	// D5: query
 	query(
 		"query: array da virgole e da chiavi ripetute",
-		t.Object({ ids: t.Array(t.String()) }),
 		z.object({ ids: z.array(z.string()) }),
 		"?ids=a,b&ids=c",
 		200,
@@ -1435,25 +990,18 @@ export const cases: Case[] = [
 	),
 	query(
 		"query: chiave ripetuta, vince l'ultima",
-		t.Object({ q: t.String() }),
 		z.object({ q: z.string() }),
 		"?q=a&q=b",
 		200,
 		{ ok: { q: "b" } },
 	),
-	query("query: solo default", TbPaginationQuery, PaginationQuery, "", 200, {
+	query("query: solo default", PaginationQuery, "", 200, {
 		ok: { page: 1, limit: 20 },
 	}),
 
 	// body: trim, campi sconosciuti, forme strane
 	body(
 		"body: trim profondo tranne le password, campi ignoti tolti a ogni livello",
-		t.Object({
-			name: t.String(),
-			password: t.String(),
-			nested: t.Object({ b: t.String() }),
-			list: t.Array(t.Object({ c: t.String() })),
-		}),
 		z.object({
 			name: z.string(),
 			password: z.string(),
@@ -1479,7 +1027,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: JSON array su schema oggetto",
-		TbRegister,
 		Register,
 		[1],
 		422,
@@ -1487,7 +1034,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: JSON null su schema oggetto",
-		TbRegister,
 		Register,
 		null,
 		422,
@@ -1495,7 +1041,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: JSON numero su schema oggetto",
-		TbRegister,
 		Register,
 		5,
 		422,
@@ -1504,7 +1049,6 @@ export const cases: Case[] = [
 	{
 		name: "urlencoded: chiave ripetuta diventa un array",
 		target: "form",
-		tb: t.Object({ name: t.String() }),
 		zod: z.object({ name: z.string() }),
 		req: {
 			raw: "name=x&name=y",
@@ -1518,7 +1062,6 @@ export const cases: Case[] = [
 	{
 		name: "multipart: oggetto come JSON, intero come stringa",
 		target: "form",
-		tb: t.Object({ meta: t.Object({ a: t.String() }), n: t.Integer() }),
 		zod: z.object({ meta: z.object({ a: z.string() }), n: zInteger() }),
 		req: { form: { meta: '{"a":" 1 ","x":2}', n: "3" } },
 		status: 200,
@@ -1527,8 +1070,7 @@ export const cases: Case[] = [
 	{
 		name: "file: mancante",
 		target: "form",
-		tb: file[0],
-		zod: file[1],
+		zod: file,
 		req: { form: { other: "x" } },
 		status: 422,
 		body: fail("File: campo obbligatorio"),
@@ -1536,8 +1078,7 @@ export const cases: Case[] = [
 	{
 		name: "file: tipo dichiarato sbagliato",
 		target: "form",
-		tb: file[0],
-		zod: file[1],
+		zod: file,
 		req: {
 			form: { file: new File(["hello"], "a.txt", { type: "text/plain" }) },
 		},
@@ -1547,8 +1088,7 @@ export const cases: Case[] = [
 	{
 		name: "file: contenuto diverso dal tipo (magic byte)",
 		target: "form",
-		tb: file[0],
-		zod: file[1],
+		zod: file,
 		req: {
 			form: { file: new File(["hello"], "a.png", { type: "image/png" }) },
 		},
@@ -1558,8 +1098,7 @@ export const cases: Case[] = [
 	{
 		name: "file: troppo grande",
 		target: "form",
-		tb: file[0],
-		zod: file[1],
+		zod: file,
 		req: {
 			form: {
 				file: new File([new Uint8Array(2048)], "a.png", { type: "image/png" }),
@@ -1571,8 +1110,7 @@ export const cases: Case[] = [
 	{
 		name: "file: PNG valido",
 		target: "form",
-		tb: file[0],
-		zod: file[1],
+		zod: file,
 		req: { form: { file: new File([PNG], "a.png", { type: "image/png" }) } },
 		status: 200,
 		body: { ok: { file: {} } },
@@ -1580,8 +1118,7 @@ export const cases: Case[] = [
 	{
 		name: "file: stringa nel JSON",
 		target: "form",
-		tb: file[0],
-		zod: file[1],
+		zod: file,
 		req: { json: { file: "x" } },
 		status: 422,
 		body: fail("File: tipo di file non ammesso"),
@@ -1589,7 +1126,6 @@ export const cases: Case[] = [
 	{
 		name: "files: un file solo diventa un array",
 		target: "form",
-		tb: t.Object({ files: t.Files({ type: "image", maxItems: 2 }) }),
 		zod: z.object({ files: zFiles({ type: "image", maxItems: 2 }) }),
 		req: { form: { files: new File([PNG], "a.png", { type: "image/png" }) } },
 		status: 200,
@@ -1598,7 +1134,6 @@ export const cases: Case[] = [
 	{
 		name: "files: troppi file",
 		target: "form",
-		tb: t.Object({ files: t.Files({ type: "image", maxItems: 1 }) }),
 		zod: z.object({ files: zFiles({ type: "image", maxItems: 1 }) }),
 		req: {
 			form: {
@@ -1615,7 +1150,6 @@ export const cases: Case[] = [
 	// altri tipi e combinazioni
 	body(
 		"body: nessuna coercizione per number e boolean",
-		t.Object({ price: t.Number(), isActive: t.Boolean() }),
 		z.object({ price: z.number(), isActive: z.boolean() }),
 		{ price: "5", isActive: "true" },
 		422,
@@ -1623,7 +1157,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: maxLength prima del formato",
-		t.Object({ email: t.String({ format: "email", maxLength: 5 }) }),
 		z.object({ email: zFormat("email").max(5) }),
 		{ email: "not-an-email" },
 		422,
@@ -1631,10 +1164,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: Nullable(Integer) e Optional",
-		t.Object({
-			a: t.Nullable(t.Integer()),
-			b: t.Optional(t.String({ format: "email" })),
-		}),
 		z.object({ a: zInteger().nullable(), b: zFormat("email").optional() }),
 		{ a: null, b: "" },
 		422,
@@ -1642,7 +1171,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: Nullable(Integer) con testo",
-		t.Object({ a: t.Nullable(t.Integer()) }),
 		z.object({ a: zInteger().nullable() }),
 		{ a: "x" },
 		422,
@@ -1650,7 +1178,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: oggetto annidato mancante",
-		t.Object({ location: t.Object({ lat: t.Number() }), name: t.String() }),
 		z.object({ location: z.object({ lat: z.number() }), name: z.string() }),
 		{ name: 3 },
 		422,
@@ -1658,23 +1185,16 @@ export const cases: Case[] = [
 	),
 	body(
 		"body: unione di letterali numerici e stringhe",
-		t.Object({ v: t.Union([t.Literal(1), t.Literal("x")]) }),
 		z.object({ v: z.union([z.literal(1), z.literal("x")]) }),
 		{ v: 2 },
 		422,
 		fail("v: valore non ammesso"),
 	),
-	query(
-		"query: t.Date",
-		t.Object({ from: t.Date() }),
-		z.object({ from: zDate() }),
-		"?from=2026-01-01",
-		200,
-		{ ok: { from: "2026-01-01T00:00:00.000Z" } },
-	),
+	query("query: t.Date", z.object({ from: zDate() }), "?from=2026-01-01", 200, {
+		ok: { from: "2026-01-01T00:00:00.000Z" },
+	}),
 	query(
 		"query: t.Number senza vincoli e notazione esponenziale",
-		t.Object({ n: t.Number() }),
 		z.object({ n: z.number() }),
 		"?n=1e3",
 		200,
@@ -1682,18 +1202,16 @@ export const cases: Case[] = [
 	),
 	query(
 		"query: stringa vuota per un numero",
-		t.Object({ n: t.Optional(t.Number()) }),
 		z.object({ n: z.number().optional() }),
 		"?n=",
 		422,
 		fail("n: valore non valido"),
 	),
 
-	// Ordine del primo errore con la pulizia di Elysia (`lib/zod/mirror.ts`):
+	// Ordine del primo errore con la pulizia di prima (`lib/schemas/mirror.ts`):
 	// le chiavi anyOf mancanti prima, poi i campi nell'ordine dello schema.
 	body(
 		"ordine: t.Integer e t.Date mancanti prima del titolo (DiscountCreateBody)",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{},
 		422,
@@ -1701,7 +1219,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"ordine: JSON null su uno schema con default (DiscountCreateBody)",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		null,
 		422,
@@ -1709,7 +1226,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"ordine: JSON numero su uno schema con default (DiscountCreateBody)",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		5,
 		422,
@@ -1718,7 +1234,6 @@ export const cases: Case[] = [
 	{
 		name: "ordine: senza Content-Type su uno schema con default",
 		target: "json",
-		tb: TbDiscountCreateBody,
 		zod: DiscountCreateBody,
 		req: { raw: "x" },
 		status: 422,
@@ -1726,7 +1241,6 @@ export const cases: Case[] = [
 	},
 	body(
 		"ordine: solo il titolo manca (DiscountCreateBody)",
-		TbDiscountCreateBody,
 		DiscountCreateBody,
 		{ percent: 5, startsAt: "2026-01-01" },
 		422,
@@ -1734,28 +1248,27 @@ export const cases: Case[] = [
 	),
 	body(
 		"ordine: unione di letterali mancante prima di una stringa",
-		...enumAfterString,
+		enumAfterString,
 		{},
 		422,
 		fail("state: campo obbligatorio"),
 	),
 	body(
 		"ordine: t.Nullable mancante prima di una stringa",
-		...nullableAfterString,
+		nullableAfterString,
 		{},
 		422,
 		fail("Note: campo obbligatorio"),
 	),
 	body(
 		"ordine: stringa obbligatoria mancante dopo un campo non valido",
-		...plainOrder,
+		plainOrder,
 		{ a: "x" },
 		422,
 		fail("a: almeno 3 caratteri"),
 	),
 	body(
 		"ordine: oggetto Optional null diventa un oggetto vuoto",
-		t.Object({ o: t.Optional(t.Object({ p: t.String() })) }),
 		z.object({ o: z.object({ p: z.string() }).optional() }),
 		{ o: null },
 		422,
@@ -1763,7 +1276,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"ordine: numero su uno schema con oggetto annidato obbligatorio",
-		t.Object({ a: t.String(), o: t.Object({ p: t.String() }) }),
 		z.object({ a: z.string(), o: z.object({ p: z.string() }) }),
 		5,
 		422,
@@ -1771,7 +1283,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"ordine: JSON null con soli default di file",
-		t.Object({ name: t.String(), n: t.Integer(), file: t.File() }),
 		z.object({ name: z.string(), n: zInteger(), file: zFile() }),
 		null,
 		422,
@@ -1779,11 +1290,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"ordine: JSON null con un default oltre al file",
-		t.Object({
-			name: t.String({ default: "a" }),
-			n: t.Integer(),
-			file: t.File(),
-		}),
 		z.object({ name: z.string().default("a"), n: zInteger(), file: zFile() }),
 		null,
 		422,
@@ -1791,7 +1297,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"ordine: in query un numero mancante prima di una stringa",
-		t.Object({ s: t.String(), n: t.Number() }),
 		z.object({ s: z.string(), n: z.number() }),
 		"?",
 		422,
@@ -1802,7 +1307,7 @@ export const cases: Case[] = [
 	// errore dentro e senza il messaggio custom annidato.
 	body(
 		"nullable: orario annidato non valido (openingHours)",
-		...openingHours,
+		openingHours,
 		{
 			openingHours: [
 				{ dayOfWeek: 0, slots: [{ open: "25:00", close: "10:00" }] },
@@ -1813,14 +1318,14 @@ export const cases: Case[] = [
 	),
 	body(
 		"nullable: fasce mancanti (openingHours)",
-		...openingHours,
+		openingHours,
 		{ openingHours: [{ dayOfWeek: 0 }] },
 		422,
 		fail("openingHours: campo obbligatorio"),
 	),
 	body(
 		"nullable: giorno fuori intervallo (openingHours)",
-		...openingHours,
+		openingHours,
 		{
 			openingHours: [
 				{ dayOfWeek: 9, slots: [{ open: "09:00", close: "10:00" }] },
@@ -1831,7 +1336,7 @@ export const cases: Case[] = [
 	),
 	body(
 		"nullable: Type.Integer come stringa (openingHours)",
-		...openingHours,
+		openingHours,
 		{
 			openingHours: [
 				{ dayOfWeek: "1", slots: [{ open: "09:00", close: "10:00" }] },
@@ -1842,7 +1347,7 @@ export const cases: Case[] = [
 	),
 	body(
 		"nullable: orari validi, campi in più tolti (openingHours)",
-		...openingHours,
+		openingHours,
 		{
 			openingHours: [
 				{
@@ -1864,24 +1369,16 @@ export const cases: Case[] = [
 
 	// Pulizia delle unioni (handleUnion di exact-mirror): se nessun ramo
 	// accetta il valore, vince il primo ramo che accetta il valore pulito; se
-	// la pulizia di un ramo lancia, Elysia controlla il body com'era.
+	// la pulizia di un ramo lancia, si controlla il body com'era.
 	body(
 		"unione pulita: una stringa vuota diventa [] (openingHours)",
-		...openingHours,
+		openingHours,
 		{ openingHours: "   " },
 		200,
 		{ ok: { openingHours: [] } },
 	),
 	body(
 		"unione pulita: la pulizia lancia, primo errore sul body com'era",
-		t.Object({
-			name: t.String({ minLength: 1, error: "Il nome è obbligatorio" }),
-			address: t.String({
-				minLength: 1,
-				error: "L'indirizzo è obbligatorio",
-			}),
-			openingHours: t.Optional(t.Nullable(TbOpeningHours)),
-		}),
 		z.object({
 			name: z.string().min(1).meta({ error: "Il nome è obbligatorio" }),
 			address: z.string().min(1).meta({ error: "L'indirizzo è obbligatorio" }),
@@ -1893,10 +1390,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"unione pulita: la pulizia lancia, un oggetto annidato resta com'era",
-		t.Object({
-			location: t.Optional(t.Object({ x: t.Number(), y: t.Number() })),
-			openingHours: t.Optional(t.Nullable(TbOpeningHours)),
-		}),
 		z.object({
 			location: z.object({ x: z.number(), y: z.number() }).optional(),
 			openingHours: OpeningHours.nullable().optional(),
@@ -1907,7 +1400,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"Type.Integer: una stringa è «deve essere un numero intero»",
-		t.Object({ n: Type.Integer({ minimum: 0 }) }),
 		z.object({ n: zInt().min(0) }),
 		{ n: "1" },
 		422,
@@ -1917,7 +1409,6 @@ export const cases: Case[] = [
 	{
 		name: "Type.Integer: oltre i safe integer cita il massimo dello schema",
 		target: "json",
-		tb: t.Object({ n: Type.Integer({ minimum: 0, maximum: 6 }) }),
 		zod: z.object({ n: zInt().min(0).max(6) }),
 		req: { raw: '{"n":9007199254740993}', contentType: "application/json" },
 		status: 422,
@@ -1925,7 +1416,6 @@ export const cases: Case[] = [
 	},
 	body(
 		"Type.Integer: 1e21 senza massimo passa, 2.5 no",
-		t.Object({ n: Type.Integer({ minimum: 0 }) }),
 		z.object({ n: zInt().min(0) }),
 		{ n: 1e21 },
 		200,
@@ -1933,7 +1423,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"Type.Integer: 2.5 è «deve essere un numero intero»",
-		t.Object({ n: Type.Integer({ minimum: 0 }) }),
 		z.object({ n: zInt().min(0) }),
 		{ n: 2.5 },
 		422,
@@ -1944,7 +1433,6 @@ export const cases: Case[] = [
 	// decodifica dà l'errore di decodifica.
 	body(
 		"unione: t.Integer come stringa oltre il massimo (StockBulkAdjustBody)",
-		TbStockBulkAdjustBody,
 		StockBulkAdjustBody,
 		{ storeId: "s", mode: "delta", value: "5000", productIds: ["a"] },
 		422,
@@ -1952,7 +1440,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"unione: nessun ramo valido (StockBulkAdjustBody)",
-		TbStockBulkAdjustBody,
 		StockBulkAdjustBody,
 		{ storeId: "s", mode: "set", value: -1, productIds: ["a"] },
 		422,
@@ -1960,7 +1447,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"unione: oggetto vuoto (StockBulkAdjustBody)",
-		TbStockBulkAdjustBody,
 		StockBulkAdjustBody,
 		{},
 		422,
@@ -1968,7 +1454,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"unione: intero come stringa valido (StockBulkAdjustBody)",
-		TbStockBulkAdjustBody,
 		StockBulkAdjustBody,
 		{ storeId: "s", mode: "set", value: "7", productIds: ["a"], extra: 1 },
 		200,
@@ -1976,20 +1461,18 @@ export const cases: Case[] = [
 	),
 	body(
 		"unione: mese come stringa oltre il massimo (CreateHolidayDefinitionBody)",
-		TbCreateHolidayDefinitionBody,
 		CreateHolidayDefinitionBody,
 		{ type: "fixed", name: "x", month: "13", day: 1 },
 		422,
 		fail("Valore non valido: deve essere al massimo 12"),
 	),
 
-	// Body con un file: oggetti e array di primo livello sono unioni per
-	// Elysia (ObjectString, ArrayString).
+	// Body con un file: oggetti e array di primo livello sono unioni, come
+	// prima (ObjectString, ArrayString).
 	{
 		name: "multipart con file: oggetto JSON non valido",
 		target: "form",
-		tb: formWithFile[0],
-		zod: formWithFile[1],
+		zod: formWithFile,
 		req: { form: { name: "n", meta: "{abc", tags: '["a"]', file: png() } },
 		status: 422,
 		body: fail("meta: valore non valido"),
@@ -1997,8 +1480,7 @@ export const cases: Case[] = [
 	{
 		name: "multipart con file: oggetto JSON con un campo sbagliato",
 		target: "form",
-		tb: formWithFile[0],
-		zod: formWithFile[1],
+		zod: formWithFile,
 		req: { form: { name: "n", meta: '{"a":5}', tags: '["a"]', file: png() } },
 		status: 422,
 		body: fail("meta: valore non valido"),
@@ -2006,8 +1488,7 @@ export const cases: Case[] = [
 	{
 		name: "multipart con file: array come testo semplice",
 		target: "form",
-		tb: formWithFile[0],
-		zod: formWithFile[1],
+		zod: formWithFile,
 		req: { form: { name: "n", meta: '{"a":"x"}', tags: "a,b", file: png() } },
 		status: 422,
 		body: fail("tags: valore non valido"),
@@ -2015,15 +1496,13 @@ export const cases: Case[] = [
 	{
 		name: "multipart con file: oggetto e array mancanti prima del nome",
 		target: "form",
-		tb: formWithFile[0],
-		zod: formWithFile[1],
+		zod: formWithFile,
 		req: { form: { file: png() } },
 		status: 422,
 		body: fail("meta: campo obbligatorio"),
 	},
 	body(
 		"ordine: in un oggetto annidato t.Date mancante prima della stringa",
-		t.Object({ o: t.Object({ s: t.String({ minLength: 3 }), d: t.Date() }) }),
 		z.object({ o: z.object({ s: z.string().min(3), d: zDate() }) }),
 		{ o: { s: "x" } },
 		422,
@@ -2031,10 +1510,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"ordine: array Optional di oggetti null (la pulizia lancia)",
-		t.Object({
-			a: t.String({ minLength: 3 }),
-			l: t.Optional(t.Array(t.Object({ x: t.String() }))),
-		}),
 		z.object({
 			a: z.string().min(3),
 			l: z.array(z.object({ x: z.string() })).optional(),
@@ -2045,9 +1520,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"nullable: maxItems prima degli elementi",
-		t.Object({
-			l: t.Nullable(t.Array(t.Object({ a: t.String() }), { maxItems: 1 })),
-		}),
 		z.object({
 			l: z
 				.array(z.object({ a: z.string() }))
@@ -2063,49 +1535,48 @@ export const cases: Case[] = [
 	// `zString` (giro di correzione di U3).
 	body(
 		"zString: maxLength in unità UTF-16 (101 emoji = 202)",
-		...name200,
+		name200,
 		{ name: "😀".repeat(101) },
 		422,
 		fail("Nome: al massimo 200 caratteri"),
 	),
 	body(
 		"zString: 100 emoji = 200 unità, al limite",
-		...name200,
+		name200,
 		{ name: "😀".repeat(100) },
 		200,
 		{ ok: { name: "😀".repeat(100) } },
 	),
 	body(
 		"zString: un emoji rispetta minLength 2 e maxLength 2",
-		...country2,
+		country2,
 		{ country: "😀" },
 		200,
 		{ ok: { country: "😀" } },
 	),
 	body(
 		"zString: minLength con title",
-		...country2,
+		country2,
 		{ country: "a" },
 		422,
 		fail("Codice: almeno 2 caratteri"),
 	),
 	body(
 		"zString: maxLength prima di pattern",
-		...phone,
+		phone,
 		{ phone: "😀😀😀" },
 		422,
 		fail("Telefono: al massimo 5 caratteri"),
 	),
 	body(
 		"zString: pattern",
-		...phone,
+		phone,
 		{ phone: "a" },
 		422,
 		fail("Telefono: formato non valido"),
 	),
 	body(
 		"zString: nullable, regola del ramo non nullo",
-		t.Object({ note: t.Nullable(t.String({ maxLength: 3 })) }),
 		z.object({ note: zString({ maxLength: 3 }).nullable() }),
 		{ note: "😀😀" },
 		422,
@@ -2113,7 +1584,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"zString in query: maxLength in unità UTF-16",
-		t.Object({ storeIds: t.String({ maxLength: 4 }) }),
 		z.object({ storeIds: zString({ maxLength: 4 }) }),
 		`?storeIds=${encodeURIComponent("😀😀😀")}`,
 		422,
@@ -2124,8 +1594,7 @@ export const cases: Case[] = [
 	{
 		name: "t.Integer: 1e400 è «numero intero»",
 		target: "json",
-		tb: quantity199[0],
-		zod: quantity199[1],
+		zod: quantity199,
 		req: { raw: '{"quantity":1e400}', contentType: "application/json" },
 		status: 422,
 		body: fail("Quantità: deve essere un numero intero"),
@@ -2133,8 +1602,7 @@ export const cases: Case[] = [
 	{
 		name: "t.Integer: -1e400 è «numero intero»",
 		target: "json",
-		tb: quantity199[0],
-		zod: quantity199[1],
+		zod: quantity199,
 		req: { raw: '{"quantity":-1e400}', contentType: "application/json" },
 		status: 422,
 		body: fail("Quantità: deve essere un numero intero"),
@@ -2142,7 +1610,6 @@ export const cases: Case[] = [
 	{
 		name: "t.Number: 1e400 nel body",
 		target: "json",
-		tb: t.Object({ price: t.Number() }),
 		zod: z.object({ price: z.number() }),
 		req: { raw: '{"price":1e400}', contentType: "application/json" },
 		status: 422,
@@ -2150,7 +1617,6 @@ export const cases: Case[] = [
 	},
 	query(
 		"t.Number in query: 1e400",
-		t.Object({ price: t.Number() }),
 		z.object({ price: z.number() }),
 		"?price=1e400",
 		422,
@@ -2161,11 +1627,10 @@ export const cases: Case[] = [
 	// Zod anche i limiti dei safe integer (422 «al massimo 9007199254740991»).
 	...bigIntegers(),
 	// U5: gemelli dei form e dei body seller condivisi (prodotti, stock). Gli
-	// schemi in linea nelle route li copre il batch catturato su Elysia
+	// schemi in linea nelle route li copre il batch catturato prima della migrazione
 	// (`baseline/hono-batch-seller-products.jsonl`).
 	body(
 		"prodotti: body vuoto (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{},
 		422,
@@ -2173,7 +1638,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: nome di soli spazi (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{ name: "   ", price: "1.00", storeId: "s" },
 		422,
@@ -2181,7 +1645,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: prezzo senza decimali (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{ name: "X", price: "1", storeId: "s" },
 		422,
@@ -2189,7 +1652,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: aliquota non ammessa (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{ name: "X", price: "1.00", storeId: "s", vatRate: "7" },
 		422,
@@ -2197,7 +1659,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: EAN di 12 cifre (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{ name: "X", price: "1.00", storeId: "s", ean: "123456789012" },
 		422,
@@ -2205,7 +1666,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: valore di caratteristica non valido (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{
 			name: "X",
@@ -2220,7 +1680,6 @@ export const cases: Case[] = [
 	// col tipo (stringa troppo lunga), TypeBox «valore non valido».
 	body(
 		"prodotti: valore di caratteristica oltre 2000 caratteri (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{
 			name: "X",
@@ -2235,7 +1694,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: valore oltre 2000 caratteri nella riga 2 (campo del PATCH)",
-		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
 		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
 		{
 			characteristicValues: [
@@ -2248,7 +1706,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: default IVA, trim, campi ignoti tolti (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{
 			name: " Pane ",
@@ -2282,7 +1739,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: stato mancante (ProductStatusBody)",
-		TbProductStatusBody,
 		ProductStatusBody,
 		{},
 		422,
@@ -2290,7 +1746,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: stato non ammesso (ProductStatusBody)",
-		TbProductStatusBody,
 		ProductStatusBody,
 		{ status: "deleted" },
 		422,
@@ -2298,7 +1753,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: lista vuota (BulkStatusBody)",
-		TbBulkStatusBody,
 		BulkStatusBody,
 		{ productIds: [], status: "active" },
 		422,
@@ -2306,7 +1760,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: più di 100 ID (BulkDeleteBody)",
-		TbBulkDeleteBody,
 		BulkDeleteBody,
 		{ productIds: Array.from({ length: 101 }, (_, i) => `p${i}`) },
 		422,
@@ -2314,7 +1767,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"stock: delta mancante (StockAdjustBody)",
-		TbStockAdjustBody,
 		StockAdjustBody,
 		{},
 		422,
@@ -2322,7 +1774,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"stock: delta come stringa oltre il massimo (StockAdjustBody)",
-		TbStockAdjustBody,
 		StockAdjustBody,
 		{ delta: "5000" },
 		422,
@@ -2330,7 +1781,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"stock: delta come stringa valido (StockAdjustBody)",
-		TbStockAdjustBody,
 		StockAdjustBody,
 		{ delta: "-3" },
 		200,
@@ -2340,7 +1790,6 @@ export const cases: Case[] = [
 	{
 		name: "stock: delta oltre i safe integer (StockAdjustBody)",
 		target: "json",
-		tb: TbStockAdjustBody,
 		zod: StockAdjustBody,
 		req: { raw: '{"delta":9007199254740993}', contentType: "application/json" },
 		status: 422,
@@ -2349,7 +1798,6 @@ export const cases: Case[] = [
 	{
 		name: "stock: delta infinito (StockAdjustBody)",
 		target: "json",
-		tb: TbStockAdjustBody,
 		zod: StockAdjustBody,
 		req: { raw: '{"delta":1e400}', contentType: "application/json" },
 		status: 422,
@@ -2358,7 +1806,6 @@ export const cases: Case[] = [
 	// ── gemelli di U6: negozi, impostazioni, team, onboarding, chiusure ──
 	body(
 		"negozio: body vuoto (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{},
 		422,
@@ -2366,7 +1813,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: posizione mancante (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{ ...STORE, location: undefined },
 		422,
@@ -2374,7 +1820,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: posizione del telefono come stringa (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{ ...STORE, phoneNumbers: [{ number: "051123456", position: "1" }] },
 		422,
@@ -2383,7 +1828,6 @@ export const cases: Case[] = [
 	{
 		name: "negozio: giorno oltre i safe integer (CreateStoreBody)",
 		target: "json",
-		tb: TbCreateStoreBody,
 		zod: CreateStoreBody,
 		req: {
 			raw: JSON.stringify({ ...STORE, openingHours: "@" }).replace(
@@ -2399,7 +1843,6 @@ export const cases: Case[] = [
 	// dell'intero (`collapse()` in issues.ts).
 	body(
 		"negozio: giorno come stringa e orario sbagliato (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			...STORE,
@@ -2413,7 +1856,6 @@ export const cases: Case[] = [
 	// 501 unità UTF-16 ma 257 code point: TypeBox controlla maxLength prima del formato.
 	body(
 		"negozio: sito oltre 500 unità UTF-16 con emoji (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{ ...STORE, websiteUrl: `https://x.it/${"😀".repeat(244)}` },
 		422,
@@ -2421,7 +1863,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: valido, con sito null, orari null e campi ignoti (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			...STORE,
@@ -2444,7 +1885,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: sito non valido (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{ ...STORE, websiteUrl: "not a url" },
 		422,
@@ -2452,7 +1892,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"anagrafica: body vuoto (PersonalInfoBody)",
-		TbPersonalInfoBody,
 		PersonalInfoBody,
 		{},
 		422,
@@ -2460,7 +1899,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"anagrafica: data che non esiste (PersonalInfoBody)",
-		TbPersonalInfoBody,
 		PersonalInfoBody,
 		{ ...PERSONAL, birthDate: "1990-02-30" },
 		422,
@@ -2468,7 +1906,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"anagrafica: valida (PersonalInfoBody)",
-		TbPersonalInfoBody,
 		PersonalInfoBody,
 		{ ...PERSONAL, firstName: " Mario " },
 		200,
@@ -2476,7 +1913,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"documento: tipo non ammesso (DocumentBody)",
-		TbDocumentBody,
 		DocumentBody,
 		{ ...DOCUMENT, documentType: "badge" },
 		422,
@@ -2484,7 +1920,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"documento: scadenza nel formato sbagliato (DocumentBody)",
-		TbDocumentBody,
 		DocumentBody,
 		{ ...DOCUMENT, documentExpiry: "01/01/2030" },
 		422,
@@ -2492,7 +1927,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"azienda: body vuoto (CompanyBody)",
-		TbCompanyBody,
 		CompanyBody,
 		{},
 		422,
@@ -2500,7 +1934,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"azienda: partita IVA corta (CompanyBody)",
-		TbCompanyBody,
 		CompanyBody,
 		{ ...COMPANY, vatNumber: "1" },
 		422,
@@ -2508,7 +1941,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"impostazioni azienda: la partita IVA è un campo ignoto (CompanySettingsBody)",
-		TbCompanySettingsBody,
 		CompanySettingsBody,
 		{ ...COMPANY, vatNumber: "12345678901" },
 		200,
@@ -2516,7 +1948,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"partita IVA: nel formato sbagliato (VatChangeBody)",
-		TbVatChangeBody,
 		VatChangeBody,
 		{ vatNumber: "123" },
 		422,
@@ -2524,7 +1955,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"invito: email non valida (TeamInviteBody)",
-		TbTeamInviteBody,
 		TeamInviteBody,
 		{ email: "bad", storeIds: ["a"] },
 		422,
@@ -2534,7 +1964,6 @@ export const cases: Case[] = [
 		(email) =>
 			body(
 				`invito: ${email} rifiutata come dall'app composta (TeamInviteBody)`,
-				TbTeamInviteBody,
 				TeamInviteBody,
 				{ email, storeIds: ["a"] },
 				422,
@@ -2543,7 +1972,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"invito: nessun negozio (TeamInviteBody)",
-		TbTeamInviteBody,
 		TeamInviteBody,
 		{ email: " a@b.it ", storeIds: [] },
 		422,
@@ -2551,7 +1979,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"chiusure: data nel formato sbagliato (PutClosuresBody)",
-		TbPutClosuresBody,
 		PutClosuresBody,
 		{ optOutIds: [], customClosures: [{ startDate: "2026-1-1" }] },
 		422,
@@ -2559,7 +1986,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"chiusure: valide, con la nota trimmata (PutClosuresBody)",
-		TbPutClosuresBody,
 		PutClosuresBody,
 		{
 			optOutIds: ["h"],
@@ -2575,7 +2001,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"t.Integer: 1e21 come numero e come stringa",
-		t.Object({ n: t.Integer({ minimum: 0 }), s: t.Integer({ minimum: 0 }) }),
 		z.object({ n: zInteger({ minimum: 0 }), s: zInteger({ minimum: 0 }) }),
 		{ n: 1e21, s: "1e21" },
 		200,
@@ -2583,7 +2008,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"paginazione: pagina oltre i safe integer (PaginationQuery)",
-		TbPaginationQuery,
 		PaginationQuery,
 		"?page=9007199254740993",
 		200,
@@ -2591,37 +2015,27 @@ export const cases: Case[] = [
 	),
 	query(
 		"paginazione: limite oltre i safe integer (PaginationQuery)",
-		TbPaginationQuery,
 		PaginationQuery,
 		"?limit=9007199254740993",
 		422,
 		fail("Valore non valido: deve essere al massimo 100"),
 	),
-	// Elysia non taglia il frammento: il `#` resta nell'ultimo valore.
+	// Come prima, il frammento non si taglia: il `#` resta nell'ultimo valore.
 	query(
 		"query: il # resta nel valore, anche negli array",
-		t.Object({ q: t.String(), ids: t.Array(t.String()) }),
 		z.object({ q: z.string(), ids: z.array(z.string()) }),
 		"?ids=a,b&q=x%20y#z&ids=c#d",
 		200,
 		{ ok: { q: "x y#z", ids: ["a", "b", "c#d"] } },
 	),
 
-	// U8: catalogo pubblico e admin 1 (attesi catturati su Elysia nel batch
+	// U8: catalogo pubblico e admin 1 (attesi catturati prima della migrazione nel batch
 	// `baseline/hono-batch-admin-1.jsonl`).
-	query(
-		"U8 categorie: default",
-		TbCategoryListQuery,
-		CategoryListQuery,
-		"",
-		200,
-		{
-			ok: { page: 1, limit: 20, sortBy: "name", sortOrder: "asc" },
-		},
-	),
+	query("U8 categorie: default", CategoryListQuery, "", 200, {
+		ok: { page: 1, limit: 20, sortBy: "name", sortOrder: "asc" },
+	}),
 	query(
 		"U8 categorie: page oltre i safe-int (t.Integer non li limita)",
-		TbCategoryListQuery,
 		CategoryListQuery,
 		"?page=9007199254740992",
 		200,
@@ -2636,7 +2050,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 categorie: ordinamento non ammesso",
-		TbCategoryListQuery,
 		CategoryListQuery,
 		"?sortBy=foo",
 		422,
@@ -2644,7 +2057,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 categorie: ricerca troppo lunga",
-		TbCategoryListQuery,
 		CategoryListQuery,
 		`?search=${"x".repeat(101)}`,
 		422,
@@ -2652,7 +2064,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 sotto-categorie: filtro macro e campi ignoti",
-		TbProductCategoryListQuery,
 		ProductCategoryListQuery,
 		"?macroCategoryId=m&foo=1&sortOrder=desc",
 		200,
@@ -2668,7 +2079,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 caratteristiche: tipo non ammesso",
-		TbCharacteristicListQuery,
 		CharacteristicListQuery,
 		"?dataType=foo",
 		422,
@@ -2676,7 +2086,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 anteprima festività: anno mancante",
-		TbHolidayPreviewQuery,
 		HolidayPreviewQuery,
 		"",
 		422,
@@ -2684,7 +2093,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 anteprima festività: anno decimale",
-		TbHolidayPreviewQuery,
 		HolidayPreviewQuery,
 		"?year=2026.5",
 		422,
@@ -2692,7 +2100,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 anteprima festività: anno fuori limite",
-		TbHolidayPreviewQuery,
 		HolidayPreviewQuery,
 		"?year=1999",
 		422,
@@ -2700,7 +2107,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U8 anteprima festività: anno valido",
-		TbHolidayPreviewQuery,
 		HolidayPreviewQuery,
 		"?year=2026",
 		200,
@@ -2708,7 +2114,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 macro prodotto: aliquota di default anche se assente",
-		TbCreateProductMacroCategoryBody,
 		CreateProductMacroCategoryBody,
 		{ name: " x " },
 		200,
@@ -2716,7 +2121,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 macro prodotto: aliquota non ammessa",
-		TbCreateProductMacroCategoryBody,
 		CreateProductMacroCategoryBody,
 		{ name: "x", suggestedVatRate: "7" },
 		422,
@@ -2724,7 +2128,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 caratteristica: id opzione non testo",
-		TbCreateProductCharacteristicBody,
 		CreateProductCharacteristicBody,
 		{
 			name: "x",
@@ -2736,7 +2139,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 caratteristica: campi ignoti tolti, unità null",
-		TbCreateProductCharacteristicBody,
 		CreateProductCharacteristicBody,
 		{
 			name: " x ",
@@ -2757,7 +2159,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 caratteristica: confirmAffected di default",
-		TbUpdateProductCharacteristicBody,
 		UpdateProductCharacteristicBody,
 		{},
 		200,
@@ -2765,7 +2166,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 caratteristica: confirmAffected negativo come stringa",
-		TbUpdateProductCharacteristicBody,
 		UpdateProductCharacteristicBody,
 		{ confirmAffected: "-1" },
 		422,
@@ -2773,7 +2173,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 caratteristica: unità troppo lunga",
-		TbUpdateProductCharacteristicBody,
 		UpdateProductCharacteristicBody,
 		{ unit: "x".repeat(21) },
 		422,
@@ -2781,7 +2180,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 elimina caratteristica: confirmAffected mancante",
-		TbDeleteProductCharacteristicBody,
 		DeleteProductCharacteristicBody,
 		{},
 		422,
@@ -2789,7 +2187,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 elimina caratteristica: confirmAffected decimale",
-		TbDeleteProductCharacteristicBody,
 		DeleteProductCharacteristicBody,
 		{ confirmAffected: 1.5 },
 		422,
@@ -2797,7 +2194,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 elimina caratteristica: confirmAffected oltre i safe-int",
-		TbDeleteProductCharacteristicBody,
 		DeleteProductCharacteristicBody,
 		{ confirmAffected: 1e20 },
 		200,
@@ -2805,7 +2201,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 caratteristica: confirmAffected come stringa oltre i safe-int",
-		TbUpdateProductCharacteristicBody,
 		UpdateProductCharacteristicBody,
 		{ confirmAffected: "9007199254740993" },
 		200,
@@ -2813,7 +2208,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 togli caratteristica: confirmAffected negativo",
-		TbRemoveCategoryCharacteristicBody,
 		RemoveCategoryCharacteristicBody,
 		{ confirmAffected: -1 },
 		422,
@@ -2821,7 +2215,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 assegna caratteristica: required non booleano",
-		TbSetCategoryCharacteristicBody,
 		SetCategoryCharacteristicBody,
 		{ required: "yes" },
 		422,
@@ -2829,7 +2222,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 festività: attivo non booleano",
-		TbUpdateHolidayDefinitionBody,
 		UpdateHolidayDefinitionBody,
 		{ isActive: "no" },
 		422,
@@ -2837,7 +2229,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 festività: trim e campi ignoti",
-		TbUpdateHolidayDefinitionBody,
 		UpdateHolidayDefinitionBody,
 		{ name: "  y  ", isActive: false, extra: 1 },
 		200,
@@ -2845,7 +2236,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U8 caratteristica: nome di 51 emoji (TypeBox conta le unità UTF-16)",
-		TbCreateProductCharacteristicBody,
 		CreateProductCharacteristicBody,
 		{ name: "😀".repeat(51), dataType: "text" },
 		422,
@@ -2855,7 +2245,6 @@ export const cases: Case[] = [
 	// i code point con `z.string().min/max`).
 	body(
 		"reg: password di 4 emoji = 8 unità UTF-16, accettata",
-		TbRegister,
 		Register,
 		{ email: "a@b.it", password: "😀".repeat(4) },
 		200,
@@ -2863,7 +2252,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"reg: password di 65 emoji = 130 unità UTF-16",
-		TbRegister,
 		Register,
 		{ email: "a@b.it", password: "😀".repeat(65) },
 		422,
@@ -2871,7 +2259,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"accept-invite: password di 4 emoji, accettata",
-		TbAcceptInviteBody,
 		AcceptInviteBody,
 		{
 			token: "t",
@@ -2889,7 +2276,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"geocode: q di 2 emoji = 4 unità UTF-16, accettata",
-		TbGeocodeQuery,
 		GeocodeQuery,
 		`?q=${encodeURIComponent("😀😀")}`,
 		200,
@@ -2897,7 +2283,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: nome di 101 emoji = 202 unità UTF-16 (CreateProductBody)",
-		TbCreateProductBody,
 		CreateProductBody,
 		{ name: "😀".repeat(101), price: "1.00", storeId: "s" },
 		422,
@@ -2905,7 +2290,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"prodotti: valore di 1001 emoji = 2002 unità UTF-16",
-		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
 		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
 		{
 			characteristicValues: [
@@ -2916,14 +2300,13 @@ export const cases: Case[] = [
 		fail("Valore (riga 1): valore non valido"),
 	),
 
-	// U9: admin 2 (attesi catturati su Elysia nel batch
+	// U9: admin 2 (attesi catturati prima della migrazione nel batch
 	// `baseline/hono-batch-admin-2.jsonl`, più i 200 dell'eco).
-	query("U9 venditori: default", TbSellerListQuery, SellerListQuery, "", 200, {
+	query("U9 venditori: default", SellerListQuery, "", 200, {
 		ok: { page: 1, limit: 20, sortBy: "createdAt", sortOrder: "desc" },
 	}),
 	query(
 		"U9 venditori: stato non ammesso",
-		TbSellerListQuery,
 		SellerListQuery,
 		"?status=foo",
 		422,
@@ -2931,7 +2314,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 venditori: ordinamento non ammesso",
-		TbSellerListQuery,
 		SellerListQuery,
 		"?sortBy=email",
 		422,
@@ -2939,7 +2321,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 venditori: ricerca di 51 emoji (unità UTF-16)",
-		TbSellerListQuery,
 		SellerListQuery,
 		`?search=${encodeURIComponent("😀".repeat(51))}`,
 		422,
@@ -2947,7 +2328,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 venditori: ricerca non trimmata e campi ignoti",
-		TbSellerListQuery,
 		SellerListQuery,
 		"?search=%20x%20&status=active&foo=1",
 		200,
@@ -2962,25 +2342,17 @@ export const cases: Case[] = [
 			},
 		},
 	),
-	query(
-		"U9 negozi: default con il tab",
-		TbStoreListQuery,
-		StoreListQuery,
-		"",
-		200,
-		{
-			ok: {
-				page: 1,
-				limit: 20,
-				status: "all",
-				sortBy: "createdAt",
-				sortOrder: "desc",
-			},
+	query("U9 negozi: default con il tab", StoreListQuery, "", 200, {
+		ok: {
+			page: 1,
+			limit: 20,
+			status: "all",
+			sortBy: "createdAt",
+			sortOrder: "desc",
 		},
-	),
+	}),
 	query(
 		"U9 negozi: tab non ammesso",
-		TbStoreListQuery,
 		StoreListQuery,
 		"?status=foo",
 		422,
@@ -2988,7 +2360,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 negozi: pagina non numerica",
-		TbStoreListQuery,
 		StoreListQuery,
 		"?page=abc",
 		422,
@@ -2996,7 +2367,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 richieste: default del tipo (t.Composite)",
-		TbRequestListQuery,
 		RequestListQuery,
 		"?limit=2",
 		200,
@@ -3004,7 +2374,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 richieste: tipo non ammesso",
-		TbRequestListQuery,
 		RequestListQuery,
 		"?type=foo",
 		422,
@@ -3012,7 +2381,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 abbonamenti: niente default",
-		TbSubscriptionsQuery,
 		SubscriptionsQuery,
 		"?page=2&sellerEmail=a&x=1",
 		200,
@@ -3020,7 +2388,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 abbonamenti: stato non ammesso",
-		TbSubscriptionsQuery,
 		SubscriptionsQuery,
 		"?status=foo",
 		422,
@@ -3028,7 +2395,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"U9 abbonamenti: limite a zero",
-		TbSubscriptionsQuery,
 		SubscriptionsQuery,
 		"?limit=0",
 		422,
@@ -3036,7 +2402,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 prezzi: corpo vuoto",
-		TbUpdatePricingBody,
 		UpdatePricingBody,
 		{},
 		422,
@@ -3044,7 +2409,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 prezzi: prodotto Stripe non valido",
-		TbUpdatePricingBody,
 		UpdatePricingBody,
 		{ ...pricing, productId: "prod_" },
 		422,
@@ -3052,7 +2416,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 prezzi: valuta di 4 lettere",
-		TbUpdatePricingBody,
 		UpdatePricingBody,
 		{ ...pricing, currency: "EURO" },
 		422,
@@ -3060,7 +2423,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 prezzi: giorni sotto il minimo",
-		TbUpdatePricingBody,
 		UpdatePricingBody,
 		{ ...pricing, suspendedAutoCancelDays: 6 },
 		422,
@@ -3068,7 +2430,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 prezzi: ore decimali",
-		TbUpdatePricingBody,
 		UpdatePricingBody,
 		{ ...pricing, pendingCreationExpiryHours: 1.5 },
 		422,
@@ -3076,7 +2437,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 prezzi: intero in stringa, trim e campi ignoti",
-		TbUpdatePricingBody,
 		UpdatePricingBody,
 		{ ...pricing, storeMonthlyFeeCents: "2900", currency: " EUR ", x: 1 },
 		200,
@@ -3084,7 +2444,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 verifica: data mancante",
-		TbVerifySellerBody,
 		VerifySellerBody,
 		{},
 		422,
@@ -3092,23 +2451,16 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 verifica: data gg/mm/aaaa",
-		TbVerifySellerBody,
 		VerifySellerBody,
 		{ expectedUpdatedAt: "24/10/2026" },
 		422,
 		fail("expectedUpdatedAt: data non valida"),
 	),
-	body(
-		"U9 verifica: epoch",
-		TbVerifySellerBody,
-		VerifySellerBody,
-		{ expectedUpdatedAt: 0 },
-		200,
-		{ ok: { expectedUpdatedAt: "1970-01-01T00:00:00.000Z" } },
-	),
+	body("U9 verifica: epoch", VerifySellerBody, { expectedUpdatedAt: 0 }, 200, {
+		ok: { expectedUpdatedAt: "1970-01-01T00:00:00.000Z" },
+	}),
 	body(
 		"U9 rifiuto: corpo vuoto (prima il campo anyOf mancante)",
-		TbRejectSellerRouteBody,
 		RejectSellerRouteBody,
 		{},
 		422,
@@ -3116,7 +2468,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 rifiuto: motivo di soli spazi",
-		TbRejectSellerRouteBody,
 		RejectSellerRouteBody,
 		{ reason: "   ", fixStep: null, expectedUpdatedAt: stale },
 		422,
@@ -3124,7 +2475,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 rifiuto: motivo di 251 emoji (unità UTF-16)",
-		TbRejectSellerRouteBody,
 		RejectSellerRouteBody,
 		{ reason: "😀".repeat(251), fixStep: null, expectedUpdatedAt: stale },
 		422,
@@ -3132,7 +2482,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 rifiuto: step non ammesso",
-		TbRejectSellerRouteBody,
 		RejectSellerRouteBody,
 		{
 			reason: "Documento illeggibile",
@@ -3144,7 +2493,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 rifiuto: step mancante",
-		TbRejectSellerRouteBody,
 		RejectSellerRouteBody,
 		{ reason: "Documento illeggibile", expectedUpdatedAt: stale },
 		422,
@@ -3152,7 +2500,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 rifiuto: trim e data",
-		TbRejectSellerRouteBody,
 		RejectSellerRouteBody,
 		{
 			reason: " Documento illeggibile ",
@@ -3169,17 +2516,11 @@ export const cases: Case[] = [
 			},
 		},
 	),
-	body(
-		"U9 modifica rifiutata: motivo facoltativo",
-		TbRejectChangeBody,
-		RejectChangeBody,
-		{},
-		200,
-		{ ok: {} },
-	),
+	body("U9 modifica rifiutata: motivo facoltativo", RejectChangeBody, {}, 200, {
+		ok: {},
+	}),
 	body(
 		"U9 modifica rifiutata: motivo di 251 emoji (unità UTF-16)",
-		TbRejectChangeBody,
 		RejectChangeBody,
 		{ reason: "😀".repeat(251) },
 		422,
@@ -3187,7 +2528,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"U9 modifica rifiutata: motivo non testo",
-		TbRejectChangeBody,
 		RejectChangeBody,
 		{ reason: 5 },
 		422,
@@ -3197,7 +2537,6 @@ export const cases: Case[] = [
 	// U7: gemelli di promozioni, ordini e negozio (checkout).
 	body(
 		"promozioni: PATCH vuoto (DiscountUpdateBody)",
-		TbDiscountUpdateBody,
 		DiscountUpdateBody,
 		{},
 		200,
@@ -3205,7 +2544,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"promozioni: PATCH con date, intero come stringa e campi ignoti",
-		TbDiscountUpdateBody,
 		DiscountUpdateBody,
 		{ percent: "10", endsAt: null, startsAt: "2026-02-01", status: "x" },
 		200,
@@ -3219,7 +2557,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"promozioni: PATCH titolo vuoto (DiscountUpdateBody)",
-		TbDiscountUpdateBody,
 		DiscountUpdateBody,
 		{ title: "", percent: 0 },
 		422,
@@ -3227,7 +2564,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"promozioni: PATCH fine con l'offset senza segno (DiscountUpdateBody)",
-		TbDiscountUpdateBody,
 		DiscountUpdateBody,
 		{ endsAt: "2026-01-01T12:00:00 01:00" },
 		422,
@@ -3235,7 +2571,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"promozioni: PATCH inizio con l'offset senza segno (DiscountUpdateBody)",
-		TbDiscountUpdateBody,
 		DiscountUpdateBody,
 		{ startsAt: "2026-01-01T12:00 01:00" },
 		422,
@@ -3243,7 +2578,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"promozioni: prodotti vuoti (DiscountProductsBody)",
-		TbDiscountProductsBody,
 		DiscountProductsBody,
 		{ productIds: [] },
 		422,
@@ -3251,7 +2585,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"ordini: stato e tipo (OrderListQuery)",
-		TbOrderListQuery,
 		OrderListQuery,
 		"?status=confirmed&type=reserve_pickup&page=2",
 		200,
@@ -3259,7 +2592,6 @@ export const cases: Case[] = [
 	),
 	query(
 		"ordini: stato non ammesso (OrderListQuery)",
-		TbOrderListQuery,
 		OrderListQuery,
 		"?status=bad",
 		422,
@@ -3267,7 +2599,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: vuoto (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{},
 		422,
@@ -3275,7 +2606,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: senza posizione (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3288,7 +2618,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: posizione fuori intervallo (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3302,7 +2631,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: telefono con posizione negativa (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3317,7 +2645,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: posizione del telefono come stringa (Type.Integer)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3332,7 +2659,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: valido, campi ignoti tolti, orari null (CreateStoreBody)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: " Bottega ",
@@ -3362,7 +2688,6 @@ export const cases: Case[] = [
 	// zString: TypeBox conta le unità UTF-16 (501 emoji sono 1002 > 1000).
 	body(
 		"negozio: descrizione di emoji oltre il limite (zString)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3379,7 +2704,6 @@ export const cases: Case[] = [
 	// nullo sta sul campo, come per t.Nullable.
 	body(
 		"negozio: giorno fuori intervallo (Type.Union con Null)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3396,7 +2720,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: orario fuori formato in profondità (Type.Union con Null)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3413,7 +2736,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: orari come testo (Type.Union con Null)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3428,7 +2750,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: sito troppo lungo (Type.Union con Null)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3443,7 +2764,6 @@ export const cases: Case[] = [
 	),
 	body(
 		"negozio: orario non valido e sito non valido (Type.Union con Null)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3469,7 +2789,6 @@ export const cases: Case[] = [
 	].map(([what, dayOfWeek]) =>
 		body(
 			`negozio: giorno come ${what} (Type.Union con Null)`,
-			TbCreateStoreBody,
 			CreateStoreBody,
 			{
 				name: "Bottega",
@@ -3494,7 +2813,6 @@ export const cases: Case[] = [
 	].map(([what, n]) =>
 		body(
 			`vm: intero o null alla radice, ${what}`,
-			t.Object({ n: Type.Union([Type.Integer(), Type.Null()]) }),
 			z.object({ n: z.union([zInt(), z.null()]) }),
 			{ n },
 			422,
@@ -3504,7 +2822,6 @@ export const cases: Case[] = [
 	// maxLength prima del formato, in unità UTF-16: 14 + 244 × 2 = 502.
 	body(
 		"negozio: sito di emoji oltre il limite (Type.Union con Null)",
-		TbCreateStoreBody,
 		CreateStoreBody,
 		{
 			name: "Bottega",
@@ -3521,8 +2838,7 @@ export const cases: Case[] = [
 	{
 		name: "Type.Integer: giorno oltre i safe integer (OpeningHoursSchema)",
 		target: "json",
-		tb: openingHours[0],
-		zod: openingHours[1],
+		zod: openingHours,
 		req: {
 			raw: '{"openingHours":[{"dayOfWeek":9007199254740993,"slots":[{"open":"09:00","close":"10:00"}]}]}',
 			contentType: "application/json",
@@ -3533,7 +2849,6 @@ export const cases: Case[] = [
 	{
 		name: "Type.Integer: posizione oltre i safe integer (CreateStoreBody)",
 		target: "json",
-		tb: TbCreateStoreBody,
 		zod: CreateStoreBody,
 		req: {
 			raw: '{"name":"B","addressLine1":"V","municipalityId":"m","zipCode":"40100","location":{"x":1,"y":2},"phoneNumbers":[{"number":"051123456","position":9007199254740993}]}',
@@ -3554,24 +2869,17 @@ export const cases: Case[] = [
 ];
 
 function bigIntegers(): Case[] {
-	const page = [
-		t.Object({ page: t.Integer({ minimum: 1 }) }),
-		z.object({ page: zInteger({ minimum: 1 }) }),
-	] as const;
-	const typeboxQuantity = [
-		t.Object({ quantity: Type.Integer({ minimum: 1, maximum: 99 }) }),
-		z.object({ quantity: zInt().min(1).max(99) }),
-	] as const;
+	const page = z.object({ page: zInteger({ minimum: 1 }) });
+	const typeboxQuantity = z.object({ quantity: zInt().min(1).max(99) });
 	const json = (
 		name: string,
-		[tb, zod]: readonly [TSchema, z.ZodType],
+		zod: z.ZodType,
 		raw: string,
 		status: number,
 		expected: unknown,
 	): Case => ({
 		name,
 		target: "json",
-		tb,
 		zod,
 		req: { raw, contentType: "application/json" },
 		status,
@@ -3580,49 +2888,43 @@ function bigIntegers(): Case[] {
 	const max99 = "Quantità: deve essere al massimo 99";
 	const min1 = "Quantità: deve essere almeno 1";
 	return [
-		query("t.Integer in query: 1e20", ...page, "?page=1e20", 200, {
+		query("t.Integer in query: 1e20", page, "?page=1e20", 200, {
 			ok: { page: 1e20 },
 		}),
-		query(
-			"t.Integer in query: 2^53+1",
-			...page,
-			"?page=9007199254740993",
-			200,
-			{
-				ok: { page: 9007199254740992 },
-			},
-		),
+		query("t.Integer in query: 2^53+1", page, "?page=9007199254740993", 200, {
+			ok: { page: 9007199254740992 },
+		}),
 		query(
 			"t.Integer in query: 20 cifre",
-			...page,
+			page,
 			"?page=99999999999999999999",
 			200,
 			{ ok: { page: 1e20 } },
 		),
 		query(
 			"t.Integer in query: -1e20",
-			...page,
+			page,
 			"?page=-99999999999999999999",
 			422,
 			fail("Valore non valido: deve essere almeno 1"),
 		),
 		query(
 			"t.Integer in query: 1e20 oltre il massimo",
-			...quantity199,
+			quantity199,
 			"?quantity=1e20",
 			422,
 			fail("Valore non valido: deve essere al massimo 99"),
 		),
 		query(
 			"t.Integer in query: 2^53+1 oltre il massimo",
-			...quantity199,
+			quantity199,
 			"?quantity=9007199254740993",
 			422,
 			fail("Valore non valido: deve essere al massimo 99"),
 		),
 		query(
 			"t.Integer in query: -1e20 sotto il minimo",
-			...quantity199,
+			quantity199,
 			"?quantity=-1e20",
 			422,
 			fail("Valore non valido: deve essere almeno 1"),
@@ -3698,10 +3000,7 @@ function bigIntegers(): Case[] {
 		),
 		json(
 			"Type.Integer: 1e20 senza massimo",
-			[
-				t.Object({ n: Type.Integer({ minimum: 0 }) }),
-				z.object({ n: zInt().min(0) }),
-			],
+			z.object({ n: zInt().min(0) }),
 			'{"n":1e20}',
 			200,
 			{ ok: { n: 1e20 } },

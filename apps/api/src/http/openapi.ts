@@ -1,14 +1,15 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { z } from "zod";
-import { elysiaJson, integerCheck } from "@/lib/zod/t";
+import { integerCheck, typeboxJson } from "@/lib/schemas/t";
 import { assertRoutes, DOC, type ModuleGuards } from "./routes";
 import { VALIDATES, type Validates } from "./validator";
 
 // OpenAPI delle route Hono (D11 del piano Hono): ogni route porta `doc(…)` e i
 // suoi `v(…)`; il generatore legge `app.routes`, converte gli schemi Zod nel
 // JSON Schema che TypeBox scriverebbe per il gemello e applica le stesse
-// trasformazioni di `@elysiajs/openapi` 1.4.16 (MIT), così `/openapi` resta
-// identico. Durante lo strangler i path si uniscono al documento di Elysia.
+// trasformazioni del plugin OpenAPI di prima (1.4.16, MIT: `THIRD_PARTY_NOTICES.md`), così
+// `/openapi` resta identico (`baseline/openapi.json`). Il documento intero lo
+// compone `plugins/openapi.ts`.
 
 type Json = Record<string, any>;
 
@@ -23,10 +24,10 @@ export interface RouteDetail {
 
 export interface RouteDoc {
 	detail?: RouteDetail;
-	/** Risposte per status, come la `response` di Elysia. */
+	/** Risposte per status, come la `response` delle route di prima. */
 	response?: Record<number, z.ZodType>;
 	/**
-	 * Il path in /openapi, se Elysia lo documenta diverso da come si registra
+	 * Il path in /openapi, se la baseline lo documenta diverso da come si registra
 	 * (D8: `GET /seller/settings/` si registra senza lo slash finale).
 	 */
 	path?: string;
@@ -45,7 +46,7 @@ const defOf = (schema: z.ZodType) => schema._zod.def as Json;
 function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 	const schema = ctx.zodSchema as z.ZodType;
 	const json = ctx.jsonSchema;
-	const registered = elysiaJson.get(defOf(schema));
+	const registered = typeboxJson.get(defOf(schema));
 	if (registered) {
 		for (const key of Object.keys(json)) delete json[key];
 		Object.assign(json, JSON.parse(JSON.stringify(registered)));
@@ -84,7 +85,7 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 // Dopo gli override Zod compatta `anyOf: [{type: a}, {type: b}]` in
 // `type: [a, b]` (es. `z.union([z.string(), z.number(), z.boolean()])`);
 // TypeBox scrive sempre l'anyOf. Un nullable torna `type: [X, "null"]` con
-// `nullTo31`, come per Elysia.
+// `nullTo31`, come prima.
 function expandTypeArrays(node: unknown): unknown {
 	if (Array.isArray(node)) return node.map(expandTypeArrays);
 	if (!node || typeof node !== "object") return node;
@@ -107,7 +108,7 @@ export function toJsonSchema(schema: z.ZodType): Json {
 	return expandTypeArrays(json) as Json;
 }
 
-// ── trasformazioni di @elysiajs/openapi 1.4.16 ──────────────────────────────
+// ── trasformazioni del plugin OpenAPI di prima (1.4.16) ─────────────────────
 
 const capitalize = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
 
@@ -225,7 +226,7 @@ interface Operation extends RouteDoc {
 	body?: z.ZodType;
 }
 
-/** Le operazioni di una sub-app, con i path sotto `prefix` (il mount). */
+/** Le operazioni di una sub-app, con i path sotto `prefix` (dove è montata). */
 export function operations(app: Hono<any, any, any>, prefix = ""): Operation[] {
 	const byRoute = new Map<string, Operation>();
 	for (const route of app.routes) {
@@ -255,7 +256,7 @@ export function operations(app: Hono<any, any, any>, prefix = ""): Operation[] {
 	return [...byRoute.values()].filter((op) => op.detail || op.response);
 }
 
-/** I `paths` OpenAPI delle operazioni, come li scrive `@elysiajs/openapi`. */
+/** I `paths` OpenAPI delle operazioni, come li scriveva il plugin di prima. */
 export function generatePaths(ops: Operation[]) {
 	const paths: Json = {};
 	for (const r of ops) {

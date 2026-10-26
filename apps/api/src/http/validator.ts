@@ -3,30 +3,30 @@ import type { Context, MiddlewareHandler } from "hono";
 import { getQueryParams } from "hono/utils/url";
 import { z } from "zod";
 import { deepTrim } from "@/lib/deep-trim";
-import { firstIssue } from "@/lib/zod/issues";
-import { coercedKeys, elysiaValue } from "@/lib/zod/mirror";
+import { firstIssue } from "@/lib/schemas/issues";
+import { coercedKeys, mirrorValue } from "@/lib/schemas/mirror";
 import {
 	fileExtensions,
 	matchesFileType,
 	zBooleanString,
 	zNumeric,
-} from "@/lib/zod/t";
+} from "@/lib/schemas/t";
 import { InvalidFileTypeError, RequestValidationError } from "./errors";
 import { zodValidationMessage } from "./validation-message";
 
-// `v(target, schema)`: il validatore delle route Hono, con le regole di Elysia
-// (D2, D4, D5 del piano Hono). In ordine: lettura del body come la fa Elysia
-// (per Content-Type, non per target), trim profondo tranne le chiavi
-// password (`plugins/normalize.ts`), default della radice e pulizia di
-// Elysia (`lib/zod/mirror.ts`), coercizione di query e params, default
+// `v(target, schema)`: il validatore delle route Hono, con le regole dell'API
+// di prima (D2, D4, D5 del piano Hono). In ordine: lettura del body come
+// prima (per Content-Type, non per target), trim profondo tranne le chiavi
+// password (`lib/deep-trim.ts`), default della radice e pulizia di prima
+// (`lib/schemas/mirror.ts`), coercizione di query e params, default
 // dello schema, campi sconosciuti tolti a ogni profondità (`z.object`),
 // controllo, decodifica, magic byte dei file. Primo errore → 422 italiano.
 // In una route i v() vanno params → query → body e prima dell'auth
 // (`routes.ts` lo controlla a ogni avvio).
 // ponytail: differenze note che nessuna route di oggi tocca (piano Hono,
-// Trappole): coercizione di query e params solo al primo livello (Elysia
-// scende anche negli anyOf e negli array: `?from=<epoch>` su un t.Date
-// opzionale), default annidati (Zod li mette, Elysia no), chiavi multipart
+// Trappole): coercizione di query e params solo al primo livello (prima
+// scendeva anche negli anyOf e negli array: `?from=<epoch>` su un t.Date
+// opzionale), default annidati (Zod li mette, prima no), chiavi multipart
 // `a.b`/`a[0]` e fusione JSON + file non portate, pulizia dei valori oggetto di
 // un t.Record e primo errore di un'unione di oggetti annidata (mirror.ts,
 // issues.ts). Chi aggiunge uno schema così estende `coerce()`/`readFormData()`/
@@ -63,11 +63,11 @@ const shapeOf = (schema: z.ZodType): Record<string, z.ZodType> | undefined => {
 
 const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
-// Il parser multipart di Elysia: una chiave ripetuta diventa un array, un
+// Il parser multipart di prima: una chiave ripetuta diventa un array, un
 // valore testuale che inizia con { o [ e contiene un oggetto JSON diventa
 // quell'oggetto (così i campi oggetto e array viaggiano come JSON).
 // ponytail: non porta le chiavi `a.b` / `a[0]` né la fusione JSON + file di
-// Elysia (`adapter/web-standard`, ~20 righe): nessuna route né client le usa,
+// prima (`adapter/web-standard`, ~20 righe): nessuna route né client le usa,
 // la differenza è nel registro dei delta; si portano col primo modulo che le usa.
 async function readFormData(c: Context) {
 	const form = await c.req.formData();
@@ -94,7 +94,7 @@ async function readFormData(c: Context) {
 	return body;
 }
 
-// Il parser urlencoded di Elysia (`parseQuery`): chiave ripetuta → array.
+// Il parser urlencoded di prima (`parseQuery`): chiave ripetuta → array.
 function parseUrlEncoded(text: string) {
 	const body: Record<string, unknown> = {};
 	for (const [key, value] of new URLSearchParams(text)) {
@@ -111,9 +111,9 @@ function parseUrlEncoded(text: string) {
 }
 
 /**
- * Il body letto come lo legge Elysia: dal Content-Type, qualunque sia il
- * target. Senza Content-Type resta undefined («Richiesta non valida»); JSON
- * malformato lancia (→ 500, come il PARSE di Elysia).
+ * Il body letto come prima: dal Content-Type, qualunque sia il target.
+ * Senza Content-Type resta undefined («Richiesta non valida»); JSON
+ * malformato lancia (→ 500, come prima).
  */
 async function readBody(c: Context): Promise<unknown> {
 	const header = c.req.header("content-type");
@@ -133,11 +133,11 @@ async function readBody(c: Context): Promise<unknown> {
 	}
 }
 
-/** Query come Elysia: array da chiavi ripetute e da virgole, altrimenti l'ultima. */
+/** Query come prima: array da chiavi ripetute e da virgole, altrimenti l'ultima. */
 function readQuery(c: Context, schema: z.ZodType) {
 	const shape = shapeOf(schema) ?? {};
 	const query: Record<string, unknown> = {};
-	// Elysia non taglia il frammento (`?q=a#b` → «a#b»), `c.req.queries()` sì.
+	// Prima il frammento restava (`?q=a#b` → «a#b»), `c.req.queries()` lo taglia.
 	const all = getQueryParams(c.req.url.replaceAll("#", "%23")) as Record<
 		string,
 		string[]
@@ -173,7 +173,7 @@ function coerceProp(prop: z.ZodType): z.ZodType {
 	}
 }
 
-/** Elysia: in query e params `t.Number`/`t.Boolean` al primo livello accettano stringhe. */
+/** Come prima: in query e params `t.Number`/`t.Boolean` al primo livello accettano stringhe. */
 function coerce(schema: z.ZodType): z.ZodType {
 	const hit = coerced.get(defOf(schema));
 	if (hit) return hit;
@@ -191,7 +191,7 @@ function coerce(schema: z.ZodType): z.ZodType {
 
 // ── validazione ─────────────────────────────────────────────────────────────
 
-const ELYSIA_ON: Record<Target, string> = {
+const ERROR_ON: Record<Target, string> = {
 	json: "body",
 	form: "body",
 	query: "query",
@@ -220,13 +220,13 @@ export async function validate<S extends z.ZodType>(
 	raw: unknown,
 ): Promise<z.output<S>> {
 	const isBody = target === "json" || target === "form";
-	// Il valore che Elysia controlla: body trimmato, default della radice e
-	// pulizia di exact-mirror (`lib/zod/mirror.ts`); i params li controlla com'è.
+	// Il valore che si controlla, come prima: body trimmato, default della radice e
+	// pulizia di exact-mirror (`lib/schemas/mirror.ts`); i params li controlla com'è.
 	const on = isBody ? "body" : "query";
 	const value =
 		target === "param"
 			? raw
-			: elysiaValue(schema, isBody ? deepTrim(raw) : raw, on);
+			: mirrorValue(schema, isBody ? deepTrim(raw) : raw, on);
 	const checked = isBody ? schema : coerce(schema);
 	const result = await checked.safeParseAsync(value, { reportInput: true });
 	if (!result.success) {
@@ -237,7 +237,7 @@ export async function validate<S extends z.ZodType>(
 		});
 		const decode = issue.code === "custom" && issue.params?.decode;
 		throw new RequestValidationError(
-			decode ? "property" : ELYSIA_ON[target],
+			decode ? "property" : ERROR_ON[target],
 			zodValidationMessage(issue, schema),
 			issue.path.length ? `/${issue.path.join("/")}` : "",
 			issue.code,

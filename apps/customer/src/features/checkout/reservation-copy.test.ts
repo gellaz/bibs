@@ -27,7 +27,7 @@ describe("closedNoteOpensAt", () => {
 		).toEqual({ date: "2026-10-19", time: "08:00" });
 	});
 
-	it("opensAt.date idratato da Eden in Date → stesso risultato", () => {
+	it("opensAt.date già idratato in Date → stesso risultato", () => {
 		expect(
 			closedNoteOpensAt({
 				open: true,

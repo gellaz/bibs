@@ -1,26 +1,33 @@
 import { describe, expect, it } from "bun:test";
-import { cases, elysiaApp, fail, honoApp, request } from "./parity-cases";
+import { join } from "node:path";
+import { cases, fail, honoApp, request } from "./parity-cases";
 
-// Il validatore Hono contro Elysia sui casi di `parity-cases.ts`: stesso
-// status e stesso corpo, al byte per gli errori.
+// Il validatore Hono sui casi di `parity-cases.ts`: stesso status e stesso
+// corpo dell'API di prima, al byte per gli errori. Le risposte di prima sono
+// in `golden/validator.json`, catturate dal framework di prima (1.4.30) prima
+// di toglierlo (U11): fino ad allora il test glielo chiedeva dal vivo.
 
-describe("v() — stesso esito di Elysia", () => {
+// Letto a runtime, non importato: tsc non deve tipizzare il JSON.
+const before: Record<string, { status: number; body: string }> = await Bun.file(
+	join(import.meta.dir, "golden/validator.json"),
+).json();
+
+describe("v() — stesso esito dell'API di prima", () => {
 	for (const c of cases) {
 		it(c.name, async () => {
-			const e = await elysiaApp(c).handle(request(c.target, c.req));
+			const e = before[c.name];
 			const h = await honoApp(c).request(request(c.target, c.req));
-			const eText = await e.text();
 			const hText = await h.text();
 			const expected = typeof c.body === "string" ? fail(c.body) : c.body;
 			expect({ status: h.status, body: JSON.parse(hText) }).toEqual({
 				status: c.status,
 				body: expected,
 			});
-			expect({ status: e.status, body: JSON.parse(eText) }).toEqual({
+			expect({ status: e.status, body: JSON.parse(e.body) }).toEqual({
 				status: c.status,
 				body: expected,
 			});
-			if (c.status !== 200) expect(hText).toBe(eText);
+			if (c.status !== 200) expect(hText).toBe(e.body);
 		});
 	}
 });

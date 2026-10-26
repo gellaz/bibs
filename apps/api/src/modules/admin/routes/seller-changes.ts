@@ -6,16 +6,16 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
-import { SellerProfileChangeWithSellerSchema } from "@/lib/zod/composed";
-import { SellerProfileChangeSchema } from "@/lib/zod/entities";
-import { PaginationQuery } from "@/lib/zod/pagination";
+import { SellerProfileChangeWithSellerSchema } from "@/lib/schemas/composed";
+import { SellerProfileChangeSchema } from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
 import {
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { zString } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import { zString } from "@/lib/schemas/t";
 import { adminDetail } from "../context";
 import {
 	approveChange,

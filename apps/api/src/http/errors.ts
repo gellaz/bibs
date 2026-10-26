@@ -6,9 +6,8 @@ import { errorBody } from "@/lib/responses";
 import { invalidFileTypeMessage } from "@/lib/validation-message";
 
 // Una sola mappatura errore → risposta (D7 del piano Hono), senza framework:
-// la usano l'`onError` del plugin Elysia (finché c'è) e quello delle app Hono.
-// Gli errori di validazione arrivano già tradotti nelle classi qui sotto, così
-// i log restano gli stessi per le due strade.
+// la usa l'`onError` delle app Hono (`http/app.ts`). Gli errori di
+// validazione arrivano già tradotti nelle classi qui sotto.
 
 /** Input non valido: 422 con il messaggio italiano già costruito. */
 export class RequestValidationError extends Error {
@@ -34,7 +33,7 @@ export class ResponseValidationError extends Error {
 
 /** File col MIME giusto ma contenuto diverso (controllo sui magic byte). */
 export class InvalidFileTypeError extends Error {
-	/** `property` come in Elysia: `body.file`. */
+	/** `property` come prima di Hono: `body.file`. */
 	constructor(readonly property: string) {
 		super("Invalid file type");
 	}

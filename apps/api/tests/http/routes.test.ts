@@ -19,7 +19,7 @@ import { withVars } from "../helpers/hono-app";
 
 // Le route Hono hanno l'auth dentro ogni route (D9 del piano Hono): il
 // controllo di `routes.ts` (a ogni avvio, da `honoPaths()`) ferma una route
-// senza guardia, un v() dopo l'auth e i v() fuori dall'ordine di Elysia.
+// senza guardia, un v() dopo l'auth e i v() fuori dall'ordine di sempre.
 
 const Body = z.object({ name: z.string() });
 const Query = z.object({ q: z.string() });

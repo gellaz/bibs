@@ -5,10 +5,10 @@ import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ok, okPage } from "@/lib/responses";
-import { AdminStoreListItemSchema } from "@/lib/zod/composed";
-import { StoreListQuery } from "@/lib/zod/queries";
-import { okPageRes, okRes, withErrors } from "@/lib/zod/responses";
-import { zInteger } from "@/lib/zod/t";
+import { AdminStoreListItemSchema } from "@/lib/schemas/composed";
+import { StoreListQuery } from "@/lib/schemas/queries";
+import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
+import { zInteger } from "@/lib/schemas/t";
 import { adminDetail } from "../context";
 import { countStoresByStatus, listStores } from "../services/stores";
 

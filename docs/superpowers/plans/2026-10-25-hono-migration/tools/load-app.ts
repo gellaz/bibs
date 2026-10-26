@@ -1,57 +1,24 @@
 /**
- * Loads the real API app from apps/api/src/index.ts without serving it.
+ * Loads the API's root Hono app (apps/api/src/app.ts) without serving it.
  * Run the tools from apps/api (cwd = apps/api): Bun loads its .env/.env.local
- * and resolves "elysia" to the same module instance src/index.ts uses.
+ * and resolves "hono" to the same module instance src/app.ts uses.
  *
- * - The Bun adapter's listen is replaced by a stub that captures the root app
- *   (index.ts calls app.listen() once, on the fully composed app).
- * - The cron plugin is swapped for an empty one: a tick would write to the dev DB.
- * - ensureBucket() becomes a no-op: no S3 call, the tools work with infra down.
- *   No other module touches the network at import time (the pg pool is lazy).
+ * Since U11 the app has no import side effects: the server, the cron jobs and
+ * ensureBucket() live in src/index.ts, which the tools never load. Importing
+ * the app still runs `assertRoutes` on every module (D9) and opens no
+ * connection (the pg pool is lazy). Until U11 this file captured the
+ * composed app of src/index.ts by stubbing its listen, cron and S3 call.
  */
 import { basename, join } from "node:path";
 
 const apiDir = process.cwd();
-if (!(await Bun.file(join(apiDir, "src/index.ts")).exists()))
+if (!(await Bun.file(join(apiDir, "src/app.ts")).exists()))
 	throw new Error("Run this tool from apps/api (cwd must be apps/api)");
 
-Bun.plugin({
-	name: "baseline-no-side-effects",
-	setup(build) {
-		build.onLoad({ filter: /\/src\/plugins\/cron\.ts$/ }, () => ({
-			contents: `import { Elysia } from "elysia";
-export const cronJobs = new Elysia({ name: "cron-jobs" });`,
-			loader: "ts",
-		}));
-		build.onLoad({ filter: /\/src\/lib\/s3\.ts$/ }, async ({ path }) => {
-			const src = await Bun.file(path).text();
-			const signature = "export async function ensureBucket()";
-			if (!src.includes(signature))
-				throw new Error(`${signature} not found: update load-app.ts`);
-			return {
-				contents: src.replace(
-					signature,
-					`${signature} {}\nasync function _realEnsureBucket()`,
-				),
-				loader: "ts",
-			};
-		});
-	},
-});
+const { app } = await import(join(apiDir, "src/app.ts"));
 
-const { Elysia } = await import(Bun.resolveSync("elysia", apiDir));
-let captured: unknown;
-// listen is an instance field, not a prototype method: stub the shared adapter it delegates to.
-new Elysia()["~adapter"].listen = (root: unknown) => () => {
-	captured = root;
-};
-await import(join(apiDir, "src/index.ts"));
-if (!(captured instanceof Elysia))
-	throw new Error("src/index.ts did not call app.listen() on an Elysia app");
-
-// any: the tools read Elysia internals (routes, hooks, handle)
-export const app = captured as any;
-export { apiDir };
+// any: the tools read Hono internals (routes, handlers)
+export { apiDir, app };
 
 export const baselineDir = join(import.meta.dir, "../baseline");
 

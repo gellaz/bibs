@@ -10,16 +10,16 @@ import {
 	RegisterCustomerResult,
 	RegisterSellerResult,
 	SignInResult,
-} from "@/lib/zod/composed";
-import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
-import { RegisterBody, SignInBody } from "@/lib/zod/registration";
+} from "@/lib/schemas/composed";
+import { RegisterBody, SignInBody } from "@/lib/schemas/registration";
 import {
 	OkMessage,
 	okRes,
 	TooManyRequestsError,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
+} from "@/lib/schemas/responses";
+import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
 import { rateLimit } from "@/plugins/rate-limit";
 import {
 	acceptInvite,
@@ -36,7 +36,7 @@ export const RegisterSellerResponse = okRes(RegisterSellerResult);
 export const SignInResponse = okRes(SignInResult);
 
 /**
- * Sub-app Hono del modulo, montata su /register in `src/index.ts`: quattro
+ * Sub-app Hono del modulo, montata su /register in `src/app.ts`: quattro
  * POST pubblici, ognuno col suo rate limit dopo la validazione.
  */
 export const registrationApp = moduleApp()

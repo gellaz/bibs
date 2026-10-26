@@ -6,19 +6,19 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { StoreProductSchema } from "@/lib/zod/entities";
+import { StoreProductSchema } from "@/lib/schemas/entities";
 import {
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
+} from "@/lib/schemas/responses";
 import {
 	StockAdjustBody,
 	StockBulkAdjustBody,
 	StockBulkAdjustResult,
-} from "@/lib/zod/stock";
-import { zInteger } from "@/lib/zod/t";
+} from "@/lib/schemas/stock";
+import { zInteger } from "@/lib/schemas/t";
 import { ensureStoreAccess } from "../context";
 import {
 	adjustStock,

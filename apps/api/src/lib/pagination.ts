@@ -1,25 +1,6 @@
-import { t } from "elysia";
 import { config } from "@/lib/config";
 
-const { defaultLimit, maxLimit } = config.pagination;
-
-/**
- * Reusable TypeBox schema for pagination query parameters.
- * Use in route definitions: `query: PaginationQuery`
- */
-export const PaginationQuery = t.Object({
-	page: t.Optional(
-		t.Integer({ minimum: 1, default: 1, description: "Numero di pagina" }),
-	),
-	limit: t.Optional(
-		t.Integer({
-			minimum: 1,
-			maximum: maxLimit,
-			default: defaultLimit,
-			description: "Elementi per pagina",
-		}),
-	),
-});
+const { defaultLimit } = config.pagination;
 
 /**
  * Parses pagination query params into page, limit, offset.

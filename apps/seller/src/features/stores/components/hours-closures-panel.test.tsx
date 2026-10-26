@@ -18,8 +18,8 @@ const calls = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {
-	// Finto client `hc`: le risposte dei test restano { data, error } come con
-	// Eden e diventano risposte HTTP (ok, status, json) per `unwrapJson`.
+	// Finto client `hc`: le risposte dei test restano { data, error } come col
+	// client di prima e diventano risposte HTTP (ok, status, json) per `unwrapJson`.
 	const http = async (
 		pending: Promise<{
 			data: unknown;

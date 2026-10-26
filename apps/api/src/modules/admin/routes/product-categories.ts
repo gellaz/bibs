@@ -6,9 +6,9 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { ProductCategorySchema } from "@/lib/zod/entities";
-import { OkMessage, okRes, withConflictErrors } from "@/lib/zod/responses";
-import { zString } from "@/lib/zod/t";
+import { ProductCategorySchema } from "@/lib/schemas/entities";
+import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas/responses";
+import { zString } from "@/lib/schemas/t";
 import { adminDetail } from "../context";
 import {
 	createProductCategory,

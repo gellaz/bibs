@@ -1,138 +1,126 @@
-import { t } from "elysia";
+import { z } from "zod";
+import { zDate, zInteger, zString } from "./t";
 
-const DATE_PATTERN = "^\\d{4}-\\d{2}-\\d{2}$";
+// Gemelli Zod di `lib/schemas/holidays.ts` (D3 del piano Hono), nello stesso
+// ordine e con gli stessi nomi; per ora solo quelli delle route migrate.
 
-const HolidayTypeSchema = t.Union(
-	[t.Literal("fixed"), t.Literal("easter_relative"), t.Literal("one_off")],
-	{ description: "Tipo di definizione festività" },
-);
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const d = (description: string) => ({ description });
 
-export const HolidayDefinitionSchema = t.Object({
-	id: t.String(),
-	name: t.String({ description: "Nome della festività" }),
+const HolidayTypeSchema = z
+	.enum(["fixed", "easter_relative", "one_off"])
+	.meta({ description: "Tipo di definizione festività" });
+
+export const HolidayDefinitionSchema = z.object({
+	id: z.string(),
+	name: z.string().meta({ description: "Nome della festività" }),
 	type: HolidayTypeSchema,
-	month: t.Nullable(t.Integer({ description: "Mese (1-12), per tipo fixed" })),
-	day: t.Nullable(t.Integer({ description: "Giorno (1-31), per tipo fixed" })),
-	easterOffsetDays: t.Nullable(
-		t.Integer({ description: "Offset dalla Pasqua, per easter_relative" }),
-	),
-	oneOffDate: t.Nullable(
-		t.String({ description: "Data YYYY-MM-DD, per one_off" }),
-	),
-	isActive: t.Boolean({ description: "Se la festività è attiva" }),
-	createdAt: t.Date(),
-	updatedAt: t.Date(),
+	month: zInteger({ description: "Mese (1-12), per tipo fixed" }).nullable(),
+	day: zInteger({ description: "Giorno (1-31), per tipo fixed" }).nullable(),
+	easterOffsetDays: zInteger({
+		description: "Offset dalla Pasqua, per easter_relative",
+	}).nullable(),
+	oneOffDate: z
+		.string()
+		.meta({ description: "Data YYYY-MM-DD, per one_off" })
+		.nullable(),
+	isActive: z.boolean().meta({ description: "Se la festività è attiva" }),
+	createdAt: zDate(),
+	updatedAt: zDate(),
 });
 
-export const HolidayPreviewSchema = t.Object({
-	definitionId: t.String(),
-	name: t.String(),
-	date: t.String({ description: "Data risolta YYYY-MM-DD" }),
+export const HolidayPreviewSchema = z.object({
+	definitionId: z.string(),
+	name: z.string(),
+	date: z.string().meta({ description: "Data risolta YYYY-MM-DD" }),
 });
 
-export const CreateHolidayDefinitionBody = t.Union([
-	t.Object({
-		type: t.Literal("fixed"),
-		name: t.String({
-			minLength: 1,
-			maxLength: 100,
-			description: "Nome festività",
-		}),
-		month: t.Integer({ minimum: 1, maximum: 12, description: "Mese (1-12)" }),
-		day: t.Integer({ minimum: 1, maximum: 31, description: "Giorno (1-31)" }),
+// Unione alla radice: `z.union`, non `z.discriminatedUnion` (che sceglie il
+// ramo dal discriminante e dà errori che TypeBox non dà).
+const holidayName = zString({
+	minLength: 1,
+	maxLength: 100,
+	description: "Nome festività",
+});
+export const CreateHolidayDefinitionBody = z.union([
+	z.object({
+		type: z.literal("fixed"),
+		name: holidayName,
+		month: zInteger({ minimum: 1, maximum: 12, description: "Mese (1-12)" }),
+		day: zInteger({ minimum: 1, maximum: 31, description: "Giorno (1-31)" }),
 	}),
-	t.Object({
-		type: t.Literal("easter_relative"),
-		name: t.String({
-			minLength: 1,
-			maxLength: 100,
-			description: "Nome festività",
-		}),
-		easterOffsetDays: t.Integer({
+	z.object({
+		type: z.literal("easter_relative"),
+		name: holidayName,
+		easterOffsetDays: zInteger({
 			minimum: -60,
 			maximum: 60,
 			description: "Offset dalla Pasqua (Pasqua=0, Pasquetta=1)",
 		}),
 	}),
-	t.Object({
-		type: t.Literal("one_off"),
-		name: t.String({
-			minLength: 1,
-			maxLength: 100,
-			description: "Nome festività",
-		}),
-		oneOffDate: t.String({
-			pattern: DATE_PATTERN,
-			description: "Data YYYY-MM-DD",
-		}),
+	z.object({
+		type: z.literal("one_off"),
+		name: holidayName,
+		oneOffDate: z
+			.string()
+			.regex(DATE_PATTERN)
+			.meta({ description: "Data YYYY-MM-DD" }),
 	}),
 ]);
 
-export const UpdateHolidayDefinitionBody = t.Object({
-	name: t.Optional(
-		t.String({ minLength: 1, maxLength: 100, description: "Nuovo nome" }),
-	),
-	isActive: t.Optional(t.Boolean({ description: "Attiva/disattiva" })),
+export const UpdateHolidayDefinitionBody = z.object({
+	name: zString({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nuovo nome",
+	}).optional(),
+	isActive: z.boolean().meta({ description: "Attiva/disattiva" }).optional(),
 });
 
-export const CustomClosureSchema = t.Object({
-	startDate: t.String({
-		pattern: DATE_PATTERN,
-		description: "Data inizio YYYY-MM-DD",
-	}),
-	endDate: t.Optional(
-		t.String({
-			pattern: DATE_PATTERN,
-			description: "Data fine (assente = giorno singolo)",
-		}),
-	),
-	note: t.Optional(
-		t.String({ maxLength: 200, description: "Nota (es. Ferie estive)" }),
-	),
+export const CustomClosureSchema = z.object({
+	startDate: z.string().regex(DATE_PATTERN).meta(d("Data inizio YYYY-MM-DD")),
+	endDate: z
+		.string()
+		.regex(DATE_PATTERN)
+		.meta(d("Data fine (assente = giorno singolo)"))
+		.optional(),
+	note: zString({
+		maxLength: 200,
+		...d("Nota (es. Ferie estive)"),
+	}).optional(),
 });
 
-export const OpenStatusSchema = t.Object({
-	isOpen: t.Boolean(),
-	status: t.Union(
-		[
-			t.Literal("open"),
-			t.Literal("closed"),
-			t.Literal("closed_holiday"),
-			t.Literal("unknown"),
-		],
-		{
-			description:
+export const OpenStatusSchema = z.object({
+	isOpen: z.boolean(),
+	status: z
+		.enum(["open", "closed", "closed_holiday", "unknown"])
+		.meta(
+			d(
 				"Stato del negozio; unknown significa che non ha mai dichiarato orari, non che è chiuso",
-		},
-	),
-	closesAt: t.Optional(
-		t.String({ description: "Orario chiusura odierno (HH:mm)" }),
-	),
-	opensAt: t.Optional(t.Object({ date: t.String(), time: t.String() })),
+			),
+		),
+	closesAt: z.string().meta(d("Orario chiusura odierno (HH:mm)")).optional(),
+	opensAt: z.object({ date: z.string(), time: z.string() }).optional(),
 });
 
-export const SellerClosuresResponse = t.Object({
-	holidays: t.Array(
-		t.Object({
-			definitionId: t.String(),
-			name: t.String(),
+export const SellerClosuresResponse = z.object({
+	holidays: z.array(
+		z.object({
+			definitionId: z.string(),
+			name: z.string(),
 			type: HolidayTypeSchema,
-			nextDate: t.Nullable(
-				t.String({ description: "Prossima occorrenza YYYY-MM-DD" }),
-			),
-			observed: t.Boolean({
-				description: "Se il negozio osserva questa festività",
-			}),
+			nextDate: z.string().meta(d("Prossima occorrenza YYYY-MM-DD")).nullable(),
+			observed: z.boolean().meta(d("Se il negozio osserva questa festività")),
 		}),
 	),
-	customClosures: t.Array(CustomClosureSchema),
+	customClosures: z.array(CustomClosureSchema),
 });
 
-export const PutClosuresBody = t.Object({
-	optOutIds: t.Array(t.String(), {
-		description: "ID festività NON osservate dal negozio",
-	}),
-	customClosures: t.Array(CustomClosureSchema, {
-		description: "Chiusure custom del negozio",
-	}),
+export const PutClosuresBody = z.object({
+	optOutIds: z
+		.array(z.string())
+		.meta(d("ID festività NON osservate dal negozio")),
+	customClosures: z
+		.array(CustomClosureSchema)
+		.meta(d("Chiusure custom del negozio")),
 });

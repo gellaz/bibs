@@ -13,12 +13,12 @@ function receive(scope: "platform" | "connect" | "thin") {
 		if (!signature) return json(c, { error: "missing signature" }, 400);
 
 		// Read the raw body, with nothing parsing it first (no `v()`, no body
-		// middleware; the Elysia mount doesn't read it either). Stripe's HMAC
+		// middleware; the root app doesn't read it either). Stripe's HMAC
 		// verifies the EXACT bytes that were signed — any re-serialization (even
 		// JSON.stringify on a parsed object) changes whitespace/key order and
 		// breaks the signature.
-		// Bytes decoded as UTF-8 by hand: Bun's `text()` on the Request that the
-		// Elysia mount rebuilds (`new Request(url, request)`) sniffs a UTF-16 BOM.
+		// Bytes decoded as UTF-8 by hand: Bun's `text()` on a rebuilt Request
+		// (`new Request(url, request)`, as a mount does) sniffs a UTF-16 BOM.
 		const payload = new TextDecoder().decode(await c.req.arrayBuffer());
 
 		try {
@@ -42,7 +42,7 @@ function receive(scope: "platform" | "connect" | "thin") {
 const webhookDoc = (summary: string, description: string) =>
 	doc({ detail: { summary, description, tags: ["Webhooks"] } });
 
-// Route relative: il modulo è montato su /webhooks (`src/index.ts`). Pubbliche:
+// Route relative: il modulo è montato su /webhooks (`src/app.ts`). Pubbliche:
 // l'autenticità la dà la firma Stripe.
 export const stripeWebhookRoutes = new Hono()
 	.post(

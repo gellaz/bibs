@@ -10,16 +10,16 @@ import {
 	AdminProductCategorySchema,
 	CategoryCharacteristicLinkSchema,
 	CategoryCharacteristicStateSchema,
-} from "@/lib/zod/entities";
-import { ProductCategoryListQuery } from "@/lib/zod/queries";
+} from "@/lib/schemas/entities";
+import { ProductCategoryListQuery } from "@/lib/schemas/queries";
 import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { zInteger } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import { zInteger } from "@/lib/schemas/t";
 import { adminDetail } from "../context";
 import {
 	listAdminProductCategories,

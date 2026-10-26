@@ -5,9 +5,9 @@ import { moduleApp } from "@/http/app";
 import { getTestDb } from "./test-db";
 
 // Harness dei test delle sub-app Hono (D13 del piano Hono), al posto delle
-// mini app Elysia copiate (`noopPino` + `errorHandler` + resolve finto).
+// mini app del framework di prima (`noopPino` + `errorHandler` + resolve finto).
 
-/** Una richiesta alla sub-app, con path relativo come in `app.handle()` dei test Elysia. */
+/** Una richiesta alla sub-app, con path relativo (come `app.handle()` nei test di prima). */
 export function testRequest(
 	app: Hono<any, any, any>,
 	path: string,
@@ -19,7 +19,7 @@ export function testRequest(
 /**
  * La sub-app con le variabili già risolte a monte (`user`; dalle unità seller
  * anche il contesto venditore): `requireAuth` e i middleware di ruolo non
- * rileggono la sessione. È il resolve finto degli harness Elysia, per i test
+ * rileggono la sessione. È il resolve finto degli harness di prima, per i test
  * senza DB (es. `tests/modules/seller-*-owner-only.test.ts`).
  */
 export function withVars(
@@ -37,7 +37,7 @@ export function withVars(
 
 /**
  * Come `withVars`, con le variabili risolte a ogni richiesta (il `.resolve`
- * finto degli harness Elysia: es. utente e profilo cliente letti dal DB di
+ * finto degli harness di prima: es. utente e profilo cliente letti dal DB di
  * test con l'id nell'header `x-test-user`).
  */
 export function withResolve(

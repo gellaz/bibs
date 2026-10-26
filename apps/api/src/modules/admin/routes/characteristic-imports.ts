@@ -9,9 +9,9 @@ import { ok } from "@/lib/responses";
 import {
 	CsvImportWithMissingResultSchema,
 	CsvUpsertResultSchema,
-} from "@/lib/zod/entities";
-import { okRes, withConflictErrors } from "@/lib/zod/responses";
-import { zFile } from "@/lib/zod/t";
+} from "@/lib/schemas/entities";
+import { okRes, withConflictErrors } from "@/lib/schemas/responses";
+import { zFile } from "@/lib/schemas/t";
 import { adminDetail } from "../context";
 import {
 	importCategoryCharacteristicsFromCsv,

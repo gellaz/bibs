@@ -53,8 +53,8 @@ export const requireAuth = guard(
 );
 
 /**
- * Ruolo seller senza partita IVA verificata: profilo e onboarding (oggi il
- * primo `.guard` di `modules/seller/index.ts`). Login (401), poi 403 per chi
+ * Ruolo seller senza partita IVA verificata: profilo e onboarding (prima di Hono
+ * il primo `.guard` del modulo seller). Login (401), poi 403 per chi
  * non ha il ruolo seller (clienti, dipendenti). Dopo i `v(...)`.
  */
 export const requireSellerRole = guard(
@@ -105,8 +105,8 @@ export type SellerEnv = {
 };
 
 /**
- * La guardia del modulo seller per le route operative (era il `.guard`
- * Elysia del modulo, con `resolveSellerAccess` di `modules/seller/context.ts`): login (401), poi
+ * La guardia del modulo seller per le route operative (prima di Hono era il
+ * `.guard` del modulo, con `resolveSellerAccess` di `modules/seller/context.ts`): login (401), poi
  * titolare con onboarding attivo o dipendente con incarico attivo di un
  * venditore attivo (i quattro 403), in `c.var.seller`. Dopo i `v(...)` come
  * `requireAuth`; non rilegge `c.var.seller` se c'è già (test, D13).
@@ -122,7 +122,7 @@ export const requireSeller = guard(
 );
 
 /**
- * La guardia del modulo admin (oggi il `.guard` di `modules/admin/index.ts`):
+ * La guardia del modulo admin (prima di Hono il `.guard` del modulo admin):
  * login (401), poi ruolo admin (403). Legge la sessione da sola, quindi basta
  * lei nella route, dopo i `v(...)` come `requireAuth`.
  */

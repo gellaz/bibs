@@ -36,8 +36,8 @@ import { validate } from "@/http/validator";
 import { truncateAll } from "../helpers/cleanup";
 import { signIn, testRequest } from "../helpers/hono-app";
 
-// Le route di /me sulla sub-app Hono (con la sua fabbrica, senza Elysia):
-// risposte catturate su Elysia prima della migrazione
+// Le route di /me sulla sub-app Hono (con la sua fabbrica, da sola):
+// risposte catturate prima della migrazione
 // (`baseline/hono-batch-me.jsonl`) e strip in ingresso e in uscita.
 
 let meApp: typeof import("@/modules/me").meApp;
@@ -90,7 +90,7 @@ describe("/me/avatar su Hono", () => {
 		expect(await post.json()).toEqual(unauthorized);
 	});
 
-	it("file non immagine: lo stesso 422 di Elysia, anche prima del login", async () => {
+	it("file non immagine: lo stesso 422 di prima, anche prima del login", async () => {
 		const { cookie } = await signIn("me-422@test.com");
 		const anonymousThenSignedIn: Record<string, string>[] = [{}, { cookie }];
 		for (const headers of anonymousThenSignedIn) {

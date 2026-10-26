@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zInt, zString } from "../t";
+import { zInt, zString } from "@/lib/schemas/t";
 import { OpeningHoursSchema } from "./opening-hours";
 
 // Gemelli Zod di `lib/schemas/forms/stores.ts` (D3 del piano Hono), stessi

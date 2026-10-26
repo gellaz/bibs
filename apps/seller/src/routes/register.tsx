@@ -47,7 +47,7 @@ function RegisterPage() {
 			});
 
 			if (!res.ok) {
-				// Un corpo non JSON (proxy) vale come errore senza dettagli, come con Eden.
+				// Un corpo non JSON (proxy) vale come errore senza dettagli, come prima.
 				const errVal: Partial<ErrorBody> = await res.json().catch(() => ({}));
 
 				if (errVal.error === "EMAIL_PENDING_VERIFICATION" && errVal.resentAt) {

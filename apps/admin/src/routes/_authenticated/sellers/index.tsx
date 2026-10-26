@@ -253,7 +253,7 @@ function SellersPage() {
 			id: "createdAt",
 			accessorKey: "createdAt",
 			enableSorting: true,
-			// Con le Date di Eden TanStack partiva da desc; la stringa ISO di `hc` partirebbe da asc.
+			// Con le Date del client di prima TanStack partiva da desc; la stringa ISO di `hc` partirebbe da asc.
 			sortDescFirst: true,
 			meta: {
 				menuLabel: m.common_registered_at(),

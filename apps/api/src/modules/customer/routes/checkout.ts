@@ -6,10 +6,10 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok } from "@/lib/responses";
-import { CheckoutPreviewSchema, CheckoutSchema } from "@/lib/zod/composed";
-import { StoreReservationDeadlineSchema } from "@/lib/zod/entities";
-import { okRes, withConflictErrors, withErrors } from "@/lib/zod/responses";
-import { zFormat, zString } from "@/lib/zod/t";
+import { CheckoutPreviewSchema, CheckoutSchema } from "@/lib/schemas/composed";
+import { StoreReservationDeadlineSchema } from "@/lib/schemas/entities";
+import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
+import { zFormat, zString } from "@/lib/schemas/t";
 import { customerSecurity } from "../context";
 import {
 	createCheckout,

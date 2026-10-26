@@ -11,14 +11,14 @@ import {
 	HolidayDefinitionSchema,
 	HolidayPreviewSchema,
 	UpdateHolidayDefinitionBody,
-} from "@/lib/zod/holidays";
+} from "@/lib/schemas/holidays";
 import {
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { zInteger } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import { zInteger } from "@/lib/schemas/t";
 import { adminDetail } from "../context";
 import {
 	createHolidayDefinition,

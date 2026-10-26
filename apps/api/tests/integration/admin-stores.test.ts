@@ -29,7 +29,7 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { store } from "@/db/schemas/store";
 import type { StoreSubscriptionStatus } from "@/db/schemas/store-subscription";
-import { adminStoreStatuses } from "@/lib/queries";
+import { adminStoreStatuses } from "@/lib/schemas/queries";
 import {
 	countStoresByStatus,
 	listStores,

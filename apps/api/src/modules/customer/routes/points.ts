@@ -5,9 +5,9 @@ import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ok } from "@/lib/responses";
-import { PointTransactionSchema } from "@/lib/zod/entities";
-import { PaginationQuery } from "@/lib/zod/pagination";
-import { okRes, withErrors } from "@/lib/zod/responses";
+import { PointTransactionSchema } from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
+import { okRes, withErrors } from "@/lib/schemas/responses";
 import { customerSecurity } from "../context";
 import { getPointsHistory } from "../services/points";
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zString } from "../t";
+import { zString } from "@/lib/schemas/t";
 
 // Gemello Zod di `RejectSellerBody` (`lib/schemas/forms/seller-rejection.ts`,
 // D3 del piano Hono). `SELLER_REJECTION_REASONS` è un dato, non uno schema:

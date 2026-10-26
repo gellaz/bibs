@@ -1,0 +1,71 @@
+{
+	"paths": {
+		"DELETE /%61vatar": {
+			"status": 404,
+			"body": {
+				"success": false,
+				"error": "NOT_FOUND",
+				"message": "Risorsa non trovata"
+			}
+		},
+		"DELETE /av%61tar": {
+			"status": 404,
+			"body": {
+				"success": false,
+				"error": "NOT_FOUND",
+				"message": "Risorsa non trovata"
+			}
+		},
+		"DELETE /avatar/": {
+			"status": 200,
+			"body": {
+				"ok": true
+			}
+		},
+		"GET /p/caf%C3%A9": {
+			"status": 200,
+			"body": {
+				"id": "café"
+			}
+		},
+		"GET /p/a%2Fb": {
+			"status": 200,
+			"body": {
+				"id": "a/b"
+			}
+		},
+		"GET /p/a%20b?x=1": {
+			"status": 200,
+			"body": {
+				"id": "a b"
+			}
+		},
+		"GET /%70/x": {
+			"status": 404,
+			"body": {
+				"success": false,
+				"error": "NOT_FOUND",
+				"message": "Risorsa non trovata"
+			}
+		},
+		"DELETE /avatar#x": {
+			"status": 404,
+			"body": {
+				"success": false,
+				"error": "NOT_FOUND",
+				"message": "Risorsa non trovata"
+			}
+		},
+		"GET /p/a#b": {
+			"status": 200,
+			"body": {
+				"id": "a#b"
+			}
+		}
+	},
+	"rootSuffixes": {
+		"": 200,
+		"/": 200,
+		"//": 404
+	}
+}

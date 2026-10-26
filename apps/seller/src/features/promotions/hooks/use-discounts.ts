@@ -79,7 +79,7 @@ export function useArchiveDiscount() {
 export function useUpdateDiscount(discountId: string) {
 	const qc = useQueryClient();
 	return useMutation({
-		// Le `Date` escono come stringhe ISO (JSON.stringify), come con Eden.
+		// Le `Date` escono come stringhe ISO (JSON.stringify), come prima.
 		mutationFn: async (patch: {
 			title?: string;
 			percent?: number;

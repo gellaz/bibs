@@ -42,7 +42,7 @@ import { signIn, testRequest } from "../helpers/hono-app";
 
 // Il modulo customer/ sulla sub-app Hono (U3 del piano Hono), con sessioni
 // better-auth vere: `requireCustomer` (401, 403, dopo i validatori) e strip dei
-// campi fuori schema in ingresso e in uscita (la `normalize` di Elysia).
+// campi fuori schema in ingresso e in uscita (la `normalize` di prima).
 
 let customerApp: typeof import("@/modules/customer").customerApp;
 

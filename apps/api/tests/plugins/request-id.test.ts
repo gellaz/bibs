@@ -1,11 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
-import { requestId } from "@/plugins/request-id";
+import { Hono } from "hono";
+import { type RequestIdEnv, requestId } from "@/plugins/request-id";
 
-const app = new Elysia().use(requestId).get("/", ({ requestId }) => requestId);
+const app = new Hono<RequestIdEnv>()
+	.use(requestId)
+	.get("/", (c) => c.text(c.var.requestId));
 
 async function call(header?: string) {
-	const res = await app.handle(
+	const res = await app.request(
 		new Request("http://localhost/", {
 			headers: header === undefined ? {} : { "x-request-id": header },
 		}),

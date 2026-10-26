@@ -62,7 +62,7 @@ export const PersonalInfoBody = Type.Object({
 // in the route definition since File is a server-only concept.
 
 export const DocumentBody = Type.Object({
-	// Literal espliciti: un Union da `.map()` diventa `never` nei tipi di Eden.
+	// Literal espliciti: un Union da `.map()` diventava `never` nei tipi del client di prima.
 	documentType: Type.Union(
 		[
 			Type.Literal("identity_card"),

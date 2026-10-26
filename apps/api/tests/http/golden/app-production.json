@@ -1,0 +1,1006 @@
+[
+	{
+		"name": "preflight, origine localhost",
+		"method": "OPTIONS",
+		"path": "/me/avatar",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"access-control-max-age": "86400",
+			"vary": "Origin"
+		},
+		"status": 204,
+		"body": "",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> OPTIONS /me/avatar 204 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "OPTIONS",
+				"path": "/me/avatar",
+				"status": 204,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "preflight, origine di produzione",
+		"method": "OPTIONS",
+		"path": "/me/avatar",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-allow-origin": "https://app.bibs.example",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"access-control-max-age": "86400",
+			"vary": "Origin"
+		},
+		"status": 204,
+		"body": "",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> OPTIONS /me/avatar 204 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "OPTIONS",
+				"path": "/me/avatar",
+				"status": 204,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "preflight, origine non ammessa",
+		"method": "OPTIONS",
+		"path": "/me/avatar",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"access-control-max-age": "86400",
+			"vary": "Origin"
+		},
+		"status": 204,
+		"body": "",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> OPTIONS /me/avatar 204 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "OPTIONS",
+				"path": "/me/avatar",
+				"status": 204,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "OPTIONS senza origine né metodo, path inesistente",
+		"method": "OPTIONS",
+		"path": "/nope",
+		"status": 204,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"access-control-max-age": "86400",
+			"vary": "Origin"
+		},
+		"body": "",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> OPTIONS /nope 204 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "OPTIONS",
+				"path": "/nope",
+				"status": 204,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "preflight su better-auth",
+		"method": "OPTIONS",
+		"path": "/auth/api/sign-in/email",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"access-control-max-age": "86400",
+			"vary": "Origin"
+		},
+		"status": 204,
+		"body": "",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> OPTIONS /auth/api/sign-in/email 204 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "OPTIONS",
+				"path": "/auth/api/sign-in/email",
+				"status": 204,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "health, origine localhost",
+		"path": "/health",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 200,
+		"body": "{\"status\":\"ok\"}",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /health 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/health",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "health, origine di produzione",
+		"path": "/health",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-allow-origin": "https://app.bibs.example",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 200,
+		"body": "{\"status\":\"ok\"}",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /health 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/health",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "health, origine non ammessa",
+		"path": "/health",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 200,
+		"body": "{\"status\":\"ok\"}",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /health 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/health",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "health, x-request-id valido",
+		"path": "/health",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "edge-1"
+		},
+		"status": 200,
+		"body": "{\"status\":\"ok\"}",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /health 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/health",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "health, x-request-id non valido",
+		"path": "/health",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 200,
+		"body": "{\"status\":\"ok\"}",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /health 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/health",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "health con lo slash finale",
+		"path": "/health/",
+		"status": 200,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"status\":\"ok\"}",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /health/ 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/health/",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "HEAD health",
+		"method": "HEAD",
+		"path": "/health",
+		"status": 200,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-length": "15",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> HEAD    /health 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "HEAD",
+				"path": "/health",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "POST health",
+		"method": "POST",
+		"path": "/health",
+		"status": 404,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin"
+		},
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> POST    /health 404 \n  └─ error.code  NOT_FOUND"
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "POST",
+				"path": "/health",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "ready",
+		"path": "/ready",
+		"status": 200,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"status\":\"ok\",\"services\":{\"database\":\"ok\",\"s3\":\"ok\"}}",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /ready 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/ready",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "404 alla radice",
+		"path": "/nope",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin"
+		},
+		"status": 404,
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /nope 404 \n  └─ error.code  NOT_FOUND"
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/nope",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "radice",
+		"path": "/",
+		"status": 404,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin"
+		},
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     / 404 \n  └─ error.code  NOT_FOUND"
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "pagina openapi",
+		"path": "/openapi",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "text/html; charset=utf8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 200,
+		"body": "<!doctype html>\n<html>\n  <head>\n    <title>bibs API</title>\n    <meta\n        name=\"description\"\n        content=\"API per il marketplace di commercio locale bibs\"\n    />\n    <meta\n        name=\"og:description\"\n        content=\"API per il marketplace di commercio locale bibs\"\n    />\n    <meta charset=\"utf-8\" />\n    <meta\n      name=\"viewport\"\n      content=\"width=device-width, initial-scale=1\" />\n    <style>\n      body {\n        margin: 0;\n      }\n    </style>\n    <style>\n      .light-mode {\n  --scalar-color-1: oklch(43.5% 0.029 321.78);\n  --scalar-color-2: oklch(54.2% 0.034 322.5);\n  --scalar-color-3: oklch(71.1% 0.019 323.02);\n  --scalar-color-accent: oklch(71.2% 0.194 13.428);\n\n  --scalar-background-1: oklch(98.5% 0 0);\n  --scalar-background-2: oklch(96% 0.003 325.6);\n  --scalar-background-3: oklch(92.2% 0.005 325.62);\n\n  --scalar-border-color: oklch(92.2% 0.005 325.62);\n}\n\n.dark-mode {\n  --scalar-color-1: oklch(98.5% 0 0);\n  --scalar-color-2: oklch(71.1% 0.019 323.02);\n  --scalar-color-3: oklch(86.5% 0.012 325.68);\n  --scalar-color-accent: oklch(89.2% 0.058 10.001);\n\n  --scalar-background-1: oklch(21.2% 0.019 322.12);\n  --scalar-background-2: oklch(26.3% 0.024 320.12);\n  --scalar-background-3: oklch(36.4% 0.029 323.89);\n  --scalar-background-accent: oklch(43.5% 0.029 321.78);\n\n  --scalar-border-color: oklch(36.4% 0.029 323.89);\n}\n\n/* Document Sidebar */\n.light-mode .t-doc__sidebar,\n.dark-mode .t-doc__sidebar {\n  --scalar-sidebar-background-1: var(--scalar-background-1);\n  --scalar-sidebar-color-1: var(--scalar-color-1);\n  --scalar-sidebar-color-2: var(--scalar-color-2);\n  --scalar-sidebar-border-color: var(--scalar-border-color);\n\n  --scalar-sidebar-item-hover-background: var(--scalar-background-2);\n  --scalar-sidebar-item-hover-color: currentColor;\n\n  --scalar-sidebar-item-active-background: #f062921f;\n  --scalar-sidebar-color-active: var(--scalar-color-accent);\n\n  --scalar-sidebar-search-background: transparent;\n  --scalar-sidebar-search-color: var(--scalar-color-3);\n  --scalar-sidebar-search-border-color: var(--scalar-border-color);\n}\n\n/* advanced */\n.light-mode {\n  --scalar-button-1: rgb(49 53 56);\n  --scalar-button-1-color: #fff;\n  --scalar-button-1-hover: rgb(28 31 33);\n\n  --scalar-color-green: #069061;\n  --scalar-color-red: #ef0006;\n  --scalar-color-yellow: #edbe20;\n  --scalar-color-blue: #0082d0;\n  --scalar-color-orange: #fb892c;\n  --scalar-color-purple: #5203d1;\n\n  --scalar-scrollbar-color: rgba(0, 0, 0, 0.18);\n  --scalar-scrollbar-color-active: rgba(0, 0, 0, 0.36);\n}\n.dark-mode {\n  --scalar-button-1: #f6f6f6;\n  --scalar-button-1-color: #000;\n  --scalar-button-1-hover: #e7e7e7;\n\n  --scalar-color-green: #a3ffa9;\n  --scalar-color-red: #ffa3a3;\n  --scalar-color-yellow: #fffca3;\n  --scalar-color-blue: #a5d6ff;\n  --scalar-color-orange: #e2ae83;\n  --scalar-color-purple: #d2a8ff;\n\n  --scalar-scrollbar-color: rgba(255, 255, 255, 0.24);\n  --scalar-scrollbar-color-active: rgba(255, 255, 255, 0.48);\n}\n.section-flare {\n  width: 100%;\n  height: 400px;\n  position: absolute;\n}\n.section-flare-item:first-of-type:before {\n  content: \"\";\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  --stripes: repeating-linear-gradient(100deg, #fff 0%, #fff 0%, transparent 2%, transparent 12%, #fff 17%);\n  --stripesDark: repeating-linear-gradient(100deg, #000 0%, #000 0%, transparent 10%, transparent 12%, #000 17%);\n  --rainbow: repeating-linear-gradient(100deg, #60a5fa 10%, #e879f9 16%, #5eead4 22%, #60a5fa 30%);\n  contain: strict;\n  contain-intrinsic-size: 100vw 40vh;\n  background-image: var(--stripesDark), var(--rainbow);\n  background-size: 300%, 200%;\n  background-position: 50% 50%, 50% 50%;\n  filter: opacity(20%) saturate(200%);\n  -webkit-mask-image: radial-gradient(ellipse at 100% 0%, black 40%, transparent 70%);\n  mask-image: radial-gradient(ellipse at 100% 0%, black 40%, transparent 70%);\n  pointer-events: none;\n}\n.section-flare-item:first-of-type:after {\n  content: \"\";\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  background-image: var(--stripes), var(--rainbow);\n  background-size: 200%, 100%;\n  background-attachment: fixed;\n  mix-blend-mode: difference;\n  background-image: var(--stripesDark), var(--rainbow);\n  pointer-events: none;\n}\n.light-mode .section-flare-item:first-of-type:after,\n.light-mode .section-flare-item:first-of-type:before {\n  background-image: var(--stripes), var(--rainbow);\n  filter: opacity(4%) saturate(200%);\n}\n    </style>\n  </head>\n  <body>\n    <script\n      id=\"api-reference\"\n      data-configuration='{\"url\":\"openapi/json\",\"version\":\"latest\",\"cdn\":\"https://cdn.jsdelivr.net/npm/@scalar/api-reference@latest/dist/browser/standalone.min.js\",\"_integration\":\"elysiajs\"}'\n    >\n    </script>\n    <script src=\"https://cdn.jsdelivr.net/npm/@scalar/api-reference@latest/dist/browser/standalone.min.js\" crossorigin></script>\n  </body>\n</html>",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /openapi 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/openapi",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "openapi json",
+		"path": "/openapi/json",
+		"skipBody": true,
+		"status": 200,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": {
+			"length": 1040666
+		},
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /openapi/json 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/openapi/json",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "better-auth ok",
+		"path": "/auth/api/ok",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 200,
+		"body": "{\"ok\":true}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "\u001b[2m<now>\u001b[0m \u001b[33mWARN\u001b[0m \u001b[1m[Better Auth]:\u001b[0m Rate limiting could not determine a client IP and is falling back to a single shared per-path bucket. Ensure your runtime forwards a trusted client IP header, then set `advanced.ipAddress.ipAddressHeaders` or `advanced.ipAddress.trustedProxies` so the address can be resolved."
+			},
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /auth/api/ok 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/auth/api/ok",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "better-auth get-session anonima",
+		"path": "/auth/api/get-session",
+		"status": 200,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"cache-control": "no-store",
+			"content-type": "application/json",
+			"pragma": "no-cache",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "null",
+		"log": [
+			{
+				"stream": "info",
+				"text": "<now> INFO <duration> GET     /auth/api/get-session 200 "
+			}
+		],
+		"transport": [
+			{
+				"level": "INFO",
+				"message": "",
+				"method": "GET",
+				"path": "/auth/api/get-session",
+				"status": 200,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "better-auth path inesistente",
+		"path": "/auth/api/nope",
+		"status": 404,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /auth/api/nope 404 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/auth/api/nope",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "/auth nudo",
+		"path": "/auth",
+		"status": 404,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /auth 404 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/auth",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "modulo: 401",
+		"method": "DELETE",
+		"path": "/me/avatar",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 401,
+		"body": "{\"success\":false,\"error\":\"UNAUTHORIZED\",\"message\":\"Devi accedere per continuare\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> DELETE  /me/avatar 401 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "DELETE",
+				"path": "/me/avatar",
+				"status": 401,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "modulo: 404 sotto il prefisso",
+		"path": "/me/nope",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"status": 404,
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /me/nope 404 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/me/nope",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "modulo: path codificato",
+		"method": "DELETE",
+		"path": "/me/%61vatar",
+		"status": 404,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> DELETE  /me/%61vatar 404 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "DELETE",
+				"path": "/me/%61vatar",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "modulo: JSON malformato",
+		"method": "POST",
+		"path": "/me/avatar",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"INTERNAL_ERROR\",\"message\":\"Errore interno del server\"}",
+		"status": 500,
+		"log": [
+			{
+				"stream": "error",
+				"text": "<now> ERROR <duration> POST    /me/avatar 500 "
+			}
+		],
+		"transport": [
+			{
+				"level": "ERROR",
+				"message": "",
+				"method": "POST",
+				"path": "/me/avatar",
+				"status": 500,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "modulo: 422 prima del 401",
+		"method": "POST",
+		"path": "/me/avatar",
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"File: tipo di file non ammesso\"}",
+		"status": 422,
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> POST    /me/avatar 422 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "POST",
+				"path": "/me/avatar",
+				"status": 422,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "admin: 401",
+		"path": "/admin/configurations/counts",
+		"status": 401,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"UNAUTHORIZED\",\"message\":\"Devi accedere per continuare\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /admin/configurations/counts 401 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/admin/configurations/counts",
+				"status": 401,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "webhooks: GET 404",
+		"path": "/webhooks/stripe",
+		"status": 404,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /webhooks/stripe 404 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/webhooks/stripe",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "catalogo: 422",
+		"path": "/product-categories?limit=0",
+		"status": 422,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /product-categories 422 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/product-categories",
+				"status": 422,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "catalogo: radice con slash",
+		"path": "/product-categories/?limit=0",
+		"status": 422,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"VALIDATION_ERROR\",\"message\":\"Valore non valido: deve essere almeno 1\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /product-categories/ 422 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/product-categories/",
+				"status": 422,
+				"hasBeforeTime": false
+			}
+		]
+	},
+	{
+		"name": "catalogo: doppio slash",
+		"path": "/product-categories//?limit=0",
+		"status": 404,
+		"headers": {
+			"access-control-allow-credentials": "true",
+			"access-control-allow-headers": "Content-Type, Authorization",
+			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"content-type": "application/json;charset=utf-8",
+			"vary": "Origin",
+			"x-request-id": "<generated>"
+		},
+		"body": "{\"success\":false,\"error\":\"NOT_FOUND\",\"message\":\"Risorsa non trovata\"}",
+		"log": [
+			{
+				"stream": "warn",
+				"text": "<now> WARNING <duration> GET     /product-categories// 404 "
+			}
+		],
+		"transport": [
+			{
+				"level": "WARNING",
+				"message": "",
+				"method": "GET",
+				"path": "/product-categories//",
+				"status": 404,
+				"hasBeforeTime": false
+			}
+		]
+	}
+]

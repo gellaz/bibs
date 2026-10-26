@@ -1,6 +1,7 @@
 /**
- * Snapshot of the OpenAPI spec served by @elysiajs/openapi at GET /openapi/json
- * (the UI is GET /openapi), fetched through app.handle without serving. From apps/api:
+ * Snapshot of the OpenAPI spec served at GET /openapi/json (the UI is GET /openapi),
+ * fetched through app.request without serving (src/app.ts; until U11 the spec came
+ * from the OpenAPI plugin of the previous framework). From apps/api:
  *
  *   bun ../../docs/superpowers/plans/2026-10-25-hono-migration/tools/openapi-snapshot.ts \
  *     [--out <file>] [--path /openapi/json]
@@ -20,7 +21,7 @@ const { values } = parseArgs({
 	},
 });
 
-const res = await app.handle(new Request(`http://localhost${values.path}`));
+const res = await app.request(`http://localhost${values.path}`);
 if (res.status !== 200) throw new Error(`GET ${values.path} → ${res.status}`);
 
 const sortKeys = (v: unknown): unknown =>

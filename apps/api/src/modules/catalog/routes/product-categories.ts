@@ -4,14 +4,14 @@ import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { okPage } from "@/lib/responses";
-import { ProductCategoryWithMacroSchema } from "@/lib/zod/entities";
-import { ProductCategoryListQuery } from "@/lib/zod/queries";
-import { okPageRes, withErrors } from "@/lib/zod/responses";
+import { ProductCategoryWithMacroSchema } from "@/lib/schemas/entities";
+import { ProductCategoryListQuery } from "@/lib/schemas/queries";
+import { okPageRes, withErrors } from "@/lib/schemas/responses";
 import { listProductCategories } from "../services/product-categories";
 
 const ProductCategoryListResponse = okPageRes(ProductCategoryWithMacroSchema);
 
-// Route relativa: la sub-app è montata su /product-categories (`src/index.ts`).
+// Route relativa: la sub-app è montata su /product-categories (`src/app.ts`).
 export const productCategoriesRoutes = new Hono().get(
 	"/",
 	doc({

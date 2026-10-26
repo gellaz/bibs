@@ -1,13 +1,13 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
-import { asResponse } from "@/lib/zod/t";
+import { asResponse } from "@/lib/schemas/t";
 import { ResponseValidationError } from "./errors";
 
-/** Il Content-Type JSON di Elysia: i client vedono lo stesso header. */
+/** Il Content-Type JSON di sempre: i client vedono lo stesso header. */
 export const JSON_UTF8 = { "Content-Type": "application/json;charset=utf-8" };
 
-/** `c.json` con il Content-Type di Elysia, per gli inviluppi di errore. */
+/** `c.json` con il Content-Type di sempre, per gli inviluppi di errore. */
 export const json = <T, S extends ContentfulStatusCode>(
 	c: Context,
 	body: T,
@@ -16,7 +16,7 @@ export const json = <T, S extends ContentfulStatusCode>(
 
 /**
  * Risposta di successo validata dallo schema (D4 del piano Hono), come la
- * `response` di Elysia: i campi fuori schema spariscono a ogni profondità
+ * `response` delle route di prima: i campi fuori schema spariscono a ogni profondità
  * (colonne interne), i `Date` escono come stringhe ISO, t.Integer e t.Date
  * codificano senza decodificare (`asResponse`), e un dato che non
  * rispetta lo schema è un bug nostro → 500 «Errore interno del server».

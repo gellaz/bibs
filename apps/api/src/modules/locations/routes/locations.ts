@@ -15,19 +15,19 @@ import {
 	MunicipalitySchema,
 	ProvinceSchema,
 	RegionSchema,
-} from "@/lib/zod/entities";
+} from "@/lib/schemas/entities";
 import {
 	GeocodeQuery,
 	MunicipalitiesQuery,
 	ProvincesQuery,
-} from "@/lib/zod/locations";
+} from "@/lib/schemas/locations";
 import {
 	okPageRes,
 	okRes,
 	ServiceUnavailableError,
 	TooManyRequestsError,
 	withErrors,
-} from "@/lib/zod/responses";
+} from "@/lib/schemas/responses";
 import { rateLimit } from "@/plugins/rate-limit";
 import { geocodeAddress } from "../services/geocode";
 import {
@@ -49,7 +49,7 @@ export const MunicipalitiesAllResponse = okRes(
 );
 export const GeocodeResponse = okRes(z.array(GeocodeSuggestionSchema));
 
-// Route relative: il modulo è montato su /locations (`src/index.ts`). Tutte
+// Route relative: il modulo è montato su /locations (`src/app.ts`). Tutte
 // pubbliche tranne /geocode (login, poi rate limit).
 export const locationsRoutes = new Hono()
 	.get(

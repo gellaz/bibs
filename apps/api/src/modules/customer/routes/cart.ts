@@ -7,14 +7,14 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { CartItemMutationSchema, CartSchema } from "@/lib/zod/entities";
+import { CartItemMutationSchema, CartSchema } from "@/lib/schemas/entities";
 import {
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
-import { zInteger } from "@/lib/zod/t";
+} from "@/lib/schemas/responses";
+import { zInteger } from "@/lib/schemas/t";
 import { customerSecurity } from "../context";
 import {
 	addCartItem,

@@ -10,9 +10,9 @@ import {
 	CustomerProductDetailSchema,
 	ProductCardSchema,
 	ProductFacetsSchema,
-} from "@/lib/zod/entities";
-import { ProductDetailQuery, ProductSearchQuery } from "@/lib/zod/queries";
-import { okPageRes, okRes, withErrors } from "@/lib/zod/responses";
+} from "@/lib/schemas/entities";
+import { ProductDetailQuery, ProductSearchQuery } from "@/lib/schemas/queries";
+import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
 import { getProductDetail } from "../services/product-detail";
 import { getProductFacets } from "../services/product-facets";
 import { searchProducts } from "../services/product-search";
@@ -21,7 +21,7 @@ const ProductPage = okPageRes(ProductCardSchema);
 const FacetsResponse = okRes(ProductFacetsSchema);
 const DetailResponse = okRes(CustomerProductDetailSchema);
 
-// Route relative e pubbliche: il modulo è montato su /customer (`src/index.ts`).
+// Route relative e pubbliche: il modulo è montato su /customer (`src/app.ts`).
 export const productsRoutes = new Hono()
 	.get(
 		"/products",

@@ -1,14 +1,12 @@
 import { z } from "zod";
 import { orderStatuses, orderTypes } from "@/db/schemas/order";
 import { onboardingStatuses } from "@/db/schemas/seller";
-import { adminStoreStatuses } from "@/lib/queries";
 import { PaginationQuery } from "./pagination";
 import { zString } from "./t";
 
-// Gemelli Zod di `lib/queries.ts` (D3 del piano Hono), nello stesso ordine e
-// con gli stessi nomi; per ora solo quelli delle route migrate. In query
+// Gli schemi delle query condivise fra route (D3 del piano Hono). In query
 // `z.number()` e `z.boolean()` al primo livello hanno la coercizione di
-// Elysia (`v()`, D5).
+// prima della migrazione (`v()`, D5).
 
 const d = (description: string) => ({ description });
 
@@ -210,6 +208,17 @@ export const ProductDetailQuery = z.object({
 		.meta(d("Longitudine dell'origine, per scegliere il negozio più vicino"))
 		.optional(),
 });
+
+/** Tab della lista negozi admin. `all` = negozi vivi; `deleted` = eliminati. */
+export const adminStoreStatuses = [
+	"all",
+	"active",
+	"past_due",
+	"suspended",
+	"none",
+	"deleted",
+] as const;
+export type AdminStoreStatus = (typeof adminStoreStatuses)[number];
 
 /**
  * Pagination + tab/search/sort for the admin store list.

@@ -5,8 +5,8 @@ import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ok } from "@/lib/responses";
-import { SellerDashboardSchema } from "@/lib/zod/dashboard";
-import { okRes, withErrors } from "@/lib/zod/responses";
+import { SellerDashboardSchema } from "@/lib/schemas/dashboard";
+import { okRes, withErrors } from "@/lib/schemas/responses";
 import { ensureStoreAccess } from "../context";
 import { getSellerDashboard } from "../services/dashboard";
 

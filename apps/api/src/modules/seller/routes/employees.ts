@@ -5,20 +5,20 @@ import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ok, okMessage, okPage } from "@/lib/responses";
-import { EmployeeWithUserSchema } from "@/lib/zod/composed";
+import { EmployeeWithUserSchema } from "@/lib/schemas/composed";
 import {
 	EmployeeInvitationSchema,
 	EmployeeSchema,
 	MunicipalityCompactSchema,
-} from "@/lib/zod/entities";
-import { TeamInviteBody } from "@/lib/zod/forms/onboarding";
-import { PaginationQuery } from "@/lib/zod/pagination";
+} from "@/lib/schemas/entities";
+import { PaginationQuery } from "@/lib/schemas/pagination";
 import {
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/zod/responses";
+} from "@/lib/schemas/responses";
+import { TeamInviteBody } from "@/lib/zod/forms/onboarding";
 import { requireOwner } from "../context";
 import {
 	banEmployee,

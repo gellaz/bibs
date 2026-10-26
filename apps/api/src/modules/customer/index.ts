@@ -9,7 +9,7 @@ import { profileRoutes } from "./routes/profile";
 import { storesRoutes } from "./routes/stores";
 
 /**
- * Sub-app Hono del modulo, montata su /customer in `src/index.ts`. Prodotti e
+ * Sub-app Hono del modulo, montata su /customer in `src/app.ts`. Prodotti e
  * negozi sono pubblici (`publicRoute`); il resto ha `requireCustomer` in ogni
  * route, dopo i suoi `v(...)`.
  */

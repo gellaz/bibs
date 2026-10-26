@@ -1,14 +1,12 @@
 import { isCalendarDate } from "@/lib/schemas/forms/formats";
 
-// I formati di stringa che l'app composta controlla nel FormatRegistry di
-// TypeBox, copiati così come sono: i gemelli Zod devono accettare e rifiutare
-// le stesse stringhe dello schema TypeBox (D5 del piano Hono). `uri` e
-// `date-time` sono quelli di Elysia 1.4.30 (`elysia/dist/type-system/format.mjs`,
-// regex da ajv-formats, MIT © 2020 Evgeny Poberezkin). `email`, `uuid` e `date`
-// no: Elysia li registra solo se mancano, e `@elysiajs/openapi` 1.4.16 (caricato
-// da `src/index.ts`) li sovrascrive al load con `z.string().email()/.uuid()/
-// .date()` dello Zod 4.4.3 che porta nel bundle (`dist/index.mjs`, regex da
-// `zod/v4/core/regexes.js`, MIT © 2025 Colin McDonnell). I formati Zod del repo
+// I formati di stringa che l'app composta di prima controllava nel
+// FormatRegistry di TypeBox, copiati così come sono: gli schemi Zod accettano
+// e rifiutano le stesse stringhe (D5 del piano Hono; esiti in
+// `tests/http/golden/formats.json`). `uri` e `date-time` vengono dal framework
+// di prima (1.4.30), regex da ajv-formats; `email`, `uuid` e `date` dallo Zod
+// 4.4.3 che il suo plugin OpenAPI (1.4.16) registrava al load. Provenienza e
+// licenze (MIT) in `apps/api/THIRD_PARTY_NOTICES.md`. I formati Zod del repo
 // (4.6) hanno altre regex e non si usano.
 const EMAIL =
 	/^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/;
@@ -74,14 +72,14 @@ function strictDateTime(value: string) {
 	return parts.length === 2 && strictDate(parts[0]) && strictTime(parts[1]);
 }
 
-/** «2026-01-01 12:00:00 +0100» → «…+0100» con il segno: come Elysia prima di `new Date`. */
+/** «2026-01-01 12:00:00 +0100» → «…+0100» con il segno, prima di `new Date`, come prima. */
 export function parseDateTimeEmptySpace(value: string): string {
 	return value.charCodeAt(value.length - 6) === 32
 		? `${value.slice(0, -6)}+${value.slice(-5)}`
 		: value;
 }
 
-// Il `date-time` di Elysia è largo: ISO, data «formale» di `Date.toString()`,
+// Il `date-time` di prima è largo: ISO, data «formale» di `Date.toString()`,
 // gg/mm/aaaa, oltre al formato RFC 3339 stretto.
 function lenientDateTime(value: string) {
 	const temp = value.replace(/"/g, "");
@@ -106,7 +104,7 @@ export const FORMATS = {
 
 export type FormatName = keyof typeof FORMATS;
 
-// Formati che Elysia usa per la coercizione di query, params e t.Integer.
+// Formati della coercizione di query, params e t.Integer, come prima.
 export const isNumericString = (value: string) =>
 	!!value && !Number.isNaN(+value);
 export const isIntegerString = (value: string) =>

@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { elysiaJson } from "./t";
+import { typeboxJson } from "./t";
 
-// Il valore che Elysia controlla davvero, per avere da Zod lo stesso primo
-// errore di TypeBox (D6 del piano Hono). Prima del controllo Elysia 1.4.30
-// (`compose`) fa due passi:
+// Il valore che l'API di prima controllava davvero, per avere da Zod lo
+// stesso primo errore di TypeBox (D6 del piano Hono). Prima del controllo il
+// framework di prima (1.4.30, `compose`; vedi `THIRD_PARTY_NOTICES.md`) faceva
+// due passi:
 // 1. body con un `default` da qualche parte nello schema (`hasProperty`):
 //    `Object.assign(defaults, body)`, quindi null, un primitivo o un array
 //    diventano un oggetto;
@@ -15,7 +16,7 @@ import { elysiaJson } from "./t";
 //    manca (TypeBox lo segnala per primo); un'unione (anche t.Nullable) si
 //    pulisce col primo ramo che accetta il valore, o col primo ramo che
 //    accetta il valore pulito (`openingHours: ""` diventa `[]`). Se legge un
-//    campo di un valore nullo lancia, ed Elysia controlla il body com'era.
+//    campo di un valore nullo lancia, e si controlla il body com'era.
 
 type Def = z.core.$ZodTypeDef & Record<string, any>;
 type Json = Record<string, any>;
@@ -31,7 +32,7 @@ export function unwrap(schema: z.ZodType) {
 	for (;;) {
 		const def = defOf(node);
 		if (def.type === "default") hasDefault = true;
-		if (elysiaJson.has(def)) break;
+		if (typeboxJson.has(def)) break;
 		if (def.type === "optional") optional = true;
 		else if (def.type !== "default") break;
 		node = def.innerType;
@@ -46,7 +47,7 @@ export function isAnyOf(node: z.ZodType) {
 		def.type === "nullable" ||
 		def.type === "union" ||
 		def.type === "enum" ||
-		Array.isArray(elysiaJson.get(def)?.anyOf)
+		Array.isArray(typeboxJson.get(def)?.anyOf)
 	);
 }
 
@@ -85,7 +86,7 @@ export function nodeAt(root: z.ZodType, path: PropertyKey[]) {
 
 // ── 1. default della radice ─────────────────────────────────────────────────
 
-/** La vista TypeBox di un nodo per `hasProperty("default")` di Elysia. */
+/** La vista TypeBox di un nodo per `hasProperty("default")` (framework di prima). */
 function view(node: z.ZodType | Json): {
 	hasDefault: boolean;
 	anyOf?: (z.ZodType | Json)[];
@@ -98,7 +99,7 @@ function view(node: z.ZodType | Json): {
 			shape: node.type === "object" ? node.properties : undefined,
 		};
 	const { node: inner, hasDefault } = unwrap(node);
-	const json = elysiaJson.get(defOf(inner));
+	const json = typeboxJson.get(defOf(inner));
 	if (json) {
 		const v = view(json);
 		return { ...v, hasDefault: hasDefault || v.hasDefault };
@@ -118,7 +119,7 @@ function view(node: z.ZodType | Json): {
 	};
 }
 
-/** `hasProperty("default", schema)` di Elysia (`schema.mjs`). */
+/** `hasProperty("default", schema)` del framework di prima (`schema.mjs`). */
 function hasDefaultDeep(node: z.ZodType | Json): boolean {
 	const v = view(node);
 	if (v.anyOf) return v.anyOf.some(hasDefaultDeep);
@@ -134,11 +135,11 @@ function hasDefaultDeep(node: z.ZodType | Json): boolean {
 }
 
 const isFile = (node: z.ZodType) => {
-	const json = elysiaJson.get(defOf(unwrap(node).node));
+	const json = typeboxJson.get(defOf(unwrap(node).node));
 	return json?.default === "File" || json?.default === "Files";
 };
 
-/** `hasType("File" | "Files", schema)` di Elysia. */
+/** `hasType("File" | "Files", schema)` del framework di prima. */
 function hasFile(node: z.ZodType): boolean {
 	const def = defOf(unwrap(node).node);
 	if (isFile(node)) return true;
@@ -150,7 +151,7 @@ function hasFile(node: z.ZodType): boolean {
 }
 
 /**
- * I campi di primo livello che Elysia trasforma in unioni prima del controllo:
+ * I campi di primo livello che diventano unioni prima del controllo, come prima:
  * in query t.Number, t.Boolean e t.Array (Numeric, BooleanString,
  * ArrayQuery); nei body con un file t.Object e t.Array (ObjectString,
  * ArrayString, `coerceFormData`). Per TypeBox sono anyOf.
@@ -172,7 +173,7 @@ export function coercedKeys(schema: z.ZodType, target: "body" | "query") {
 	return keys;
 }
 
-// Elysia toglie i default "File"/"Files": se restano solo quelli, niente assign.
+// I default "File"/"Files" non contano: se restano solo quelli, niente assign.
 function assignsDefaults(root: z.ZodType) {
 	const shape = defOf(root).shape as Record<string, z.ZodType>;
 	return (
@@ -210,7 +211,7 @@ const NULL = z.null();
 function union(node: z.ZodType, value: unknown) {
 	const def = defOf(node);
 	const raw = plain(value);
-	const branches: z.ZodType[] | undefined = elysiaJson.has(def)
+	const branches: z.ZodType[] | undefined = typeboxJson.has(def)
 		? undefined
 		: def.type === "nullable"
 			? [def.innerType, NULL]
@@ -273,10 +274,10 @@ function mirror(
 }
 
 /**
- * Il body (o la query) come lo controlla Elysia: default della radice e
+ * Il body (o la query) come lo controllava l'API di prima: default della radice e
  * pulizia; se la pulizia lancia, il valore com'era.
  */
-export function elysiaValue(
+export function mirrorValue(
 	schema: z.ZodType,
 	value: unknown,
 	target: "body" | "query",

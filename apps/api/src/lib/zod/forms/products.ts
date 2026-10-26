@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { zString } from "../t";
+import { zString } from "@/lib/schemas/t";
 
 // Gemello Zod di `lib/schemas/forms/products.ts` (D3 del piano Hono). Lo
 // schema TypeBox resta per i form del seller FE fino a U11b.
 
 // Aliquote IVA accettate (vedi VAT_RATES in @/lib/vat). Stringhe percentuali;
 // `z.union` di letterali per tenere l'ordine in /openapi. Il default lo mette
-// anche Elysia, anche in PATCH: si usa con `.optional()`.
+// l'API anche in PATCH, come prima: si usa con `.optional()`.
 export const VatRateSchema = z
 	.union([
 		z.literal("22"),

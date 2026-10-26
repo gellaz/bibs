@@ -5,8 +5,8 @@ import { doc } from "@/http/openapi";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ok } from "@/lib/responses";
-import { SellerCategoryCharacteristicSchema } from "@/lib/zod/entities";
-import { okRes, withErrors } from "@/lib/zod/responses";
+import { SellerCategoryCharacteristicSchema } from "@/lib/schemas/entities";
+import { okRes, withErrors } from "@/lib/schemas/responses";
 import { getFormCharacteristics } from "../services/product-characteristics";
 
 const Params = z.object({
