@@ -36,7 +36,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/zod/responses";
-import { zFile, zInteger } from "@/lib/zod/t";
+import { zFile, zInteger, zString } from "@/lib/zod/t";
 import { ensureStoreAccess } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {
@@ -94,15 +94,11 @@ const ListQuery = PaginationQuery.extend({
 		.string()
 		.meta(d("Escludi prodotti già in questa promo"))
 		.optional(),
-	q: z
-		.string()
-		.max(100)
-		.meta(
-			d(
-				"Ricerca testuale su nome, descrizione, EAN e brand. Full-text con prefix matching e fuzzy (typo) tolerance. Minimo 2 caratteri effettivi.",
-			),
-		)
-		.optional(),
+	q: zString({
+		maxLength: 100,
+		description:
+			"Ricerca testuale su nome, descrizione, EAN e brand. Full-text con prefix matching e fuzzy (typo) tolerance. Minimo 2 caratteri effettivi.",
+	}).optional(),
 	sort: z
 		.enum(["name", "price", "ean", "stock", "createdAt", "updatedAt"])
 		.meta(
@@ -152,12 +148,15 @@ const UpdateProductBody = z.object({
 		.union([z.string(), z.null()])
 		.meta(d("ID della sotto-categoria del prodotto. null per rimuoverla."))
 		.optional(),
-	name: z.string().min(1).max(200).meta(d("Nome del prodotto")).optional(),
-	description: z
-		.string()
-		.max(2000)
-		.meta(d("Descrizione del prodotto"))
-		.optional(),
+	name: zString({
+		minLength: 1,
+		maxLength: 200,
+		description: "Nome del prodotto",
+	}).optional(),
+	description: zString({
+		maxLength: 2000,
+		description: "Descrizione del prodotto",
+	}).optional(),
 	price: z
 		.string()
 		.regex(/^\d+\.\d{2}$/)
@@ -180,12 +179,11 @@ const UpdateProductBody = z.object({
 		.union([z.string(), z.null()])
 		.meta(d("ID brand esistente (null per rimuovere)"))
 		.optional(),
-	brandName: z
-		.string()
-		.min(1)
-		.max(120)
-		.meta(d("Nome brand da creare (ignorato se brandId valorizzato)"))
-		.optional(),
+	brandName: zString({
+		minLength: 1,
+		maxLength: 120,
+		description: "Nome brand da creare (ignorato se brandId valorizzato)",
+	}).optional(),
 	characteristicValues: CharacteristicValuesField.optional(),
 	confirmAffected: zInteger({
 		minimum: 0,

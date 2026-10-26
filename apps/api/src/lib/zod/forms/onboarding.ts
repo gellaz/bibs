@@ -142,15 +142,20 @@ export const TeamInviteBody = z.object({
 });
 
 export const AcceptInviteBody = z.object({
-	token: z
-		.string()
-		.min(1)
-		.meta({ description: "Token dell'invito", error: "Token mancante" }),
-	password: z.string().min(8).max(128).meta({
+	token: zString({
+		minLength: 1,
+		description: "Token dell'invito",
+		error: "Token mancante",
+	}),
+	password: zString({
+		minLength: 8,
+		maxLength: 128,
 		description: "Password (minimo 8, massimo 128 caratteri)",
 		error: "La password deve avere almeno 8 caratteri",
 	}),
-	confirmPassword: z.string().min(8).max(128).meta({
+	confirmPassword: zString({
+		minLength: 8,
+		maxLength: 128,
 		description: "Conferma password",
 		error: "La conferma password deve avere almeno 8 caratteri",
 	}),

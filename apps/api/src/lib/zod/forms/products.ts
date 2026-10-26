@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { zString } from "../t";
 
 // Gemello Zod di `lib/schemas/forms/products.ts` (D3 del piano Hono). Lo
 // schema TypeBox resta per i form del seller FE fino a U11b.
@@ -20,7 +21,7 @@ export const VatRateSchema = z
 export const CharacteristicValueInputSchema = z.object({
 	characteristicId: z.string().meta({ description: "ID della caratteristica" }),
 	value: z
-		.union([z.string().max(2000), z.number(), z.boolean(), z.null()])
+		.union([zString({ maxLength: 2000 }), z.number(), z.boolean(), z.null()])
 		.meta({
 			description:
 				"Testo, numero o sì/no secondo il tipo; per le liste chiuse l'ID dell'opzione. null o testo vuoto cancella il valore",
@@ -36,15 +37,16 @@ export const CharacteristicValuesField = z
 	});
 
 export const CreateProductBody = z.object({
-	name: z.string().min(1).max(200).meta({
+	name: zString({
+		minLength: 1,
+		maxLength: 200,
 		description: "Nome del prodotto",
 		error: "Il nome è obbligatorio",
 	}),
-	description: z
-		.string()
-		.max(2000)
-		.meta({ description: "Descrizione del prodotto" })
-		.optional(),
+	description: zString({
+		maxLength: 2000,
+		description: "Descrizione del prodotto",
+	}).optional(),
 	price: z
 		.string()
 		.regex(/^\d+\.\d{2}$/)
@@ -72,15 +74,12 @@ export const CreateProductBody = z.object({
 		.string()
 		.meta({ description: "ID di un brand esistente del venditore" })
 		.optional(),
-	brandName: z
-		.string()
-		.min(1)
-		.max(120)
-		.meta({
-			description:
-				"Nome di un brand da creare (ignorato se brandId è valorizzato)",
-		})
-		.optional(),
+	brandName: zString({
+		minLength: 1,
+		maxLength: 120,
+		description:
+			"Nome di un brand da creare (ignorato se brandId è valorizzato)",
+	}).optional(),
 	characteristicValues: CharacteristicValuesField.optional(),
 	storeId: z.string().meta({
 		description:

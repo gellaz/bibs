@@ -832,11 +832,11 @@ export const PointTransactionSchema = z.object({
 // ────────────────────────────────────────────
 
 export const CountrySchema = z.object({
-	code: z
-		.string()
-		.min(2)
-		.max(2)
-		.meta({ description: "Codice ISO 3166-1 alpha-2" }),
+	code: zString({
+		minLength: 2,
+		maxLength: 2,
+		description: "Codice ISO 3166-1 alpha-2",
+	}),
 	label: z.string().meta({ description: "Nome del paese in italiano" }),
 });
 

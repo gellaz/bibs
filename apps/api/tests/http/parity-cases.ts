@@ -2752,6 +2752,70 @@ export const cases: Case[] = [
 		422,
 		fail("Nome: al massimo 100 caratteri"),
 	),
+	// Spedizione di U6: i gemelli di U2, U4 e U5 passano a `zString` (contavano
+	// i code point con `z.string().min/max`).
+	body(
+		"reg: password di 4 emoji = 8 unità UTF-16, accettata",
+		TbRegister,
+		Register,
+		{ email: "a@b.it", password: "😀".repeat(4) },
+		200,
+		{ ok: { email: "a@b.it", password: "😀".repeat(4) } },
+	),
+	body(
+		"reg: password di 65 emoji = 130 unità UTF-16",
+		TbRegister,
+		Register,
+		{ email: "a@b.it", password: "😀".repeat(65) },
+		422,
+		fail("Password: al massimo 128 caratteri"),
+	),
+	body(
+		"accept-invite: password di 4 emoji, accettata",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{
+			token: "t",
+			password: "😀".repeat(4),
+			confirmPassword: "😀".repeat(4),
+		},
+		200,
+		{
+			ok: {
+				token: "t",
+				password: "😀".repeat(4),
+				confirmPassword: "😀".repeat(4),
+			},
+		},
+	),
+	query(
+		"geocode: q di 2 emoji = 4 unità UTF-16, accettata",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		`?q=${encodeURIComponent("😀😀")}`,
+		200,
+		{ ok: { q: "😀😀", limit: 5 } },
+	),
+	body(
+		"prodotti: nome di 101 emoji = 202 unità UTF-16 (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "😀".repeat(101), price: "1.00", storeId: "s" },
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"prodotti: valore di 1001 emoji = 2002 unità UTF-16",
+		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
+		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
+		{
+			characteristicValues: [
+				{ characteristicId: "c", value: "😀".repeat(1001) },
+			],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
+	),
 ];
 
 function bigIntegers(): Case[] {
