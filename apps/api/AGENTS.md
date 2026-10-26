@@ -112,10 +112,13 @@ Plain Hono middleware and route groups:
    either fails).
 7. **`rate-limit.ts`** — `rateLimit({ name, limits })`, a per-route middleware with in-memory buckets keyed by IP or
    by the body's `email` (registration, sign-in, geocoding); it goes after the route's `v()` and guard.
-8. **`cron.ts`** — `startCronJobs()` with `croner`, called only by `src/index.ts` (tests, tools and the CLI never
-   schedule a tick). Five jobs, server local time: `expireReservations` and `expireUnpaidOrders` every minute,
-   `retryStoreTransfers` hourly at :30, `expirePendingStoreCreations` hourly, `autoCancelSuspendedStores` daily at
-   03:00.
+
+### Jobs — `src/jobs/`
+
+`scheduler.ts` — `startCronJobs()` with `croner`, called only by `src/index.ts` (tests, tools and the CLI never
+schedule a tick). The five jobs live next to it, one file each: `expireReservations` and `expireUnpaidOrders` every
+minute, `retryStoreTransfers` hourly at :30, `expirePendingStoreCreations` hourly, `autoCancelSuspendedStores` daily
+at 03:00 (server local time).
 
 The HTTP kit the routes use lives in `src/http/`: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()`
 (`send.ts`), `doc()` and the OpenAPI generator (`openapi.ts`), the guards (`auth.ts`), `guard()`, `publicRoute` and
@@ -214,7 +217,7 @@ Defines valid status transitions per order type using typed keys (
 Shared helper `refundStockAndPoints(tx, order)` for restocking items and refunding loyalty points within an existing DB
 transaction. Used by cancellation, expiry, and pickup-expired flows to avoid code duplication.
 
-### Reservation Expiry — `src/lib/jobs/expire-reservations.ts`
+### Reservation Expiry — `src/jobs/expire-reservations.ts`
 
 Each store picks how long a `reserve_pickup` reservation lasts: `stores.reservation_hours` (1–72, default 24) **opening
 hours**. `insertOrder` computes the deadline once, at confirmation, with the pure `reservationDeadline()`
@@ -223,7 +226,7 @@ it walks the store's slots in Europe/Rome time, skipping closures and holidays (
 declared hours, or with no opening within 60 days, falls back to calendar hours. The deadline is stored in
 `orders.reservation_expires_at` and never recomputed.
 
-The cron job in `src/plugins/cron.ts` runs `expireReservations()` every minute (`*/1 * * * *`) and is the
+The cron job in `src/jobs/scheduler.ts` runs `expireReservations()` every minute (`*/1 * * * *`) and is the
 single source of truth — no in-memory timers, no per-order scheduling. Both the cron and the seller completion guard
 allow `config.reservationGraceMinutes` (15) past the deadline (`reservationGraceCutoff()`): many deadlines fall exactly
 at closing time, and a customer served at 19:01 must not lose a 19:00 reservation. Customers always see the real deadline.

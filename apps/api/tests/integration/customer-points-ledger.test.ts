@@ -25,7 +25,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { customerProfile } from "@/db/schemas/customer";
 import { order } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
-import { cancelUnpaidOrder } from "@/lib/jobs/expire-unpaid-orders";
+import { cancelUnpaidOrder } from "@/jobs/expire-unpaid-orders";
 import { createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";
 import { truncateAll } from "../helpers/cleanup";

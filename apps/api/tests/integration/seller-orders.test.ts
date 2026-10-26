@@ -34,7 +34,7 @@ import { storeProduct as storeProductTable } from "@/db/schemas/product";
 import {
 	expireReservations,
 	expireSingleReservation,
-} from "@/lib/jobs/expire-reservations";
+} from "@/jobs/expire-reservations";
 import {
 	cancelSellerOrder,
 	completePickupByCode,

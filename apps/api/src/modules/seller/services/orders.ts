@@ -2,11 +2,11 @@ import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order, orderStatuses } from "@/db/schemas/order";
-import { ServiceError } from "@/lib/errors";
 import {
 	expireSingleReservation,
 	reservationGraceCutoff,
-} from "@/lib/jobs/expire-reservations";
+} from "@/jobs/expire-reservations";
+import { ServiceError } from "@/lib/errors";
 import { toCents } from "@/lib/money";
 import {
 	municipalityCompactWith,
