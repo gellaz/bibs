@@ -29,13 +29,16 @@ mock.module("@/lib/stripe", () => ({
 		prices: { create: priceCreate, update: priceUpdate },
 	},
 }));
+mock.module("@/lib/email", () => ({ sendEmail: async () => {} }));
 
+import { eq } from "drizzle-orm";
 import { pricingConfig } from "@/db/schemas/pricing-config";
 import {
 	getCurrentPricing,
 	updatePricing,
 } from "@/modules/admin/services/billing";
 import { truncateAll } from "../helpers/cleanup";
+import { signIn, testRequest } from "../helpers/hono-app";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -143,5 +146,44 @@ describe("updatePricing", () => {
 		// The original DB error propagates, not the compensation failure.
 		expect((caught as Error).message).not.toBe("CLEANUP_FAILED");
 		expect(priceUpdate).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("PUT /billing/pricing (route Hono)", () => {
+	it("con una sessione admin crea il prezzo e risponde solo con newPriceId", async () => {
+		// dinamico: @/lib/auth (via requireAdmin) cattura `db` alla valutazione
+		const { moduleApp } = await import("@/http/app");
+		const { adminBillingRoutes } = await import(
+			"@/modules/admin/routes/billing"
+		);
+		const { userId, cookie } = await signIn("admin-pricing@test.com", "admin");
+
+		const res = await testRequest(
+			moduleApp().route("/", adminBillingRoutes),
+			"/billing/pricing",
+			{
+				method: "PUT",
+				headers: { "content-type": "application/json", cookie },
+				body: JSON.stringify({
+					storeMonthlyFeeCents: 3500,
+					currency: "EUR",
+					suspendedAutoCancelDays: 60,
+					pendingCreationExpiryHours: 24,
+					productId: "prod_TEST",
+				}),
+			},
+		);
+
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			success: true,
+			data: { newPriceId: "price_NEW" },
+		});
+		const [active] = await getTestDb()
+			.select()
+			.from(pricingConfig)
+			.where(eq(pricingConfig.isActive, true));
+		expect(active.stripePriceId).toBe("price_NEW");
+		expect(active.createdByUserId).toBe(userId);
 	});
 });
