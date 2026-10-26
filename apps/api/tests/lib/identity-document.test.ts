@@ -7,7 +7,7 @@ import {
 	isValidDocumentNumber,
 	normalizeDocumentNumber,
 	todayInRome,
-} from "@/lib/schemas/forms/identity-document";
+} from "@/schemas/forms/identity-document";
 
 describe("normalizeDocumentNumber", () => {
 	it("porta in maiuscolo e tiene solo lettere e cifre", () => {

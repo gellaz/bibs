@@ -17,11 +17,11 @@ import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
-import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
 } from "@/modules/seller/services/municipality";
+import type { OpeningHoursSchema } from "@/schemas/forms/opening-hours";
 
 type OpeningHours = z.infer<typeof OpeningHoursSchema>;
 

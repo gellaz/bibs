@@ -1,6 +1,6 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { z } from "zod";
-import { integerCheck, schemaJson } from "@/lib/schemas/t";
+import { integerCheck, schemaJson } from "@/schemas/t";
 import { assertRoutes, DOC, type ModuleGuards } from "./routes";
 import { VALIDATES, type Validates } from "./validator";
 

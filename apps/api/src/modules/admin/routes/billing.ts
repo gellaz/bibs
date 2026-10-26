@@ -5,8 +5,8 @@ import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
-import { zDate, zInteger, zString } from "@/lib/schemas/t";
+import { okRes, withConflictErrors, withErrors } from "@/schemas/responses";
+import { zDate, zInteger, zString } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
 	getBillingOverview,

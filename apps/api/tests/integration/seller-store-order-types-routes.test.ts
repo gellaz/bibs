@@ -24,7 +24,7 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { user as userTable } from "@/db/schemas/auth";
-import { resolveSellerAccess } from "@/modules/seller/context";
+import { resolveSellerAccess } from "@/domain/sellers/access";
 import { storesRoutes } from "@/modules/seller/routes/stores";
 import { truncateAll } from "../helpers/cleanup";
 import {

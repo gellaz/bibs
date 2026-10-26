@@ -6,8 +6,8 @@ import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
-import { CreateStoreBody } from "@/lib/schemas/forms/stores";
-import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
+import { CreateStoreBody } from "@/schemas/forms/stores";
+import { okRes, withConflictErrors, withErrors } from "@/schemas/responses";
 import { requireOwner } from "../context";
 import {
 	createCheckoutSession,

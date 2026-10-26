@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
-import { asResponse } from "@/lib/schemas/t";
+import { asResponse } from "@/schemas/t";
 import { ResponseValidationError } from "./errors";
 
 /** Il Content-Type JSON di sempre: i client vedono lo stesso header. */

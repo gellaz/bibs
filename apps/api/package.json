@@ -47,7 +47,7 @@
 			"default": "./src/index.ts"
 		},
 		"./schemas": {
-			"default": "./src/lib/schemas/forms/index.ts"
+			"default": "./src/schemas/forms/index.ts"
 		},
 		"./validation-rule": {
 			"default": "./src/http/validation-rule.ts"

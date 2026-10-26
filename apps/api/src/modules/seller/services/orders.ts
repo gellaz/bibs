@@ -7,19 +7,19 @@ import {
 	awardPoints,
 	refundStockAndPoints,
 } from "@/domain/orders/order-helpers";
-import { assertTransition } from "@/domain/orders/order-state-machine";
+import {
+	assertCancellable,
+	assertTransition,
+} from "@/domain/orders/order-state-machine";
+import { PAY_TYPES } from "@/domain/orders/order-types";
 import { normalizePickupCode } from "@/domain/orders/pickup-code";
 import {
 	expireSingleReservation,
 	reservationGraceCutoff,
-} from "@/jobs/expire-reservations";
+} from "@/domain/orders/reservation-expiry";
 import { ServiceError } from "@/lib/errors";
 import { toCents } from "@/lib/money";
 import { parsePagination } from "@/lib/pagination";
-import {
-	assertCancellable,
-	PAY_TYPES,
-} from "@/modules/customer/services/orders";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,

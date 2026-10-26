@@ -11,16 +11,16 @@ import {
 	RegisterCustomerResult,
 	RegisterSellerResult,
 	SignInResult,
-} from "@/lib/schemas/composed";
-import { AcceptInviteBody } from "@/lib/schemas/forms/onboarding";
-import { RegisterBody, SignInBody } from "@/lib/schemas/registration";
+} from "@/schemas/composed";
+import { AcceptInviteBody } from "@/schemas/forms/onboarding";
+import { RegisterBody, SignInBody } from "@/schemas/registration";
 import {
 	OkMessage,
 	okRes,
 	TooManyRequestsError,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
+} from "@/schemas/responses";
 import {
 	acceptInvite,
 	registerCustomer,

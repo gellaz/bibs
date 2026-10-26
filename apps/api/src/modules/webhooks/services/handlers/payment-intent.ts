@@ -4,8 +4,8 @@ import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
 import { settleCheckoutPayment } from "@/domain/billing/order-payments";
+import { cancelUnpaidOrder } from "@/domain/orders/unpaid-orders";
 import { logger } from "@/infra/logger";
-import { cancelUnpaidOrder } from "@/jobs/expire-unpaid-orders";
 
 /**
  * Pagamento dei PR2 di un checkout. Un rifiuto della carta NON annulla gli

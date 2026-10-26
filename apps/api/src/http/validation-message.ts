@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { type Issue, issueRule, ruleParams } from "@/lib/schemas/issues";
-import { nodeAt } from "@/lib/schemas/mirror";
+import { type Issue, issueRule, ruleParams } from "@/schemas/issues";
+import { nodeAt } from "@/schemas/mirror";
 import type { ValidationRule } from "./validation-rule";
 
 // Etichette italiane per i campi di input che arrivano dai form, sull'ultimo

@@ -10,21 +10,21 @@ import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { SellerSettingsSchema } from "@/lib/schemas/composed";
+import { SellerSettingsSchema } from "@/schemas/composed";
 import {
 	OnlinePaymentsSchema,
 	OrganizationSchema,
 	SellerProfileChangeSchema,
 	SellerProfileSchema,
-} from "@/lib/schemas/entities";
+} from "@/schemas/entities";
 import {
 	CompanySettingsBody,
 	DocumentChangeBody,
 	PersonalSettingsBody,
 	VatChangeBody,
-} from "@/lib/schemas/forms/settings";
-import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
-import { zFile } from "@/lib/schemas/t";
+} from "@/schemas/forms/settings";
+import { okRes, withConflictErrors, withErrors } from "@/schemas/responses";
+import { zFile } from "@/schemas/t";
 import { requireOwner } from "../context";
 import {
 	cancelSellerChange,

@@ -3,9 +3,9 @@ import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { db } from "@/db";
 import { customerProfile } from "@/db/schemas/customer";
+import { resolveSellerAccess } from "@/domain/sellers/access";
 import { auth } from "@/infra/auth";
 import { ServiceError } from "@/lib/errors";
-import { resolveSellerAccess } from "@/modules/seller/context";
 import { guard } from "./routes";
 
 type Session = typeof auth.$Infer.Session;
@@ -106,7 +106,7 @@ export type SellerEnv = {
 
 /**
  * La guardia del modulo seller per le route operative (prima di Hono era il
- * `.guard` del modulo, con `resolveSellerAccess` di `modules/seller/context.ts`): login (401), poi
+ * `.guard` del modulo, con `resolveSellerAccess`, ora in `domain/sellers/access.ts`): login (401), poi
  * titolare con onboarding attivo o dipendente con incarico attivo di un
  * venditore attivo (i quattro 403), in `c.var.seller`. Dopo i `v(...)` come
  * `requireAuth`; non rilegge `c.var.seller` se c'è già (test, D13).

@@ -9,9 +9,9 @@ import { logger } from "@/infra/logger";
 import {
 	CsvImportWithMissingResultSchema,
 	CsvUpsertResultSchema,
-} from "@/lib/schemas/entities";
-import { okRes, withConflictErrors } from "@/lib/schemas/responses";
-import { zFile } from "@/lib/schemas/t";
+} from "@/schemas/entities";
+import { okRes, withConflictErrors } from "@/schemas/responses";
+import { zFile } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
 	importCategoryCharacteristicsFromCsv,

@@ -9,7 +9,7 @@ import { validateOpeningHours } from "@/domain/stores/opening-hours";
 import { env } from "@/infra/env";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import type { CreateStoreBody } from "@/lib/schemas/forms";
+import type { CreateStoreBody } from "@/schemas/forms";
 
 type CreateStoreInput = z.infer<typeof CreateStoreBody>;
 

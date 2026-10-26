@@ -86,7 +86,7 @@ taxonomy listings, `webhooks` (Stripe).
 Four order types: **direct** (in-store, completes immediately — no state-machine
 transitions required), **reserve_pickup** (stock held 48 h), **pay_pickup** and
 **pay_deliver** (fixed €5.00 shipping). Status transitions for the non-direct types are
-enforced by `src/lib/order-state-machine.ts`; not every transition is valid for every
+enforced by `src/domain/orders/order-state-machine.ts`; not every transition is valid for every
 type.
 
 Order creation (single transaction): stock check → totals in integer cents → optional
@@ -100,7 +100,7 @@ points on the final total.
 restarts; worst-case latency between configured expiry and the status flip is ~60 s.
 
 VAT is gross-inclusive (*scorporo*): products carry a `vatRate`, order items snapshot
-it, orders store the VAT breakdown. Pure logic in `src/lib/vat.ts`.
+it, orders store the VAT breakdown. Pure logic in `src/domain/pricing/vat.ts`.
 
 ## Authentication
 

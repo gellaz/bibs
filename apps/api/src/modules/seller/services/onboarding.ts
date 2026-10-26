@@ -9,8 +9,8 @@ import { env } from "@/infra/env";
 import { logger } from "@/infra/logger";
 import { publicUrl, s3 } from "@/infra/s3";
 import { ServiceError } from "@/lib/errors";
-import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import { notifyAdminsNewRequest } from "@/modules/seller/services/admin-notifications";
+import type { IdentityDocumentType } from "@/schemas/forms/identity-document";
 import { checkDocument } from "./document-check";
 import { fetchSellerProfileCompact } from "./profile";
 

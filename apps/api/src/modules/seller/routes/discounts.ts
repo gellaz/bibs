@@ -16,16 +16,16 @@ import {
 	DiscountRemoveResultSchema,
 	DiscountSchema,
 	DiscountUpdateBody,
-} from "@/lib/schemas/discount";
-import { PaginationQuery } from "@/lib/schemas/pagination";
+} from "@/schemas/discount";
+import { PaginationQuery } from "@/schemas/pagination";
 import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
-import { zInteger } from "@/lib/schemas/t";
+} from "@/schemas/responses";
+import { zInteger } from "@/schemas/t";
 import { requireOwner } from "../context";
 import {
 	addProductsToDiscount,

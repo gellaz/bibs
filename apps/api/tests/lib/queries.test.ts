@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { ProductSearchQuery } from "@/lib/schemas/queries";
+import { ProductSearchQuery } from "@/schemas/queries";
 
 /** Il valore (già decodificato da `v()`) passa lo schema della query. */
 const passes = (schema: typeof ProductSearchQuery, value: unknown) =>

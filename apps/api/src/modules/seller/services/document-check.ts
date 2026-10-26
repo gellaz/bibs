@@ -6,7 +6,7 @@ import {
 	isValidDocumentNumber,
 	normalizeDocumentNumber,
 	todayInRome,
-} from "@/lib/schemas/forms/identity-document";
+} from "@/schemas/forms/identity-document";
 
 /**
  * Controlla numero (per tipo) e scadenza di un documento: 422 con il messaggio

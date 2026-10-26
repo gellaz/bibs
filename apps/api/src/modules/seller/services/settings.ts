@@ -8,15 +8,15 @@ import {
 	getDefaultPaymentMethod,
 	toOnlinePayments,
 } from "@/domain/billing/connect-account";
-import { logger } from "@/infra/logger";
+import { getEmployeeAssignedStoreIds } from "@/domain/sellers/access";
+import { deleteDocumentImage } from "@/domain/sellers/documents";
 import { ServiceError } from "@/lib/errors";
-import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import { notifyAdminsNewRequest } from "@/modules/seller/services/admin-notifications";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
 } from "@/modules/seller/services/municipality";
-import { getEmployeeAssignedStoreIds } from "./access";
+import type { IdentityDocumentType } from "@/schemas/forms/identity-document";
 import { checkDocument } from "./document-check";
 import { fetchSellerProfileCompact } from "./profile";
 
@@ -335,24 +335,6 @@ export async function requestVatChange(params: VatChangeParams) {
 		changeId: change.id,
 	});
 	return change;
-}
-
-// Document photos are personal data: delete the ones nobody references any
-// more. Best-effort, after the commit: a failed delete leaves an orphan file,
-// never a half-applied decision. A decided request's changeData may point at a
-// deleted key: the admin detail hides the photo once the request isn't pending.
-export async function deleteDocumentImage(
-	key: string,
-	sellerProfileId: string,
-	action: string,
-) {
-	const { s3 } = await import("@/infra/s3");
-	await s3.delete(key).catch((err) => {
-		logger.warn(
-			{ sellerProfileId, key, action, err: String(err) },
-			"Cleanup foto del documento fallito",
-		);
-	});
 }
 
 export async function cancelSellerChange(params: {

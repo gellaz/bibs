@@ -87,20 +87,20 @@ export const order = pgTable(
 		checkoutId: text("checkout_id").references(() => checkout.id, {
 			onDelete: "set null",
 		}),
-		// Codice di ritiro al banco (lib/pickup-code.ts): solo per gli ordini da
+		// Codice di ritiro al banco (domain/orders/pickup-code.ts): solo per gli ordini da
 		// ritirare, unico tra gli ordini aperti dello stesso negozio.
 		pickupCode: text("pickup_code"),
 		// Solo pay_*: oltre questa data un ordine ancora `pending` si annulla da
 		// solo (cron expireUnpaidOrders) e lo stock torna disponibile.
 		paymentExpiresAt: timestamp("payment_expires_at", { withTimezone: true }),
-		// Commissione bibs (lib/platform-fee.ts), fissata alla creazione; 0 per
+		// Commissione bibs (domain/billing/platform-fee.ts), fissata alla creazione; 0 per
 		// ogni ordine che non è pay_pickup.
 		platformFee: numeric("platform_fee", { precision: 10, scale: 2 })
 			.default("0")
 			.notNull(),
 		// Sconto punti in euro, fissato alla creazione: lo copre bibs, quindi
 		// `total` è quanto paga il cliente e il negozio riceve
-		// total + pointsDiscount − platformFee (lib/platform-fee.ts).
+		// total + pointsDiscount − platformFee (domain/billing/platform-fee.ts).
 		pointsDiscount: numeric("points_discount", { precision: 10, scale: 2 })
 			.default("0")
 			.notNull(),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { join, posix } from "node:path";
 
-// Le regole sugli import tra le cartelle di src/ (AGENTS.md, «Struttura di src/»):
+// Le regole sugli import tra le cartelle di src/ (AGENTS.md, «Source layout»):
 // A. un modulo non importa da un altro modulo;
 // B. fuori da modules/ nessuno importa da modules/, tranne la composizione
 //    (app.ts, types.ts) e gli strumenti (db/seed/, scripts/);

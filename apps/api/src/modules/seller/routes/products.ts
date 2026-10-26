@@ -10,7 +10,7 @@ import { ServiceError } from "@/lib/errors";
 import {
 	SellerProductDetailSchema,
 	SellerProductListItemSchema,
-} from "@/lib/schemas/composed";
+} from "@/schemas/composed";
 import {
 	BulkDeleteBody,
 	BulkDeleteResult,
@@ -22,21 +22,21 @@ import {
 	ProductSchema,
 	ProductStatusBody,
 	ProductStatusCounts,
-} from "@/lib/schemas/entities";
+} from "@/schemas/entities";
 import {
 	CharacteristicValuesField,
 	CreateProductBody,
 	VatRateSchema,
-} from "@/lib/schemas/forms/products";
-import { PaginationQuery } from "@/lib/schemas/pagination";
+} from "@/schemas/forms/products";
+import { PaginationQuery } from "@/schemas/pagination";
 import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
-import { zFile, zInteger, zString } from "@/lib/schemas/t";
+} from "@/schemas/responses";
+import { zFile, zInteger, zString } from "@/schemas/t";
 import { ensureStoreAccess } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {

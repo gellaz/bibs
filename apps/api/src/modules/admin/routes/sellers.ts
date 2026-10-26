@@ -6,17 +6,17 @@ import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { SellerProfileWithUserSchema } from "@/lib/schemas/composed";
-import { SellerProfileSchema } from "@/lib/schemas/entities";
-import { RejectSellerBody } from "@/lib/schemas/forms/seller-rejection";
-import { SellerListQuery } from "@/lib/schemas/queries";
+import { SellerProfileWithUserSchema } from "@/schemas/composed";
+import { SellerProfileSchema } from "@/schemas/entities";
+import { RejectSellerBody } from "@/schemas/forms/seller-rejection";
+import { SellerListQuery } from "@/schemas/queries";
 import {
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
-import { zDate } from "@/lib/schemas/t";
+} from "@/schemas/responses";
+import { zDate } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
 	countSellersByStatus,

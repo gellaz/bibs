@@ -4,8 +4,8 @@ import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { logger } from "@/infra/logger";
-import { SellerProfileSchema } from "@/lib/schemas/entities";
-import { okRes, withErrors } from "@/lib/schemas/responses";
+import { SellerProfileSchema } from "@/schemas/entities";
+import { okRes, withErrors } from "@/schemas/responses";
 import { getSellerProfile } from "../services/profile";
 
 const ProfileRes = okRes(SellerProfileSchema);

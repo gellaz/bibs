@@ -1,65 +1,10 @@
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { order } from "@/db/schemas/order";
-import { refundStockAndPoints } from "@/domain/orders/order-helpers";
-import { config } from "@/lib/config";
-
-/**
- * Expires a single reserve_pickup order by ID.
- * Sets status to "expired" and refunds any points spent.
- *
- * Returns true if the order was expired, false if it was no longer eligible.
- */
-export async function expireSingleReservation(
-	orderId: string,
-): Promise<boolean> {
-	return db.transaction(async (tx) => {
-		const existing = await tx.query.order.findFirst({
-			where: and(
-				eq(order.id, orderId),
-				eq(order.type, "reserve_pickup"),
-				inArray(order.status, ["confirmed", "ready_for_pickup"]),
-			),
-			columns: { id: true, customerProfileId: true, pointsSpent: true },
-			with: { items: true },
-		});
-
-		if (!existing) return false;
-
-		// Compare-and-swap: only the transaction that actually flips the order
-		// out of confirmed/ready_for_pickup performs the refund. Under READ
-		// COMMITTED two concurrent expirers (cron sweep, seller completion,
-		// customer pickup) can both pass the SELECT above; the status-guarded
-		// UPDATE makes the loser claim 0 rows and skip the refund, preventing
-		// double restock / double point-refund (the point_transaction unique
-		// index only backstops orders that actually spent points).
-		const [claimed] = await tx
-			.update(order)
-			.set({ status: "expired" })
-			.where(
-				and(
-					eq(order.id, existing.id),
-					inArray(order.status, ["confirmed", "ready_for_pickup"]),
-				),
-			)
-			.returning();
-
-		if (!claimed) return false;
-
-		await refundStockAndPoints(tx, existing);
-
-		return true;
-	});
-}
-
-/**
- * Le prenotazioni scadute prima di questo istante non si possono più ritirare.
- * Contando le ore di apertura molte scadono all'ora di chiusura: i 15 minuti
- * di tolleranza salvano il cliente servito alle 19:01 di una scadenza alle 19:00.
- */
-export function reservationGraceCutoff(now = new Date()): Date {
-	return new Date(now.getTime() - config.reservationGraceMinutes * 60_000);
-}
+import {
+	expireSingleReservation,
+	reservationGraceCutoff,
+} from "@/domain/orders/reservation-expiry";
 
 /**
  * Bulk safety-net: expires all reserve_pickup orders whose reservation

@@ -23,11 +23,6 @@ mock.module("@/db", () => ({
 
 import type { z } from "zod";
 import {
-	CustomerOrderWithRelationsSchema,
-	SellerOrderWithRelationsSchema,
-} from "@/lib/schemas/composed";
-import { asResponse } from "@/lib/schemas/t";
-import {
 	createOrder,
 	getCustomerOrder,
 	listCustomerOrders,
@@ -36,6 +31,11 @@ import {
 	getSellerOrder,
 	listSellerOrders,
 } from "@/modules/seller/services/orders";
+import {
+	CustomerOrderWithRelationsSchema,
+	SellerOrderWithRelationsSchema,
+} from "@/schemas/composed";
+import { asResponse } from "@/schemas/t";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,

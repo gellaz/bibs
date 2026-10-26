@@ -31,10 +31,8 @@ import { customerProfile } from "@/db/schemas/customer";
 import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct as storeProductTable } from "@/db/schemas/product";
-import {
-	expireReservations,
-	expireSingleReservation,
-} from "@/jobs/expire-reservations";
+import { expireSingleReservation } from "@/domain/orders/reservation-expiry";
+import { expireReservations } from "@/jobs/expire-reservations";
 import {
 	cancelSellerOrder,
 	completePickupByCode,

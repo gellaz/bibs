@@ -6,16 +6,16 @@ import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { StoreFacetsSchema } from "@/lib/schemas/composed";
+import { StoreFacetsSchema } from "@/schemas/composed";
 import {
 	StoreCardSchema,
 	StoreDetailSchema,
 	StoreMapSchema,
 	StoreProductCardSchema,
-} from "@/lib/schemas/entities";
-import { PaginationQuery } from "@/lib/schemas/pagination";
-import { StoreSearchQuery } from "@/lib/schemas/queries";
-import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
+} from "@/schemas/entities";
+import { PaginationQuery } from "@/schemas/pagination";
+import { StoreSearchQuery } from "@/schemas/queries";
+import { okPageRes, okRes, withErrors } from "@/schemas/responses";
 import { getStoreDetail } from "../services/store-detail";
 import { searchStores } from "../services/store-discovery";
 import { getStoreFacets } from "../services/store-facets";

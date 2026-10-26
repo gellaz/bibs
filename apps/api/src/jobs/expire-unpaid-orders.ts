@@ -1,38 +1,11 @@
-import { and, eq, inArray, isNotNull, lt } from "drizzle-orm";
+import { and, eq, isNotNull, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
 import { settleCheckoutPayment } from "@/domain/billing/order-payments";
-import { refundStockAndPoints } from "@/domain/orders/order-helpers";
+import { cancelUnpaidOrder } from "@/domain/orders/unpaid-orders";
 import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
-
-/**
- * Annulla un ordine pay_* mai pagato e restituisce lo stock. CAS sullo stato:
- * se nel frattempo il pagamento l'ha confermato (o un altro sweep l'ha già
- * annullato), non fa nulla.
- */
-export async function cancelUnpaidOrder(orderId: string): Promise<boolean> {
-	return db.transaction(async (tx) => {
-		const [claimed] = await tx
-			.update(order)
-			.set({ status: "cancelled" })
-			.where(
-				and(
-					eq(order.id, orderId),
-					eq(order.status, "pending"),
-					inArray(order.type, ["pay_pickup", "pay_deliver"]),
-				),
-			)
-			.returning();
-		if (!claimed) return false;
-		const items = await tx.query.orderItem.findMany({
-			where: (i, { eq }) => eq(i.orderId, orderId),
-		});
-		await refundStockAndPoints(tx, { ...claimed, items });
-		return true;
-	});
-}
 
 /**
  * Sweep ogni minuto dei pay_* ancora pending oltre payment_expires_at. Per ogni

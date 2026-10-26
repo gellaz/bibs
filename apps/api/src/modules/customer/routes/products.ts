@@ -10,9 +10,9 @@ import {
 	CustomerProductDetailSchema,
 	ProductCardSchema,
 	ProductFacetsSchema,
-} from "@/lib/schemas/entities";
-import { ProductDetailQuery, ProductSearchQuery } from "@/lib/schemas/queries";
-import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
+} from "@/schemas/entities";
+import { ProductDetailQuery, ProductSearchQuery } from "@/schemas/queries";
+import { okPageRes, okRes, withErrors } from "@/schemas/responses";
 import { getProductDetail } from "../services/product-detail";
 import { getProductFacets } from "../services/product-facets";
 import { searchProducts } from "../services/product-search";

@@ -1,5 +1,6 @@
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { ServiceError } from "@/lib/errors";
+import { PAY_TYPES } from "./order-types";
 
 /**
  * Defines valid (status → target_status) transitions per order type.
@@ -71,4 +72,18 @@ export function assertTransition(
 		);
 	}
 	return true;
+}
+
+/**
+ * Un pay_* in attesa di pagamento non si annulla a mano: il PaymentIntent copre
+ * tutti i negozi del checkout, e l'ordine si annulla da solo allo scadere della
+ * finestra di pagamento. Poi valgono le transizioni della macchina a stati.
+ */
+export function assertCancellable(o: { status: string; type: string }) {
+	if (o.status === "pending" && PAY_TYPES.includes(o.type as OrderType))
+		throw new ServiceError(
+			409,
+			"L'ordine è in attesa di pagamento: se non viene pagato si annulla da solo entro 30 minuti",
+		);
+	assertTransition(o.status as OrderStatus, "cancelled", o.type as OrderType);
 }

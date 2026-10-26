@@ -23,7 +23,7 @@ The defining property of the stack is **one type flow with no code generation**:
 ```text
 Drizzle table definitions (apps/api/src/db/schemas/)
         ↓ inform
-Zod schemas (apps/api/src/lib/schemas/) — validation + OpenAPI
+Zod schemas (apps/api/src/schemas/) — validation + OpenAPI
         ↓ typed into
 Hono sub-apps, one per module → exported app types (apps/api/src/types.ts)
         ↓ inferred by
@@ -52,10 +52,14 @@ after any API change.
 - **`src/http/`** — the kit every route uses: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()` (`send.ts`),
   `doc()` and the OpenAPI generator (`openapi.ts`), the auth guards (`auth.ts`), `guard()`, `publicRoute` and
   `assertRoutes` (`routes.ts`), the error mapping (`errors.ts`), the 422 messages (`validation-message.ts`).
-- **`src/lib/schemas/`** — the Zod schemas (entities, queries, bodies, response envelopes) and the constructors of
+- **`src/schemas/`** — the Zod schemas (entities, queries, bodies, response envelopes) and the constructors of
   `t.ts`; `forms/` holds the form schemas shared with the seller app (`@bibs/api/schemas`).
+- **`src/infra/`** — adapters to external systems: env, logger, S3, Stripe, email, better-auth, geocoding.
+- **`src/domain/<area>/`** — business rules shared by several modules or by the jobs (billing, orders, pricing,
+  stores, holidays, catalog, sellers).
+- **`src/lib/`** — generic utilities with no business meaning (money, pagination, errors, …).
 - **`src/modules/<module>/`** — `index.ts` (the sub-app and its exported type), `routes/`, `services/`,
-  `context.ts`.
+  `context.ts`. A module never imports another module (`tests/unit/architecture.test.ts`).
 
 ### Request lifecycle and response contract
 
@@ -83,12 +87,12 @@ A request goes through the root app in this order:
    builds the envelope and logs it; a path no route matches gets the JSON 404.
 
 Every route returns the same envelope. There are two layers of helpers in `src/http/responses.ts` (runtime) and
-`src/lib/schemas/responses.ts` (Zod schemas for `send()` and OpenAPI):
+`src/schemas/responses.ts` (Zod schemas for `send()` and OpenAPI):
 
 - `ok(data)` / `okPage(data, pagination)` / `okMessage(message)` (`src/http/responses.ts`) — runtime envelope
   builders
 - `okRes(schema)` / `okPageRes(schema)` / `OkMessage` / `withErrors()` / `withConflictErrors()`
-  (`src/lib/schemas/responses.ts`) — schemas used by `send()` and `doc()` so the response and OpenAPI agree
+  (`src/schemas/responses.ts`) — schemas used by `send()` and `doc()` so the response and OpenAPI agree
 - Success shape: `{ success: true, data }` or `{ success: true, data: [...], pagination: { page, limit, total } }`
   (page `limit` is capped at 100 — request more and you get a `422 VALIDATION_ERROR`)
 - Error shape: `{ success: false, error: "ERROR_CODE", message }` — never built by hand
@@ -99,7 +103,7 @@ of every `moduleApp()`:
 - Business errors are thrown as `ServiceError(status, message)`; the error *code* is
   derived from the status, not passed in.
 - Routes declare their error surface with `withErrors()` / `withConflictErrors()`
-  (`src/lib/schemas/responses.ts`) so OpenAPI stays honest.
+  (`src/schemas/responses.ts`) so OpenAPI stays honest.
 - Postgres unique violations (`23505`) are translated to `409` globally — unique-write
   routes don't try/catch for it.
 - A 422 message is `«Etichetta: regola»` built from the first Zod issue (`src/http/validation-message.ts`); the log
@@ -142,7 +146,6 @@ Each module under `src/modules/` is a Hono sub-app (`index.ts`, `routes/`, `serv
 | `locations/` | `/locations` | Italian regions / provinces / municipalities (public) |
 | `catalog/` | — | public taxonomy listings (`/product-macro-categories`, `/product-categories`, `/store-macro-categories`, `/store-categories`: four sub-apps, one `CatalogApp` type and one `catalogApi` client for the frontends); writes in `admin/` |
 | `webhooks/` | — | Stripe webhook receiver at `/webhooks/stripe` (signature-verified, idempotent — see [stripe-billing.md](stripe-billing.md)) |
-| `billing/` | — | internal services only (Stripe customer management shared by seller checkout); no routes |
 
 Background jobs (`src/jobs/`, scheduled by `src/jobs/scheduler.ts` with `croner`, started only by `src/index.ts`):
 
@@ -157,11 +160,11 @@ Background jobs (`src/jobs/`, scheduled by `src/jobs/scheduler.ts` with `croner`
 ### Writing schemas
 
 Plain Zod, with an Italian `description` in `.meta()` (`title` and `error` in the meta change the 422 message).
-For the API's own rules use the constructors of `src/lib/schemas/t.ts`:
+For the API's own rules use the constructors of `src/schemas/t.ts`:
 
 - strings with `minLength`/`maxLength`/`pattern`/`format` → `zString({ … })`, never `z.string().min()/.max()`
   (the API counts UTF-16 units: «😀» is 2 long, for Zod it is 1); a bare format → `zFormat(f)`, never Zod's own
-  formats (`FORMATS` in `src/lib/schemas/formats.ts` holds the API's format checks);
+  formats (`FORMATS` in `src/schemas/formats.ts` holds the API's format checks);
 - integers → `zInteger` (an integer or a string holding one) or `zInt()` (a number only), never `z.int()` or
   `z.number().int()`: Zod 4 rejects integers beyond ±2^53, the API does not (`page=9007199254740993` is a 200);
 - numbers and booleans in query or params → `zNumeric` / `zBooleanString`; dates → `zDate`; files → `zFile` /
@@ -232,7 +235,7 @@ erDiagram
 (Domain-grouped and simplified on purpose; the schema files are the source of truth.)
 
 All money is integer cents (`src/lib/money.ts`). VAT is gross-inclusive *scorporo* —
-prices include VAT, the breakdown is computed, never added on top (`src/lib/vat.ts`).
+prices include VAT, the breakdown is computed, never added on top (`src/domain/pricing/vat.ts`).
 
 ## Frontend apps
 
