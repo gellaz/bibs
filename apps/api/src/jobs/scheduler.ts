@@ -142,3 +142,17 @@ export function startCronJobs(): Cron[] {
 	logger.info({ jobs: jobs.map((job) => job.name) }, "Cron avviati");
 	return started;
 }
+
+/**
+ * Shutdown: no new tick from now on, then wait for the running ones (a job
+ * halfway through a transaction must not lose the pool) up to `timeoutMs`.
+ */
+export async function stopCronJobs(
+	crons: Cron[],
+	timeoutMs: number,
+): Promise<void> {
+	for (const cron of crons) cron.stop();
+	const deadline = Date.now() + timeoutMs;
+	while (crons.some((cron) => cron.isBusy()) && Date.now() < deadline)
+		await Bun.sleep(50);
+}

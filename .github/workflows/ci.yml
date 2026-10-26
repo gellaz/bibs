@@ -135,6 +135,12 @@ jobs:
             echo "Image is not a production build: localhost origin allowed" >&2
             exit 1
           fi
+      # SIGTERM: requests and running jobs finish, the pool closes, exit 0
+      # within docker stop's grace period (a SIGKILL would be 137).
+      - name: Graceful stop
+        run: |
+          docker stop -t 10 api
+          test "$(docker inspect -f '{{.State.ExitCode}}' api)" = 0
       - name: API logs
         if: failure()
         run: docker logs api || true
