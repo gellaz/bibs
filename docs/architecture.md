@@ -173,7 +173,7 @@ verifica di ogni PR stanno nel piano
 immagini, caratteristiche, stock); `customer/` (U3); catalogo pubblico e `admin/`
 (U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; U9:
 venditori, modifiche del profilo, negozi, richieste, billing; l'app admin non usa
-più Eden).
+più Eden); `webhooks/` (U10).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con

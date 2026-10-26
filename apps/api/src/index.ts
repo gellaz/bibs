@@ -21,7 +21,7 @@ import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
 import { sellerApp, sellerGuards, sellerModule } from "@/modules/seller";
-import { stripeWebhookRoutes } from "@/modules/webhooks";
+import { webhooksApp } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
 import { errorHandler } from "@/plugins/error-handler";
@@ -177,11 +177,11 @@ const app = new Elysia()
 					...honoPaths(storeCategoriesApp, "/store-categories", [
 						"publicRoute",
 					]),
+					...honoPaths(webhooksApp, "/webhooks", ["publicRoute"]),
 				},
 			},
 		}),
 	)
-	.use(stripeWebhookRoutes)
 	.use(betterAuth)
 	.use(sellerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
@@ -196,6 +196,7 @@ const app = new Elysia()
 	.mount("/product-categories", productCategoriesApp.fetch)
 	.mount("/store-macro-categories", storeMacroCategoriesApp.fetch)
 	.mount("/store-categories", storeCategoriesApp.fetch)
+	.mount("/webhooks", webhooksApp.fetch)
 	.use(cronJobs)
 	.use(health);
 
