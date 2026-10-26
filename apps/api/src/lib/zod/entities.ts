@@ -803,6 +803,20 @@ export const MunicipalitySchema = z.object({
 	updatedAt: zDate(),
 });
 
+export const SellerProfileChangeSchema = z.object({
+	id: z.string(),
+	sellerProfileId: z.string(),
+	changeType: z.enum(["vat", "document"]).meta(d("Tipo di modifica richiesta")),
+	changeData: z.unknown().meta(d("Dati della modifica (JSON)")),
+	status: z
+		.enum(["pending", "approved", "rejected", "cancelled"])
+		.meta(d("Stato della richiesta")),
+	reviewedBy: z.string().nullable(),
+	reviewedAt: zDate().nullable(),
+	rejectionReason: z.string().nullable(),
+	createdAt: zDate(),
+});
+
 // Store discovery card (customer public search)
 export const StoreCardSchema = z.object({
 	id: z.string(),

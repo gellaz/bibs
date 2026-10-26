@@ -1,23 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
+import { moduleApp } from "@/http/app";
 import { adminBillingRoutes } from "@/modules/admin/routes/billing";
-import { errorHandler } from "@/plugins/error-handler";
-
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
+import { testRequest } from "../helpers/hono-app";
 
 // Mounted bare: validation runs before the handler, so a bad productId must be
 // a 422 and never reach Stripe as an empty product.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(adminBillingRoutes);
+const app = moduleApp().route("/", adminBillingRoutes);
 
 const VALID = {
 	storeMonthlyFeeCents: 2900,
@@ -28,13 +16,11 @@ const VALID = {
 };
 
 function put(body: unknown) {
-	return app.handle(
-		new Request("http://localhost/billing/pricing", {
-			method: "PUT",
-			body: JSON.stringify(body),
-			headers: { "content-type": "application/json" },
-		}),
-	);
+	return testRequest(app, "/billing/pricing", {
+		method: "PUT",
+		body: JSON.stringify(body),
+		headers: { "content-type": "application/json" },
+	});
 }
 
 describe("PUT /billing/pricing — productId", () => {

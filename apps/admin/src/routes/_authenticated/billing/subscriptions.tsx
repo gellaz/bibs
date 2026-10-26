@@ -6,14 +6,14 @@ import { formatPriceEur } from "@bibs/ui/custom/price";
 import { SearchInput } from "@bibs/ui/custom/search-input";
 import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import {
 	dataTableFooterLabels,
 	tableColumnsToggleLabels,
@@ -43,7 +43,7 @@ function SubscriptionsPage() {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin", "billing", "subs", sellerEmail, storeName, page, limit],
 		queryFn: async () => {
-			const r = await api().admin.billing.subscriptions.get({
+			const r = await adminApi.billing.subscriptions.$get({
 				query: {
 					page,
 					limit,
@@ -51,7 +51,7 @@ function SubscriptionsPage() {
 					...(storeName ? { storeName } : {}),
 				},
 			});
-			return unwrap(r, m.billing_subs_load_error()).data;
+			return (await unwrapJson(r, m.billing_subs_load_error())).data;
 		},
 		placeholderData: keepPreviousData,
 	});

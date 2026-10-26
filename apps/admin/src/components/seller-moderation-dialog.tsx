@@ -20,9 +20,10 @@ import {
 import { RadioGroup, RadioGroupItem } from "@bibs/ui/components/radio-group";
 import { toast } from "@bibs/ui/components/sonner";
 import { Textarea } from "@bibs/ui/components/textarea";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
@@ -81,17 +82,14 @@ export function useSellerModeration(opts?: {
 	};
 
 	const verifyMutation = useMutation({
-		mutationFn: async ({ sellerId, updatedAt }: ModerationTarget) => {
-			const response = await api()
-				.admin.sellers({ sellerId })
-				.verify.patch({ expectedUpdatedAt: updatedAt });
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m.sellers_verify_error(),
-				);
-			}
-			return response.data;
-		},
+		mutationFn: async ({ sellerId, updatedAt }: ModerationTarget) =>
+			unwrapJson(
+				await adminApi.sellers[":sellerId"].verify.$patch({
+					param: { sellerId },
+					json: { expectedUpdatedAt: updatedAt },
+				}),
+				m.sellers_verify_error(),
+			),
 		onSuccess: () => {
 			invalidateLists();
 			setTarget(null);
@@ -113,17 +111,14 @@ export function useSellerModeration(opts?: {
 		}: {
 			target: ModerationTarget;
 			rejection: Rejection;
-		}) => {
-			const response = await api()
-				.admin.sellers({ sellerId })
-				.reject.patch({ ...rejection, expectedUpdatedAt: updatedAt });
-			if (response.error) {
-				throw new Error(
-					response.error.value?.message || m.sellers_reject_error(),
-				);
-			}
-			return response.data;
-		},
+		}) =>
+			unwrapJson(
+				await adminApi.sellers[":sellerId"].reject.$patch({
+					param: { sellerId },
+					json: { ...rejection, expectedUpdatedAt: updatedAt },
+				}),
+				m.sellers_reject_error(),
+			),
 		onSuccess: () => {
 			invalidateLists();
 			setTarget(null);

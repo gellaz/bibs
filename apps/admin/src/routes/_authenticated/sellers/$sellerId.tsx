@@ -1,6 +1,7 @@
 import { Alert, AlertDescription } from "@bibs/ui/components/alert";
 import { Button } from "@bibs/ui/components/button";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { displayName } from "@bibs/ui/lib/display-name";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useQuery } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import {
 	SellerModerationDialog,
 	useSellerModeration,
 } from "@/components/seller-moderation-dialog";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/sellers/$sellerId")({
@@ -32,15 +33,11 @@ function SellerDetailPage() {
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin-seller-detail", sellerId],
-		queryFn: async () => {
-			const response = await api().admin.sellers({ sellerId }).get();
-
-			if (response.error) {
-				throw new Error(response.error.value?.message || m.common_load_error());
-			}
-
-			return response.data;
-		},
+		queryFn: async () =>
+			unwrapJson(
+				await adminApi.sellers[":sellerId"].$get({ param: { sellerId } }),
+				m.common_load_error(),
+			),
 	});
 
 	const seller = data?.data;
@@ -90,7 +87,7 @@ function SellerDetailPage() {
 											sellerName:
 												seller.organization?.businessName ??
 												displayName(seller.user),
-											updatedAt: seller.updatedAt,
+											updatedAt: new Date(seller.updatedAt),
 										})
 									}
 								>
@@ -107,7 +104,7 @@ function SellerDetailPage() {
 											sellerName:
 												seller.organization?.businessName ??
 												displayName(seller.user),
-											updatedAt: seller.updatedAt,
+											updatedAt: new Date(seller.updatedAt),
 										})
 									}
 								>
@@ -267,7 +264,7 @@ function SellerDetailPage() {
 								sellerId,
 								sellerName:
 									seller.organization?.businessName ?? displayName(seller.user),
-								updatedAt: seller.updatedAt,
+								updatedAt: new Date(seller.updatedAt),
 							})
 						}
 					>
@@ -283,7 +280,7 @@ function SellerDetailPage() {
 								sellerId,
 								sellerName:
 									seller.organization?.businessName ?? displayName(seller.user),
-								updatedAt: seller.updatedAt,
+								updatedAt: new Date(seller.updatedAt),
 							})
 						}
 					>

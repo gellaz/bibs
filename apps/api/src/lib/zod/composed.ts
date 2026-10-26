@@ -10,6 +10,7 @@ import {
 	ProductCharacteristicValueSchema,
 	ProductImageSchema,
 	ProductSchema,
+	SellerProfileChangeSchema,
 	SellerProfileSchema,
 	StoreProductSchema,
 	StoreSchema,
@@ -22,6 +23,16 @@ import { zDate, zInteger } from "./t";
 // stesso ordine; si aggiungono quando una route migrata li usa.
 
 const d = (description: string) => ({ description });
+
+// Seller profile + user + organization (admin pending list)
+export const SellerProfileWithUserSchema = SellerProfileSchema.extend({
+	updatedAt: zDate({
+		description:
+			"Versione della candidatura: da rimandare in verify/reject come expectedUpdatedAt",
+	}),
+	user: UserSchema,
+	organization: OrganizationSchema.nullable(),
+});
 
 // ── Auth: registration / sign-in success payloads ──────────
 // These endpoints return RAW DB rows: seller profiles without the joined
@@ -180,6 +191,15 @@ export const CheckoutPreviewSchema = z.object({
 		.nullable(),
 });
 
+// Change request with seller profile + user (admin view)
+export const SellerProfileChangeWithSellerSchema =
+	SellerProfileChangeSchema.extend({
+		sellerProfile: SellerProfileSchema.extend({
+			user: UserSchema,
+			organization: OrganizationSchema.nullable(),
+		}),
+	});
+
 // ── Customer: facet di ricerca negozi (sidebar filtri) ─────
 const StoreCategoryFacetSchema = z.object({
 	id: z.string(),
@@ -208,4 +228,81 @@ export const StoreFacetsSchema = z.object({
 			categories: z.array(StoreCategoryFacetSchema),
 		}),
 	),
+});
+
+const subscriptionStatus = () =>
+	z.enum(["active", "past_due", "canceling", "suspended", "canceled"]);
+
+export const AdminStoreListItemSchema = z
+	.object({
+		id: z.string().meta(d("ID del negozio")),
+		name: z.string().meta(d("Nome del negozio")),
+		sellerProfileId: z.string().meta(d("ID del profilo venditore titolare")),
+		businessName: z
+			.string()
+			.meta(d("Ragione sociale del venditore"))
+			.nullable(),
+		categoryName: z.string().meta(d("Categoria del negozio")).nullable(),
+		municipality: z.object({
+			name: z.string().meta(d("Nome del comune")),
+			provinceAcronym: z.string().meta(d("Sigla della provincia")),
+		}),
+		subscriptionStatus: subscriptionStatus()
+			.meta(d("Stato dell'abbonamento; null se mai sottoscritto"))
+			.nullable(),
+		createdAt: zDate({ description: "Data di creazione" }),
+		deletedAt: zDate({ description: "Data di eliminazione" }).nullable(),
+	})
+	.meta(
+		d(
+			"Negozio nella lista admin, con venditore, comune e stato dell'abbonamento",
+		),
+	);
+
+// ── Admin: pagina «Richieste» ──────────────
+export const AdminRequestRowSchema = z.object({
+	kind: z.enum(["candidature", "vat", "document"]),
+	id: z
+		.string()
+		.meta(d("ID della richiesta; per le candidature il sellerProfileId")),
+	sellerProfileId: z.string(),
+	seller: z.object({ name: z.string().nullable(), email: z.string() }),
+	businessName: z.string().nullable(),
+	currentValue: z.string().nullable(),
+	requestedValue: z.string().nullable(),
+	submittedAt: zDate(),
+});
+
+const DocumentSnapshotSchema = z.object({
+	documentType: z
+		.enum(["identity_card", "driving_license", "passport"])
+		.nullable(),
+	documentNumber: z.string().nullable(),
+	documentExpiry: z.string().nullable(),
+	issuedMunicipality: z
+		.object({ name: z.string(), provinceAcronym: z.string() })
+		.nullable(),
+	imageUrl: z.string().nullable(),
+});
+
+export const AdminChangeDetailSchema = z.object({
+	id: z.string(),
+	changeType: z.enum(["vat", "document"]),
+	status: z.enum(["pending", "approved", "rejected", "cancelled"]),
+	createdAt: zDate(),
+	seller: z.object({
+		id: z.string(),
+		name: z.string().nullable(),
+		email: z.string(),
+		businessName: z.string().nullable(),
+	}),
+	vat: z
+		.object({ current: z.string().nullable(), requested: z.string() })
+		.nullable(),
+	document: z
+		.object({
+			current: DocumentSnapshotSchema,
+			requested: DocumentSnapshotSchema,
+		})
+		.nullable(),
 });

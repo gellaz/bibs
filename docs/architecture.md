@@ -170,9 +170,10 @@ verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
-immagini, caratteristiche, stock); `customer/` (U3); catalogo pubblico e admin 1
-(U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; il resto
-di /admin resta Elysia fino a U9 e vince sul mount); `webhooks/` (U10).
+immagini, caratteristiche, stock); `customer/` (U3); catalogo pubblico e `admin/`
+(U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; U9:
+venditori, modifiche del profilo, negozi, richieste, billing; l'app admin non usa
+più Eden); `webhooks/` (U10).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con

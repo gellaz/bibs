@@ -10,6 +10,8 @@ import {
 	CharacteristicListQuery as TbCharacteristicListQuery,
 	ProductCategoryListQuery as TbProductCategoryListQuery,
 	ProductSearchQuery as TbProductSearchQuery,
+	SellerListQuery as TbSellerListQuery,
+	StoreListQuery as TbStoreListQuery,
 } from "@/lib/queries";
 import {
 	BulkDeleteBody as TbBulkDeleteBody,
@@ -25,6 +27,7 @@ import {
 	CharacteristicValuesField as TbCharacteristicValuesField,
 	CreateProductBody as TbCreateProductBody,
 } from "@/lib/schemas/forms/products";
+import { RejectSellerBody as TbRejectSellerBody } from "@/lib/schemas/forms/seller-rejection";
 import {
 	CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody,
 	UpdateHolidayDefinitionBody as TbUpdateHolidayDefinitionBody,
@@ -54,6 +57,8 @@ import {
 	CharacteristicListQuery,
 	ProductCategoryListQuery,
 	ProductSearchQuery,
+	SellerListQuery,
+	StoreListQuery,
 } from "@/lib/zod/queries";
 import { RegisterBody, SignInBody } from "@/lib/zod/registration";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
@@ -67,6 +72,10 @@ import {
 	zString,
 } from "@/lib/zod/t";
 import {
+	SubscriptionsQuery,
+	UpdatePricingBody,
+} from "@/modules/admin/routes/billing";
+import {
 	RemoveCategoryCharacteristicBody,
 	SetCategoryCharacteristicBody,
 } from "@/modules/admin/routes/category-characteristics";
@@ -77,6 +86,12 @@ import {
 	UpdateProductCharacteristicBody,
 } from "@/modules/admin/routes/product-characteristics";
 import { CreateProductMacroCategoryBody } from "@/modules/admin/routes/product-macro-categories";
+import { RequestListQuery } from "@/modules/admin/routes/requests";
+import { RejectChangeBody } from "@/modules/admin/routes/seller-changes";
+import {
+	RejectSellerRouteBody,
+	VerifySellerBody,
+} from "@/modules/admin/routes/sellers";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 
@@ -399,6 +414,75 @@ const TbHolidayPreviewQuery = t.Object({
 		description: "Anno da risolvere",
 	}),
 });
+
+// U9 (admin 2): gli schemi TypeBox scritti dentro le route Elysia di
+// sellers, seller-changes, requests e billing, copiati da lì.
+const TbExpectedUpdatedAt = t.Date({
+	description:
+		"`updatedAt` del venditore come l'admin l'ha visto: 409 se nel frattempo la candidatura è cambiata (es. reinvio dopo un rifiuto)",
+});
+const TbVerifySellerBody = t.Object({ expectedUpdatedAt: TbExpectedUpdatedAt });
+const TbRejectSellerRouteBody = t.Object({
+	...TbRejectSellerBody.properties,
+	expectedUpdatedAt: TbExpectedUpdatedAt,
+});
+const TbRejectChangeBody = t.Object({
+	reason: t.Optional(
+		t.String({
+			maxLength: 500,
+			description: "Motivo del rifiuto",
+		}),
+	),
+});
+const TbRequestListQuery = t.Composite([
+	TbPaginationQuery,
+	t.Object({
+		type: t.Optional(
+			t.Union(
+				[
+					t.Literal("all"),
+					t.Literal("candidature"),
+					t.Literal("vat"),
+					t.Literal("document"),
+				],
+				{ default: "all", description: "Filtra per tipo di richiesta" },
+			),
+		),
+	}),
+]);
+const TbSubscriptionStatus = t.Union([
+	t.Literal("active"),
+	t.Literal("past_due"),
+	t.Literal("canceling"),
+	t.Literal("suspended"),
+	t.Literal("canceled"),
+]);
+const TbSubscriptionsQuery = t.Object({
+	page: t.Optional(t.Integer({ minimum: 1 })),
+	limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
+	status: t.Optional(TbSubscriptionStatus),
+	sellerEmail: t.Optional(t.String()),
+	storeName: t.Optional(t.String()),
+});
+const TbUpdatePricingBody = t.Object({
+	storeMonthlyFeeCents: t.Integer({ minimum: 100 }),
+	currency: t.String({ minLength: 3, maxLength: 3 }),
+	suspendedAutoCancelDays: t.Integer({ minimum: 7, maximum: 365 }),
+	pendingCreationExpiryHours: t.Integer({ minimum: 1, maximum: 168 }),
+	productId: t.String({
+		pattern: "^prod_[A-Za-z0-9]+$",
+		description:
+			"ID del prodotto Stripe (prod_…) a cui agganciare il nuovo prezzo",
+	}),
+});
+const pricing = {
+	storeMonthlyFeeCents: 2900,
+	currency: "EUR",
+	suspendedAutoCancelDays: 60,
+	pendingCreationExpiryHours: 24,
+	productId: "prod_ABC123",
+};
+const stale = "2026-01-01T00:00:00.000Z";
 
 const body = (
 	name: string,
@@ -2438,6 +2522,284 @@ export const cases: Case[] = [
 		{ name: "😀".repeat(51), dataType: "text" },
 		422,
 		fail("Nome: al massimo 100 caratteri"),
+	),
+
+	// U9: admin 2 (attesi catturati su Elysia nel batch
+	// `baseline/hono-batch-admin-2.jsonl`, più i 200 dell'eco).
+	query("U9 venditori: default", TbSellerListQuery, SellerListQuery, "", 200, {
+		ok: { page: 1, limit: 20, sortBy: "createdAt", sortOrder: "desc" },
+	}),
+	query(
+		"U9 venditori: stato non ammesso",
+		TbSellerListQuery,
+		SellerListQuery,
+		"?status=foo",
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	query(
+		"U9 venditori: ordinamento non ammesso",
+		TbSellerListQuery,
+		SellerListQuery,
+		"?sortBy=email",
+		422,
+		fail("sortBy: valore non ammesso"),
+	),
+	query(
+		"U9 venditori: ricerca di 51 emoji (unità UTF-16)",
+		TbSellerListQuery,
+		SellerListQuery,
+		`?search=${encodeURIComponent("😀".repeat(51))}`,
+		422,
+		fail("Ricerca: al massimo 100 caratteri"),
+	),
+	query(
+		"U9 venditori: ricerca non trimmata e campi ignoti",
+		TbSellerListQuery,
+		SellerListQuery,
+		"?search=%20x%20&status=active&foo=1",
+		200,
+		{
+			ok: {
+				page: 1,
+				limit: 20,
+				sortBy: "createdAt",
+				sortOrder: "desc",
+				search: " x ",
+				status: "active",
+			},
+		},
+	),
+	query(
+		"U9 negozi: default con il tab",
+		TbStoreListQuery,
+		StoreListQuery,
+		"",
+		200,
+		{
+			ok: {
+				page: 1,
+				limit: 20,
+				status: "all",
+				sortBy: "createdAt",
+				sortOrder: "desc",
+			},
+		},
+	),
+	query(
+		"U9 negozi: tab non ammesso",
+		TbStoreListQuery,
+		StoreListQuery,
+		"?status=foo",
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	query(
+		"U9 negozi: pagina non numerica",
+		TbStoreListQuery,
+		StoreListQuery,
+		"?page=abc",
+		422,
+		fail("Pagina: deve essere un numero intero"),
+	),
+	query(
+		"U9 richieste: default del tipo (t.Composite)",
+		TbRequestListQuery,
+		RequestListQuery,
+		"?limit=2",
+		200,
+		{ ok: { page: 1, limit: 2, type: "all" } },
+	),
+	query(
+		"U9 richieste: tipo non ammesso",
+		TbRequestListQuery,
+		RequestListQuery,
+		"?type=foo",
+		422,
+		fail("Tipo: valore non ammesso"),
+	),
+	query(
+		"U9 abbonamenti: niente default",
+		TbSubscriptionsQuery,
+		SubscriptionsQuery,
+		"?page=2&sellerEmail=a&x=1",
+		200,
+		{ ok: { page: 2, sellerEmail: "a" } },
+	),
+	query(
+		"U9 abbonamenti: stato non ammesso",
+		TbSubscriptionsQuery,
+		SubscriptionsQuery,
+		"?status=foo",
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	query(
+		"U9 abbonamenti: limite a zero",
+		TbSubscriptionsQuery,
+		SubscriptionsQuery,
+		"?limit=0",
+		422,
+		fail("Valore non valido: deve essere almeno 1"),
+	),
+	body(
+		"U9 prezzi: corpo vuoto",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{},
+		422,
+		fail("storeMonthlyFeeCents: campo obbligatorio"),
+	),
+	body(
+		"U9 prezzi: prodotto Stripe non valido",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, productId: "prod_" },
+		422,
+		fail("Prodotto: formato non valido"),
+	),
+	body(
+		"U9 prezzi: valuta di 4 lettere",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, currency: "EURO" },
+		422,
+		fail("currency: al massimo 3 caratteri"),
+	),
+	body(
+		"U9 prezzi: giorni sotto il minimo",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, suspendedAutoCancelDays: 6 },
+		422,
+		fail("suspendedAutoCancelDays: deve essere almeno 7"),
+	),
+	body(
+		"U9 prezzi: ore decimali",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, pendingCreationExpiryHours: 1.5 },
+		422,
+		fail("pendingCreationExpiryHours: deve essere un numero intero"),
+	),
+	body(
+		"U9 prezzi: intero in stringa, trim e campi ignoti",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, storeMonthlyFeeCents: "2900", currency: " EUR ", x: 1 },
+		200,
+		{ ok: { ...pricing, storeMonthlyFeeCents: 2900 } },
+	),
+	body(
+		"U9 verifica: data mancante",
+		TbVerifySellerBody,
+		VerifySellerBody,
+		{},
+		422,
+		fail("expectedUpdatedAt: campo obbligatorio"),
+	),
+	body(
+		"U9 verifica: data gg/mm/aaaa",
+		TbVerifySellerBody,
+		VerifySellerBody,
+		{ expectedUpdatedAt: "24/10/2026" },
+		422,
+		fail("expectedUpdatedAt: data non valida"),
+	),
+	body(
+		"U9 verifica: epoch",
+		TbVerifySellerBody,
+		VerifySellerBody,
+		{ expectedUpdatedAt: 0 },
+		200,
+		{ ok: { expectedUpdatedAt: "1970-01-01T00:00:00.000Z" } },
+	),
+	body(
+		"U9 rifiuto: corpo vuoto (prima il campo anyOf mancante)",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{},
+		422,
+		fail("fixStep: campo obbligatorio"),
+	),
+	body(
+		"U9 rifiuto: motivo di soli spazi",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{ reason: "   ", fixStep: null, expectedUpdatedAt: stale },
+		422,
+		fail("Indica il motivo del rifiuto"),
+	),
+	body(
+		"U9 rifiuto: motivo di 251 emoji (unità UTF-16)",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{ reason: "😀".repeat(251), fixStep: null, expectedUpdatedAt: stale },
+		422,
+		fail("Indica il motivo del rifiuto"),
+	),
+	body(
+		"U9 rifiuto: step non ammesso",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{
+			reason: "Documento illeggibile",
+			fixStep: "foo",
+			expectedUpdatedAt: stale,
+		},
+		422,
+		fail("fixStep: valore non valido"),
+	),
+	body(
+		"U9 rifiuto: step mancante",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{ reason: "Documento illeggibile", expectedUpdatedAt: stale },
+		422,
+		fail("fixStep: campo obbligatorio"),
+	),
+	body(
+		"U9 rifiuto: trim e data",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{
+			reason: " Documento illeggibile ",
+			fixStep: "document",
+			expectedUpdatedAt: stale,
+			x: 1,
+		},
+		200,
+		{
+			ok: {
+				reason: "Documento illeggibile",
+				fixStep: "document",
+				expectedUpdatedAt: stale,
+			},
+		},
+	),
+	body(
+		"U9 modifica rifiutata: motivo facoltativo",
+		TbRejectChangeBody,
+		RejectChangeBody,
+		{},
+		200,
+		{ ok: {} },
+	),
+	body(
+		"U9 modifica rifiutata: motivo di 251 emoji (unità UTF-16)",
+		TbRejectChangeBody,
+		RejectChangeBody,
+		{ reason: "😀".repeat(251) },
+		422,
+		fail("Motivo: al massimo 500 caratteri"),
+	),
+	body(
+		"U9 modifica rifiutata: motivo non testo",
+		TbRejectChangeBody,
+		RejectChangeBody,
+		{ reason: 5 },
+		422,
+		fail("Motivo: deve essere un testo"),
 	),
 ];
 

@@ -1,12 +1,10 @@
-import type { AdminApp, App, CatalogApp, MeApp } from "@bibs/api";
-import { createApiClient, type WithErrors } from "@bibs/ui/lib/api-client";
+import type { AdminApp, CatalogApp, MeApp } from "@bibs/api";
+import type { WithErrors } from "@bibs/ui/lib/api-client";
 import { hc } from "hono/client";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-export const api = createApiClient<App>(API_URL);
-
-// Client `hc` per i moduli già su Hono: uno per sotto-albero.
+// Client `hc` per sotto-albero (dalla U9 l'admin non usa più Eden).
 const init = { credentials: "include" } satisfies RequestInit;
 export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });
 export const adminApi = hc<WithErrors<AdminApp>>(`${API_URL}/admin`, { init });
