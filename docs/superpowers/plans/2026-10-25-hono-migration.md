@@ -32,7 +32,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U11 | Cambio finale: Hono app principale, via Elysia/Eden/logixlysia/`@elysiajs/*` | U2–U10 | fatto | #310 |
 | U11b | Uscita da TypeBox: form condivisi e resolver seller su Zod, `env.ts`, catalog | U11 | da fare | — |
 | U12 | Hono 5: bump all'ultima 5.x (GA se uscita, altrimenti l'ultima rc); ultima PR di codice prima di U13/U14 | U11b | no-op (`5.0.0-rc.1` è ancora l'ultima 5.x) | — |
-| U13 | Documentazione e rimozione della skill `elysiajs` | U12 | in revisione | #PR_U13 |
+| U13 | Documentazione e rimozione della skill `elysiajs` | U12 | in revisione | #311 |
 | U14 | PR finale `feat/hono-migration` → `main` (la mergia Marco) | U13 | da fare | — |
 
 Parallelismo: al massimo 3 unità insieme, ognuna nel suo worktree; collaudo nel browser e merge uno alla volta. Dopo U1 possono partire insieme U2, U3, U5, U8, U10 (tre per volta); U4 aspetta U2, U6 e U7 aspettano U5, U9 aspetta U8. **U2 e U4 escono nella stessa PR** (branch `feat/hono-u2-u4-locations-registration`, deciso dall'orchestratore il 2026-10-25: U4 dipendeva solo dal rate limit di U2, così si risparmia un giro di spedizione). I file toccati da tutti (`apps/api/src/index.ts`, `apps/api/src/types.ts`, `apps/*/src/lib/api.ts`, `apps/api/src/lib/zod/*`) danno conflitti piccoli: si risolvono con `git merge origin/feat/hono-migration` nel branch, mai con rebase.
@@ -1011,7 +1011,7 @@ Da U1 il repo è già su Hono 5 (`5.0.0-rc.1`, D1). U12 è l'**ultima PR di codi
 
 ### U13 — Documentazione e skill
 
-**Stato:** in revisione · **PR:** #PR_U13 · **Branch:** `docs/hono-u13-docs` (nome dato dall'orchestratore al posto di `docs/hono-docs`)
+**Stato:** in revisione · **PR:** #311 · **Branch:** `docs/hono-u13-docs` (nome dato dall'orchestratore al posto di `docs/hono-docs`)
 
 Scritta per lo stato dopo U11b (TypeBox fuori dal repo, form del seller su Zod con `zodResolver`, `env.ts` su Zod), che si mergia prima di questa PR.
 
