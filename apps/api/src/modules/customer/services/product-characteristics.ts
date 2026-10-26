@@ -7,7 +7,7 @@ import {
 	productCharacteristicOption,
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
-import { toCharacteristicDisplayValue } from "@/lib/characteristic-values";
+import { toCharacteristicDisplayValue } from "@/domain/catalog/characteristic-values";
 
 export interface CustomerCharacteristic {
 	characteristicId: string;

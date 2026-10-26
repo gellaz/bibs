@@ -11,7 +11,7 @@ import {
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
-import type { CastellettoLine } from "@/lib/vat";
+import type { CastellettoLine } from "@/domain/pricing/vat";
 import { customerAddress } from "./address";
 import { checkout } from "./checkout";
 import { customerProfile } from "./customer";

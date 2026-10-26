@@ -2,7 +2,7 @@ import { m } from "@/paraglide/messages";
 import type { DaySchedule } from "../components/opening-hours-editor";
 
 /**
- * Mirror client-side del validator API (apps/api/src/lib/opening-hours.ts).
+ * Mirror client-side del validator API (apps/api/src/domain/stores/opening-hours.ts).
  * Ritorna una mappa dayOfWeek → messaggio per il rendering inline per-giorno.
  * HH:mm zero-padded: il confronto lessicografico è quello cronologico.
  */

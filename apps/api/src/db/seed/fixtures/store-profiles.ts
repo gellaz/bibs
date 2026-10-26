@@ -6,8 +6,8 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store, storePhoneNumber } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeImage } from "@/db/schemas/store-image";
+import { validateOpeningHours } from "@/domain/stores/opening-hours";
 import { config } from "@/lib/config";
-import { validateOpeningHours } from "@/lib/opening-hours";
 import {
 	bolognaPrefixes,
 	businessPrefixes,

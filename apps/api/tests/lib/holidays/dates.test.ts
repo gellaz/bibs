@@ -4,7 +4,7 @@ import {
 	dowFromYMD,
 	expandRange,
 	ymdToYear,
-} from "@/lib/holidays/dates";
+} from "@/domain/holidays/dates";
 
 describe("calendar date helpers", () => {
 	it("dowFromYMD uses 0=Mon..6=Sun", () => {

@@ -4,14 +4,14 @@ import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
+import { notifyApplicationReceived } from "@/domain/sellers/onboarding-notifications";
 import { env } from "@/infra/env";
 import { logger } from "@/infra/logger";
 import { publicUrl, s3 } from "@/infra/s3";
-import { notifyAdminsNewRequest } from "@/lib/admin-notifications";
 import { ServiceError } from "@/lib/errors";
 import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
+import { notifyAdminsNewRequest } from "@/modules/seller/services/admin-notifications";
 import { checkDocument } from "./document-check";
-import { notifyApplicationReceived } from "./onboarding-notifications";
 import { fetchSellerProfileCompact } from "./profile";
 
 // ── Helpers ─────────────────────────────────

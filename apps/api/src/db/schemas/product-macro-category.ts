@@ -1,6 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import { check, pgTable, text, timestamp } from "drizzle-orm/pg-core";
-import { DEFAULT_VAT_RATE, VAT_RATES } from "@/lib/vat";
+import { DEFAULT_VAT_RATE, VAT_RATES } from "@/domain/pricing/vat";
 import { productCategory } from "./category";
 
 export const productMacroCategory = pgTable(

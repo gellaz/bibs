@@ -4,7 +4,7 @@ import { municipality } from "@/db/schemas/location";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeMacroCategory } from "@/db/schemas/store-macro-category";
-import { openNowCondition } from "@/lib/store-open-status";
+import { openNowCondition } from "@/domain/stores/store-open-status";
 import { storeFilterConditions } from "./store-search-conditions";
 
 interface StoreFacetParams {

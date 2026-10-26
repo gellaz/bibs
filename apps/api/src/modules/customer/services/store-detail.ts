@@ -4,14 +4,14 @@ import { municipality, province } from "@/db/schemas/location";
 import { store, storePhoneNumber } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
 import { storeImage } from "@/db/schemas/store-image";
-import { ServiceError } from "@/lib/errors";
 import type {
 	CustomClosure,
 	OpeningHoursDay,
 	OpenStatus,
-} from "@/lib/holidays";
-import { resolveOpenStatuses } from "@/lib/store-open-status";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
+} from "@/domain/holidays";
+import { resolveOpenStatuses } from "@/domain/stores/store-open-status";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
+import { ServiceError } from "@/lib/errors";
 
 export interface StoreDetail {
 	id: string;

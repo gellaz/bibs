@@ -7,8 +7,8 @@ import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { store } from "@/db/schemas/store";
+import { getBestActiveDiscounts } from "@/domain/pricing/discount-pricing";
 import { ServiceError } from "@/lib/errors";
-import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 import {
 	type CustomerCharacteristic,
 	listCustomerCharacteristics,

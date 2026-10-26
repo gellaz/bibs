@@ -3,7 +3,7 @@ import {
 	generatePickupCode,
 	normalizePickupCode,
 	PICKUP_CODE_ALPHABET,
-} from "@/lib/pickup-code";
+} from "@/domain/orders/pickup-code";
 
 describe("generatePickupCode", () => {
 	it("6 caratteri dall'alfabeto senza ambigui", () => {

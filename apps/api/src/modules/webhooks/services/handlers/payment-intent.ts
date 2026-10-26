@@ -3,9 +3,9 @@ import type Stripe from "stripe";
 import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
+import { settleCheckoutPayment } from "@/domain/billing/order-payments";
 import { logger } from "@/infra/logger";
 import { cancelUnpaidOrder } from "@/jobs/expire-unpaid-orders";
-import { settleCheckoutPayment } from "@/modules/billing/services/order-payments";
 
 /**
  * Pagamento dei PR2 di un checkout. Un rifiuto della carta NON annulla gli

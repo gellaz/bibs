@@ -8,10 +8,13 @@ import type {
 	CustomClosure,
 	OpeningHoursDay,
 	OpenStatus,
-} from "@/lib/holidays";
+} from "@/domain/holidays";
+import {
+	openNowCondition,
+	resolveOpenStatuses,
+} from "@/domain/stores/store-open-status";
 import { containsPattern, prefixPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
-import { openNowCondition, resolveOpenStatuses } from "@/lib/store-open-status";
 import { storeFilterConditions } from "./store-search-conditions";
 
 interface StoreSearchParams {

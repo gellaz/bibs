@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
+import { refreshConnectAccount } from "@/domain/billing/connect-account";
 import { logger } from "@/infra/logger";
-import { refreshConnectAccount } from "@/modules/billing/services/connect-account";
 
 /**
  * I conti sono creati con Accounts v2, ma Stripe continua a emettere gli

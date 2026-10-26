@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type Stripe from "stripe";
-import { accountStateFromV2, connectStatus } from "@/lib/connect-status";
+import {
+	accountStateFromV2,
+	connectStatus,
+} from "@/domain/billing/connect-status";
 
 const pm = (
 	o: Partial<{

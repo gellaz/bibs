@@ -4,7 +4,7 @@ import { productCategory } from "@/db/schemas/category";
 import { product, storeProduct } from "@/db/schemas/product";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
 import { store } from "@/db/schemas/store";
-import { openNowCondition } from "@/lib/store-open-status";
+import { openNowCondition } from "@/domain/stores/store-open-status";
 import {
 	offerConditions,
 	type ProductFilterParams,

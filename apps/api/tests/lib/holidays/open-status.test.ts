@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { addDaysYMD } from "@/lib/holidays";
-import { getOpenStatus } from "@/lib/holidays/open-status";
-import type { OpeningHoursDay } from "@/lib/holidays/types";
+import { addDaysYMD } from "@/domain/holidays";
+import { getOpenStatus } from "@/domain/holidays/open-status";
+import type { OpeningHoursDay } from "@/domain/holidays/types";
 
 // Mon-Fri 09:00-13:00 / 14:30-19:00 (dayOfWeek 0..4); weekend closed.
 const hours: OpeningHoursDay[] = Array.from({ length: 5 }, (_, i) => ({

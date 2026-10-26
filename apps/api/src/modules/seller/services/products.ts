@@ -22,17 +22,17 @@ import {
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
+import type { CharacteristicValueInput } from "@/domain/catalog/characteristic-values";
+import { getBestActiveDiscounts } from "@/domain/pricing/discount-pricing";
+import type { VatRate } from "@/domain/pricing/vat";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
 import { s3 } from "@/infra/s3";
-import type { CharacteristicValueInput } from "@/lib/characteristic-values";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
+import { parsePagination } from "@/lib/pagination";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/lib/municipality";
-import { parsePagination } from "@/lib/pagination";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
-import type { VatRate } from "@/lib/vat";
-import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
+} from "@/modules/seller/services/municipality";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
 import {
 	listProductCharacteristicValues,

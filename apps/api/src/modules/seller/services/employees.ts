@@ -18,7 +18,7 @@ import { env } from "@/infra/env";
 import { logger } from "@/infra/logger";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
-import { userSummaryWith } from "@/lib/user-summary";
+import { userSummaryWith } from "@/modules/seller/services/user-summary";
 import { getSellerStoreIds } from "../context";
 
 /** Invitation token validity: 7 days */

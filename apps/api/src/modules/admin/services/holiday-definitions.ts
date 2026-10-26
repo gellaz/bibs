@@ -2,9 +2,9 @@
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { holidayDefinition } from "@/db/schemas/holiday-definition";
+import type { HolidayDef } from "@/domain/holidays";
+import { resolveOccurrences } from "@/domain/holidays";
 import { ServiceError } from "@/lib/errors";
-import type { HolidayDef } from "@/lib/holidays";
-import { resolveOccurrences } from "@/lib/holidays";
 
 export async function listHolidayDefinitions() {
 	return db.query.holidayDefinition.findMany({

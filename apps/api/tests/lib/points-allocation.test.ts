@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { allocateCheckoutPoints } from "@/lib/points-allocation";
+import { allocateCheckoutPoints } from "@/modules/customer/services/points-allocation";
 
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
 

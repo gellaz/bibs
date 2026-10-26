@@ -4,18 +4,18 @@ import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
-import { logger } from "@/infra/logger";
-import { notifyAdminsNewRequest } from "@/lib/admin-notifications";
-import { ServiceError } from "@/lib/errors";
-import {
-	municipalityCompactWith,
-	toMunicipalityCompact,
-} from "@/lib/municipality";
-import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import {
 	getDefaultPaymentMethod,
 	toOnlinePayments,
-} from "@/modules/billing/services/connect-account";
+} from "@/domain/billing/connect-account";
+import { logger } from "@/infra/logger";
+import { ServiceError } from "@/lib/errors";
+import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
+import { notifyAdminsNewRequest } from "@/modules/seller/services/admin-notifications";
+import {
+	municipalityCompactWith,
+	toMunicipalityCompact,
+} from "@/modules/seller/services/municipality";
 import { getEmployeeAssignedStoreIds } from "./access";
 import { checkDocument } from "./document-check";
 import { fetchSellerProfileCompact } from "./profile";

@@ -1,8 +1,8 @@
 import { and, eq, inArray, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { order } from "@/db/schemas/order";
+import { refundStockAndPoints } from "@/domain/orders/order-helpers";
 import { config } from "@/lib/config";
-import { refundStockAndPoints } from "@/lib/order-helpers";
 
 /**
  * Expires a single reserve_pickup order by ID.

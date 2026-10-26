@@ -9,7 +9,7 @@ import {
 	timestamp,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { DEFAULT_VAT_RATE, VAT_RATES } from "@/lib/vat";
+import { DEFAULT_VAT_RATE, VAT_RATES } from "@/domain/pricing/vat";
 import { brand } from "./brand";
 import { productCategory } from "./category";
 import { productCharacteristicValue } from "./product-characteristic";

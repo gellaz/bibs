@@ -3,10 +3,10 @@ import { db } from "@/db";
 import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
+import { getBestActiveDiscounts } from "@/domain/pricing/discount-pricing";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
-import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
 
 export interface StoreProductCard {
 	id: string;

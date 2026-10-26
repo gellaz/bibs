@@ -1,5 +1,9 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import {
+	createOnboardingLink,
+	syncOnlinePayments,
+} from "@/domain/billing/connect-account";
 import { requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
@@ -21,10 +25,6 @@ import {
 } from "@/lib/schemas/forms/settings";
 import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
 import { zFile } from "@/lib/schemas/t";
-import {
-	createOnboardingLink,
-	syncOnlinePayments,
-} from "@/modules/billing/services/connect-account";
 import { requireOwner } from "../context";
 import {
 	cancelSellerChange,

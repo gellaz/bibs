@@ -27,7 +27,7 @@ import { product } from "@/db/schemas/product";
 import {
 	bestActiveDiscountPercent,
 	getBestActiveDiscounts,
-} from "@/modules/seller/services/discount-pricing";
+} from "@/domain/pricing/discount-pricing";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestDiscount,

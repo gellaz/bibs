@@ -5,27 +5,27 @@ import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
-import { logger } from "@/infra/logger";
-import { config } from "@/lib/config";
-import { isUniqueViolation, ServiceError } from "@/lib/errors";
-import { fromCents, toCents } from "@/lib/money";
-import { isBelowOnlineMinimum } from "@/lib/online-charge";
-import {
-	offeredOrderTypes,
-	sellerChargesEnabledSql,
-	sellerVatChangeBlockedSql,
-} from "@/lib/order-types";
-import { allocateCheckoutPoints } from "@/lib/points-allocation";
-import {
-	resolveOpenStatuses,
-	resolveReservationDeadlines,
-} from "@/lib/store-open-status";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
+import { isBelowOnlineMinimum } from "@/domain/billing/online-charge";
 import {
 	createCheckoutPaymentIntent,
 	payableClientSecret,
 	transferStorePayouts,
-} from "@/modules/billing/services/order-payments";
+} from "@/domain/billing/order-payments";
+import {
+	offeredOrderTypes,
+	sellerChargesEnabledSql,
+	sellerVatChangeBlockedSql,
+} from "@/domain/orders/order-types";
+import {
+	resolveOpenStatuses,
+	resolveReservationDeadlines,
+} from "@/domain/stores/store-open-status";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
+import { logger } from "@/infra/logger";
+import { config } from "@/lib/config";
+import { isUniqueViolation, ServiceError } from "@/lib/errors";
+import { fromCents, toCents } from "@/lib/money";
+import { allocateCheckoutPoints } from "@/modules/customer/services/points-allocation";
 import type { OrderTx, PricedOrder } from "./orders";
 import { insertOrder, listCustomerOrders, priceOrder } from "./orders";
 

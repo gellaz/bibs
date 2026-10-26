@@ -2,8 +2,8 @@ import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { productCategory } from "@/db/schemas/category";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
+import type { VatRate } from "@/domain/pricing/vat";
 import { ServiceError } from "@/lib/errors";
-import type { VatRate } from "@/lib/vat";
 
 export async function createProductMacroCategory(params: {
 	name: string;

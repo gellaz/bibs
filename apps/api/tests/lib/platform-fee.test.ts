@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { platformFeeCents, storePayoutSplit } from "@/lib/platform-fee";
+import {
+	platformFeeCents,
+	storePayoutSplit,
+} from "@/domain/billing/platform-fee";
 
 describe("platformFeeCents", () => {
 	it("è il 5% del totale, arrotondato al centesimo", () => {

@@ -1,4 +1,4 @@
-// Stesso alfabeto di apps/api/src/lib/pickup-code.ts: 6 caratteri senza quelli
+// Stesso alfabeto di apps/api/src/domain/orders/pickup-code.ts: 6 caratteri senza quelli
 // che si confondono (0/O, 1/I/L). Tenerli allineati.
 const PICKUP_CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/;
 

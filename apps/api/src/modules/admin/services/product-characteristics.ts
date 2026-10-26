@@ -10,7 +10,7 @@ import {
 	assertImpactConfirmed,
 	countValuesByCharacteristic,
 	countValuesByOption,
-} from "@/lib/characteristic-impact";
+} from "@/domain/catalog/characteristic-impact";
 import { ServiceError } from "@/lib/errors";
 import {
 	type ListByNameParams,

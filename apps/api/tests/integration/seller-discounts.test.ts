@@ -21,7 +21,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
+import { getBestActiveDiscount } from "@/domain/pricing/discount-pricing";
 import {
 	addProductsToDiscount,
 	archiveDiscount,

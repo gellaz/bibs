@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import {
 	resolveOccurrences,
 	resolveStoreClosedDates,
-} from "@/lib/holidays/resolve";
-import type { HolidayDef } from "@/lib/holidays/types";
+} from "@/domain/holidays/resolve";
+import type { HolidayDef } from "@/domain/holidays/types";
 
 const fixed = (id: string, month: number, day: number): HolidayDef => ({
 	id,

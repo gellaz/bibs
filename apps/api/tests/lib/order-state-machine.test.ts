@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { assertTransition } from "@/domain/orders/order-state-machine";
 import { ServiceError } from "@/lib/errors";
-import { assertTransition } from "@/lib/order-state-machine";
 
 describe("assertTransition — valid transitions", () => {
 	// pending →

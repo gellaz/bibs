@@ -5,16 +5,16 @@ import { municipality, province } from "@/db/schemas/location";
 import { product, storeProduct } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
-import { ServiceError } from "@/lib/errors";
-import { fromCents, toCents } from "@/lib/money";
 import {
 	offeredOrderTypes,
 	type StoreOrderType,
 	sellerChargesEnabledSql,
 	sellerVatChangeBlockedSql,
-} from "@/lib/order-types";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
-import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";
+} from "@/domain/orders/order-types";
+import { getBestActiveDiscounts } from "@/domain/pricing/discount-pricing";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
+import { ServiceError } from "@/lib/errors";
+import { fromCents, toCents } from "@/lib/money";
 
 interface AddCartItemParams {
 	customerProfileId: string;
