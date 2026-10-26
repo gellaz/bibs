@@ -213,27 +213,12 @@ function collapse(issues: Issue[], checked: Checked) {
 	}
 	return out.map((item): Issue => {
 		if (!("at" in item)) return item;
-		const { at, issues: inner } = item;
+		const { at } = item;
+		let inner = item.issues;
 		// ObjectString/ArrayString dei body con file: due rami non nulli.
 		const coerced = at.length === 1 && checked.anyOfKeys?.has(String(at[0]));
 		const node = unwrap(nodeAt(schema, at) as z.ZodType).node;
 		const def = node._zod.def as Record<string, any>;
-		// Zod dà l'errore dell'unico ramo che combacia col tipo (stringa troppo
-		// lunga); TypeBox, con più rami non nulli, «valore non valido».
-		const manyBranches =
-			def.type === "union" &&
-			def.options.filter((o: z.ZodType) => o._zod.def.type !== "null").length >
-				1;
-		if (
-			!coerced &&
-			inner.length === 1 &&
-			inner[0].path.length === at.length &&
-			!(manyBranches && inner[0].code !== "invalid_union")
-		)
-			return inner[0];
-		const input = valueAt(value, at);
-		let rule: ValidationRule =
-			input === undefined ? { kind: "required" } : { kind: "invalid" };
 		// t.Nullable o `Type.Union([X, Type.Null()])` dei form condivisi: per
 		// TypeBox sono lo stesso anyOf, la regola è quella del ramo non nullo.
 		const nonNull =
@@ -246,6 +231,36 @@ function collapse(issues: Issue[], checked: Checked) {
 				: nonNull.length === 1
 					? nonNull[0]
 					: undefined;
+		// Un errore di tipo nel ramo X di `Type.Union([X, Type.Null()])` fa
+		// fallire entrambi i rami: Zod dà un solo `invalid_union` sul campo, con
+		// le issue di X in `errors`. Si prendono quelle, come per t.Nullable
+		// (`dayOfWeek: "1"` è «numero intero» solo guardando lo schema di X).
+		const union = inner[0];
+		const expanded =
+			!coerced &&
+			def.type === "union" &&
+			!!branch &&
+			inner.length === 1 &&
+			union.code === "invalid_union" &&
+			union.path.length === at.length;
+		if (expanded)
+			inner = (union as Extract<Issue, { code: "invalid_union" }>).errors[
+				def.options.indexOf(branch)
+			].map((i) => ({ ...i, path: [...at, ...i.path] }) as Issue);
+		// Zod dà l'errore dell'unico ramo che combacia col tipo (stringa troppo
+		// lunga); TypeBox, con più rami non nulli, «valore non valido».
+		const manyBranches = nonNull.length > 1;
+		if (
+			!coerced &&
+			!expanded &&
+			inner.length === 1 &&
+			inner[0].path.length === at.length &&
+			!(manyBranches && inner[0].code !== "invalid_union")
+		)
+			return inner[0];
+		const input = valueAt(value, at);
+		let rule: ValidationRule =
+			input === undefined ? { kind: "required" } : { kind: "invalid" };
 		if (!coerced && branch) {
 			const relative = inner.map((i) => ({
 				...i,

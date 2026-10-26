@@ -235,8 +235,11 @@ billing); `customer/` (U3).
     in Elysia); `t.String` con `minLength`/`maxLength` →
     `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
     unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
-    per Zod); `t.Date` → `zDate`; `t.Nullable(x)` →
-    `x.nullable()`; unione di letterali → `z.enum`, ma di letterali numerici (le
+    per Zod), anche con un formato (`zString({ format: "uri", maxLength })`, non
+    `zFormat(…).max()`); `t.Date` → `zDate`; `t.Nullable(x)` →
+    `x.nullable()`, `Type.Union([x, Type.Null()])` dei form condivisi →
+    `z.union([x, z.null()])` (niente `nullable: true` in /openapi); unione di
+    letterali → `z.enum`, ma di letterali numerici (le
     aliquote IVA `"22"`, `"10"`, …) → `z.union` di `z.literal` (`z.enum` riordina le
     chiavi numeriche in /openapi); `t.Union` di oggetti →
     `z.union`, mai `z.discriminatedUnion`;

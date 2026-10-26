@@ -110,16 +110,18 @@ export interface StringOptions extends Meta {
 	minLength?: number;
 	maxLength?: number;
 	pattern?: string;
+	/** Formato di Elysia (`t.String({ format, maxLength })`): issue di `zFormat`. */
+	format?: FormatName;
 }
 
 /**
- * `t.String` con `minLength`/`maxLength` (e `pattern`): TypeBox conta le unità
+ * `t.String` con `minLength`/`maxLength` (e `pattern`, `format`): TypeBox conta le unità
  * UTF-16 (`value.length`), `z.string().min/max` di Zod 4.6 i code point
  * («😀» è lungo 2 per TypeBox, 1 per Zod). Le issue sono le `too_small` e
  * `too_big` di Zod: stessa regola e stesso ordine nel 422 (`issues.ts`).
  */
 export function zString(options: StringOptions = {}) {
-	const { minLength, maxLength, pattern } = options;
+	const { minLength, maxLength, pattern, format } = options;
 	let schema = z.string().check((ctx) => {
 		const input = ctx.value;
 		if (minLength !== undefined && input.length < minLength)
@@ -138,6 +140,8 @@ export function zString(options: StringOptions = {}) {
 				inclusive: true,
 				input,
 			});
+		if (format !== undefined && !FORMATS[format](input))
+			ctx.issues.push({ code: "invalid_format", format, input });
 	});
 	if (pattern !== undefined) schema = schema.regex(new RegExp(pattern));
 	return register(schema.meta(metaOf(options)), {

@@ -2311,6 +2311,49 @@ export const cases: Case[] = [
 		422,
 		fail("Sito web: indirizzo web non valido"),
 	),
+	// Un errore di tipo nel ramo non nullo fa fallire entrambi i rami: Zod dà
+	// una sola issue `invalid_union` sul campo, e la regola va presa dallo
+	// schema del ramo (`zInt()` → «numero intero», non «numero»).
+	...[
+		["testo", "1"],
+		["null", null],
+		["booleano", true],
+	].map(([what, dayOfWeek]) =>
+		body(
+			`negozio: giorno come ${what} (Type.Union con Null)`,
+			TbCreateStoreBody,
+			CreateStoreBody,
+			{
+				name: "Bottega",
+				addressLine1: "Via Roma 1",
+				municipalityId: "m1",
+				zipCode: "40100",
+				location: { x: 11, y: 44 },
+				openingHours: [
+					{ dayOfWeek: 1, slots: [{ open: "09:00", close: "12:00" }] },
+					{ dayOfWeek, slots: [{ open: "09:00", close: "12:00" }] },
+				],
+			},
+			422,
+			fail("openingHours: deve essere un numero intero"),
+		),
+	),
+	// maxLength prima del formato, in unità UTF-16: 14 + 244 × 2 = 502.
+	body(
+		"negozio: sito di emoji oltre il limite (Type.Union con Null)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			websiteUrl: `https://e.com/${"😀".repeat(244)}`,
+		},
+		422,
+		fail("Sito web: al massimo 500 caratteri"),
+	),
 	// `Type.Integer` (zInt) non ha i limiti dei safe integer di `z.int()`.
 	{
 		name: "Type.Integer: giorno oltre i safe integer (OpeningHoursSchema)",

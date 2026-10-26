@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zFormat, zInt, zString } from "../t";
+import { zInt, zString } from "../t";
 import { OpeningHoursSchema } from "./opening-hours";
 
 // Gemelli Zod di `lib/schemas/forms/stores.ts` (D3 del piano Hono), stessi
@@ -79,15 +79,13 @@ export const CreateStoreBody = z.object({
 		.optional(),
 	// `Type.Union([X, Type.Null()])`, non `t.Nullable`: niente `nullable: true`
 	// in /openapi, quindi `z.union` e non `.nullable()`.
-	// ponytail: il formato `uri` non passa da `zString`, quindi `.max(500)`
-	// conta i code point e non le unità UTF-16 di TypeBox: cambia il 422 solo
-	// per un URL di circa 500 caratteri con emoji; da sistemare se `zString`
-	// impara i formati.
 	websiteUrl: z
 		.union([
-			zFormat("uri")
-				.max(500)
-				.meta({ description: "URL del sito web. null per assenza esplicita" }),
+			zString({
+				format: "uri",
+				maxLength: 500,
+				description: "URL del sito web. null per assenza esplicita",
+			}),
 			z.null(),
 		])
 		.optional(),

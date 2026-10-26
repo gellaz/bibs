@@ -77,7 +77,7 @@ Reading the results:
   The 409 holds for 7 days from that user's creation (2026-10-25): after that the API deletes the
   stale account and registers it again (200, the step fails). Before replaying later, check the user
   or drop that line; never point it at a seed user.
-  U5 added `hono-batch-seller-products.jsonl`, U7 `hono-batch-seller-orders.jsonl` (188 steps: orders,
+  U5 added `hono-batch-seller-products.jsonl`, U7 `hono-batch-seller-orders.jsonl` (196 steps: orders,
   discounts, store checkout, billing; logins of `customer1@test.com`, `seller96@test.com`,
   `seller@dev.bibs`, `employee1@test.com`; only reads and answers that come before any write). The dev
   DB is shared: the browser checks of other units create and cancel orders on Bottega Dev, so the U7
