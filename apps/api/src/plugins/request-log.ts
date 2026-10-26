@@ -124,7 +124,8 @@ export const requestLog = createMiddleware(async (c, next) => {
 	await next();
 	const entry = {
 		method: c.req.method,
-		path: new URL(c.req.url).pathname,
+		// Un URL che non si analizza (Host non valido) non deve far perdere la riga.
+		path: URL.canParse(c.req.url) ? new URL(c.req.url).pathname : c.req.path,
 		status: c.res.status,
 		durationMs: performance.now() - start,
 	};

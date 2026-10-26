@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { unlink } from "node:fs/promises";
+import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Hono } from "hono";
@@ -300,6 +301,126 @@ describe("better-auth sulla radice", () => {
 		const res = await app.request("http://localhost/auth/api/ok");
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ ok: true });
+	});
+});
+
+/**
+ * Una richiesta scritta a mano su un socket vero: con un Host non valido Bun
+ * dà a `request.url` solo il path (o un URL che non si analizza), cosa che
+ * `fetch` e `app.request` non sanno produrre.
+ */
+async function rawHttp(port: number, lines: string[], body = "") {
+	const text = await new Promise<string>((resolve, reject) => {
+		let out = "";
+		const socket = connect(port, "127.0.0.1", () =>
+			socket.write(`${lines.join("\r\n")}\r\n\r\n${body}`),
+		);
+		socket.on("data", (d) => {
+			out += d;
+		});
+		socket.on("close", () => resolve(out));
+		socket.on("error", reject);
+	});
+	const split = text.indexOf("\r\n\r\n");
+	const [statusLine, ...headerLines] = text.slice(0, split).split("\r\n");
+	const headers = Object.fromEntries(
+		headerLines.map((l) => {
+			const i = l.indexOf(":");
+			return [l.slice(0, i).toLowerCase(), l.slice(i + 1).trim()];
+		}),
+	);
+	return {
+		status: Number(statusLine?.split(" ")[1]),
+		headers,
+		body: text.slice(split + 4),
+	};
+}
+
+// Delta 19 del piano Hono: rispondono come prima il preflight, /health, /ready
+// e /openapi; il resto è un 400 senza arrivare a una route (prima: 500), e la
+// riga di log c'è sempre. Prima della correzione il path perdeva il primo
+// segmento (`/xxx/register/customer` arrivava a `/register/customer`), la
+// route girava e la riga di log lanciava («Invalid URL» → 500 dopo l'handler).
+describe("app radice — Host non valido (socket vero)", () => {
+	const send = async (lines: string[], body = "") => {
+		const server = Bun.serve({ port: 0, fetch: app.fetch });
+		try {
+			return await rawHttp(server.port as number, lines, body);
+		} finally {
+			await server.stop(true);
+		}
+	};
+	const close = "Connection: close";
+
+	it("GET /health con Host vuoto: 200 e la riga di log", async () => {
+		const info = spyOn(console, "info").mockImplementation(() => {});
+		const res = await send(["GET /health HTTP/1.1", "Host: ", close]);
+		expect(res.status).toBe(200);
+		expect(JSON.parse(res.body)).toEqual({ status: "ok" });
+		expect(loggedRequests(info.mock.calls)).toContainEqual({
+			path: "/health",
+			status: 200,
+		});
+	});
+
+	it("GET /health in HTTP/1.0 senza Host e con una porta fuori range: 200", async () => {
+		for (const lines of [
+			["GET /health HTTP/1.0"],
+			["GET /health HTTP/1.1", "Host: localhost:99999", close],
+		]) {
+			const res = await send(lines);
+			expect([lines[0], res.status]).toEqual([lines[0], 200]);
+		}
+	});
+
+	it("preflight con Host vuoto: 204 con CORS", async () => {
+		const res = await send([
+			"OPTIONS /health HTTP/1.1",
+			"Host: ",
+			"Origin: http://localhost:3001",
+			"Access-Control-Request-Method: GET",
+			close,
+		]);
+		expect(res.status).toBe(204);
+		expect(res.headers["access-control-allow-origin"]).toBe(
+			"http://localhost:3001",
+		);
+	});
+
+	it("una route di modulo non gira: 400, non 422, e nessun path spostato", async () => {
+		const warn = spyOn(console, "warn").mockImplementation(() => {});
+		for (const path of ["/register/customer", "/xxx/register/customer"]) {
+			const res = await send(
+				[
+					`POST ${path} HTTP/1.1`,
+					"Host: ",
+					"Content-Type: application/json",
+					"Content-Length: 2",
+					close,
+				],
+				"{}",
+			);
+			expect([path, res.status]).toEqual([path, 400]);
+			expect(JSON.parse(res.body)).toEqual(
+				errorBody("BAD_REQUEST", "Richiesta non valida"),
+			);
+			expect(res.headers["x-request-id"]).toBeTruthy();
+			expect(loggedRequests(warn.mock.calls)).toContainEqual({
+				path,
+				status: 400,
+			});
+		}
+	});
+
+	it("better-auth e i moduli con Host fuori range: 400", async () => {
+		for (const path of ["/auth/api/ok", "/me/avatar"]) {
+			const res = await send([
+				`GET ${path} HTTP/1.1`,
+				"Host: localhost:99999",
+				close,
+			]);
+			expect([path, res.status]).toEqual([path, 400]);
+		}
 	});
 });
 

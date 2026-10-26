@@ -8,6 +8,9 @@ import { startCronJobs } from "@/plugins/cron";
 // signals). The app itself lives in `src/app.ts`.
 
 // ── Startup sequence ────────────────────────────────
+// Cron first, as before (they were scheduled when the app was built, before
+// the bucket check and listen): a slow S3 at boot does not delay them.
+startCronJobs();
 await ensureBucket();
 
 // Same Bun.serve options the API had before Hono. Bun passes the server as
@@ -19,7 +22,6 @@ const server = Bun.serve({
 	idleTimeout: 30,
 	fetch: app.fetch,
 });
-startCronJobs();
 console.log(`bibs API in ascolto su ${server.url}`);
 
 // ── Graceful shutdown ───────────────────────────────

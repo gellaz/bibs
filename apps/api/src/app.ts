@@ -1,7 +1,9 @@
 import { Hono } from "hono";
+import { createMiddleware } from "hono/factory";
 import { errorResponse, notFoundResponse, rawPath } from "@/http/app";
 import { honoPaths } from "@/http/openapi";
 import type { ModuleGuards } from "@/http/routes";
+import { ServiceError } from "@/lib/errors";
 import { adminApp } from "@/modules/admin";
 import {
 	productCategoriesApp,
@@ -71,9 +73,24 @@ export function rootApp() {
 		.use(socketIpAsForwardedFor);
 }
 
+/**
+ * Un Host non valido (vuoto, con spazi, porta fuori range, zone id IPv6) o
+ * l'HTTP/1.0 senza Host: Bun dà un `request.url` che non è un URL assoluto.
+ * Come prima rispondono solo il preflight, /health, /ready e /openapi
+ * (registrate prima di questo middleware); il resto, che prima era un 500
+ * senza arrivare a better-auth né ai moduli, è un 400 (RFC 9112 §3.2).
+ * Delta 19 del piano Hono.
+ */
+const absoluteUrlOnly = createMiddleware(async (c, next) => {
+	if (!URL.canParse(c.req.url))
+		throw new ServiceError(400, "Richiesta non valida");
+	await next();
+});
+
 export const app = rootApp()
 	.route("/", openapiRoutes(paths))
-	.all("/auth/*", authHandler)
-	.route("/", healthRoutes);
+	.route("/", healthRoutes)
+	.use(absoluteUrlOnly)
+	.all("/auth/*", authHandler);
 
 for (const [prefix, sub] of MODULES) app.route(prefix, sub);

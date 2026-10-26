@@ -10,7 +10,10 @@ import { json } from "./send";
  */
 export function rawPath(request: Request) {
 	const url = request.url;
-	const start = url.indexOf("/", url.indexOf(":") + 4);
+	// Con un Host non valido (o HTTP/1.0 senza Host) Bun dà solo il path.
+	const start = url.startsWith("/")
+		? 0
+		: url.indexOf("/", url.indexOf(":") + 4);
 	// Solo `?`: `/brands#x` resta un path che non esiste (404), come prima.
 	const end = url.indexOf("?", start);
 	const path = end === -1 ? url.slice(start) : url.slice(start, end);

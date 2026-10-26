@@ -3,7 +3,7 @@ import { z } from "zod";
 import { moduleApp } from "@/http/app";
 import { v } from "@/http/validator";
 import type { FormatName } from "@/lib/schemas/formats";
-import { zDate, zFormat, zInteger } from "@/lib/schemas/t";
+import { zDate, zFormat, zInteger, zString } from "@/lib/schemas/t";
 
 // Il messaggio del 422 passa davvero dal validatore (`v()`): i dettagli
 // dell'errore (tipo, path, rami di zInteger/nullable) sono quelli che produce
@@ -85,7 +85,7 @@ describe("validationMessage — campi e tipi", () => {
 	});
 
 	it("lunghezza minima e massima del testo", async () => {
-		const schema = z.object({ name: z.string().min(2).max(5) });
+		const schema = z.object({ name: zString({ minLength: 2, maxLength: 5 }) });
 		expect(await bodyMessage(schema, { name: "a" })).toBe(
 			"Nome: almeno 2 caratteri",
 		);
@@ -96,7 +96,7 @@ describe("validationMessage — campi e tipi", () => {
 
 	it("minLength 1 su testo vuoto: obbligatorio", async () => {
 		expect(
-			await bodyMessage(z.object({ name: z.string().min(1) }), {
+			await bodyMessage(z.object({ name: zString({ minLength: 1 }) }), {
 				name: "",
 			}),
 		).toBe("Nome: campo obbligatorio");
@@ -104,9 +104,12 @@ describe("validationMessage — campi e tipi", () => {
 
 	it("pattern: formato non valido", async () => {
 		expect(
-			await bodyMessage(z.object({ zipCode: z.string().regex(/^\d{5}$/) }), {
-				zipCode: "ab",
-			}),
+			await bodyMessage(
+				z.object({ zipCode: zString({ pattern: "^\\d{5}$" }) }),
+				{
+					zipCode: "ab",
+				},
+			),
 		).toBe("CAP: formato non valido");
 	});
 
@@ -140,9 +143,12 @@ describe("validationMessage — campi e tipi", () => {
 
 	it("t.Nullable: la regola del ramo non nullo", async () => {
 		expect(
-			await bodyMessage(z.object({ note: z.string().max(3).nullable() }), {
-				note: "abcd",
-			}),
+			await bodyMessage(
+				z.object({ note: zString({ maxLength: 3 }).nullable() }),
+				{
+					note: "abcd",
+				},
+			),
 		).toBe("Note: al massimo 3 caratteri");
 	});
 
@@ -220,7 +226,7 @@ describe("validationMessage — messaggi già scritti e ripieghi", () => {
 		expect(
 			await bodyMessage(
 				z.object({
-					name: z.string().min(1).meta({ error: "Il nome è obbligatorio" }),
+					name: zString({ minLength: 1, error: "Il nome è obbligatorio" }),
 				}),
 				{ name: "" },
 			),
