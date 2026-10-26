@@ -17,7 +17,9 @@ function receive(scope: "platform" | "connect" | "thin") {
 		// verifies the EXACT bytes that were signed — any re-serialization (even
 		// JSON.stringify on a parsed object) changes whitespace/key order and
 		// breaks the signature.
-		const payload = await c.req.text();
+		// Bytes decoded as UTF-8 by hand: Bun's `text()` on the Request that the
+		// Elysia mount rebuilds (`new Request(url, request)`) sniffs a UTF-16 BOM.
+		const payload = new TextDecoder().decode(await c.req.arrayBuffer());
 
 		try {
 			await handleStripeWebhook({ payload, signature, scope });

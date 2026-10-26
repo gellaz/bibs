@@ -167,6 +167,21 @@ describe("webhook su Hono: body grezzo in ingresso, corpi fissi in uscita", () =
 			signature: "sig",
 			scope: "platform",
 		});
+
+		// Come la Request che ricostruisce il mount di Elysia: un BOM UTF-16LE
+		// resta byte da decodificare in UTF-8, come `request.text()` di prima.
+		const bom = new Uint8Array([0xff, 0xfe, 0x41, 0x00]);
+		const original = new Request("http://localhost/stripe", {
+			method: "POST",
+			headers: { "stripe-signature": "sig" },
+			body: bom,
+		});
+		await webhooksApp.request(new Request(original.url, original));
+		expect(handleStripeWebhook).toHaveBeenLastCalledWith({
+			payload: new TextDecoder().decode(bom),
+			signature: "sig",
+			scope: "platform",
+		});
 	});
 
 	it("le risposte sono solo i corpi fissi, col Content-Type di Elysia", async () => {
