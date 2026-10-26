@@ -6,7 +6,7 @@ import { pricingConfig } from "@/db/schemas/pricing-config";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 import { daysAgo, getSeedMunicipalityIds } from "./utils";
 
 const DEV_EMAIL = "seller@dev.bibs";

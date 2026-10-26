@@ -1,17 +1,17 @@
-import { getGeocodingProvider } from "@/lib/geocoding";
-import { readLookup, writeLookup } from "@/lib/geocoding/cache";
-import { loadMunicipalityIndex } from "@/lib/geocoding/municipality-index";
-import { biasCell, normalizeQuery } from "@/lib/geocoding/normalize";
+import { getGeocodingProvider } from "@/infra/geocoding";
+import { readLookup, writeLookup } from "@/infra/geocoding/cache";
+import { loadMunicipalityIndex } from "@/infra/geocoding/municipality-index";
+import { biasCell, normalizeQuery } from "@/infra/geocoding/normalize";
 import type {
 	GeocodeHit,
 	GeocodeSearchOptions,
-} from "@/lib/geocoding/provider";
+} from "@/infra/geocoding/provider";
 import {
 	findMunicipalityNamesInQuery,
 	type MunicipalityCompact,
 	type MunicipalityIndex,
 	resolveMunicipality,
-} from "@/lib/geocoding/resolve-municipality";
+} from "@/infra/geocoding/resolve-municipality";
 
 const DEFAULT_LIMIT = 5;
 // La chiave di cache è (provider, query, biasCell): non include `limit` perché

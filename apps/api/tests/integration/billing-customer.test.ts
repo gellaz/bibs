@@ -26,7 +26,7 @@ const fakeStripeCustomer = { id: "cus_FAKE123" };
 const customersCreate = mock(async () => fakeStripeCustomer);
 const customersRetrieve = mock(async () => fakeStripeCustomer);
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		customers: {
 			create: customersCreate,

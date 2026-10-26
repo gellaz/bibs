@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { OPENAPI_PAGE } from "@/http/openapi-page";
 import { json } from "@/http/send";
-import { OpenAPI } from "@/lib/auth";
+import { OpenAPI } from "@/infra/auth";
 
 const info = {
 	title: "bibs API",

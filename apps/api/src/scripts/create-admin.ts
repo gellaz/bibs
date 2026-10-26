@@ -11,7 +11,7 @@ import { parseArgs } from "node:util";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 
 const { values } = parseArgs({
 	options: {

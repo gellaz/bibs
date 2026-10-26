@@ -23,7 +23,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-mock.module("@/lib/email", () => ({
+mock.module("@/infra/email", () => ({
 	sendEmail: async () => {},
 }));
 

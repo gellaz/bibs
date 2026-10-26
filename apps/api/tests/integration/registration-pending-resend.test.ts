@@ -23,7 +23,7 @@ mock.module("@/db", () => ({
 }));
 
 const sent: { to: string; subject: string }[] = [];
-mock.module("@/lib/email", () => ({
+mock.module("@/infra/email", () => ({
 	sendEmail: async ({ to, subject }: { to: string; subject: string }) => {
 		sent.push({ to, subject });
 	},

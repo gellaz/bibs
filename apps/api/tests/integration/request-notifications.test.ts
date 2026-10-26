@@ -25,9 +25,9 @@ mock.module("@/db", () => ({
 const sendEmail = mock(
 	async (_params: { to: string; subject: string; html: string }) => {},
 );
-mock.module("@/lib/email", () => ({ sendEmail }));
+mock.module("@/infra/email", () => ({ sendEmail }));
 
-mock.module("@/lib/s3", () => ({
+mock.module("@/infra/s3", () => ({
 	s3: { write: mock(async () => {}), delete: mock(async () => {}) },
 	publicUrl: (key: string) => `https://cdn.test/${key}`,
 }));

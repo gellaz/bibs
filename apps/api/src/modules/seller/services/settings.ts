@@ -4,9 +4,9 @@ import { user } from "@/db/schemas/auth";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
+import { logger } from "@/infra/logger";
 import { notifyAdminsNewRequest } from "@/lib/admin-notifications";
 import { ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
@@ -346,7 +346,7 @@ export async function deleteDocumentImage(
 	sellerProfileId: string,
 	action: string,
 ) {
-	const { s3 } = await import("@/lib/s3");
+	const { s3 } = await import("@/infra/s3");
 	await s3.delete(key).catch((err) => {
 		logger.warn(
 			{ sellerProfileId, key, action, err: String(err) },
@@ -430,7 +430,7 @@ export async function requestDocumentChange(params: DocumentChangeParams) {
 	const documentNumber = checkDocument(data);
 
 	// Upload new document image to S3 if provided
-	const { publicUrl, s3 } = await import("@/lib/s3");
+	const { publicUrl, s3 } = await import("@/infra/s3");
 	const key = documentImage
 		? `documents/${sellerProfileId}/${crypto.randomUUID()}`
 		: null;

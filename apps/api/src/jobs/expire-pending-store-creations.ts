@@ -1,7 +1,7 @@
 import { and, eq, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { pendingStoreCreation } from "@/db/schemas/pending-store-creation";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 
 export async function runExpirePending(): Promise<{ expired: number }> {
 	const now = new Date();

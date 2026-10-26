@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { db } from "@/db";
 import { customerProfile } from "@/db/schemas/customer";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 import { ServiceError } from "@/lib/errors";
 import { resolveSellerAccess } from "@/modules/seller/context";
 import { guard } from "./routes";

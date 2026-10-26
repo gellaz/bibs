@@ -5,7 +5,7 @@ import {
 	normalizeQuery,
 	placeNameVariants,
 	placeTokens,
-} from "@/lib/geocoding/normalize";
+} from "@/infra/geocoding/normalize";
 
 describe("normalizeQuery", () => {
 	it("collapses whitespace and lowercases", () => {

@@ -22,6 +22,7 @@ import {
 import type { ProductAuditAction } from "@/db/schemas/product-audit-log";
 import { productImage } from "@/db/schemas/product-image";
 import { store } from "@/db/schemas/store";
+import { s3 } from "@/infra/s3";
 import type { CharacteristicValueInput } from "@/lib/characteristic-values";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import {
@@ -29,7 +30,6 @@ import {
 	toMunicipalityCompact,
 } from "@/lib/municipality";
 import { parsePagination } from "@/lib/pagination";
-import { s3 } from "@/lib/s3";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import type { VatRate } from "@/lib/vat";
 import { getBestActiveDiscounts } from "@/modules/seller/services/discount-pricing";

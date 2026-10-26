@@ -46,13 +46,13 @@ const activeV2Account = () => ({
 let remote = activeV2Account();
 const accountsRetrieve = mock(async (_id: string, _p?: unknown) => remote);
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		webhooks: { constructEventAsync },
 		v2: { core: { accounts: { retrieve: accountsRetrieve } } },
 	},
 }));
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
 		STRIPE_WEBHOOK_SECRET: "whsec_PLATFORM",

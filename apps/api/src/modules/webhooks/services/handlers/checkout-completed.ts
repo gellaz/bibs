@@ -4,9 +4,9 @@ import { db } from "@/db";
 import { pendingStoreCreation } from "@/db/schemas/pending-store-creation";
 import { store, storePhoneNumber } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
-import { stripe } from "@/lib/stripe";
 import { handleStoreReactivation } from "./store-reactivation";
 
 export async function handleCheckoutCompleted(

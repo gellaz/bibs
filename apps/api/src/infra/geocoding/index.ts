@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env } from "@/infra/env";
 import { photonProvider } from "./photon";
 import type { GeocodingProvider } from "./provider";
 

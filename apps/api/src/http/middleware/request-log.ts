@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import { logRequestToFile } from "@/lib/logger";
+import { logRequestToFile } from "@/infra/logger";
 
 // La riga per richiesta di prima della migrazione (il plugin di log 6.10.3 con
 // `customLogFormat: "{now} {level} {duration} {method} {pathname} {status}

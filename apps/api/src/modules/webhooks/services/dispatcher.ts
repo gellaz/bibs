@@ -2,10 +2,10 @@ import { eq, isNull } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { stripeEvent } from "@/db/schemas/stripe-event";
-import { env } from "@/lib/env";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
-import { stripe } from "@/lib/stripe";
 import {
 	handleConnectAccountEvent,
 	handleConnectAccountNotification,

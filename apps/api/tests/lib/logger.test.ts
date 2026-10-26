@@ -4,7 +4,7 @@ import {
 	formatDuration,
 	formatRequestLine,
 } from "@/http/middleware/request-log";
-import { pinoOptions } from "@/lib/logger";
+import { pinoOptions } from "@/infra/logger";
 
 describe("pinoOptions", () => {
 	it("pins messageKey and errorKey so a derived logger keeps them", () => {

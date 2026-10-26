@@ -1,5 +1,5 @@
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
 
 interface SendEmailParams {
 	to: string;

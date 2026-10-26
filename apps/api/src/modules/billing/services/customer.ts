@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sellerProfile } from "@/db/schemas/seller";
+import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import { stripe } from "@/lib/stripe";
 
 export async function getOrCreateStripeCustomer(
 	sellerProfileId: string,

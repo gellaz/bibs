@@ -1,10 +1,10 @@
 import { Cron } from "croner";
+import { logger } from "@/infra/logger";
 import { runAutoCancelSuspended } from "@/jobs/auto-cancel-suspended-stores";
 import { runExpirePending } from "@/jobs/expire-pending-store-creations";
 import { expireReservations } from "@/jobs/expire-reservations";
 import { expireUnpaidOrders } from "@/jobs/expire-unpaid-orders";
 import { retryStoreTransfers } from "@/jobs/retry-store-transfers";
-import { logger } from "@/lib/logger";
 
 interface Job {
 	name: string;

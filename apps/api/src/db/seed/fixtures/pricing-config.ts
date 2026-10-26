@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { pricingConfig } from "@/db/schemas/pricing-config";
-import { env } from "@/lib/env";
+import { env } from "@/infra/env";
 
 export async function seedPricingConfig() {
 	const existing = await db.query.pricingConfig.findFirst();

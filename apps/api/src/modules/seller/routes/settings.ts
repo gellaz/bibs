@@ -5,7 +5,7 @@ import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { SellerSettingsSchema } from "@/lib/schemas/composed";
 import {
 	OnlinePaymentsSchema,

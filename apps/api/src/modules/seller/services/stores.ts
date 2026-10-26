@@ -10,9 +10,10 @@ import {
 	store as storeTable,
 } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
 import type { CustomClosure } from "@/lib/holidays";
-import { logger } from "@/lib/logger";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
@@ -21,7 +22,6 @@ import { validateOpeningHours } from "@/lib/opening-hours";
 import { parsePagination } from "@/lib/pagination";
 import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
 import { resolveOpenStatuses } from "@/lib/store-open-status";
-import { stripe } from "@/lib/stripe";
 
 type OpeningHours = z.infer<typeof OpeningHoursSchema>;
 

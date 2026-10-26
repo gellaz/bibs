@@ -3,15 +3,15 @@ import Stripe from "stripe";
 import { db } from "@/db";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import {
 	accountStateFromV2,
 	type ConnectStatus,
 	connectStatus,
 } from "@/lib/connect-status";
-import { env } from "@/lib/env";
 import { ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
-import { stripe } from "@/lib/stripe";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type PaymentMethodRow = typeof paymentMethod.$inferSelect;

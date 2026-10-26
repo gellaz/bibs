@@ -52,14 +52,14 @@ const constructEvent = mock(() => ({
 	},
 }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		subscriptions: { retrieve: subRetrieve, cancel: subCancel },
 		webhooks: { constructEventAsync: constructEvent },
 	},
 }));
 
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
 		STRIPE_WEBHOOK_SECRET: "whsec_FAKE",

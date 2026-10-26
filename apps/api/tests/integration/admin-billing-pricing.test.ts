@@ -24,12 +24,12 @@ mock.module("@/db", () => ({
 
 const priceCreate = mock(async () => ({ id: "price_NEW" }));
 const priceUpdate = mock(async () => ({ id: "price_NEW", active: false }));
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		prices: { create: priceCreate, update: priceUpdate },
 	},
 }));
-mock.module("@/lib/email", () => ({ sendEmail: async () => {} }));
+mock.module("@/infra/email", () => ({ sendEmail: async () => {} }));
 
 import { eq } from "drizzle-orm";
 import { pricingConfig } from "@/db/schemas/pricing-config";

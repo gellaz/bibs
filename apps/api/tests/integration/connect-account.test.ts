@@ -74,7 +74,7 @@ const accountLinksCreate = mock(async (_p: unknown) => ({
 	url: "https://connect.stripe.test/setup/abc",
 }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		v2: {
 			core: {
@@ -85,7 +85,7 @@ mock.module("@/lib/stripe", () => ({
 	},
 }));
 
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
 		SELLER_APP_URL: "http://localhost:3002",

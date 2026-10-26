@@ -32,7 +32,7 @@ const transfersCreate = mock(async (p: any, _o?: any) => ({
 	amount: p.amount,
 }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		paymentIntents: { retrieve: paymentIntentsRetrieve },
 		transfers: { create: transfersCreate },

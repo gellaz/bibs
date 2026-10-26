@@ -3,9 +3,9 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
 import { sellerProfile } from "@/db/schemas/seller";
-import { sendEmail } from "@/lib/email";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { sendEmail } from "@/infra/email";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
 
 /**
  * Avviso agli admin per ogni nuova candidatura o richiesta di modifica.

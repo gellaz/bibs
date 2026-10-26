@@ -9,14 +9,14 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user as userTable } from "@/db/schemas/auth";
 import { sellerProfile } from "@/db/schemas/seller";
-import { sendEmail } from "@/lib/email";
+import { sendEmail } from "@/infra/email";
 import {
 	ac,
 	adminRole,
 	customerRole,
 	employeeRole,
 	sellerRole,
-} from "@/lib/permissions";
+} from "@/infra/permissions";
 
 /**
  * Nome per il saluto delle email: solo `firstName` del profilo, mai `name`

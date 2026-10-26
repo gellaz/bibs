@@ -60,7 +60,7 @@ export function withResolve(
  * importa qui dentro, come negli altri test.
  */
 export async function signIn(email: string, role = "customer") {
-	const { auth } = await import("@/lib/auth");
+	const { auth } = await import("@/infra/auth");
 	const password = "password123";
 	await auth.api.signUpEmail({ body: { name: "Test", email, password } });
 	await getTestDb()

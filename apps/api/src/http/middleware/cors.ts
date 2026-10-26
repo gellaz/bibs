@@ -1,5 +1,5 @@
 import { cors as honoCors } from "hono/cors";
-import { env } from "@/lib/env";
+import { env } from "@/infra/env";
 
 const LOCALHOST = /^http:\/\/localhost(:\d+)?$/;
 // Explicit allow-list of environments where localhost CORS is permitted. Using an

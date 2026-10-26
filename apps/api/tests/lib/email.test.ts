@@ -4,8 +4,8 @@ import {
 	sendEmailToMailpit,
 	sendEmailToResend,
 	toMailpitPayload,
-} from "@/lib/email";
-import { env } from "@/lib/env";
+} from "@/infra/email";
+import { env } from "@/infra/env";
 
 const realFetch = globalThis.fetch;
 const realEnv = { ...env };

@@ -23,7 +23,7 @@ mock.module("@/db", () => ({
 }));
 
 let sendEmailImpl: (msg: { to: string }) => Promise<void> = async () => {};
-mock.module("@/lib/email", () => ({
+mock.module("@/infra/email", () => ({
 	sendEmail: (msg: { to: string }) => sendEmailImpl(msg),
 }));
 

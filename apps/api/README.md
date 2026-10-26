@@ -13,7 +13,7 @@ Stripe local-dev runbook: [docs/stripe-billing.md](../../docs/stripe-billing.md)
 - **DB** PostgreSQL 18 + PostGIS 3.6 (Docker) · **ORM** [Drizzle](https://orm.drizzle.team)
 - **Auth** [better-auth](https://www.better-auth.com) (email/password, RBAC admin plugin)
 - **Storage** SeaweedFS (S3-compatible) via Bun's native S3 client · **Payments** Stripe (subscriptions)
-- **Email** Mailpit in dev via `src/lib/email.ts`, templates in `packages/emails`
+- **Email** Mailpit in dev via `src/infra/email.ts`, templates in `packages/emails`
 - **Docs** OpenAPI generated from the routes' Zod schemas — Scalar UI at `/openapi`, JSON at `/openapi/json`
 
 ## Getting started
@@ -33,7 +33,7 @@ Generate the auth secret with `bunx --bun @better-auth/cli secret`.
 
 ### Environment variables
 
-`src/lib/env.ts` validates everything at boot and exits with a clear message if a
+`src/infra/env.ts` validates everything at boot and exits with a clear message if a
 required variable is missing. See [.env.example](./.env.example) for the full annotated
 list. Highlights:
 

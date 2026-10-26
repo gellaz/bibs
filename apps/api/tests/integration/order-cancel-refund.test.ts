@@ -26,7 +26,7 @@ const createReversal = mock(async (_id: string, _p: any, _o?: any) => ({
 	id: "trr_1",
 }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		refunds: { create: refundsCreate },
 		transfers: { createReversal },

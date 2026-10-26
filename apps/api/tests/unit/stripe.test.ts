@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { stripe } from "@/lib/stripe";
+import { stripe } from "@/infra/stripe";
 
 describe("stripe wrapper", () => {
 	it("exposes a Stripe SDK instance with the configured secret key", () => {

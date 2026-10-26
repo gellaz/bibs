@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import sharp from "sharp";
 import { db } from "@/db";
 import { user as userTable } from "@/db/schemas/auth";
-import { env } from "@/lib/env";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
+import { publicUrl, s3 } from "@/infra/s3";
 import { ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
-import { publicUrl, s3 } from "@/lib/s3";
 
 interface UploadUserAvatarParams {
 	userId: string;

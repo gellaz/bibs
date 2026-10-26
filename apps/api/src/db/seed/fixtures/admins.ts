@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { user } from "@/db/schemas/auth";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 
 const testAdmins = [
 	{ email: "admin1@test.com", password: "password123" },

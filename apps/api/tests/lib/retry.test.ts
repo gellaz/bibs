@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { isConnectionError, retry } from "@/lib/retry";
+import { isConnectionError, retry } from "@/infra/retry";
 
 /** Never sleeps, so the retry tests stay instant. */
 const noSleep = async () => {};

@@ -5,7 +5,7 @@ import { doc } from "@/http/openapi";
 import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { CustomerOrderWithRelationsSchema } from "@/lib/schemas/composed";
 import { OrderSchema } from "@/lib/schemas/entities";
 import { OrderListQuery } from "@/lib/schemas/queries";

@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { mount } from "hono/mount";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 
 /** Minimal structural type for Bun's server, the `env` of `Bun.serve({ fetch: app.fetch })`. */
 interface RequestIpResolver {

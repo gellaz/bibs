@@ -50,7 +50,7 @@ const invoicesList = mock(async () => ({
 	has_more: false,
 }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		invoices: { list: invoicesList },
 	},

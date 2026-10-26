@@ -3,7 +3,7 @@ import { requireSellerRole } from "@/http/auth";
 import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
 import { send } from "@/http/send";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { SellerProfileSchema } from "@/lib/schemas/entities";
 import { okRes, withErrors } from "@/lib/schemas/responses";
 import { getSellerProfile } from "../services/profile";

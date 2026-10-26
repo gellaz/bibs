@@ -5,7 +5,7 @@ import { ok, okPage } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import {
 	CustomerProductDetailSchema,
 	ProductCardSchema,

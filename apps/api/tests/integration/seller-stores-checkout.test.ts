@@ -32,7 +32,7 @@ const sessionRetrieve = mock(async () => ({
 	status: "open",
 }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		customers: { create: async () => ({ id: "cus_FAKE" }) },
 		checkout: {
@@ -41,7 +41,7 @@ mock.module("@/lib/stripe", () => ({
 	},
 }));
 
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
 		SELLER_APP_URL: "http://localhost:3002",

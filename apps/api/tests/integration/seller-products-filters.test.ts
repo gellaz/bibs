@@ -21,7 +21,7 @@ mock.module("@/db", () => ({
 		},
 	}),
 }));
-mock.module("@/lib/s3", () => ({ s3: { delete: mock(async () => {}) } }));
+mock.module("@/infra/s3", () => ({ s3: { delete: mock(async () => {}) } }));
 
 import { product } from "@/db/schemas/product";
 import { addProductsToDiscount } from "@/modules/seller/services/discounts";

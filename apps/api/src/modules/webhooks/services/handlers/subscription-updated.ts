@@ -5,7 +5,7 @@ import {
 	type StoreSubscriptionStatus,
 	storeSubscription,
 } from "@/db/schemas/store-subscription";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import {
 	notifyPaymentFailed,
 	notifyStoreSuspended,

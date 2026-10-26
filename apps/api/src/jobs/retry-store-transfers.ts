@@ -2,8 +2,8 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
-import { logger } from "@/lib/logger";
-import { stripe } from "@/lib/stripe";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import {
 	settleCheckoutPayment,
 	transferStorePayouts,

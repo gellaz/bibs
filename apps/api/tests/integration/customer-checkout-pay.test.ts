@@ -34,7 +34,7 @@ const paymentIntentsRetrieve = mock(async (id: string) => ({
 	status: piStatus,
 }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		paymentIntents: {
 			create: paymentIntentsCreate,

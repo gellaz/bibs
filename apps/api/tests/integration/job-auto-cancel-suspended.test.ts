@@ -23,7 +23,7 @@ mock.module("@/db", () => ({
 }));
 
 const subCancel = mock(async () => ({}));
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: { subscriptions: { cancel: subCancel } },
 }));
 

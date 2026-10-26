@@ -28,7 +28,7 @@ mock.module("@/db", () => ({
 const s3WriteMock = mock(async (_key: string, _data: Buffer) => {});
 const s3DeleteMock = mock(async (_key: string) => {});
 
-mock.module("@/lib/s3", () => ({
+mock.module("@/infra/s3", () => ({
 	s3: { write: s3WriteMock, delete: s3DeleteMock },
 	publicUrl: (key: string) => `http://s3/test-bucket/${key}`,
 }));
@@ -37,7 +37,7 @@ mock.module("@/lib/s3", () => ({
 // STRIPE_SECRET_KEY: il mock di @/lib/env è globale, quindi il singleton in
 // @/lib/stripe si ri-valuta contro questo env; senza la chiave, `new Stripe()`
 // lancia "between tests". Vedi anche i mock dei test stripe-webhook-*.
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		S3_ENDPOINT: "http://s3",
 		S3_BUCKET: "test-bucket",

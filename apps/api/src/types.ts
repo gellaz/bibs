@@ -4,7 +4,7 @@
  * per evitare problemi di risoluzione dei path alias quando
  * i tipi vengono importati da altri workspace.
  */
-export type { auth } from "./lib/auth";
+export type { auth } from "./infra/auth";
 // Un client `hc` per sotto-albero: uno per sub-app.
 export type { AdminApp } from "./modules/admin";
 export type { CatalogApp } from "./modules/catalog";

@@ -25,11 +25,11 @@ mock.module("@/db", () => ({
 const sendEmail = mock(
 	async (_params: { to: string; subject: string; html: string }) => {},
 );
-mock.module("@/lib/email", () => ({ sendEmail }));
+mock.module("@/infra/email", () => ({ sendEmail }));
 
 const write = mock(async () => {});
 const remove = mock(async (_key: string) => {});
-mock.module("@/lib/s3", () => ({
+mock.module("@/infra/s3", () => ({
 	s3: { write, delete: remove },
 	publicUrl: (key: string) => `https://cdn.test/${key}`,
 }));

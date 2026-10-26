@@ -6,8 +6,8 @@ import { rootApp } from "@/app";
 import { moduleApp } from "@/http/app";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
+import { logger } from "@/infra/logger";
 import { ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
 import { zFile, zInteger } from "@/lib/schemas/t";
 
 // La mappatura errore → risposta (`toErrorResponse`, D7 del piano Hono) come

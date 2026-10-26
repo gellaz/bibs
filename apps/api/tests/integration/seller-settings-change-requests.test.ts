@@ -23,7 +23,7 @@ mock.module("@/db", () => ({
 }));
 
 const s3Delete = mock(async (_key: string) => {});
-mock.module("@/lib/s3", () => ({
+mock.module("@/infra/s3", () => ({
 	s3: { write: mock(async () => {}), delete: s3Delete },
 	publicUrl: (key: string) => `https://cdn.test/${key}`,
 }));
