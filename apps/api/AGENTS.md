@@ -151,8 +151,9 @@ immediately with a clear error listing the missing variables. Always import `env
 `process.env` directly.
 
 Required: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`,
-`S3_BUCKET`.
-Optional: `PORT` (default `3000`), `ALLOWED_ORIGINS`, `NODE_ENV` (default `development`).
+`S3_BUCKET`, `STRIPE_SECRET_KEY`.
+Optional (defaults in `env.ts`): `PORT` (default `3000`), `ALLOWED_ORIGINS`, `NODE_ENV` (default `development`), and the
+rest of the schema (Stripe webhook secrets, email, app URLs, geocoding).
 
 ### Email — `src/lib/email.ts`
 
