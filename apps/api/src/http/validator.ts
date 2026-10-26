@@ -1,5 +1,6 @@
 import { fileTypeFromBlob } from "file-type";
 import type { Context, MiddlewareHandler } from "hono";
+import { getQueryParams } from "hono/utils/url";
 import { z } from "zod";
 import { deepTrim } from "@/lib/deep-trim";
 import { firstIssue } from "@/lib/zod/issues";
@@ -136,7 +137,12 @@ async function readBody(c: Context): Promise<unknown> {
 function readQuery(c: Context, schema: z.ZodType) {
 	const shape = shapeOf(schema) ?? {};
 	const query: Record<string, unknown> = {};
-	for (const [key, values] of Object.entries(c.req.queries())) {
+	// Elysia non taglia il frammento (`?q=a#b` → «a#b»), `c.req.queries()` sì.
+	const all = getQueryParams(c.req.url.replaceAll("#", "%23")) as Record<
+		string,
+		string[]
+	>;
+	for (const [key, values] of Object.entries(all)) {
 		if (!values?.length) continue;
 		const prop = shape[key];
 		query[key] =

@@ -1,6 +1,6 @@
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const POINTS_KEY = ["customer", "points"] as const;
@@ -11,11 +11,13 @@ export function useCustomerPoints(page: number) {
 	return useQuery({
 		queryKey: [...POINTS_KEY, page],
 		queryFn: async () =>
-			unwrap(
-				await api().customer.points.get({
-					query: { page, limit: POINTS_PAGE_SIZE },
-				}),
-				m.points_load_failed(),
+			(
+				await unwrapJson(
+					await customerApi.points.$get({
+						query: { page, limit: POINTS_PAGE_SIZE },
+					}),
+					m.points_load_failed(),
+				)
 			).data,
 	});
 }

@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
 import { ProductCategorySchema } from "@/lib/zod/entities";
 import { OkMessage, okRes, withConflictErrors } from "@/lib/zod/responses";
+import { zString } from "@/lib/zod/t";
 import { adminDetail } from "../context";
 import {
 	createProductCategory,
@@ -36,15 +37,15 @@ export const productCategoriesWriteRoutes = new Hono()
 		v(
 			"json",
 			z.object({
-				name: z
-					.string()
-					.min(1)
-					.max(100)
-					.meta({ description: "Nome della sotto-categoria" }),
-				macroCategoryId: z
-					.string()
-					.min(1)
-					.meta({ description: "ID della macro categoria di appartenenza" }),
+				name: zString({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nome della sotto-categoria",
+				}),
+				macroCategoryId: zString({
+					minLength: 1,
+					description: "ID della macro categoria di appartenenza",
+				}),
 			}),
 		),
 		requireAdmin,
@@ -82,19 +83,15 @@ export const productCategoriesWriteRoutes = new Hono()
 		v(
 			"json",
 			z.object({
-				name: z
-					.string()
-					.min(1)
-					.max(100)
-					.meta({ description: "Nuovo nome della sotto-categoria" })
-					.optional(),
-				macroCategoryId: z
-					.string()
-					.min(1)
-					.meta({
-						description: "Nuovo ID della macro categoria di appartenenza",
-					})
-					.optional(),
+				name: zString({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nuovo nome della sotto-categoria",
+				}).optional(),
+				macroCategoryId: zString({
+					minLength: 1,
+					description: "Nuovo ID della macro categoria di appartenenza",
+				}).optional(),
 			}),
 		),
 		requireAdmin,

@@ -1,8 +1,8 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { Coords } from "@/features/location/coords";
-import { api } from "@/lib/api";
+import { customerApi } from "@/lib/api";
 
-/** Forma stabile per la UI, disaccoppiata dal tipo inferito da Eden. */
+/** Forma stabile per la UI, disaccoppiata dal tipo inferito dall'API. */
 export interface ProductCardView {
 	id: string;
 	name: string;
@@ -63,7 +63,7 @@ export function useProductSearch({
 		staleTime: 60_000,
 		initialPageParam: 1,
 		queryFn: async ({ pageParam }) => {
-			const { data, error } = await api().customer.products.get({
+			const res = await customerApi.products.$get({
 				query: {
 					page: pageParam,
 					limit,
@@ -78,10 +78,9 @@ export function useProductSearch({
 					...(maxPrice !== undefined ? { maxPrice } : {}),
 				},
 			});
-			if (error) {
-				throw new Error(`Ricerca prodotti non riuscita (${error.status})`);
-			}
-			return data;
+			if (!res.ok)
+				throw new Error(`Ricerca prodotti non riuscita (${res.status})`);
+			return res.json();
 		},
 		getNextPageParam: (lastPage) => {
 			const { page, limit: lim, total } = lastPage.pagination;

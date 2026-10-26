@@ -12,27 +12,60 @@ import {
 	ProductSearchQuery as TbProductSearchQuery,
 } from "@/lib/queries";
 import {
+	BulkDeleteBody as TbBulkDeleteBody,
+	BulkStatusBody as TbBulkStatusBody,
 	DiscountCreateBody as TbDiscountCreateBody,
 	DiscountListQuery as TbDiscountListQuery,
+	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
 import { VatRateSchema as TbVatRateSchema } from "@/lib/schemas/forms";
+import { AcceptInviteBody as TbAcceptInviteBody } from "@/lib/schemas/forms/onboarding";
 import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
+import {
+	CharacteristicValuesField as TbCharacteristicValuesField,
+	CreateProductBody as TbCreateProductBody,
+} from "@/lib/schemas/forms/products";
 import {
 	CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody,
 	UpdateHolidayDefinitionBody as TbUpdateHolidayDefinitionBody,
 } from "@/lib/schemas/holidays";
-import { StockBulkAdjustBody as TbStockBulkAdjustBody } from "@/lib/schemas/stock";
+import {
+	StockAdjustBody as TbStockAdjustBody,
+	StockBulkAdjustBody as TbStockBulkAdjustBody,
+} from "@/lib/schemas/stock";
+import {
+	BulkDeleteBody,
+	BulkStatusBody,
+	ProductStatusBody,
+} from "@/lib/zod/entities";
+import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+} from "@/lib/zod/forms/products";
 import {
 	CreateHolidayDefinitionBody,
 	UpdateHolidayDefinitionBody,
 } from "@/lib/zod/holidays";
+import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
 import { PaginationQuery } from "@/lib/zod/pagination";
 import {
 	CategoryListQuery,
 	CharacteristicListQuery,
 	ProductCategoryListQuery,
+	ProductSearchQuery,
 } from "@/lib/zod/queries";
-import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
+import { RegisterBody, SignInBody } from "@/lib/zod/registration";
+import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
+import {
+	zDate,
+	zFile,
+	zFiles,
+	zFormat,
+	zInt,
+	zInteger,
+	zString,
+} from "@/lib/zod/t";
 import {
 	RemoveCategoryCharacteristicBody,
 	SetCategoryCharacteristicBody,
@@ -156,19 +189,61 @@ const TbRegister = t.Object({
 		description: "Password (minimo 8, massimo 128 caratteri)",
 	}),
 });
-const Register = z.object({
-	email: zFormat("email").meta({ description: "Indirizzo email" }),
-	password: z.string().min(8).max(128).meta({
-		description: "Password (minimo 8, massimo 128 caratteri)",
-	}),
+const Register = RegisterBody;
+
+// POST /register/sign-in
+const TbSignIn = t.Object({
+	email: t.String({ format: "email", description: "Indirizzo email" }),
+	password: t.String({ description: "Password" }),
 });
 
+// GET /locations/geocode, /locations/municipalities (query scritte nella route)
+const TbGeocodeQuery = t.Object({
+	q: t.String({
+		minLength: 3,
+		maxLength: 200,
+		description: "Testo dell'indirizzo da cercare",
+	}),
+	limit: t.Optional(
+		t.Integer({
+			minimum: 1,
+			maximum: 10,
+			default: 5,
+			title: "Numero di suggerimenti",
+			description: "Numero massimo di suggerimenti (default 5)",
+		}),
+	),
+	lat: t.Optional(
+		t.Number({
+			minimum: -90,
+			maximum: 90,
+			description:
+				"Latitudine da cui cercare: i risultati vicini vengono primi",
+		}),
+	),
+	lng: t.Optional(
+		t.Number({
+			minimum: -180,
+			maximum: 180,
+			description: "Longitudine da cui cercare",
+		}),
+	),
+});
+const TbMunicipalitiesQuery = t.Composite([
+	TbPaginationQuery,
+	t.Object({
+		provinceId: t.Optional(
+			t.String({ description: "Filtra per ID provincia" }),
+		),
+	}),
+]);
+
 const DiscountCreateBody = z.object({
-	title: z
-		.string()
-		.min(1)
-		.max(80)
-		.meta({ description: "Titolo della promozione" }),
+	title: zString({
+		minLength: 1,
+		maxLength: 80,
+		description: "Titolo della promozione",
+	}),
 	percent: zInteger({ minimum: 1, maximum: 99 }),
 	startsAt: zDate(),
 	endsAt: zDate().nullable().optional(),
@@ -187,68 +262,15 @@ const DiscountListQuery = PaginationQuery.extend({
 				"Filtro lista: 'assignable' = in corso/programmate/in pausa; 'concluded' = scadute/archiviate",
 		})
 		.optional(),
-	search: z.string().max(80).optional(),
+	search: zString({ maxLength: 80 }).optional(),
 });
 
-// Gemello di `ProductSearchQuery` (`lib/queries.ts`), descrizioni comprese.
-const d = (description: string) => ({ description });
-const ProductSearchQuery = PaginationQuery.extend({
-	q: z.string().meta(d("Testo di ricerca (full-text italiano)")).optional(),
-	categoryId: z.string().meta(d("Filtra per ID categoria prodotto")).optional(),
-	macroCategoryId: z
-		.string()
-		.meta(
-			d(
-				"Filtra per ID macro categoria prodotto. Ignorato se `categoryId` è presente: la categoria è già dentro la sua macro.",
-			),
-		)
-		.optional(),
-	lat: z
-		.number()
-		.min(-90)
-		.max(90)
-		.meta(d("Latitudine del punto di ricerca"))
-		.optional(),
-	lng: z
-		.number()
-		.min(-180)
-		.max(180)
-		.meta(d("Longitudine del punto di ricerca"))
-		.optional(),
-	radius: z
-		.number()
-		.gt(0)
-		.max(100)
-		.meta(d("Raggio in km (opzionale, nessun limite di default; max 100)"))
-		.optional(),
-	openNow: z
-		.boolean()
-		.meta(
-			d(
-				"Solo i prodotti disponibili in un negozio aperto in questo momento (fuso Europe/Rome). Restringe anche quale negozio viene agganciato al risultato.",
-			),
-		)
-		.optional(),
-	onSale: z
-		.boolean()
-		.meta(d("Solo i prodotti con uno sconto attivo in questo momento"))
-		.optional(),
-	minPrice: z
-		.number()
-		.min(0)
-		.meta(d("Prezzo minimo in €, sul prezzo scontato"))
-		.optional(),
-	maxPrice: z
-		.number()
-		.min(0)
-		.meta(d("Prezzo massimo in €, sul prezzo scontato"))
-		.optional(),
-});
+// Gemello di `ProductSearchQuery`: `lib/zod/queries.ts` (U3).
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
 // Gemello di `OpeningHoursSchema` (`lib/schemas/forms/opening-hours.ts`):
-// `Type.Integer` di TypeBox è `z.int()`, il `t.Integer` di Elysia è `zInteger`.
+// `Type.Integer` di TypeBox è `zInt()`, il `t.Integer` di Elysia è `zInteger`.
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const slotTime = (description: string) =>
 	z
@@ -258,7 +280,7 @@ const slotTime = (description: string) =>
 const OpeningHours = z
 	.array(
 		z.object({
-			dayOfWeek: z.int().min(0).max(6).meta({
+			dayOfWeek: zInt().min(0).max(6).meta({
 				description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
 			}),
 			slots: z
@@ -278,40 +300,8 @@ const OpeningHours = z
 
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
 // (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
-const bulkStoreId = z
-	.string()
-	.meta({ description: "ID negozio attivo del chiamante" });
-const bulkProductIds = z
-	.array(z.string())
-	.min(1)
-	.max(100)
-	.meta({ description: "ID dei prodotti su cui applicare l'operazione" });
-const StockBulkAdjustBody = z.union([
-	z.object({
-		storeId: bulkStoreId,
-		mode: z
-			.literal("delta")
-			.meta({ description: "Somma algebrica di `value` allo stock corrente" }),
-		value: zInteger({
-			minimum: -1000,
-			maximum: 1000,
-			description: "Variazione (segno + per aumentare, - per diminuire).",
-		}),
-		productIds: bulkProductIds,
-	}),
-	z.object({
-		storeId: bulkStoreId,
-		mode: z
-			.literal("set")
-			.meta({ description: "Imposta lo stock a `value` per ogni prodotto" }),
-		value: zInteger({
-			minimum: 0,
-			maximum: 100000,
-			description: "Valore assoluto da impostare.",
-		}),
-		productIds: bulkProductIds,
-	}),
-]);
+// `StockBulkAdjustBody` è in `lib/zod/stock.ts` da U5.
+// `CreateHolidayDefinitionBody` è in `lib/zod/holidays.ts` da U8.
 
 // Gli schemi TypeBox delle route di U8 (catalogo e admin 1) che stavano dentro
 // le route Elysia, copiati da lì: il confronto dal vivo resta fino a U11.
@@ -455,6 +445,10 @@ const quantity199 = [
 	t.Object({ quantity: t.Integer({ minimum: 1, maximum: 99 }) }),
 	z.object({ quantity: zInteger({ minimum: 1, maximum: 99 }) }),
 ] as const;
+const quantity1e20 = [
+	t.Object({ quantity: t.Integer() }),
+	z.object({ quantity: zInteger() }),
+] as const;
 const storeIds = [
 	t.Object({
 		storeIds: t.Array(t.String(), {
@@ -513,6 +507,34 @@ const formWithFile = [
 		meta: z.object({ a: z.string() }),
 		tags: z.array(z.string()),
 		file: zFile(),
+	}),
+] as const;
+const name200 = [
+	t.Object({ name: t.String({ maxLength: 200 }) }),
+	z.object({ name: zString({ maxLength: 200 }) }),
+] as const;
+const country2 = [
+	t.Object({
+		country: t.String({ minLength: 2, maxLength: 2, title: "Codice" }),
+	}),
+	z.object({
+		country: zString({ minLength: 2, maxLength: 2, title: "Codice" }),
+	}),
+] as const;
+const phone = [
+	t.Object({
+		phone: t.String({
+			maxLength: 5,
+			pattern: "^(.{2,})?$",
+			description: "Telefono",
+		}),
+	}),
+	z.object({
+		phone: zString({
+			maxLength: 5,
+			pattern: "^(.{2,})?$",
+			description: "Telefono",
+		}),
 	}),
 ] as const;
 const png = () => new File([PNG], "a.png", { type: "image/png" });
@@ -854,6 +876,175 @@ export const cases: Case[] = [
 		status: 422,
 		body: fail("Email: campo obbligatorio"),
 	},
+	body(
+		"reg: email trimmata, campi ignoti tolti",
+		TbRegister,
+		Register,
+		{
+			email: " a@b.it ",
+			password: " 12345678 ",
+			role: "admin",
+			nested: { x: 1 },
+		},
+		200,
+		{ ok: { email: "a@b.it", password: " 12345678 " } },
+	),
+	// U4: sign-in e accept-invite
+	body(
+		"sign-in: password mancante",
+		TbSignIn,
+		SignInBody,
+		{ email: "mario@example.it" },
+		422,
+		fail("Password: campo obbligatorio"),
+	),
+	body(
+		"sign-in: vuoto",
+		TbSignIn,
+		SignInBody,
+		{},
+		422,
+		fail("Email: campo obbligatorio"),
+	),
+	body(
+		"accept-invite: vuoto → error dello schema",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{},
+		422,
+		fail("Token mancante"),
+	),
+	body(
+		"accept-invite: password corta",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{ token: "x", password: "short", confirmPassword: "short" },
+		422,
+		fail("La password deve avere almeno 8 caratteri"),
+	),
+	body(
+		"accept-invite: conferma corta",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{ token: "x", password: "password123", confirmPassword: "short" },
+		422,
+		fail("La conferma password deve avere almeno 8 caratteri"),
+	),
+	body(
+		"accept-invite: valido, campi ignoti tolti",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{
+			token: " t ",
+			password: "password123",
+			confirmPassword: "password456",
+			extra: { a: 1 },
+		},
+		200,
+		{
+			ok: {
+				token: "t",
+				password: "password123",
+				confirmPassword: "password456",
+			},
+		},
+	),
+	// U2: query di /locations
+	query(
+		"geocode: limit frazionario (title dello schema)",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&limit=2.5",
+		422,
+		fail("Numero di suggerimenti: deve essere un numero intero"),
+	),
+	query(
+		"geocode: q corta",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=ab",
+		422,
+		fail("q: almeno 3 caratteri"),
+	),
+	query(
+		"geocode: q mancante",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"",
+		422,
+		fail("q: campo obbligatorio"),
+	),
+	query(
+		"geocode: lat non numerica",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&lat=abc",
+		422,
+		fail("Latitudine: valore non valido"),
+	),
+	query(
+		"geocode: lat fuori intervallo (decodifica, etichetta persa)",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&lat=100",
+		422,
+		fail("Valore non valido: deve essere al massimo 90"),
+	),
+	query(
+		"geocode: limit oltre il massimo",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=Via%20Roma&limit=11",
+		422,
+		fail("Valore non valido: deve essere al massimo 10"),
+	),
+	query(
+		"geocode: default, coercizione, campi ignoti tolti",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		"?q=%20Via%20Roma&lat=45.4&lng=9.1&x=1",
+		200,
+		{ ok: { q: " Via Roma", lat: 45.4, lng: 9.1, limit: 5 } },
+	),
+	query(
+		"municipalities: paginazione composta con provinceId",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?page=2&limit=3&page=1&provinceId=p&x=1",
+		200,
+		{ ok: { page: 1, limit: 3, provinceId: "p" } },
+	),
+	query(
+		"municipalities: page=0",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?page=0",
+		422,
+		fail("Valore non valido: deve essere almeno 1"),
+	),
+	query(
+		"municipalities: page oltre i safe-int (t.Integer non li limita)",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?page=9007199254740993",
+		200,
+		{ ok: { page: 9007199254740992, limit: 20 } },
+	),
+	query(
+		"municipalities: limit oltre i safe-int → massimo 100",
+		TbMunicipalitiesQuery,
+		MunicipalitiesQuery,
+		"?limit=9007199254740993",
+		422,
+		fail("Valore non valido: deve essere al massimo 100"),
+	),
+	body(
+		"t.Integer: numero oltre i safe-int nel JSON",
+		...quantity1e20,
+		{ quantity: 1e20 },
+		200,
+		{ ok: { quantity: 1e20 } },
+	),
 	body(
 		"disc-empty-title (trim)",
 		TbDiscountCreateBody,
@@ -1549,7 +1740,7 @@ export const cases: Case[] = [
 	body(
 		"Type.Integer: una stringa è «deve essere un numero intero»",
 		t.Object({ n: Type.Integer({ minimum: 0 }) }),
-		z.object({ n: z.int().min(0) }),
+		z.object({ n: zInt().min(0) }),
 		{ n: "1" },
 		422,
 		fail("n: deve essere un numero intero"),
@@ -1672,6 +1863,336 @@ export const cases: Case[] = [
 		{ l: [{}, {}] },
 		422,
 		fail("l: al massimo 1 elemento"),
+	),
+
+	// t.String conta le unità UTF-16, `z.string().min/max` i code point:
+	// `zString` (giro di correzione di U3).
+	body(
+		"zString: maxLength in unità UTF-16 (101 emoji = 202)",
+		...name200,
+		{ name: "😀".repeat(101) },
+		422,
+		fail("Nome: al massimo 200 caratteri"),
+	),
+	body(
+		"zString: 100 emoji = 200 unità, al limite",
+		...name200,
+		{ name: "😀".repeat(100) },
+		200,
+		{ ok: { name: "😀".repeat(100) } },
+	),
+	body(
+		"zString: un emoji rispetta minLength 2 e maxLength 2",
+		...country2,
+		{ country: "😀" },
+		200,
+		{ ok: { country: "😀" } },
+	),
+	body(
+		"zString: minLength con title",
+		...country2,
+		{ country: "a" },
+		422,
+		fail("Codice: almeno 2 caratteri"),
+	),
+	body(
+		"zString: maxLength prima di pattern",
+		...phone,
+		{ phone: "😀😀😀" },
+		422,
+		fail("Telefono: al massimo 5 caratteri"),
+	),
+	body(
+		"zString: pattern",
+		...phone,
+		{ phone: "a" },
+		422,
+		fail("Telefono: formato non valido"),
+	),
+	body(
+		"zString: nullable, regola del ramo non nullo",
+		t.Object({ note: t.Nullable(t.String({ maxLength: 3 })) }),
+		z.object({ note: zString({ maxLength: 3 }).nullable() }),
+		{ note: "😀😀" },
+		422,
+		fail("Note: al massimo 3 caratteri"),
+	),
+	query(
+		"zString in query: maxLength in unità UTF-16",
+		t.Object({ storeIds: t.String({ maxLength: 4 }) }),
+		z.object({ storeIds: zString({ maxLength: 4 }) }),
+		`?storeIds=${encodeURIComponent("😀😀😀")}`,
+		422,
+		fail("Negozi: al massimo 4 caratteri"),
+	),
+
+	// Numeri non finiti (`1e400` nel JSON è Infinity).
+	{
+		name: "t.Integer: 1e400 è «numero intero»",
+		target: "json",
+		tb: quantity199[0],
+		zod: quantity199[1],
+		req: { raw: '{"quantity":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Quantità: deve essere un numero intero"),
+	},
+	{
+		name: "t.Integer: -1e400 è «numero intero»",
+		target: "json",
+		tb: quantity199[0],
+		zod: quantity199[1],
+		req: { raw: '{"quantity":-1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Quantità: deve essere un numero intero"),
+	},
+	{
+		name: "t.Number: 1e400 nel body",
+		target: "json",
+		tb: t.Object({ price: t.Number() }),
+		zod: z.object({ price: z.number() }),
+		req: { raw: '{"price":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Prezzo: deve essere un numero"),
+	},
+	query(
+		"t.Number in query: 1e400",
+		t.Object({ price: t.Number() }),
+		z.object({ price: z.number() }),
+		"?price=1e400",
+		422,
+		fail("Valore non valido: deve essere un numero"),
+	),
+
+	// Interi oltre ±2^53: TypeBox controlla `Number.isInteger`, `z.int()` di
+	// Zod anche i limiti dei safe integer (422 «al massimo 9007199254740991»).
+	...bigIntegers(),
+	// U5: gemelli dei form e dei body seller condivisi (prodotti, stock). Gli
+	// schemi in linea nelle route li copre il batch catturato su Elysia
+	// (`baseline/hono-batch-seller-products.jsonl`).
+	body(
+		"prodotti: body vuoto (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"prodotti: nome di soli spazi (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "   ", price: "1.00", storeId: "s" },
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"prodotti: prezzo senza decimali (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "X", price: "1", storeId: "s" },
+		422,
+		fail("Il prezzo deve essere nel formato 0.00"),
+	),
+	body(
+		"prodotti: aliquota non ammessa (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "X", price: "1.00", storeId: "s", vatRate: "7" },
+		422,
+		fail("Aliquota IVA: valore non ammesso"),
+	),
+	body(
+		"prodotti: EAN di 12 cifre (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "X", price: "1.00", storeId: "s", ean: "123456789012" },
+		422,
+		fail("EAN deve essere 8 o 13 cifre"),
+	),
+	body(
+		"prodotti: valore di caratteristica non valido (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{
+			name: "X",
+			price: "1.00",
+			storeId: "s",
+			characteristicValues: [{ characteristicId: "c", value: {} }],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
+	),
+	// Unione con più rami non nulli: Zod dà solo l'errore del ramo che combacia
+	// col tipo (stringa troppo lunga), TypeBox «valore non valido».
+	body(
+		"prodotti: valore di caratteristica oltre 2000 caratteri (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{
+			name: "X",
+			price: "1.00",
+			storeId: "s",
+			characteristicValues: [
+				{ characteristicId: "c", value: "y".repeat(2001) },
+			],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
+	),
+	body(
+		"prodotti: valore oltre 2000 caratteri nella riga 2 (campo del PATCH)",
+		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
+		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
+		{
+			characteristicValues: [
+				{ characteristicId: "c", value: "x" },
+				{ characteristicId: "d", value: "y".repeat(2001) },
+			],
+		},
+		422,
+		fail("Valore (riga 2): valore non valido"),
+	),
+	body(
+		"prodotti: default IVA, trim, campi ignoti tolti (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{
+			name: " Pane ",
+			price: "1.00",
+			storeId: "s",
+			ean: "",
+			productCategoryId: null,
+			characteristicValues: [
+				{ characteristicId: "c", value: " x ", extra: 1 },
+				{ characteristicId: "d", value: 5 },
+				{ characteristicId: "e", value: null },
+			],
+			sellerProfileId: "altro",
+		},
+		200,
+		{
+			ok: {
+				name: "Pane",
+				price: "1.00",
+				vatRate: "22",
+				productCategoryId: null,
+				ean: "",
+				characteristicValues: [
+					{ characteristicId: "c", value: "x" },
+					{ characteristicId: "d", value: 5 },
+					{ characteristicId: "e", value: null },
+				],
+				storeId: "s",
+			},
+		},
+	),
+	body(
+		"prodotti: stato mancante (ProductStatusBody)",
+		TbProductStatusBody,
+		ProductStatusBody,
+		{},
+		422,
+		fail("Stato: campo obbligatorio"),
+	),
+	body(
+		"prodotti: stato non ammesso (ProductStatusBody)",
+		TbProductStatusBody,
+		ProductStatusBody,
+		{ status: "deleted" },
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	body(
+		"prodotti: lista vuota (BulkStatusBody)",
+		TbBulkStatusBody,
+		BulkStatusBody,
+		{ productIds: [], status: "active" },
+		422,
+		fail("Prodotti: almeno 1 elemento"),
+	),
+	body(
+		"prodotti: più di 100 ID (BulkDeleteBody)",
+		TbBulkDeleteBody,
+		BulkDeleteBody,
+		{ productIds: Array.from({ length: 101 }, (_, i) => `p${i}`) },
+		422,
+		fail("Prodotti: al massimo 100 elementi"),
+	),
+	body(
+		"stock: delta mancante (StockAdjustBody)",
+		TbStockAdjustBody,
+		StockAdjustBody,
+		{},
+		422,
+		fail("Variazione di scorta: campo obbligatorio"),
+	),
+	body(
+		"stock: delta come stringa oltre il massimo (StockAdjustBody)",
+		TbStockAdjustBody,
+		StockAdjustBody,
+		{ delta: "5000" },
+		422,
+		fail("Valore non valido: deve essere al massimo 1000"),
+	),
+	body(
+		"stock: delta come stringa valido (StockAdjustBody)",
+		TbStockAdjustBody,
+		StockAdjustBody,
+		{ delta: "-3" },
+		200,
+		{ ok: { delta: -3 } },
+	),
+	// t.Integer non ha i limiti dei safe integer di `z.number().int()`.
+	{
+		name: "stock: delta oltre i safe integer (StockAdjustBody)",
+		target: "json",
+		tb: TbStockAdjustBody,
+		zod: StockAdjustBody,
+		req: { raw: '{"delta":9007199254740993}', contentType: "application/json" },
+		status: 422,
+		body: fail("Variazione di scorta: deve essere al massimo 1000"),
+	},
+	{
+		name: "stock: delta infinito (StockAdjustBody)",
+		target: "json",
+		tb: TbStockAdjustBody,
+		zod: StockAdjustBody,
+		req: { raw: '{"delta":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Variazione di scorta: deve essere un numero intero"),
+	},
+	body(
+		"t.Integer: 1e21 come numero e come stringa",
+		t.Object({ n: t.Integer({ minimum: 0 }), s: t.Integer({ minimum: 0 }) }),
+		z.object({ n: zInteger({ minimum: 0 }), s: zInteger({ minimum: 0 }) }),
+		{ n: 1e21, s: "1e21" },
+		200,
+		{ ok: { n: 1e21, s: 1e21 } },
+	),
+	query(
+		"paginazione: pagina oltre i safe integer (PaginationQuery)",
+		TbPaginationQuery,
+		PaginationQuery,
+		"?page=9007199254740993",
+		200,
+		{ ok: { page: 9007199254740992, limit: 20 } },
+	),
+	query(
+		"paginazione: limite oltre i safe integer (PaginationQuery)",
+		TbPaginationQuery,
+		PaginationQuery,
+		"?limit=9007199254740993",
+		422,
+		fail("Valore non valido: deve essere al massimo 100"),
+	),
+	// Elysia non taglia il frammento: il `#` resta nell'ultimo valore.
+	query(
+		"query: il # resta nel valore, anche negli array",
+		t.Object({ q: t.String(), ids: t.Array(t.String()) }),
+		z.object({ q: z.string(), ids: z.array(z.string()) }),
+		"?ids=a,b&q=x%20y#z&ids=c#d",
+		200,
+		{ ok: { q: "x y#z", ids: ["a", "b", "c#d"] } },
 	),
 
 	// U8: catalogo pubblico e admin 1 (attesi catturati su Elysia nel batch
@@ -1910,4 +2431,168 @@ export const cases: Case[] = [
 		200,
 		{ ok: { name: "y", isActive: false } },
 	),
+	body(
+		"U8 caratteristica: nome di 51 emoji (TypeBox conta le unità UTF-16)",
+		TbCreateProductCharacteristicBody,
+		CreateProductCharacteristicBody,
+		{ name: "😀".repeat(51), dataType: "text" },
+		422,
+		fail("Nome: al massimo 100 caratteri"),
+	),
 ];
+
+function bigIntegers(): Case[] {
+	const page = [
+		t.Object({ page: t.Integer({ minimum: 1 }) }),
+		z.object({ page: zInteger({ minimum: 1 }) }),
+	] as const;
+	const typeboxQuantity = [
+		t.Object({ quantity: Type.Integer({ minimum: 1, maximum: 99 }) }),
+		z.object({ quantity: zInt().min(1).max(99) }),
+	] as const;
+	const json = (
+		name: string,
+		[tb, zod]: readonly [TSchema, z.ZodType],
+		raw: string,
+		status: number,
+		expected: unknown,
+	): Case => ({
+		name,
+		target: "json",
+		tb,
+		zod,
+		req: { raw, contentType: "application/json" },
+		status,
+		body: expected,
+	});
+	const max99 = "Quantità: deve essere al massimo 99";
+	const min1 = "Quantità: deve essere almeno 1";
+	return [
+		query("t.Integer in query: 1e20", ...page, "?page=1e20", 200, {
+			ok: { page: 1e20 },
+		}),
+		query(
+			"t.Integer in query: 2^53+1",
+			...page,
+			"?page=9007199254740993",
+			200,
+			{
+				ok: { page: 9007199254740992 },
+			},
+		),
+		query(
+			"t.Integer in query: 20 cifre",
+			...page,
+			"?page=99999999999999999999",
+			200,
+			{ ok: { page: 1e20 } },
+		),
+		query(
+			"t.Integer in query: -1e20",
+			...page,
+			"?page=-99999999999999999999",
+			422,
+			fail("Valore non valido: deve essere almeno 1"),
+		),
+		query(
+			"t.Integer in query: 1e20 oltre il massimo",
+			...quantity199,
+			"?quantity=1e20",
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		query(
+			"t.Integer in query: 2^53+1 oltre il massimo",
+			...quantity199,
+			"?quantity=9007199254740993",
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		query(
+			"t.Integer in query: -1e20 sotto il minimo",
+			...quantity199,
+			"?quantity=-1e20",
+			422,
+			fail("Valore non valido: deve essere almeno 1"),
+		),
+		json("t.Integer: 1e20 nel body", page, '{"page":1e20}', 200, {
+			ok: { page: 1e20 },
+		}),
+		json("t.Integer: 2^53+1 nel body", page, '{"page":9007199254740993}', 200, {
+			ok: { page: 9007199254740992 },
+		}),
+		json(
+			"t.Integer: 20 cifre in stringa nel body",
+			page,
+			'{"page":"99999999999999999999"}',
+			200,
+			{ ok: { page: 1e20 } },
+		),
+		json(
+			"t.Integer: 1e20 oltre il massimo",
+			quantity199,
+			'{"quantity":1e20}',
+			422,
+			fail(max99),
+		),
+		json(
+			"t.Integer: -1e20 sotto il minimo",
+			quantity199,
+			'{"quantity":-1e20}',
+			422,
+			fail(min1),
+		),
+		json(
+			"t.Integer: 2^53 oltre il massimo",
+			quantity199,
+			'{"quantity":9007199254740992}',
+			422,
+			fail(max99),
+		),
+		json(
+			"t.Integer: 20 cifre in stringa oltre il massimo",
+			quantity199,
+			'{"quantity":"99999999999999999999"}',
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		json(
+			"Type.Integer: 1e20 oltre il massimo",
+			typeboxQuantity,
+			'{"quantity":1e20}',
+			422,
+			fail(max99),
+		),
+		json(
+			"Type.Integer: -1e20 sotto il minimo",
+			typeboxQuantity,
+			'{"quantity":-1e20}',
+			422,
+			fail(min1),
+		),
+		json(
+			"Type.Integer: 2^53+1 oltre il massimo",
+			typeboxQuantity,
+			'{"quantity":9007199254740993}',
+			422,
+			fail(max99),
+		),
+		json(
+			"Type.Integer: 20 cifre in stringa",
+			typeboxQuantity,
+			'{"quantity":"99999999999999999999"}',
+			422,
+			fail("Quantità: deve essere un numero intero"),
+		),
+		json(
+			"Type.Integer: 1e20 senza massimo",
+			[
+				t.Object({ n: Type.Integer({ minimum: 0 }) }),
+				z.object({ n: zInt().min(0) }),
+			],
+			'{"n":1e20}',
+			200,
+			{ ok: { n: 1e20 } },
+		),
+	];
+}

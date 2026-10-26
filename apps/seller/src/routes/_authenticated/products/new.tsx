@@ -1,4 +1,5 @@
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
@@ -8,7 +9,7 @@ import {
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products/new")({
@@ -32,27 +33,32 @@ function NewProductPage() {
 		mutationFn: async (formData: ProductFormValues) => {
 			const storeId = activeStore?.id;
 			if (!storeId) throw new Error(m.products_new_no_store());
-			const response = await api().seller.products.post({
-				name: formData.name,
-				description: formData.description,
-				price: formData.price,
-				vatRate: formData.vatRate,
-				productCategoryId: formData.productCategoryId ?? null,
-				ean: formData.ean,
-				brandId: formData.brandId,
-				brandName: formData.brandName,
-				characteristicValues: formData.characteristicValues,
-				storeId,
+			const response = await sellerApi.products.$post({
+				json: {
+					name: formData.name,
+					description: formData.description,
+					price: formData.price,
+					vatRate: formData.vatRate,
+					productCategoryId: formData.productCategoryId ?? null,
+					ean: formData.ean,
+					brandId: formData.brandId,
+					brandName: formData.brandName,
+					characteristicValues: formData.characteristicValues,
+					storeId,
+				},
 			});
 
-			const product = unwrap(response, m.products_new_create_error());
+			const product = await unwrapJson(response, m.products_new_create_error());
 
 			if (formData.files.length > 0 && product.data?.id) {
-				const imgResponse = await api()
-					.seller.products({ productId: product.data.id })
-					.images.post({ files: formData.files });
+				const imgResponse = await sellerApi.products[":productId"].images.$post(
+					{
+						param: { productId: product.data.id },
+						form: { files: formData.files },
+					},
+				);
 
-				if (imgResponse.error) {
+				if (!imgResponse.ok) {
 					toast.warning(m.products_new_images_upload_error());
 				}
 			}

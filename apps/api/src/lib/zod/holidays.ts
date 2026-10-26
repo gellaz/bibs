@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zDate, zInteger } from "./t";
+import { zDate, zInteger, zString } from "./t";
 
 // Gemelli Zod di `lib/schemas/holidays.ts` (D3 del piano Hono), nello stesso
 // ordine e con gli stessi nomi; per ora solo quelli delle route migrate.
@@ -36,11 +36,11 @@ export const HolidayPreviewSchema = z.object({
 
 // Unione alla radice: `z.union`, non `z.discriminatedUnion` (che sceglie il
 // ramo dal discriminante e dà errori che TypeBox non dà).
-const holidayName = z
-	.string()
-	.min(1)
-	.max(100)
-	.meta({ description: "Nome festività" });
+const holidayName = zString({
+	minLength: 1,
+	maxLength: 100,
+	description: "Nome festività",
+});
 export const CreateHolidayDefinitionBody = z.union([
 	z.object({
 		type: z.literal("fixed"),
@@ -68,11 +68,23 @@ export const CreateHolidayDefinitionBody = z.union([
 ]);
 
 export const UpdateHolidayDefinitionBody = z.object({
-	name: z
-		.string()
-		.min(1)
-		.max(100)
-		.meta({ description: "Nuovo nome" })
-		.optional(),
+	name: zString({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nuovo nome",
+	}).optional(),
 	isActive: z.boolean().meta({ description: "Attiva/disattiva" }).optional(),
+});
+
+export const OpenStatusSchema = z.object({
+	isOpen: z.boolean(),
+	status: z.enum(["open", "closed", "closed_holiday", "unknown"]).meta({
+		description:
+			"Stato del negozio; unknown significa che non ha mai dichiarato orari, non che è chiuso",
+	}),
+	closesAt: z
+		.string()
+		.meta({ description: "Orario chiusura odierno (HH:mm)" })
+		.optional(),
+	opensAt: z.object({ date: z.string(), time: z.string() }).optional(),
 });

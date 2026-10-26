@@ -19,7 +19,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/zod/responses";
-import { zInteger } from "@/lib/zod/t";
+import { zInteger, zString } from "@/lib/zod/t";
 import { adminDetail } from "../context";
 import {
 	createProductCharacteristic,
@@ -38,7 +38,7 @@ const OptionsBody = z
 						"ID di un'opzione esistente: tenerlo permette di rinominarla senza perdere i valori dei prodotti",
 				})
 				.optional(),
-			value: z.string().max(100).meta({ description: "Valore ammesso" }),
+			value: zString({ maxLength: 100, description: "Valore ammesso" }),
 		}),
 	)
 	.meta({
@@ -46,10 +46,10 @@ const OptionsBody = z
 	});
 
 const unit = () =>
-	z
-		.string()
-		.max(20)
-		.meta({ description: "Unità di misura, solo per il tipo number" })
+	zString({
+		maxLength: 20,
+		description: "Unità di misura, solo per il tipo number",
+	})
 		.nullable()
 		.optional();
 
@@ -63,7 +63,9 @@ const Params = z.object({
 });
 
 export const CreateProductCharacteristicBody = z.object({
-	name: z.string().min(1).max(100).meta({
+	name: zString({
+		minLength: 1,
+		maxLength: 100,
 		description: "Nome della caratteristica, univoco nel dizionario",
 	}),
 	dataType: CharacteristicDataTypeSchema,
@@ -72,12 +74,11 @@ export const CreateProductCharacteristicBody = z.object({
 });
 
 export const UpdateProductCharacteristicBody = z.object({
-	name: z
-		.string()
-		.min(1)
-		.max(100)
-		.meta({ description: "Nuovo nome della caratteristica" })
-		.optional(),
+	name: zString({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nuovo nome della caratteristica",
+	}).optional(),
 	dataType: CharacteristicDataTypeSchema.optional(),
 	unit: unit(),
 	options: OptionsBody.optional(),

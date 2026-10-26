@@ -6,12 +6,13 @@ import {
 	CardTitle,
 } from "@bibs/ui/components/card";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
+import type { ErrorBody } from "@bibs/ui/lib/api-client";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PendingVerificationBannerConnected } from "@/features/auth/components/pending-verification-banner-connected";
 import { RegisterForm } from "@/features/auth/components/register-form";
 import type { RegisterFormData } from "@/features/auth/schemas/register";
-import { api } from "@/lib/api";
+import { registerApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
@@ -41,17 +42,13 @@ function RegisterPage() {
 		setPending(null);
 
 		try {
-			const { error: regError } = await api().register.seller.post({
-				email: data.email,
-				password: data.password,
+			const res = await registerApi.seller.$post({
+				json: { email: data.email, password: data.password },
 			});
 
-			if (regError) {
-				const errVal = regError.value as {
-					error?: string;
-					message?: string;
-					resentAt?: string;
-				};
+			if (!res.ok) {
+				// Un corpo non JSON (proxy) vale come errore senza dettagli, come con Eden.
+				const errVal: Partial<ErrorBody> = await res.json().catch(() => ({}));
 
 				if (errVal.error === "EMAIL_PENDING_VERIFICATION" && errVal.resentAt) {
 					setPending({

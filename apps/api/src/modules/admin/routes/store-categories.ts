@@ -13,6 +13,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/zod/responses";
+import { zString } from "@/lib/zod/t";
 import { adminDetail } from "../context";
 import {
 	createStoreCategory,
@@ -39,11 +40,11 @@ export const storeCategoriesWriteRoutes = new Hono()
 		v(
 			"json",
 			z.object({
-				name: z
-					.string()
-					.min(1)
-					.max(100)
-					.meta({ description: "Nome della categoria negozio" }),
+				name: zString({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nome della categoria negozio",
+				}),
 				macroCategoryId: z
 					.string()
 					.meta({ description: "ID della macro categoria di appartenenza" }),
@@ -84,12 +85,11 @@ export const storeCategoriesWriteRoutes = new Hono()
 		v(
 			"json",
 			z.object({
-				name: z
-					.string()
-					.min(1)
-					.max(100)
-					.meta({ description: "Nuovo nome della categoria negozio" })
-					.optional(),
+				name: zString({
+					minLength: 1,
+					maxLength: 100,
+					description: "Nuovo nome della categoria negozio",
+				}).optional(),
 				macroCategoryId: z
 					.string()
 					.meta({ description: "Nuova macro categoria di appartenenza" })

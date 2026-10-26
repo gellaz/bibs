@@ -169,13 +169,17 @@ per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline 
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
-catalogo pubblico e admin 1 (U8: configurazioni, tassonomia, caratteristiche,
-festività, import CSV; il resto di /admin resta Elysia fino a U9 e vince sul mount).
+`locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
+immagini, caratteristiche, stock); `customer/` (U3); catalogo pubblico e admin 1
+(U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; il resto
+di /admin resta Elysia fino a U9 e vince sul mount).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
   `.mount("/me", meApp.fetch)`. Il mount toglie il prefisso e non legge il body;
-  una route Elysia vince sempre sul mount. Finché c'è Elysia restano suoi il
+  una route Elysia vince sempre sul mount, quindi un modulo può migrare in parte
+  (`.mount("/seller", sellerApp.fetch)` accanto a `sellerModule`, che tiene le route
+  non ancora migrate). Finché c'è Elysia restano suoi il
   preflight e gli header CORS, `X-Request-Id`, la riga di log di logixlysia e la
   sovrascrittura di `x-forwarded-for`; tutto il resto lo fa la sub-app (prove in
   `apps/api/tests/http/mount.test.ts`).
@@ -202,7 +206,11 @@ festività, import CSV; il resto di /admin resta Elysia fino a U9 e vince sul mo
   modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
   `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`) e il
   mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
-  in `src/index.ts`. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
+  in `src/index.ts`, o una funzione del path quando cambiano da route a route
+  (`sellerGuards`: `requireSellerRole` su profilo e onboarding, `requireSeller` sul
+  resto). Le guardie di ruolo (`requireCustomer`, `requireSeller`) leggono la
+  sessione da sé (401 per l'anonimo), quindi non serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
+  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
   ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
   guardia del modulo, o `publicRoute` in un modulo che dichiara `"publicRoute"`
   (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
@@ -214,14 +222,29 @@ festività, import CSV; il resto di /admin resta Elysia fino a U9 e vince sul mo
   `/product-macro-categories`, `/store-categories`, `/store-macro-categories` sono
   quattro sub-app con la route `/`, montate ognuna sul suo path; per i FE un solo
   tipo `CatalogApp` e un client `catalogApi = hc<WithErrors<CatalogApp>>(API_URL)`.
+- **Rate limit.** `rateLimit({ name, limits })` (`src/plugins/rate-limit.ts`) è un
+  middleware Hono: va dopo i `v()` e dopo la guardia o `publicRoute` (un input non
+  valido non consuma budget; la chiave `email` è quella del body validato). Sotto
+  il mount l'IP è l'`x-forwarded-for` che Elysia ha già riscritto con l'IP del
+  socket.
 - **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
-  (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
-  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
-  `zFiles`, `zFormat`); per il resto Zod normale, con `title`/`error`/`description`
-  in `.meta()`. Regole per scrivere un gemello:
+  (stessi nomi di `lib/schemas/`), scritti modulo per modulo; gli input che in
+  Elysia erano scritti nella route stanno in `lib/zod/<modulo>.ts`
+  (`registration.ts`, `locations.ts`), senza effetti all'import, così li usano
+  anche i casi di parità. I tipi propri di
+  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zInt`, `zDate`,
+  `zFile`, `zFiles`, `zFormat`, `zString`); per il resto Zod normale, con
+  `title`/`error`/`description` in `.meta()`. Regole per scrivere un gemello:
   - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
-    form condivisi) → `z.int()`; `t.Date` → `zDate`; `t.Nullable(x)` →
-    `x.nullable()`; unione di letterali → `z.enum`; `t.Union` di oggetti →
+    form condivisi) → `zInt()`, mai `z.int()` né `z.number().int()` (Zod 4.6
+    rifiuta gli interi oltre ±2^53, TypeBox no: `page=9007199254740993` è 200
+    in Elysia); `t.String` con `minLength`/`maxLength` →
+    `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
+    unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
+    per Zod); `t.Date` → `zDate`; `t.Nullable(x)` →
+    `x.nullable()`; unione di letterali → `z.enum`, ma di letterali numerici (le
+    aliquote IVA `"22"`, `"10"`, …) → `z.union` di `z.literal` (`z.enum` riordina le
+    chiavi numeriche in /openapi); `t.Union` di oggetti →
     `z.union`, mai `z.discriminatedUnion`;
   - ogni gemello nuovo entra in `apps/api/tests/http/parity-cases.ts` con lo schema
     TypeBox e l'atteso: il test confronta dal vivo con Elysia status, corpo del 422
@@ -231,11 +254,14 @@ festività, import CSV; il resto di /admin resta Elysia fino a U9 e vince sul mo
     query, default annidati, chiavi multipart `a.b`/`a[0]`): nel piano, Trappole.
 - **Test delle sub-app.** `apps/api/tests/helpers/hono-app.ts`: `testRequest`,
   `signIn(email, role)` (utente e sessione better-auth veri sul DB di test) e
-  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB). I log
+  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB),
+  `withResolve(app, (request) => vars)` (variabili risolte a ogni richiesta, il
+  `.resolve` finto degli harness Elysia). I log
   degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
-  `src/types.ts` (`MeApp`, `AdminApp`, `CatalogApp`); ogni app crea in `src/lib/api.ts` il client del
+  `src/types.ts` (`MeApp`, `CustomerApp`, `LocationsApp`, `RegistrationApp`,
+  `SellerApp`, `AdminApp`, `CatalogApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

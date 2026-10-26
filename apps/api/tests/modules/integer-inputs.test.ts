@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { Elysia } from "elysia";
+import { moduleApp } from "@/http/app";
 import { ordersRoutes } from "@/modules/customer/routes/orders";
-import { locationsRoutes } from "@/modules/locations/routes/locations";
-import { brandsRoutes } from "@/modules/seller/routes/brands";
-import { imagesRoutes } from "@/modules/seller/routes/images";
-import { stockRoutes } from "@/modules/seller/routes/stock";
+import { locationsApp } from "@/modules/locations";
+import { sellerApp } from "@/modules/seller";
 import { storeImagesRoutes } from "@/modules/seller/routes/store-images";
 import { storesRoutes } from "@/modules/seller/routes/stores";
 import { errorHandler } from "@/plugins/error-handler";
+import { testRequest } from "../helpers/hono-app";
 
 const noopPino = {
 	debug: () => {},
@@ -21,16 +21,18 @@ const noopPino = {
 // Mounted bare: validation runs before any guard or handler, so a fractional
 // value in an integer field must come back as a 422, never reach the DB
 // (22P02 → 500). Everything else in each request is valid on purpose.
+// Stock, product images and brands are on Hono (seller sub-app, mounted at the
+// root: the Elysia routes win, the rest reaches it); there the guard sits in
+// each route after its validators, so the 422 still comes first.
 const app = new Elysia()
 	.state("pino", noopPino)
 	.use(errorHandler)
-	.use(stockRoutes)
 	.use(storesRoutes)
-	.use(imagesRoutes)
 	.use(storeImagesRoutes)
-	.use(brandsRoutes)
-	.use(locationsRoutes)
-	.use(ordersRoutes);
+	.mount(sellerApp.fetch);
+
+// Modulo customer: sub-app Hono (piano Hono, U3).
+const customer = moduleApp().route("/", ordersRoutes);
 
 function json(method: string, path: string, body: unknown) {
 	return app.handle(
@@ -44,6 +46,11 @@ function json(method: string, path: string, body: unknown) {
 
 function get(path: string) {
 	return app.handle(new Request(`http://localhost${path}`));
+}
+
+// /locations è una sub-app Hono (montata su /locations: path relativi).
+function locations(path: string) {
+	return testRequest(locationsApp, path);
 }
 
 // 1×1 PNG: a real image, so the multipart `files` field passes t.Files.
@@ -104,8 +111,11 @@ describe("integer inputs reject fractions with 422", () => {
 		["GET /brands page", () => get("/brands?page=1.5")],
 		// The shared PaginationQuery, spread into ~19 routes.
 		["GET /stores (PaginationQuery) limit", () => get("/stores?limit=2.5")],
-		["GET /orders (PaginationQuery) page", () => get("/orders?page=1.5")],
-		["GET /geocode limit", () => get("/geocode?q=Via%20Roma&limit=2.5")],
+		[
+			"GET /orders (PaginationQuery) page",
+			() => testRequest(customer, "/orders?page=1.5"),
+		],
+		["GET /geocode limit", () => locations("/geocode?q=Via%20Roma&limit=2.5")],
 	];
 
 	for (const [label, send] of fractional) {
@@ -147,7 +157,7 @@ describe("integer inputs: Italian 422 message on real routes", () => {
 		],
 		[
 			"GET /geocode limit (title on the schema)",
-			() => get("/geocode?q=Via%20Roma&limit=2.5"),
+			() => locations("/geocode?q=Via%20Roma&limit=2.5"),
 			"Numero di suggerimenti: deve essere un numero intero",
 		],
 		[

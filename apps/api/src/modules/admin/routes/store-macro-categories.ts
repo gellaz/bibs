@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
 import { StoreMacroCategorySchema } from "@/lib/zod/entities";
 import { OkMessage, okRes, withConflictErrors } from "@/lib/zod/responses";
+import { zString } from "@/lib/zod/t";
 import { adminDetail } from "../context";
 import {
 	createStoreMacroCategory,
@@ -24,7 +25,7 @@ const Params = z.object({
 });
 
 const macroName = (description: string) =>
-	z.object({ name: z.string().min(1).max(100).meta({ description }) });
+	z.object({ name: zString({ minLength: 1, maxLength: 100, description }) });
 
 export const storeMacroCategoriesWriteRoutes = new Hono()
 	.post(

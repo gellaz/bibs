@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { ValidationRule } from "@/lib/validation-rule";
 import { isAnyOf, nodeAt, unwrap } from "./mirror";
+import { integerCheck } from "./t";
 
 // Dalle issue di Zod alla regola di `validation-rule.ts` e all'errore che
 // TypeBox (quindi Elysia) avrebbe dato per primo: i 422 restano identici al
@@ -24,18 +25,17 @@ export function ruleParams(issue: Issue): RuleParams | undefined {
 
 const isDecode = (issue: Issue) => !!ruleParams(issue)?.decode;
 
-// `Type.Integer` (gemello `z.int()`): un non numero è «deve essere un numero
+// `Type.Integer` (gemello `zInt()`): un non numero è «deve essere un numero
 // intero», ma Zod dice solo `expected: "number"`.
 function isInt(node: z.ZodType | undefined) {
 	if (!node) return false;
 	const def = unwrap(node).node._zod.def as Record<string, any>;
-	const formats = [def, ...(def.checks ?? []).map((c: any) => c._zod.def)];
-	return def.type === "number" && formats.some((f) => f.format === "safeint");
+	return def.type === "number" && !!def.checks?.includes(integerCheck);
 }
 
 /**
  * La regola violata, come `validationRule` sull'errore TypeBox equivalente;
- * `node` è lo schema che ha prodotto l'issue (per `z.int()`).
+ * `node` è lo schema che ha prodotto l'issue (per `zInt()`).
  */
 export function issueRule(issue: Issue, node?: z.ZodType): ValidationRule {
 	const custom = ruleParams(issue);
@@ -216,10 +216,21 @@ function collapse(issues: Issue[], checked: Checked) {
 		const { at, issues: inner } = item;
 		// ObjectString/ArrayString dei body con file: due rami non nulli.
 		const coerced = at.length === 1 && checked.anyOfKeys?.has(String(at[0]));
-		if (!coerced && inner.length === 1 && inner[0].path.length === at.length)
-			return inner[0];
 		const node = unwrap(nodeAt(schema, at) as z.ZodType).node;
 		const def = node._zod.def as Record<string, any>;
+		// Zod dà l'errore dell'unico ramo che combacia col tipo (stringa troppo
+		// lunga); TypeBox, con più rami non nulli, «valore non valido».
+		const manyBranches =
+			def.type === "union" &&
+			def.options.filter((o: z.ZodType) => o._zod.def.type !== "null").length >
+				1;
+		if (
+			!coerced &&
+			inner.length === 1 &&
+			inner[0].path.length === at.length &&
+			!(manyBranches && inner[0].code !== "invalid_union")
+		)
+			return inner[0];
 		const input = valueAt(value, at);
 		let rule: ValidationRule =
 			input === undefined ? { kind: "required" } : { kind: "invalid" };

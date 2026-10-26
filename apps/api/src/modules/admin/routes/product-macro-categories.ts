@@ -9,6 +9,7 @@ import { ok, okMessage } from "@/lib/responses";
 import { ProductMacroCategorySchema } from "@/lib/zod/entities";
 import { VatRateSchema } from "@/lib/zod/forms/products";
 import { OkMessage, okRes, withConflictErrors } from "@/lib/zod/responses";
+import { zString } from "@/lib/zod/t";
 import { adminDetail } from "../context";
 import {
 	createProductMacroCategory,
@@ -25,7 +26,7 @@ const Params = z.object({
 });
 
 const macroName = (description: string) =>
-	z.string().min(1).max(100).meta({ description });
+	zString({ minLength: 1, maxLength: 100, description });
 
 export const CreateProductMacroCategoryBody = z.object({
 	name: macroName("Nome della macro categoria"),
