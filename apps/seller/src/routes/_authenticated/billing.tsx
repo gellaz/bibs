@@ -24,6 +24,7 @@ import {
 } from "@bibs/ui/components/table";
 import { formatPriceEur } from "@bibs/ui/custom/price";
 import { StatusBadge } from "@bibs/ui/custom/status-badge";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -34,7 +35,7 @@ import { CancelStoreDialog } from "@/features/billing/components/cancel-store-di
 import { invoiceStatusBadge } from "@/features/billing/invoice-status";
 import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { api, unwrap } from "@/lib/api";
+import { api, sellerApi, unwrap } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
@@ -154,8 +155,10 @@ function BillingPage() {
 
 	const reactivateMutation = useMutation({
 		mutationFn: async (storeId: string) => {
-			const r = await api().seller.stores({ storeId }).reactivate.post();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.stores[":storeId"].reactivate.$post({
+				param: { storeId },
+			});
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["seller", "billing"] });

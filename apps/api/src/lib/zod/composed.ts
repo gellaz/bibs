@@ -3,6 +3,8 @@ import {
 	BrandSchema,
 	CustomerAddressSchema,
 	CustomerProfileSchema,
+	EmployeeSchema,
+	OnlinePaymentsSchema,
 	OrderItemSchema,
 	OrderSchema,
 	OrganizationSchema,
@@ -12,9 +14,13 @@ import {
 	ProductSchema,
 	SellerProfileChangeSchema,
 	SellerProfileSchema,
+	StoreCategorySchema,
+	StoreImageSchema,
+	StorePhoneNumberSchema,
 	StoreProductSchema,
 	StoreSchema,
 	UserSchema,
+	UserSummarySchema,
 } from "./entities";
 import { OpenStatusSchema } from "./holidays";
 import { zDate, zInteger } from "./t";
@@ -23,6 +29,23 @@ import { zDate, zInteger } from "./t";
 // stesso ordine; si aggiungono quando una route migrata li usa.
 
 const d = (description: string) => ({ description });
+
+// Store + phone numbers + category + images
+export const StoreWithPhonesSchema = StoreSchema.extend({
+	lowStockThreshold: zInteger({
+		minimum: 0,
+		description:
+			"Soglia di scorta bassa del negozio (0 = avviso spento). Solo lato venditore",
+	}),
+	reservationHours: zInteger({
+		description:
+			"Ore di apertura entro cui ritirare una prenotazione. Solo lato venditore",
+	}),
+	phoneNumbers: z.array(StorePhoneNumberSchema),
+	category: StoreCategorySchema.nullable(),
+	images: z.array(StoreImageSchema),
+	openStatus: OpenStatusSchema.nullable().optional(),
+});
 
 // Seller profile + user + organization (admin pending list)
 export const SellerProfileWithUserSchema = SellerProfileSchema.extend({
@@ -66,6 +89,14 @@ export const SignInResult = z.object({
 	}),
 	organization: RawOrganizationSchema.nullable(),
 	token: AuthToken,
+});
+
+// Employee + user
+export const EmployeeWithUserSchema = EmployeeSchema.extend({
+	user: UserSummarySchema,
+	storeIds: z.array(z.string()).meta({
+		description: "ID dei negozi a cui il dipendente è assegnato",
+	}),
 });
 
 // StoreProduct + store (location excluded — PostGIS EWKB fails in nested relational queries)
@@ -189,6 +220,18 @@ export const CheckoutPreviewSchema = z.object({
 			d("Null se non ci sono ordini Paga e ritira o i punti non danno sconto"),
 		)
 		.nullable(),
+});
+
+// Seller settings (profile + org + online payments + pending changes)
+export const SellerSettingsSchema = z.object({
+	profile: SellerProfileSchema,
+	organization: OrganizationSchema.nullable(),
+	onlinePayments: OnlinePaymentsSchema.nullable(),
+	pendingChanges: z.array(SellerProfileChangeSchema),
+	assignedStoreIds: z.union([z.array(z.string()), z.null()]).meta({
+		description:
+			"Lista storeId assegnati all'employee, o null se owner (= tutti)",
+	}),
 });
 
 // Change request with seller profile + user (admin view)

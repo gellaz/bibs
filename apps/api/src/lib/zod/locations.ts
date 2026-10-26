@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { PaginationQuery } from "./pagination";
-import { zInteger } from "./t";
+import { zInteger, zString } from "./t";
 
 // Query di /locations (in Elysia erano scritte nella route): qui, senza
 // effetti all'import, perché le usano anche i casi di parità
@@ -21,11 +21,11 @@ export const MunicipalitiesQuery = PaginationQuery.extend({
 });
 
 export const GeocodeQuery = z.object({
-	q: z
-		.string()
-		.min(3)
-		.max(200)
-		.meta({ description: "Testo dell'indirizzo da cercare" }),
+	q: zString({
+		minLength: 3,
+		maxLength: 200,
+		description: "Testo dell'indirizzo da cercare",
+	}),
 	limit: zInteger({
 		minimum: 1,
 		maximum: 10,

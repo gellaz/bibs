@@ -10,6 +10,7 @@ import { Field, FieldError, FieldLabel } from "@bibs/ui/components/field";
 import { Input } from "@bibs/ui/components/input";
 import { toast } from "@bibs/ui/components/sonner";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
@@ -19,7 +20,7 @@ import {
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { zodResolver } from "@/lib/zod-resolver";
 import { m } from "@/paraglide/messages";
 import { PendingVatChange } from "./pending-vat-change";
@@ -80,8 +81,8 @@ export function BusinessInfoCard({ readOnly }: Props) {
 
 	const mut = useMutation({
 		mutationFn: async (form: Form) => {
-			const r = await api().seller.settings.company.patch(form);
-			return unwrap(r, m.profile_business_save_error());
+			const r = await sellerApi.settings.company.$patch({ json: form });
+			return unwrapJson(r, m.profile_business_save_error());
 		},
 		onSuccess: () => {
 			void qc.invalidateQueries({ queryKey: ["seller", "settings"] });

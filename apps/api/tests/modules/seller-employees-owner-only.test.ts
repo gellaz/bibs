@@ -1,27 +1,18 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
+import { sellerApp } from "@/modules/seller";
 import { employeesRoutes } from "@/modules/seller/routes/employees";
-import { errorHandler } from "@/plugins/error-handler";
+import { withVars } from "../helpers/hono-app";
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-// Mounted bare (no seller guard) → withSeller(ctx).isOwner is undefined,
+// Mounted with a resolved non-owner (withVars skips the seller guard),
 // so requireOwner must produce a 403 before the handler runs. Bodies are
 // valid on purpose: a 422 from validation would pass for the wrong reason.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(employeesRoutes);
+const app = withVars(employeesRoutes, {
+	user: { id: "u" },
+	seller: { isOwner: false },
+});
 
 async function call(method: string, path: string, body?: unknown) {
-	return app.handle(
+	return app.request(
 		new Request(`http://localhost${path}`, {
 			method,
 			...(body
@@ -78,5 +69,28 @@ describe("seller employee management is owner-only", () => {
 			storeIds: ["some-store"],
 		});
 		expect(res.status).toBe(403);
+	});
+});
+
+// L'email la controlla il FormatRegistry dell'app composta (`@elysiajs/openapi`
+// sovrascrive quello di Elysia): «a@b.c» è un 422, prima del 401 e del 403.
+describe("POST /employees/invite — email rifiutata dall'app composta", () => {
+	const body = JSON.stringify({ email: "a@b.c", storeIds: ["some-store"] });
+	const invalid = "Inserisci un indirizzo email valido";
+
+	it("anonimo → 422 prima del 401", async () => {
+		const res = await sellerApp.request("/employees/invite", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body,
+		});
+		expect(res.status).toBe(422);
+		expect((await res.json()).message).toBe(invalid);
+	});
+
+	it("non titolare → 422 prima del 403", async () => {
+		const res = await call("POST", "/employees/invite", JSON.parse(body));
+		expect(res.status).toBe(422);
+		expect((await res.json()).message).toBe(invalid);
 	});
 });

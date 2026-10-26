@@ -1,6 +1,7 @@
 // apps/seller/src/hooks/use-employee-stores.ts
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 /**
@@ -12,10 +13,10 @@ export function useEmployeeStores(employeeId: string | null) {
 		queryKey: ["employees", employeeId, "stores"],
 		queryFn: async () => {
 			if (!employeeId) return [];
-			const response = await api()
-				.seller.employees({ employeeId })
-				.stores.get();
-			return unwrap(response, m.team_stores_load_error()).data;
+			const response = await sellerApi.employees[":employeeId"].stores.$get({
+				param: { employeeId },
+			});
+			return (await unwrapJson(response, m.team_stores_load_error())).data;
 		},
 		enabled: employeeId !== null,
 	});
@@ -29,10 +30,11 @@ export function useUpdateEmployeeStores(employeeId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (storeIds: string[]) => {
-			const response = await api()
-				.seller.employees({ employeeId })
-				.stores.put({ storeIds });
-			return unwrap(response, m.team_stores_update_error()).data;
+			const response = await sellerApi.employees[":employeeId"].stores.$put({
+				param: { employeeId },
+				json: { storeIds },
+			});
+			return (await unwrapJson(response, m.team_stores_update_error())).data;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["employees"] });

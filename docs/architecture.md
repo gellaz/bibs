@@ -170,7 +170,9 @@ verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
-immagini, caratteristiche, stock); `customer/` (U3); catalogo pubblico e `admin/`
+immagini, caratteristiche, stock; U6: negozi, immagini dei negozi, chiusure,
+impostazioni, team, onboarding, profilo, dashboard; restano a Elysia ordini,
+promozioni, checkout e billing); `customer/` (U3); catalogo pubblico e `admin/`
 (U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; U9:
 venditori, modifiche del profilo, negozi, richieste, billing; l'app admin non usa
 più Eden); `webhooks/` (U10).
@@ -201,7 +203,9 @@ più Eden); `webhooks/` (U10).
   non rilegge la sessione); `toErrorResponse` (una sola mappatura errore →
   risposta, usata anche dal plugin Elysia); `doc(...)` + generatore OpenAPI (i path
   delle sub-app si uniscono al documento di Elysia: `/openapi/json` è uguale alla
-  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi).
+  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi;
+  `doc({ path })` documenta una route registrata senza lo slash finale col path di
+  Elysia, es. `GET /seller/settings/`).
 - **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
   i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
   modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
@@ -209,9 +213,12 @@ più Eden); `webhooks/` (U10).
   mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
   in `src/index.ts`, o una funzione del path quando cambiano da route a route
   (`sellerGuards`: `requireSellerRole` su profilo e onboarding, `requireSeller` sul
-  resto). Le guardie di ruolo (`requireCustomer`, `requireSeller`) leggono la
-  sessione da sé (401 per l'anonimo), quindi non serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
-  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
+  resto). Le guardie di ruolo (`requireCustomer`, `requireSeller`,
+  `requireSellerRole`) leggono la sessione da sé (401 per l'anonimo), quindi non
+  serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
+  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`),
+  `requireSellerRole` vuole solo il ruolo seller (403 «Accesso riservato ai
+  venditori»). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
   ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
   guardia del modulo, o `publicRoute` in un modulo che dichiara `"publicRoute"`
   (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
@@ -242,8 +249,16 @@ più Eden); `webhooks/` (U10).
     in Elysia); `t.String` con `minLength`/`maxLength` →
     `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
     unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
-    per Zod); `t.Date` → `zDate`; `t.Nullable(x)` →
-    `x.nullable()`; unione di letterali → `z.enum`, ma di letterali numerici (le
+    per Zod; con un formato `zFormat(f).max(n).check(utf16Length({ maxLength: n }))`);
+    `t.String({ format })` → `zFormat(f)`, mai i formati di Zod: `FORMATS`
+    (`lib/zod/formats.ts`) copia il FormatRegistry dell'app composta, dove
+    `@elysiajs/openapi` sovrascrive `email`, `uuid` e `date` di Elysia
+    (`tests/http/formats.test.ts`); `t.Date` → `zDate`; `t.Nullable(x)` → `x.nullable()`, ma
+    `Type.Union([x, Type.Null()])` → `z.union([x, z.null()])` (solo il t.Nullable
+    scrive `nullable: true` in /openapi); `uniqueItems` → `.refine` con la regola
+    `uniqueItems` più `.meta({ uniqueItems: true })`; un `format` con `pattern` →
+    `zFormat(f).regex(p).meta({ format: f })` (il `.regex()` toglie il formato dal
+    JSON Schema); unione di letterali → `z.enum`, ma di letterali numerici (le
     aliquote IVA `"22"`, `"10"`, …) → `z.union` di `z.literal` (`z.enum` riordina le
     chiavi numeriche in /openapi); `t.Union` di oggetti →
     `z.union`, mai `z.discriminatedUnion`;

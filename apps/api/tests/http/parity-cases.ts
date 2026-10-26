@@ -1,6 +1,9 @@
 import { CloneType, Type } from "@sinclair/typebox";
 import { Elysia, type TSchema, t } from "elysia";
 import { z } from "zod";
+// Come `src/index.ts`: al load sovrascrive email, uuid e date nel FormatRegistry
+// di TypeBox. Senza, il lato Elysia avrebbe i formati di Elysia nudo.
+import "@elysiajs/openapi";
 import "@/lib/schemas/forms/formats";
 import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
@@ -21,7 +24,13 @@ import {
 	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
 import { VatRateSchema as TbVatRateSchema } from "@/lib/schemas/forms";
-import { AcceptInviteBody as TbAcceptInviteBody } from "@/lib/schemas/forms/onboarding";
+import {
+	AcceptInviteBody as TbAcceptInviteBody,
+	CompanyBody as TbCompanyBody,
+	DocumentBody as TbDocumentBody,
+	PersonalInfoBody as TbPersonalInfoBody,
+	TeamInviteBody as TbTeamInviteBody,
+} from "@/lib/schemas/forms/onboarding";
 import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
 import {
 	CharacteristicValuesField as TbCharacteristicValuesField,
@@ -29,7 +38,13 @@ import {
 } from "@/lib/schemas/forms/products";
 import { RejectSellerBody as TbRejectSellerBody } from "@/lib/schemas/forms/seller-rejection";
 import {
+	CompanySettingsBody as TbCompanySettingsBody,
+	VatChangeBody as TbVatChangeBody,
+} from "@/lib/schemas/forms/settings";
+import { CreateStoreBody as TbCreateStoreBody } from "@/lib/schemas/forms/stores";
+import {
 	CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody,
+	PutClosuresBody as TbPutClosuresBody,
 	UpdateHolidayDefinitionBody as TbUpdateHolidayDefinitionBody,
 } from "@/lib/schemas/holidays";
 import {
@@ -41,13 +56,23 @@ import {
 	BulkStatusBody,
 	ProductStatusBody,
 } from "@/lib/zod/entities";
-import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
+import {
+	AcceptInviteBody,
+	CompanyBody,
+	DocumentBody,
+	PersonalInfoBody,
+	TeamInviteBody,
+} from "@/lib/zod/forms/onboarding";
+import { OpeningHoursSchema } from "@/lib/zod/forms/opening-hours";
 import {
 	CharacteristicValuesField,
 	CreateProductBody,
 } from "@/lib/zod/forms/products";
+import { CompanySettingsBody, VatChangeBody } from "@/lib/zod/forms/settings";
+import { CreateStoreBody } from "@/lib/zod/forms/stores";
 import {
 	CreateHolidayDefinitionBody,
+	PutClosuresBody,
 	UpdateHolidayDefinitionBody,
 } from "@/lib/zod/holidays";
 import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
@@ -284,34 +309,9 @@ const DiscountListQuery = PaginationQuery.extend({
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
-// Gemello di `OpeningHoursSchema` (`lib/schemas/forms/opening-hours.ts`):
-// `Type.Integer` di TypeBox è `zInt()`, il `t.Integer` di Elysia è `zInteger`.
-const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
-const slotTime = (description: string) =>
-	z
-		.string()
-		.regex(HHMM)
-		.meta({ description, error: "Formato orario non valido (HH:mm)" });
-const OpeningHours = z
-	.array(
-		z.object({
-			dayOfWeek: zInt().min(0).max(6).meta({
-				description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
-			}),
-			slots: z
-				.array(
-					z.object({
-						open: slotTime("Orario di apertura (HH:mm)"),
-						close: slotTime("Orario di chiusura (HH:mm)"),
-					}),
-				)
-				.min(1)
-				.max(4)
-				.meta({ description: "Fasce orarie del giorno" }),
-		}),
-	)
-	.max(7)
-	.meta({ description: "Orari di apertura del negozio" });
+// `OpeningHoursSchema` è in `lib/zod/forms/opening-hours.ts` da U6:
+// `Type.Integer` di TypeBox è `zInt`, il `t.Integer` di Elysia è `zInteger`.
+const OpeningHours = OpeningHoursSchema;
 
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
 // (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
@@ -622,6 +622,38 @@ const phone = [
 	}),
 ] as const;
 const png = () => new File([PNG], "a.png", { type: "image/png" });
+// Body validi dei form di U6, da cui i casi tolgono o rompono un campo.
+const STORE = {
+	name: "Bottega",
+	addressLine1: "Via Roma 1",
+	municipalityId: "m",
+	zipCode: "40100",
+	location: { x: 11.34, y: 44.49 },
+};
+const PERSONAL = {
+	firstName: "Mario",
+	lastName: "Rossi",
+	citizenship: "IT",
+	birthCountry: "IT",
+	birthDate: "1990-05-01",
+	residenceCountry: "IT",
+	residenceMunicipalityId: "m",
+	residenceAddress: "Via Roma 1",
+	residenceZipCode: "40100",
+};
+const DOCUMENT = {
+	documentType: "identity_card",
+	documentNumber: "CA12345AB",
+	documentExpiry: "2030-01-01",
+	documentIssuedMunicipalityId: "m",
+};
+const COMPANY = {
+	businessName: "Rossi SRL",
+	legalForm: "SRL",
+	addressLine1: "Via Roma 1",
+	municipalityId: "m",
+	zipCode: "40100",
+};
 
 export const cases: Case[] = [
 	// tests/lib/validation-message.test.ts, stesse stringhe
@@ -740,6 +772,27 @@ export const cases: Case[] = [
 		fail("x: identificativo non valido"),
 	),
 	body(
+		"vm: email che solo Elysia nudo accetta (TLD di una lettera)",
+		...fmt("email", zFormat("email")),
+		{ x: "a@b.c" },
+		422,
+		fail("x: indirizzo email non valido"),
+	),
+	body(
+		"vm: uuid fuori da RFC 9562",
+		...fmt("uuid", zFormat("uuid")),
+		{ x: "11111111-1111-1111-1111-111111111111" },
+		422,
+		fail("x: identificativo non valido"),
+	),
+	body(
+		"vm: uuid v4 maiuscolo",
+		...fmt("uuid", zFormat("uuid")),
+		{ x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" },
+		200,
+		{ ok: { x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" } },
+	),
+	body(
 		"vm: calendar-date",
 		...fmt("calendar-date", zFormat("calendar-date")),
 		{ x: "2024-02-31" },
@@ -788,6 +841,14 @@ export const cases: Case[] = [
 		t.Object({ startsAt: t.Date() }),
 		z.object({ startsAt: zDate() }),
 		{ startsAt: "nope" },
+		422,
+		fail("Inizio: data non valida"),
+	),
+	body(
+		"vm: t.Date con l'offset senza segno (il «+» di una query)",
+		t.Object({ startsAt: t.Date() }),
+		z.object({ startsAt: zDate() }),
+		{ startsAt: "2026-01-01T12:00:00 01:00" },
 		422,
 		fail("Inizio: data non valida"),
 	),
@@ -895,6 +956,14 @@ export const cases: Case[] = [
 		TbRegister,
 		Register,
 		{ email: "nope", password: "12345678" },
+		422,
+		fail("Email: indirizzo email non valido"),
+	),
+	body(
+		"reg: email che solo Elysia nudo accetta",
+		TbRegister,
+		Register,
+		{ email: "mario#rossi@test.it", password: "12345678" },
 		422,
 		fail("Email: indirizzo email non valido"),
 	),
@@ -1829,6 +1898,32 @@ export const cases: Case[] = [
 		422,
 		fail("n: deve essere un numero intero"),
 	),
+	// `zInt()` non ha i limiti dei safe integer di `z.int()` (U3, U6).
+	{
+		name: "Type.Integer: oltre i safe integer cita il massimo dello schema",
+		target: "json",
+		tb: t.Object({ n: Type.Integer({ minimum: 0, maximum: 6 }) }),
+		zod: z.object({ n: zInt().min(0).max(6) }),
+		req: { raw: '{"n":9007199254740993}', contentType: "application/json" },
+		status: 422,
+		body: fail("n: deve essere al massimo 6"),
+	},
+	body(
+		"Type.Integer: 1e21 senza massimo passa, 2.5 no",
+		t.Object({ n: Type.Integer({ minimum: 0 }) }),
+		z.object({ n: zInt().min(0) }),
+		{ n: 1e21 },
+		200,
+		{ ok: { n: 1e21 } },
+	),
+	body(
+		"Type.Integer: 2.5 è «deve essere un numero intero»",
+		t.Object({ n: Type.Integer({ minimum: 0 }) }),
+		z.object({ n: zInt().min(0) }),
+		{ n: 2.5 },
+		422,
+		fail("n: deve essere un numero intero"),
+	),
 
 	// Unioni alla radice: un ramo che passa il controllo e fallisce la
 	// decodifica dà l'errore di decodifica.
@@ -2245,6 +2340,224 @@ export const cases: Case[] = [
 		status: 422,
 		body: fail("Variazione di scorta: deve essere un numero intero"),
 	},
+	// ── gemelli di U6: negozi, impostazioni, team, onboarding, chiusure ──
+	body(
+		"negozio: body vuoto (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"negozio: posizione mancante (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, location: undefined },
+		422,
+		fail("La posizione del negozio sulla mappa è obbligatoria"),
+	),
+	body(
+		"negozio: posizione del telefono come stringa (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, phoneNumbers: [{ number: "051123456", position: "1" }] },
+		422,
+		fail("Posizione (riga 1): deve essere un numero intero"),
+	),
+	{
+		name: "negozio: giorno oltre i safe integer (CreateStoreBody)",
+		target: "json",
+		tb: TbCreateStoreBody,
+		zod: CreateStoreBody,
+		req: {
+			raw: JSON.stringify({ ...STORE, openingHours: "@" }).replace(
+				'"@"',
+				'[{"dayOfWeek":9007199254740993,"slots":[{"open":"09:00","close":"13:00"}]}]',
+			),
+			contentType: "application/json",
+		},
+		status: 422,
+		body: fail("openingHours: deve essere al massimo 6"),
+	},
+	// Zod chiude gli errori del ramo in un invalid_union: la regola resta quella
+	// dell'intero (`collapse()` in issues.ts).
+	body(
+		"negozio: giorno come stringa e orario sbagliato (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			...STORE,
+			openingHours: [
+				{ dayOfWeek: "1", slots: [{ open: "9", close: "13:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: deve essere un numero intero"),
+	),
+	// 501 unità UTF-16 ma 257 code point: TypeBox controlla maxLength prima del formato.
+	body(
+		"negozio: sito oltre 500 unità UTF-16 con emoji (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, websiteUrl: `https://x.it/${"😀".repeat(244)}` },
+		422,
+		fail("Sito web: al massimo 500 caratteri"),
+	),
+	body(
+		"negozio: valido, con sito null, orari null e campi ignoti (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			...STORE,
+			name: "  Bottega  ",
+			websiteUrl: null,
+			openingHours: null,
+			phoneNumbers: [{ number: "051123456", position: 1e21, extra: 1 }],
+			sellerProfileId: "x",
+		},
+		200,
+		{
+			ok: {
+				...STORE,
+				name: "Bottega",
+				websiteUrl: null,
+				openingHours: null,
+				phoneNumbers: [{ number: "051123456", position: 1e21 }],
+			},
+		},
+	),
+	body(
+		"negozio: sito non valido (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, websiteUrl: "not a url" },
+		422,
+		fail("Sito web: indirizzo web non valido"),
+	),
+	body(
+		"anagrafica: body vuoto (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"anagrafica: data che non esiste (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{ ...PERSONAL, birthDate: "1990-02-30" },
+		422,
+		fail("Data non valida (AAAA-MM-GG)"),
+	),
+	body(
+		"anagrafica: valida (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{ ...PERSONAL, firstName: " Mario " },
+		200,
+		{ ok: PERSONAL },
+	),
+	body(
+		"documento: tipo non ammesso (DocumentBody)",
+		TbDocumentBody,
+		DocumentBody,
+		{ ...DOCUMENT, documentType: "badge" },
+		422,
+		fail("Seleziona il tipo di documento"),
+	),
+	body(
+		"documento: scadenza nel formato sbagliato (DocumentBody)",
+		TbDocumentBody,
+		DocumentBody,
+		{ ...DOCUMENT, documentExpiry: "01/01/2030" },
+		422,
+		fail("Data non valida (AAAA-MM-GG)"),
+	),
+	body(
+		"azienda: body vuoto (CompanyBody)",
+		TbCompanyBody,
+		CompanyBody,
+		{},
+		422,
+		fail("La ragione sociale è obbligatoria"),
+	),
+	body(
+		"azienda: partita IVA corta (CompanyBody)",
+		TbCompanyBody,
+		CompanyBody,
+		{ ...COMPANY, vatNumber: "1" },
+		422,
+		fail("La partita IVA deve essere di 11 cifre"),
+	),
+	body(
+		"impostazioni azienda: la partita IVA è un campo ignoto (CompanySettingsBody)",
+		TbCompanySettingsBody,
+		CompanySettingsBody,
+		{ ...COMPANY, vatNumber: "12345678901" },
+		200,
+		{ ok: COMPANY },
+	),
+	body(
+		"partita IVA: nel formato sbagliato (VatChangeBody)",
+		TbVatChangeBody,
+		VatChangeBody,
+		{ vatNumber: "123" },
+		422,
+		fail("La partita IVA deve essere di 11 cifre"),
+	),
+	body(
+		"invito: email non valida (TeamInviteBody)",
+		TbTeamInviteBody,
+		TeamInviteBody,
+		{ email: "bad", storeIds: ["a"] },
+		422,
+		fail("Inserisci un indirizzo email valido"),
+	),
+	...["a@b.c", "mario#rossi@test.it", "info@negozio.123", "x{y}@test.it"].map(
+		(email) =>
+			body(
+				`invito: ${email} rifiutata come dall'app composta (TeamInviteBody)`,
+				TbTeamInviteBody,
+				TeamInviteBody,
+				{ email, storeIds: ["a"] },
+				422,
+				fail("Inserisci un indirizzo email valido"),
+			),
+	),
+	body(
+		"invito: nessun negozio (TeamInviteBody)",
+		TbTeamInviteBody,
+		TeamInviteBody,
+		{ email: " a@b.it ", storeIds: [] },
+		422,
+		fail("Seleziona almeno un negozio"),
+	),
+	body(
+		"chiusure: data nel formato sbagliato (PutClosuresBody)",
+		TbPutClosuresBody,
+		PutClosuresBody,
+		{ optOutIds: [], customClosures: [{ startDate: "2026-1-1" }] },
+		422,
+		fail("Data di inizio (riga 1): formato non valido"),
+	),
+	body(
+		"chiusure: valide, con la nota trimmata (PutClosuresBody)",
+		TbPutClosuresBody,
+		PutClosuresBody,
+		{
+			optOutIds: ["h"],
+			customClosures: [{ startDate: "2026-12-24", note: " Ferie ", x: 1 }],
+		},
+		200,
+		{
+			ok: {
+				optOutIds: ["h"],
+				customClosures: [{ startDate: "2026-12-24", note: "Ferie" }],
+			},
+		},
+	),
 	body(
 		"t.Integer: 1e21 come numero e come stringa",
 		t.Object({ n: t.Integer({ minimum: 0 }), s: t.Integer({ minimum: 0 }) }),
@@ -2522,6 +2835,70 @@ export const cases: Case[] = [
 		{ name: "😀".repeat(51), dataType: "text" },
 		422,
 		fail("Nome: al massimo 100 caratteri"),
+	),
+	// Spedizione di U6: i gemelli di U2, U4 e U5 passano a `zString` (contavano
+	// i code point con `z.string().min/max`).
+	body(
+		"reg: password di 4 emoji = 8 unità UTF-16, accettata",
+		TbRegister,
+		Register,
+		{ email: "a@b.it", password: "😀".repeat(4) },
+		200,
+		{ ok: { email: "a@b.it", password: "😀".repeat(4) } },
+	),
+	body(
+		"reg: password di 65 emoji = 130 unità UTF-16",
+		TbRegister,
+		Register,
+		{ email: "a@b.it", password: "😀".repeat(65) },
+		422,
+		fail("Password: al massimo 128 caratteri"),
+	),
+	body(
+		"accept-invite: password di 4 emoji, accettata",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{
+			token: "t",
+			password: "😀".repeat(4),
+			confirmPassword: "😀".repeat(4),
+		},
+		200,
+		{
+			ok: {
+				token: "t",
+				password: "😀".repeat(4),
+				confirmPassword: "😀".repeat(4),
+			},
+		},
+	),
+	query(
+		"geocode: q di 2 emoji = 4 unità UTF-16, accettata",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		`?q=${encodeURIComponent("😀😀")}`,
+		200,
+		{ ok: { q: "😀😀", limit: 5 } },
+	),
+	body(
+		"prodotti: nome di 101 emoji = 202 unità UTF-16 (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "😀".repeat(101), price: "1.00", storeId: "s" },
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"prodotti: valore di 1001 emoji = 2002 unità UTF-16",
+		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
+		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
+		{
+			characteristicValues: [
+				{ characteristicId: "c", value: "😀".repeat(1001) },
+			],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
 	),
 
 	// U9: admin 2 (attesi catturati su Elysia nel batch

@@ -99,6 +99,13 @@ export const UserSchema = z.object({
 	banExpires: zDate().nullable(),
 });
 
+export const UserSummarySchema = UserSchema.pick({
+	id: true,
+	name: true,
+	email: true,
+	image: true,
+});
+
 /** Le aliquote IVA (%), nell'ordine dello schema TypeBox. */
 const vatRates = () =>
 	z.union([
@@ -282,6 +289,27 @@ export const StoreCategoryWithMacroSchema = StoreCategorySchema.extend({
 	macroCategory: StoreMacroCategorySchema,
 });
 
+export const StoreImageSchema = z.object({
+	id: z.string(),
+	storeId: z.string(),
+	url: z.string().meta(d("URL pubblico dell'immagine")),
+	key: z.string().meta(d("Chiave S3")),
+	position: z.number().min(0).meta(d("Posizione di ordinamento")),
+	createdAt: zDate(),
+});
+
+export const OnlinePaymentsSchema = z.object({
+	status: z
+		.enum(["none", "incomplete", "in_review", "enabled"])
+		.meta(
+			d(
+				"Stato dei pagamenti online: none (da attivare), incomplete (onboarding da completare), in_review (in verifica da Stripe), enabled (attivi)",
+			),
+		),
+	chargesEnabled: z.boolean(),
+	payoutsEnabled: z.boolean(),
+});
+
 export const StoreSchema = z.object({
 	id: z.string(),
 	sellerProfileId: z.string(),
@@ -412,6 +440,18 @@ export const ProductImageSchema = z.object({
 	productId: z.string(),
 	url: z.string().meta(d("URL pubblico dell'immagine")),
 	key: z.string().meta(d("Chiave S3")),
+	position: z.number().min(0).meta(d("Posizione di ordinamento")),
+	createdAt: zDate(),
+});
+
+export const StorePhoneNumberSchema = z.object({
+	id: z.string(),
+	storeId: z.string(),
+	label: z
+		.string()
+		.meta(d("Etichetta (es. 'Principale', 'WhatsApp')"))
+		.nullable(),
+	number: z.string().meta(d("Numero di telefono")),
 	position: z.number().min(0).meta(d("Posizione di ordinamento")),
 	createdAt: zDate(),
 });
@@ -581,6 +621,16 @@ export const StoreProductSchema = z.object({
 	stock: z.number().min(0).meta(d("Quantità disponibile in magazzino")),
 });
 
+export const EmployeeSchema = z.object({
+	id: z.string(),
+	sellerProfileId: z.string(),
+	userId: z.string(),
+	status: z
+		.enum(["active", "banned", "removed"])
+		.meta(d("Stato del dipendente")),
+	createdAt: zDate(),
+});
+
 export const OrderSchema = z.object({
 	id: z.string(),
 	customerProfileId: z.string(),
@@ -745,6 +795,20 @@ export const CustomerAddressSchema = z.object({
 	updatedAt: zDate(),
 });
 
+export const EmployeeInvitationSchema = z.object({
+	id: z.string(),
+	sellerProfileId: z.string(),
+	email: z.string().meta(d("Email del collaboratore invitato")),
+	status: z
+		.enum(["pending", "accepted", "expired"])
+		.meta(d("Stato dell'invito")),
+	expiresAt: zDate({ description: "Scadenza dell'invito" }),
+	createdAt: zDate(),
+	storeIds: z
+		.array(z.string())
+		.meta(d("ID dei negozi preselezionati per l'invito")),
+});
+
 export const PointTransactionSchema = z.object({
 	id: z.string(),
 	customerProfileId: z.string(),
@@ -768,11 +832,11 @@ export const PointTransactionSchema = z.object({
 // ────────────────────────────────────────────
 
 export const CountrySchema = z.object({
-	code: z
-		.string()
-		.min(2)
-		.max(2)
-		.meta({ description: "Codice ISO 3166-1 alpha-2" }),
+	code: zString({
+		minLength: 2,
+		maxLength: 2,
+		description: "Codice ISO 3166-1 alpha-2",
+	}),
 	label: z.string().meta({ description: "Nome del paese in italiano" }),
 });
 
@@ -1200,6 +1264,8 @@ export const CartItemMutationSchema = z.object({
 	quantity: zInteger({ minimum: 1, description: "Quantità risultante" }),
 });
 
+const storeOrderType = () => z.enum(["reserve_pickup", "pay_pickup"]);
+
 export const ReservationDeadlineSchema = z.object({
 	hours: zInteger({
 		description: "Ore entro cui ritirare una prenotazione nel negozio",
@@ -1219,4 +1285,23 @@ export const ReservationDeadlineSchema = z.object({
 export const StoreReservationDeadlineSchema = z.object({
 	storeId: z.string().meta(d("ID del negozio")),
 	...ReservationDeadlineSchema.shape,
+});
+
+export const StoreOrderTypesSchema = z.object({
+	orderTypes: z
+		.array(storeOrderType())
+		.meta(d("Tipologie configurate dal negozio")),
+	offeredOrderTypes: z
+		.array(storeOrderType())
+		.meta(d("Tipologie che i clienti vedono al checkout")),
+	chargesEnabled: z
+		.boolean()
+		.meta(d("Il venditore può incassare online (Stripe Connect)")),
+	vatChangeBlocked: z
+		.boolean()
+		.meta(
+			d(
+				"Cambio partita IVA in attesa: gli ordini sono bloccati finché l'admin non decide",
+			),
+		),
 });

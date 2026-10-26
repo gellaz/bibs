@@ -52,6 +52,21 @@ export const requireAuth = guard(
 	"auth",
 );
 
+/**
+ * Ruolo seller senza partita IVA verificata: profilo e onboarding (oggi il
+ * primo `.guard` di `modules/seller/index.ts`). Login (401), poi 403 per chi
+ * non ha il ruolo seller (clienti, dipendenti). Dopo i `v(...)`.
+ */
+export const requireSellerRole = guard(
+	createMiddleware<AuthEnv>(async (c, next) => {
+		await readSession(c);
+		if (c.get("user").role !== "seller")
+			throw new ServiceError(403, "Accesso riservato ai venditori");
+		await next();
+	}),
+	"sellerRole",
+);
+
 /** Variabili delle route del cliente (oggi il resolve del guard di /customer). */
 export type CustomerEnv = {
 	Variables: AuthEnv["Variables"] & {

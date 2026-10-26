@@ -11,10 +11,11 @@ import {
 	AlertDialogTrigger,
 } from "@bibs/ui/components/alert-dialog";
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
@@ -37,13 +38,15 @@ export function CancelStoreDialog({
 
 	const cancelMutation = useMutation({
 		mutationFn: async () => {
-			const r = await api().seller.stores({ storeId }).delete();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.stores[":storeId"].$delete({
+				param: { storeId },
+			});
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: (data) => {
 			void qc.invalidateQueries({ queryKey: ["seller", "billing"] });
 			void qc.invalidateQueries({ queryKey: ["stores"] });
-			if ((data as any)?.status === "canceled") {
+			if (data.status === "canceled") {
 				toast.success(m.billing_cancel_archived_toast({ store: storeName }));
 			} else {
 				toast.success(m.billing_cancel_scheduled_toast({ store: storeName }));

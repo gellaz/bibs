@@ -25,24 +25,26 @@ vi.mock("@/hooks/use-active-store", () => ({
 vi.mock("@/hooks/use-is-owner", () => ({ useIsOwner: () => state.owner }));
 vi.mock("@/lib/api", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@/lib/api")>()),
-	api: () => ({
-		seller: {
-			stores: ({ storeId }: { storeId: string }) => ({
+	// Finto client `hc`: la risposta HTTP (ok, json) che legge `unwrapJson`.
+	sellerApi: {
+		stores: {
+			":storeId": {
 				"order-types": {
-					get: async () => ({
-						data: {
+					$get: async ({ param }: { param: { storeId: string } }) => ({
+						ok: true,
+						status: 200,
+						json: async () => ({
 							data: {
-								orderTypes: state.types[storeId].orderTypes,
-								offeredOrderTypes: state.types[storeId].offered,
+								orderTypes: state.types[param.storeId].orderTypes,
+								offeredOrderTypes: state.types[param.storeId].offered,
 								chargesEnabled: false,
 							},
-						},
-						error: null,
+						}),
 					}),
 				},
-			}),
+			},
 		},
-	}),
+	},
 }));
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({ children }: { children: ReactNode }) => (

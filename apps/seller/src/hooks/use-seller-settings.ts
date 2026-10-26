@@ -1,5 +1,6 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 /**
@@ -17,9 +18,9 @@ export function useSellerSettings({
 	return useQuery({
 		queryKey: ["seller", "settings"],
 		queryFn: async () => {
-			const response = await api().seller.settings.get();
+			const response = await sellerApi.settings.$get();
 
-			return unwrap(response, m.profile_settings_load_error()).data;
+			return (await unwrapJson(response, m.profile_settings_load_error())).data;
 		},
 		refetchInterval: (query) => {
 			const status = query.state.data?.onlinePayments?.status;

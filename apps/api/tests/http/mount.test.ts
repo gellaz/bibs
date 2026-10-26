@@ -352,7 +352,10 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 });
 
 // U5: /seller è in parte Hono (prodotti, brand, immagini, caratteristiche,
-// stock) e in parte ancora Elysia (U6, U7), come in `src/index.ts`.
+// stock; da U6 negozi, impostazioni, team, onboarding, profilo, dashboard) e
+// in parte ancora Elysia (U7), come in `src/index.ts`. U6 ha spostato le route
+// dei negozi dalla prima lista alla seconda e messo nella prima quelle di U7
+// sotto /stores (checkout), che Elysia deve continuare a prendere.
 describe("mount — modulo migrato in parte (/seller)", () => {
 	const hits: string[] = [];
 	const partial = new Elysia()
@@ -371,9 +374,9 @@ describe("mount — modulo migrato in parte (/seller)", () => {
 	);
 
 	for (const [method, path] of [
-		["GET", "/seller/stores"],
-		["DELETE", "/seller/stores/s1"],
-		["DELETE", "/seller/stores/s1/images/i1"],
+		["GET", "/seller/stores/checkout/p1"],
+		["POST", "/seller/stores/s1/reactivation-checkout"],
+		["GET", "/seller/billing/subscriptions"],
 		["GET", "/seller/discounts/d1/products"],
 	])
 		it(`${method} ${path}: risponde Elysia, Hono non la vede`, async () => {
@@ -390,6 +393,11 @@ describe("mount — modulo migrato in parte (/seller)", () => {
 		["DELETE", "/seller/products/p1/images/i1", 401],
 		["PATCH", "/seller/products/p1/stores/s1", 422],
 		["GET", "/seller/product-categories/c1/characteristics", 401],
+		["GET", "/seller/stores", 401],
+		["DELETE", "/seller/stores/s1", 401],
+		["DELETE", "/seller/stores/s1/images/i1", 401],
+		["GET", "/seller/settings", 401],
+		["GET", "/seller/profile", 401],
 		["GET", "/seller/nope", 404],
 	] as const)
 		it(`${method} ${path}: arriva a Hono senza prefisso`, async () => {

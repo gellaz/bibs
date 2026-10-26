@@ -1,35 +1,63 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage } from "@/lib/responses";
-import { OkMessage, okRes, StoreImageSchema, withErrors } from "@/lib/schemas";
-import { withSeller } from "../context";
+import { StoreImageSchema } from "@/lib/zod/entities";
+import { OkMessage, okRes, withErrors } from "@/lib/zod/responses";
+import { zFiles, zInteger } from "@/lib/zod/t";
 import { deleteStoreImage, uploadStoreImages } from "../services/store-images";
 
-export const storeImagesRoutes = new Elysia()
+const storeId = z.string().meta({ description: "ID del negozio" });
+
+const ImagesBody = z.object({
+	files: zFiles({
+		type: "image",
+		maxSize: "5m",
+		description: "Immagini (max 5MB ciascuna, solo formati immagine)",
+	}),
+	position: zInteger({
+		minimum: 0,
+		description: "Posizione di ordinamento (default: indice del file)",
+	}).optional(),
+});
+
+const ImagesRes = okRes(z.array(StoreImageSchema));
+
+export const storeImagesRoutes = new Hono()
 	.post(
 		"/stores/:storeId/images",
-		async (ctx) => {
-			const {
-				sellerProfile: sp,
-				params,
-				body,
-				user,
-				store,
-				isOwner,
-			} = withSeller(ctx);
-			const pino = getLogger(store);
-
-			const files = Array.isArray(body.files) ? body.files : [body.files];
+		doc({
+			response: withErrors({ 200: ImagesRes }),
+			detail: {
+				summary: "Upload immagini negozio",
+				description:
+					"Carica una o più immagini per un negozio. Le immagini vengono salvate su S3.",
+				tags: ["Seller - Store Images"],
+				security: [{ bearerAuth: [] }],
+			},
+		}),
+		v("param", z.object({ storeId })),
+		v("form", ImagesBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			const user = c.var.user;
+			const params = c.req.valid("param");
+			const body = c.req.valid("form");
 			const data = await uploadStoreImages({
 				storeId: params.storeId,
 				sellerProfileId: sp.id,
 				userId: user.id,
 				isOwner,
-				files,
+				files: body.files,
 				position: body.position,
 			});
 
-			pino.info(
+			logger.info(
 				{
 					userId: user.id,
 					sellerProfileId: sp.id,
@@ -40,57 +68,38 @@ export const storeImagesRoutes = new Elysia()
 				`${data.length} immagini negozio caricate`,
 			);
 
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-			}),
-			body: t.Object({
-				files: t.Files({
-					type: "image",
-					maxSize: "5m",
-					description: "Immagini (max 5MB ciascuna, solo formati immagine)",
-				}),
-				position: t.Optional(
-					t.Integer({
-						minimum: 0,
-						description: "Posizione di ordinamento (default: indice del file)",
-					}),
-				),
-			}),
-			response: withErrors({ 200: okRes(t.Array(StoreImageSchema)) }),
-			detail: {
-				summary: "Upload immagini negozio",
-				description:
-					"Carica una o più immagini per un negozio. Le immagini vengono salvate su S3.",
-				tags: ["Seller - Store Images"],
-			},
+			return send(c, ImagesRes, ok(data));
 		},
 	)
 	.delete(
 		"/stores/:storeId/images/:imageId",
-		async (ctx) => {
-			const { sellerProfile: sp, params, user, isOwner } = withSeller(ctx);
-			await deleteStoreImage({
-				storeId: params.storeId,
-				sellerProfileId: sp.id,
-				userId: user.id,
-				isOwner,
-				imageId: params.imageId,
-			});
-			return okMessage("Immagine eliminata");
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio" }),
-				imageId: t.String({ description: "ID dell'immagine" }),
-			}),
+		doc({
 			response: withErrors({ 200: OkMessage }),
 			detail: {
 				summary: "Elimina immagine negozio",
 				description: "Elimina un'immagine dal negozio e dal bucket S3.",
 				tags: ["Seller - Store Images"],
+				security: [{ bearerAuth: [] }],
 			},
+		}),
+		v(
+			"param",
+			z.object({
+				storeId,
+				imageId: z.string().meta({ description: "ID dell'immagine" }),
+			}),
+		),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			const params = c.req.valid("param");
+			await deleteStoreImage({
+				storeId: params.storeId,
+				sellerProfileId: sp.id,
+				userId: c.var.user.id,
+				isOwner,
+				imageId: params.imageId,
+			});
+			return send(c, OkMessage, okMessage("Immagine eliminata"));
 		},
 	);
