@@ -665,6 +665,13 @@ Catalogo pubblico: 4 GET a path radice (`/product-macro-categories`, `/product-c
   - typecheck, wall time di `tsc --noEmit` (2 run, carico 4,1–6,2; baseline tra parentesi): api 7,57 / 7,62 s, media 7,59 (6,65; ×1,14) · admin 8,62 / 8,92, media 8,77 (9,51; ×0,92) · customer 8,36 / 8,53, media 8,44 (8,61; ×0,98) · seller 11,17 / 10,93, media 11,05 (9,96; ×1,11): tutti sotto il budget ×1,25, lontani da 2×, nessun ripiego di D10. Istanziazioni (`--extendedDiagnostics`): api 2,29 M (U8 2,23 M), admin 2,59 M (2,54 M: +2 % per le 18 route nel tipo di `adminApi`), customer 2,43 M, seller 2,70 M (cambiate per le unità unite dopo U8, non toccate da U9);
   - strip: `tests/modules/admin-sellers-strip.test.ts` più i casi «campi ignoti» di `parity-cases.ts` (venditori, abbonamenti, prezzi, rifiuto);
   - revisione avversaria e browser: non fatti dall'unità (li fa l'orchestratore prima della PR).
+- [x] Verifica rifatta dopo il merge di `origin/feat/hono-migration` (U10, `4183da27`; conflitti solo in `docs/architecture.md`, nella tabella e nelle righe 4 e 5 del registro, unite tenendo le aggiunte di entrambe):
+  - typecheck → exit 0, 6 workspace e 3 `pretypecheck` con `Exited with code 0`; lint → exit 0, 0 errori (gli stessi 6 avvisi);
+  - test: `bun run test` → exit 0 in 442 s (carico 5,1 → 10,5), ogni workspace `Exited with code 0`; emails 26, ui 40, api unit 980 in 73 file (+2 di U10), api integration 1.014 in 106 file, admin 112, customer 168, seller 206; totale 2.546, 0 fail, 0 skip, nessun `Unhandled error between tests`;
+  - build (7,55 MB) e avvio a `:3109`: `/ready` 200 con database e s3 ok, gli stessi esiti di sopra per le route di U9, `POST /webhooks/stripe` senza firma 400 `{"error":"missing signature"}`; fermato;
+  - inventario route (con `--hono /webhooks=src/modules/webhooks/index.ts#webhooksApp`): 260 righe (185 route, 49 better-auth, 26 di mount), diff solo delta 1, 2 e 13; OpenAPI uguale al byte a `baseline/openapi.json`;
+  - Hono CLI: baseline 66/66, `me` 18/18, `locations` 35/35, `registration` 31/31, `customer` 140/140, `seller-products` 113/113, `admin-1` 171/171, `admin-2` 135/135, `webhooks` 21/21;
+  - typecheck, wall time (2 run, carico 5,8–10): api 7,61 / 7,51 s, media 7,56 (×1,14) · admin 8,72 / 8,55, media 8,63 (×0,91) · customer 8,34 / 8,43, media 8,39 (×0,97) · seller 10,28 / 10,30, media 10,29 (×1,03); istanziazioni api 2,29 M, admin 2,59 M, customer 2,44 M, seller 2,70 M.
 
 ### U10 — `webhooks/`
 
