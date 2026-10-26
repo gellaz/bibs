@@ -10,7 +10,7 @@ exists (see [apps/api](../api/README.md)), the UI doesn't.
 
 ## Stack
 
-TanStack Start (SSR) + React 19 + TanStack Query + Eden Treaty + better-auth +
+TanStack Start (SSR) + React 19 + TanStack Query + Hono `hc` + better-auth +
 Paraglide (it/en) + Tailwind v4 + [@bibs/ui](../../packages/ui/). The shared frontend
 architecture — routing conventions, data fetching, auth, aliases, gotchas — is
 documented once in [docs/architecture.md](../../docs/architecture.md).

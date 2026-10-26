@@ -11,7 +11,7 @@ platform charges sellers a per-store subscription. The why and the brand live in
 
 ```text
 apps/
-  api/         → Backend API (Elysia + Bun + Drizzle + PostGIS)        :3000
+  api/         → Backend API (Hono + Bun + Drizzle + PostGIS)          :3000
   customer/    → Customer-facing web app (TanStack Start + React 19)   :3001
   seller/      → Seller back-office (TanStack Start + React 19)        :3002
   admin/       → Admin back-office (TanStack Start + React 19)         :3003

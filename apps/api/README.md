@@ -9,12 +9,12 @@ Stripe local-dev runbook: [docs/stripe-billing.md](../../docs/stripe-billing.md)
 
 ## Tech stack
 
-- **Runtime** [Bun](https://bun.sh) · **Framework** [Elysia](https://elysiajs.com)
+- **Runtime** [Bun](https://bun.sh) · **Framework** [Hono](https://hono.dev) · **Validation** [Zod](https://zod.dev)
 - **DB** PostgreSQL 18 + PostGIS 3.6 (Docker) · **ORM** [Drizzle](https://orm.drizzle.team)
 - **Auth** [better-auth](https://www.better-auth.com) (email/password, RBAC admin plugin)
 - **Storage** SeaweedFS (S3-compatible) via Bun's native S3 client · **Payments** Stripe (subscriptions)
 - **Email** Mailpit in dev via `src/lib/email.ts`, templates in `packages/emails`
-- **Docs** OpenAPI auto-generated — Scalar UI at `/openapi`, JSON at `/openapi/json`
+- **Docs** OpenAPI generated from the routes' Zod schemas — Scalar UI at `/openapi`, JSON at `/openapi/json`
 
 ## Getting started
 
@@ -67,10 +67,12 @@ wipe + migrate + seed in one shot.
 
 ## Modules
 
-One Elysia plugin per domain under `src/modules/` (`context.ts` guard + `routes/` +
-`services/`). The domain map and shared patterns (response envelope, error contract,
-auth macro) are documented in [docs/architecture.md](../../docs/architecture.md); the
-authoritative route list is the OpenAPI spec at `http://localhost:3000/openapi`.
+One Hono sub-app per domain under `src/modules/` (`index.ts`, `routes/`, `services/`,
+`context.ts`), attached to the root app in `src/app.ts`. The domain map and shared
+patterns (request lifecycle, response envelope, error contract, per-route auth guards)
+are documented in [docs/architecture.md](../../docs/architecture.md); how to add an
+endpoint in [AGENTS.md](AGENTS.md#how-to-add-a-new-endpoint); the authoritative route
+list is the OpenAPI spec at `http://localhost:3000/openapi`.
 
 In one line each: `registration` (sign-up/sign-in/password-reset/invites), `admin`
 (taxonomies, seller verification, change review, holidays, pricing), `seller`
@@ -106,7 +108,8 @@ Four roles via better-auth's admin plugin: **admin**, **seller**, **employee**,
 **customer**. Sessions are HTTP-only cookies (bearer token also supported). Custom
 unified endpoints under `/register/*` (sign-up creates the right profile; sign-in
 returns user + both profiles); better-auth's own endpoints live under `/auth/api/*`.
-Routes opt in with `{ auth: true }`.
+Every route carries its auth guard (`requireAuth`, `requireCustomer`, `requireSeller`,
+`requireAdmin`, … in `src/http/auth.ts`) or is marked `publicRoute`.
 
 Seller onboarding is a status ladder on `seller_profiles`:
 `pending_email → pending_personal → pending_document → pending_company →
@@ -161,8 +164,8 @@ Error semantics and the global handler are described in
 
 ## Logging, health, shutdown
 
-Structured logging via logixlysia + Pino (request logs, JSON, sensitive-field
-redaction). Logs are written to `logs/app.log` (single file, no rotation) and to
+Structured logging via Pino (sensitive-field redaction) plus one line per request
+(`src/plugins/request-log.ts`). Logs are written to `logs/app.log` (single file, no rotation) and to
 stdout. `GET /health` always returns `{ status: "ok" }` (200) if the process is
 alive; `GET /ready` performs DB + S3 connectivity checks and returns 503 if either is
 unreachable. On SIGTERM/SIGINT the server drains, closes the pool, exits.

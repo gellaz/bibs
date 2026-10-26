@@ -4,21 +4,43 @@ This file provides backend-specific guidance to coding agents working in `apps/a
 
 ## Project Overview
 
-bibs-elysia is a backend API for a local-commerce marketplace built with **Elysia** (web framework) running on the **Bun
-** runtime. It uses **Drizzle ORM** with **PostgreSQL + PostGIS** for data persistence and **better-auth** for
-authentication (email/password, RBAC via admin plugin). An OpenAPI spec is auto-generated and served via
-`@elysiajs/openapi`.
+The bibs API is the backend of a local-commerce marketplace, built with **Hono** (web framework) on the **Bun**
+runtime. It uses **Drizzle ORM** with **PostgreSQL + PostGIS** for data persistence, **Zod** for validation and
+**better-auth** for authentication (email/password, RBAC via admin plugin). The OpenAPI spec is generated from the
+routes' Zod schemas and `doc()` metadata and served at `/openapi` (Scalar UI) and `/openapi/json`.
 
-**Migration to Hono decided (2026-10-25).** The API moves from Elysia to Hono module by module (Hono app mounted
-inside Elysia until the cutover). For Hono APIs read the official docs as Markdown — index at
-`https://hono.dev/llms.txt`, any page with `curl -H 'Accept: text/markdown' https://hono.dev/docs/<path>` — or the
-`hono` skill in `.agents/skills/hono`. Until a module is migrated, the Elysia rules below still apply to it.
+For Hono APIs read the official docs as Markdown — index at `https://hono.dev/llms.txt`, any page with
+`curl -H 'Accept: text/markdown' https://hono.dev/docs/<path>` — or the `hono` skill in `.agents/skills/hono`. The
+API ran on Elysia until October 2026; the move to Hono (decisions, accepted deltas, golden files) is recorded in
+[`docs/superpowers/plans/2026-10-25-hono-migration.md`](../../docs/superpowers/plans/2026-10-25-hono-migration.md).
 
-Verify Hono routes with **Hono CLI** (`bunx hono`, devDependency `@hono/cli` 1.0 rc) instead of curl or a dev server:
-`bunx hono routes <file>`, `bunx hono request <path> <file>`, `bunx hono batch - <file>` for flows, `bunx hono diff`
-after a change. Run `bunx hono --help` first. It loads only Hono apps, so until the cutover pass the Hono app file
-explicitly (the default `src/index.ts` is still Elysia); `batch`, `snapshot` and `diff` run the app on Node, not Bun.
-Requests hit the real dev database: write only to test entities.
+### Hono CLI
+
+Check routes with **Hono CLI** (devDependency `@hono/cli` 1.0 rc) instead of curl or a dev server: it loads the real
+app, `src/app.ts` (no side effects at import), and calls it in process. Run the CLI file with Bun from `apps/api`,
+with two externals: `-e bun` (`src/lib/s3.ts` imports from `bun`) and `-e @bibs/emails` (the CLI would compile the
+react-email templates with Hono's JSX):
+
+```bash
+cd apps/api
+# every route, @ERROR/@NOT_FOUND included
+bun node_modules/@hono/cli/dist/cli.js routes src/app.ts -e bun -e @bibs/emails
+# one request: status, headers, body
+bun node_modules/@hono/cli/dist/cli.js request /health src/app.ts -e bun -e @bibs/emails
+# a flow, one JSON step per line ("-" instead of the file reads stdin)
+bun node_modules/@hono/cli/dist/cli.js batch steps.jsonl src/app.ts -e bun -e @bibs/emails --compact
+# what the app answers today, as batch lines
+bun node_modules/@hono/cli/dist/cli.js snapshot --status-only src/app.ts -e bun -e @bibs/emails
+```
+
+Bun loads the env of `apps/api` (`.env`) as for the dev server; where there is none (a worktree), pass a file with
+`bun --env-file=<file> node_modules/@hono/cli/dist/cli.js …`. The infra must be up (`bun run infra:up`) and requests
+hit the real dev database: write only to test entities. In a batch file a step like
+`{"method":"POST","path":"/auth/api/sign-in/email","body":{"email":"seller@dev.bibs","password":"password123"}}`
+logs in and its cookie carries to the next steps; a step without `expect` fails on a 4xx/5xx, and the last JSON line
+holds the summary (`.data.summary.failed`). Two things that do not work here: `bunx hono` (it runs the CLI on Node,
+where `bun` does not resolve) and `hono diff` (it bundles `src/index.ts`, the server entry, and ends in
+`SNAPSHOT_FAILED`).
 
 ## Commands
 
@@ -26,7 +48,7 @@ Requests hit the real dev database: write only to test entities.
 - `bun run dev` — start dev server with watch mode (port 3000)
 - `bun run build` — bundle the project into `dist/` (target Bun)
 - `bun run typecheck` — run TypeScript type checking (`tsc --noEmit`)
-- `bun test` — run all tests (unit + integration)
+- `bun run test` — run all tests (unit + integration). Never bare `bun test` for the whole suite: it skips `--isolate`
 - `bun run test:unit` — run unit tests only (`tests/unit/`)
 - `bun run test:integration` — run integration tests only (`tests/integration/`, 180s timeout; builds the test image first)
 - `bun run test:image` — build the `bibs-postgis-test:latest` image the integration tests start (needed once before running a single integration file with `bun test`)
@@ -43,65 +65,88 @@ After making code changes, always run `bun run typecheck` to verify there are no
 
 ## Architecture
 
-### Entrypoint — `src/index.ts`
+### App — `src/app.ts`
 
-Creates the Elysia app with plugins and modules:
+The root Hono app, with no side effects at import (tests, tools and the Hono CLI import it):
 
-1. **logixlysia** — structured request logging with Pino (method, path, status, duration, IP). Writes to stdout +
-   `logs/app.log` (single file, no rotation).
-2. **cors** — CORS configuration for React frontends. Auto-accepts localhost in dev, uses `ALLOWED_ORIGINS`
-   in production.
-3. **errorHandler** — global error handler that catches `ServiceError`, validation errors, pg unique constraint
-   violations (`23505 → 409`), and unhandled exceptions. Logs errors via Pino with appropriate severity.
-4. **requestId** — derives a `X-Request-Id` (`crypto.randomUUID()`) and sets it on `set.headers` in the `derive` hook so
-   the header is present in both success and error responses.
-5. **openapi** — serves the OpenAPI/Swagger spec at `/openapi`, merging better-auth's generated paths and components.
-   Full documentation with request/response schemas and error responses — the spec is the authoritative route inventory.
-6. **stripeWebhookRoutes** — `POST /webhooks/stripe` (platform events) and `POST /webhooks/stripe/connect` (connected-account
-   events, e.g. `account.updated`, verified with `STRIPE_CONNECT_WEBHOOK_SECRET` falling back to `STRIPE_WEBHOOK_SECRET`) —
-   Stripe webhook receiver (signature verification, idempotent event handling; see the Modules domain map below).
-7. **betterAuth** — mounts better-auth's handler at `/auth/api` and defines an `auth` macro that resolves the current
-   user/session from request headers. Routes opt in to authentication by setting `{ auth: true }` in their config.
-8. **registration** — `/register/*` — custom authentication endpoints:
-    - `POST /register/customer` — register + create customer profile
-    - `POST /register/seller` — register + create seller profile (starts onboarding)
-    - `POST /register/sign-in` — login, returns user + both profiles (customer & seller if they exist)
-9. **adminModule** — `/admin/*` — category CRUD, seller verification. All routes documented with OpenAPI schemas.
-10. **productMacroCategoriesModule** — `/product-macro-categories/*` — public macro-category listing (no auth).
-11. **productCategoriesModule** — `/product-categories/*` — public product-category listing (no auth).
-12. **storeCategoriesModule** — `/store-categories/*` — public store-category listing (no auth).
-13. **locationsModule** — `/locations/*` — Italian geographic data (regions, provinces, municipalities). Public, no auth.
-14. **sellerModule** — `/seller/*` — onboarding, profile, stores, products, images, stock, orders, employees,
-    billing, checkout. Accessible by sellers (owner) and their employees.
-15. **customerModule** — `/customer/*` — product search (public, with full-text relevance ranking + geo-filter),
-    profile, addresses, orders, loyalty points.
-16. **meModule** — `/me/*` — cross-role endpoints for any authenticated user (avatar today).
-17. **cronJobs** — scheduled tasks via `@elysiajs/cron`. Three jobs: reservation expiry every minute; suspended-store
-    auto-cancel daily at 03:00; pending-store-creation expiry hourly.
-18. **health** plugin — `GET /health` (liveness probe, always 200) + `GET /ready` (readiness probe, checks DB + S3
-    connectivity, returns 503 if unhealthy).
+- `rootApp()` — `new Hono({ getPath: rawPath })` with `onError` and `notFound` answering with the JSON error
+  envelope, then the global middleware in this order: `requestLog`, `cors`, `requestId`, `socketIpAsForwardedFor`
+  (below). Tests build their probe apps on it.
+- `app` — `rootApp()` plus `/openapi` and `/openapi/json`, `/health` and `/ready`, then `absoluteUrlOnly` (a request
+  whose URL is not absolute — empty or invalid `Host`, HTTP/1.0 without `Host` — is a 400 from here on), better-auth
+  on `ALL /auth/*`, and every module sub-app attached with `app.route(prefix, subApp)` from the `MODULES` table
+  (prefix, sub-app, guards). Exported as `app` and as the default export (for the Hono CLI).
+- At import, `honoPaths()` builds the OpenAPI paths of every module and runs `assertRoutes` with the module's
+  guards: a route without its guard, or with its validators after the guard or out of order, stops the API at
+  boot.
 
-**Startup sequence**: ensures the S3 bucket exists, then `app.listen(env.PORT)`. The cron plugin starts itself.
+`rawPath` (`src/http/app.ts`) routes on the raw path (`/me/%61vatar` is a 404) and tolerates a trailing slash.
 
-**Graceful shutdown**: on `SIGTERM`/`SIGINT`, stops the server and closes the database connection pool.
+### Server — `src/index.ts`
+
+The only module with side effects: `startCronJobs()`, then `ensureBucket()` (creates the S3 bucket if missing), then
+`Bun.serve({ port: env.PORT, fetch: app.fetch, … })`. Bun passes the server to `fetch` as `c.env`, which is how
+`socketIpAsForwardedFor` and `rateLimit` read the socket IP. On `SIGTERM`/`SIGINT` it stops the server and closes the
+database pool.
+
+### Middleware — `src/plugins/`
+
+Plain Hono middleware and route groups:
+
+1. **`request-log.ts`** — `requestLog`: one line per request on stdout (time, level, duration, method, path, status;
+   `INFO`/`WARNING`/`ERROR` by status, colours only on a terminal) and a JSON line in `logs/app.log` (single file,
+   no rotation).
+2. **`cors.ts`** — `cors`: CORS for the React frontends, with credentials. Localhost is accepted automatically in
+   development and test, `ALLOWED_ORIGINS` in production. Every `OPTIONS` is answered as a 204 preflight before any
+   route (not `hono/cors`, which formats the headers differently).
+3. **`request-id.ts`** — `requestId`: `X-Request-Id` on every response except the preflight (the client's id when it
+   matches `^[A-Za-z0-9._:-]{1,128}$`, otherwise a fresh UUID), also in `c.var.requestId`.
+4. **`better-auth.ts`** — `socketIpAsForwardedFor` overwrites `x-forwarded-for` with the socket IP and drops
+   `x-real-ip`, so a client cannot dodge better-auth's rate limit (no-op without a socket, e.g. `app.request()` in
+   tests); `authHandler` mounts better-auth's handler on `/auth/*` (`hono/mount`), so its endpoints live at
+   `/auth/api/*`.
+5. **`openapi.ts`** — `/openapi` (Scalar UI) and `/openapi/json`: better-auth's paths and components plus the paths
+   of `/health`, `/ready` and every module, built on the first request and cached. OpenAPI tags are declared here.
+6. **`health.ts`** — `GET /health` (liveness probe, always 200) and `GET /ready` (readiness probe: DB + S3, 503 if
+   either fails).
+7. **`rate-limit.ts`** — `rateLimit({ name, limits })`, a per-route middleware with in-memory buckets keyed by IP or
+   by the body's `email` (registration, sign-in, geocoding); it goes after the route's `v()` and guard.
+8. **`cron.ts`** — `startCronJobs()` with `croner`, called only by `src/index.ts` (tests, tools and the CLI never
+   schedule a tick). Five jobs, server local time: `expireReservations` and `expireUnpaidOrders` every minute,
+   `retryStoreTransfers` hourly at :30, `expirePendingStoreCreations` hourly, `autoCancelSuspendedStores` daily at
+   03:00.
+
+The HTTP kit the routes use lives in `src/http/`: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()`
+(`send.ts`), `doc()` and the OpenAPI generator (`openapi.ts`), the guards (`auth.ts`), `guard()`, `publicRoute` and
+`assertRoutes` (`routes.ts`), the error mapping (`errors.ts`) and the 422 messages (`validation-message.ts`).
 
 Test data can be seeded separately via `bun run db:seed` (see `src/db/seed/`).
 
 ### Schemas — `src/lib/schemas/`
 
-TypeBox schemas split into submodules (all re-exported from `src/lib/schemas/index.ts`, import as `@/lib/schemas`):
+Zod schemas, imported from their own file (no barrel): `@/lib/schemas/entities`, `@/lib/schemas/responses`, …
 
-- **`entities.ts`** — entity schemas (`UserSchema`, `CategorySchema`, `ProductSchema`, `OrderSchema`, etc.) with full
-  type definitions, plus shared field groups (`LocationField`, `AddressFieldsRequired`, `AddressFieldsOptional`)
-- **`composed.ts`** — schemas with nested relations (`ProductWithRelationsSchema`, `SellerOrderWithRelationsSchema`,
-  `CustomerOrderWithRelationsSchema`, etc.)
-- **`responses.ts`** — response envelope helpers (`okRes()`, `okPageRes()`, `OkMessage`), error schemas
-  per status code, `withErrors()` / `withConflictErrors()` helpers
-- All schemas include Italian descriptions and TypeScript-like type constraints
+- **`t.ts`** — constructors for the API's own rules: `zString` (lengths in UTF-16 units, pattern, format), `zInteger`
+  (an integer or a string holding one) and `zInt()` (a number only, used by the shared forms), both checked with
+  `Number.isInteger` (no safe-int limits); `zNumeric` and `zBooleanString` (numbers and booleans in query and
+  params), `zDate` (ISO strings and timestamps in, `Date` out as an ISO string), `zFormat`, `zFile`, `zFiles`. Use them
+  instead of `z.string().min()/.max()`, `z.int()` / `z.number().int()` and Zod's string formats.
+- **`formats.ts`** — `FORMATS`, the API's string formats (`email`, `uuid`, `uri`, `date`, `date-time`,
+  `calendar-date`).
+- **`entities.ts`**, **`composed.ts`** (nested relations), **`queries.ts`**, **`pagination.ts`** (`PaginationQuery`),
+  **`discount.ts`**, **`stock.ts`**, **`holidays.ts`**, **`dashboard.ts`**, **`locations.ts`**, **`registration.ts`** —
+  entity, response, query and body schemas.
+- **`responses.ts`** — `okRes()`, `okPageRes()`, `OkMessage`, error schemas per status code, `withErrors()` /
+  `withConflictErrors()`.
+- **`forms/`** — the form schemas shared with the seller app, exported as `@bibs/api/schemas`.
+- **`mirror.ts`**, **`issues.ts`** — validator internals (the cleaning the API has always applied and the first
+  error it reports), used by `src/http/`.
+- Every schema carries an Italian description (`.meta({ description })` or the constructor option); a `title` or
+  `error` in the meta changes the 422 message.
 
 ### Environment — `src/lib/env.ts`
 
-Validates all environment variables at startup using TypeBox. If any required variable is missing, the server exits
+Validates all environment variables at startup with Zod. If any required variable is missing, the server exits
 immediately with a clear error listing the missing variables. Always import `env` from this module instead of using
 `process.env` directly.
 
@@ -129,16 +174,17 @@ Email sending via **Resend** in production, Mailpit in development:
 
 ### Logging — `src/lib/logger.ts`
 
-Structured logging via **logixlysia** (Elysia plugin) + **Pino**:
+**Pino**, plus the per-request line of `src/plugins/request-log.ts`:
 
-- **Request logging** — automatic HTTP request/response logging (method, path, status, duration, IP)
-- **File output** — writes to `logs/app.log` (single file, no rotation)
-- **Standalone logger** — `logger` export for non-request contexts (cron jobs, startup, timers); writes to both stdout
-  and log file
+- **Request logging** — one line per request on stdout and a JSON line (`type: "request"`, method, path, status,
+  `durationMs`) in `logs/app.log` (single file, no rotation)
+- **`logger`** — the Pino logger for every context (route handlers, services, cron jobs, startup, timers); writes to
+  both stdout and the log file
 - **Redaction** — automatically redacts `password`, `token`, `apiKey`, `secret`, `authorization` fields
 - **Log level** — `debug` in development, `info` in production (based on `NODE_ENV`)
 
-In request handlers, access the Pino logger via `getLogger(store)` from the Elysia context store.
+Errors are logged once, by the error mapping (`toErrorResponse`, `src/http/errors.ts`), with status, path and
+method — never the submitted values.
 
 ### Money — `src/lib/money.ts`
 
@@ -175,7 +221,7 @@ it walks the store's slots in Europe/Rome time, skipping closures and holidays (
 declared hours, or with no opening within 60 days, falls back to calendar hours. The deadline is stored in
 `orders.reservation_expires_at` and never recomputed.
 
-The cron job in `src/plugins/cron.ts` runs `expireReservations()` every minute (`Patterns.EVERY_MINUTE`) and is the
+The cron job in `src/plugins/cron.ts` runs `expireReservations()` every minute (`*/1 * * * *`) and is the
 single source of truth — no in-memory timers, no per-order scheduling. Both the cron and the seller completion guard
 allow `config.reservationGraceMinutes` (15) past the deadline (`reservationGraceCutoff()`): many deadlines fall exactly
 at closing time, and a customer served at 19:01 must not lose a 19:00 reservation. Customers always see the real deadline.
@@ -188,8 +234,9 @@ status, so concurrent runs are idempotent.
 
 Reusable pagination utilities:
 
-- `PaginationQuery` — TypeBox schema for `page` and `limit` query params (use in route definitions)
-- `parsePagination(query)` — returns `{ page, limit, offset }` from parsed query params
+- `PaginationQuery` (`src/lib/schemas/pagination.ts`) — Zod schema for the `page` and `limit` query params
+  (`v("query", PaginationQuery)`, or spread its fields into the route's query schema)
+- `parsePagination(query)` (`src/lib/pagination.ts`) — returns `{ page, limit, offset }` from parsed query params
 
 ### Auth & Permissions — `src/lib/auth.ts`, `src/lib/permissions.ts`
 
@@ -216,8 +263,10 @@ under `/auth/api` and tag them as "Better Auth". These are merged into the main 
 
 ### Modules — `src/modules/`
 
-Each module is a self-contained Elysia plugin; most follow `context.ts` (guard context
-+ type helpers) + `routes/` + `services/`. Endpoint counts are intentionally not
+Each module is a Hono sub-app: `index.ts` attaches its route files to a `moduleApp()`
+and exports the app type for the frontends; `routes/` holds one chained `new Hono()`
+per concern, with paths relative to the module prefix; `services/` holds the logic;
+`context.ts` the module's shared helpers. Endpoint counts are intentionally not
 tracked here — the OpenAPI spec at `/openapi` is the authoritative route list. The
 domain map:
 
@@ -232,10 +281,10 @@ domain map:
   "Richieste" inbox (`GET /admin/requests`, `GET /admin/requests/counts`,
   `GET /admin/requests/changes/:changeId`), holiday
   definitions, pricing configuration.
-- `seller/` (`/seller`) — two guard levels: **auth-only** (`withSellerAuth`) for
-  profile + onboarding routes, accessible to any authenticated seller regardless of
-  onboarding status; **full** (`withSeller`, requires `active` status + ownership
-  checks) for everything else. Route files map 1:1 to concerns under `routes/`:
+- `seller/` (`/seller`) — two guard levels: **seller role only** (`requireSellerRole`)
+  for profile + onboarding routes, accessible to any authenticated seller regardless of
+  onboarding status; **full** (`requireSeller`, requires `active` status + ownership
+  checks) for everything else (`sellerGuards` in `index.ts`). Route files map 1:1 to concerns under `routes/`:
   stores, store-images, images (product), opening hours live in stores, closures,
   products (incl. CSV import), brands, stock, discounts, orders, employees (+
   invitations), settings change-requests, billing, checkout (Stripe).
@@ -253,8 +302,9 @@ domain map:
       also kept in sync by `POST /webhooks/stripe/connect` (`account.updated`). Owner-only; not exposed to employees.
     - `GET /settings` returns profile + organization + `onlinePayments` status (owner-only, `null` for employees) +
       pending change requests.
-  - Access resolved from seller (owner) or employee role. Ownership checks in `context.ts`
-    (`ensureProductOwnership`, `requireOwner`). Store IDs are lazy-loaded via `getStoreIds()`.
+  - Access resolved from seller (owner) or employee role by `resolveSellerAccess` (`context.ts`)
+    into `c.var.seller`. Ownership checks in `context.ts` (`ensureProductOwnership`,
+    `requireOwner`). Store IDs are lazy-loaded via `c.var.seller.getStoreIds()`.
 - `customer/` (`/customer`) — geo search (PostGIS), profile, addresses, orders (4 types: direct,
   reserve_pickup, pay_pickup, pay_deliver), loyalty points. Search is public, others require auth.
 - `me/` (`/me`) — cross-role endpoints for any authenticated user (avatar today).
@@ -277,61 +327,32 @@ domain map:
   onboarding/refresh in `services/connect-account.ts`, Accounts v2 `recipient`); no routes of its own (mounted
   under `seller/settings`).
 
-**Module context pattern**: Each module has a `context.ts` that defines the resolved context interface (e.g.
-`SellerResolvedContext`) and a `withX(ctx)` helper for type-safe context access in route handlers.
+**Guards and route context.** Authentication is per route, never per module: each route lists its guard after its
+validators, and the guard puts what it resolved in `c.var`, typed by its Env (`src/http/auth.ts`):
 
-#### Context Management Best Practices
+| Guard | Tag | Rejects | Adds to `c.var` |
+|---|---|---|---|
+| `requireAuth` | `auth` | 401 without a session | `user`, `session` |
+| `requireCustomer` | `customer` | 401; 403 without a customer profile | `user`, `session`, `customerProfile` |
+| `requireSellerRole` | `sellerRole` | 401; 403 if the role is not seller | `user`, `session` |
+| `requireSeller` | `seller` | 401; the 403s of `resolveSellerAccess` (owner not active, employee without an active assignment, …) | `user`, `session`, `seller` (`sellerProfile`, `isOwner`, `accessCtx`, `getStoreIds()`, `getAccessibleStoreIds()`) |
+| `requireAdmin` | `admin` | 401; 403 if the role is not admin | `user`, `session` |
+| `publicRoute` | — | nothing (a deliberately public route) | — |
 
-1. **Define context interfaces** in `context.ts`:
-
-   ```ts
-   export interface MyModuleResolvedContext {
-     user: { id: string; name: string; email: string; role: string | null; };
-     // ... other resolved properties
-   }
-   ```
-
-2. **Create type-safe helpers** for route handlers:
-
-   ```ts
-   export function withMyModule<T>(ctx: T) {
-     return ctx as T & MyModuleResolvedContext;
-   }
-   ```
-
-3. **Use helpers in route files** instead of type assertions:
-
-   ```ts
-   // Good
-   import { withMyModule } from "../context";
-   async (ctx) => {
-     const { user, myProperty } = withMyModule(ctx);
-   }
-   
-   // Bad - don't define context types inline
-   async (ctx) => {
-     const { user } = ctx as { user: { ... } };
-   }
-   ```
-
-4. **Multiple guard levels**: Some modules may have multiple guards with different requirements:
-   - Example: `seller/` module has `withSeller()` (requires verified VAT) and `withSellerAuth()` (only requires
-     authentication)
-   - Define separate interfaces and helpers for each guard level in the same `context.ts` file
-
-5. **Lazy evaluation**: For expensive operations (like querying store IDs), use lazy cached getters:
-
-   ```ts
-   let cached: Promise<string[]> | null = null;
-   const getStoreIds = () => (cached ??= fetchStoreIds());
-   ```
+Every guard reads the session itself, so one guard per route is enough. The `MODULES` table in `src/app.ts` says
+which guards each module accepts (`["admin"]`, `["customer", "publicRoute"]`, `sellerGuards` by path) and
+`assertRoutes` enforces it at boot. A new guard is created with `guard(middleware, tag)` (`src/http/routes.ts`), or the
+check does not see it. A guard does not re-read what an upstream middleware already set: the tests use that
+(`withVars()`) to inject a user or a seller context without a session. Keep expensive lookups lazy and cached
+(`getStoreIds()`), so routes that do not need them do not pay for them.
 
 Complex business logic (order creation/pickup/cancel, product creation with categories, employee creation, product
 search) is extracted into `services/` sub-folders under each module. Services use `db.transaction()` for multi-step
 operations and atomic SQL expressions (`SET stock = stock - $n WHERE stock >= $n`) to prevent race conditions.
 
 All list endpoints accept `page` and `limit` query parameters for pagination (defaults in `src/lib/config.ts`). Use
-`PaginationQuery` from `src/lib/pagination.ts` for the query schema and `parsePagination()` for offset calculation.
+`PaginationQuery` from `src/lib/schemas/pagination.ts` for the query schema and `parsePagination()` for offset
+calculation.
 
 ### Database — `src/db/`
 
@@ -501,17 +522,19 @@ Bun's native S3Client configured for SeaweedFS (local S3-compatible storage). Us
 
 ## How to Add a New Endpoint
 
-This is the step-by-step process. Use the admin categories module (`src/modules/admin/`) as reference.
+This is the step-by-step process. `src/modules/seller/routes/brands.ts` is a compact reference.
 
-### 1. Define TypeBox schema (if new entity)
+### 1. Define the Zod schemas
 
-Add the entity schema to `src/lib/schemas/entities.ts`:
+Shared entity schemas go in `src/lib/schemas/entities.ts`; route-only inputs at the top of the route file (or in
+`src/lib/schemas/<module>.ts` when tests reuse them). Use the constructors of `src/lib/schemas/t.ts` for strings with
+lengths, integers, dates, formats and files:
 
 ```ts
-export const MyEntitySchema = t.Object({
-    id: t.String(),
-    name: t.String({description: "Nome dell'entità"}),
-    createdAt: t.Date(),
+export const MyEntitySchema = z.object({
+    id: z.string(),
+    name: z.string().meta({description: "Nome dell'entità"}),
+    createdAt: zDate(),
 });
 ```
 
@@ -542,99 +565,123 @@ if (!found) throw new ServiceError(404, "Elemento non trovato");
 if (!allowed) throw new ServiceError(403, "Accesso negato");
 ```
 
-### 3. Define the route
+### 3. Define the routes
 
-Create `src/modules/<module>/routes/<resource>.ts`:
+Create `src/modules/<module>/routes/<resource>.ts`, with paths relative to the module prefix:
 
 ```ts
-import {Elysia, t} from "elysia";
-import {ok, okPage, okMessage} from "@/lib/responses";
-import {getLogger} from "@/lib/logger";
-import {PaginationQuery} from "@/lib/pagination";
-import {okRes, okPageRes, OkMessage, withErrors, MyEntitySchema} from "@/lib/schemas";
-import {withAdmin} from "../context";  // Import context helper
-import {listMyEntities, createMyEntity} from "../services/my-entities";
+import {Hono} from "hono";
+import {z} from "zod";
+import {requireAdmin} from "@/http/auth";
+import {doc} from "@/http/openapi";
+import {send} from "@/http/send";
+import {v} from "@/http/validator";
+import {logger} from "@/lib/logger";
+import {ok, okPage} from "@/lib/responses";
+import {MyEntitySchema} from "@/lib/schemas/entities";
+import {PaginationQuery} from "@/lib/schemas/pagination";
+import {okPageRes, okRes, withErrors} from "@/lib/schemas/responses";
+import {zString} from "@/lib/schemas/t";
+import {adminDetail} from "../context";
+import {createMyEntity, listMyEntities} from "../services/my-entities";
 
-export const myEntitiesRoutes = new Elysia()
+const MyEntityPage = okPageRes(MyEntitySchema);
+const MyEntityRes = okRes(MyEntitySchema);
+const CreateMyEntityBody = z.object({
+    name: zString({minLength: 1, maxLength: 120, description: "Nome dell'entità"}),
+});
+
+export const myEntitiesRoutes = new Hono()
     .get(
         "/my-entities",
-        async ({query}) => {
-            const result = await listMyEntities(query);
-            return okPage(result.data, result.pagination);
-        },
-        {
-            query: PaginationQuery,
-            response: withErrors({200: okPageRes(MyEntitySchema)}),
-            detail: {
-                summary: "Lista entità",
-                description: "Restituisce la lista paginata.",
-                tags: ["Admin"],
-            },
+        doc({
+            response: withErrors({200: MyEntityPage}),
+            detail: adminDetail("Lista entità", "Restituisce la lista paginata."),
+        }),
+        v("query", PaginationQuery),
+        requireAdmin,
+        async (c) => {
+            const result = await listMyEntities(c.req.valid("query"));
+            return send(c, MyEntityPage, okPage(result.data, result.pagination));
         },
     )
     .post(
         "/my-entities",
-        async (ctx) => {
-            // Use context helper for type-safe access to resolved context
-            const {user, body, store} = withAdmin(ctx);
-            const pino = getLogger(store);
-            
-            const data = await createMyEntity(body);
-            
-            pino.info({userId: user.id, entityId: data.id}, "Entity created");
-            return ok(data);
-        },
-        {
-            body: t.Object({name: t.String()}),
-            response: withErrors({200: okRes(MyEntitySchema)}),
-            detail: {
-                summary: "Crea entità",
-                description: "Crea una nuova entità.",
-                tags: ["Admin"],
-            },
+        doc({
+            response: withErrors({200: MyEntityRes}),
+            detail: adminDetail("Crea entità", "Crea una nuova entità."),
+        }),
+        v("json", CreateMyEntityBody),
+        requireAdmin,
+        async (c) => {
+            const data = await createMyEntity(c.req.valid("json"));
+            logger.info({userId: c.var.user.id, entityId: data.id}, "Entità creata");
+            return send(c, MyEntityRes, ok(data));
         },
     );
 ```
 
 Key patterns:
 
-- **Always use context helpers**: Import `withAdmin(ctx)` / `withSeller(ctx)` / `withSellerAuth(ctx)` / `withCustomer(ctx)`
-  from `../context` for type-safe access to resolved context. Never define context types inline in route files.
-- Use `withErrors()` (or `withConflictErrors()` if 409 is possible) to wrap the response schema
-- Use `okRes()` for single item, `okPageRes()` for paginated lists, `OkMessage` for delete/action confirmations
-- Use `PaginationQuery` for list endpoints
-- Access the logger via `getLogger(store)` and log important actions
-- Always include `detail` with `summary`, `description`, and `tags` for OpenAPI docs
+- **Chain the routes** on one `new Hono()`: a route added in a separate statement drops out of the type the `hc`
+  clients see.
+- **Order**: `doc()` → `v("param")` → `v("query")` → `v("json" | "form")` → guard or `publicRoute` → (`rateLimit()`)
+  → handler. Validators before the guard keep the 422 ahead of the 401; `assertRoutes` refuses anything else at
+  boot. Never `app.use(requireX)` on a module.
+- **One schema for `doc()` and `send()`**: `send(c, Schema, body)` validates the payload, drops fields outside the
+  schema (internal columns never leak), writes dates as ISO strings, answers 500 if the payload breaks the schema,
+  and types the `hc` response. Never `c.json()` for a success body.
+- Use `withErrors()` (or `withConflictErrors()` if 409 is possible) to list the error responses in OpenAPI; `okRes()`
+  for a single item, `okPageRes()` for paginated lists, `OkMessage` for delete/action confirmations, with the bodies
+  built by `ok()`, `okPage()`, `okMessage()`.
+- Always include `detail` with `summary`, `description` and `tags`, plus `security: [{ bearerAuth: [] }]` on
+  authenticated routes (`adminDetail()` in `admin/context.ts` does both for the admin module).
+- **Static paths before parametric ones**: Hono answers with the first registered route that matches
+  (`/products/lookup` before `/products/:productId`).
+- **Multipart**: `v("form", Schema)` with `zFile()` / `zFiles()`; an object or array inside a multipart body travels
+  as a JSON string.
+- Log important actions with `logger` (`src/lib/logger.ts`).
 
-### 4. Register the route in the module index
+### 4. Register the routes in the module index
 
-In `src/modules/<module>/index.ts`, import and `.use()` the routes:
+In `src/modules/<module>/index.ts`, attach the routes to the module's sub-app and export its type:
 
 ```ts
+import {moduleApp} from "@/http/app";
 import {myEntitiesRoutes} from "./routes/my-entities";
 
-export const myModule = new Elysia({prefix: "/my-module"})
-    .use(betterAuth)
-    .guard({auth: true}, (app) =>
-        app
-            .resolve(async ({user}) => { /* role check */
-            })
-            .use(myEntitiesRoutes)
-    );
+export const myModuleApp = moduleApp().route("/", myEntitiesRoutes);
+
+/** Type for the frontends' `hc` client. */
+export type MyModuleApp = typeof myModuleApp;
 ```
 
-### 5. Register the module in the app entrypoint
+Always `moduleApp()`, never `new Hono()`, for a module's sub-app: it answers errors and 404s with the JSON envelope
+and routes on the raw path.
 
-In `src/index.ts`, import and `.use()` the module. If it introduces a new OpenAPI tag, add it to the `openapi()` config.
+### 5. Register a new module in `src/app.ts`
+
+Add a row to `MODULES` with the prefix and the guards every route must carry (`["admin"]`, `["publicRoute"]` for a
+public module, `["customer", "publicRoute"]` for a mixed one, a function of the path when they change by route), and
+export the module's type from `src/types.ts` for the frontends. A new OpenAPI tag goes in `src/plugins/openapi.ts`.
+
+### 6. Test it
+
+- Route tests through `app.request()` or the helpers of `tests/helpers/hono-app.ts`: `testRequest(app, path, init)`,
+  `withVars(app, { user, … })` (context already resolved, no DB), `withResolve(app, (request) => vars)`,
+  `signIn(email, role)` (a real better-auth user and session on the test DB).
+- The module's **strip test**: an unknown field, nested too, in the body or query never reaches the service, and an
+  extra field returned by the service never leaves the response (e.g.
+  `tests/modules/locations-registration-strip.test.ts`).
 
 ### Checklist
 
 - Service function in `services/` with proper error handling (`ServiceError`)
-- Route file in `routes/` with TypeBox schemas, `withErrors()`, and `detail` for OpenAPI
-- Context helper imported and used (e.g. `withAdmin(ctx)`, `withSeller(ctx)`) instead of inline type assertions
-- Route registered in module `index.ts`
-- Module registered in `src/index.ts` (if new module)
-- Run `bun run typecheck` to verify
+- Route chained in `routes/`, with `doc()`, the `v()` in order, a guard or `publicRoute`, and `send()` with the
+  schema listed in `doc()`
+- Routes registered in the module `index.ts`; a new module in `MODULES` (`src/app.ts`) and its type in `src/types.ts`
+- Strip test for a new module, route tests for the new behaviour
+- Run `bun run typecheck` from the root (the frontends' `hc` clients see the change) and check `/openapi`
 
 ## Code Conventions
 
@@ -672,12 +719,15 @@ throw new Error("not found");
 return {error: "not found"};
 ```
 
-The global error handler (`src/plugins/error-handler.ts`) catches `ServiceError` and converts it to the standard
-response envelope.
+The `onError` of the root app and of every `moduleApp()` (`errorResponse`, `src/http/app.ts`) hands the error to
+`toErrorResponse` (`src/http/errors.ts`), which converts `ServiceError` to the standard response envelope, maps the
+Postgres constraint violations (`23505` → 409, `23503` → 409 or 400, `23514` → 400) and logs.
 
-Validation errors (422) are translated centrally by `src/lib/validation-message.ts` from the TypeBox error type:
-`«Etichetta: regola»` on the first error (e.g. «Quantità (riga 2): deve essere un numero intero»). Don't add `error:`
-to schemas just to translate them; use it only for a message more specific than the generic rule. A new input field
+Validation errors (422) are translated centrally by `src/http/validation-message.ts`, with the rules and labels of
+`src/lib/validation-message.ts`, from the first Zod issue — the one the API has always reported first
+(`src/lib/schemas/issues.ts`): `«Etichetta: regola»` (e.g. «Quantità (riga 2): deve essere un numero intero»). Don't
+add an `error` meta to schemas just to translate them; use it only for a message more specific than the generic
+rule. A new input field
 gets its Italian label in `FIELD_LABELS` (fields not listed fall back to the technical path); a `title` on the schema wins, for names whose meaning changes between routes (e.g. geocode `limit`). The log carries
 `on`/`field`/`valueErrorType`, never the submitted values; a response that fails its schema is a 500.
 
@@ -689,7 +739,7 @@ Always use the response helpers from `src/lib/responses.ts`:
 - `okPage(data, pagination)` — paginated list response
 - `okMessage(message)` — action confirmation (e.g. delete)
 
-Never construct response objects manually.
+Never construct response objects manually, and return them through `send(c, Schema, body)` (`src/http/send.ts`).
 
 ### Database transactions
 
@@ -716,19 +766,18 @@ const total = fromCents(totalCents); // "19.98"
 
 ### Pagination
 
-All list endpoints must support pagination using `PaginationQuery` for the query schema and `parsePagination()` for
-offset calculation.
+All list endpoints must support pagination using `PaginationQuery` (`src/lib/schemas/pagination.ts`) for the query
+schema and `parsePagination()` for offset calculation.
 
 ### Logging
 
 Log important actions (create, update, delete, auth events) in route handlers:
 
 ```ts
-const pino = getLogger(store);
-pino.info({userId: user.id, action: 'entity_created'}, 'Description');
+logger.info({userId: c.var.user.id, action: 'entity_created'}, 'Description');
 ```
 
-Use `logger` from `src/lib/logger.ts` for non-request contexts (cron jobs, startup).
+Use `logger` from `src/lib/logger.ts` everywhere: route handlers, services, cron jobs, startup.
 
 ## Infrastructure
 
@@ -766,21 +815,28 @@ Optional:
 
 ## Testing
 
-Tests use **Bun's built-in test runner** with two levels:
+Tests use **Bun's built-in test runner**:
 
-- **Unit tests** (`tests/unit/`) — test core lib modules (errors, money, order state machine, pagination)
-- **Route-level tests** (`tests/modules/`, `tests/plugins/`) — test registration, error handler via Elysia's test
-  client
+- **Unit tests** (`tests/unit/`, `tests/lib/`) — test core lib modules (errors, money, order state machine, pagination)
+- **Route-level tests** (`tests/modules/`, `tests/plugins/`) — sub-apps and middleware through `app.request()` or the
+  helpers of `tests/helpers/hono-app.ts` (`testRequest`, `withVars`, `withResolve`, `signIn`), including each
+  module's strip test
+- **HTTP kit tests** (`tests/http/`) — the validator, `send()`, the OpenAPI generator, the formats and the root app
+  (CORS, `X-Request-Id`, 404s, log line), compared with the golden files in `tests/http/golden/`: the answers of the
+  previous framework, captured before it was removed (Hono migration, U11). They are never regenerated and their
+  values never change; an accepted difference goes in the test's expectation, with its number in the plan's delta
+  register
 - **Integration tests** (`tests/integration/`) — full end-to-end tests using **testcontainers** (spins up a real
   PostgreSQL container). Tests orders, product search, etc.
 
 Test helpers in `tests/helpers/`: `test-db.ts` (testcontainers setup), `fixtures.ts` (test data), `cleanup.ts` (DB
-cleanup between tests). A `tests/preload.ts` file configures the test environment.
+cleanup between tests), `hono-app.ts` (requests to a sub-app). A `tests/preload.ts` file configures the test
+environment.
 
 Run tests:
 
 ```bash
-bun test            # all tests
+bun run test        # all tests
 bun run test:unit   # unit only
 bun run test:integration  # integration only (requires Docker)
 bun run test:image && bun test tests/integration/<file>.test.ts  # a single integration file
@@ -870,25 +926,20 @@ The verification link can be extracted from the `HTML` field of the message resp
 
 ## API Documentation
 
-Full OpenAPI 3.0 spec available at `/openapi` with:
+Full OpenAPI spec at `/openapi` (Scalar UI) and `/openapi/json`, generated from the routes (`src/http/openapi.ts`,
+assembled by `src/plugins/openapi.ts`), with:
 
 - Every module's endpoints, fully documented (the spec is the authoritative route inventory)
-- Request/response schemas with TypeBox (runtime validation + types + restrictive input validation)
+- Request/response schemas from the routes' Zod schemas (`v()` for the input, `doc({ response })` for the output)
 - Error responses (400, 401, 403, 404, 409, 422, 500) for all endpoints
 - Better-auth endpoints merged under "Better Auth" tag
 - Scalar UI for interactive documentation
 
 ## Frontend Integration
 
-Eden Treaty integration (client setup, typed errors, gotchas) is documented in
-[docs/architecture.md](../../docs/architecture.md#frontend--api-integration-eden-treaty).
-
-**Eden Treaty** is Elysia's RPC-like client that provides:
-
-- Full TypeScript inference from backend to frontend (no code generation)
-- Auto-completion for all API endpoints with parameters and response types
-- Type narrowing for errors: `if (error) { error.value.message }`
-- Weight < 2KB gzipped
-
-The backend exports `export type App = typeof app` for Eden to consume. Changes to backend types are instantly reflected
-in the frontend with zero configuration.
+The frontends call the API with Hono's RPC client, `hc`, one client per sub-app: `src/types.ts` exports the type of
+each (`MeApp`, `CustomerApp`, `SellerApp`, `AdminApp`, `RegistrationApp`, `LocationsApp`, `CatalogApp`) and each app
+builds its clients in `src/lib/api.ts` (``hc<WithErrors<SellerApp>>(`${API_URL}/seller`, { init })``). Types flow from
+the route chain — `v()` for the input, `send()` for the output — with no code generation, so a change to a route is
+seen by every frontend at the next `bun run typecheck`. Client setup, errors, dates and gotchas:
+[docs/architecture.md](../../docs/architecture.md#frontend--api-integration-hc).

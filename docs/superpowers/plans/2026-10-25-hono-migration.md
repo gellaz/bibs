@@ -31,8 +31,8 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U10 | `webhooks/` (Stripe) | U1 | fatto | #306 |
 | U11 | Cambio finale: Hono app principale, via Elysia/Eden/logixlysia/`@elysiajs/*` | U2–U10 | fatto | #310 |
 | U11b | Uscita da TypeBox: form condivisi e resolver seller su Zod, `env.ts`, catalog | U11 | da fare | — |
-| U12 | Hono 5: bump all'ultima 5.x (GA se uscita, altrimenti l'ultima rc); ultima PR di codice prima di U13/U14 | U11b | da fare | — |
-| U13 | Documentazione e rimozione della skill `elysiajs` | U12 | da fare | — |
+| U12 | Hono 5: bump all'ultima 5.x (GA se uscita, altrimenti l'ultima rc); ultima PR di codice prima di U13/U14 | U11b | no-op (`5.0.0-rc.1` è ancora l'ultima 5.x) | — |
+| U13 | Documentazione e rimozione della skill `elysiajs` | U12 | in revisione | #PR_U13 |
 | U14 | PR finale `feat/hono-migration` → `main` (la mergia Marco) | U13 | da fare | — |
 
 Parallelismo: al massimo 3 unità insieme, ognuna nel suo worktree; collaudo nel browser e merge uno alla volta. Dopo U1 possono partire insieme U2, U3, U5, U8, U10 (tre per volta); U4 aspetta U2, U6 e U7 aspettano U5, U9 aspetta U8. **U2 e U4 escono nella stessa PR** (branch `feat/hono-u2-u4-locations-registration`, deciso dall'orchestratore il 2026-10-25: U4 dipendeva solo dal rate limit di U2, così si risparmia un giro di spedizione). I file toccati da tutti (`apps/api/src/index.ts`, `apps/api/src/types.ts`, `apps/*/src/lib/api.ts`, `apps/api/src/lib/zod/*`) danno conflitti piccoli: si risolvono con `git merge origin/feat/hono-migration` nel branch, mai con rebase.
@@ -998,32 +998,33 @@ Cosa resta di TypeBox dopo U11 (inventario del 2026-10-26, `grep -rln "@sinclair
 
 ### U12 — Hono 5: ultima 5.x
 
-**Stato:** da fare · **PR:** — · **Branch:** `chore/hono-v5`
+**Stato:** no-op (nessuna PR) · **PR:** — · **Branch:** —
 
 *Nota di U11 (2026-10-26):* `npm view hono dist-tags` → `next: 5.0.0-rc.1`, `latest: 4.13.14`; le 5.x pubblicate sono `5.0.0-rc.0` e `5.0.0-rc.1`. Il repo è già sull'ultima 5.x: U12 è un no-op finché non esce una 5.x più nuova (va solo riverificato quando tocca). Riverificato alla spedizione di U11 (stesso giorno): invariato.
 
+*Chiusura (U13, 2026-10-26):* riverificato con `npm view hono dist-tags` → `{ v4: '4.0.0-rc.4', latest: '4.13.14', next: '5.0.0-rc.1' }` e `npm view hono versions` → 5.x pubblicate solo `5.0.0-rc.0` e `5.0.0-rc.1`. Il catalog ha già `hono: 5.0.0-rc.1` (pin esatto, D1): U12 si chiude come no-op, senza branch né PR. Se prima di U14 esce una 5.x più nuova, la si porta in una PR `chore/hono-v5` con la checklist qui sotto.
+
 Da U1 il repo è già su Hono 5 (`5.0.0-rc.1`, D1). U12 è l'**ultima PR di codice prima di U13/U14**, non si rimanda: porta il catalog all'ultima 5.x (la GA `5.0.x` se è uscita, altrimenti l'ultima rc), con il pin esatto se è ancora una prerelease e `^5.x.y` alla GA.
 
-- [ ] Catalog `hono` all'ultima 5.x; changelog dalla rc.1 letto e applicato (oggi del codice specifico della v5 ci sono solo `onError((c) => c.error)` in `src/http/app.ts`, `hono/mount` e `c.req.query()`/`c.req.json()` tipizzati `string | undefined`/`unknown`); adapter Bun da `@hono/bun` se serve `getConnInfo`; peer di `@hono/cli` verificati.
-- [ ] [Verifica di ogni PR](#verifica-di-ogni-pr).
+- [x] Catalog `hono` all'ultima 5.x: n/a, è già `5.0.0-rc.1`, l'ultima 5.x pubblicata (changelog, adapter Bun e peer di `@hono/cli` da riguardare solo con un bump vero: oggi del codice specifico della v5 ci sono solo `onError((c) => c.error)` in `src/http/app.ts`, `hono/mount` e `c.req.query()`/`c.req.json()` tipizzati `string | undefined`/`unknown`).
+- [x] [Verifica di ogni PR](#verifica-di-ogni-pr): n/a, nessun cambio.
 
 ### U13 — Documentazione e skill
 
-**Stato:** da fare · **PR:** — · **Branch:** `docs/hono-docs`
+**Stato:** in revisione · **PR:** #PR_U13 · **Branch:** `docs/hono-u13-docs` (nome dato dall'orchestratore al posto di `docs/hono-docs`)
 
-- [ ] `AGENTS.md`: riga dello stack (`Elysia + Bun` → `Hono + Bun`), «Eden Treaty» → `hc`, sezione «Writing New API Endpoints (Elysia)» riscritta per Hono (sub-app, `v()`, `send()`, `doc()`, auth per route dopo i validatori, `ServiceError`), nota di verifica sui client, form con Zod.
-- [ ] `apps/api/AGENTS.md` (anche «Three jobs» → cinque), `apps/api/README.md` (`/openapi`), `CLAUDE.md` (tabella skill: via `elysiajs`, `hono` non più «per la migrazione»), `docs/architecture.md` (ciclo della richiesta, integrazione FE ↔ API con `hc`; la sezione di U1 diventa storia breve), `docs/ai-tooling.md`.
-- [ ] Via `.agents/skills/elysiajs` e il link `.claude/skills/elysiajs` (fuori da `skills-lock.json`).
-- [ ] `grep -rni "elysia\|eden\|typebox" AGENTS.md CLAUDE.md apps/api/AGENTS.md apps/api/README.md docs/architecture.md docs/ai-tooling.md` → solo menzioni storiche volute.
-- [ ] `bun run lint`, `bun run typecheck`.
+Scritta per lo stato dopo U11b (TypeBox fuori dal repo, form del seller su Zod con `zodResolver`, `env.ts` su Zod), che si mergia prima di questa PR.
 
-Da coprire, dall'inventario di U11 (`git grep -n -i -E "elysia|@elysiajs|logixlysia|\beden\b|treaty|apiNoDates" -- . ':!docs/superpowers/' ':!.agents' ':!.claude/skills'`, 2026-10-26; nel codice, nelle config e nei manifest non resta niente tranne i dati catturati sotto):
-- `AGENTS.md` (11 righe: stack, Eden Treaty, «Writing New API Endpoints (Elysia)», `t.Object`, `.guard`, `detail`), `CLAUDE.md` (4 righe: tabella skill, `elysiajs`, `hono` «per la migrazione»), `apps/api/AGENTS.md` (20 righe: plugin, logixlysia, `.guard`, test con `.handle()`, cron «Three jobs» → cinque in `plugins/cron.ts`), `apps/api/README.md` (3: stack, `/openapi`), `README.md` (1), `apps/{admin,customer,seller}/README.md` (1 ciascuno: Eden), `docs/architecture.md` (36: ciclo della richiesta, integrazione FE ↔ API, sezione della migrazione), `docs/ai-tooling.md` (1);
-- storici, da lasciare: `docs/audit/*.md` (audit datati), `docs/superpowers/` (piano e note);
-- dati catturati, da lasciare: `apps/api/tests/http/golden/*.json` (i valori di Elysia: `"_integration":"elysiajs"` nella pagina /openapi e le chiavi `elysiaMeta` degli schemi), e il nome della chiave del delta 15 in `apps/api/tests/http/openapi.test.ts`;
-- nel `git grep` letterale della consegna (`eden` senza `\b`) compaiono anche tutte le parole con «credentials»: non sono menzioni;
-- `apps/api/THIRD_PARTY_NOTICES.md` (nuovo in U11): provenienza e licenze MIT del codice portato; resta;
-- `docs/architecture.md` e `apps/api/AGENTS.md` devono spiegare `src/app.ts` (radice, tabella `MODULES`, `rootApp()`), `src/index.ts` (solo server), i middleware di `src/plugins/` (cors, request-id, request-log, better-auth, health, openapi, cron, rate-limit), `lib/schemas/` (Zod) contro `lib/zod/forms/` (fino a U11b) e i golden dei test.
+- [x] `AGENTS.md`: riga dello stack (`Hono + Bun`), `hc` al posto di Eden Treaty (stack dei FE, `src/lib/api.ts`, link alla sezione `hc` di `docs/architecture.md`, typecheck dalla root), «Writing New API Endpoints (Hono)» riscritta sul codice di oggi (schemi Zod e costruttori di `lib/schemas/t.ts`, una sub-app per modulo con `moduleApp()` e la tabella `MODULES` di `src/app.ts`, catena `doc()` → `v()` → guardia → handler con `assertRoutes`, `c.req.valid()` e `c.var`, `send()`, `ServiceError(status, message)` e `toErrorResponse`, `doc()` per /openapi, test di strip per modulo, client `hc` e date ISO), «Writing New Frontend Routes» con `hc` + `unwrapJson` e form con Zod (`zodResolver` di `@/lib/zod-resolver`, `@bibs/api/schemas`); esempio di commit e pin del catalog senza `elysia`.
+- [x] `apps/api/AGENTS.md`: panoramica (Hono, Zod, /openapi generato), via la nota «Migration to Hono decided» (storia in una riga con il link al piano), sezione **Hono CLI** con i comandi provati sul vero `src/app.ts` (sotto), `bun run test` al posto di `bun test`; architettura: `src/app.ts` (`rootApp()`, `app`, `MODULES`, `honoPaths`/`assertRoutes`, `rawPath`), `src/index.ts` solo server, i middleware di `src/plugins/` (request-log, cors, request-id, better-auth, openapi, health, rate-limit, cron con **cinque** job), il kit `src/http/`; schemi Zod in `lib/schemas/` (niente barrel, `forms/` = `@bibs/api/schemas`); logging senza logixlysia né `getLogger`; guardie per route al posto di `.guard` e dei `withX(ctx)` (tabella guardia → 401/403 → `c.var`); «How to Add a New Endpoint» riscritta (route concatenate, ordine dei middleware, `send()`, registrazione nel modulo e in `MODULES`, test con `app.request()`/`testRequest` e di strip); errori e 422 da `toErrorResponse` e dalla prima issue Zod; test (`tests/http/` e golden); API docs e integrazione FE con `hc`.
+- [x] `apps/api/README.md` (stack, moduli come sub-app, guardie per route, logging), `README.md` e `apps/{admin,customer,seller}/README.md` (stack), `CLAUDE.md` (tabella skill senza `elysiajs`, `hono` non più «per la migrazione» e col link ai comandi della CLI, context7 senza Elysia, client `hc` nella riga del flusso multi-step), `docs/architecture.md` (flusso dei tipi, struttura del codice, ciclo della richiesta su Hono, contratto di risposta ed errori, auth per route, cinque cron, regole per scrivere gli schemi Zod, test del livello HTTP con i golden, integrazione FE ↔ API con `hc`; la sezione della migrazione è diventata «History: from Elysia to Hono», un paragrafo col link al piano), `docs/ai-tooling.md` (riga `elysiajs` tolta).
+- [x] Via `.agents/skills/elysiajs` (53 file) e il link `.claude/skills/elysiajs`; nessun altro link alla skill (`git ls-files -s`: i symlink tracciati stanno solo in `.claude/skills/`), nessuna voce in `skills-lock.json`.
+- [x] `grep -rni "elysia\|eden\|typebox" AGENTS.md CLAUDE.md apps/api/AGENTS.md apps/api/README.md docs/architecture.md docs/ai-tooling.md README.md apps/{admin,customer,seller}/README.md` → solo le 3 righe storiche volute (`apps/api/AGENTS.md:14`, `docs/architecture.md` titolo e paragrafo «History»), più le parole con «credentials».
+- [x] `bun run lint` → 0 errori, 6 avvisi (gli stessi); `bun run typecheck` → i 6 workspace e i 3 `pretypecheck` con `Exited with code 0`.
+
+Comandi della Hono CLI documentati, provati da `apps/api` su `src/app.ts` con `bun --env-file=<file dei valori di sviluppo>` (il `cp` dei `.env` resta vietato nei worktree) e l'infra su: `routes` → 207 route; `request /health` → 200 con CORS e `x-request-id`; `batch <file>` con `GET /seller/products` 401, login `POST /auth/api/sign-in/email` di `seller@dev.bibs`, `GET /seller/products?limit=1` 200 → `{"total":3,"passed":3,"failed":0}` (il login apre una sessione nel DB di sviluppo, come i batch delle unità); `batch -` con i passi da stdin → 1/1; `snapshot --status-only` → 184 righe. Non funzionano e la doc lo dice: `bunx hono request …` (`UNEXPECTED_ERROR`, `bun` non si risolve su Node) e `hono diff` (`SNAPSHOT_FAILED`).
+
+`git grep -n -i -E 'elysia|eden treaty|@elysiajs|logixlysia|typebox|apiNoDates' -- . ':!docs/audit/' ':!docs/superpowers/' ':!apps/api/tests/http/golden/' ':!apps/api/THIRD_PARTY_NOTICES.md'` dopo U13: nella documentazione solo le 3 righe storiche; `elysiaMeta` in `apps/api/tests/http/openapi.test.ts` (il nome della chiave del delta 15, voluto); il resto sono le menzioni di TypeBox nel codice, nel catalog e nel lock che U11b toglie o riscrive (inventario di U11b sopra): da riverificare dopo il merge di U11b, nella PR di U13 se U11b è già dentro, altrimenti in U14.
 
 ### U14 — PR finale verso `main`
 
