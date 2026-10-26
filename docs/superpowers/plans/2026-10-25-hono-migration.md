@@ -27,7 +27,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U6 | seller 2: stores, store-images, settings, closures, employees, onboarding, profile, dashboard | U5 | da fare | — |
 | U7 | seller 3: orders, discounts, checkout, billing | U5 | da fare | — |
 | U8 | catalogo pubblico + admin 1: configurations, categorie, macro-categorie, caratteristiche, category-characteristics, holiday-definitions, import | U1 | fatto | #305 |
-| U9 | admin 2: sellers, seller-changes, stores, requests, billing | U8 | fatto (spedizione verde, PR in apertura) | — |
+| U9 | admin 2: sellers, seller-changes, stores, requests, billing | U8 | fatto | #308 |
 | U10 | `webhooks/` (Stripe) | U1 | fatto | #306 |
 | U11 | Cambio finale: Hono app principale, via Elysia/Eden/logixlysia/`@elysiajs/*` | U2–U10 | da fare | — |
 | U11b | Uscita da TypeBox: form condivisi e resolver seller su Zod, `env.ts`, catalog | U11 | da fare | — |
@@ -634,7 +634,7 @@ Catalogo pubblico: 4 GET a path radice (`/product-macro-categories`, `/product-c
 
 ### U9 — admin 2
 
-**Stato:** fatto (spedizione sotto) · **PR:** — · **Branch:** `feat/hono-u9-admin-2` (nome dato dall'orchestratore al posto di `refactor/hono-admin-sellers`)
+**Stato:** fatto (spedizione sotto) · **PR:** #308 · **Branch:** `feat/hono-u9-admin-2` (nome dato dall'orchestratore al posto di `refactor/hono-admin-sellers`)
 
 18 endpoint: sellers (5; `PATCH /sellers/:id/{verify,reject}` con `expectedUpdatedAt` data in ingresso, 409 ottimistico; `RejectSellerBody`), seller-changes (3), stores (2), requests (3, indice `/requests/` con slash), billing (5, `PUT /billing/pricing`). Toglie il modulo admin Elysia.
 
