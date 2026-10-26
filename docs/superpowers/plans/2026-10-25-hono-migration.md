@@ -28,7 +28,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U7 | seller 3: orders, discounts, checkout, billing | U5 | da fare | — |
 | U8 | catalogo pubblico + admin 1: configurations, categorie, macro-categorie, caratteristiche, category-characteristics, holiday-definitions, import | U1 | fatto | #305 |
 | U9 | admin 2: sellers, seller-changes, stores, requests, billing | U8 | da fare | — |
-| U10 | `webhooks/` (Stripe) | U1 | fatto | — |
+| U10 | `webhooks/` (Stripe) | U1 | fatto | #306 |
 | U11 | Cambio finale: Hono app principale, via Elysia/Eden/logixlysia/`@elysiajs/*` | U2–U10 | da fare | — |
 | U11b | Uscita da TypeBox: form condivisi e resolver seller su Zod, `env.ts`, catalog | U11 | da fare | — |
 | U12 | Hono 5: bump all'ultima 5.x (GA se uscita, altrimenti l'ultima rc); ultima PR di codice prima di U13/U14 | U11b | da fare | — |
@@ -648,7 +648,7 @@ Catalogo pubblico: 4 GET a path radice (`/product-macro-categories`, `/product-c
 
 ### U10 — `webhooks/`
 
-**Stato:** fatto · **PR:** — · **Branch:** `feat/hono-u10-webhooks` (nome dato dall'orchestratore al posto di `refactor/hono-webhooks`)
+**Stato:** fatto · **PR:** #306 · **Branch:** `feat/hono-u10-webhooks` (nome dato dall'orchestratore al posto di `refactor/hono-webhooks`)
 
 3 `POST` (platform, connect, thin) con body grezzo per la firma Stripe; corpi **fuori inviluppo**: firma mancante → 400 `{"error":"missing signature"}`, messaggio con «signature» → 400 `{"error":"invalid signature"}`, altro → 500 `{"error":"internal error"}`, ok → `{"received":true}`. Nessuno schema di risposta. `billing/` non ha route: niente da spostare (riverificato in U10: `modules/billing/index.ts` riesporta solo `getOrCreateStripeCustomer`, nessun `Elysia` né route in `modules/billing/`).
 
