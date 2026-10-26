@@ -13,6 +13,23 @@ import {
 	ProductStatusBody,
 } from "@/lib/schemas/entities";
 import {
+	AcceptInviteBody,
+	CompanyBody,
+	DocumentBody,
+	PersonalInfoBody,
+	TeamInviteBody,
+} from "@/lib/schemas/forms/onboarding";
+import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+} from "@/lib/schemas/forms/products";
+import {
+	CompanySettingsBody,
+	VatChangeBody,
+} from "@/lib/schemas/forms/settings";
+import { CreateStoreBody } from "@/lib/schemas/forms/stores";
+import {
 	CreateHolidayDefinitionBody,
 	PutClosuresBody,
 	UpdateHolidayDefinitionBody,
@@ -39,20 +56,6 @@ import {
 	zInteger,
 	zString,
 } from "@/lib/schemas/t";
-import {
-	AcceptInviteBody,
-	CompanyBody,
-	DocumentBody,
-	PersonalInfoBody,
-	TeamInviteBody,
-} from "@/lib/zod/forms/onboarding";
-import { OpeningHoursSchema } from "@/lib/zod/forms/opening-hours";
-import {
-	CharacteristicValuesField,
-	CreateProductBody,
-} from "@/lib/zod/forms/products";
-import { CompanySettingsBody, VatChangeBody } from "@/lib/zod/forms/settings";
-import { CreateStoreBody } from "@/lib/zod/forms/stores";
 import {
 	SubscriptionsQuery,
 	UpdatePricingBody,
@@ -81,8 +84,8 @@ import {
 // Hono). Sono i casi di `tests/lib/validation-message.test.ts` con le stesse
 // stringhe, il corpus della sonda (`notes/prototypes/validation/before.json`)
 // sugli schemi veri, la coercizione di query e multipart, il trim, i campi
-// sconosciuti, i file. Fino a U11 ogni riga portava anche lo schema TypeBox e
-// il test lo confrontava dal vivo: gli esiti di allora sono nei file golden.
+// sconosciuti, i file. Fino a U11 ogni riga portava anche lo schema di prima
+// e il test lo confrontava dal vivo: gli esiti di allora sono nei file golden.
 
 export interface Req {
 	search?: string;
@@ -156,8 +159,8 @@ const Register = RegisterBody;
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
-// `Type.Integer` di TypeBox (form condivisi) è `zInt`, il `t.Integer` di
-// prima della migrazione è `zInteger` (`lib/schemas/t.ts`).
+// L'intero dei form condivisi è `zInt`, il `t.Integer` di prima della
+// migrazione è `zInteger` (`lib/schemas/t.ts`).
 const OpeningHours = OpeningHoursSchema;
 
 // Unioni alla radice: `z.union`, non `z.discriminatedUnion` (che sceglie il
@@ -834,7 +837,7 @@ export const cases: Case[] = [
 		fail("Inizio: campo obbligatorio"),
 	),
 	body(
-		"disc: mancante prima del tipo sbagliato (ordine di TypeBox)",
+		"disc: mancante prima del tipo sbagliato (ordine di prima)",
 		DiscountCreateBody,
 		{ title: 3, percent: 5 },
 		422,
@@ -1623,7 +1626,7 @@ export const cases: Case[] = [
 		fail("Valore non valido: deve essere un numero"),
 	),
 
-	// Interi oltre ±2^53: TypeBox controlla `Number.isInteger`, `z.int()` di
+	// Interi oltre ±2^53: prima si controllava `Number.isInteger`, `z.int()` di
 	// Zod anche i limiti dei safe integer (422 «al massimo 9007199254740991»).
 	...bigIntegers(),
 	// U5: gemelli dei form e dei body seller condivisi (prodotti, stock). Gli
@@ -1677,7 +1680,7 @@ export const cases: Case[] = [
 		fail("Valore (riga 1): valore non valido"),
 	),
 	// Unione con più rami non nulli: Zod dà solo l'errore del ramo che combacia
-	// col tipo (stringa troppo lunga), TypeBox «valore non valido».
+	// col tipo (stringa troppo lunga), prima «valore non valido».
 	body(
 		"prodotti: valore di caratteristica oltre 2000 caratteri (CreateProductBody)",
 		CreateProductBody,
@@ -1853,7 +1856,7 @@ export const cases: Case[] = [
 		422,
 		fail("openingHours: deve essere un numero intero"),
 	),
-	// 501 unità UTF-16 ma 257 code point: TypeBox controlla maxLength prima del formato.
+	// 501 unità UTF-16 ma 257 code point: maxLength si controlla prima del formato.
 	body(
 		"negozio: sito oltre 500 unità UTF-16 con emoji (CreateStoreBody)",
 		CreateStoreBody,
@@ -2235,7 +2238,7 @@ export const cases: Case[] = [
 		{ ok: { name: "y", isActive: false } },
 	),
 	body(
-		"U8 caratteristica: nome di 51 emoji (TypeBox conta le unità UTF-16)",
+		"U8 caratteristica: nome di 51 emoji (si contano le unità UTF-16)",
 		CreateProductCharacteristicBody,
 		{ name: "😀".repeat(51), dataType: "text" },
 		422,
@@ -2685,7 +2688,7 @@ export const cases: Case[] = [
 			},
 		},
 	),
-	// zString: TypeBox conta le unità UTF-16 (501 emoji sono 1002 > 1000).
+	// zString: conta le unità UTF-16, come prima (501 emoji sono 1002 > 1000).
 	body(
 		"negozio: descrizione di emoji oltre il limite (zString)",
 		CreateStoreBody,
@@ -2870,7 +2873,7 @@ export const cases: Case[] = [
 
 function bigIntegers(): Case[] {
 	const page = z.object({ page: zInteger({ minimum: 1 }) });
-	const typeboxQuantity = z.object({ quantity: zInt().min(1).max(99) });
+	const intQuantity = z.object({ quantity: zInt().min(1).max(99) });
 	const json = (
 		name: string,
 		zod: z.ZodType,
@@ -2972,28 +2975,28 @@ function bigIntegers(): Case[] {
 		),
 		json(
 			"Type.Integer: 1e20 oltre il massimo",
-			typeboxQuantity,
+			intQuantity,
 			'{"quantity":1e20}',
 			422,
 			fail(max99),
 		),
 		json(
 			"Type.Integer: -1e20 sotto il minimo",
-			typeboxQuantity,
+			intQuantity,
 			'{"quantity":-1e20}',
 			422,
 			fail(min1),
 		),
 		json(
 			"Type.Integer: 2^53+1 oltre il massimo",
-			typeboxQuantity,
+			intQuantity,
 			'{"quantity":9007199254740993}',
 			422,
 			fail(max99),
 		),
 		json(
 			"Type.Integer: 20 cifre in stringa",
-			typeboxQuantity,
+			intQuantity,
 			'{"quantity":"99999999999999999999"}',
 			422,
 			fail("Quantità: deve essere un numero intero"),

@@ -23,6 +23,11 @@ import {
 	ProductStatusBody,
 	ProductStatusCounts,
 } from "@/lib/schemas/entities";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+	VatRateSchema,
+} from "@/lib/schemas/forms/products";
 import { PaginationQuery } from "@/lib/schemas/pagination";
 import {
 	OkMessage,
@@ -32,11 +37,6 @@ import {
 	withErrors,
 } from "@/lib/schemas/responses";
 import { zFile, zInteger, zString } from "@/lib/schemas/t";
-import {
-	CharacteristicValuesField,
-	CreateProductBody,
-	VatRateSchema,
-} from "@/lib/zod/forms/products";
 import { ensureStoreAccess } from "../context";
 import { importProductsFromCsv } from "../services/product-import";
 import {

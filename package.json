@@ -39,7 +39,6 @@
 		"@hookform/resolvers": "^5.9.2",
 		"@inlang/paraglide-js": "^2.29.1",
 		"@rolldown/plugin-babel": "^0.2.4",
-		"@sinclair/typebox": "^0.34.52",
 		"@t3-oss/env-core": "^0.13.11",
 		"@tailwindcss/postcss": "^4.3.3",
 		"@tailwindcss/vite": "^4.3.3",

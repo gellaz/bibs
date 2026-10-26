@@ -98,7 +98,7 @@ All three frontend apps (`admin`, `customer`, `seller`) share the same tech stac
 - **TanStack Query** — data fetching with cache, pagination, refetch
 - **Hono RPC client** (`hc` from `hono/client`) — type-safe API client, one per API sub-app, typed by the backend's exported app types
 - **better-auth client** — `src/lib/auth-client.ts` uses `createAuthClient` pointing to the API's `/auth/api` endpoint
-- **React Hook Form** + Zod (`zodResolver` from `src/lib/zod-resolver.ts`) — form state management with schema validation
+- **React Hook Form** + Zod (`zodResolver` from `src/lib/zod-resolver.ts`; the seller's forms on `@bibs/api/schemas` use `schemaResolver` from `src/lib/schema-errors.ts`) — form state management with schema validation
 - **Paraglide JS** — i18n with localized routing (messages in `messages/`, output in `src/paraglide/`)
 - **Tailwind CSS v4** — via `@tailwindcss/vite` plugin
 - **@bibs/ui** — shared UI components from `packages/ui`, aliased as `~/` in imports
@@ -399,7 +399,7 @@ When adding a route under `apps/api/src/`, follow the existing pattern (a compac
 - File-based routing in `src/routes/`. Auth-guarded routes go under `_authenticated/`.
 - i18n via Paraglide — add strings to `messages/*.json`, never hard-code user-facing copy.
 - Data fetching via the `hc` clients (`src/lib/api.ts`) + TanStack Query, unwrapped with `unwrapJson(res, fallback)` from `@bibs/ui/lib/api-client`. Types come from the API — no manual DTOs. Dates arrive as ISO strings: build a `Date` where you need one.
-- Forms: `react-hook-form` + Zod through `zodResolver` from `@/lib/zod-resolver` (it registers the translated Zod messages first). The seller's forms shared with the API use the Zod schemas of `@bibs/api/schemas`.
+- Forms: `react-hook-form` + Zod through `zodResolver` from `@/lib/zod-resolver` (it registers the translated Zod messages first). The seller's forms on the Zod schemas shared with the API (`@bibs/api/schemas`) use `schemaResolver` from `@/lib/schema-errors` instead: the schema's `error` meta (the 422 message) wins, translated through `SCHEMA_ERRORS`, and the submit gets the raw form values.
 - UI primitives from `@bibs/ui` (`~/` alias), not raw Base UI or hand-rolled shadcn copies.
 
 ## Commit Conventions

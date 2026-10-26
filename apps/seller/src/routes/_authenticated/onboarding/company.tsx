@@ -12,11 +12,10 @@ import {
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import type { Static } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
+import type { z } from "zod";
 import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
 import { LEGAL_FORMS } from "@/features/onboarding/legal-forms";
 import {
@@ -25,11 +24,10 @@ import {
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useGoBack, useUpdateCompany } from "@/hooks/use-onboarding";
-import { typeboxResolver } from "@/lib/typebox-resolver";
+import { schemaResolver } from "@/lib/schema-errors";
 import { m } from "@/paraglide/messages";
 
-type CompanyFormData = Static<typeof CompanyBody>;
-const compiledSchema = TypeCompiler.Compile(CompanyBody);
+type CompanyFormData = z.infer<typeof CompanyBody>;
 
 export const Route = createFileRoute("/_authenticated/onboarding/company")({
 	loader: ({ context }) =>
@@ -49,7 +47,7 @@ function CompanyPage() {
 		control,
 		formState: { errors, isSubmitting },
 	} = useForm<CompanyFormData>({
-		resolver: typeboxResolver(compiledSchema),
+		resolver: schemaResolver(CompanyBody),
 		defaultValues: { country: "IT" },
 	});
 

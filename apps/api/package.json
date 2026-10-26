@@ -21,7 +21,6 @@
 	"dependencies": {
 		"@aws-sdk/client-s3": "catalog:",
 		"@bibs/emails": "workspace:*",
-		"@sinclair/typebox": "catalog:",
 		"better-auth": "catalog:",
 		"croner": "^6.0.7",
 		"drizzle-orm": "^0.45.4",

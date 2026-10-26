@@ -1,4 +1,5 @@
-import { Type } from "@sinclair/typebox";
+import { z } from "zod";
+import { zString } from "../t";
 
 export type SellerRejectionFixStep = "document" | "company";
 
@@ -22,16 +23,15 @@ export const SELLER_REJECTION_REASONS: readonly {
 	{ label: "Identità non verificabile", fixStep: null },
 ];
 
-export const RejectSellerBody = Type.Object({
-	reason: Type.String({
+export const RejectSellerBody = z.object({
+	reason: zString({
 		minLength: 1,
 		maxLength: 500,
 		pattern: "\\S",
 		description: "Motivo del rifiuto, mostrato al venditore e nell'email",
 		error: "Indica il motivo del rifiuto",
 	}),
-	fixStep: Type.Union(
-		[Type.Literal("document"), Type.Literal("company"), Type.Null()],
-		{ description: "Step da correggere; null = rifiuto definitivo" },
-	),
+	fixStep: z
+		.union([z.literal("document"), z.literal("company"), z.null()])
+		.meta({ description: "Step da correggere; null = rifiuto definitivo" }),
 });

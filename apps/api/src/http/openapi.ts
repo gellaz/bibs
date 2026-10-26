@@ -1,12 +1,12 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { z } from "zod";
-import { integerCheck, typeboxJson } from "@/lib/schemas/t";
+import { integerCheck, schemaJson } from "@/lib/schemas/t";
 import { assertRoutes, DOC, type ModuleGuards } from "./routes";
 import { VALIDATES, type Validates } from "./validator";
 
 // OpenAPI delle route Hono (D11 del piano Hono): ogni route porta `doc(…)` e i
 // suoi `v(…)`; il generatore legge `app.routes`, converte gli schemi Zod nel
-// JSON Schema che TypeBox scriverebbe per il gemello e applica le stesse
+// JSON Schema che l'API di prima scriveva per lo stesso schema e applica le stesse
 // trasformazioni del plugin OpenAPI di prima (1.4.16, MIT: `THIRD_PARTY_NOTICES.md`), così
 // `/openapi` resta identico (`baseline/openapi.json`). Il documento intero lo
 // compone `plugins/openapi.ts`.
@@ -39,21 +39,21 @@ export function doc(meta: RouteDoc): MiddlewareHandler {
 	return Object.assign(middleware, { [DOC]: meta });
 }
 
-// ── Zod → JSON Schema come lo scrive TypeBox ────────────────────────────────
+// ── Zod → JSON Schema come lo scriveva l'API di prima ────────────────────────
 
 const defOf = (schema: z.ZodType) => schema._zod.def as Json;
 
 function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 	const schema = ctx.zodSchema as z.ZodType;
 	const json = ctx.jsonSchema;
-	const registered = typeboxJson.get(defOf(schema));
+	const registered = schemaJson.get(defOf(schema));
 	if (registered) {
 		for (const key of Object.keys(json)) delete json[key];
 		Object.assign(json, JSON.parse(JSON.stringify(registered)));
 		return;
 	}
 	const def = defOf(schema);
-	// TypeBox mette in `required` ogni campo non Optional, anche con default.
+	// Come prima, `required` ha ogni campo non facoltativo, anche con default.
 	if (def.type === "object") {
 		const required = Object.entries(def.shape as Record<string, z.ZodType>)
 			.filter(([, prop]) => defOf(prop).type !== "optional")
@@ -63,28 +63,28 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 	}
 	// t.Nullable: unione con null marcata `nullable: true`.
 	if (def.type === "nullable") json.nullable = true;
-	// t.Record(t.String(), X): TypeBox scrive `patternProperties` con la chiave
+	// t.Record(t.String(), X): prima era `patternProperties` con la chiave
 	// `^(.*)$`, Zod `propertyNames` + `additionalProperties` (U7).
 	if (def.type === "record") {
 		json.patternProperties = { "^(.*)$": json.additionalProperties };
 		delete json.additionalProperties;
 		delete json.propertyNames;
 	}
-	// Unione di letterali: TypeBox scrive un anyOf di `const`.
+	// Unione di letterali: prima era un anyOf di `const`.
 	if (def.type === "enum") {
 		const values = json.enum as unknown[];
 		delete json.enum;
 		delete json.type;
 		json.anyOf = values.map((value) => ({ const: value, type: typeof value }));
 	}
-	// zInt(): Zod lo vede come `number`, TypeBox scrive `integer`.
+	// zInt(): Zod lo vede come `number`, prima era `integer`.
 	if (def.type === "number" && def.checks?.includes(integerCheck))
 		json.type = "integer";
 }
 
 // Dopo gli override Zod compatta `anyOf: [{type: a}, {type: b}]` in
 // `type: [a, b]` (es. `z.union([z.string(), z.number(), z.boolean()])`);
-// TypeBox scrive sempre l'anyOf. Un nullable torna `type: [X, "null"]` con
+// prima c'era sempre l'anyOf. Un nullable torna `type: [X, "null"]` con
 // `nullTo31`, come prima.
 function expandTypeArrays(node: unknown): unknown {
 	if (Array.isArray(node)) return node.map(expandTypeArrays);
@@ -97,7 +97,7 @@ function expandTypeArrays(node: unknown): unknown {
 	return out;
 }
 
-/** JSON Schema di uno schema Zod, come TypeBox lo scrive per il gemello. */
+/** JSON Schema di uno schema Zod, come lo scriveva l'API di prima. */
 export function toJsonSchema(schema: z.ZodType): Json {
 	const { $schema: _, ...json } = z.toJSONSchema(schema, {
 		io: "input",

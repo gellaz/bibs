@@ -1,0 +1,1396 @@
+{
+	"product": {
+		"valido": {
+			"it": {},
+			"en": {}
+		},
+		"form appena aperto": {
+			"it": {
+				"name": "Il nome è obbligatorio",
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"name": "Name is required",
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"name vuoto": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"name assente": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"name undefined": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"name null": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"name numero": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"name spazio": {
+			"it": {},
+			"en": {}
+		},
+		"name 200": {
+			"it": {},
+			"en": {}
+		},
+		"name 201": {
+			"it": {
+				"name": "Al massimo 200 caratteri"
+			},
+			"en": {
+				"name": "At most 200 characters"
+			}
+		},
+		"name 100 emoji": {
+			"it": {},
+			"en": {}
+		},
+		"name 101 emoji": {
+			"it": {
+				"name": "Al massimo 200 caratteri"
+			},
+			"en": {
+				"name": "At most 200 characters"
+			}
+		},
+		"description 2000": {
+			"it": {},
+			"en": {}
+		},
+		"description 2001": {
+			"it": {
+				"description": "Al massimo 2000 caratteri"
+			},
+			"en": {
+				"description": "At most 2,000 characters"
+			}
+		},
+		"description null": {
+			"it": {
+				"description": "Deve essere un testo"
+			},
+			"en": {
+				"description": "Must be text"
+			}
+		},
+		"description numero": {
+			"it": {
+				"description": "Deve essere un testo"
+			},
+			"en": {
+				"description": "Must be text"
+			}
+		},
+		"description assente": {
+			"it": {},
+			"en": {}
+		},
+		"price vuoto": {
+			"it": {
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"price assente": {
+			"it": {
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"price 9": {
+			"it": {},
+			"en": {}
+		},
+		"price 9.9": {
+			"it": {},
+			"en": {}
+		},
+		"price 9.999": {
+			"it": {
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"price abc": {
+			"it": {
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"price -1": {
+			"it": {
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"price virgola": {
+			"it": {
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"price numero": {
+			"it": {
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		},
+		"vatRate 7": {
+			"it": {
+				"vatRate": "Valore non ammesso"
+			},
+			"en": {
+				"vatRate": "Value not allowed"
+			}
+		},
+		"vatRate vuoto": {
+			"it": {
+				"vatRate": "Valore non ammesso"
+			},
+			"en": {
+				"vatRate": "Value not allowed"
+			}
+		},
+		"vatRate assente": {
+			"it": {},
+			"en": {}
+		},
+		"vatRate 10": {
+			"it": {},
+			"en": {}
+		},
+		"vatRate numero": {
+			"it": {
+				"vatRate": "Valore non ammesso"
+			},
+			"en": {
+				"vatRate": "Value not allowed"
+			}
+		},
+		"vatRate null": {
+			"it": {
+				"vatRate": "Valore non ammesso"
+			},
+			"en": {
+				"vatRate": "Value not allowed"
+			}
+		},
+		"productCategoryId null": {
+			"it": {},
+			"en": {}
+		},
+		"productCategoryId testo": {
+			"it": {},
+			"en": {}
+		},
+		"productCategoryId vuoto": {
+			"it": {},
+			"en": {}
+		},
+		"productCategoryId numero": {
+			"it": {
+				"productCategoryId": "Deve essere un testo"
+			},
+			"en": {
+				"productCategoryId": "Must be text"
+			}
+		},
+		"ean vuoto": {
+			"it": {},
+			"en": {}
+		},
+		"ean 7 cifre": {
+			"it": {
+				"ean": "EAN deve essere 8 o 13 cifre"
+			},
+			"en": {
+				"ean": "EAN must be 8 or 13 digits"
+			}
+		},
+		"ean 8 cifre": {
+			"it": {},
+			"en": {}
+		},
+		"ean 12 cifre": {
+			"it": {
+				"ean": "EAN deve essere 8 o 13 cifre"
+			},
+			"en": {
+				"ean": "EAN must be 8 or 13 digits"
+			}
+		},
+		"ean 13 cifre": {
+			"it": {},
+			"en": {}
+		},
+		"ean lettere": {
+			"it": {
+				"ean": "EAN deve essere 8 o 13 cifre"
+			},
+			"en": {
+				"ean": "EAN must be 8 or 13 digits"
+			}
+		},
+		"ean null": {
+			"it": {
+				"ean": "EAN deve essere 8 o 13 cifre"
+			},
+			"en": {
+				"ean": "EAN must be 8 or 13 digits"
+			}
+		},
+		"brandId testo": {
+			"it": {},
+			"en": {}
+		},
+		"brandId numero": {
+			"it": {
+				"brandId": "Deve essere un testo"
+			},
+			"en": {
+				"brandId": "Must be text"
+			}
+		},
+		"brandName vuoto": {
+			"it": {
+				"brandName": "Campo obbligatorio"
+			},
+			"en": {
+				"brandName": "Required"
+			}
+		},
+		"brandName 120": {
+			"it": {},
+			"en": {}
+		},
+		"brandName 121": {
+			"it": {
+				"brandName": "Al massimo 120 caratteri"
+			},
+			"en": {
+				"brandName": "At most 120 characters"
+			}
+		},
+		"brandName null": {
+			"it": {
+				"brandName": "Deve essere un testo"
+			},
+			"en": {
+				"brandName": "Must be text"
+			}
+		},
+		"tutto sbagliato": {
+			"it": {
+				"name": "Al massimo 200 caratteri",
+				"description": "Al massimo 2000 caratteri",
+				"vatRate": "Valore non ammesso",
+				"productCategoryId": "Deve essere un testo",
+				"ean": "EAN deve essere 8 o 13 cifre",
+				"brandId": "Deve essere un testo",
+				"brandName": "Campo obbligatorio",
+				"price": "Inserisci un prezzo valido (max 2 decimali)"
+			},
+			"en": {
+				"name": "At most 200 characters",
+				"description": "At most 2,000 characters",
+				"vatRate": "Value not allowed",
+				"productCategoryId": "Must be text",
+				"ean": "EAN must be 8 or 13 digits",
+				"brandId": "Must be text",
+				"brandName": "Required",
+				"price": "Enter a valid price (up to 2 decimals)"
+			}
+		}
+	},
+	"store": {
+		"valido": {
+			"it": {},
+			"en": {}
+		},
+		"form appena aperto": {
+			"it": {
+				"location": "La posizione del negozio sulla mappa è obbligatoria",
+				"name": "Il nome è obbligatorio",
+				"addressLine1": "L'indirizzo è obbligatorio",
+				"municipalityId": "Il comune è obbligatorio",
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"location": "The store's position on the map is required",
+				"name": "Name is required",
+				"addressLine1": "Address is required",
+				"municipalityId": "Municipality is required",
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"name vuoto": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"name assente": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"name 100": {
+			"it": {},
+			"en": {}
+		},
+		"name 101": {
+			"it": {
+				"name": "Al massimo 100 caratteri"
+			},
+			"en": {
+				"name": "At most 100 characters"
+			}
+		},
+		"name null": {
+			"it": {
+				"name": "Il nome è obbligatorio"
+			},
+			"en": {
+				"name": "Name is required"
+			}
+		},
+		"description 1001": {
+			"it": {
+				"description": "Al massimo 1000 caratteri"
+			},
+			"en": {
+				"description": "At most 1,000 characters"
+			}
+		},
+		"description null": {
+			"it": {
+				"description": "Deve essere un testo"
+			},
+			"en": {
+				"description": "Must be text"
+			}
+		},
+		"addressLine1 vuoto": {
+			"it": {
+				"addressLine1": "L'indirizzo è obbligatorio"
+			},
+			"en": {
+				"addressLine1": "Address is required"
+			}
+		},
+		"addressLine1 assente": {
+			"it": {
+				"addressLine1": "L'indirizzo è obbligatorio"
+			},
+			"en": {
+				"addressLine1": "Address is required"
+			}
+		},
+		"addressLine1 201": {
+			"it": {
+				"addressLine1": "Al massimo 200 caratteri"
+			},
+			"en": {
+				"addressLine1": "At most 200 characters"
+			}
+		},
+		"addressLine2 201": {
+			"it": {
+				"addressLine2": "Al massimo 200 caratteri"
+			},
+			"en": {
+				"addressLine2": "At most 200 characters"
+			}
+		},
+		"addressLine2 assente": {
+			"it": {},
+			"en": {}
+		},
+		"municipalityId vuoto": {
+			"it": {
+				"municipalityId": "Il comune è obbligatorio"
+			},
+			"en": {
+				"municipalityId": "Municipality is required"
+			}
+		},
+		"municipalityId assente": {
+			"it": {
+				"municipalityId": "Il comune è obbligatorio"
+			},
+			"en": {
+				"municipalityId": "Municipality is required"
+			}
+		},
+		"municipalityId numero": {
+			"it": {
+				"municipalityId": "Il comune è obbligatorio"
+			},
+			"en": {
+				"municipalityId": "Municipality is required"
+			}
+		},
+		"zipCode vuoto": {
+			"it": {
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"zipCode 4 cifre": {
+			"it": {
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"zipCode 6 cifre": {
+			"it": {
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"zipCode lettere": {
+			"it": {
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"zipCode spazio": {
+			"it": {
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"location assente": {
+			"it": {
+				"location": "La posizione del negozio sulla mappa è obbligatoria"
+			},
+			"en": {
+				"location": "The store's position on the map is required"
+			}
+		},
+		"location undefined": {
+			"it": {
+				"location": "La posizione del negozio sulla mappa è obbligatoria"
+			},
+			"en": {
+				"location": "The store's position on the map is required"
+			}
+		},
+		"location null": {
+			"it": {
+				"location": "La posizione del negozio sulla mappa è obbligatoria"
+			},
+			"en": {
+				"location": "The store's position on the map is required"
+			}
+		},
+		"location testo": {
+			"it": {
+				"location": "La posizione del negozio sulla mappa è obbligatoria"
+			},
+			"en": {
+				"location": "The store's position on the map is required"
+			}
+		},
+		"location vuota": {
+			"it": {
+				"location.x": "Campo obbligatorio",
+				"location.y": "Campo obbligatorio"
+			},
+			"en": {
+				"location.x": "Required",
+				"location.y": "Required"
+			}
+		},
+		"location x 181": {
+			"it": {
+				"location.x": "Deve essere al massimo 180"
+			},
+			"en": {
+				"location.x": "Must be at most 180"
+			}
+		},
+		"location x -181": {
+			"it": {
+				"location.x": "Deve essere almeno -180"
+			},
+			"en": {
+				"location.x": "Must be at least -180"
+			}
+		},
+		"location y 91": {
+			"it": {
+				"location.y": "Deve essere al massimo 90"
+			},
+			"en": {
+				"location.y": "Must be at most 90"
+			}
+		},
+		"location y -91": {
+			"it": {
+				"location.y": "Deve essere almeno -90"
+			},
+			"en": {
+				"location.y": "Must be at least -90"
+			}
+		},
+		"location stringhe": {
+			"it": {
+				"location.x": "Deve essere un numero",
+				"location.y": "Deve essere un numero"
+			},
+			"en": {
+				"location.x": "Must be a number",
+				"location.y": "Must be a number"
+			}
+		},
+		"country I": {
+			"it": {
+				"country": "Almeno 2 caratteri"
+			},
+			"en": {
+				"country": "At least 2 characters"
+			}
+		},
+		"country ITA": {
+			"it": {
+				"country": "Al massimo 2 caratteri"
+			},
+			"en": {
+				"country": "At most 2 characters"
+			}
+		},
+		"country vuoto": {
+			"it": {
+				"country": "Almeno 2 caratteri"
+			},
+			"en": {
+				"country": "At least 2 characters"
+			}
+		},
+		"country IT": {
+			"it": {},
+			"en": {}
+		},
+		"country numero": {
+			"it": {
+				"country": "Deve essere un testo"
+			},
+			"en": {
+				"country": "Must be text"
+			}
+		},
+		"categoryId testo": {
+			"it": {},
+			"en": {}
+		},
+		"categoryId numero": {
+			"it": {
+				"categoryId": "Deve essere un testo"
+			},
+			"en": {
+				"categoryId": "Must be text"
+			}
+		},
+		"websiteUrl null": {
+			"it": {},
+			"en": {}
+		},
+		"websiteUrl vuoto": {
+			"it": {
+				"websiteUrl": "Indirizzo web non valido"
+			},
+			"en": {
+				"websiteUrl": "Invalid web address"
+			}
+		},
+		"websiteUrl ftp": {
+			"it": {
+				"websiteUrl": "Indirizzo web non valido"
+			},
+			"en": {
+				"websiteUrl": "Invalid web address"
+			}
+		},
+		"websiteUrl https": {
+			"it": {},
+			"en": {}
+		},
+		"websiteUrl http con query": {
+			"it": {},
+			"en": {}
+		},
+		"websiteUrl senza schema": {
+			"it": {
+				"websiteUrl": "Indirizzo web non valido"
+			},
+			"en": {
+				"websiteUrl": "Invalid web address"
+			}
+		},
+		"websiteUrl solo schema": {
+			"it": {
+				"websiteUrl": "Indirizzo web non valido"
+			},
+			"en": {
+				"websiteUrl": "Invalid web address"
+			}
+		},
+		"websiteUrl mailto": {
+			"it": {
+				"websiteUrl": "Indirizzo web non valido"
+			},
+			"en": {
+				"websiteUrl": "Invalid web address"
+			}
+		},
+		"websiteUrl testo": {
+			"it": {
+				"websiteUrl": "Indirizzo web non valido"
+			},
+			"en": {
+				"websiteUrl": "Invalid web address"
+			}
+		},
+		"websiteUrl 500": {
+			"it": {},
+			"en": {}
+		},
+		"websiteUrl 501": {
+			"it": {
+				"websiteUrl": "Al massimo 500 caratteri"
+			},
+			"en": {
+				"websiteUrl": "At most 500 characters"
+			}
+		},
+		"websiteUrl 501 non url": {
+			"it": {
+				"websiteUrl": "Al massimo 500 caratteri"
+			},
+			"en": {
+				"websiteUrl": "At most 500 characters"
+			}
+		},
+		"websiteUrl numero": {
+			"it": {
+				"websiteUrl": "Deve essere un testo"
+			},
+			"en": {
+				"websiteUrl": "Must be text"
+			}
+		},
+		"phoneNumbers testo": {
+			"it": {
+				"phoneNumbers": "Deve essere un elenco"
+			},
+			"en": {
+				"phoneNumbers": "Must be a list"
+			}
+		},
+		"phoneNumbers null": {
+			"it": {
+				"phoneNumbers": "Deve essere un elenco"
+			},
+			"en": {
+				"phoneNumbers": "Must be a list"
+			}
+		},
+		"phone corto": {
+			"it": {
+				"phoneNumbers.0.number": "Il numero è obbligatorio (minimo 5 caratteri)"
+			},
+			"en": {
+				"phoneNumbers.0.number": "Number is required (at least 5 characters)"
+			}
+		},
+		"phone valido": {
+			"it": {},
+			"en": {}
+		},
+		"phone vuoto": {
+			"it": {
+				"phoneNumbers.0.number": "Il numero è obbligatorio (minimo 5 caratteri)"
+			},
+			"en": {
+				"phoneNumbers.0.number": "Number is required (at least 5 characters)"
+			}
+		},
+		"phone senza numero": {
+			"it": {
+				"phoneNumbers.0.number": "Il numero è obbligatorio (minimo 5 caratteri)"
+			},
+			"en": {
+				"phoneNumbers.0.number": "Number is required (at least 5 characters)"
+			}
+		},
+		"phone numero numerico": {
+			"it": {
+				"phoneNumbers.0.number": "Il numero è obbligatorio (minimo 5 caratteri)"
+			},
+			"en": {
+				"phoneNumbers.0.number": "Number is required (at least 5 characters)"
+			}
+		},
+		"phone 31": {
+			"it": {
+				"phoneNumbers.0.number": "Al massimo 30 caratteri"
+			},
+			"en": {
+				"phoneNumbers.0.number": "At most 30 characters"
+			}
+		},
+		"phone label 51": {
+			"it": {
+				"phoneNumbers.0.label": "Al massimo 50 caratteri"
+			},
+			"en": {
+				"phoneNumbers.0.label": "At most 50 characters"
+			}
+		},
+		"phone position -1": {
+			"it": {
+				"phoneNumbers.0.position": "Deve essere almeno 0"
+			},
+			"en": {
+				"phoneNumbers.0.position": "Must be at least 0"
+			}
+		},
+		"phone position 1.5": {
+			"it": {
+				"phoneNumbers.0.position": "Deve essere un numero intero"
+			},
+			"en": {
+				"phoneNumbers.0.position": "Must be a whole number"
+			}
+		},
+		"phone position stringa": {
+			"it": {
+				"phoneNumbers.0.position": "Deve essere un numero intero"
+			},
+			"en": {
+				"phoneNumbers.0.position": "Must be a whole number"
+			}
+		},
+		"phone seconda riga": {
+			"it": {
+				"phoneNumbers.1.number": "Il numero è obbligatorio (minimo 5 caratteri)"
+			},
+			"en": {
+				"phoneNumbers.1.number": "Number is required (at least 5 characters)"
+			}
+		},
+		"openingHours null": {
+			"it": {},
+			"en": {}
+		},
+		"openingHours valido": {
+			"it": {},
+			"en": {}
+		},
+		"come il test del resolver": {
+			"it": {
+				"location": "La posizione del negozio sulla mappa è obbligatoria",
+				"name": "Il nome è obbligatorio",
+				"zipCode": "Il CAP deve essere di 5 cifre",
+				"websiteUrl": "Indirizzo web non valido",
+				"phoneNumbers.0.number": "Il numero è obbligatorio (minimo 5 caratteri)"
+			},
+			"en": {
+				"location": "The store's position on the map is required",
+				"name": "Name is required",
+				"zipCode": "Postcode must be 5 digits",
+				"websiteUrl": "Invalid web address",
+				"phoneNumbers.0.number": "Number is required (at least 5 characters)"
+			}
+		}
+	},
+	"personalInfo": {
+		"valido": {
+			"it": {},
+			"en": {}
+		},
+		"form appena aperto": {
+			"it": {
+				"citizenship": "Seleziona la cittadinanza",
+				"birthCountry": "Seleziona il paese di nascita",
+				"residenceCountry": "Seleziona il paese di residenza",
+				"residenceMunicipalityId": "Il comune di residenza è obbligatorio",
+				"firstName": "Il nome è obbligatorio",
+				"lastName": "Il cognome è obbligatorio",
+				"birthDate": "Data non valida (AAAA-MM-GG)",
+				"residenceAddress": "L'indirizzo di residenza è obbligatorio",
+				"residenceZipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"citizenship": "Select your citizenship",
+				"birthCountry": "Select your country of birth",
+				"residenceCountry": "Select your country of residence",
+				"residenceMunicipalityId": "Municipality of residence is required",
+				"firstName": "Name is required",
+				"lastName": "Last name is required",
+				"birthDate": "Invalid date (YYYY-MM-DD)",
+				"residenceAddress": "Residential address is required",
+				"residenceZipCode": "Postcode must be 5 digits"
+			}
+		},
+		"firstName vuoto": {
+			"it": {
+				"firstName": "Il nome è obbligatorio"
+			},
+			"en": {
+				"firstName": "Name is required"
+			}
+		},
+		"firstName assente": {
+			"it": {
+				"firstName": "Il nome è obbligatorio"
+			},
+			"en": {
+				"firstName": "Name is required"
+			}
+		},
+		"firstName 101": {
+			"it": {
+				"firstName": "Al massimo 100 caratteri"
+			},
+			"en": {
+				"firstName": "At most 100 characters"
+			}
+		},
+		"firstName null": {
+			"it": {
+				"firstName": "Il nome è obbligatorio"
+			},
+			"en": {
+				"firstName": "Name is required"
+			}
+		},
+		"lastName vuoto": {
+			"it": {
+				"lastName": "Il cognome è obbligatorio"
+			},
+			"en": {
+				"lastName": "Last name is required"
+			}
+		},
+		"lastName 101": {
+			"it": {
+				"lastName": "Al massimo 100 caratteri"
+			},
+			"en": {
+				"lastName": "At most 100 characters"
+			}
+		},
+		"citizenship vuoto": {
+			"it": {
+				"citizenship": "Seleziona la cittadinanza"
+			},
+			"en": {
+				"citizenship": "Select your citizenship"
+			}
+		},
+		"citizenship I": {
+			"it": {
+				"citizenship": "Seleziona la cittadinanza"
+			},
+			"en": {
+				"citizenship": "Select your citizenship"
+			}
+		},
+		"citizenship ITA": {
+			"it": {
+				"citizenship": "Al massimo 2 caratteri"
+			},
+			"en": {
+				"citizenship": "At most 2 characters"
+			}
+		},
+		"birthCountry assente": {
+			"it": {
+				"birthCountry": "Seleziona il paese di nascita"
+			},
+			"en": {
+				"birthCountry": "Select your country of birth"
+			}
+		},
+		"birthCountry ITA": {
+			"it": {
+				"birthCountry": "Al massimo 2 caratteri"
+			},
+			"en": {
+				"birthCountry": "At most 2 characters"
+			}
+		},
+		"residenceCountry I": {
+			"it": {
+				"residenceCountry": "Seleziona il paese di residenza"
+			},
+			"en": {
+				"residenceCountry": "Select your country of residence"
+			}
+		},
+		"residenceCountry ITA": {
+			"it": {
+				"residenceCountry": "Al massimo 2 caratteri"
+			},
+			"en": {
+				"residenceCountry": "At most 2 characters"
+			}
+		},
+		"birthDate vuoto": {
+			"it": {
+				"birthDate": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"birthDate": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"birthDate 30 febbraio": {
+			"it": {
+				"birthDate": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"birthDate": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"birthDate mese 13": {
+			"it": {
+				"birthDate": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"birthDate": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"birthDate gg/mm/aaaa": {
+			"it": {
+				"birthDate": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"birthDate": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"birthDate senza zeri": {
+			"it": {
+				"birthDate": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"birthDate": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"birthDate 29 febbraio": {
+			"it": {},
+			"en": {}
+		},
+		"birthDate numero": {
+			"it": {
+				"birthDate": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"birthDate": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"residenceMunicipalityId vuoto": {
+			"it": {
+				"residenceMunicipalityId": "Il comune di residenza è obbligatorio"
+			},
+			"en": {
+				"residenceMunicipalityId": "Municipality of residence is required"
+			}
+		},
+		"residenceMunicipalityId numero": {
+			"it": {
+				"residenceMunicipalityId": "Il comune di residenza è obbligatorio"
+			},
+			"en": {
+				"residenceMunicipalityId": "Municipality of residence is required"
+			}
+		},
+		"residenceAddress vuoto": {
+			"it": {
+				"residenceAddress": "L'indirizzo di residenza è obbligatorio"
+			},
+			"en": {
+				"residenceAddress": "Residential address is required"
+			}
+		},
+		"residenceAddress 201": {
+			"it": {
+				"residenceAddress": "Al massimo 200 caratteri"
+			},
+			"en": {
+				"residenceAddress": "At most 200 characters"
+			}
+		},
+		"residenceZipCode vuoto": {
+			"it": {
+				"residenceZipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"residenceZipCode": "Postcode must be 5 digits"
+			}
+		},
+		"residenceZipCode 4 cifre": {
+			"it": {
+				"residenceZipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"residenceZipCode": "Postcode must be 5 digits"
+			}
+		},
+		"residenceZipCode lettere": {
+			"it": {
+				"residenceZipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"residenceZipCode": "Postcode must be 5 digits"
+			}
+		}
+	},
+	"document": {
+		"valido": {
+			"it": {},
+			"en": {}
+		},
+		"form appena aperto": {
+			"it": {
+				"documentType": "Seleziona il tipo di documento",
+				"documentIssuedMunicipalityId": "Il comune di emissione è obbligatorio",
+				"documentNumber": "Il numero del documento deve avere tra 5 e 20 caratteri",
+				"documentExpiry": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"documentType": "Select the document type",
+				"documentIssuedMunicipalityId": "Issuing municipality is required",
+				"documentNumber": "Document number must be between 5 and 20 characters",
+				"documentExpiry": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"documentType vuoto": {
+			"it": {
+				"documentType": "Seleziona il tipo di documento"
+			},
+			"en": {
+				"documentType": "Select the document type"
+			}
+		},
+		"documentType sconosciuto": {
+			"it": {
+				"documentType": "Seleziona il tipo di documento"
+			},
+			"en": {
+				"documentType": "Select the document type"
+			}
+		},
+		"documentType passaporto": {
+			"it": {},
+			"en": {}
+		},
+		"documentType null": {
+			"it": {
+				"documentType": "Seleziona il tipo di documento"
+			},
+			"en": {
+				"documentType": "Select the document type"
+			}
+		},
+		"documentNumber vuoto": {
+			"it": {
+				"documentNumber": "Il numero del documento deve avere tra 5 e 20 caratteri"
+			},
+			"en": {
+				"documentNumber": "Document number must be between 5 and 20 characters"
+			}
+		},
+		"documentNumber 4": {
+			"it": {
+				"documentNumber": "Il numero del documento deve avere tra 5 e 20 caratteri"
+			},
+			"en": {
+				"documentNumber": "Document number must be between 5 and 20 characters"
+			}
+		},
+		"documentNumber 21": {
+			"it": {
+				"documentNumber": "Al massimo 20 caratteri"
+			},
+			"en": {
+				"documentNumber": "At most 20 characters"
+			}
+		},
+		"documentNumber 2 emoji": {
+			"it": {
+				"documentNumber": "Il numero del documento deve avere tra 5 e 20 caratteri"
+			},
+			"en": {
+				"documentNumber": "Document number must be between 5 and 20 characters"
+			}
+		},
+		"documentNumber 3 emoji": {
+			"it": {},
+			"en": {}
+		},
+		"documentExpiry vuoto": {
+			"it": {
+				"documentExpiry": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"documentExpiry": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"documentExpiry 30 febbraio": {
+			"it": {
+				"documentExpiry": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"documentExpiry": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"documentExpiry con barre": {
+			"it": {
+				"documentExpiry": "Data non valida (AAAA-MM-GG)"
+			},
+			"en": {
+				"documentExpiry": "Invalid date (YYYY-MM-DD)"
+			}
+		},
+		"documentIssuedMunicipalityId vuoto": {
+			"it": {
+				"documentIssuedMunicipalityId": "Il comune di emissione è obbligatorio"
+			},
+			"en": {
+				"documentIssuedMunicipalityId": "Issuing municipality is required"
+			}
+		},
+		"documentIssuedMunicipalityId assente": {
+			"it": {
+				"documentIssuedMunicipalityId": "Il comune di emissione è obbligatorio"
+			},
+			"en": {
+				"documentIssuedMunicipalityId": "Issuing municipality is required"
+			}
+		}
+	},
+	"company": {
+		"valido": {
+			"it": {},
+			"en": {}
+		},
+		"form appena aperto": {
+			"it": {
+				"businessName": "La ragione sociale è obbligatoria",
+				"vatNumber": "La partita IVA deve essere di 11 cifre",
+				"legalForm": "La forma giuridica è obbligatoria",
+				"addressLine1": "L'indirizzo è obbligatorio",
+				"municipalityId": "Il comune è obbligatorio",
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"businessName": "Business name is required",
+				"vatNumber": "VAT number must be 11 digits",
+				"legalForm": "Legal form is required",
+				"addressLine1": "Address is required",
+				"municipalityId": "Municipality is required",
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"businessName vuoto": {
+			"it": {
+				"businessName": "La ragione sociale è obbligatoria"
+			},
+			"en": {
+				"businessName": "Business name is required"
+			}
+		},
+		"businessName 201": {
+			"it": {
+				"businessName": "Al massimo 200 caratteri"
+			},
+			"en": {
+				"businessName": "At most 200 characters"
+			}
+		},
+		"vatNumber vuoto": {
+			"it": {
+				"vatNumber": "La partita IVA deve essere di 11 cifre"
+			},
+			"en": {
+				"vatNumber": "VAT number must be 11 digits"
+			}
+		},
+		"vatNumber 10 cifre": {
+			"it": {
+				"vatNumber": "La partita IVA deve essere di 11 cifre"
+			},
+			"en": {
+				"vatNumber": "VAT number must be 11 digits"
+			}
+		},
+		"vatNumber 12 cifre": {
+			"it": {
+				"vatNumber": "La partita IVA deve essere di 11 cifre"
+			},
+			"en": {
+				"vatNumber": "VAT number must be 11 digits"
+			}
+		},
+		"vatNumber lettera": {
+			"it": {
+				"vatNumber": "La partita IVA deve essere di 11 cifre"
+			},
+			"en": {
+				"vatNumber": "VAT number must be 11 digits"
+			}
+		},
+		"legalForm vuoto": {
+			"it": {
+				"legalForm": "La forma giuridica è obbligatoria"
+			},
+			"en": {
+				"legalForm": "Legal form is required"
+			}
+		},
+		"legalForm 101": {
+			"it": {
+				"legalForm": "Al massimo 100 caratteri"
+			},
+			"en": {
+				"legalForm": "At most 100 characters"
+			}
+		},
+		"addressLine1 vuoto": {
+			"it": {
+				"addressLine1": "L'indirizzo è obbligatorio"
+			},
+			"en": {
+				"addressLine1": "Address is required"
+			}
+		},
+		"addressLine1 201": {
+			"it": {
+				"addressLine1": "Al massimo 200 caratteri"
+			},
+			"en": {
+				"addressLine1": "At most 200 characters"
+			}
+		},
+		"country vuoto": {
+			"it": {
+				"country": "Almeno 2 caratteri"
+			},
+			"en": {
+				"country": "At least 2 characters"
+			}
+		},
+		"country I": {
+			"it": {
+				"country": "Almeno 2 caratteri"
+			},
+			"en": {
+				"country": "At least 2 characters"
+			}
+		},
+		"country ITA": {
+			"it": {
+				"country": "Al massimo 2 caratteri"
+			},
+			"en": {
+				"country": "At most 2 characters"
+			}
+		},
+		"country assente": {
+			"it": {},
+			"en": {}
+		},
+		"country null": {
+			"it": {
+				"country": "Deve essere un testo"
+			},
+			"en": {
+				"country": "Must be text"
+			}
+		},
+		"municipalityId vuoto": {
+			"it": {
+				"municipalityId": "Il comune è obbligatorio"
+			},
+			"en": {
+				"municipalityId": "Municipality is required"
+			}
+		},
+		"zipCode vuoto": {
+			"it": {
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"zipCode": "Postcode must be 5 digits"
+			}
+		},
+		"zipCode 4 cifre": {
+			"it": {
+				"zipCode": "Il CAP deve essere di 5 cifre"
+			},
+			"en": {
+				"zipCode": "Postcode must be 5 digits"
+			}
+		}
+	}
+}

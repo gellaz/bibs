@@ -7,10 +7,6 @@ import { Separator } from "@bibs/ui/components/separator";
 import { Skeleton } from "@bibs/ui/components/skeleton";
 import { Textarea } from "@bibs/ui/components/textarea";
 import { MunicipalityCombobox } from "@bibs/ui/custom/municipality-combobox";
-import type { Static } from "@sinclair/typebox";
-import { TypeCompiler } from "@sinclair/typebox/compiler";
-import { typeboxResolver } from "@/lib/typebox-resolver";
-import "@/lib/typebox-formats";
 import { useQueryClient } from "@tanstack/react-query";
 import { LocateFixed, MapPinOff, PlusIcon, Trash2Icon } from "lucide-react";
 import {
@@ -27,12 +23,14 @@ import {
 	useFieldArray,
 	useForm,
 } from "react-hook-form";
+import { z } from "zod";
 import { FormSection } from "@/components/form-section";
 import { SaveBar } from "@/components/save-bar";
 import {
 	municipalityComboboxLabels,
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
+import { schemaResolver } from "@/lib/schema-errors";
 import { m } from "@/paraglide/messages";
 import {
 	fetchGeocodeSuggestions,
@@ -50,8 +48,38 @@ import { StoreAddressSearch } from "./store-address-search";
 // Leaflet è DOM-only: si carica a parte e si monta solo dopo l'hydration.
 const LazyStoreMapPreview = lazy(() => import("./store-map-preview"));
 
-export type StoreFormData = Static<typeof CreateStoreBody>;
-const compiledSchema = TypeCompiler.Compile(CreateStoreBody);
+/** Sito web http(s) che `URL` sa leggere: più stretto dell'`uri` dell'API. */
+function isWebUrl(value: string): boolean {
+	try {
+		const url = new URL(value);
+		return url.protocol === "http:" || url.protocol === "https:";
+	} catch {
+		return false;
+	}
+}
+
+// Lo schema dell'API con il sito web del form, come prima: al massimo 500
+// unità UTF-16 e solo http(s); `null` per toglierlo.
+export const storeFormSchema = CreateStoreBody.extend({
+	websiteUrl: z
+		.string()
+		.check((ctx) => {
+			const input = ctx.value;
+			if (input.length > 500)
+				ctx.issues.push({
+					code: "too_big",
+					origin: "string",
+					maximum: 500,
+					inclusive: true,
+					input,
+				});
+			else if (!isWebUrl(input))
+				ctx.issues.push({ code: "invalid_format", format: "uri", input });
+		})
+		.nullable()
+		.optional(),
+});
+export type StoreFormData = z.infer<typeof storeFormSchema>;
 
 /**
  * Canonical serialization of opening hours for change detection. Days are
@@ -126,7 +154,7 @@ export function StoreForm({
 		setValue,
 		formState: { errors, isDirty, isSubmitted },
 	} = useForm<StoreFormData>({
-		resolver: typeboxResolver(compiledSchema),
+		resolver: schemaResolver(storeFormSchema),
 		defaultValues: {
 			name: "",
 			description: "",

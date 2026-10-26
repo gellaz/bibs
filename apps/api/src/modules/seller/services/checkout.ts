@@ -1,5 +1,5 @@
-import type { Static } from "@sinclair/typebox";
 import { and, eq } from "drizzle-orm";
+import type { z } from "zod";
 import { db } from "@/db";
 import { pendingStoreCreation } from "@/db/schemas/pending-store-creation";
 import { pricingConfig } from "@/db/schemas/pricing-config";
@@ -11,7 +11,7 @@ import type { CreateStoreBody } from "@/lib/schemas/forms";
 import { stripe } from "@/lib/stripe";
 import { getOrCreateStripeCustomer } from "@/modules/billing/services/customer";
 
-type CreateStoreInput = Static<typeof CreateStoreBody>;
+type CreateStoreInput = z.infer<typeof CreateStoreBody>;
 
 // The Stripe Checkout Session must expire strictly BEFORE the pending row, so a
 // paid `checkout.session.completed` can never land after the expire-pending cron

@@ -160,7 +160,7 @@ For the API's own rules use the constructors of `src/lib/schemas/t.ts`:
 
 - strings with `minLength`/`maxLength`/`pattern`/`format` → `zString({ … })`, never `z.string().min()/.max()`
   (the API counts UTF-16 units: «😀» is 2 long, for Zod it is 1); a bare format → `zFormat(f)`, never Zod's own
-  formats (`FORMATS` in `src/lib/schemas/formats.ts` holds the API's regexes);
+  formats (`FORMATS` in `src/lib/schemas/formats.ts` holds the API's format checks);
 - integers → `zInteger` (an integer or a string holding one) or `zInt()` (a number only), never `z.int()` or
   `z.number().int()`: Zod 4 rejects integers beyond ±2^53, the API does not (`page=9007199254740993` is a 200);
 - numbers and booleans in query or params → `zNumeric` / `zBooleanString`; dates → `zDate`; files → `zFile` /

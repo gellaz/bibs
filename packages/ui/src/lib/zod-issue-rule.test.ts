@@ -72,7 +72,7 @@ describe("zodIssueRule", () => {
 		).toEqual([{ kind: "date" }]);
 	});
 
-	it("maps formats to the TypeBox names, patterns to pattern", () => {
+	it("maps formats to the API format names, patterns to pattern", () => {
 		expect(rules(z.string().email(), "a@b")).toEqual([
 			{ kind: "format", format: "email" },
 		]);
