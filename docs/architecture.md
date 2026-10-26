@@ -172,9 +172,10 @@ verifica di ogni PR stanno nel piano
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
 immagini, caratteristiche, stock; U6: negozi, immagini dei negozi, chiusure,
 impostazioni, team, onboarding, profilo, dashboard; restano a Elysia ordini,
-promozioni, checkout e billing); `customer/` (U3); catalogo pubblico e admin 1
-(U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; il resto
-di /admin resta Elysia fino a U9 e vince sul mount); `webhooks/` (U10).
+promozioni, checkout e billing); `customer/` (U3); catalogo pubblico e `admin/`
+(U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; U9:
+venditori, modifiche del profilo, negozi, richieste, billing; l'app admin non usa
+più Eden); `webhooks/` (U10).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con

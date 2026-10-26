@@ -72,13 +72,21 @@ Reading the results:
 - Module batch files with bodies, captured on the commit before each module moved:
   `hono-batch-me.jsonl` (U1), `hono-batch-locations.jsonl` and `hono-batch-registration.jsonl`
   (U2+U4), `hono-batch-customer.jsonl` (U3), `hono-batch-seller-products.jsonl` (U5),
-  `hono-batch-seller-stores.jsonl` (U6).
+  `hono-batch-seller-stores.jsonl` (U6), `hono-batch-admin-1.jsonl` (U8),
+  `hono-batch-admin-2.jsonl` (U9), `hono-batch-webhooks.jsonl` (U10).
   The registration file logs in with `customer1@test.com` through `/register/sign-in` and
   expects a 409 `EMAIL_PENDING_VERIFICATION` for `collaudo.hono.u4@test.com`, a customer created once
   by a registration on the dev DB and left unverified (each replay re-sends its link to Mailpit).
   The 409 holds for 7 days from that user's creation (2026-10-25): after that the API deletes the
   stale account and registers it again (200, the step fails). Before replaying later, check the user
   or drop that line; never point it at a seed user.
+  `hono-batch-admin-2.jsonl` (U9, captured on `a2a7e044`) reads the dev DB as it was on 2026-10-26:
+  seller and store counts, the first rows of the lists and the decided VAT change
+  `c1392aa5-…` (its approve/reject answer 400 «non più in attesa» without writing). Its two 409 steps
+  send a stale `expectedUpdatedAt` to a pending (`seller146@test.com`) and an active seller: the
+  compare-and-set UPDATE matches no row, so nothing is written. A new seller, store or subscription
+  in the dev DB shifts counts and first rows: replay it on the base commit too before reading a
+  failure as a regression.
 - `hono-batch-seller-products.jsonl` (U5) and `hono-batch-seller-stores.jsonl` (U6) log in with
   seed users and expect full bodies of dev-DB data: a test entity created by another unit's
   browser check moves them (on 2026-10-26 a product «Collaudo Hono U3» in `seller@dev.bibs`'s
