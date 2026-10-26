@@ -1,8 +1,10 @@
 import { app } from "@/app";
 import { db } from "@/db";
 import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
 import { ensureBucket } from "@/infra/s3";
-import { startCronJobs, stopCronJobs } from "@/jobs/scheduler";
+import { startCronJobs } from "@/jobs/scheduler";
+import { gracefulShutdown } from "@/shutdown";
 
 // The server entry: the only module with side effects (S3, listen, cron,
 // signals). The app itself lives in `src/app.ts`.
@@ -22,23 +24,14 @@ const server = Bun.serve({
 	idleTimeout: 30,
 	fetch: app.fetch,
 });
-console.log(`bibs API in ascolto su ${server.url}`);
+logger.info(`bibs API in ascolto su ${server.url}`);
 
 // ── Graceful shutdown ───────────────────────────────
-// Under the 10 s `docker stop` grants before SIGKILL.
-const SHUTDOWN_TIMEOUT_MS = 8_000;
 let shuttingDown = false;
 const shutdown = async () => {
 	if (shuttingDown) return;
 	shuttingDown = true;
-	console.log("\n🛑 Shutting down...");
-	// No new requests or ticks; the ones in flight finish before the pool
-	// closes, within the cap.
-	await Promise.race([
-		Promise.all([server.stop(), stopCronJobs(crons, SHUTDOWN_TIMEOUT_MS)]),
-		Bun.sleep(SHUTDOWN_TIMEOUT_MS),
-	]);
-	await db.$client.end();
+	await gracefulShutdown({ server, crons, pool: db.$client });
 	process.exit(0);
 };
 process.on("SIGTERM", shutdown);

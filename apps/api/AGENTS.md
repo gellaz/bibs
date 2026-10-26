@@ -108,9 +108,11 @@ The root Hono app, with no side effects at import (tests, tools and the Hono CLI
 
 The only module with side effects: `startCronJobs()`, then `ensureBucket()` (creates the S3 bucket if missing), then
 `Bun.serve({ port: env.PORT, fetch: app.fetch, … })`. Bun passes the server to `fetch` as `c.env`, which is how
-`socketIpAsForwardedFor` and `rateLimit` read the socket IP. On `SIGTERM`/`SIGINT` it stops accepting requests,
-stops the scheduler (`stopCronJobs`), waits for the requests and jobs in flight (at most 8 s, under the 10 s of
-`docker stop`), then closes the database pool and exits 0. The CI's Docker job checks the exit code.
+`socketIpAsForwardedFor` and `rateLimit` read the socket IP. On `SIGTERM`/`SIGINT` it runs `gracefulShutdown()`
+(`src/shutdown.ts`): stops accepting requests, stops the scheduler (`stopCronJobs`), waits for the requests and jobs
+in flight (at most 8 s), then closes the database pool (at most 1 s more, since `pool.end()` also waits for
+checked-out clients) and exits 0 — under the 10 s of `docker stop`. The CI's Docker job checks the exit code and
+that every stdout line is JSON.
 
 ### Middleware — `src/http/middleware/`
 
@@ -146,8 +148,10 @@ at 03:00, all in `Europe/Rome` time.
 Each tick runs inside `runExclusive(lockKey, run)` (`lock.ts`): a Postgres advisory lock per job (keys 9101–9105),
 so with several API replicas one job runs on one replica at a time, and croner's `protect` skips a tick while the
 previous one still runs. The lock prevents overlaps, not re-runs: a replica whose tick fires right after another
-replica finished runs the job again. **Every job must stay idempotent** — re-check the state in a transaction
-(compare-and-set) and pass an idempotency key to Stripe, as the five jobs do.
+replica finished runs the job again. **Every job must stay idempotent**: re-check the state in a transaction
+(compare-and-set) before acting, and give Stripe calls that create money movements an idempotency key
+(`domain/billing/order-payments.ts` does). A cancel (`paymentIntents.cancel`, `subscriptions.cancel`) is safe
+without one because the state check runs first.
 
 The HTTP kit the routes use lives in `src/http/`: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()`
 (`send.ts`), `doc()` and the OpenAPI generator (`openapi.ts`), the guards (`auth.ts`), `guard()`, `publicRoute` and

@@ -7,6 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { S3Client } from "bun";
 import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
 import { isConnectionError, retry } from "@/infra/retry";
 
 const endpoint = env.S3_ENDPOINT;
@@ -84,7 +85,7 @@ async function provisionBucket() {
 	);
 
 	if (created) {
-		console.log(`🪣 Bucket "${bucket}" created (public-read)`);
+		logger.info({ bucket }, "Bucket S3 creato (public-read)");
 	}
 }
 

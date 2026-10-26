@@ -146,6 +146,11 @@ jobs:
         run: |
           docker stop -t 10 api
           test "$(docker inspect -f '{{.State.ExitCode}}' api)" = 0
+      # Boot, requests and shutdown included: every stdout line is pino JSON.
+      - name: Stdout is JSON only
+        run: |
+          docker logs api > api-stdout.log 2>/dev/null
+          jq -e . api-stdout.log > /dev/null
       - name: API logs
         if: failure()
         run: docker logs api || true
