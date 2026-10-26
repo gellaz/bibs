@@ -24,7 +24,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U3 | `customer/` | U1 | fatto | #304 |
 | U4 | `registration/` — **stessa PR di U2** | U2 (rate limit) | fatto | #302 |
 | U5 | seller 1: contesto seller + products, brands, images, product-characteristics, stock | U1 | fatto | #303 |
-| U6 | seller 2: stores, store-images, settings, closures, employees, onboarding, profile, dashboard | U5 | fatto | — |
+| U6 | seller 2: stores, store-images, settings, closures, employees, onboarding, profile, dashboard | U5 | fatto | #307 |
 | U7 | seller 3: orders, discounts, checkout, billing | U5 | da fare | — |
 | U8 | catalogo pubblico + admin 1: configurations, categorie, macro-categorie, caratteristiche, category-characteristics, holiday-definitions, import | U1 | fatto | #305 |
 | U9 | admin 2: sellers, seller-changes, stores, requests, billing | U8 | da fare | — |
@@ -544,7 +544,7 @@ Monta `/seller` su Hono; le route seller ancora Elysia (U6, U7) continuano a vin
 
 ### U6 — seller 2: negozi, impostazioni, team, onboarding
 
-**Stato:** fatto · **PR:** — · **Branch:** `feat/hono-u6-seller-2` (nome dato dall'orchestratore al posto di `refactor/hono-seller-stores`; una sola PR, senza la divisione U6a/U6b: il diff è ~3.400 righe aggiunte, di cui ~1.100 di test, batch e piano)
+**Stato:** fatto · **PR:** #307 · **Branch:** `feat/hono-u6-seller-2` (nome dato dall'orchestratore al posto di `refactor/hono-seller-stores`; una sola PR, senza la divisione U6a/U6b: il diff è ~3.400 righe aggiunte, di cui ~1.100 di test, batch e piano)
 
 38 endpoint: stores (9, con la cancellazione che risponde `status: canceling | canceled`), store-images (2, `t.Files`), settings (8, indice `/settings/` con slash, cambio documento con `t.File` opzionale), closures (2), employees (10), onboarding (5, documento `t.File({ type: "image" })` senza `maxSize`, guard A), profile (1, guard A), dashboard (1). Guard A = `requireSellerRole`.
 
