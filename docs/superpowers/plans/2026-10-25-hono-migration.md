@@ -21,7 +21,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U0 | Piano + baseline | — | fatto | #300 |
 | U1 | `me/` + fondamenta (kit `src/http/`, client `hc`, sezione in `docs/architecture.md`) | U0 | fatto | #301 |
 | U2 | `locations/` (+ rate limit) — **stessa PR di U4** | U1 | fatto | #302 |
-| U3 | `customer/` | U1 | PR aperta | (PR) |
+| U3 | `customer/` | U1 | fatto | #304 |
 | U4 | `registration/` — **stessa PR di U2** | U2 (rate limit) | fatto | #302 |
 | U5 | seller 1: contesto seller + products, brands, images, product-characteristics, stock | U1 | fatto | #303 |
 | U6 | seller 2: stores, store-images, settings, closures, employees, onboarding, profile, dashboard | U5 | da fare | — |
@@ -390,7 +390,7 @@ Note di U2+U4 per il frontend: `Awaited<ReturnType<typeof fetchSuggestions>>` re
 
 ### U3 — `customer/`
 
-**Stato:** PR aperta · **PR:** (PR) · **Branch:** `feat/hono-u3-customer` (nome dato dall'orchestratore al posto di `refactor/hono-customer`)
+**Stato:** fatto · **PR:** #304 · **Branch:** `feat/hono-u3-customer` (nome dato dall'orchestratore al posto di `refactor/hono-customer`)
 
 25 endpoint: products (3) e stores (5) pubblici; profile (1), addresses (4), points (1), orders (3), cart (4), checkout (4) con `requireCustomer` per route. Query con molta coercizione (`ProductSearchQuery`/`StoreSearchQuery` in `lib/queries.ts:79-170`: `lat`, `lng`, `radius`, `minPrice`, `maxPrice` numeri; `openNow`, `onSale` booleani; default), `Omit` per le facet.
 
