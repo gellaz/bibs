@@ -12,10 +12,10 @@ import { ensureBucket } from "@/lib/s3";
 import { adminModule } from "@/modules/admin";
 import { catalogModule } from "@/modules/catalog";
 import { customerApp } from "@/modules/customer";
-import { locationsModule } from "@/modules/locations";
+import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
-import { registration } from "@/modules/registration";
-import { sellerModule } from "@/modules/seller";
+import { registrationApp } from "@/modules/registration";
+import { sellerApp, sellerGuards, sellerModule } from "@/modules/seller";
 import { stripeWebhookRoutes } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
@@ -156,20 +156,25 @@ const app = new Elysia()
 					...(await OpenAPI.getPaths()),
 					...honoPaths(meApp, "/me", ["auth"]),
 					...honoPaths(customerApp, "/customer", ["customer", "publicRoute"]),
+					...honoPaths(registrationApp, "/register", ["publicRoute"]),
+					...honoPaths(locationsApp, "/locations", ["auth", "publicRoute"]),
+					...honoPaths(sellerApp, "/seller", sellerGuards),
 				},
 			},
 		}),
 	)
 	.use(stripeWebhookRoutes)
 	.use(betterAuth)
-	.use(registration)
 	.use(adminModule)
 	.use(catalogModule)
-	.use(locationsModule)
 	.use(sellerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
 	.mount("/customer", customerApp.fetch)
+	.mount("/register", registrationApp.fetch)
+	.mount("/locations", locationsApp.fetch)
+	// Seller in parte: le route ancora in `sellerModule` vincono sul mount.
+	.mount("/seller", sellerApp.fetch)
 	.use(cronJobs)
 	.use(health);
 

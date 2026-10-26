@@ -11,6 +11,7 @@ import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
 import { CreateIcon } from "@bibs/ui/icons";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { formatDate } from "@bibs/ui/lib/date";
 import { intlLocale } from "@bibs/ui/lib/intl-locale";
 import { parsePaginationSearch } from "@bibs/ui/lib/pagination-search";
@@ -30,7 +31,7 @@ import {
 import { ProductsFilterSheet } from "@/features/products/components/products-filter-sheet";
 import { StockEditorCell } from "@/features/products/components/stock-editor-cell";
 import { useActiveStore } from "@/hooks/use-active-store";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import {
 	dataTableFooterLabels,
 	tableColumnsToggleLabels,
@@ -175,7 +176,7 @@ function ProductsListPage() {
 		queryFn: async () => {
 			const storeId = activeStore?.id;
 			if (!storeId) throw new Error("No active store");
-			const response = await api().seller.products.get({
+			const response = await sellerApi.products.$get({
 				query: {
 					storeId,
 					page,
@@ -190,7 +191,7 @@ function ProductsListPage() {
 					...(maxPrice ? { maxPrice } : {}),
 				},
 			});
-			return unwrap(response, m.common_load_error());
+			return unwrapJson(response, m.common_load_error());
 		},
 		enabled: !!activeStore?.id,
 	});

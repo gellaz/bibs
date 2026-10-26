@@ -6,9 +6,10 @@ import {
 	ComboboxItem,
 	ComboboxList,
 } from "@bibs/ui/components/combobox";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { useDeferredValue, useState } from "react";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export interface BrandComboboxValue {
@@ -54,10 +55,10 @@ export function BrandCombobox({
 	const { data: brands = [] } = useQuery({
 		queryKey: ["seller-brands", deferredQuery],
 		queryFn: async () => {
-			const response = await api().seller.brands.get({
+			const response = await sellerApi.brands.$get({
 				query: { q: deferredQuery || undefined, limit: 20 },
 			});
-			return unwrap(response, m.products_brand_load_error()).data;
+			return (await unwrapJson(response, m.products_brand_load_error())).data;
 		},
 		enabled: open,
 		staleTime: 30_000,

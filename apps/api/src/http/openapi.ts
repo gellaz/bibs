@@ -1,7 +1,7 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { z } from "zod";
 import { elysiaJson, integerCheck } from "@/lib/zod/t";
-import { assertRoutes, DOC, type ModuleGuard } from "./routes";
+import { assertRoutes, DOC, type ModuleGuards } from "./routes";
 import { VALIDATES, type Validates } from "./validator";
 
 // OpenAPI delle route Hono (D11 del piano Hono): ogni route porta `doc(…)` e i
@@ -67,26 +67,21 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 	// zInt(): Zod lo vede come `number`, TypeBox scrive `integer`.
 	if (def.type === "number" && def.checks?.includes(integerCheck))
 		json.type = "integer";
-	// t.Union scrive sempre `anyOf`; dopo l'override Zod compatterebbe i rami di
-	// solo tipo (`string | number | boolean`) in `type: [...]`. La chiave si
-	// nasconde qui e torna `anyOf` in `toJsonSchema`.
-	if (def.type === "union" && Array.isArray(json.anyOf)) {
-		json[HIDDEN_ANY_OF] = json.anyOf;
-		delete json.anyOf;
-	}
 }
 
-const HIDDEN_ANY_OF = "~anyOf";
-
-function restoreAnyOf(value: unknown): unknown {
-	if (Array.isArray(value)) return value.map(restoreAnyOf);
-	if (!value || typeof value !== "object") return value;
-	return Object.fromEntries(
-		Object.entries(value).map(([k, v]) => [
-			k === HIDDEN_ANY_OF ? "anyOf" : k,
-			restoreAnyOf(v),
-		]),
-	);
+// Dopo gli override Zod compatta `anyOf: [{type: a}, {type: b}]` in
+// `type: [a, b]` (es. `z.union([z.string(), z.number(), z.boolean()])`);
+// TypeBox scrive sempre l'anyOf. Un nullable torna `type: [X, "null"]` con
+// `nullTo31`, come per Elysia.
+function expandTypeArrays(node: unknown): unknown {
+	if (Array.isArray(node)) return node.map(expandTypeArrays);
+	if (!node || typeof node !== "object") return node;
+	const out: Json = {};
+	for (const [key, value] of Object.entries(node))
+		if (key === "type" && Array.isArray(value))
+			out.anyOf = value.map((type) => ({ type }));
+		else out[key] = expandTypeArrays(value);
+	return out;
 }
 
 /** JSON Schema di uno schema Zod, come TypeBox lo scrive per il gemello. */
@@ -97,7 +92,7 @@ export function toJsonSchema(schema: z.ZodType): Json {
 		reused: "inline",
 		override: overrideNode,
 	});
-	return restoreAnyOf(json) as Json;
+	return expandTypeArrays(json) as Json;
 }
 
 // ── trasformazioni di @elysiajs/openapi 1.4.16 ──────────────────────────────
@@ -315,13 +310,14 @@ export function generatePaths(ops: Operation[]) {
 /**
  * Path OpenAPI di una sub-app montata su `prefix`. Controlla anche le sue
  * route (`assertRoutes`): una route senza una delle `guards` del modulo (es.
- * `["admin"]` per /admin; `"publicRoute"` se il modulo ha route pubbliche)
- * ferma l'avvio.
+ * `["admin"]` per /admin; `"publicRoute"` se il modulo ha route pubbliche;
+ * una funzione del path se cambiano da route a route, come nel seller) ferma
+ * l'avvio.
  */
 export function honoPaths(
 	app: Hono<any, any, any>,
 	prefix: string,
-	guards: readonly ModuleGuard[],
+	guards: ModuleGuards,
 ) {
 	assertRoutes(app, guards);
 	return generatePaths(operations(app, prefix));

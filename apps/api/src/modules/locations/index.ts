@@ -1,9 +1,11 @@
-import { Elysia } from "elysia";
-import { betterAuth } from "@/plugins/better-auth";
+import { moduleApp } from "@/http/app";
 import { locationsRoutes } from "./routes/locations";
 
-// `betterAuth` serve per il macro `auth: true` di `/geocode`. Le altre route
-// del modulo restano pubbliche: nessun `.guard()` attorno a loro.
-export const locationsModule = new Elysia({ prefix: "/locations" })
-	.use(betterAuth)
-	.use(locationsRoutes);
+/**
+ * Sub-app Hono del modulo, montata su /locations in `src/index.ts`. Modulo
+ * misto: /geocode con `requireAuth`, le altre route con `publicRoute`.
+ */
+export const locationsApp = moduleApp().route("/", locationsRoutes);
+
+/** Tipo per il client `hc` dei frontend (`hc<LocationsApp>(`${API_URL}/locations`)`). */
+export type LocationsApp = typeof locationsApp;

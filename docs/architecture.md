@@ -169,12 +169,15 @@ per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline 
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
-`customer/` (U3).
+`locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
+immagini, caratteristiche, stock); `customer/` (U3).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
   `.mount("/me", meApp.fetch)`. Il mount toglie il prefisso e non legge il body;
-  una route Elysia vince sempre sul mount. Finché c'è Elysia restano suoi il
+  una route Elysia vince sempre sul mount, quindi un modulo può migrare in parte
+  (`.mount("/seller", sellerApp.fetch)` accanto a `sellerModule`, che tiene le route
+  non ancora migrate). Finché c'è Elysia restano suoi il
   preflight e gli header CORS, `X-Request-Id`, la riga di log di logixlysia e la
   sovrascrittura di `x-forwarded-for`; tutto il resto lo fa la sub-app (prove in
   `apps/api/tests/http/mount.test.ts`).
@@ -199,19 +202,29 @@ verifica di ogni PR stanno nel piano
 - **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
   i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
   modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
-  `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`; una
-  guardia di ruolo legge da sé la sessione, come `requireCustomer`, così basta
-  da sola e non c'è un ordine fra guardie da rispettare) e il
+  `"auth"`; i ruoli `"customer"`, `"seller"`, `"sellerRole"`, `"admin"`) e il
   mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
-  in `src/index.ts`. `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
+  in `src/index.ts`, o una funzione del path quando cambiano da route a route
+  (`sellerGuards`: `requireSellerRole` su profilo e onboarding, `requireSeller` sul
+  resto). Le guardie di ruolo (`requireCustomer`, `requireSeller`) leggono la
+  sessione da sé (401 per l'anonimo), quindi non serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
+  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
   ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
   guardia del modulo, o `publicRoute` in un modulo che dichiara `"publicRoute"`
   (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
   /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
   un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
   query → body.
+- **Rate limit.** `rateLimit({ name, limits })` (`src/plugins/rate-limit.ts`) è un
+  middleware Hono: va dopo i `v()` e dopo la guardia o `publicRoute` (un input non
+  valido non consuma budget; la chiave `email` è quella del body validato). Sotto
+  il mount l'IP è l'`x-forwarded-for` che Elysia ha già riscritto con l'IP del
+  socket.
 - **Schemi Zod.** I gemelli degli schemi TypeBox stanno in `apps/api/src/lib/zod/`
-  (stessi nomi di `lib/schemas/`), scritti modulo per modulo. I tipi propri di
+  (stessi nomi di `lib/schemas/`), scritti modulo per modulo; gli input che in
+  Elysia erano scritti nella route stanno in `lib/zod/<modulo>.ts`
+  (`registration.ts`, `locations.ts`), senza effetti all'import, così li usano
+  anche i casi di parità. I tipi propri di
   Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zInt`, `zDate`,
   `zFile`, `zFiles`, `zFormat`, `zString`); per il resto Zod normale, con
   `title`/`error`/`description` in `.meta()`. Regole per scrivere un gemello:
@@ -222,9 +235,10 @@ verifica di ogni PR stanno nel piano
     `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
     unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
     per Zod); `t.Date` → `zDate`; `t.Nullable(x)` →
-    `x.nullable()`; unione di letterali → `z.enum` (se i letterali sono numeri
-    in stringa, `"22"`, `"10"`: `z.union` di `z.literal`, perché `z.enum` li
-    riordina); `t.Union` di oggetti → `z.union`, mai `z.discriminatedUnion`;
+    `x.nullable()`; unione di letterali → `z.enum`, ma di letterali numerici (le
+    aliquote IVA `"22"`, `"10"`, …) → `z.union` di `z.literal` (`z.enum` riordina le
+    chiavi numeriche in /openapi); `t.Union` di oggetti →
+    `z.union`, mai `z.discriminatedUnion`;
   - ogni gemello nuovo entra in `apps/api/tests/http/parity-cases.ts` con lo schema
     TypeBox e l'atteso: il test confronta dal vivo con Elysia status, corpo del 422
     e OpenAPI. I casi coprono anche l'ordine del primo errore, i t.Nullable di
@@ -239,7 +253,8 @@ verifica di ogni PR stanno nel piano
   degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
-  `src/types.ts` (`MeApp`, `CustomerApp`); ogni app crea in `src/lib/api.ts` il client del
+  `src/types.ts` (`MeApp`, `CustomerApp`, `LocationsApp`, `RegistrationApp`,
+  `SellerApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

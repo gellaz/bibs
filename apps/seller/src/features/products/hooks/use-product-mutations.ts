@@ -1,6 +1,7 @@
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 type ProductStatus = "active" | "disabled" | "trashed";
@@ -41,10 +42,11 @@ export function useProductMutations() {
 
 	const setStatus = useMutation({
 		mutationFn: async (vars: SetStatusVars) => {
-			const res = await api()
-				.seller.products({ productId: vars.productId })
-				.status.patch({ status: vars.status });
-			return unwrap(res, m.products_status_update_error());
+			const res = await sellerApi.products[":productId"].status.$patch({
+				param: { productId: vars.productId },
+				json: { status: vars.status },
+			});
+			return unwrapJson(res, m.products_status_update_error());
 		},
 		onSuccess: (_data, vars) => {
 			invalidateAll();
@@ -73,11 +75,10 @@ export function useProductMutations() {
 
 	const bulkSetStatus = useMutation({
 		mutationFn: async (vars: BulkSetStatusVars) => {
-			const res = await api().seller.products.bulk.status.post({
-				productIds: vars.productIds,
-				status: vars.status,
+			const res = await sellerApi.products.bulk.status.$post({
+				json: { productIds: vars.productIds, status: vars.status },
 			});
-			return unwrap(res, m.products_bulk_update_error()).data;
+			return (await unwrapJson(res, m.products_bulk_update_error())).data;
 		},
 		onSuccess: (data) => {
 			invalidateAll();
@@ -95,10 +96,10 @@ export function useProductMutations() {
 
 	const bulkDeletePermanent = useMutation({
 		mutationFn: async (vars: BulkDeletePermanentVars) => {
-			const res = await api().seller.products.bulk["delete-permanent"].post({
-				productIds: vars.productIds,
+			const res = await sellerApi.products.bulk["delete-permanent"].$post({
+				json: { productIds: vars.productIds },
 			});
-			return unwrap(res, m.products_delete_error()).data;
+			return (await unwrapJson(res, m.products_delete_error())).data;
 		},
 		onSuccess: (data) => {
 			invalidateAll();

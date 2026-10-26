@@ -11,8 +11,9 @@ import { json } from "./send";
 function rawPath(request: Request) {
 	const url = request.url;
 	const start = url.indexOf("/", url.indexOf(":") + 4);
-	const end = url.slice(start).search(/[?#]/);
-	const path = end === -1 ? url.slice(start) : url.slice(start, start + end);
+	// Solo `?`, come Elysia: `/brands#x` resta un path che non esiste (404).
+	const end = url.indexOf("?", start);
+	const path = end === -1 ? url.slice(start) : url.slice(start, end);
 	return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
 }
 

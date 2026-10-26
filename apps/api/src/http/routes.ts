@@ -22,6 +22,15 @@ export const DOC = Symbol("doc");
 export type ModuleGuard = GuardTag | "publicRoute";
 
 /**
+ * Le voci ammesse: una lista per tutto il modulo, o una funzione del path
+ * della route per un modulo con guardie diverse (seller: `requireSellerRole`
+ * su profilo e onboarding, `requireSeller` sul resto). Una voce basta.
+ */
+export type ModuleGuards =
+	| readonly ModuleGuard[]
+	| ((path: string) => readonly ModuleGuard[]);
+
+/**
  * Marca un middleware di auth con la sua guardia. Una guardia già marcata non
  * si rimarca: `guard(requireAuth, "admin")` darebbe a `requireAuth` il ruolo
  * admin senza il controllo del ruolo.
@@ -53,13 +62,15 @@ type Marked = {
 /**
  * Le route che non rispettano le regole, con il motivo. `guards`: ciò che il
  * modulo accetta (una voce basta); `["publicRoute"]` se tutte le route sono
- * pubbliche, `["customer", "publicRoute"]` per un modulo misto.
+ * pubbliche, `["customer", "publicRoute"]` per un modulo misto, una funzione
+ * del path se cambiano da route a route.
  */
 export function routeProblems(
 	app: Hono<any, any, any>,
-	guards: readonly ModuleGuard[],
+	guards: ModuleGuards,
 ): string[] {
 	const routes = new Map<string, Marked[]>();
+	const paths = new Map<string, string>();
 	for (const r of app.routes) {
 		// `use()` e i mount sono ALL su un path con `*`; onError e notFound in
 		// Hono 5 sono @ERROR e @NOT_FOUND. Un `.all("/x")` è una route.
@@ -70,6 +81,7 @@ export function routeProblems(
 			continue;
 		const key = `${r.method} ${r.path}`;
 		routes.set(key, [...(routes.get(key) ?? []), r.handler as Marked]);
+		paths.set(key, r.path);
 	}
 	const problems: string[] = [];
 	for (const [key, handlers] of routes) {
@@ -84,15 +96,17 @@ export function routeProblems(
 			const v = h[VALIDATES];
 			return v ? [{ i, rank: ORDER[v.target] }] : [];
 		});
+		const allowed =
+			typeof guards === "function" ? guards(paths.get(key) ?? "") : guards;
 		if (!head.some((h) => h[GUARD] || h[PUBLIC]))
 			problems.push(`${key}: né guardia di auth né publicRoute`);
 		else if (
 			!head.some((h) =>
-				guards.includes(h[PUBLIC] ? "publicRoute" : (h[GUARD] as GuardTag)),
+				allowed.includes(h[PUBLIC] ? "publicRoute" : (h[GUARD] as GuardTag)),
 			)
 		)
 			problems.push(
-				`${key}: manca la guardia del modulo (${guards.join(" o ")})`,
+				`${key}: manca la guardia del modulo (${allowed.join(" o ")})`,
 			);
 		if (auth !== -1 && validators.some((v) => v.i > auth))
 			problems.push(`${key}: un v() dopo l'auth (422 prima di 401)`);
@@ -103,10 +117,7 @@ export function routeProblems(
 }
 
 /** Lancia se una route non rispetta le regole: l'API non parte. */
-export function assertRoutes(
-	app: Hono<any, any, any>,
-	guards: readonly ModuleGuard[],
-) {
+export function assertRoutes(app: Hono<any, any, any>, guards: ModuleGuards) {
 	const problems = routeProblems(app, guards);
 	if (problems.length)
 		throw new Error(`Route Hono non valide:\n${problems.join("\n")}`);

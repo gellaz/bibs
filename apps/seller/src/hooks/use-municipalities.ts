@@ -1,15 +1,15 @@
 import type { MunicipalityComboboxLabels } from "@bibs/ui/custom/municipality-combobox";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { locationsApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const municipalitiesQueryOptions = () =>
 	queryOptions({
 		queryKey: ["municipalities", "all"] as const,
 		queryFn: async () => {
-			const response = await api().locations.municipalities.all.get();
-			if (response.error) throw response.error;
-			return response.data.data;
+			const response = await locationsApi.municipalities.all.$get();
+			return (await unwrapJson(response, m.municipality_combobox_error())).data;
 		},
 		staleTime: Infinity,
 		gcTime: Infinity,

@@ -1,6 +1,7 @@
 import { Separator } from "@bibs/ui/components/separator";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
@@ -12,7 +13,7 @@ import {
 	type ProductFormValues,
 } from "@/features/products/components/product-form";
 import { ProductStockManager } from "@/features/products/components/product-stock-manager";
-import { api, apiNoDates, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/products/$productId")({
@@ -41,12 +42,13 @@ function EditProductPage() {
 	} = useQuery({
 		queryKey: ["product", productId],
 		queryFn: async () => {
-			// apiNoDates: le caratteristiche di tipo testo (es. "Scadenza/TMC")
-			// possono contenere un testo simile a una data ("05/03/2027"); il
-			// client di default di Eden lo revivificherebbe in un `Date` sbagliato.
-			const response = await apiNoDates().seller.products({ productId }).get();
+			// `hc` non trasforma i testi simili a una data (es. «Scadenza/TMC»
+			// "05/03/2027"): arrivano come li ha salvati il venditore.
+			const response = await sellerApi.products[":productId"].$get({
+				param: { productId },
+			});
 
-			return unwrap(response, m.products_edit_load_error()).data;
+			return (await unwrapJson(response, m.products_edit_load_error())).data;
 		},
 	});
 
@@ -59,12 +61,11 @@ function EditProductPage() {
 
 	const deleteImageMutation = useMutation({
 		mutationFn: async (imageId: string) => {
-			const response = await api()
-				.seller.products({ productId })
-				.images({ imageId })
-				.delete();
+			const response = await sellerApi.products[":productId"].images[
+				":imageId"
+			].$delete({ param: { productId, imageId } });
 
-			if (response.error) {
+			if (!response.ok) {
 				throw new Error(m.products_edit_image_delete_error());
 			}
 		},
@@ -79,9 +80,9 @@ function EditProductPage() {
 
 	const updateMutation = useMutation({
 		mutationFn: async (formData: ProductFormValues) => {
-			const response = await api()
-				.seller.products({ productId })
-				.patch({
+			const response = await sellerApi.products[":productId"].$patch({
+				param: { productId },
+				json: {
 					name: formData.name,
 					description: formData.description,
 					price: formData.price,
@@ -93,16 +94,17 @@ function EditProductPage() {
 					brandName: formData.brandName,
 					characteristicValues: formData.characteristicValues,
 					confirmAffected: formData.confirmAffected,
-				});
+				},
+			});
 
-			const data = unwrap(response, m.products_edit_update_error());
+			const data = await unwrapJson(response, m.products_edit_update_error());
 
 			if (formData.files.length > 0) {
-				const imgResponse = await api()
-					.seller.products({ productId })
-					.images.post({ files: formData.files });
+				const imgResponse = await sellerApi.products[":productId"].images.$post(
+					{ param: { productId }, form: { files: formData.files } },
+				);
 
-				if (imgResponse.error) {
+				if (!imgResponse.ok) {
 					toast.warning(m.products_edit_images_upload_error());
 				}
 			}

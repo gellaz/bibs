@@ -1,4 +1,10 @@
-import type { App, CustomerApp, MeApp } from "@bibs/api";
+import type {
+	App,
+	CustomerApp,
+	LocationsApp,
+	MeApp,
+	RegistrationApp,
+} from "@bibs/api";
 import { createApiClient, type WithErrors } from "@bibs/ui/lib/api-client";
 import { hc } from "hono/client";
 
@@ -14,3 +20,11 @@ export const meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init });
 export const customerApi = hc<WithErrors<CustomerApp>>(`${API_URL}/customer`, {
 	init,
 });
+export const locationsApi = hc<WithErrors<LocationsApp>>(
+	`${API_URL}/locations`,
+	{ init },
+);
+export const registerApi = hc<WithErrors<RegistrationApp>>(
+	`${API_URL}/register`,
+	{ init },
+);

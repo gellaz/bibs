@@ -1,21 +1,33 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireAuth } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { publicRoute } from "@/http/routes";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { env } from "@/lib/env";
-import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { logger } from "@/lib/logger";
 import { ok, okPage } from "@/lib/responses";
 import {
 	CountrySchema,
 	GeocodeSuggestionSchema,
 	MunicipalityCompactSchema,
 	MunicipalitySchema,
-	okPageRes,
-	okRes,
 	ProvinceSchema,
 	RegionSchema,
+} from "@/lib/zod/entities";
+import {
+	GeocodeQuery,
+	MunicipalitiesQuery,
+	ProvincesQuery,
+} from "@/lib/zod/locations";
+import {
+	okPageRes,
+	okRes,
 	ServiceUnavailableError,
 	TooManyRequestsError,
 	withErrors,
-} from "@/lib/schemas";
+} from "@/lib/zod/responses";
 import { rateLimit } from "@/plugins/rate-limit";
 import { geocodeAddress } from "../services/geocode";
 import {
@@ -28,165 +40,114 @@ import {
 
 const MINUTE = 60_000;
 
-export const locationsRoutes = new Elysia()
+export const CountriesResponse = okRes(z.array(CountrySchema));
+export const RegionsResponse = okRes(z.array(RegionSchema));
+export const ProvincesResponse = okRes(z.array(ProvinceSchema));
+export const MunicipalitiesResponse = okPageRes(MunicipalitySchema);
+export const MunicipalitiesAllResponse = okRes(
+	z.array(MunicipalityCompactSchema),
+);
+export const GeocodeResponse = okRes(z.array(GeocodeSuggestionSchema));
+
+// Route relative: il modulo è montato su /locations (`src/index.ts`). Tutte
+// pubbliche tranne /geocode (login, poi rate limit).
+export const locationsRoutes = new Hono()
 	.get(
 		"/countries",
-		() => {
-			const data = [...listCountries()];
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(t.Array(CountrySchema)) }),
+		doc({
+			response: withErrors({ 200: CountriesResponse }),
 			detail: {
 				summary: "Lista paesi",
 				description:
 					"Restituisce la lista completa dei paesi (ISO 3166-1 alpha-2) con nome in italiano.",
 				tags: ["Locations"],
 			},
-		},
+		}),
+		publicRoute,
+		(c) => send(c, CountriesResponse, ok([...listCountries()])),
 	)
 	.get(
 		"/regions",
-		async () => {
-			const data = await listRegions();
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(t.Array(RegionSchema)) }),
+		doc({
+			response: withErrors({ 200: RegionsResponse }),
 			detail: {
 				summary: "Lista regioni",
 				description: "Restituisce la lista di tutte le regioni italiane.",
 				tags: ["Locations"],
 			},
-		},
+		}),
+		publicRoute,
+		async (c) => send(c, RegionsResponse, ok(await listRegions())),
 	)
 	.get(
 		"/provinces",
-		async ({ query }) => {
-			const data = await listProvinces(query);
-			return ok(data);
-		},
-		{
-			query: t.Object({
-				regionId: t.Optional(
-					t.String({ description: "Filtra per ID regione" }),
-				),
-			}),
-			response: withErrors({ 200: okRes(t.Array(ProvinceSchema)) }),
+		doc({
+			response: withErrors({ 200: ProvincesResponse }),
 			detail: {
 				summary: "Lista province",
 				description:
 					"Restituisce la lista delle province, con filtro opzionale per regione.",
 				tags: ["Locations"],
 			},
-		},
+		}),
+		v("query", ProvincesQuery),
+		publicRoute,
+		async (c) =>
+			send(c, ProvincesResponse, ok(await listProvinces(c.req.valid("query")))),
 	)
 	.get(
 		"/municipalities",
-		async ({ query }) => {
-			const result = await listMunicipalities(query);
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: t.Composite([
-				PaginationQuery,
-				t.Object({
-					provinceId: t.Optional(
-						t.String({ description: "Filtra per ID provincia" }),
-					),
-				}),
-			]),
-			response: withErrors({ 200: okPageRes(MunicipalitySchema) }),
+		doc({
+			response: withErrors({ 200: MunicipalitiesResponse }),
 			detail: {
 				summary: "Lista comuni",
 				description:
 					"Restituisce la lista paginata dei comuni, con filtro opzionale per provincia.",
 				tags: ["Locations"],
 			},
+		}),
+		v("query", MunicipalitiesQuery),
+		publicRoute,
+		async (c) => {
+			const result = await listMunicipalities(c.req.valid("query"));
+			return send(
+				c,
+				MunicipalitiesResponse,
+				okPage(result.data, result.pagination),
+			);
 		},
 	)
 	.get(
 		"/municipalities/all",
-		async ({ set }) => {
-			const data = await listAllMunicipalities();
-			// In production: aggressive cache (lista immutabile). In dev: no cache
-			// così un db:reset rigenera correttamente gli UUID lato client senza
-			// rischiare FK violations da cache HTTP stale.
-			set.headers["cache-control"] =
-				env.NODE_ENV === "production"
-					? "public, max-age=86400, stale-while-revalidate=604800"
-					: "no-store";
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(t.Array(MunicipalityCompactSchema)) }),
+		doc({
+			response: withErrors({ 200: MunicipalitiesAllResponse }),
 			detail: {
 				summary: "Lista completa comuni (formato compatto)",
 				description:
 					"Restituisce l'elenco di TUTTI i comuni italiani con sigla provincia, in formato compatto e ordinati per nome. Endpoint pensato per precaricamento client-side; risposta cacheable 24h.",
 				tags: ["Locations"],
 			},
+		}),
+		publicRoute,
+		async (c) => {
+			const data = await listAllMunicipalities();
+			// In production: aggressive cache (lista immutabile). In dev: no cache
+			// così un db:reset rigenera correttamente gli UUID lato client senza
+			// rischiare FK violations da cache HTTP stale.
+			c.header(
+				"cache-control",
+				env.NODE_ENV === "production"
+					? "public, max-age=86400, stale-while-revalidate=604800"
+					: "no-store",
+			);
+			return send(c, MunicipalitiesAllResponse, ok(data));
 		},
 	)
 	.get(
 		"/geocode",
-		async (ctx) => {
-			const { user, query, store } = ctx as typeof ctx & {
-				user: { id: string };
-			};
-			const pino = getLogger(store);
-			const data = await geocodeAddress(query);
-			pino.info(
-				{
-					userId: user.id,
-					queryLength: query.q.length,
-					hasBias: query.lat !== undefined && query.lng !== undefined,
-					resultCount: data.length,
-					action: "address_geocode",
-				},
-				"Geocoding indirizzo eseguito",
-			);
-			return ok(data);
-		},
-		{
-			auth: true,
-			query: t.Object({
-				q: t.String({
-					minLength: 3,
-					maxLength: 200,
-					description: "Testo dell'indirizzo da cercare",
-				}),
-				limit: t.Optional(
-					t.Integer({
-						minimum: 1,
-						maximum: 10,
-						default: 5,
-						title: "Numero di suggerimenti",
-						description: "Numero massimo di suggerimenti (default 5)",
-					}),
-				),
-				lat: t.Optional(
-					t.Number({
-						minimum: -90,
-						maximum: 90,
-						description:
-							"Latitudine da cui cercare: i risultati vicini vengono primi",
-					}),
-				),
-				lng: t.Optional(
-					t.Number({
-						minimum: -180,
-						maximum: 180,
-						description: "Longitudine da cui cercare",
-					}),
-				),
-			}),
-			beforeHandle: rateLimit({
-				name: "geocode",
-				limits: [{ by: "ip", window: MINUTE, max: 30 }],
-			}),
+		doc({
 			response: withErrors({
-				200: okRes(t.Array(GeocodeSuggestionSchema)),
+				200: GeocodeResponse,
 				429: TooManyRequestsError,
 				503: ServiceUnavailableError,
 			}),
@@ -197,5 +158,26 @@ export const locationsRoutes = new Elysia()
 				tags: ["Locations"],
 				security: [{ bearerAuth: [] }],
 			},
+		}),
+		v("query", GeocodeQuery),
+		requireAuth,
+		rateLimit({
+			name: "geocode",
+			limits: [{ by: "ip", window: MINUTE, max: 30 }],
+		}),
+		async (c) => {
+			const query = c.req.valid("query");
+			const data = await geocodeAddress(query);
+			logger.info(
+				{
+					userId: c.var.user.id,
+					queryLength: query.q.length,
+					hasBias: query.lat !== undefined && query.lng !== undefined,
+					resultCount: data.length,
+					action: "address_geocode",
+				},
+				"Geocoding indirizzo eseguito",
+			);
+			return send(c, GeocodeResponse, ok(data));
 		},
 	);

@@ -1,5 +1,6 @@
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { api, unwrap } from "@/lib/api";
+import { locationsApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 /**
@@ -10,9 +11,9 @@ export function useCountries() {
 	return useQuery({
 		queryKey: ["countries"],
 		queryFn: async () => {
-			const response = await api().locations.countries.get();
+			const response = await locationsApi.countries.$get();
 
-			return unwrap(response, m.common_countries_load_error()).data;
+			return (await unwrapJson(response, m.common_countries_load_error())).data;
 		},
 		staleTime: 1000 * 60 * 60, // 1 hour
 	});
