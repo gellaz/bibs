@@ -11,7 +11,7 @@ Claude Code-specific tooling for this repository.
 
 1. **Install Claude Code**: <https://claude.com/claude-code>
 2. **MCP servers**: `.mcp.json` at repo root auto-loads:
-   - `context7` — live library docs for TanStack, Elysia, Drizzle, Tailwind (and a fallback for better-auth)
+   - `context7` — live library docs for TanStack, Drizzle, Tailwind, Zod (and a fallback for better-auth)
    - `shadcn` — browse/search/install components from the registries declared in [packages/ui/components.json](packages/ui/components.json) (shadcn/ui, `@kibo-ui`, `@shadcnblocks` — needs `SHADCNBLOCKS_API_KEY` in `packages/ui/.env.local`; see [packages/ui/README.md](packages/ui/README.md#registries))
    - `better-auth` — remote MCP server at `https://mcp.better-auth.com/mcp`. Preferred over context7 for Better Auth work
    - Hono has no docs MCP: every page is served as Markdown (`curl -H 'Accept: text/markdown' https://hono.dev/docs/api/routing`, index at `https://hono.dev/llms.txt`). Only `WebFetch` on `hono.dev` is pre-approved: a `Bash(curl …)` allow rule would also let any extra curl flag through (upload, write to disk)
@@ -35,7 +35,7 @@ Use these skills at the matching moment — they override default behavior only 
 | Moment | Skill |
 |---|---|
 | Start of any non-trivial feature | `superpowers:brainstorming` |
-| Multi-step task (e.g. new endpoint → schema → route → OpenAPI → 3 Eden clients) | `superpowers:writing-plans` then `superpowers:executing-plans` |
+| Multi-step task (e.g. new endpoint → schema → route → OpenAPI → 3 `hc` clients) | `superpowers:writing-plans` then `superpowers:executing-plans` |
 | New domain logic (reservations, loyalty points, geo-search, pricing) | `superpowers:test-driven-development` |
 | Non-obvious bug | `superpowers:systematic-debugging` |
 | API change that touches frontend clients | `superpowers:dispatching-parallel-agents` to verify admin/customer/seller in parallel |
@@ -52,8 +52,7 @@ Checked-in skills live at repo root under `.agents/skills/` (symlinked into `.cl
 | Skill | Purpose |
 |---|---|
 | `tanstack-start-best-practices`, `tanstack-router-best-practices`, `tanstack-query-best-practices`, `tanstack-integration-best-practices` | TanStack patterns — activates in `apps/{admin,customer,seller}` |
-| `elysiajs` | Canonical Elysia 1.x patterns — activates in `apps/api`. Frozen snapshot outside `skills-lock.json`; remove it once the API is on Hono |
-| `hono` | Official Hono skill (honojs/skills) for the Elysia → Hono migration of `apps/api` — inline API reference, RPC client rules, Hono CLI |
+| `hono` | Official Hono skill (honojs/skills) — activates in `apps/api`: inline API reference, RPC client (`hc`) rules, Hono CLI (how to run it here: [apps/api/AGENTS.md](apps/api/AGENTS.md#hono-cli)) |
 | `shadcn` | shadcn/ui CLI, theming, registries — activates on `packages/ui` work |
 | `migrate-radix-to-base` | Official shadcn skill for moving wrappers and call sites from Radix to Base UI (golden pair + `git merge-file`, reports in `.migration/`) |
 | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices` | Better Auth — matches the current auth stack |

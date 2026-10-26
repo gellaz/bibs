@@ -6,7 +6,7 @@ This file provides guidance when working with the **bibs** monorepo.
 
 **bibs** is a local-commerce marketplace. The monorepo uses **Bun workspaces** and contains:
 
-- `apps/api/` — Backend API (Elysia + Bun + Drizzle + PostgreSQL/PostGIS), port **3000**. See `apps/api/AGENTS.md` for detailed backend guidance.
+- `apps/api/` — Backend API (Hono + Bun + Drizzle + PostgreSQL/PostGIS), port **3000**. See `apps/api/AGENTS.md` for detailed backend guidance.
 - `apps/customer/` — Customer-facing web app (TanStack Start + React 19), port **3001**
 - `apps/seller/` — Seller back-office (TanStack Start + React 19), port **3002**
 - `apps/admin/` — Admin back-office (TanStack Start + React 19), port **3003**
@@ -96,9 +96,9 @@ All three frontend apps (`admin`, `customer`, `seller`) share the same tech stac
 - **TanStack Start** — SSR framework with file-based routing (`src/routes/`)
 - **TanStack Router** — type-safe routing with route tree generation (`src/routeTree.gen.ts`)
 - **TanStack Query** — data fetching with cache, pagination, refetch
-- **Eden Treaty** (`@elysiajs/eden`) — type-safe API client from the Elysia backend
+- **Hono RPC client** (`hc` from `hono/client`) — type-safe API client, one per API sub-app, typed by the backend's exported app types
 - **better-auth client** — `src/lib/auth-client.ts` uses `createAuthClient` pointing to the API's `/auth/api` endpoint
-- **React Hook Form** + `@hookform/resolvers` — form state management with schema validation
+- **React Hook Form** + Zod (`zodResolver` from `src/lib/zod-resolver.ts`; the seller's forms on `@bibs/api/schemas` use `schemaResolver` from `src/lib/schema-errors.ts`) — form state management with schema validation
 - **Paraglide JS** — i18n with localized routing (messages in `messages/`, output in `src/paraglide/`)
 - **Tailwind CSS v4** — via `@tailwindcss/vite` plugin
 - **@bibs/ui** — shared UI components from `packages/ui`, aliased as `~/` in imports
@@ -107,7 +107,7 @@ All three frontend apps (`admin`, `customer`, `seller`) share the same tech stac
 
 Key files in each frontend app:
 
-- `src/lib/api.ts` — Eden Treaty client using `createIsomorphicFn` from `@tanstack/react-start`
+- `src/lib/api.ts` — the `hc` clients, one per API sub-tree (`meApi`, `sellerApi`, `adminApi`, `customerApi`, `catalogApi`, …)
 - `src/lib/auth-client.ts` — better-auth React client with admin plugin
 - `src/env.ts` — typed environment variables (validated with Zod)
 - `src/routes/__root.tsx` — root layout
@@ -120,8 +120,8 @@ Key files in each frontend app:
 - `@/*` → `./src/*` (via `package.json` imports field)
 - `~/*` → `../../packages/ui/src/*` (via `tsconfig.json` paths + Vite alias)
 
-Eden Treaty integration (concepts, error handling, gotchas) is documented in
-[docs/architecture.md](docs/architecture.md#frontend--api-integration-eden-treaty).
+The `hc` integration (clients, errors, dates, gotchas) is documented in
+[docs/architecture.md](docs/architecture.md#frontend--api-integration-hc).
 
 ## Dependency Management
 
@@ -220,7 +220,7 @@ bun outdated --filter '*'   # confirm only the intentional majors are left
 Rules that bite:
 
 - **Never `bun update <package-name>`.** Bun reads the name as "add this to the root package" and injects a spurious root `dependencies` block instead of re-resolving the catalog entry (#128). To recover, delete that block and re-run `bun install`.
-- **No `latest` tags in the catalog.** A `latest` tag is not a hold: it crosses majors in silence (the lock sat on `@tanstack/react-table` 8.21.3 while `latest` had moved to 9.2.4, #149). The TanStack Start/Router/Query/Devtools entries are **exact pins** since P2.1, like `elysia` and `better-auth`: `bun update` leaves them alone. Bump them by hand, together (they release in lockstep): read the target versions from `bun outdated --filter '*'`, edit the pins, `bun install`, then the SSR smoke below.
+- **No `latest` tags in the catalog.** A `latest` tag is not a hold: it crosses majors in silence (the lock sat on `@tanstack/react-table` 8.21.3 while `latest` had moved to 9.2.4, #149). The TanStack Start/Router/Query/Devtools entries are **exact pins** since P2.1, like `hono` (a prerelease) and `better-auth`: `bun update` leaves them alone. Bump them by hand, together (they release in lockstep): read the target versions from `bun outdated --filter '*'`, edit the pins, `bun install`, then the SSR smoke below.
 - **One major per PR.** Majors fall outside the caret ranges and stay put on their own; port them deliberately, never folded into a sweep.
 - **`@types/node` stays on `^22`.** Transitives (testcontainers, `@types/pg`, bun-types) resolve their own nested copies higher; only the catalog entry is ours.
 
@@ -338,33 +338,68 @@ Do **not** do any of the following without explicit user confirmation:
 Before claiming a task is done, run (in the affected scope):
 
 ```bash
-bun run typecheck   # always — catalog propagates types across 3 frontends via Eden Treaty
+bun run typecheck   # always — the API's app types reach the 3 frontends through the `hc` clients
 bun run lint        # Biome
 bun run test        # when touching apps/api, packages/emails or a frontend
 ```
 
 UI changes: start the relevant dev server and exercise the feature in a browser —
 type-check alone does not verify UI. API changes: check `/openapi` reflects the
-change and the Eden clients still typecheck from root. Drizzle schema changes:
+change and the `hc` clients still typecheck from root. Drizzle schema changes:
 `bun run db:generate`, then **read the generated SQL** before `bun run db:migrate`.
 
-## Writing New API Endpoints (Elysia)
+## Writing New API Endpoints (Hono)
 
-When adding a route under `apps/api/src/`, follow the existing pattern:
+When adding a route under `apps/api/src/`, follow the existing pattern (a compact reference:
+`src/modules/seller/routes/brands.ts`; step by step in [apps/api/AGENTS.md](apps/api/AGENTS.md#how-to-add-a-new-endpoint)):
 
-1. Schema in `apps/api/src/lib/schemas/` (Zod, Italian `description`), re-exported from `index.ts`.
-2. Response via `okRes()` / `okPageRes()` helpers (see `responses.ts`).
-3. Errors via `withErrors()` / `withConflictErrors()`, with `ServiceError` for business errors. Let the global `errorHandler` do its job — don't try/catch for envelope shaping.
-4. Auth: set `{ auth: true }` on the route config and use the `auth` macro instead of reading headers manually.
-5. OpenAPI description on every route (Italian, consistent with the rest of the spec).
-6. Handle pg unique violations implicitly via the global handler (`23505 → 409`).
+1. **Zod schemas** in `apps/api/src/lib/schemas/` (shared) or at the top of the route file, with an Italian
+   `description` (`.meta({ description })` or the constructor option). Use the constructors of
+   `lib/schemas/t.ts` (`zString`, `zInteger`, `zInt`, `zDate`, `zFormat`, `zFile`, `zFiles`) instead of
+   `z.string().min()/.max()`, `z.int()` or Zod's formats: they keep the API's rules (lengths in UTF-16 units,
+   integers without safe-int limits, the API's formats) and its OpenAPI shape.
+2. **One sub-app per module.** A route file exports a *chained* `new Hono().get(…).post(…)` (a route added in
+   a separate statement drops out of the `hc` type); the module's `index.ts` adds it with `.route("/", xRoutes)` to
+   its `moduleApp()` (`src/http/app.ts`: JSON error envelope, raw path, tolerated trailing slash) and exports
+   `type XApp = typeof xApp`. A new module goes in the `MODULES` table of `src/app.ts` (prefix, sub-app,
+   guards) and its type in `src/types.ts`. The first registered route wins: register static paths
+   (`/products/lookup`) before `/products/:productId`.
+3. **Handler order in every route:** `doc(…)` → `v("param", …)` → `v("query", …)` → `v("json" | "form", …)` →
+   guard → handler. Guards come from `src/http/auth.ts` (`requireAuth`, `requireCustomer`, `requireSeller`,
+   `requireSellerRole`, `requireAdmin`); a public route takes `publicRoute`; a rate limit (`rateLimit()`,
+   `src/plugins/rate-limit.ts`) goes after the guard. Validation runs before auth (422 before 401): never
+   `app.use(requireX)` on a module. `assertRoutes` stops the API at boot when a route lacks its module's
+   guard, has a `v()` after the guard, or has the `v()` out of order.
+4. **Input** from `c.req.valid(target)` (validated, query and params coerced, bodies trimmed except password
+   fields, unknown fields stripped at any depth); what the guard resolved is in `c.var` (`user`, `session`,
+   `customerProfile`, `seller`).
+5. **Response** with `send(c, Schema, ok(data))` (or `okPage(data, pagination)`, `okMessage("…")` from
+   `src/lib/responses.ts`), where `Schema` is `okRes(X)` / `okPageRes(X)` / `OkMessage`
+   (`src/lib/schemas/responses.ts`), the same schema listed in `doc({ response: withErrors({ 200: Schema }) })`
+   (`withConflictErrors` when a 409 is possible). `send()` drops fields outside the schema (internal columns
+   never leak), writes `Date` as ISO strings and turns an off-schema payload into a 500; it is also what
+   types the `hc` response. Never `c.json()` for a success body.
+6. **Errors:** `throw new ServiceError(status, "messaggio in italiano")` (the code derives from the status;
+   no custom codes). The app's `onError` (`toErrorResponse`, `src/http/errors.ts`) builds the envelope, maps
+   pg unique violations (`23505`) to 409 and logs: don't try/catch for envelope shaping.
+7. **OpenAPI:** `doc({ response, detail })` with an Italian `summary` and `description`, `tags` (a new tag is
+   declared in `src/plugins/openapi.ts`) and `security: [{ bearerAuth: [] }]` on authenticated routes; check
+   `/openapi`.
+8. **Strip test:** every module has one proving that an unknown (nested) field in the body or query never
+   reaches the service and that an extra field returned by the service never leaves the response (e.g.
+   `tests/modules/locations-registration-strip.test.ts`). Requests in tests go through `app.request()` or
+   `testRequest()` / `withVars()` / `signIn()` of `tests/helpers/hono-app.ts`.
+9. **Clients:** the frontends call the route through the `hc` client of that sub-tree
+   (`sellerApi.brands.$get({ query })`, `src/lib/api.ts`) and read it with `unwrapJson()`. JSON has no
+   dates: they arrive as ISO strings, so convert with `new Date(iso)` where a `Date` is needed, and send
+   query values without `null` (`hc` would send the string `"null"`).
 
 ## Writing New Frontend Routes (TanStack Start)
 
 - File-based routing in `src/routes/`. Auth-guarded routes go under `_authenticated/`.
 - i18n via Paraglide — add strings to `messages/*.json`, never hard-code user-facing copy.
-- Data fetching via Eden Treaty + TanStack Query (`src/lib/api.ts`). Types come from the API — no manual DTOs.
-- Forms: `react-hook-form` + `@hookform/resolvers` + Zod (the seller forms on the shared `@bibs/api/schemas` use `schemaResolver`).
+- Data fetching via the `hc` clients (`src/lib/api.ts`) + TanStack Query, unwrapped with `unwrapJson(res, fallback)` from `@bibs/ui/lib/api-client`. Types come from the API — no manual DTOs. Dates arrive as ISO strings: build a `Date` where you need one.
+- Forms: `react-hook-form` + Zod through `zodResolver` from `@/lib/zod-resolver` (it registers the translated Zod messages first). The seller's forms on the Zod schemas shared with the API (`@bibs/api/schemas`) use `schemaResolver` from `@/lib/schema-errors` instead: the schema's `error` meta (the 422 message) wins, translated through `SCHEMA_ERRORS`, and the submit gets the raw form values.
 - UI primitives from `@bibs/ui` (`~/` alias), not raw Base UI or hand-rolled shadcn copies.
 
 ## Commit Conventions
@@ -408,7 +443,7 @@ feat(api): add bulk product import endpoint
 fix(customer): correct loyalty points calculation on refund
 refactor(seller): extract order validation into service layer
 docs(api): update OpenAPI descriptions for store endpoints
-chore(deps): bump elysia to 1.3
+chore(deps): bump better-auth to 1.8
 ```
 
 ### When Committing
