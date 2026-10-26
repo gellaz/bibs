@@ -7,8 +7,8 @@ import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { app, rootApp } from "@/app";
 import { moduleApp } from "@/http/app";
+import { errorBody } from "@/http/responses";
 import { ServiceError } from "@/lib/errors";
-import { errorBody } from "@/lib/responses";
 import { meApp } from "@/modules/me";
 
 // L'app radice (U11 del piano Hono, `src/app.ts`): cosa dà a ogni sub-app

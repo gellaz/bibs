@@ -43,7 +43,7 @@ export class ServiceError extends Error {
 
 /**
  * Errori 409 specializzati per la registrazione. Sopravvivono al global error
- * handler (apps/api/src/plugins/error-handler.ts) che legge `code` dall'istanza
+ * handler (apps/api/src/http/errors.ts) che legge `code` dall'istanza
  * se presente, altrimenti fa fallback a ERROR_CODES[status].
  */
 export class EmailAlreadyRegisteredError extends ServiceError {

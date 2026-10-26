@@ -89,15 +89,15 @@ The only module with side effects: `startCronJobs()`, then `ensureBucket()` (cre
 `socketIpAsForwardedFor` and `rateLimit` read the socket IP. On `SIGTERM`/`SIGINT` it stops the server and closes the
 database pool.
 
-### Middleware — `src/plugins/`
+### Middleware — `src/http/middleware/`
 
-Plain Hono middleware and route groups:
+Plain Hono middleware (1–4, 7) and the two route groups in `src/http/` (5–6):
 
 1. **`request-log.ts`** — `requestLog`: one line per request on stdout (time, level, duration, method, path, status;
    `INFO`/`WARNING`/`ERROR` by status, colours only on a terminal) and a JSON line in `logs/app.log` (single file,
    no rotation).
 2. **`cors.ts`** — `cors`: `hono/cors` for the React frontends, with credentials. Localhost is accepted automatically
-   in development and test, `ALLOWED_ORIGINS` in production (`lib/cors.ts`). Every `OPTIONS` is answered as a 204
+   in development and test, `ALLOWED_ORIGINS` in production (`isOriginAllowed`, same file). Every `OPTIONS` is answered as a 204
    preflight before any route.
 3. **`X-Request-Id`** — `hono/request-id`, registered in `src/app.ts`: on every response except the preflight (the
    client's id when it is letters, digits, `_`, `-` or `=` and at most 255 characters, otherwise a fresh UUID), also
@@ -106,7 +106,7 @@ Plain Hono middleware and route groups:
    `x-real-ip`, so a client cannot dodge better-auth's rate limit (no-op without a socket, e.g. `app.request()` in
    tests); `authHandler` mounts better-auth's handler on `/auth/*` (`hono/mount`), so its endpoints live at
    `/auth/api/*`.
-5. **`openapi.ts`** — `/openapi` (Scalar UI) and `/openapi/json`: better-auth's paths and components plus the paths
+5. **`openapi-routes.ts`** — `/openapi` (Scalar UI) and `/openapi/json`: better-auth's paths and components plus the paths
    of `/health`, `/ready` and every module, built on the first request and cached. OpenAPI tags are declared here.
 6. **`health.ts`** — `GET /health` (liveness probe, always 200) and `GET /ready` (readiness probe: DB + S3, 503 if
    either fails).
@@ -168,7 +168,7 @@ Email sending via **Resend** in production, Mailpit in development:
 - Used for email verification during seller onboarding and employee invites
 - Templates live in `packages/emails` (`@bibs/emails`); see `packages/emails/src/index.tsx`. Preview them with `bun run dev:emails` (port 3004); `@react-email/ui` is a devDependency of `packages/emails`, so the preview server boots non-interactively on fresh clones.
 
-### Config & Errors — `src/lib/config.ts`, `src/lib/errors.ts`, `src/lib/responses.ts`
+### Config & Errors — `src/lib/config.ts`, `src/lib/errors.ts`, `src/http/responses.ts`
 
 `config.ts` centralises business constants: `pointsPerEuro` (1), `pointsPerEuroDiscount` (100), `reservationHours`
 (`{ min: 1, max: 72, default: 24 }`, limits of the per-store `stores.reservation_hours`), `reservationGraceMinutes` (15),
@@ -179,7 +179,7 @@ Email sending via **Resend** in production, Mailpit in development:
 
 ### Logging — `src/lib/logger.ts`
 
-**Pino**, plus the per-request line of `src/plugins/request-log.ts`:
+**Pino**, plus the per-request line of `src/http/middleware/request-log.ts`:
 
 - **Request logging** — one line per request on stdout and a JSON line (`type: "request"`, method, path, status,
   `durationMs`) in `logs/app.log` (single file, no rotation)
@@ -582,7 +582,7 @@ import {doc} from "@/http/openapi";
 import {send} from "@/http/send";
 import {v} from "@/http/validator";
 import {logger} from "@/lib/logger";
-import {ok, okPage} from "@/lib/responses";
+import {ok, okPage} from "@/http/responses";
 import {MyEntitySchema} from "@/lib/schemas/entities";
 import {PaginationQuery} from "@/lib/schemas/pagination";
 import {okPageRes, okRes, withErrors} from "@/lib/schemas/responses";
@@ -668,7 +668,7 @@ and routes on the raw path.
 
 Add a row to `MODULES` with the prefix and the guards every route must carry (`["admin"]`, `["publicRoute"]` for a
 public module, `["customer", "publicRoute"]` for a mixed one, a function of the path when they change by route), and
-export the module's type from `src/types.ts` for the frontends. A new OpenAPI tag goes in `src/plugins/openapi.ts`.
+export the module's type from `src/types.ts` for the frontends. A new OpenAPI tag goes in `src/http/openapi-routes.ts`.
 
 ### 6. Test it
 
@@ -729,7 +729,7 @@ The `onError` of the root app and of every `moduleApp()` (`errorResponse`, `src/
 Postgres constraint violations (`23505` → 409, `23503` → 409 or 400, `23514` → 400) and logs.
 
 Validation errors (422) are translated centrally by `src/http/validation-message.ts`, with the rules and labels of
-`src/lib/validation-message.ts`, from the first Zod issue — the one the API has always reported first
+`src/http/validation-message.ts`, from the first Zod issue — the one the API has always reported first
 (`src/lib/schemas/issues.ts`): `«Etichetta: regola»` (e.g. «Quantità (riga 2): deve essere un numero intero»). Don't
 add an `error` meta to schemas just to translate them; use it only for a message more specific than the generic
 rule. A new input field
@@ -738,7 +738,7 @@ gets its Italian label in `FIELD_LABELS` (fields not listed fall back to the tec
 
 ### Response helpers
 
-Always use the response helpers from `src/lib/responses.ts`:
+Always use the response helpers from `src/http/responses.ts`:
 
 - `ok(data)` — single item response
 - `okPage(data, pagination)` — paginated list response
@@ -932,7 +932,7 @@ The verification link can be extracted from the `HTML` field of the message resp
 ## API Documentation
 
 Full OpenAPI spec at `/openapi` (Scalar UI) and `/openapi/json`, generated from the routes (`src/http/openapi.ts`,
-assembled by `src/plugins/openapi.ts`), with:
+assembled by `src/http/openapi-routes.ts`), with:
 
 - Every module's endpoints, fully documented (the spec is the authoritative route inventory)
 - Request/response schemas from the routes' Zod schemas (`v()` for the input, `doc({ response })` for the output)

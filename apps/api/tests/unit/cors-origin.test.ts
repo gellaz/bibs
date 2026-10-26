@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { isOriginAllowed } from "@/lib/cors";
+import { isOriginAllowed } from "@/http/middleware/cors";
 
 describe("isOriginAllowed", () => {
 	it("allows any localhost origin outside production", () => {

@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { doc } from "@/http/openapi";
+import { okPage } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { okPage } from "@/lib/responses";
 import { ProductCategoryWithMacroSchema } from "@/lib/schemas/entities";
 import { ProductCategoryListQuery } from "@/lib/schemas/queries";
 import { okPageRes, withErrors } from "@/lib/schemas/responses";

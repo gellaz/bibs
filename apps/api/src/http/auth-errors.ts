@@ -1,5 +1,5 @@
 import type { APIError } from "better-auth";
-import { ERROR_CODES, type ErrorStatus, ServiceError } from "./errors";
+import { ERROR_CODES, type ErrorStatus, ServiceError } from "@/lib/errors";
 
 /**
  * Mappa i `code` noti di better-auth (quando valorizzati nel body) al nostro

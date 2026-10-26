@@ -1,11 +1,12 @@
 import { moduleApp } from "@/http/app";
+import { rateLimit } from "@/http/middleware/rate-limit";
 import { doc } from "@/http/openapi";
+import { ok, okMessage } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
-import { ok, okMessage } from "@/lib/responses";
 import {
 	RegisterCustomerResult,
 	RegisterSellerResult,
@@ -20,7 +21,6 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/schemas/responses";
-import { rateLimit } from "@/plugins/rate-limit";
 import {
 	acceptInvite,
 	registerCustomer,

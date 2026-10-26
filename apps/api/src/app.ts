@@ -2,7 +2,15 @@ import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
 import { requestId } from "hono/request-id";
 import { errorResponse, notFoundResponse, rawPath } from "@/http/app";
+import { healthRoutes } from "@/http/health";
+import {
+	authHandler,
+	socketIpAsForwardedFor,
+} from "@/http/middleware/better-auth";
+import { cors } from "@/http/middleware/cors";
+import { markRootNotFound, requestLog } from "@/http/middleware/request-log";
 import { honoPaths } from "@/http/openapi";
+import { openapiRoutes } from "@/http/openapi-routes";
 import type { ModuleGuards } from "@/http/routes";
 import { ServiceError } from "@/lib/errors";
 import { adminApp } from "@/modules/admin";
@@ -18,11 +26,6 @@ import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
 import { sellerApp, sellerGuards } from "@/modules/seller";
 import { webhooksApp } from "@/modules/webhooks";
-import { authHandler, socketIpAsForwardedFor } from "@/plugins/better-auth";
-import { cors } from "@/plugins/cors";
-import { healthRoutes } from "@/plugins/health";
-import { openapiRoutes } from "@/plugins/openapi";
-import { markRootNotFound, requestLog } from "@/plugins/request-log";
 
 // L'app Hono radice dell'API (U11 del piano Hono). Nessun effetto all'import:
 // niente server, niente cron, niente S3 (li avvia `src/index.ts`); così la

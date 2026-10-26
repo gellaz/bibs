@@ -36,7 +36,7 @@ type ExistingDecision =
  * NB: distinguere `verified-conflict` da `pending-resend` rivela se un'email è
  * registrata (scelta di prodotto deliberata: alimenta la UX del banner "Re-invia").
  * Indebolisce la protezione anti-enumeration di better-auth; il rate limiter sui
- * route /register/* (vedi plugins/rate-limit.ts) ne limita lo sfruttamento di massa.
+ * route /register/* (vedi http/middleware/rate-limit.ts) ne limita lo sfruttamento di massa.
  */
 export function decideExistingUser(
 	row: UserRow | undefined | null,

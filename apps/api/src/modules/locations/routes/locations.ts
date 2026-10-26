@@ -1,13 +1,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireAuth } from "@/http/auth";
+import { rateLimit } from "@/http/middleware/rate-limit";
 import { doc } from "@/http/openapi";
+import { ok, okPage } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { ok, okPage } from "@/lib/responses";
 import {
 	CountrySchema,
 	GeocodeSuggestionSchema,
@@ -28,7 +29,6 @@ import {
 	TooManyRequestsError,
 	withErrors,
 } from "@/lib/schemas/responses";
-import { rateLimit } from "@/plugins/rate-limit";
 import { geocodeAddress } from "../services/geocode";
 import {
 	listAllMunicipalities,

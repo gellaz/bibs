@@ -37,7 +37,7 @@ export interface RequestLogEntry {
 	durationMs: number;
 }
 
-/** The request line in `logs/app.log`, written by `plugins/request-log.ts`. */
+/** The request line in `logs/app.log`, written by `http/middleware/request-log.ts`. */
 export function logRequestToFile(
 	level: "info" | "warn" | "error",
 	{ method, path, status, durationMs }: RequestLogEntry,

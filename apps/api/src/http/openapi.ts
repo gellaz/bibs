@@ -9,7 +9,7 @@ import { VALIDATES, type Validates } from "./validator";
 // JSON Schema che l'API di prima scriveva per lo stesso schema e applica le stesse
 // trasformazioni del plugin OpenAPI di prima (1.4.16, MIT: `THIRD_PARTY_NOTICES.md`), così
 // `/openapi` resta identico (`baseline/openapi.json`). Il documento intero lo
-// compone `plugins/openapi.ts`.
+// compone `openapi-routes.ts`.
 
 type Json = Record<string, any>;
 

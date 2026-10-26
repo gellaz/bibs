@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ValidationRule } from "@/lib/validation-rule";
+import type { ValidationRule } from "@/http/validation-rule";
 import {
 	FORMATS,
 	type FormatName,

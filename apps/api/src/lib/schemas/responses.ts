@@ -76,7 +76,7 @@ export const TooManyRequestsError = errorOf("TOO_MANY_REQUESTS");
 export const ServiceUnavailableError = errorOf("SERVICE_UNAVAILABLE");
 export const InternalError = errorOf("INTERNAL_ERROR");
 
-/** Corpo di ogni errore dell'API (`errorBody` in `lib/responses.ts`). */
+/** Corpo di ogni errore dell'API (`errorBody` in `http/responses.ts`). */
 export interface ErrorBody {
 	success: false;
 	error: string;

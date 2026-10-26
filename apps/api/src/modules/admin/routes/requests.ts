@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireAdmin } from "@/http/auth";
 import { doc } from "@/http/openapi";
+import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { ok, okPage } from "@/lib/responses";
 import {
 	AdminChangeDetailSchema,
 	AdminRequestRowSchema,
