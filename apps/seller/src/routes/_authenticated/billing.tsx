@@ -35,7 +35,7 @@ import { CancelStoreDialog } from "@/features/billing/components/cancel-store-di
 import { invoiceStatusBadge } from "@/features/billing/invoice-status";
 import { subscriptionStatusBadge } from "@/features/billing/subscription-status";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { api, sellerApi, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { richMessage } from "@/lib/rich-message";
 import { m } from "@/paraglide/messages";
 
@@ -117,8 +117,8 @@ function BillingPage() {
 		queryKey: ["seller", "billing", "summary"],
 		enabled: isOwner,
 		queryFn: async () => {
-			const r = await api().seller.billing.summary.get();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.billing.summary.$get();
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 	});
 
@@ -126,8 +126,8 @@ function BillingPage() {
 		queryKey: ["seller", "billing", "subscriptions"],
 		enabled: isOwner,
 		queryFn: async () => {
-			const r = await api().seller.billing.subscriptions.get();
-			return unwrap(r, m.common_error()).data ?? [];
+			const r = await sellerApi.billing.subscriptions.$get();
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 	});
 
@@ -135,17 +135,17 @@ function BillingPage() {
 		queryKey: ["seller", "billing", "invoices"],
 		enabled: isOwner,
 		queryFn: async () => {
-			const r = await api().seller.billing.invoices.get({
+			const r = await sellerApi.billing.invoices.$get({
 				query: { limit: 25 },
 			});
-			return unwrap(r, m.common_error()).data;
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 	});
 
 	const portalMutation = useMutation({
 		mutationFn: async () => {
-			const r = await api().seller.billing.portal.post();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.billing.portal.$post();
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: (data) => {
 			if (data?.url) window.location.href = data.url;

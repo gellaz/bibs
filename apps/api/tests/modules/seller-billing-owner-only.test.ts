@@ -1,37 +1,25 @@
 import { describe, expect, it } from "bun:test";
-import { Elysia } from "elysia";
 import { billingRoutes } from "@/modules/seller/routes/billing";
-import { errorHandler } from "@/plugins/error-handler";
+import { testRequest, withVars } from "../helpers/hono-app";
 
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
-
-// Mounted bare (no seller guard) → withSeller(ctx).isOwner is undefined,
-// so requireOwner must produce a 403 before the handler runs. Bodies are
+// Mounted with a non-owner seller context (`withVars`, no session read) →
+// requireOwner must produce a 403 before the handler runs. Bodies are
 // valid on purpose: a 422 from validation would pass for the wrong reason.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.use(billingRoutes);
+const app = withVars(billingRoutes, {
+	user: { id: "u1" },
+	seller: { isOwner: false },
+});
 
 async function call(method: string, path: string, body?: unknown) {
-	return app.handle(
-		new Request(`http://localhost${path}`, {
-			method,
-			...(body
-				? {
-						body: JSON.stringify(body),
-						headers: { "content-type": "application/json" },
-					}
-				: {}),
-		}),
-	);
+	return testRequest(app, path, {
+		method,
+		...(body
+			? {
+					body: JSON.stringify(body),
+					headers: { "content-type": "application/json" },
+				}
+			: {}),
+	});
 }
 
 describe("seller billing routes are owner-only", () => {

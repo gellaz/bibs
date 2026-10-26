@@ -99,6 +99,9 @@ export const UserSchema = z.object({
 	banExpires: zDate().nullable(),
 });
 
+// Utente visto da un altro ruolo non admin (cliente al seller, dipendente al
+// titolare): solo ciò che si mostra. Mai moderazione (role/ban*) né date
+// dell'account.
 export const UserSummarySchema = UserSchema.pick({
 	id: true,
 	name: true,

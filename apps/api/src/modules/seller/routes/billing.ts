@@ -1,8 +1,14 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
 import { storeSubscriptionStatuses } from "@/db/schemas/store-subscription";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ok } from "@/lib/responses";
-import { okRes, withErrors } from "@/lib/schemas";
-import { requireOwner, withSeller } from "../context";
+import { okRes, withErrors } from "@/lib/zod/responses";
+import { zDate, zInteger } from "@/lib/zod/t";
+import { requireOwner } from "../context";
 import {
 	createPortalSession,
 	getBillingSummary,
@@ -10,133 +16,154 @@ import {
 	listInvoices,
 } from "../services/billing";
 
-const SummarySchema = t.Object({
-	totalMonthlyCents: t.Integer(),
-	billableStoresCount: t.Integer({
-		description:
-			"Negozi con abbonamento fatturabile (active, past_due, canceling): quelli sommati in totalMonthlyCents",
+const security = [{ bearerAuth: [] }];
+const tags = ["Seller - Billing"];
+
+const SummaryRes = okRes(
+	z.object({
+		totalMonthlyCents: zInteger(),
+		billableStoresCount: zInteger({
+			description:
+				"Negozi con abbonamento fatturabile (active, past_due, canceling): quelli sommati in totalMonthlyCents",
+		}),
+		nextRenewal: z
+			.object({
+				storeId: z.string(),
+				storeName: z.string(),
+				date: zDate(),
+				amountCents: zInteger(),
+			})
+			.nullable(),
 	}),
-	nextRenewal: t.Nullable(
-		t.Object({
-			storeId: t.String(),
-			storeName: t.String(),
-			date: t.Date(),
-			amountCents: t.Integer(),
+);
+
+const SubscriptionsRes = okRes(
+	z.array(
+		z.object({
+			storeId: z.string(),
+			storeName: z.string(),
+			status: z.enum(storeSubscriptionStatuses),
+			feeAmountCents: zInteger(),
+			currency: z.string(),
+			currentPeriodEnd: zDate(),
+			cancelAtPeriodEnd: z.boolean(),
+			suspendedAt: zDate().nullable(),
 		}),
 	),
-});
+);
 
-const StatusUnion = t.Union(storeSubscriptionStatuses.map((s) => t.Literal(s)));
+const PortalRes = okRes(z.object({ url: z.string() }));
 
-const SubscriptionRowSchema = t.Object({
-	storeId: t.String(),
-	storeName: t.String(),
-	status: StatusUnion,
-	feeAmountCents: t.Integer(),
-	currency: t.String(),
-	currentPeriodEnd: t.Date(),
-	cancelAtPeriodEnd: t.Boolean(),
-	suspendedAt: t.Nullable(t.Date()),
-});
+const InvoicesRes = okRes(
+	z.object({
+		data: z.array(
+			z.object({
+				id: z.string(),
+				createdAt: zDate(),
+				totalCents: zInteger(),
+				currency: z.string(),
+				status: z.string().nullable(),
+				invoicePdfUrl: z.string().nullable(),
+				stripeSubscriptionId: z.string().nullable(),
+				description: z.string().nullable(),
+			}),
+		),
+		hasMore: z.boolean(),
+	}),
+);
 
-const PortalSchema = t.Object({ url: t.String() });
-
-const InvoiceSchema = t.Object({
-	id: t.String(),
-	createdAt: t.Date(),
-	totalCents: t.Integer(),
-	currency: t.String(),
-	status: t.Nullable(t.String()),
-	invoicePdfUrl: t.Nullable(t.String()),
-	stripeSubscriptionId: t.Nullable(t.String()),
-	description: t.Nullable(t.String()),
-});
-
-const InvoicesPageSchema = t.Object({
-	data: t.Array(InvoiceSchema),
-	hasMore: t.Boolean(),
-});
-
-export const billingRoutes = new Elysia({ prefix: "/billing" })
+export const billingRoutes = new Hono()
 	.get(
-		"/summary",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const data = await getBillingSummary({ sellerProfileId: sp.id });
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(SummarySchema) }),
+		"/billing/summary",
+		doc({
+			response: withErrors({ 200: SummaryRes }),
 			detail: {
 				summary: "Riepilogo billing",
 				description:
 					"Totale mensile, conteggio negozi attivi, prossimo rinnovo.",
-				tags: ["Seller - Billing"],
+				tags,
+				security,
 			},
+		}),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const data = await getBillingSummary({ sellerProfileId: sp.id });
+			return send(c, SummaryRes, ok(data));
 		},
 	)
 	.get(
-		"/subscriptions",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const data = await listBillingSubscriptions({ sellerProfileId: sp.id });
-			return ok(data) as any;
-		},
-		{
-			response: withErrors({ 200: okRes(t.Array(SubscriptionRowSchema)) }),
+		"/billing/subscriptions",
+		doc({
+			response: withErrors({ 200: SubscriptionsRes }),
 			detail: {
 				summary: "Lista subscription del seller",
 				description: "Esclude i sub canceled (archivio).",
-				tags: ["Seller - Billing"],
+				tags,
+				security,
 			},
+		}),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const data = await listBillingSubscriptions({ sellerProfileId: sp.id });
+			return send(c, SubscriptionsRes, ok(data));
 		},
 	)
 	.post(
-		"/portal",
-		async (ctx) => {
-			const { sellerProfile: sp, isOwner } = withSeller(ctx);
+		"/billing/portal",
+		doc({
+			response: withErrors({ 200: PortalRes }),
+			detail: {
+				summary: "Customer Portal session",
+				description:
+					"Crea una sessione di Stripe Customer Portal e ritorna l'URL.",
+				tags,
+				security,
+			},
+		}),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await createPortalSession({
 				sellerProfileId: sp.id,
 				stripeCustomerId: sp.stripeCustomerId ?? null,
 			});
-			return ok(data);
-		},
-		{
-			response: withErrors({ 200: okRes(PortalSchema) }),
-			detail: {
-				summary: "Customer Portal session",
-				description:
-					"Crea una sessione di Stripe Customer Portal e ritorna l'URL.",
-				tags: ["Seller - Billing"],
-			},
+			return send(c, PortalRes, ok(data));
 		},
 	)
 	.get(
-		"/invoices",
-		async (ctx) => {
-			const { sellerProfile: sp, query, isOwner } = withSeller(ctx);
+		"/billing/invoices",
+		doc({
+			response: withErrors({ 200: InvoicesRes }),
+			detail: {
+				summary: "Storico fatture (Stripe lazy)",
+				description:
+					"Recupera le fatture dal Customer Stripe. Max 100/req, paging via starting_after.",
+				tags,
+				security,
+			},
+		}),
+		v(
+			"query",
+			z.object({
+				limit: zInteger({ minimum: 1, maximum: 100 }).optional(),
+				startingAfter: z.string().optional(),
+			}),
+		),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
+			const query = c.req.valid("query");
 			const data = await listInvoices({
 				sellerProfileId: sp.id,
 				limit: query.limit ?? 25,
 				startingAfter: query.startingAfter,
 			});
-			return ok(data);
-		},
-		{
-			query: t.Object({
-				limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
-				startingAfter: t.Optional(t.String()),
-			}),
-			response: withErrors({ 200: okRes(InvoicesPageSchema) }),
-			detail: {
-				summary: "Storico fatture (Stripe lazy)",
-				description:
-					"Recupera le fatture dal Customer Stripe. Max 100/req, paging via starting_after.",
-				tags: ["Seller - Billing"],
-			},
+			return send(c, InvoicesRes, ok(data));
 		},
 	);

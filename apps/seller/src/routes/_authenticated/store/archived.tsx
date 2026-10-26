@@ -24,7 +24,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { api, sellerApi, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/store/archived")({
@@ -80,10 +80,10 @@ function ArchivedPage() {
 	// webhook conferma il pagamento; success/cancel riportano su /billing.
 	const reactivateMutation = useMutation({
 		mutationFn: async (storeId: string) => {
-			const r = await api()
-				.seller.stores({ storeId })
-				["reactivation-checkout"].post();
-			return unwrap(r, m.common_error()).data;
+			const r = await sellerApi.stores[":storeId"][
+				"reactivation-checkout"
+			].$post({ param: { storeId } });
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		onSuccess: (data) => {
 			if (data?.checkoutUrl) window.location.href = data.checkoutUrl;

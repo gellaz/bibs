@@ -2,6 +2,7 @@ import { Button } from "@bibs/ui/components/button";
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -15,7 +16,7 @@ import {
 import { useFirstStoreOnboarding } from "@/hooks/use-first-store-onboarding";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { municipalitiesQueryOptions } from "@/hooks/use-municipalities";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { m } from "@/paraglide/messages";
 
@@ -72,11 +73,11 @@ function NewStorePage() {
 
 	useEffect(() => {
 		if (!pendingId) return;
-		void api()
-			.seller.stores.checkout({ pendingId })
-			.get()
+		void sellerApi.stores.checkout[":pendingId"]
+			.$get({ param: { pendingId } })
+			.then((res) => unwrapJson(res, m.store_new_prefill_error()))
 			.then((res) => {
-				const formData = res.data?.data?.formData;
+				const formData = res.data.formData;
 				if (formData) {
 					setPrefillData(formData as Partial<StoreFormData>);
 				} else {
@@ -90,8 +91,10 @@ function NewStorePage() {
 
 	const createMutation = useMutation({
 		mutationFn: async (formData: StoreFormData) => {
-			const response = await api().seller.stores.checkout.post(formData);
-			return unwrap(response, m.store_new_checkout_error());
+			const response = await sellerApi.stores.checkout.$post({
+				json: formData,
+			});
+			return unwrapJson(response, m.store_new_checkout_error());
 		},
 		onSuccess: (data) => {
 			if (data?.data?.checkoutUrl) {

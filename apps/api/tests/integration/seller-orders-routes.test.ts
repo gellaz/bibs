@@ -22,12 +22,11 @@ mock.module("@/db", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
 import { user as userTable } from "@/db/schemas/auth";
 import { order } from "@/db/schemas/order";
+import { moduleApp } from "@/http/app";
 import { resolveSellerAccess } from "@/modules/seller/context";
 import { ordersRoutes } from "@/modules/seller/routes/orders";
-import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,
@@ -35,42 +34,33 @@ import {
 	createTestSeller,
 	createTestStore,
 } from "../helpers/fixtures";
-
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
+import { testRequest } from "../helpers/hono-app";
 
 // Stessa resolve della guardia seller vera (`resolveSellerAccess`), con
-// l'utente preso da un header al posto della sessione better-auth.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.resolve(async ({ request }) => {
-		const id = request.headers.get("x-test-user") ?? "";
+// l'utente preso da un header al posto della sessione better-auth:
+// `requireSeller` trova `user` e `seller` già messi e non rilegge niente.
+const app = moduleApp()
+	.use(async (c, next) => {
+		const id = c.req.header("x-test-user") ?? "";
 		const u = await getTestDb().query.user.findFirst({
 			where: eq(userTable.id, id),
 		});
 		if (!u) throw new Error("test user missing");
-		return { user: u, ...(await resolveSellerAccess(u)) };
+		c.set("user" as never, u as never);
+		c.set("seller" as never, (await resolveSellerAccess(u)) as never);
+		await next();
 	})
-	.use(ordersRoutes);
+	.route("/", ordersRoutes);
 
 function call(userId: string, method: string, path: string, body?: unknown) {
-	return app.handle(
-		new Request(`http://localhost${path}`, {
-			method,
-			headers: {
-				"x-test-user": userId,
-				...(body === undefined ? {} : { "content-type": "application/json" }),
-			},
-			body: body === undefined ? undefined : JSON.stringify(body),
-		}),
-	);
+	return testRequest(app, path, {
+		method,
+		headers: {
+			"x-test-user": userId,
+			...(body === undefined ? {} : { "content-type": "application/json" }),
+		},
+		body: body === undefined ? undefined : JSON.stringify(body),
+	});
 }
 
 beforeAll(async () => {

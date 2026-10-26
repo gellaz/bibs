@@ -1,6 +1,10 @@
-import { Elysia, t } from "elysia";
-import { getLogger } from "@/lib/logger";
-import { PaginationQuery } from "@/lib/pagination";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
+import { logger } from "@/lib/logger";
 import { ok, okMessage, okPage } from "@/lib/responses";
 import {
 	DiscountAddResultSchema,
@@ -12,13 +16,17 @@ import {
 	DiscountRemoveResultSchema,
 	DiscountSchema,
 	DiscountUpdateBody,
+} from "@/lib/zod/discount";
+import { PaginationQuery } from "@/lib/zod/pagination";
+import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas";
-import { requireOwner, withSeller } from "../context";
+} from "@/lib/zod/responses";
+import { zInteger } from "@/lib/zod/t";
+import { requireOwner } from "../context";
 import {
 	addProductsToDiscount,
 	archiveDiscount,
@@ -31,12 +39,37 @@ import {
 	updateDiscount,
 } from "../services/discounts";
 
-export const discountsRoutes = new Elysia()
+const security = [{ bearerAuth: [] }];
+const tags = ["Seller - Discounts"];
+
+const DiscountParams = z.object({ discountId: z.string() });
+
+const ListRes = okPageRes(DiscountListItemSchema);
+const DetailRes = okRes(DiscountSchema.extend({ productCount: zInteger() }));
+const ProductsRes = okPageRes(DiscountProductRowSchema);
+const DiscountRes = okRes(DiscountSchema);
+const AddRes = okRes(DiscountAddResultSchema);
+const RemoveRes = okRes(DiscountRemoveResultSchema);
+
+export const discountsRoutes = new Hono()
 	.get(
 		"/discounts",
-		async (ctx) => {
-			const { sellerProfile: sp, query, isOwner } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: ListRes }),
+			detail: {
+				summary: "Lista promozioni",
+				description:
+					"Elenca le promozioni del venditore. Filtro 'state': 'assignable' (in corso/programmate/in pausa, default) o 'concluded' (scadute/archiviate).",
+				tags,
+				security,
+			},
+		}),
+		v("query", DiscountListQuery),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
+			const query = c.req.valid("query");
 			const result = await listDiscounts({
 				sellerProfileId: sp.id,
 				page: query.page,
@@ -44,79 +77,79 @@ export const discountsRoutes = new Elysia()
 				state: query.state,
 				search: query.search,
 			});
-			return okPage(result.data, result.pagination);
-		},
-		{
-			query: DiscountListQuery,
-			response: withErrors({ 200: okPageRes(DiscountListItemSchema) }),
-			detail: {
-				summary: "Lista promozioni",
-				description:
-					"Elenca le promozioni del venditore. Filtro 'state': 'assignable' (in corso/programmate/in pausa, default) o 'concluded' (scadute/archiviate).",
-				tags: ["Seller - Discounts"],
-			},
+			return send(c, ListRes, okPage(result.data, result.pagination));
 		},
 	)
 	.get(
 		"/discounts/:discountId",
-		async (ctx) => {
-			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const d = await getDiscountById({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-			});
-			return ok(d);
-		},
-		{
-			params: t.Object({ discountId: t.String() }),
-			response: withErrors({
-				200: okRes(
-					t.Object({
-						...DiscountSchema.properties,
-						productCount: t.Integer(),
-					}),
-				),
-			}),
+		doc({
+			response: withErrors({ 200: DetailRes }),
 			detail: {
 				summary: "Dettaglio promozione",
 				description:
 					"Restituisce una promozione con il conteggio dei prodotti associati.",
-				tags: ["Seller - Discounts"],
+				tags,
+				security,
 			},
+		}),
+		v("param", DiscountParams),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const d = await getDiscountById({
+				discountId: c.req.valid("param").discountId,
+				sellerProfileId: sp.id,
+			});
+			return send(c, DetailRes, ok(d));
 		},
 	)
 	.get(
 		"/discounts/:discountId/products",
-		async (ctx) => {
-			const { sellerProfile: sp, params, query, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const out = await getDiscountProducts({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-				page: query.page,
-				limit: query.limit,
-			});
-			return okPage(out.data, out.pagination);
-		},
-		{
-			params: t.Object({ discountId: t.String() }),
-			query: PaginationQuery,
-			response: withErrors({ 200: okPageRes(DiscountProductRowSchema) }),
+		doc({
+			response: withErrors({ 200: ProductsRes }),
 			detail: {
 				summary: "Prodotti inclusi nella promozione",
 				description:
 					"Lista paginata dei prodotti inclusi, con prezzo originale e scontato.",
-				tags: ["Seller - Discounts"],
+				tags,
+				security,
 			},
+		}),
+		v("param", DiscountParams),
+		v("query", PaginationQuery),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const query = c.req.valid("query");
+			const out = await getDiscountProducts({
+				discountId: c.req.valid("param").discountId,
+				sellerProfileId: sp.id,
+				page: query.page,
+				limit: query.limit,
+			});
+			return send(c, ProductsRes, okPage(out.data, out.pagination));
 		},
 	)
 	.post(
 		"/discounts",
-		async (ctx) => {
-			const { sellerProfile: sp, body, user, store, isOwner } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: DiscountRes }),
+			detail: {
+				summary: "Crea promozione",
+				description:
+					"Crea una nuova promozione del venditore, opzionalmente con prodotti iniziali.",
+				tags,
+				security,
+			},
+		}),
+		v("json", DiscountCreateBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			const pino = getLogger(store);
+			const body = c.req.valid("json");
 			const d = await createDiscount({
 				sellerProfileId: sp.id,
 				title: body.title,
@@ -131,9 +164,9 @@ export const discountsRoutes = new Elysia()
 					productIds: body.initialProductIds,
 				});
 			}
-			pino.info(
+			logger.info(
 				{
-					userId: user.id,
+					userId: c.var.user.id,
 					sellerProfileId: sp.id,
 					discountId: d.id,
 					percent: d.percent,
@@ -142,155 +175,155 @@ export const discountsRoutes = new Elysia()
 				},
 				"Promozione creata",
 			);
-			return ok(d);
-		},
-		{
-			body: DiscountCreateBody,
-			response: withErrors({ 200: okRes(DiscountSchema) }),
-			detail: {
-				summary: "Crea promozione",
-				description:
-					"Crea una nuova promozione del venditore, opzionalmente con prodotti iniziali.",
-				tags: ["Seller - Discounts"],
-			},
+			return send(c, DiscountRes, ok(d));
 		},
 	)
 	.patch(
 		"/discounts/:discountId",
-		async (ctx) => {
-			const { sellerProfile: sp, params, body, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const out = await updateDiscount({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-				patch: body,
-			});
-			return ok(out);
-		},
-		{
-			params: t.Object({ discountId: t.String() }),
-			body: DiscountUpdateBody,
-			response: withConflictErrors({ 200: okRes(DiscountSchema) }),
+		doc({
+			response: withConflictErrors({ 200: DiscountRes }),
 			detail: {
 				summary: "Modifica promozione",
 				description:
 					"Modifica i campi di una promozione. Percentuale e data di inizio non sono modificabili una volta partita.",
-				tags: ["Seller - Discounts"],
+				tags,
+				security,
 			},
+		}),
+		v("param", DiscountParams),
+		v("json", DiscountUpdateBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const out = await updateDiscount({
+				discountId: c.req.valid("param").discountId,
+				sellerProfileId: sp.id,
+				patch: c.req.valid("json"),
+			});
+			return send(c, DiscountRes, ok(out));
 		},
 	)
 	.post(
 		"/discounts/:discountId/pause",
-		async (ctx) => {
-			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const out = await pauseDiscount({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-			});
-			return ok(out);
-		},
-		{
-			params: t.Object({ discountId: t.String() }),
-			response: withConflictErrors({ 200: okRes(DiscountSchema) }),
+		doc({
+			response: withConflictErrors({ 200: DiscountRes }),
 			detail: {
 				summary: "Pausa/riprendi promozione",
 				description:
 					"Toggle tra status 'active' e 'paused'. Errore 409 se archiviata.",
-				tags: ["Seller - Discounts"],
+				tags,
+				security,
 			},
+		}),
+		v("param", DiscountParams),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const out = await pauseDiscount({
+				discountId: c.req.valid("param").discountId,
+				sellerProfileId: sp.id,
+			});
+			return send(c, DiscountRes, ok(out));
 		},
 	)
 	.post(
 		"/discounts/:discountId/archive",
-		async (ctx) => {
-			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const out = await archiveDiscount({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-			});
-			return ok(out);
-		},
-		{
-			params: t.Object({ discountId: t.String() }),
-			response: withConflictErrors({ 200: okRes(DiscountSchema) }),
+		doc({
+			response: withConflictErrors({ 200: DiscountRes }),
 			detail: {
 				summary: "Archivia promozione",
 				description: "Imposta status='archived'. Errore 409 se già archiviata.",
-				tags: ["Seller - Discounts"],
+				tags,
+				security,
 			},
+		}),
+		v("param", DiscountParams),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const out = await archiveDiscount({
+				discountId: c.req.valid("param").discountId,
+				sellerProfileId: sp.id,
+			});
+			return send(c, DiscountRes, ok(out));
 		},
 	)
 	.post(
 		"/discounts/:discountId/products",
-		async (ctx) => {
-			const { sellerProfile: sp, params, body, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const out = await addProductsToDiscount({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-				productIds: body.productIds,
-			});
-			return ok(out);
-		},
-		{
-			params: t.Object({ discountId: t.String() }),
-			body: DiscountProductsBody,
-			response: withErrors({ 200: okRes(DiscountAddResultSchema) }),
+		doc({
+			response: withErrors({ 200: AddRes }),
 			detail: {
 				summary: "Aggiungi prodotti alla promozione",
 				description:
 					"Aggiunge prodotti (idempotente). I prodotti di altri venditori finiscono in 'rejected'. Limite 100 IDs.",
-				tags: ["Seller - Discounts"],
+				tags,
+				security,
 			},
+		}),
+		v("param", DiscountParams),
+		v("json", DiscountProductsBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const out = await addProductsToDiscount({
+				discountId: c.req.valid("param").discountId,
+				sellerProfileId: sp.id,
+				productIds: c.req.valid("json").productIds,
+			});
+			return send(c, AddRes, ok(out));
 		},
 	)
 	.delete(
 		"/discounts/:discountId/products",
-		async (ctx) => {
-			const { sellerProfile: sp, params, body, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const out = await removeProductsFromDiscount({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-				productIds: body.productIds,
-			});
-			return ok(out);
-		},
-		{
-			params: t.Object({ discountId: t.String() }),
-			body: DiscountProductsBody,
-			response: withErrors({ 200: okRes(DiscountRemoveResultSchema) }),
+		doc({
+			response: withErrors({ 200: RemoveRes }),
 			detail: {
 				summary: "Rimuovi prodotti dalla promozione",
 				description: "Rimuove i prodotti specificati. Limite 100 IDs.",
-				tags: ["Seller - Discounts"],
+				tags,
+				security,
 			},
+		}),
+		v("param", DiscountParams),
+		v("json", DiscountProductsBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const out = await removeProductsFromDiscount({
+				discountId: c.req.valid("param").discountId,
+				sellerProfileId: sp.id,
+				productIds: c.req.valid("json").productIds,
+			});
+			return send(c, RemoveRes, ok(out));
 		},
 	)
 	.delete(
 		"/discounts/:discountId/products/:productId",
-		async (ctx) => {
-			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
+		doc({
+			response: withErrors({ 200: OkMessage }),
+			detail: {
+				summary: "Rimuovi singolo prodotto",
+				description: "Rimuove un solo prodotto dalla promozione.",
+				tags,
+				security,
+			},
+		}),
+		v("param", z.object({ discountId: z.string(), productId: z.string() })),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
+			const params = c.req.valid("param");
 			await removeProductsFromDiscount({
 				discountId: params.discountId,
 				sellerProfileId: sp.id,
 				productIds: [params.productId],
 			});
-			return okMessage("Prodotto rimosso dalla promozione");
-		},
-		{
-			params: t.Object({
-				discountId: t.String(),
-				productId: t.String(),
-			}),
-			response: withErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Rimuovi singolo prodotto",
-				description: "Rimuove un solo prodotto dalla promozione.",
-				tags: ["Seller - Discounts"],
-			},
+			return send(c, OkMessage, okMessage("Prodotto rimosso dalla promozione"));
 		},
 	);

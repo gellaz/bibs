@@ -105,8 +105,8 @@ export type SellerEnv = {
 };
 
 /**
- * La guardia del modulo seller per le route operative (oggi il `.guard` con
- * `resolveSellerAccess` di `modules/seller/index.ts`): login (401), poi
+ * La guardia del modulo seller per le route operative (era il `.guard`
+ * Elysia del modulo, con `resolveSellerAccess` di `modules/seller/context.ts`): login (401), poi
  * titolare con onboarding attivo o dipendente con incarico attivo di un
  * venditore attivo (i quattro 403), in `c.var.seller`. Dopo i `v(...)` come
  * `requireAuth`; non rilegge `c.var.seller` se c'è già (test, D13).

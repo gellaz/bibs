@@ -169,20 +169,20 @@ per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline 
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
-`locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
+`locations/` e `registration/` (U2+U4); `seller/` (U5: prodotti, brand,
 immagini, caratteristiche, stock; U6: negozi, immagini dei negozi, chiusure,
-impostazioni, team, onboarding, profilo, dashboard; restano a Elysia ordini,
-promozioni, checkout e billing); `customer/` (U3); catalogo pubblico e `admin/`
-(U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; U9:
-venditori, modifiche del profilo, negozi, richieste, billing; l'app admin non usa
-più Eden); `webhooks/` (U10).
+impostazioni, team, onboarding, profilo, dashboard; U7: ordini, promozioni,
+checkout negozio, billing; l'app seller non usa più Eden); `customer/` (U3);
+catalogo pubblico e `admin/` (U8: configurazioni, tassonomia, caratteristiche,
+festività, import CSV; U9: venditori, modifiche del profilo, negozi, richieste,
+billing; l'app admin non usa più Eden); `webhooks/` (U10).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
   `.mount("/me", meApp.fetch)`. Il mount toglie il prefisso e non legge il body;
   una route Elysia vince sempre sul mount, quindi un modulo può migrare in parte
-  (`.mount("/seller", sellerApp.fetch)` accanto a `sellerModule`, che tiene le route
-  non ancora migrate). Finché c'è Elysia restano suoi il
+  (`/seller` fra U5 e U7: `.mount("/seller", sellerApp.fetch)` accanto al modulo
+  Elysia che teneva le route non ancora migrate). Finché c'è Elysia restano suoi il
   preflight e gli header CORS, `X-Request-Id`, la riga di log di logixlysia e la
   sovrascrittura di `x-forwarded-for`; tutto il resto lo fa la sub-app (prove in
   `apps/api/tests/http/mount.test.ts`).
@@ -249,16 +249,18 @@ più Eden); `webhooks/` (U10).
     in Elysia); `t.String` con `minLength`/`maxLength` →
     `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
     unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
-    per Zod; con un formato `zFormat(f).max(n).check(utf16Length({ maxLength: n }))`);
-    `t.String({ format })` → `zFormat(f)`, mai i formati di Zod: `FORMATS`
-    (`lib/zod/formats.ts`) copia il FormatRegistry dell'app composta, dove
-    `@elysiajs/openapi` sovrascrive `email`, `uuid` e `date` di Elysia
-    (`tests/http/formats.test.ts`); `t.Date` → `zDate`; `t.Nullable(x)` → `x.nullable()`, ma
-    `Type.Union([x, Type.Null()])` → `z.union([x, z.null()])` (solo il t.Nullable
-    scrive `nullable: true` in /openapi); `uniqueItems` → `.refine` con la regola
-    `uniqueItems` più `.meta({ uniqueItems: true })`; un `format` con `pattern` →
-    `zFormat(f).regex(p).meta({ format: f })` (il `.regex()` toglie il formato dal
-    JSON Schema); unione di letterali → `z.enum`, ma di letterali numerici (le
+    per Zod), anche con un formato (`zString({ format: "uri", maxLength })`:
+    lunghezze, pattern e formato nell'ordine di TypeBox; `utf16Length` per uno
+    schema scritto a mano); `t.String({ format })` → `zFormat(f)`, mai i formati
+    di Zod: `FORMATS` (`lib/zod/formats.ts`) copia il FormatRegistry dell'app
+    composta, dove `@elysiajs/openapi` sovrascrive `email`, `uuid` e `date` di
+    Elysia (`tests/http/formats.test.ts`); `t.Date` → `zDate`; `t.Nullable(x)` →
+    `x.nullable()`, ma `Type.Union([x, Type.Null()])` → `z.union([x, z.null()])`
+    (solo il t.Nullable scrive `nullable: true` in /openapi); `uniqueItems` →
+    `.refine` con la regola `uniqueItems` più `.meta({ uniqueItems: true })`; un
+    `format` con `pattern` → `zFormat(f).regex(p).meta({ format: f })` (il
+    `.regex()` toglie il formato dal JSON Schema); unione di letterali → `z.enum`,
+    ma di letterali numerici (le
     aliquote IVA `"22"`, `"10"`, …) → `z.union` di `z.literal` (`z.enum` riordina le
     chiavi numeriche in /openapi); `t.Union` di oggetti →
     `z.union`, mai `z.discriminatedUnion`;

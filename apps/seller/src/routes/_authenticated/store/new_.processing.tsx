@@ -1,4 +1,5 @@
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +10,7 @@ import {
 } from "@/features/stores/lib/checkout-progress";
 import { useActiveStore } from "@/hooks/use-active-store";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 // `new_`: stesso URL /store/new/processing (la success_url di Stripe), ma fuori
@@ -44,10 +45,10 @@ function ProcessingPage() {
 	const { data, error } = useQuery({
 		queryKey: ["checkout-status", sessionId],
 		queryFn: async () => {
-			const res = await api()
-				.seller["checkout-sessions"]({ sessionId })
-				.status.get();
-			return unwrap(res, m.common_error()).data;
+			const res = await sellerApi["checkout-sessions"][
+				":sessionId"
+			].status.$get({ param: { sessionId } });
+			return (await unwrapJson(res, m.common_error())).data;
 		},
 		refetchInterval: (q) =>
 			checkoutProgress({

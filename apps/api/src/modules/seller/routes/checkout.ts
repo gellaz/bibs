@@ -1,9 +1,14 @@
-import { Elysia, t } from "elysia";
+import { Hono } from "hono";
+import { z } from "zod";
+import { requireSeller } from "@/http/auth";
+import { doc } from "@/http/openapi";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
 import { ok } from "@/lib/responses";
-import { okRes, withConflictErrors, withErrors } from "@/lib/schemas";
-import { CreateStoreBody } from "@/lib/schemas/forms";
-import { requireOwner, withSeller } from "../context";
+import { CreateStoreBody } from "@/lib/zod/forms/stores";
+import { okRes, withConflictErrors, withErrors } from "@/lib/zod/responses";
+import { requireOwner } from "../context";
 import {
 	createCheckoutSession,
 	createReactivationCheckoutSession,
@@ -11,126 +16,133 @@ import {
 	getPendingForResume,
 } from "../services/checkout";
 
-const CheckoutResponseSchema = t.Object({
-	checkoutUrl: t.String(),
-	pendingStoreCreationId: t.String(),
-});
+const security = [{ bearerAuth: [] }];
+const tags = ["Seller - Stores"];
 
-const CheckoutStatusSchema = t.Object({
-	status: t.Union([
-		t.Literal("open"),
-		t.Literal("ready"),
-		t.Literal("expired"),
-		t.Literal("canceled"),
-	]),
-	storeId: t.Optional(t.String()),
-});
+const CheckoutRes = okRes(
+	z.object({
+		checkoutUrl: z.string(),
+		pendingStoreCreationId: z.string(),
+	}),
+);
 
-const PendingFormSchema = t.Object({
-	formData: t.Unknown(),
-});
+const CheckoutStatusRes = okRes(
+	z.object({
+		status: z.enum(["open", "ready", "expired", "canceled"]),
+		storeId: z.string().optional(),
+	}),
+);
 
-export const checkoutRoutes = new Elysia()
+const PendingFormRes = okRes(z.object({ formData: z.unknown() }));
+
+const ReactivationRes = okRes(z.object({ checkoutUrl: z.string() }));
+
+const inactive = () =>
+	new ServiceError(
+		403,
+		"Per aggiungere negozi l'account venditore deve essere attivo",
+	);
+
+export const checkoutRoutes = new Hono()
 	.post(
 		"/stores/checkout",
-		async (ctx) => {
-			const { sellerProfile: sp, body, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			if (sp.onboardingStatus !== "active") {
-				throw new ServiceError(
-					403,
-					"Per aggiungere negozi l'account venditore deve essere attivo",
-				);
-			}
-			const data = await createCheckoutSession({
-				sellerProfileId: sp.id,
-				body,
-			});
-			return ok(data);
-		},
-		{
-			body: CreateStoreBody,
-			response: withErrors({ 200: okRes(CheckoutResponseSchema) }),
+		doc({
+			response: withErrors({ 200: CheckoutRes }),
 			detail: {
 				summary: "Crea checkout session per nuovo negozio",
 				description:
 					"Crea una Stripe Checkout in mode subscription. Il negozio viene creato dal webhook a pagamento avvenuto.",
-				tags: ["Seller - Stores"],
+				tags,
+				security,
 			},
+		}),
+		v("json", CreateStoreBody),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			if (sp.onboardingStatus !== "active") throw inactive();
+			const data = await createCheckoutSession({
+				sellerProfileId: sp.id,
+				body: c.req.valid("json"),
+			});
+			return send(c, CheckoutRes, ok(data));
 		},
 	)
 	.get(
 		"/checkout-sessions/:sessionId/status",
-		async (ctx) => {
-			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const data = await getCheckoutStatus({
-				sellerProfileId: sp.id,
-				stripeCheckoutSessionId: params.sessionId,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({ sessionId: t.String() }),
-			response: withErrors({ 200: okRes(CheckoutStatusSchema) }),
+		doc({
+			response: withErrors({ 200: CheckoutStatusRes }),
 			detail: {
 				summary: "Stato della checkout session",
 				description: "Polling endpoint per la pagina /store/new/processing.",
-				tags: ["Seller - Stores"],
+				tags,
+				security,
 			},
+		}),
+		v("param", z.object({ sessionId: z.string() })),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const data = await getCheckoutStatus({
+				sellerProfileId: sp.id,
+				stripeCheckoutSessionId: c.req.valid("param").sessionId,
+			});
+			return send(c, CheckoutStatusRes, ok(data));
 		},
 	)
 	.get(
 		"/stores/checkout/:pendingId",
-		async (ctx) => {
-			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			const data = await getPendingForResume({
-				sellerProfileId: sp.id,
-				pendingId: params.pendingId,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({ pendingId: t.String() }),
-			response: withErrors({ 200: okRes(PendingFormSchema) }),
+		doc({
+			response: withErrors({ 200: PendingFormRes }),
 			detail: {
 				summary: "Recupera form data per cancel flow",
 				description:
 					"Usato per ripopolare il form quando l'utente torna da checkout cancellato.",
-				tags: ["Seller - Stores"],
+				tags,
+				security,
 			},
+		}),
+		v("param", z.object({ pendingId: z.string() })),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			const data = await getPendingForResume({
+				sellerProfileId: sp.id,
+				pendingId: c.req.valid("param").pendingId,
+			});
+			return send(c, PendingFormRes, ok(data));
 		},
 	)
 	.post(
 		"/stores/:storeId/reactivation-checkout",
-		async (ctx) => {
-			const { sellerProfile: sp, params, isOwner } = withSeller(ctx);
-			requireOwner(isOwner);
-			if (sp.onboardingStatus !== "active") {
-				throw new ServiceError(
-					403,
-					"Per aggiungere negozi l'account venditore deve essere attivo",
-				);
-			}
-			const data = await createReactivationCheckoutSession({
-				sellerProfileId: sp.id,
-				storeId: params.storeId,
-			});
-			return ok(data);
-		},
-		{
-			params: t.Object({
-				storeId: t.String({ description: "ID del negozio archiviato" }),
-			}),
-			response: withConflictErrors({
-				200: okRes(t.Object({ checkoutUrl: t.String() })),
-			}),
+		doc({
+			response: withConflictErrors({ 200: ReactivationRes }),
 			detail: {
 				summary: "Checkout per riattivare un negozio cancellato",
 				description:
 					"Crea una Stripe Checkout in mode subscription (stesso prezzo della creazione negozio) per un negozio con abbonamento 'canceled'. A pagamento avvenuto il webhook toglie il negozio dall'archivio con prodotti, orari e immagini invariati. 409 se il negozio non è cancellato. Solo il titolare.",
-				tags: ["Seller - Stores"],
+				tags,
+				security,
 			},
+		}),
+		v(
+			"param",
+			z.object({
+				storeId: z.string().meta({ description: "ID del negozio archiviato" }),
+			}),
+		),
+		requireSeller,
+		async (c) => {
+			const { sellerProfile: sp, isOwner } = c.var.seller;
+			requireOwner(isOwner);
+			if (sp.onboardingStatus !== "active") throw inactive();
+			const data = await createReactivationCheckoutSession({
+				sellerProfileId: sp.id,
+				storeId: c.req.valid("param").storeId,
+			});
+			return send(c, ReactivationRes, ok(data));
 		},
 	);

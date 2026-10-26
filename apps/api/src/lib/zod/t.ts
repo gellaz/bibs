@@ -110,6 +110,8 @@ export interface StringOptions extends Meta {
 	minLength?: number;
 	maxLength?: number;
 	pattern?: string;
+	/** Formato di Elysia (`t.String({ format, maxLength })`): issue di `zFormat`. */
+	format?: FormatName;
 }
 
 /**
@@ -142,11 +144,19 @@ export const utf16Length = ({
 			});
 	});
 
-/** `t.String` con `minLength`/`maxLength` (vedi `utf16Length`) e `pattern`. */
+/**
+ * `t.String` con `minLength`/`maxLength` (vedi `utf16Length`), `pattern` e
+ * `format`, controllati nell'ordine di TypeBox: lunghezze, pattern, formato.
+ */
 export function zString(options: StringOptions = {}) {
-	const { pattern } = options;
+	const { pattern, format } = options;
 	let schema = z.string().check(utf16Length(options));
 	if (pattern !== undefined) schema = schema.regex(new RegExp(pattern));
+	if (format !== undefined)
+		schema = schema.check((ctx) => {
+			if (!FORMATS[format](ctx.value))
+				ctx.issues.push({ code: "invalid_format", format, input: ctx.value });
+		});
 	return register(schema.meta(metaOf(options)), {
 		...options,
 		type: "string",

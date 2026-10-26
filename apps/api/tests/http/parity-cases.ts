@@ -11,6 +11,7 @@ import { PaginationQuery as TbPaginationQuery } from "@/lib/pagination";
 import {
 	CategoryListQuery as TbCategoryListQuery,
 	CharacteristicListQuery as TbCharacteristicListQuery,
+	OrderListQuery as TbOrderListQuery,
 	ProductCategoryListQuery as TbProductCategoryListQuery,
 	ProductSearchQuery as TbProductSearchQuery,
 	SellerListQuery as TbSellerListQuery,
@@ -21,6 +22,8 @@ import {
 	BulkStatusBody as TbBulkStatusBody,
 	DiscountCreateBody as TbDiscountCreateBody,
 	DiscountListQuery as TbDiscountListQuery,
+	DiscountProductsBody as TbDiscountProductsBody,
+	DiscountUpdateBody as TbDiscountUpdateBody,
 	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
 import { VatRateSchema as TbVatRateSchema } from "@/lib/schemas/forms";
@@ -52,6 +55,12 @@ import {
 	StockBulkAdjustBody as TbStockBulkAdjustBody,
 } from "@/lib/schemas/stock";
 import {
+	DiscountCreateBody,
+	DiscountListQuery,
+	DiscountProductsBody,
+	DiscountUpdateBody,
+} from "@/lib/zod/discount";
+import {
 	BulkDeleteBody,
 	BulkStatusBody,
 	ProductStatusBody,
@@ -80,6 +89,7 @@ import { PaginationQuery } from "@/lib/zod/pagination";
 import {
 	CategoryListQuery,
 	CharacteristicListQuery,
+	OrderListQuery,
 	ProductCategoryListQuery,
 	ProductSearchQuery,
 	SellerListQuery,
@@ -278,39 +288,15 @@ const TbMunicipalitiesQuery = t.Composite([
 	}),
 ]);
 
-const DiscountCreateBody = z.object({
-	title: zString({
-		minLength: 1,
-		maxLength: 80,
-		description: "Titolo della promozione",
-	}),
-	percent: zInteger({ minimum: 1, maximum: 99 }),
-	startsAt: zDate(),
-	endsAt: zDate().nullable().optional(),
-	initialProductIds: z
-		.array(z.string())
-		.max(100)
-		.meta({ description: "Prodotti da includere subito" })
-		.optional(),
-});
-
-const DiscountListQuery = PaginationQuery.extend({
-	state: z
-		.enum(["assignable", "concluded"])
-		.meta({
-			description:
-				"Filtro lista: 'assignable' = in corso/programmate/in pausa; 'concluded' = scadute/archiviate",
-		})
-		.optional(),
-	search: zString({ maxLength: 80 }).optional(),
-});
+// `DiscountCreateBody` e `DiscountListQuery` sono in `lib/zod/discount.ts` da U7.
 
 // Gemello di `ProductSearchQuery`: `lib/zod/queries.ts` (U3).
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
-// `OpeningHoursSchema` è in `lib/zod/forms/opening-hours.ts` da U6:
-// `Type.Integer` di TypeBox è `zInt`, il `t.Integer` di Elysia è `zInteger`.
+// `OpeningHoursSchema` è in `lib/zod/forms/opening-hours.ts` da U6 e
+// `CreateStoreBody` in `lib/zod/forms/stores.ts` da U7: `Type.Integer` di
+// TypeBox è `zInt`, il `t.Integer` di Elysia è `zInteger`.
 const OpeningHours = OpeningHoursSchema;
 
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
@@ -1309,6 +1295,35 @@ export const cases: Case[] = [
 		{ title: "x", percent: 5, startsAt: "05/03/2027" },
 		200,
 		{ ok: { title: "x", percent: 5, startsAt: "2027-05-03T00:00:00.000Z" } },
+	),
+	// Offset senza segno: Elysia nudo lo accettava come `date`, l'app composta
+	// (formato `date` di @elysiajs/openapi) no. Giro di correzioni 2 di U7.
+	...[
+		"2026-01-01T12:00:00 01:00",
+		"2026-01-01T12:00 01:00",
+		"2026-01-01T12:00:00.000 01:00",
+	].map((startsAt) =>
+		body(
+			`disc: inizio ${startsAt} (offset senza segno)`,
+			TbDiscountCreateBody,
+			DiscountCreateBody,
+			{ title: "x", percent: 5, startsAt },
+			422,
+			fail("Inizio: data non valida"),
+		),
+	),
+	body(
+		"disc: fine con l'offset senza segno",
+		TbDiscountCreateBody,
+		DiscountCreateBody,
+		{
+			title: "x",
+			percent: 5,
+			startsAt: "2026-01-01",
+			endsAt: "2026-01-01T12:00:00 01:00",
+		},
+		422,
+		fail("Fine: data non valida"),
 	),
 	query(
 		"q-page-0",
@@ -3178,6 +3193,364 @@ export const cases: Case[] = [
 		422,
 		fail("Motivo: deve essere un testo"),
 	),
+
+	// U7: gemelli di promozioni, ordini e negozio (checkout).
+	body(
+		"promozioni: PATCH vuoto (DiscountUpdateBody)",
+		TbDiscountUpdateBody,
+		DiscountUpdateBody,
+		{},
+		200,
+		{ ok: {} },
+	),
+	body(
+		"promozioni: PATCH con date, intero come stringa e campi ignoti",
+		TbDiscountUpdateBody,
+		DiscountUpdateBody,
+		{ percent: "10", endsAt: null, startsAt: "2026-02-01", status: "x" },
+		200,
+		{
+			ok: {
+				percent: 10,
+				endsAt: null,
+				startsAt: "2026-02-01T00:00:00.000Z",
+			},
+		},
+	),
+	body(
+		"promozioni: PATCH titolo vuoto (DiscountUpdateBody)",
+		TbDiscountUpdateBody,
+		DiscountUpdateBody,
+		{ title: "", percent: 0 },
+		422,
+		fail("Titolo: campo obbligatorio"),
+	),
+	body(
+		"promozioni: PATCH fine con l'offset senza segno (DiscountUpdateBody)",
+		TbDiscountUpdateBody,
+		DiscountUpdateBody,
+		{ endsAt: "2026-01-01T12:00:00 01:00" },
+		422,
+		fail("Fine: data non valida"),
+	),
+	body(
+		"promozioni: PATCH inizio con l'offset senza segno (DiscountUpdateBody)",
+		TbDiscountUpdateBody,
+		DiscountUpdateBody,
+		{ startsAt: "2026-01-01T12:00 01:00" },
+		422,
+		fail("Inizio: data non valida"),
+	),
+	body(
+		"promozioni: prodotti vuoti (DiscountProductsBody)",
+		TbDiscountProductsBody,
+		DiscountProductsBody,
+		{ productIds: [] },
+		422,
+		fail("Prodotti: almeno 1 elemento"),
+	),
+	query(
+		"ordini: stato e tipo (OrderListQuery)",
+		TbOrderListQuery,
+		OrderListQuery,
+		"?status=confirmed&type=reserve_pickup&page=2",
+		200,
+		{ ok: { page: 2, limit: 20, status: "confirmed", type: "reserve_pickup" } },
+	),
+	query(
+		"ordini: stato non ammesso (OrderListQuery)",
+		TbOrderListQuery,
+		OrderListQuery,
+		"?status=bad",
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	body(
+		"negozio: vuoto (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"negozio: senza posizione (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+		},
+		422,
+		fail("La posizione del negozio sulla mappa è obbligatoria"),
+	),
+	body(
+		"negozio: posizione fuori intervallo (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 144 },
+		},
+		422,
+		fail("location.y: deve essere al massimo 90"),
+	),
+	body(
+		"negozio: telefono con posizione negativa (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			phoneNumbers: [{ number: "051123456", position: -1 }],
+		},
+		422,
+		fail("Posizione (riga 1): deve essere almeno 0"),
+	),
+	body(
+		"negozio: posizione del telefono come stringa (Type.Integer)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			phoneNumbers: [{ number: "051123456", position: "1" }],
+		},
+		422,
+		fail("Posizione (riga 1): deve essere un numero intero"),
+	),
+	body(
+		"negozio: valido, campi ignoti tolti, orari null (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: " Bottega ",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44, z: 1 },
+			websiteUrl: null,
+			openingHours: null,
+			phoneNumbers: [{ number: "051123456", position: 0, extra: 1 }],
+			sellerProfileId: "altro",
+		},
+		200,
+		{
+			ok: {
+				name: "Bottega",
+				addressLine1: "Via Roma 1",
+				municipalityId: "m1",
+				zipCode: "40100",
+				location: { x: 11, y: 44 },
+				websiteUrl: null,
+				openingHours: null,
+				phoneNumbers: [{ number: "051123456", position: 0 }],
+			},
+		},
+	),
+	// zString: TypeBox conta le unità UTF-16 (501 emoji sono 1002 > 1000).
+	body(
+		"negozio: descrizione di emoji oltre il limite (zString)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			description: "😀".repeat(501),
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+		},
+		422,
+		fail("Descrizione: al massimo 1000 caratteri"),
+	),
+	// `Type.Union([X, Type.Null()])` (non t.Nullable): l'errore del ramo non
+	// nullo sta sul campo, come per t.Nullable.
+	body(
+		"negozio: giorno fuori intervallo (Type.Union con Null)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			openingHours: [
+				{ dayOfWeek: 7, slots: [{ open: "09:00", close: "12:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: deve essere al massimo 6"),
+	),
+	body(
+		"negozio: orario fuori formato in profondità (Type.Union con Null)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			openingHours: [
+				{ dayOfWeek: 0, slots: [{ open: "9:00", close: "12:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: formato non valido"),
+	),
+	body(
+		"negozio: orari come testo (Type.Union con Null)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			openingHours: "abc",
+		},
+		422,
+		fail("openingHours: deve essere un elenco"),
+	),
+	body(
+		"negozio: sito troppo lungo (Type.Union con Null)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			websiteUrl: `https://x.it/${"a".repeat(500)}`,
+		},
+		422,
+		fail("Sito web: al massimo 500 caratteri"),
+	),
+	body(
+		"negozio: orario non valido e sito non valido (Type.Union con Null)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			websiteUrl: "nope",
+			openingHours: [
+				{ dayOfWeek: 0, slots: [{ open: "9:00", close: "12:00" }] },
+			],
+		},
+		422,
+		fail("Sito web: indirizzo web non valido"),
+	),
+	// Un errore di tipo nel ramo non nullo fa fallire entrambi i rami: Zod dà
+	// una sola issue `invalid_union` sul campo, e la regola va presa dallo
+	// schema del ramo (`zInt()` → «numero intero», non «numero»).
+	...[
+		["testo", "1"],
+		["null", null],
+		["booleano", true],
+	].map(([what, dayOfWeek]) =>
+		body(
+			`negozio: giorno come ${what} (Type.Union con Null)`,
+			TbCreateStoreBody,
+			CreateStoreBody,
+			{
+				name: "Bottega",
+				addressLine1: "Via Roma 1",
+				municipalityId: "m1",
+				zipCode: "40100",
+				location: { x: 11, y: 44 },
+				openingHours: [
+					{ dayOfWeek: 1, slots: [{ open: "09:00", close: "12:00" }] },
+					{ dayOfWeek, slots: [{ open: "09:00", close: "12:00" }] },
+				],
+			},
+			422,
+			fail("openingHours: deve essere un numero intero"),
+		),
+	),
+	// Lo stesso con l'unione sul campo stesso (nessun form la usa ancora): guardia
+	// per il merge con U6, che qui dava «numero» (`collapse()` di issues.ts).
+	...[
+		["testo", "1"],
+		["booleano", true],
+	].map(([what, n]) =>
+		body(
+			`vm: intero o null alla radice, ${what}`,
+			t.Object({ n: Type.Union([Type.Integer(), Type.Null()]) }),
+			z.object({ n: z.union([zInt(), z.null()]) }),
+			{ n },
+			422,
+			fail("n: deve essere un numero intero"),
+		),
+	),
+	// maxLength prima del formato, in unità UTF-16: 14 + 244 × 2 = 502.
+	body(
+		"negozio: sito di emoji oltre il limite (Type.Union con Null)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+			websiteUrl: `https://e.com/${"😀".repeat(244)}`,
+		},
+		422,
+		fail("Sito web: al massimo 500 caratteri"),
+	),
+	// `Type.Integer` (zInt) non ha i limiti dei safe integer di `z.int()`.
+	{
+		name: "Type.Integer: giorno oltre i safe integer (OpeningHoursSchema)",
+		target: "json",
+		tb: openingHours[0],
+		zod: openingHours[1],
+		req: {
+			raw: '{"openingHours":[{"dayOfWeek":9007199254740993,"slots":[{"open":"09:00","close":"10:00"}]}]}',
+			contentType: "application/json",
+		},
+		status: 422,
+		body: fail("openingHours: deve essere al massimo 6"),
+	},
+	{
+		name: "Type.Integer: posizione oltre i safe integer (CreateStoreBody)",
+		target: "json",
+		tb: TbCreateStoreBody,
+		zod: CreateStoreBody,
+		req: {
+			raw: '{"name":"B","addressLine1":"V","municipalityId":"m","zipCode":"40100","location":{"x":1,"y":2},"phoneNumbers":[{"number":"051123456","position":9007199254740993}]}',
+			contentType: "application/json",
+		},
+		status: 200,
+		body: {
+			ok: {
+				name: "B",
+				addressLine1: "V",
+				municipalityId: "m",
+				zipCode: "40100",
+				location: { x: 1, y: 2 },
+				phoneNumbers: [{ number: "051123456", position: 9007199254740992 }],
+			},
+		},
+	},
 ];
 
 function bigIntegers(): Case[] {

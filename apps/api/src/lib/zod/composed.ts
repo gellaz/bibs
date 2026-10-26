@@ -132,6 +132,7 @@ export const SellerProductListItemSchema = ProductWithRelationsSchema.extend({
 	appliedDiscount: AppliedDiscountSchema.nullable(),
 });
 
+// StoreProduct + product (for order items)
 const StoreProductWithProduct = z.object({
 	...StoreProductSchema.shape,
 	product: ProductSchema,
@@ -141,6 +142,21 @@ const StoreProductWithProduct = z.object({
 const OrderItemWithProduct = z.object({
 	...OrderItemSchema.shape,
 	storeProduct: StoreProductWithProduct.nullable(),
+});
+
+// Cliente visto dal seller sull'ordine: niente saldo punti né dati di account
+const SellerOrderCustomer = z.object({
+	id: z.string(),
+	user: UserSummarySchema,
+});
+
+// Order with relations — seller view
+export const SellerOrderWithRelationsSchema = z.object({
+	...OrderSchema.shape,
+	items: z.array(OrderItemWithProduct),
+	customerProfile: SellerOrderCustomer,
+	// location esclusa: la geometria PostGIS non si legge nelle relazioni annidate.
+	store: StoreSchema.omit({ location: true }),
 });
 
 // Order with relations — customer view

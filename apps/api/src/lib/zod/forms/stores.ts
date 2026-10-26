@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { utf16Length, zFormat, zInt, zString } from "../t";
+import { zInt, zString } from "../t";
 import { OpeningHoursSchema } from "./opening-hours";
 
-// Gemello Zod di `lib/schemas/forms/stores.ts` (D3 del piano Hono). Le unioni
-// con `Type.Null()` sono `z.union([…, z.null()])`, non `.nullable()`: in
-// /openapi solo il t.Nullable di Elysia porta `nullable: true`.
+// Gemelli Zod di `lib/schemas/forms/stores.ts` (D3 del piano Hono), stessi
+// nomi; si aggiungono quando una route migrata li usa. In U11b prendono il
+// posto del file TypeBox (`@bibs/api/schemas`).
 
 const PhoneNumber = z.object({
 	label: zString({
@@ -24,7 +24,8 @@ const PhoneNumber = z.object({
 });
 
 // Obbligatoria alla creazione: senza coordinate il negozio non compare nelle
-// ricerche per prossimità.
+// ricerche per prossimità. La sceglie il seller (suggerimento + pin), non la
+// deduce il server.
 const StoreLocation = z
 	.object({
 		x: z.number().min(-180).max(180).meta({ description: "Longitudine" }),
@@ -61,13 +62,11 @@ export const CreateStoreBody = z.object({
 		description: "ID del comune del negozio",
 		error: "Il comune è obbligatorio",
 	}),
-	zipCode: z
-		.string()
-		.regex(/^\d{5}$/)
-		.meta({
-			description: "CAP italiano (5 cifre)",
-			error: "Il CAP deve essere di 5 cifre",
-		}),
+	zipCode: zString({
+		pattern: "^\\d{5}$",
+		description: "CAP italiano (5 cifre)",
+		error: "Il CAP deve essere di 5 cifre",
+	}),
 	location: StoreLocation,
 	country: zString({
 		minLength: 2,
@@ -78,16 +77,15 @@ export const CreateStoreBody = z.object({
 		.string()
 		.meta({ description: "ID categoria negozio" })
 		.optional(),
+	// `Type.Union([X, Type.Null()])`, non `t.Nullable`: niente `nullable: true`
+	// in /openapi, quindi `z.union` e non `.nullable()`.
 	websiteUrl: z
 		.union([
-			// `.max()` scrive maxLength in /openapi ma conta i code point:
-			// `utf16Length` conta come TypeBox.
-			zFormat("uri")
-				.max(500)
-				.check(utf16Length({ maxLength: 500 }))
-				.meta({
-					description: "URL del sito web. null per assenza esplicita",
-				}),
+			zString({
+				format: "uri",
+				maxLength: 500,
+				description: "URL del sito web. null per assenza esplicita",
+			}),
 			z.null(),
 		])
 		.optional(),

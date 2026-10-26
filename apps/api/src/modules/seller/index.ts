@@ -1,8 +1,5 @@
-import { Elysia } from "elysia";
 import { moduleApp } from "@/http/app";
 import type { ModuleGuard } from "@/http/routes";
-import { betterAuth } from "@/plugins/better-auth";
-import { resolveSellerAccess } from "./context";
 import { billingRoutes } from "./routes/billing";
 import { brandsRoutes } from "./routes/brands";
 import { checkoutRoutes } from "./routes/checkout";
@@ -22,10 +19,11 @@ import { storeImagesRoutes } from "./routes/store-images";
 import { storesRoutes } from "./routes/stores";
 
 /**
- * Sub-app Hono del modulo, montata su /seller in `src/index.ts` (strangler,
- * migrazione Hono): le route seller ancora Elysia (`sellerModule`, U7)
- * vincono sul mount. Ogni route porta la sua guardia: `requireSellerRole`
- * per profilo e onboarding, `requireSeller` per il resto.
+ * Sub-app Hono del modulo, montata su /seller in `src/index.ts`. Ogni route
+ * porta la sua guardia: `requireSellerRole` per profilo e onboarding,
+ * `requireSeller` per il resto. In Hono risponde la prima route registrata:
+ * il checkout (`/stores/checkout`, `/stores/checkout/:pendingId`) sta prima
+ * delle route `/stores/:storeId/…`, come la precedenza statica di Elysia.
  */
 export const sellerApp = moduleApp()
 	.route("/", productsRoutes)
@@ -33,6 +31,10 @@ export const sellerApp = moduleApp()
 	.route("/", brandsRoutes)
 	.route("/", imagesRoutes)
 	.route("/", stockRoutes)
+	.route("/", billingRoutes)
+	.route("/", checkoutRoutes)
+	.route("/", ordersRoutes)
+	.route("/", discountsRoutes)
 	.route("/", profileRoutes)
 	.route("/", onboardingRoutes)
 	.route("/", storesRoutes)
@@ -55,23 +57,3 @@ export const sellerGuards = (path: string): readonly ModuleGuard[] =>
 	path === "/profile" || path.startsWith("/onboarding/")
 		? ["sellerRole"]
 		: ["seller"];
-
-export const sellerModule = new Elysia({ prefix: "/seller" })
-	.use(betterAuth)
-	// Route operative (U7): partita IVA verificata
-	.guard(
-		{
-			auth: true,
-			detail: {
-				security: [{ bearerAuth: [] }],
-			},
-		},
-		(app) =>
-			app
-				.resolve(({ user: u }) => resolveSellerAccess(u))
-				// Le altre sub-route sono su Hono (`sellerApp`)
-				.use(billingRoutes)
-				.use(checkoutRoutes)
-				.use(ordersRoutes)
-				.use(discountsRoutes),
-	);

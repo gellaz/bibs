@@ -62,6 +62,13 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 	}
 	// t.Nullable: unione con null marcata `nullable: true`.
 	if (def.type === "nullable") json.nullable = true;
+	// t.Record(t.String(), X): TypeBox scrive `patternProperties` con la chiave
+	// `^(.*)$`, Zod `propertyNames` + `additionalProperties` (U7).
+	if (def.type === "record") {
+		json.patternProperties = { "^(.*)$": json.additionalProperties };
+		delete json.additionalProperties;
+		delete json.propertyNames;
+	}
 	// Unione di letterali: TypeBox scrive un anyOf di `const`.
 	if (def.type === "enum") {
 		const values = json.enum as unknown[];

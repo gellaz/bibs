@@ -20,7 +20,7 @@ import { customerApp } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
-import { sellerApp, sellerGuards, sellerModule } from "@/modules/seller";
+import { sellerApp, sellerGuards } from "@/modules/seller";
 import { webhooksApp } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
@@ -183,13 +183,11 @@ const app = new Elysia()
 		}),
 	)
 	.use(betterAuth)
-	.use(sellerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
 	.mount("/customer", customerApp.fetch)
 	.mount("/register", registrationApp.fetch)
 	.mount("/locations", locationsApp.fetch)
-	// Seller in parte: le route ancora in `sellerModule` vincono sul mount.
 	.mount("/seller", sellerApp.fetch)
 	.mount("/admin", adminApp.fetch)
 	.mount("/product-macro-categories", productMacroCategoriesApp.fetch)
