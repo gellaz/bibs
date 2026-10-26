@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createMiddleware } from "hono/factory";
+import { requestId } from "hono/request-id";
 import { errorResponse, notFoundResponse, rawPath } from "@/http/app";
 import { honoPaths } from "@/http/openapi";
 import type { ModuleGuards } from "@/http/routes";
@@ -21,7 +22,6 @@ import { authHandler, socketIpAsForwardedFor } from "@/plugins/better-auth";
 import { cors } from "@/plugins/cors";
 import { healthRoutes } from "@/plugins/health";
 import { openapiRoutes } from "@/plugins/openapi";
-import { requestId } from "@/plugins/request-id";
 import { markRootNotFound, requestLog } from "@/plugins/request-log";
 
 // L'app Hono radice dell'API (U11 del piano Hono). Nessun effetto all'import:
@@ -69,7 +69,7 @@ export function rootApp() {
 		})
 		.use(requestLog)
 		.use(cors)
-		.use(requestId)
+		.use(requestId())
 		.use(socketIpAsForwardedFor);
 }
 

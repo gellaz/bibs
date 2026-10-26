@@ -90,7 +90,7 @@ describe("app radice — cosa dà alle sub-app", () => {
 		expect(res.headers.get("access-control-allow-origin")).toBe(ORIGIN.origin);
 		expect(res.headers.get("access-control-allow-credentials")).toBe("true");
 		expect(res.headers.get("access-control-expose-headers")).toBe(
-			"Content-Length, X-Request-Id",
+			"Content-Length,X-Request-Id",
 		);
 		expect(res.headers.get("vary")).toBe("Origin");
 		expect(res.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/);
@@ -198,7 +198,7 @@ describe("app radice — errori e 404", () => {
 		expect(res.status).toBe(401);
 	});
 
-	it("/me vero: 401 con gli header della baseline", async () => {
+	it("/me vero: 401 con gli header CORS", async () => {
 		const res = await req("/me/avatar", { method: "DELETE", headers: ORIGIN });
 		expect(res.status).toBe(401);
 		expect(await res.json()).toEqual(
@@ -206,13 +206,12 @@ describe("app radice — errori e 404", () => {
 		);
 		expect(Object.fromEntries(res.headers)).toMatchObject({
 			"access-control-allow-credentials": "true",
-			"access-control-allow-headers": "Content-Type, Authorization",
-			"access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 			"access-control-allow-origin": "http://localhost:3001",
-			"access-control-expose-headers": "Content-Length, X-Request-Id",
+			"access-control-expose-headers": "Content-Length,X-Request-Id",
 			"content-type": "application/json;charset=utf-8",
 			vary: "Origin",
 		});
+		expect(res.headers.has("access-control-allow-methods")).toBe(false);
 	});
 
 	it("/me vero: 422 prima del 401 per un anonimo con input non valido", async () => {
@@ -600,6 +599,20 @@ function expected(g: Golden, spec: Spec) {
 		headers["x-request-id"] = "<generated>";
 	// Delta 5: Hono risponde all'HEAD senza corpo da misurare.
 	if (spec.method === "HEAD") delete headers["content-length"];
+	// Delta 22: CORS di `hono/cors`. Liste unite con "," invece di ", ";
+	// metodi e header ammessi solo sul preflight, che i metodi li dà sempre e
+	// aggiunge `Access-Control-Request-Headers` a `vary`.
+	for (const key of Object.keys(headers))
+		if (key.startsWith("access-control-"))
+			headers[key] = headers[key].replaceAll(", ", ",");
+	if (spec.method === "OPTIONS") {
+		headers["access-control-allow-methods"] =
+			"GET,POST,PUT,PATCH,DELETE,OPTIONS";
+		headers.vary = "Origin, Access-Control-Request-Headers";
+	} else {
+		delete headers["access-control-allow-headers"];
+		delete headers["access-control-allow-methods"];
+	}
 	// Delta 16 (U11): la pagina di /openapi dichiara a Scalar l'integrazione
 	// "hono" al posto di quella di prima; il resto dell'HTML è identico.
 	const body = spec.skipBody

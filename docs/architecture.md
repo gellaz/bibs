@@ -45,7 +45,7 @@ after any API change.
 - **`src/index.ts`** — the server only: cron jobs, S3 bucket check, `Bun.serve({ fetch: app.fetch })`, graceful
   shutdown.
 - **`src/plugins/`** — plain Hono middleware and route groups: `request-log.ts` (log line per request),
-  `cors.ts`, `request-id.ts` (`X-Request-Id`), `better-auth.ts` (`x-forwarded-for` from the socket IP, better-auth
+  `cors.ts` (`hono/cors`), `better-auth.ts` (`x-forwarded-for` from the socket IP, better-auth
   handler), `openapi.ts` (`/openapi`, `/openapi/json`), `health.ts` (`/health`, `/ready`), `rate-limit.ts`
   (per-route `rateLimit()`), `cron.ts` (the five jobs below).
 - **`src/http/`** — the kit every route uses: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()` (`send.ts`),

@@ -1,5 +1,6 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { APIError } from "better-auth";
+import { requestId } from "hono/request-id";
 import { z } from "zod";
 import { rootApp } from "@/app";
 import { moduleApp } from "@/http/app";
@@ -8,14 +9,13 @@ import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
 import { logger } from "@/lib/logger";
 import { zFile, zInteger } from "@/lib/schemas/t";
-import { requestId } from "@/plugins/request-id";
 
 // La mappatura errore → risposta (`toErrorResponse`, D7 del piano Hono) come
 // la applicano le app Hono (`moduleApp()` e l'app radice). Fino a U11 lo
 // stesso test passava dal plugin di errori dell'app di prima.
 
 const app = moduleApp()
-	.use(requestId)
+	.use(requestId())
 	.get("/service-error-404", () => {
 		throw new ServiceError(404, "Resource not found");
 	})
