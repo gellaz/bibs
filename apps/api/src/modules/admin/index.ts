@@ -1,4 +1,5 @@
 import { Elysia } from "elysia";
+import { moduleApp } from "@/http/app";
 import { ServiceError } from "@/lib/errors";
 import { betterAuth } from "@/plugins/better-auth";
 import { adminBillingRoutes } from "./routes/billing";
@@ -17,6 +18,27 @@ import { storeCategoriesWriteRoutes } from "./routes/store-categories";
 import { storeMacroCategoriesWriteRoutes } from "./routes/store-macro-categories";
 import { storesRoutes } from "./routes/stores";
 
+/**
+ * Sub-app Hono del modulo, montata su /admin in `src/index.ts`: configurazioni,
+ * tassonomia, caratteristiche, festività e import CSV (U8 del piano Hono).
+ * Ogni route ha `requireAdmin` dopo i suoi `v(...)`.
+ */
+export const adminApp = moduleApp()
+	.route("/", productMacroCategoriesWriteRoutes)
+	.route("/", productCategoriesWriteRoutes)
+	.route("/", categoryCharacteristicsRoutes)
+	.route("/", configurationsRoutes)
+	.route("/", storeMacroCategoriesWriteRoutes)
+	.route("/", storeCategoriesWriteRoutes)
+	.route("/", holidayDefinitionsRoutes)
+	.route("/", categoryImportsRoutes)
+	.route("/", productCharacteristicsRoutes)
+	.route("/", characteristicImportsRoutes);
+
+/** Tipo per il client `hc` dei frontend (`hc<AdminApp>(`${API_URL}/admin`)`). */
+export type AdminApp = typeof adminApp;
+
+// Route admin ancora su Elysia (U9): vincono sul mount di /admin.
 export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.use(betterAuth)
 	.guard(
@@ -36,16 +58,6 @@ export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
 						);
 					return {};
 				})
-				.use(productMacroCategoriesWriteRoutes)
-				.use(productCategoriesWriteRoutes)
-				.use(categoryCharacteristicsRoutes)
-				.use(configurationsRoutes)
-				.use(storeMacroCategoriesWriteRoutes)
-				.use(storeCategoriesWriteRoutes)
-				.use(holidayDefinitionsRoutes)
-				.use(categoryImportsRoutes)
-				.use(productCharacteristicsRoutes)
-				.use(characteristicImportsRoutes)
 				.use(sellersRoutes)
 				.use(storesRoutes)
 				.use(sellerChangesRoutes)

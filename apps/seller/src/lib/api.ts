@@ -1,5 +1,6 @@
 import type {
 	App,
+	CatalogApp,
 	LocationsApp,
 	MeApp,
 	RegistrationApp,
@@ -28,6 +29,8 @@ export const registerApi = hc<WithErrors<RegistrationApp>>(
 export const sellerApi = hc<WithErrors<SellerApp>>(`${API_URL}/seller`, {
 	init,
 });
+// Le liste pubbliche della tassonomia: quattro path radice in un client.
+export const catalogApi = hc<WithErrors<CatalogApp>>(API_URL, { init });
 
 // edenMessage/unwrap are generic Eden helpers shared from @bibs/ui; re-exported
 // here so the seller's existing `@/lib/api` import sites keep working.

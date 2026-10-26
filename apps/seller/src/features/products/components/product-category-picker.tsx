@@ -1,8 +1,9 @@
 import { Label } from "@bibs/ui/components/label";
 import { SelectCombobox } from "@bibs/ui/custom/select-combobox";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { useId } from "react";
-import { api, unwrap } from "@/lib/api";
+import { catalogApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface ProductCategoryPickerProps {
@@ -21,10 +22,12 @@ export function useProductMacroCategories() {
 	return useQuery({
 		queryKey: ["product-macro-categories"],
 		queryFn: async () => {
-			const response = await api()["product-macro-categories"].get({
+			const response = await catalogApi["product-macro-categories"].$get({
 				query: { page: 1, limit: 100 },
 			});
-			return unwrap(response, m.products_category_macro_load_error()).data;
+			return (
+				await unwrapJson(response, m.products_category_macro_load_error())
+			).data;
 		},
 	});
 }
@@ -43,14 +46,15 @@ export function ProductCategoryPicker({
 	const { data: categories = [], isSuccess: categoriesLoaded } = useQuery({
 		queryKey: ["product-categories", macroCategoryId],
 		queryFn: async () => {
-			const response = await api()["product-categories"].get({
+			const response = await catalogApi["product-categories"].$get({
 				query: {
 					page: 1,
 					limit: 100,
 					macroCategoryId: macroCategoryId ?? undefined,
 				},
 			});
-			return unwrap(response, m.products_category_load_error()).data;
+			return (await unwrapJson(response, m.products_category_load_error()))
+				.data;
 		},
 		enabled: !!macroCategoryId,
 	});

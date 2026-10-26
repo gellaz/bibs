@@ -1,6 +1,7 @@
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export function categoryCharacteristicsKey(categoryId: string) {
@@ -9,19 +10,16 @@ export function categoryCharacteristicsKey(categoryId: string) {
 
 export function useCategoryCharacteristics(categoryId: string) {
 	const queryClient = useQueryClient();
-	const endpoint = () =>
-		api().admin["product-categories"]({ productCategoryId: categoryId })
-			.characteristics;
+	const characteristics =
+		adminApi["product-categories"][":productCategoryId"].characteristics;
 
 	const { data, isLoading, error } = useQuery({
 		queryKey: categoryCharacteristicsKey(categoryId),
 		queryFn: async () => {
-			const res = await endpoint().get();
-			if (res.error)
-				throw new Error(
-					res.error.value?.message || m.characteristics_load_error(),
-				);
-			return res.data?.data ?? [];
+			const res = await characteristics.$get({
+				param: { productCategoryId: categoryId },
+			});
+			return (await unwrapJson(res, m.characteristics_load_error())).data;
 		},
 	});
 
@@ -40,13 +38,14 @@ export function useCategoryCharacteristics(categoryId: string) {
 
 	const include = useMutation({
 		mutationFn: async (p: { characteristicId: string; required: boolean }) => {
-			const res = await endpoint()({
-				characteristicId: p.characteristicId,
-			}).put({
-				required: p.required,
+			const res = await characteristics[":characteristicId"].$put({
+				param: {
+					productCategoryId: categoryId,
+					characteristicId: p.characteristicId,
+				},
+				json: { required: p.required },
 			});
-			if (res.error)
-				throw new Error(res.error.value?.message || m.common_save_error());
+			await unwrapJson(res, m.common_save_error());
 		},
 		onSuccess: refresh,
 		onError: (e: Error) => toast.error(e.message),
@@ -57,13 +56,14 @@ export function useCategoryCharacteristics(categoryId: string) {
 			characteristicId: string;
 			confirmAffected: number;
 		}) => {
-			const res = await endpoint()({
-				characteristicId: p.characteristicId,
-			}).delete({
-				confirmAffected: p.confirmAffected,
+			const res = await characteristics[":characteristicId"].$delete({
+				param: {
+					productCategoryId: categoryId,
+					characteristicId: p.characteristicId,
+				},
+				json: { confirmAffected: p.confirmAffected },
 			});
-			if (res.error)
-				throw new Error(res.error.value?.message || m.common_remove_error());
+			await unwrapJson(res, m.common_remove_error());
 		},
 		onSuccess: refresh,
 		// Anche sull'errore: un 409 per conteggio vecchio deve portare in pagina

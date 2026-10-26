@@ -1,27 +1,36 @@
-import { Elysia } from "elysia";
-import { ProductCategoryListQuery } from "@/lib/queries";
+import { Hono } from "hono";
+import { doc } from "@/http/openapi";
+import { publicRoute } from "@/http/routes";
+import { send } from "@/http/send";
+import { v } from "@/http/validator";
 import { okPage } from "@/lib/responses";
-import {
-	okPageRes,
-	ProductCategoryWithMacroSchema,
-	withErrors,
-} from "@/lib/schemas";
+import { ProductCategoryWithMacroSchema } from "@/lib/zod/entities";
+import { ProductCategoryListQuery } from "@/lib/zod/queries";
+import { okPageRes, withErrors } from "@/lib/zod/responses";
 import { listProductCategories } from "../services/product-categories";
 
-export const productCategoriesRoutes = new Elysia().get(
-	"/product-categories",
-	async ({ query }) => {
-		const result = await listProductCategories(query);
-		return okPage(result.data, result.pagination);
-	},
-	{
-		query: ProductCategoryListQuery,
-		response: withErrors({ 200: okPageRes(ProductCategoryWithMacroSchema) }),
+const ProductCategoryListResponse = okPageRes(ProductCategoryWithMacroSchema);
+
+// Route relativa: la sub-app è montata su /product-categories (`src/index.ts`).
+export const productCategoriesRoutes = new Hono().get(
+	"/",
+	doc({
+		response: withErrors({ 200: ProductCategoryListResponse }),
 		detail: {
 			summary: "Lista categorie prodotto",
 			description:
 				"Restituisce la lista paginata delle sotto-categorie prodotto con la macro categoria di appartenenza.",
 			tags: ["Product Categories"],
 		},
+	}),
+	publicRoute,
+	v("query", ProductCategoryListQuery),
+	async (c) => {
+		const result = await listProductCategories(c.req.valid("query"));
+		return send(
+			c,
+			ProductCategoryListResponse,
+			okPage(result.data, result.pagination),
+		);
 	},
 );

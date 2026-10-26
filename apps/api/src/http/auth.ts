@@ -105,3 +105,18 @@ export const requireSeller = guard(
 	}),
 	"seller",
 );
+
+/**
+ * La guardia del modulo admin (oggi il `.guard` di `modules/admin/index.ts`):
+ * login (401), poi ruolo admin (403). Legge la sessione da sola, quindi basta
+ * lei nella route, dopo i `v(...)` come `requireAuth`.
+ */
+export const requireAdmin = guard(
+	createMiddleware<AuthEnv>(async (c, next) => {
+		await readSession(c);
+		if (c.get("user").role !== "admin")
+			throw new ServiceError(403, "Accesso riservato agli amministratori");
+		await next();
+	}),
+	"admin",
+);

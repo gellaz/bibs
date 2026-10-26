@@ -170,7 +170,9 @@ verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
-immagini, caratteristiche, stock); `customer/` (U3).
+immagini, caratteristiche, stock); `customer/` (U3); catalogo pubblico e admin 1
+(U8: configurazioni, tassonomia, caratteristiche, festività, import CSV; il resto
+di /admin resta Elysia fino a U9 e vince sul mount).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
@@ -214,7 +216,12 @@ immagini, caratteristiche, stock); `customer/` (U3).
   (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
   /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
   un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
-  query → body.
+  query → body. Le guardie di ruolo (`requireAdmin`) leggono la sessione da sole
+  (401, poi 403): in una route basta lei, l'ordine fra guardie non conta.
+- **Catalogo: quattro path radice, quattro mount.** `/product-categories`,
+  `/product-macro-categories`, `/store-categories`, `/store-macro-categories` sono
+  quattro sub-app con la route `/`, montate ognuna sul suo path; per i FE un solo
+  tipo `CatalogApp` e un client `catalogApi = hc<WithErrors<CatalogApp>>(API_URL)`.
 - **Rate limit.** `rateLimit({ name, limits })` (`src/plugins/rate-limit.ts`) è un
   middleware Hono: va dopo i `v()` e dopo la guardia o `publicRoute` (un input non
   valido non consuma budget; la chiave `email` è quella del body validato). Sotto
@@ -254,7 +261,7 @@ immagini, caratteristiche, stock); `customer/` (U3).
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
   `src/types.ts` (`MeApp`, `CustomerApp`, `LocationsApp`, `RegistrationApp`,
-  `SellerApp`); ogni app crea in `src/lib/api.ts` il client del
+  `SellerApp`, `AdminApp`, `CatalogApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

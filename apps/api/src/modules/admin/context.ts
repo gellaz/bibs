@@ -16,3 +16,14 @@ export interface AdminResolvedContext {
 export function withAdmin<T>(ctx: T) {
 	return ctx as T & AdminResolvedContext;
 }
+
+/**
+ * `detail` OpenAPI delle route admin su Hono: il tag e la security che le
+ * route Elysia prendono dal modulo (`tags` e `.guard` di `index.ts`).
+ */
+export const adminDetail = (summary: string, description: string) => ({
+	summary,
+	description,
+	tags: ["Admin"],
+	security: [{ bearerAuth: [] }],
+});

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { orderStatuses, orderTypes } from "@/db/schemas/order";
 import { PaginationQuery } from "./pagination";
+import { zString } from "./t";
 
 // Gemelli Zod di `lib/queries.ts` (D3 del piano Hono), nello stesso ordine e
 // con gli stessi nomi; per ora solo quelli delle route migrate. In query
@@ -107,6 +108,48 @@ export const StoreSearchQuery = PaginationQuery.extend({
 				"Restituisce solo i negozi aperti in questo momento (fuso Europe/Rome), tenendo conto di orari, chiusure personalizzate e festività.",
 			),
 		)
+		.optional(),
+});
+
+/**
+ * Pagination + optional search/sort for category list endpoints.
+ */
+export const CategoryListQuery = PaginationQuery.extend({
+	search: zString({
+		maxLength: 100,
+		description: "Ricerca testuale sul nome",
+	}).optional(),
+	sortBy: z
+		.enum(["name", "createdAt"])
+		.default("name")
+		.meta(d("Campo di ordinamento"))
+		.optional(),
+	sortOrder: z
+		.enum(["asc", "desc"])
+		.default("asc")
+		.meta(d("Direzione di ordinamento"))
+		.optional(),
+});
+
+/**
+ * Pagination + optional search/sort/dataType filter for characteristic list
+ * endpoints.
+ */
+export const CharacteristicListQuery = CategoryListQuery.extend({
+	dataType: z
+		.enum(["text", "number", "boolean", "enum"])
+		.meta(d("Filtra per tipo di dato"))
+		.optional(),
+});
+
+/**
+ * Pagination + optional search/sort/macroCategoryId filter for product
+ * category list endpoints (public and admin).
+ */
+export const ProductCategoryListQuery = CategoryListQuery.extend({
+	macroCategoryId: z
+		.string()
+		.meta(d("Filtra per ID della macro categoria"))
 		.optional(),
 });
 
