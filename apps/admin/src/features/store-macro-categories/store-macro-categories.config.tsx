@@ -1,7 +1,7 @@
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import { StoreMacroCategoryForm } from "@/features/store-macro-categories/components/store-macro-category-form";
 import type { StoreMacroCategoryFormData } from "@/features/store-macro-categories/schemas/store-macro-category";
-import { api } from "@/lib/api";
+import { adminApi, catalogApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 interface StoreMacroCategory {
@@ -19,7 +19,7 @@ export const storeMacroCategoriesConfig: CategoryCrudConfig<
 	extraInvalidate: [["store-categories"], ["admin-configurations-counts"]],
 
 	list: (q) =>
-		api()["store-macro-categories"].get({
+		catalogApi["store-macro-categories"].$get({
 			query: {
 				page: q.page,
 				limit: q.limit,
@@ -29,13 +29,16 @@ export const storeMacroCategoriesConfig: CategoryCrudConfig<
 			},
 		}),
 	create: (form) =>
-		api().admin["store-macro-categories"].post({ name: form.name }),
+		adminApi["store-macro-categories"].$post({ json: { name: form.name } }),
 	update: (id, form) =>
-		api()
-			.admin["store-macro-categories"]({ macroCategoryId: id })
-			.patch({ name: form.name }),
+		adminApi["store-macro-categories"][":macroCategoryId"].$patch({
+			param: { macroCategoryId: id },
+			json: { name: form.name },
+		}),
 	remove: (id) =>
-		api().admin["store-macro-categories"]({ macroCategoryId: id }).delete(),
+		adminApi["store-macro-categories"][":macroCategoryId"].$delete({
+			param: { macroCategoryId: id },
+		}),
 
 	renderForm: (p) => <StoreMacroCategoryForm {...p} />,
 	editDefaults: (e) => ({ name: e.name }),

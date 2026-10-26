@@ -1,22 +1,19 @@
 import { z } from "zod";
 import { zInt } from "../t";
 
-// Gemelli Zod di `lib/schemas/forms/opening-hours.ts` (D3 del piano Hono),
-// stessi nomi. `Type.Integer` di TypeBox è `zInt()`, non `zInteger` (che
-// accetta le stringhe come il `t.Integer` di Elysia) né `z.int()` (limiti
-// safe-int).
+// Gemello Zod di `lib/schemas/forms/opening-hours.ts` (D3 del piano Hono).
+// `Type.Integer` di TypeBox è `zInt()`, non `zInteger` (niente stringhe).
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const time = (description: string) =>
+	z
+		.string()
+		.regex(HHMM)
+		.meta({ description, error: "Formato orario non valido (HH:mm)" });
 
 export const TimeSlotSchema = z.object({
-	open: z.string().regex(HHMM).meta({
-		description: "Orario di apertura (HH:mm)",
-		error: "Formato orario non valido (HH:mm)",
-	}),
-	close: z.string().regex(HHMM).meta({
-		description: "Orario di chiusura (HH:mm)",
-		error: "Formato orario non valido (HH:mm)",
-	}),
+	open: time("Orario di apertura (HH:mm)"),
+	close: time("Orario di chiusura (HH:mm)"),
 });
 
 export const DayScheduleSchema = z.object({

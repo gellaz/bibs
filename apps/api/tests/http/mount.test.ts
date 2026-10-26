@@ -12,7 +12,7 @@ import { ServiceError } from "@/lib/errors";
 import { pinoOptions } from "@/lib/logger";
 import { errorBody } from "@/lib/responses";
 import { meApp } from "@/modules/me";
-import { sellerApp, sellerModule } from "@/modules/seller";
+import { sellerApp } from "@/modules/seller";
 import { betterAuth } from "@/plugins/better-auth";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
@@ -325,6 +325,23 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 			});
 		});
 
+	it("radice di una sub-app montata: /x e /x/ sì, /x// no, come Elysia", async () => {
+		const root = new Elysia()
+			.use(errorHandler)
+			.state("pino", noopPino)
+			.get("/elysia", () => ({ ok: true }))
+			.mount("/hono", moduleApp().get("/", (c) => c.json({ ok: true })).fetch);
+		for (const suffix of ["", "/", "//"]) {
+			const e = await root.handle(
+				new Request(`http://localhost/elysia${suffix}`),
+			);
+			const h = await root.handle(
+				new Request(`http://localhost/hono${suffix}`),
+			);
+			expect([suffix, h.status]).toEqual([suffix, e.status]);
+		}
+	});
+
 	it("/me/%61vatar montato: 404 come prima", async () => {
 		const res = await req("/me/%61vatar", { method: "DELETE" });
 		expect(res.status).toBe(404);
@@ -334,39 +351,22 @@ describe("path grezzo come Elysia (`moduleApp`)", () => {
 	});
 });
 
-// U5: /seller è in parte Hono (prodotti, brand, immagini, caratteristiche,
-// stock; da U7 anche ordini, promozioni, checkout e billing) e in parte
-// ancora Elysia (U6), come in `src/index.ts`.
-describe("mount — modulo migrato in parte (/seller)", () => {
+// /seller è tutto Hono da U7 (U5 prodotti, brand, immagini, caratteristiche,
+// stock; U6 negozi, impostazioni, team, onboarding, profilo, dashboard; U7
+// ordini, promozioni, checkout e billing), come in `src/index.ts`. Con
+// `sellerModule` è sparita la lista «risponde Elysia, Hono non la vede»: le sue
+// ultime route (U7) sono passate nella lista qui sotto.
+describe("mount — modulo migrato (/seller)", () => {
 	const hits: string[] = [];
-	const partial = new Elysia()
+	const app = new Elysia()
 		.state("pino", noopPino)
 		.use(errorHandler)
-		.use(sellerModule)
 		.mount("/seller", (request) => {
 			hits.push(`${request.method} ${new URL(request.url).pathname}`);
 			return sellerApp.fetch(request);
 		});
 	const send = (method: string, path: string) =>
-		partial.handle(new Request(`http://localhost${path}`, { method }));
-	const unauthorized = errorBody(
-		"UNAUTHORIZED",
-		"Devi accedere per continuare",
-	);
-
-	for (const [method, path] of [
-		["GET", "/seller/stores"],
-		["DELETE", "/seller/stores/s1"],
-		["DELETE", "/seller/stores/s1/images/i1"],
-		["GET", "/seller/employees/e1/stores"],
-	])
-		it(`${method} ${path}: risponde Elysia, Hono non la vede`, async () => {
-			hits.length = 0;
-			const res = await send(method, path);
-			expect(res.status).toBe(401);
-			expect(await res.json()).toEqual(unauthorized);
-			expect(hits).toEqual([]);
-		});
+		app.handle(new Request(`http://localhost${path}`, { method }));
 
 	for (const [method, path, status] of [
 		["GET", "/seller/products", 401],
@@ -374,6 +374,15 @@ describe("mount — modulo migrato in parte (/seller)", () => {
 		["DELETE", "/seller/products/p1/images/i1", 401],
 		["PATCH", "/seller/products/p1/stores/s1", 422],
 		["GET", "/seller/product-categories/c1/characteristics", 401],
+		["GET", "/seller/stores", 401],
+		["DELETE", "/seller/stores/s1", 401],
+		["DELETE", "/seller/stores/s1/images/i1", 401],
+		["GET", "/seller/settings", 401],
+		["GET", "/seller/profile", 401],
+		["GET", "/seller/employees/e1/stores", 401],
+		["GET", "/seller/stores/checkout/p1", 401],
+		["POST", "/seller/stores/s1/reactivation-checkout", 401],
+		["GET", "/seller/billing/subscriptions", 401],
 		["GET", "/seller/discounts/d1/products", 401],
 		["GET", "/seller/nope", 404],
 	] as const)

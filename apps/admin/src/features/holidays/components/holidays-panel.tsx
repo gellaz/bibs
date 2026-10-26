@@ -34,7 +34,7 @@ import { toast } from "@bibs/ui/components/sonner";
 import { DataTable } from "@bibs/ui/custom/data-table";
 import { StatusBadge } from "@bibs/ui/custom/status-badge";
 import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { toYMD } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -54,7 +54,7 @@ import {
 	selectColumn,
 } from "@/components/bulk-selection";
 import { HolidayForm } from "@/features/holidays/components/holiday-form";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { runBulk, toastBulkResult } from "@/lib/bulk";
 import { m } from "@/paraglide/messages";
 
@@ -102,6 +102,8 @@ function describeHoliday(h: HolidayDefinition): string {
 	return "—";
 }
 
+const holiday = adminApi["holiday-definitions"][":holidayId"];
+
 const YEARS = Array.from({ length: 4 }, (_, i) => new Date().getFullYear() + i);
 
 export function HolidaysPanel({
@@ -125,19 +127,19 @@ export function HolidaysPanel({
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["holiday-definitions"],
 		queryFn: async () => {
-			const response = await api().admin["holiday-definitions"].get();
-			return unwrap(response, m.holidays_load_error());
+			const response = await adminApi["holiday-definitions"].$get();
+			return unwrapJson(response, m.holidays_load_error());
 		},
 	});
 
 	const { data: previewData } = useQuery({
 		queryKey: ["holiday-definitions", "preview", previewYear],
 		queryFn: async () => {
-			const response = await api().admin["holiday-definitions"].preview.get({
+			const response = await adminApi["holiday-definitions"].preview.$get({
 				query: { year: previewYear },
 			});
-			if (response.error) return null;
-			return response.data?.data ?? null;
+			if (!response.ok) return null;
+			return (await response.json()).data;
 		},
 	});
 
@@ -148,8 +150,10 @@ export function HolidaysPanel({
 				| { type: "easter_relative"; name: string; easterOffsetDays: number }
 				| { type: "one_off"; name: string; oneOffDate: string },
 		) => {
-			const response = await api().admin["holiday-definitions"].post(input);
-			return unwrap(response, m.common_create_error());
+			const response = await adminApi["holiday-definitions"].$post({
+				json: input,
+			});
+			return unwrapJson(response, m.common_create_error());
 		},
 		onSuccess: () => {
 			invalidate();
@@ -166,10 +170,11 @@ export function HolidaysPanel({
 			isActive?: boolean;
 		}) => {
 			const { id, ...patch } = input;
-			const response = await api()
-				.admin["holiday-definitions"]({ holidayId: id })
-				.patch(patch);
-			return unwrap(response, m.common_update_error());
+			const response = await holiday.$patch({
+				param: { holidayId: id },
+				json: patch,
+			});
+			return unwrapJson(response, m.common_update_error());
 		},
 		onSuccess: () => {
 			invalidate();
@@ -182,10 +187,8 @@ export function HolidaysPanel({
 
 	const deleteMutation = useMutation({
 		mutationFn: async (id: string) => {
-			const response = await api()
-				.admin["holiday-definitions"]({ holidayId: id })
-				.delete();
-			return unwrap(response, m.common_delete_error());
+			const response = await holiday.$delete({ param: { holidayId: id } });
+			return unwrapJson(response, m.common_delete_error());
 		},
 		onSuccess: () => {
 			invalidate();
@@ -196,10 +199,7 @@ export function HolidaysPanel({
 		onError: (e: Error) => toast.error(e.message || m.common_delete_error()),
 	});
 
-	const rows = useMemo<HolidayDefinition[]>(
-		() => (data?.data as HolidayDefinition[]) ?? [],
-		[data],
-	);
+	const rows = useMemo<HolidayDefinition[]>(() => data?.data ?? [], [data]);
 	// Una sola pagina con tutte le festività: niente da azzerare.
 	const selection = useRowSelection({
 		currentPageIds: rows.map((r) => r.id),
@@ -218,11 +218,17 @@ export function HolidaysPanel({
 			items: HolidayDefinition[];
 		}) =>
 			runBulk(items, async (h) => {
-				const holiday = api().admin["holiday-definitions"]({ holidayId: h.id });
+				const param = { holidayId: h.id };
 				if (action === "delete")
-					return unwrap(await holiday.delete(), m.common_delete_error());
-				return unwrap(
-					await holiday.patch({ isActive: action === "activate" }),
+					return unwrapJson(
+						await holiday.$delete({ param }),
+						m.common_delete_error(),
+					);
+				return unwrapJson(
+					await holiday.$patch({
+						param,
+						json: { isActive: action === "activate" },
+					}),
 					m.common_update_error(),
 				);
 			}),

@@ -52,6 +52,21 @@ export const requireAuth = guard(
 	"auth",
 );
 
+/**
+ * Ruolo seller senza partita IVA verificata: profilo e onboarding (oggi il
+ * primo `.guard` di `modules/seller/index.ts`). Login (401), poi 403 per chi
+ * non ha il ruolo seller (clienti, dipendenti). Dopo i `v(...)`.
+ */
+export const requireSellerRole = guard(
+	createMiddleware<AuthEnv>(async (c, next) => {
+		await readSession(c);
+		if (c.get("user").role !== "seller")
+			throw new ServiceError(403, "Accesso riservato ai venditori");
+		await next();
+	}),
+	"sellerRole",
+);
+
 /** Variabili delle route del cliente (oggi il resolve del guard di /customer). */
 export type CustomerEnv = {
 	Variables: AuthEnv["Variables"] & {
@@ -90,8 +105,8 @@ export type SellerEnv = {
 };
 
 /**
- * La guardia del modulo seller per le route operative (oggi il `.guard` con
- * `resolveSellerAccess` di `modules/seller/index.ts`): login (401), poi
+ * La guardia del modulo seller per le route operative (era il `.guard`
+ * Elysia del modulo, con `resolveSellerAccess` di `modules/seller/context.ts`): login (401), poi
  * titolare con onboarding attivo o dipendente con incarico attivo di un
  * venditore attivo (i quattro 403), in `c.var.seller`. Dopo i `v(...)` come
  * `requireAuth`; non rilegge `c.var.seller` se c'è già (test, D13).
@@ -104,4 +119,19 @@ export const requireSeller = guard(
 		await next();
 	}),
 	"seller",
+);
+
+/**
+ * La guardia del modulo admin (oggi il `.guard` di `modules/admin/index.ts`):
+ * login (401), poi ruolo admin (403). Legge la sessione da sola, quindi basta
+ * lei nella route, dopo i `v(...)` come `requireAuth`.
+ */
+export const requireAdmin = guard(
+	createMiddleware<AuthEnv>(async (c, next) => {
+		await readSession(c);
+		if (c.get("user").role !== "admin")
+			throw new ServiceError(403, "Accesso riservato agli amministratori");
+		await next();
+	}),
+	"admin",
 );

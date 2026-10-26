@@ -6,10 +6,10 @@ import {
 } from "@bibs/ui/components/card";
 import { Spinner } from "@bibs/ui/components/spinner";
 import { formatPriceEur } from "@bibs/ui/custom/price";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/billing/")({
@@ -20,8 +20,8 @@ function OverviewPage() {
 	const { data, isLoading, error } = useQuery({
 		queryKey: ["admin", "billing", "overview"],
 		queryFn: async () => {
-			const r = await api().admin.billing.overview.get();
-			return unwrap(r, m.billing_overview_load_error()).data;
+			const r = await adminApi.billing.overview.$get();
+			return (await unwrapJson(r, m.billing_overview_load_error())).data;
 		},
 	});
 

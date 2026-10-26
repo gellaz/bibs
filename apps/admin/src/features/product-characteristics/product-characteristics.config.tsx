@@ -2,11 +2,11 @@ import {
 	NativeSelect,
 	NativeSelectOption,
 } from "@bibs/ui/components/native-select";
-import { unwrap } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import type { CategoryCrudConfig } from "@/features/crud/category-crud-panel";
 import type { CsvImportResult } from "@/features/csv-import/components/csv-import-dialog";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import { ProductCharacteristicForm } from "./components/product-characteristic-form";
 import {
@@ -121,29 +121,31 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 		["admin-category-characteristics"],
 	],
 
-	list: (q) =>
-		api().admin["product-characteristics"].get({
+	list: (q) => {
+		const dataType = CHARACTERISTIC_DATA_TYPES.find((d) => d === q.dataType);
+		return adminApi["product-characteristics"].$get({
 			query: {
 				page: q.page,
 				limit: q.limit,
 				...(q.search ? { search: q.search } : {}),
-				...(q.dataType
-					? { dataType: q.dataType as CharacteristicDataType }
-					: {}),
+				...(dataType ? { dataType } : {}),
 				sortBy: q.sortBy,
 				sortOrder: q.sortOrder,
 			},
-		}),
+		});
+	},
 	create: (submit) =>
-		api().admin["product-characteristics"].post(toBody(submit)),
+		adminApi["product-characteristics"].$post({ json: toBody(submit) }),
 	update: (id, submit) =>
-		api()
-			.admin["product-characteristics"]({ characteristicId: id })
-			.patch({ ...toBody(submit), confirmAffected: submit.confirmAffected }),
+		adminApi["product-characteristics"][":characteristicId"].$patch({
+			param: { characteristicId: id },
+			json: { ...toBody(submit), confirmAffected: submit.confirmAffected },
+		}),
 	remove: (id, entity) =>
-		api()
-			.admin["product-characteristics"]({ characteristicId: id })
-			.delete({ confirmAffected: entity.valueCount }),
+		adminApi["product-characteristics"][":characteristicId"].$delete({
+			param: { characteristicId: id },
+			json: { confirmAffected: entity.valueCount },
+		}),
 
 	extraColumns,
 
@@ -167,10 +169,10 @@ export const productCharacteristicsConfig: CategoryCrudConfig<
 
 	csvImport: {
 		onImport: async (file): Promise<CsvImportResult> => {
-			const res = await api().admin["product-characteristics"].import.post({
-				file,
+			const res = await adminApi["product-characteristics"].import.$post({
+				form: { file },
 			});
-			return unwrap(res, m.common_import_error()).data;
+			return (await unwrapJson(res, m.common_import_error())).data;
 		},
 		labels: () => ({
 			title: m.characteristics_import_title(),

@@ -22,7 +22,6 @@ mock.module("@/db", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { Elysia } from "elysia";
 import { user as userTable } from "@/db/schemas/auth";
 import type { OrderStatus } from "@/db/schemas/order";
 import { order } from "@/db/schemas/order";
@@ -30,7 +29,6 @@ import { store as storeTable } from "@/db/schemas/store";
 import { resolveSellerAccess } from "@/modules/seller/context";
 import { dashboardRoutes } from "@/modules/seller/routes/dashboard";
 import { getSellerDashboard } from "@/modules/seller/services/dashboard";
-import { errorHandler } from "@/plugins/error-handler";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,
@@ -41,32 +39,20 @@ import {
 	createTestStore,
 	createTestStoreProduct,
 } from "../helpers/fixtures";
-
-const noopPino = {
-	debug: () => {},
-	info: () => {},
-	warn: () => {},
-	error: () => {},
-	fatal: () => {},
-	trace: () => {},
-} as any;
+import { withResolve } from "../helpers/hono-app";
 
 // Stessa resolve della guardia seller vera, utente da header.
-const app = new Elysia()
-	.state("pino", noopPino)
-	.use(errorHandler)
-	.resolve(async ({ request }) => {
-		const id = request.headers.get("x-test-user") ?? "";
-		const u = await getTestDb().query.user.findFirst({
-			where: eq(userTable.id, id),
-		});
-		if (!u) throw new Error("test user missing");
-		return { user: u, ...(await resolveSellerAccess(u)) };
-	})
-	.use(dashboardRoutes);
+const app = withResolve(dashboardRoutes, async (request) => {
+	const id = request.headers.get("x-test-user") ?? "";
+	const u = await getTestDb().query.user.findFirst({
+		where: eq(userTable.id, id),
+	});
+	if (!u) throw new Error("test user missing");
+	return { user: u, seller: await resolveSellerAccess(u) };
+});
 
 function get(userId: string, path: string) {
-	return app.handle(
+	return app.request(
 		new Request(`http://localhost${path}`, {
 			headers: { "x-test-user": userId },
 		}),

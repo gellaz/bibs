@@ -24,7 +24,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { api, sellerApi, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/store/archived")({
@@ -68,10 +68,10 @@ function ArchivedPage() {
 	const { data, isLoading } = useQuery({
 		queryKey: ["seller", "stores", "archived"],
 		queryFn: async () => {
-			const r = await api().seller.stores.archived.get({
+			const r = await sellerApi.stores.archived.$get({
 				query: { page: 1, limit: 50 },
 			});
-			return unwrap(r, m.common_error()).data;
+			return (await unwrapJson(r, m.common_error())).data;
 		},
 		enabled: isOwner,
 	});

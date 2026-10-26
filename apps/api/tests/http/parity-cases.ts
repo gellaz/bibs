@@ -9,8 +9,13 @@ import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
 import { PaginationQuery as TbPaginationQuery } from "@/lib/pagination";
 import {
+	CategoryListQuery as TbCategoryListQuery,
+	CharacteristicListQuery as TbCharacteristicListQuery,
 	OrderListQuery as TbOrderListQuery,
+	ProductCategoryListQuery as TbProductCategoryListQuery,
 	ProductSearchQuery as TbProductSearchQuery,
+	SellerListQuery as TbSellerListQuery,
+	StoreListQuery as TbStoreListQuery,
 } from "@/lib/queries";
 import {
 	BulkDeleteBody as TbBulkDeleteBody,
@@ -21,14 +26,30 @@ import {
 	DiscountUpdateBody as TbDiscountUpdateBody,
 	ProductStatusBody as TbProductStatusBody,
 } from "@/lib/schemas";
-import { AcceptInviteBody as TbAcceptInviteBody } from "@/lib/schemas/forms/onboarding";
+import { VatRateSchema as TbVatRateSchema } from "@/lib/schemas/forms";
+import {
+	AcceptInviteBody as TbAcceptInviteBody,
+	CompanyBody as TbCompanyBody,
+	DocumentBody as TbDocumentBody,
+	PersonalInfoBody as TbPersonalInfoBody,
+	TeamInviteBody as TbTeamInviteBody,
+} from "@/lib/schemas/forms/onboarding";
 import { OpeningHoursSchema as TbOpeningHours } from "@/lib/schemas/forms/opening-hours";
 import {
 	CharacteristicValuesField as TbCharacteristicValuesField,
 	CreateProductBody as TbCreateProductBody,
 } from "@/lib/schemas/forms/products";
+import { RejectSellerBody as TbRejectSellerBody } from "@/lib/schemas/forms/seller-rejection";
+import {
+	CompanySettingsBody as TbCompanySettingsBody,
+	VatChangeBody as TbVatChangeBody,
+} from "@/lib/schemas/forms/settings";
 import { CreateStoreBody as TbCreateStoreBody } from "@/lib/schemas/forms/stores";
-import { CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody } from "@/lib/schemas/holidays";
+import {
+	CreateHolidayDefinitionBody as TbCreateHolidayDefinitionBody,
+	PutClosuresBody as TbPutClosuresBody,
+	UpdateHolidayDefinitionBody as TbUpdateHolidayDefinitionBody,
+} from "@/lib/schemas/holidays";
 import {
 	StockAdjustBody as TbStockAdjustBody,
 	StockBulkAdjustBody as TbStockBulkAdjustBody,
@@ -44,16 +65,36 @@ import {
 	BulkStatusBody,
 	ProductStatusBody,
 } from "@/lib/zod/entities";
-import { AcceptInviteBody } from "@/lib/zod/forms/onboarding";
+import {
+	AcceptInviteBody,
+	CompanyBody,
+	DocumentBody,
+	PersonalInfoBody,
+	TeamInviteBody,
+} from "@/lib/zod/forms/onboarding";
 import { OpeningHoursSchema } from "@/lib/zod/forms/opening-hours";
 import {
 	CharacteristicValuesField,
 	CreateProductBody,
 } from "@/lib/zod/forms/products";
+import { CompanySettingsBody, VatChangeBody } from "@/lib/zod/forms/settings";
 import { CreateStoreBody } from "@/lib/zod/forms/stores";
+import {
+	CreateHolidayDefinitionBody,
+	PutClosuresBody,
+	UpdateHolidayDefinitionBody,
+} from "@/lib/zod/holidays";
 import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
 import { PaginationQuery } from "@/lib/zod/pagination";
-import { OrderListQuery, ProductSearchQuery } from "@/lib/zod/queries";
+import {
+	CategoryListQuery,
+	CharacteristicListQuery,
+	OrderListQuery,
+	ProductCategoryListQuery,
+	ProductSearchQuery,
+	SellerListQuery,
+	StoreListQuery,
+} from "@/lib/zod/queries";
 import { RegisterBody, SignInBody } from "@/lib/zod/registration";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
 import {
@@ -65,6 +106,27 @@ import {
 	zInteger,
 	zString,
 } from "@/lib/zod/t";
+import {
+	SubscriptionsQuery,
+	UpdatePricingBody,
+} from "@/modules/admin/routes/billing";
+import {
+	RemoveCategoryCharacteristicBody,
+	SetCategoryCharacteristicBody,
+} from "@/modules/admin/routes/category-characteristics";
+import { HolidayPreviewQuery } from "@/modules/admin/routes/holiday-definitions";
+import {
+	CreateProductCharacteristicBody,
+	DeleteProductCharacteristicBody,
+	UpdateProductCharacteristicBody,
+} from "@/modules/admin/routes/product-characteristics";
+import { CreateProductMacroCategoryBody } from "@/modules/admin/routes/product-macro-categories";
+import { RequestListQuery } from "@/modules/admin/routes/requests";
+import { RejectChangeBody } from "@/modules/admin/routes/seller-changes";
+import {
+	RejectSellerRouteBody,
+	VerifySellerBody,
+} from "@/modules/admin/routes/sellers";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 
@@ -232,43 +294,181 @@ const TbMunicipalitiesQuery = t.Composite([
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
-// `OpeningHoursSchema` (`Type.Integer` di TypeBox è `zInt()`, il `t.Integer`
-// di Elysia è `zInteger`) e `CreateStoreBody` sono in `lib/zod/forms/` da U7.
+// `OpeningHoursSchema` è in `lib/zod/forms/opening-hours.ts` da U6 e
+// `CreateStoreBody` in `lib/zod/forms/stores.ts` da U7: `Type.Integer` di
+// TypeBox è `zInt`, il `t.Integer` di Elysia è `zInteger`.
 const OpeningHours = OpeningHoursSchema;
 
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
 // (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
 // `StockBulkAdjustBody` è in `lib/zod/stock.ts` da U5.
-const holidayName = zString({
-	minLength: 1,
-	maxLength: 100,
-	description: "Nome festività",
-});
-const CreateHolidayDefinitionBody = z.union([
-	z.object({
-		type: z.literal("fixed"),
-		name: holidayName,
-		month: zInteger({ minimum: 1, maximum: 12, description: "Mese (1-12)" }),
-		day: zInteger({ minimum: 1, maximum: 31, description: "Giorno (1-31)" }),
+// `CreateHolidayDefinitionBody` è in `lib/zod/holidays.ts` da U8.
+
+// Gli schemi TypeBox delle route di U8 (catalogo e admin 1) che stavano dentro
+// le route Elysia, copiati da lì: il confronto dal vivo resta fino a U11.
+const tbOptions = t.Array(
+	t.Object({
+		id: t.Optional(
+			t.String({
+				description:
+					"ID di un'opzione esistente: tenerlo permette di rinominarla senza perdere i valori dei prodotti",
+			}),
+		),
+		value: t.String({ maxLength: 100, description: "Valore ammesso" }),
 	}),
-	z.object({
-		type: z.literal("easter_relative"),
-		name: holidayName,
-		easterOffsetDays: zInteger({
-			minimum: -60,
-			maximum: 60,
-			description: "Offset dalla Pasqua (Pasqua=0, Pasquetta=1)",
+	{ description: "Opzioni della lista chiusa, nell'ordine di presentazione" },
+);
+const tbUnit = t.Optional(
+	t.Nullable(
+		t.String({
+			maxLength: 20,
+			description: "Unità di misura, solo per il tipo number",
 		}),
+	),
+);
+const tbDataType = t.Union(
+	[
+		t.Literal("text"),
+		t.Literal("number"),
+		t.Literal("boolean"),
+		t.Literal("enum"),
+	],
+	{
+		description:
+			"Tipo di dato: text (testo libero), number (numero, con unità facoltativa), boolean (sì/no), enum (lista chiusa di opzioni)",
+	},
+);
+const TbCreateProductCharacteristicBody = t.Object({
+	name: t.String({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nome della caratteristica, univoco nel dizionario",
 	}),
-	z.object({
-		type: z.literal("one_off"),
-		name: holidayName,
-		oneOffDate: z
-			.string()
-			.regex(/^\d{4}-\d{2}-\d{2}$/)
-			.meta({ description: "Data YYYY-MM-DD" }),
+	dataType: tbDataType,
+	unit: tbUnit,
+	options: t.Optional(tbOptions),
+});
+const TbUpdateProductCharacteristicBody = t.Object({
+	name: t.Optional(
+		t.String({
+			minLength: 1,
+			maxLength: 100,
+			description: "Nuovo nome della caratteristica",
+		}),
+	),
+	dataType: t.Optional(tbDataType),
+	unit: tbUnit,
+	options: t.Optional(tbOptions),
+	confirmAffected: t.Optional(
+		t.Integer({
+			minimum: 0,
+			default: 0,
+			description:
+				"Numero di prodotti con un valore che l'interfaccia ha mostrato nella conferma. Serve quando la modifica rimuove opzioni in uso o cambia il tipo: se i prodotti coinvolti sono di più, 409 e nulla cambia.",
+		}),
+	),
+});
+const TbDeleteProductCharacteristicBody = t.Object({
+	confirmAffected: t.Integer({
+		minimum: 0,
+		description:
+			"Numero di prodotti con un valore che l'interfaccia ha mostrato nella conferma. Se i prodotti coinvolti sono di più, la richiesta è respinta con 409 e nulla viene cancellato.",
+	}),
+});
+const TbRemoveCategoryCharacteristicBody = t.Object({
+	confirmAffected: t.Integer({
+		minimum: 0,
+		description:
+			"Numero di prodotti della sotto-categoria con un valore che l'interfaccia ha mostrato nella conferma. Se sono di più, 409 e nulla viene cancellato.",
+	}),
+});
+const TbSetCategoryCharacteristicBody = t.Object({
+	required: t.Boolean({ description: "Il venditore deve compilarla" }),
+});
+const TbCreateProductMacroCategoryBody = t.Object({
+	name: t.String({
+		minLength: 1,
+		maxLength: 100,
+		description: "Nome della macro categoria",
+	}),
+	suggestedVatRate: t.Optional(TbVatRateSchema),
+});
+const TbHolidayPreviewQuery = t.Object({
+	year: t.Integer({
+		minimum: 2000,
+		maximum: 2100,
+		description: "Anno da risolvere",
+	}),
+});
+
+// U9 (admin 2): gli schemi TypeBox scritti dentro le route Elysia di
+// sellers, seller-changes, requests e billing, copiati da lì.
+const TbExpectedUpdatedAt = t.Date({
+	description:
+		"`updatedAt` del venditore come l'admin l'ha visto: 409 se nel frattempo la candidatura è cambiata (es. reinvio dopo un rifiuto)",
+});
+const TbVerifySellerBody = t.Object({ expectedUpdatedAt: TbExpectedUpdatedAt });
+const TbRejectSellerRouteBody = t.Object({
+	...TbRejectSellerBody.properties,
+	expectedUpdatedAt: TbExpectedUpdatedAt,
+});
+const TbRejectChangeBody = t.Object({
+	reason: t.Optional(
+		t.String({
+			maxLength: 500,
+			description: "Motivo del rifiuto",
+		}),
+	),
+});
+const TbRequestListQuery = t.Composite([
+	TbPaginationQuery,
+	t.Object({
+		type: t.Optional(
+			t.Union(
+				[
+					t.Literal("all"),
+					t.Literal("candidature"),
+					t.Literal("vat"),
+					t.Literal("document"),
+				],
+				{ default: "all", description: "Filtra per tipo di richiesta" },
+			),
+		),
 	}),
 ]);
+const TbSubscriptionStatus = t.Union([
+	t.Literal("active"),
+	t.Literal("past_due"),
+	t.Literal("canceling"),
+	t.Literal("suspended"),
+	t.Literal("canceled"),
+]);
+const TbSubscriptionsQuery = t.Object({
+	page: t.Optional(t.Integer({ minimum: 1 })),
+	limit: t.Optional(t.Integer({ minimum: 1, maximum: 100 })),
+	status: t.Optional(TbSubscriptionStatus),
+	sellerEmail: t.Optional(t.String()),
+	storeName: t.Optional(t.String()),
+});
+const TbUpdatePricingBody = t.Object({
+	storeMonthlyFeeCents: t.Integer({ minimum: 100 }),
+	currency: t.String({ minLength: 3, maxLength: 3 }),
+	suspendedAutoCancelDays: t.Integer({ minimum: 7, maximum: 365 }),
+	pendingCreationExpiryHours: t.Integer({ minimum: 1, maximum: 168 }),
+	productId: t.String({
+		pattern: "^prod_[A-Za-z0-9]+$",
+		description:
+			"ID del prodotto Stripe (prod_…) a cui agganciare il nuovo prezzo",
+	}),
+});
+const pricing = {
+	storeMonthlyFeeCents: 2900,
+	currency: "EUR",
+	suspendedAutoCancelDays: 60,
+	pendingCreationExpiryHours: 24,
+	productId: "prod_ABC123",
+};
+const stale = "2026-01-01T00:00:00.000Z";
 
 const body = (
 	name: string,
@@ -408,6 +608,38 @@ const phone = [
 	}),
 ] as const;
 const png = () => new File([PNG], "a.png", { type: "image/png" });
+// Body validi dei form di U6, da cui i casi tolgono o rompono un campo.
+const STORE = {
+	name: "Bottega",
+	addressLine1: "Via Roma 1",
+	municipalityId: "m",
+	zipCode: "40100",
+	location: { x: 11.34, y: 44.49 },
+};
+const PERSONAL = {
+	firstName: "Mario",
+	lastName: "Rossi",
+	citizenship: "IT",
+	birthCountry: "IT",
+	birthDate: "1990-05-01",
+	residenceCountry: "IT",
+	residenceMunicipalityId: "m",
+	residenceAddress: "Via Roma 1",
+	residenceZipCode: "40100",
+};
+const DOCUMENT = {
+	documentType: "identity_card",
+	documentNumber: "CA12345AB",
+	documentExpiry: "2030-01-01",
+	documentIssuedMunicipalityId: "m",
+};
+const COMPANY = {
+	businessName: "Rossi SRL",
+	legalForm: "SRL",
+	addressLine1: "Via Roma 1",
+	municipalityId: "m",
+	zipCode: "40100",
+};
 
 export const cases: Case[] = [
 	// tests/lib/validation-message.test.ts, stesse stringhe
@@ -1681,6 +1913,32 @@ export const cases: Case[] = [
 		422,
 		fail("n: deve essere un numero intero"),
 	),
+	// `zInt()` non ha i limiti dei safe integer di `z.int()` (U3, U6).
+	{
+		name: "Type.Integer: oltre i safe integer cita il massimo dello schema",
+		target: "json",
+		tb: t.Object({ n: Type.Integer({ minimum: 0, maximum: 6 }) }),
+		zod: z.object({ n: zInt().min(0).max(6) }),
+		req: { raw: '{"n":9007199254740993}', contentType: "application/json" },
+		status: 422,
+		body: fail("n: deve essere al massimo 6"),
+	},
+	body(
+		"Type.Integer: 1e21 senza massimo passa, 2.5 no",
+		t.Object({ n: Type.Integer({ minimum: 0 }) }),
+		z.object({ n: zInt().min(0) }),
+		{ n: 1e21 },
+		200,
+		{ ok: { n: 1e21 } },
+	),
+	body(
+		"Type.Integer: 2.5 è «deve essere un numero intero»",
+		t.Object({ n: Type.Integer({ minimum: 0 }) }),
+		z.object({ n: zInt().min(0) }),
+		{ n: 2.5 },
+		422,
+		fail("n: deve essere un numero intero"),
+	),
 
 	// Unioni alla radice: un ramo che passa il controllo e fallisce la
 	// decodifica dà l'errore di decodifica.
@@ -2097,6 +2355,224 @@ export const cases: Case[] = [
 		status: 422,
 		body: fail("Variazione di scorta: deve essere un numero intero"),
 	},
+	// ── gemelli di U6: negozi, impostazioni, team, onboarding, chiusure ──
+	body(
+		"negozio: body vuoto (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"negozio: posizione mancante (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, location: undefined },
+		422,
+		fail("La posizione del negozio sulla mappa è obbligatoria"),
+	),
+	body(
+		"negozio: posizione del telefono come stringa (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, phoneNumbers: [{ number: "051123456", position: "1" }] },
+		422,
+		fail("Posizione (riga 1): deve essere un numero intero"),
+	),
+	{
+		name: "negozio: giorno oltre i safe integer (CreateStoreBody)",
+		target: "json",
+		tb: TbCreateStoreBody,
+		zod: CreateStoreBody,
+		req: {
+			raw: JSON.stringify({ ...STORE, openingHours: "@" }).replace(
+				'"@"',
+				'[{"dayOfWeek":9007199254740993,"slots":[{"open":"09:00","close":"13:00"}]}]',
+			),
+			contentType: "application/json",
+		},
+		status: 422,
+		body: fail("openingHours: deve essere al massimo 6"),
+	},
+	// Zod chiude gli errori del ramo in un invalid_union: la regola resta quella
+	// dell'intero (`collapse()` in issues.ts).
+	body(
+		"negozio: giorno come stringa e orario sbagliato (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			...STORE,
+			openingHours: [
+				{ dayOfWeek: "1", slots: [{ open: "9", close: "13:00" }] },
+			],
+		},
+		422,
+		fail("openingHours: deve essere un numero intero"),
+	),
+	// 501 unità UTF-16 ma 257 code point: TypeBox controlla maxLength prima del formato.
+	body(
+		"negozio: sito oltre 500 unità UTF-16 con emoji (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, websiteUrl: `https://x.it/${"😀".repeat(244)}` },
+		422,
+		fail("Sito web: al massimo 500 caratteri"),
+	),
+	body(
+		"negozio: valido, con sito null, orari null e campi ignoti (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			...STORE,
+			name: "  Bottega  ",
+			websiteUrl: null,
+			openingHours: null,
+			phoneNumbers: [{ number: "051123456", position: 1e21, extra: 1 }],
+			sellerProfileId: "x",
+		},
+		200,
+		{
+			ok: {
+				...STORE,
+				name: "Bottega",
+				websiteUrl: null,
+				openingHours: null,
+				phoneNumbers: [{ number: "051123456", position: 1e21 }],
+			},
+		},
+	),
+	body(
+		"negozio: sito non valido (CreateStoreBody)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{ ...STORE, websiteUrl: "not a url" },
+		422,
+		fail("Sito web: indirizzo web non valido"),
+	),
+	body(
+		"anagrafica: body vuoto (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{},
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"anagrafica: data che non esiste (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{ ...PERSONAL, birthDate: "1990-02-30" },
+		422,
+		fail("Data non valida (AAAA-MM-GG)"),
+	),
+	body(
+		"anagrafica: valida (PersonalInfoBody)",
+		TbPersonalInfoBody,
+		PersonalInfoBody,
+		{ ...PERSONAL, firstName: " Mario " },
+		200,
+		{ ok: PERSONAL },
+	),
+	body(
+		"documento: tipo non ammesso (DocumentBody)",
+		TbDocumentBody,
+		DocumentBody,
+		{ ...DOCUMENT, documentType: "badge" },
+		422,
+		fail("Seleziona il tipo di documento"),
+	),
+	body(
+		"documento: scadenza nel formato sbagliato (DocumentBody)",
+		TbDocumentBody,
+		DocumentBody,
+		{ ...DOCUMENT, documentExpiry: "01/01/2030" },
+		422,
+		fail("Data non valida (AAAA-MM-GG)"),
+	),
+	body(
+		"azienda: body vuoto (CompanyBody)",
+		TbCompanyBody,
+		CompanyBody,
+		{},
+		422,
+		fail("La ragione sociale è obbligatoria"),
+	),
+	body(
+		"azienda: partita IVA corta (CompanyBody)",
+		TbCompanyBody,
+		CompanyBody,
+		{ ...COMPANY, vatNumber: "1" },
+		422,
+		fail("La partita IVA deve essere di 11 cifre"),
+	),
+	body(
+		"impostazioni azienda: la partita IVA è un campo ignoto (CompanySettingsBody)",
+		TbCompanySettingsBody,
+		CompanySettingsBody,
+		{ ...COMPANY, vatNumber: "12345678901" },
+		200,
+		{ ok: COMPANY },
+	),
+	body(
+		"partita IVA: nel formato sbagliato (VatChangeBody)",
+		TbVatChangeBody,
+		VatChangeBody,
+		{ vatNumber: "123" },
+		422,
+		fail("La partita IVA deve essere di 11 cifre"),
+	),
+	body(
+		"invito: email non valida (TeamInviteBody)",
+		TbTeamInviteBody,
+		TeamInviteBody,
+		{ email: "bad", storeIds: ["a"] },
+		422,
+		fail("Inserisci un indirizzo email valido"),
+	),
+	...["a@b.c", "mario#rossi@test.it", "info@negozio.123", "x{y}@test.it"].map(
+		(email) =>
+			body(
+				`invito: ${email} rifiutata come dall'app composta (TeamInviteBody)`,
+				TbTeamInviteBody,
+				TeamInviteBody,
+				{ email, storeIds: ["a"] },
+				422,
+				fail("Inserisci un indirizzo email valido"),
+			),
+	),
+	body(
+		"invito: nessun negozio (TeamInviteBody)",
+		TbTeamInviteBody,
+		TeamInviteBody,
+		{ email: " a@b.it ", storeIds: [] },
+		422,
+		fail("Seleziona almeno un negozio"),
+	),
+	body(
+		"chiusure: data nel formato sbagliato (PutClosuresBody)",
+		TbPutClosuresBody,
+		PutClosuresBody,
+		{ optOutIds: [], customClosures: [{ startDate: "2026-1-1" }] },
+		422,
+		fail("Data di inizio (riga 1): formato non valido"),
+	),
+	body(
+		"chiusure: valide, con la nota trimmata (PutClosuresBody)",
+		TbPutClosuresBody,
+		PutClosuresBody,
+		{
+			optOutIds: ["h"],
+			customClosures: [{ startDate: "2026-12-24", note: " Ferie ", x: 1 }],
+		},
+		200,
+		{
+			ok: {
+				optOutIds: ["h"],
+				customClosures: [{ startDate: "2026-12-24", note: "Ferie" }],
+			},
+		},
+	),
 	body(
 		"t.Integer: 1e21 come numero e come stringa",
 		t.Object({ n: t.Integer({ minimum: 0 }), s: t.Integer({ minimum: 0 }) }),
@@ -2129,6 +2605,593 @@ export const cases: Case[] = [
 		"?ids=a,b&q=x%20y#z&ids=c#d",
 		200,
 		{ ok: { q: "x y#z", ids: ["a", "b", "c#d"] } },
+	),
+
+	// U8: catalogo pubblico e admin 1 (attesi catturati su Elysia nel batch
+	// `baseline/hono-batch-admin-1.jsonl`).
+	query(
+		"U8 categorie: default",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		"",
+		200,
+		{
+			ok: { page: 1, limit: 20, sortBy: "name", sortOrder: "asc" },
+		},
+	),
+	query(
+		"U8 categorie: page oltre i safe-int (t.Integer non li limita)",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		"?page=9007199254740992",
+		200,
+		{
+			ok: {
+				page: 9007199254740992,
+				limit: 20,
+				sortBy: "name",
+				sortOrder: "asc",
+			},
+		},
+	),
+	query(
+		"U8 categorie: ordinamento non ammesso",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		"?sortBy=foo",
+		422,
+		fail("sortBy: valore non ammesso"),
+	),
+	query(
+		"U8 categorie: ricerca troppo lunga",
+		TbCategoryListQuery,
+		CategoryListQuery,
+		`?search=${"x".repeat(101)}`,
+		422,
+		fail("Ricerca: al massimo 100 caratteri"),
+	),
+	query(
+		"U8 sotto-categorie: filtro macro e campi ignoti",
+		TbProductCategoryListQuery,
+		ProductCategoryListQuery,
+		"?macroCategoryId=m&foo=1&sortOrder=desc",
+		200,
+		{
+			ok: {
+				page: 1,
+				limit: 20,
+				sortBy: "name",
+				sortOrder: "desc",
+				macroCategoryId: "m",
+			},
+		},
+	),
+	query(
+		"U8 caratteristiche: tipo non ammesso",
+		TbCharacteristicListQuery,
+		CharacteristicListQuery,
+		"?dataType=foo",
+		422,
+		fail("dataType: valore non ammesso"),
+	),
+	query(
+		"U8 anteprima festività: anno mancante",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"",
+		422,
+		fail("year: campo obbligatorio"),
+	),
+	query(
+		"U8 anteprima festività: anno decimale",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"?year=2026.5",
+		422,
+		fail("year: deve essere un numero intero"),
+	),
+	query(
+		"U8 anteprima festività: anno fuori limite",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"?year=1999",
+		422,
+		fail("Valore non valido: deve essere almeno 2000"),
+	),
+	query(
+		"U8 anteprima festività: anno valido",
+		TbHolidayPreviewQuery,
+		HolidayPreviewQuery,
+		"?year=2026",
+		200,
+		{ ok: { year: 2026 } },
+	),
+	body(
+		"U8 macro prodotto: aliquota di default anche se assente",
+		TbCreateProductMacroCategoryBody,
+		CreateProductMacroCategoryBody,
+		{ name: " x " },
+		200,
+		{ ok: { name: "x", suggestedVatRate: "22" } },
+	),
+	body(
+		"U8 macro prodotto: aliquota non ammessa",
+		TbCreateProductMacroCategoryBody,
+		CreateProductMacroCategoryBody,
+		{ name: "x", suggestedVatRate: "7" },
+		422,
+		fail("suggestedVatRate: valore non ammesso"),
+	),
+	body(
+		"U8 caratteristica: id opzione non testo",
+		TbCreateProductCharacteristicBody,
+		CreateProductCharacteristicBody,
+		{
+			name: "x",
+			dataType: "enum",
+			options: [{ value: "a" }, { id: 1, value: "b" }],
+		},
+		422,
+		fail("options.1.id: deve essere un testo"),
+	),
+	body(
+		"U8 caratteristica: campi ignoti tolti, unità null",
+		TbCreateProductCharacteristicBody,
+		CreateProductCharacteristicBody,
+		{
+			name: " x ",
+			dataType: "enum",
+			unit: null,
+			options: [{ value: "a", extra: 1 }],
+			extra: 2,
+		},
+		200,
+		{
+			ok: {
+				name: "x",
+				dataType: "enum",
+				unit: null,
+				options: [{ value: "a" }],
+			},
+		},
+	),
+	body(
+		"U8 caratteristica: confirmAffected di default",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{},
+		200,
+		{ ok: { confirmAffected: 0 } },
+	),
+	body(
+		"U8 caratteristica: confirmAffected negativo come stringa",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{ confirmAffected: "-1" },
+		422,
+		fail("Valore non valido: deve essere almeno 0"),
+	),
+	body(
+		"U8 caratteristica: unità troppo lunga",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{ unit: "x".repeat(21) },
+		422,
+		fail("unit: al massimo 20 caratteri"),
+	),
+	body(
+		"U8 elimina caratteristica: confirmAffected mancante",
+		TbDeleteProductCharacteristicBody,
+		DeleteProductCharacteristicBody,
+		{},
+		422,
+		fail("confirmAffected: campo obbligatorio"),
+	),
+	body(
+		"U8 elimina caratteristica: confirmAffected decimale",
+		TbDeleteProductCharacteristicBody,
+		DeleteProductCharacteristicBody,
+		{ confirmAffected: 1.5 },
+		422,
+		fail("confirmAffected: deve essere un numero intero"),
+	),
+	body(
+		"U8 elimina caratteristica: confirmAffected oltre i safe-int",
+		TbDeleteProductCharacteristicBody,
+		DeleteProductCharacteristicBody,
+		{ confirmAffected: 1e20 },
+		200,
+		{ ok: { confirmAffected: 1e20 } },
+	),
+	body(
+		"U8 caratteristica: confirmAffected come stringa oltre i safe-int",
+		TbUpdateProductCharacteristicBody,
+		UpdateProductCharacteristicBody,
+		{ confirmAffected: "9007199254740993" },
+		200,
+		{ ok: { confirmAffected: 9007199254740992 } },
+	),
+	body(
+		"U8 togli caratteristica: confirmAffected negativo",
+		TbRemoveCategoryCharacteristicBody,
+		RemoveCategoryCharacteristicBody,
+		{ confirmAffected: -1 },
+		422,
+		fail("confirmAffected: deve essere almeno 0"),
+	),
+	body(
+		"U8 assegna caratteristica: required non booleano",
+		TbSetCategoryCharacteristicBody,
+		SetCategoryCharacteristicBody,
+		{ required: "yes" },
+		422,
+		fail("required: deve essere vero o falso"),
+	),
+	body(
+		"U8 festività: attivo non booleano",
+		TbUpdateHolidayDefinitionBody,
+		UpdateHolidayDefinitionBody,
+		{ isActive: "no" },
+		422,
+		fail("Attivo: deve essere vero o falso"),
+	),
+	body(
+		"U8 festività: trim e campi ignoti",
+		TbUpdateHolidayDefinitionBody,
+		UpdateHolidayDefinitionBody,
+		{ name: "  y  ", isActive: false, extra: 1 },
+		200,
+		{ ok: { name: "y", isActive: false } },
+	),
+	body(
+		"U8 caratteristica: nome di 51 emoji (TypeBox conta le unità UTF-16)",
+		TbCreateProductCharacteristicBody,
+		CreateProductCharacteristicBody,
+		{ name: "😀".repeat(51), dataType: "text" },
+		422,
+		fail("Nome: al massimo 100 caratteri"),
+	),
+	// Spedizione di U6: i gemelli di U2, U4 e U5 passano a `zString` (contavano
+	// i code point con `z.string().min/max`).
+	body(
+		"reg: password di 4 emoji = 8 unità UTF-16, accettata",
+		TbRegister,
+		Register,
+		{ email: "a@b.it", password: "😀".repeat(4) },
+		200,
+		{ ok: { email: "a@b.it", password: "😀".repeat(4) } },
+	),
+	body(
+		"reg: password di 65 emoji = 130 unità UTF-16",
+		TbRegister,
+		Register,
+		{ email: "a@b.it", password: "😀".repeat(65) },
+		422,
+		fail("Password: al massimo 128 caratteri"),
+	),
+	body(
+		"accept-invite: password di 4 emoji, accettata",
+		TbAcceptInviteBody,
+		AcceptInviteBody,
+		{
+			token: "t",
+			password: "😀".repeat(4),
+			confirmPassword: "😀".repeat(4),
+		},
+		200,
+		{
+			ok: {
+				token: "t",
+				password: "😀".repeat(4),
+				confirmPassword: "😀".repeat(4),
+			},
+		},
+	),
+	query(
+		"geocode: q di 2 emoji = 4 unità UTF-16, accettata",
+		TbGeocodeQuery,
+		GeocodeQuery,
+		`?q=${encodeURIComponent("😀😀")}`,
+		200,
+		{ ok: { q: "😀😀", limit: 5 } },
+	),
+	body(
+		"prodotti: nome di 101 emoji = 202 unità UTF-16 (CreateProductBody)",
+		TbCreateProductBody,
+		CreateProductBody,
+		{ name: "😀".repeat(101), price: "1.00", storeId: "s" },
+		422,
+		fail("Il nome è obbligatorio"),
+	),
+	body(
+		"prodotti: valore di 1001 emoji = 2002 unità UTF-16",
+		t.Object({ characteristicValues: t.Optional(TbCharacteristicValuesField) }),
+		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
+		{
+			characteristicValues: [
+				{ characteristicId: "c", value: "😀".repeat(1001) },
+			],
+		},
+		422,
+		fail("Valore (riga 1): valore non valido"),
+	),
+
+	// U9: admin 2 (attesi catturati su Elysia nel batch
+	// `baseline/hono-batch-admin-2.jsonl`, più i 200 dell'eco).
+	query("U9 venditori: default", TbSellerListQuery, SellerListQuery, "", 200, {
+		ok: { page: 1, limit: 20, sortBy: "createdAt", sortOrder: "desc" },
+	}),
+	query(
+		"U9 venditori: stato non ammesso",
+		TbSellerListQuery,
+		SellerListQuery,
+		"?status=foo",
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	query(
+		"U9 venditori: ordinamento non ammesso",
+		TbSellerListQuery,
+		SellerListQuery,
+		"?sortBy=email",
+		422,
+		fail("sortBy: valore non ammesso"),
+	),
+	query(
+		"U9 venditori: ricerca di 51 emoji (unità UTF-16)",
+		TbSellerListQuery,
+		SellerListQuery,
+		`?search=${encodeURIComponent("😀".repeat(51))}`,
+		422,
+		fail("Ricerca: al massimo 100 caratteri"),
+	),
+	query(
+		"U9 venditori: ricerca non trimmata e campi ignoti",
+		TbSellerListQuery,
+		SellerListQuery,
+		"?search=%20x%20&status=active&foo=1",
+		200,
+		{
+			ok: {
+				page: 1,
+				limit: 20,
+				sortBy: "createdAt",
+				sortOrder: "desc",
+				search: " x ",
+				status: "active",
+			},
+		},
+	),
+	query(
+		"U9 negozi: default con il tab",
+		TbStoreListQuery,
+		StoreListQuery,
+		"",
+		200,
+		{
+			ok: {
+				page: 1,
+				limit: 20,
+				status: "all",
+				sortBy: "createdAt",
+				sortOrder: "desc",
+			},
+		},
+	),
+	query(
+		"U9 negozi: tab non ammesso",
+		TbStoreListQuery,
+		StoreListQuery,
+		"?status=foo",
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	query(
+		"U9 negozi: pagina non numerica",
+		TbStoreListQuery,
+		StoreListQuery,
+		"?page=abc",
+		422,
+		fail("Pagina: deve essere un numero intero"),
+	),
+	query(
+		"U9 richieste: default del tipo (t.Composite)",
+		TbRequestListQuery,
+		RequestListQuery,
+		"?limit=2",
+		200,
+		{ ok: { page: 1, limit: 2, type: "all" } },
+	),
+	query(
+		"U9 richieste: tipo non ammesso",
+		TbRequestListQuery,
+		RequestListQuery,
+		"?type=foo",
+		422,
+		fail("Tipo: valore non ammesso"),
+	),
+	query(
+		"U9 abbonamenti: niente default",
+		TbSubscriptionsQuery,
+		SubscriptionsQuery,
+		"?page=2&sellerEmail=a&x=1",
+		200,
+		{ ok: { page: 2, sellerEmail: "a" } },
+	),
+	query(
+		"U9 abbonamenti: stato non ammesso",
+		TbSubscriptionsQuery,
+		SubscriptionsQuery,
+		"?status=foo",
+		422,
+		fail("Stato: valore non ammesso"),
+	),
+	query(
+		"U9 abbonamenti: limite a zero",
+		TbSubscriptionsQuery,
+		SubscriptionsQuery,
+		"?limit=0",
+		422,
+		fail("Valore non valido: deve essere almeno 1"),
+	),
+	body(
+		"U9 prezzi: corpo vuoto",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{},
+		422,
+		fail("storeMonthlyFeeCents: campo obbligatorio"),
+	),
+	body(
+		"U9 prezzi: prodotto Stripe non valido",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, productId: "prod_" },
+		422,
+		fail("Prodotto: formato non valido"),
+	),
+	body(
+		"U9 prezzi: valuta di 4 lettere",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, currency: "EURO" },
+		422,
+		fail("currency: al massimo 3 caratteri"),
+	),
+	body(
+		"U9 prezzi: giorni sotto il minimo",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, suspendedAutoCancelDays: 6 },
+		422,
+		fail("suspendedAutoCancelDays: deve essere almeno 7"),
+	),
+	body(
+		"U9 prezzi: ore decimali",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, pendingCreationExpiryHours: 1.5 },
+		422,
+		fail("pendingCreationExpiryHours: deve essere un numero intero"),
+	),
+	body(
+		"U9 prezzi: intero in stringa, trim e campi ignoti",
+		TbUpdatePricingBody,
+		UpdatePricingBody,
+		{ ...pricing, storeMonthlyFeeCents: "2900", currency: " EUR ", x: 1 },
+		200,
+		{ ok: { ...pricing, storeMonthlyFeeCents: 2900 } },
+	),
+	body(
+		"U9 verifica: data mancante",
+		TbVerifySellerBody,
+		VerifySellerBody,
+		{},
+		422,
+		fail("expectedUpdatedAt: campo obbligatorio"),
+	),
+	body(
+		"U9 verifica: data gg/mm/aaaa",
+		TbVerifySellerBody,
+		VerifySellerBody,
+		{ expectedUpdatedAt: "24/10/2026" },
+		422,
+		fail("expectedUpdatedAt: data non valida"),
+	),
+	body(
+		"U9 verifica: epoch",
+		TbVerifySellerBody,
+		VerifySellerBody,
+		{ expectedUpdatedAt: 0 },
+		200,
+		{ ok: { expectedUpdatedAt: "1970-01-01T00:00:00.000Z" } },
+	),
+	body(
+		"U9 rifiuto: corpo vuoto (prima il campo anyOf mancante)",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{},
+		422,
+		fail("fixStep: campo obbligatorio"),
+	),
+	body(
+		"U9 rifiuto: motivo di soli spazi",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{ reason: "   ", fixStep: null, expectedUpdatedAt: stale },
+		422,
+		fail("Indica il motivo del rifiuto"),
+	),
+	body(
+		"U9 rifiuto: motivo di 251 emoji (unità UTF-16)",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{ reason: "😀".repeat(251), fixStep: null, expectedUpdatedAt: stale },
+		422,
+		fail("Indica il motivo del rifiuto"),
+	),
+	body(
+		"U9 rifiuto: step non ammesso",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{
+			reason: "Documento illeggibile",
+			fixStep: "foo",
+			expectedUpdatedAt: stale,
+		},
+		422,
+		fail("fixStep: valore non valido"),
+	),
+	body(
+		"U9 rifiuto: step mancante",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{ reason: "Documento illeggibile", expectedUpdatedAt: stale },
+		422,
+		fail("fixStep: campo obbligatorio"),
+	),
+	body(
+		"U9 rifiuto: trim e data",
+		TbRejectSellerRouteBody,
+		RejectSellerRouteBody,
+		{
+			reason: " Documento illeggibile ",
+			fixStep: "document",
+			expectedUpdatedAt: stale,
+			x: 1,
+		},
+		200,
+		{
+			ok: {
+				reason: "Documento illeggibile",
+				fixStep: "document",
+				expectedUpdatedAt: stale,
+			},
+		},
+	),
+	body(
+		"U9 modifica rifiutata: motivo facoltativo",
+		TbRejectChangeBody,
+		RejectChangeBody,
+		{},
+		200,
+		{ ok: {} },
+	),
+	body(
+		"U9 modifica rifiutata: motivo di 251 emoji (unità UTF-16)",
+		TbRejectChangeBody,
+		RejectChangeBody,
+		{ reason: "😀".repeat(251) },
+		422,
+		fail("Motivo: al massimo 500 caratteri"),
+	),
+	body(
+		"U9 modifica rifiutata: motivo non testo",
+		TbRejectChangeBody,
+		RejectChangeBody,
+		{ reason: 5 },
+		422,
+		fail("Motivo: deve essere un testo"),
 	),
 
 	// U7: gemelli di promozioni, ordini e negozio (checkout).

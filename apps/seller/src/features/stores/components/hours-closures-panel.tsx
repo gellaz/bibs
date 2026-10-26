@@ -1,12 +1,12 @@
 import { toast } from "@bibs/ui/components/sonner";
 import { Spinner } from "@bibs/ui/components/spinner";
-import { toYMD } from "@bibs/ui/lib/date";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { cn } from "@bibs/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { FormSection } from "@/components/form-section";
 import { SaveBar } from "@/components/save-bar";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import {
 	type ClosuresDraft,
@@ -31,24 +31,14 @@ interface ClosuresState {
 	draft: ClosuresDraft;
 }
 
-/**
- * Risposta chiusure → stato del pannello. Eden idrata le date in Date anche
- * dove lo schema dice stringa: si riportano a YYYY-MM-DD.
- */
+/** Risposta chiusure → stato del pannello (le date sono già YYYY-MM-DD). */
 function toClosuresState(raw: {
 	holidays: HolidayRow[];
 	customClosures: CustomClosure[];
 }): ClosuresState {
-	const holidays = raw.holidays.map((h) => ({
-		...h,
-		nextDate: h.nextDate ? toYMD(h.nextDate) : null,
-	}));
+	const { holidays } = raw;
 	const { past, upcoming } = splitCustomClosures(
-		raw.customClosures.map((c) => ({
-			startDate: toYMD(c.startDate),
-			endDate: c.endDate ? toYMD(c.endDate) : undefined,
-			note: c.note,
-		})),
+		raw.customClosures,
 		romeToday(),
 	);
 	const saved = {
@@ -83,10 +73,14 @@ export function HoursClosuresPanel({
 	const closuresQuery = useQuery({
 		queryKey: ["store-closures", storeId],
 		queryFn: async () =>
-			unwrap(
-				await api().seller.stores({ storeId }).closures.get(),
-				m.store_closures_error(),
-			).data as { holidays: HolidayRow[]; customClosures: CustomClosure[] },
+			(
+				await unwrapJson(
+					await sellerApi.stores[":storeId"].closures.$get({
+						param: { storeId },
+					}),
+					m.store_closures_error(),
+				)
+			).data,
 		enabled: !readOnly,
 	});
 	const [closures, setClosures] = useState<ClosuresState | null>(null);
@@ -108,28 +102,32 @@ export function HoursClosuresPanel({
 	const save = useMutation({
 		mutationFn: async () => {
 			if (hoursDirty) {
-				unwrap(
-					await api()
-						.seller.stores({ storeId })
-						.patch({ openingHours: hours.length > 0 ? hours : null }),
+				await unwrapJson(
+					await sellerApi.stores[":storeId"].$patch({
+						param: { storeId },
+						json: { openingHours: hours.length > 0 ? hours : null },
+					}),
 					m.store_update_error(),
 				);
 				setSavedHours(hours);
 			}
 			if (closures && closuresDirty) {
-				const next = unwrap(
-					await api()
-						.seller.stores({ storeId })
-						.closures.put({
-							optOutIds: closures.draft.optOutIds,
-							customClosures: [
-								...closures.past,
-								...closures.draft.customClosures,
-								...(pendingClosure ? [pendingClosure] : []),
-							],
+				const next = (
+					await unwrapJson(
+						await sellerApi.stores[":storeId"].closures.$put({
+							param: { storeId },
+							json: {
+								optOutIds: closures.draft.optOutIds,
+								customClosures: [
+									...closures.past,
+									...closures.draft.customClosures,
+									...(pendingClosure ? [pendingClosure] : []),
+								],
+							},
 						}),
-					m.store_closures_error(),
-				).data as { holidays: HolidayRow[]; customClosures: CustomClosure[] };
+						m.store_closures_error(),
+					)
+				).data;
 				setClosures(toClosuresState(next));
 				setPending(null);
 			}

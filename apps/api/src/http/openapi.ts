@@ -25,6 +25,11 @@ export interface RouteDoc {
 	detail?: RouteDetail;
 	/** Risposte per status, come la `response` di Elysia. */
 	response?: Record<number, z.ZodType>;
+	/**
+	 * Il path in /openapi, se Elysia lo documenta diverso da come si registra
+	 * (D8: `GET /seller/settings/` si registra senza lo slash finale).
+	 */
+	path?: string;
 }
 
 /** Metadati OpenAPI di una route: middleware che non fa niente. */
@@ -233,7 +238,8 @@ export function operations(app: Hono<any, any, any>, prefix = ""): Operation[] {
 			[VALIDATES]?: Validates;
 		};
 		const meta = handler[DOC];
-		if (meta) Object.assign(op, meta);
+		if (meta)
+			Object.assign(op, meta, meta.path && { path: `${prefix}${meta.path}` });
 		const validates = handler[VALIDATES];
 		if (validates) {
 			const slot =

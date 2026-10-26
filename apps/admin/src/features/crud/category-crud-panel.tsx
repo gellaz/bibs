@@ -27,11 +27,17 @@ import { EmptyState } from "@bibs/ui/custom/empty-state";
 import { SearchInput } from "@bibs/ui/custom/search-input";
 import { TableColumnsToggle } from "@bibs/ui/custom/table-columns-toggle";
 import { useRowSelection } from "@bibs/ui/hooks/use-row-selection";
-import { unwrap as unwrapResponse } from "@bibs/ui/lib/api-client";
+import { type ErrorBody, unwrapJson } from "@bibs/ui/lib/api-client";
 import { formatDate } from "@bibs/ui/lib/date";
 import type { DataTableColumnDef } from "@bibs/ui/lib/table-features";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SortingState } from "@tanstack/react-table";
+import type { ClientResponse } from "hono/client";
+import type {
+	ClientErrorStatusCode,
+	ServerErrorStatusCode,
+	SuccessStatusCode,
+} from "hono/utils/http-status";
 import { PencilIcon, Trash2Icon, UploadIcon } from "lucide-react";
 import { type ReactNode, useMemo, useRef, useState } from "react";
 import {
@@ -55,15 +61,21 @@ type SortOrder = "asc" | "desc";
 
 const EMPTY: never[] = [];
 
-// Eden responses are { data, error }. The error shape is per-route, so keep it
-// `unknown` here — that way any config closure's eden promise is assignable —
-// and narrow it at runtime in `edenMessage` (@bibs/ui).
-type EdenRes<T> = { data: T | null; error: unknown };
+// Una risposta del client `hc`: il corpo di successo `T` o l'inviluppo di
+// errore dell'API. Le config passano la risposta così com'è, il pannello la
+// apre con il suo messaggio di ripiego.
+type HcRes<T> =
+	| ClientResponse<T, SuccessStatusCode, "json">
+	| ClientResponse<
+			ErrorBody,
+			ClientErrorStatusCode | ServerErrorStatusCode,
+			"json"
+	  >;
 
 // Condiviso con il resto dei FE: lancia un `ApiError` con lo status, così la
 // policy di retry del QueryClient non riprova i 4xx.
-async function unwrap<T>(p: Promise<EdenRes<T>>, fallback: string): Promise<T> {
-	return unwrapResponse(await p, fallback);
+async function unwrap<T>(p: Promise<HcRes<T>>, fallback: string): Promise<T> {
+	return unwrapJson(await p, fallback);
 }
 
 export interface CategoryEntity {
@@ -100,10 +112,10 @@ export interface CategoryCrudConfig<TEntity extends CategoryEntity, TForm> {
 	storageKey: string;
 	extraInvalidate?: readonly (readonly string[])[];
 
-	list: (q: CrudListQuery) => Promise<EdenRes<CrudListResult<TEntity>>>;
-	create: (form: TForm) => Promise<EdenRes<unknown>>;
-	update: (id: string, form: TForm) => Promise<EdenRes<unknown>>;
-	remove: (id: string, entity: TEntity) => Promise<EdenRes<unknown>>;
+	list: (q: CrudListQuery) => Promise<HcRes<CrudListResult<TEntity>>>;
+	create: (form: TForm) => Promise<HcRes<unknown>>;
+	update: (id: string, form: TForm) => Promise<HcRes<unknown>>;
+	remove: (id: string, entity: TEntity) => Promise<HcRes<unknown>>;
 
 	// Funzioni e non costanti: i testi vanno letti a ogni render, nella lingua
 	// corrente (anche in SSR).

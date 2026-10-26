@@ -115,14 +115,16 @@ export interface StringOptions extends Meta {
 }
 
 /**
- * `t.String` con `minLength`/`maxLength` (e `pattern`, `format`): TypeBox conta le unità
- * UTF-16 (`value.length`), `z.string().min/max` di Zod 4.6 i code point
- * («😀» è lungo 2 per TypeBox, 1 per Zod). Le issue sono le `too_small` e
- * `too_big` di Zod: stessa regola e stesso ordine nel 422 (`issues.ts`).
+ * `minLength`/`maxLength` di TypeBox: conta le unità UTF-16 (`value.length`),
+ * `z.string().min/max` di Zod 4.6 i code point («😀» è lungo 2 per TypeBox, 1
+ * per Zod). Le issue sono le `too_small` e `too_big` di Zod: stessa regola e
+ * stesso ordine nel 422 (`issues.ts`).
  */
-export function zString(options: StringOptions = {}) {
-	const { minLength, maxLength, pattern, format } = options;
-	let schema = z.string().check((ctx) => {
+export const utf16Length = ({
+	minLength,
+	maxLength,
+}: Pick<StringOptions, "minLength" | "maxLength">) =>
+	z.check<string>((ctx) => {
 		const input = ctx.value;
 		if (minLength !== undefined && input.length < minLength)
 			ctx.issues.push({
@@ -140,10 +142,21 @@ export function zString(options: StringOptions = {}) {
 				inclusive: true,
 				input,
 			});
-		if (format !== undefined && !FORMATS[format](input))
-			ctx.issues.push({ code: "invalid_format", format, input });
 	});
+
+/**
+ * `t.String` con `minLength`/`maxLength` (vedi `utf16Length`), `pattern` e
+ * `format`, controllati nell'ordine di TypeBox: lunghezze, pattern, formato.
+ */
+export function zString(options: StringOptions = {}) {
+	const { pattern, format } = options;
+	let schema = z.string().check(utf16Length(options));
 	if (pattern !== undefined) schema = schema.regex(new RegExp(pattern));
+	if (format !== undefined)
+		schema = schema.check((ctx) => {
+			if (!FORMATS[format](ctx.value))
+				ctx.issues.push({ code: "invalid_format", format, input: ctx.value });
+		});
 	return register(schema.meta(metaOf(options)), {
 		...options,
 		type: "string",
@@ -276,8 +289,8 @@ export function zBooleanString(inner: z.ZodType) {
 // ── date ────────────────────────────────────────────────────────────────────
 
 /**
- * `t.Date` di Elysia: `Date`, stringa `date-time` o `date` (formati larghi di
- * Elysia) o timestamp numerico, decodificati in `Date`. In risposta il `Date`
+ * `t.Date` di Elysia: `Date`, stringa `date-time` (largo, di Elysia) o `date`
+ * (ISO stretto, vedi `formats.ts`) o timestamp numerico, decodificati in `Date`. In risposta il `Date`
  * esce come stringa ISO con `JSON.stringify`.
  */
 export function zDate<O extends Meta & { default?: string | Date }>(

@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { orderStatuses, orderTypes } from "@/db/schemas/order";
+import { onboardingStatuses } from "@/db/schemas/seller";
+import { adminStoreStatuses } from "@/lib/queries";
 import { PaginationQuery } from "./pagination";
+import { zString } from "./t";
 
 // Gemelli Zod di `lib/queries.ts` (D3 del piano Hono), nello stesso ordine e
 // con gli stessi nomi; per ora solo quelli delle route migrate. In query
@@ -18,6 +21,34 @@ export const OrderListQuery = PaginationQuery.extend({
 		.meta(d("Filtra per stato dell'ordine"))
 		.optional(),
 	type: z.enum(orderTypes).meta(d("Filtra per tipo di ordine")).optional(),
+});
+
+/**
+ * Pagination + optional status/search/sort for seller list endpoints.
+ */
+export const SellerListQuery = PaginationQuery.extend({
+	status: z
+		.enum(onboardingStatuses)
+		.meta(
+			d(
+				"Filtra per stato di onboarding. Se omesso, restituisce solo i venditori con candidatura sottomessa (pending_review, active, rejected).",
+			),
+		)
+		.optional(),
+	search: zString({
+		maxLength: 100,
+		description: "Ricerca testuale su nome, email, ragione sociale o P.IVA",
+	}).optional(),
+	sortBy: z
+		.enum(["name", "createdAt"])
+		.default("createdAt")
+		.meta(d("Campo di ordinamento"))
+		.optional(),
+	sortOrder: z
+		.enum(["asc", "desc"])
+		.default("desc")
+		.meta(d("Direzione di ordinamento"))
+		.optional(),
 });
 
 /**
@@ -111,6 +142,48 @@ export const StoreSearchQuery = PaginationQuery.extend({
 });
 
 /**
+ * Pagination + optional search/sort for category list endpoints.
+ */
+export const CategoryListQuery = PaginationQuery.extend({
+	search: zString({
+		maxLength: 100,
+		description: "Ricerca testuale sul nome",
+	}).optional(),
+	sortBy: z
+		.enum(["name", "createdAt"])
+		.default("name")
+		.meta(d("Campo di ordinamento"))
+		.optional(),
+	sortOrder: z
+		.enum(["asc", "desc"])
+		.default("asc")
+		.meta(d("Direzione di ordinamento"))
+		.optional(),
+});
+
+/**
+ * Pagination + optional search/sort/dataType filter for characteristic list
+ * endpoints.
+ */
+export const CharacteristicListQuery = CategoryListQuery.extend({
+	dataType: z
+		.enum(["text", "number", "boolean", "enum"])
+		.meta(d("Filtra per tipo di dato"))
+		.optional(),
+});
+
+/**
+ * Pagination + optional search/sort/macroCategoryId filter for product
+ * category list endpoints (public and admin).
+ */
+export const ProductCategoryListQuery = CategoryListQuery.extend({
+	macroCategoryId: z
+		.string()
+		.meta(d("Filtra per ID della macro categoria"))
+		.optional(),
+});
+
+/**
  * Negozio, lat/lng opzionali per la scheda prodotto customer: `storeId`
  * indica il negozio da cui arriva il cliente, lat/lng scelgono il più vicino
  * fra quelli idonei quando quello richiesto non c'è (o non è indicato).
@@ -135,5 +208,35 @@ export const ProductDetailQuery = z.object({
 		.min(-180)
 		.max(180)
 		.meta(d("Longitudine dell'origine, per scegliere il negozio più vicino"))
+		.optional(),
+});
+
+/**
+ * Pagination + tab/search/sort for the admin store list.
+ */
+export const StoreListQuery = PaginationQuery.extend({
+	status: z
+		.enum(adminStoreStatuses)
+		.default("all")
+		.meta(
+			d(
+				"Tab: all (negozi vivi), active (abbonamento attivo o in cancellazione), past_due, suspended, none (senza abbonamento o cancellato), deleted (eliminati)",
+			),
+		)
+		.optional(),
+	search: zString({
+		maxLength: 100,
+		description:
+			"Ricerca testuale su nome negozio, ragione sociale del venditore o comune",
+	}).optional(),
+	sortBy: z
+		.enum(["name", "createdAt"])
+		.default("createdAt")
+		.meta(d("Campo di ordinamento"))
+		.optional(),
+	sortOrder: z
+		.enum(["asc", "desc"])
+		.default("desc")
+		.meta(d("Direzione di ordinamento"))
 		.optional(),
 });

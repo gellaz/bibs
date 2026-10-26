@@ -7,7 +7,7 @@ import { v } from "@/http/validator";
 import { ok, okPage } from "@/lib/responses";
 import { BrandSchema } from "@/lib/zod/entities";
 import { okPageRes, okRes, withErrors } from "@/lib/zod/responses";
-import { zInteger } from "@/lib/zod/t";
+import { zInteger, zString } from "@/lib/zod/t";
 import { findOrCreateBrandByName, listBrands } from "../services/brands";
 
 const ListBrandsQuery = z.object({
@@ -22,15 +22,18 @@ const ListBrandsQuery = z.object({
 		default: 20,
 		description: "Elementi per pagina",
 	}).optional(),
-	q: z
-		.string()
-		.max(120)
-		.meta({ description: "Filtro testuale (case-insensitive)" })
-		.optional(),
+	q: zString({
+		maxLength: 120,
+		description: "Filtro testuale (case-insensitive)",
+	}).optional(),
 });
 
 const BrandBody = z.object({
-	name: z.string().min(1).max(120).meta({ description: "Nome del brand" }),
+	name: zString({
+		minLength: 1,
+		maxLength: 120,
+		description: "Nome del brand",
+	}),
 });
 
 const BrandPage = okPageRes(BrandSchema);

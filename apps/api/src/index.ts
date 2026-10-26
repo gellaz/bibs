@@ -9,14 +9,19 @@ import { isOriginAllowed } from "@/lib/cors";
 import { env } from "@/lib/env";
 import { fileTransport, pinoOptions } from "@/lib/logger";
 import { ensureBucket } from "@/lib/s3";
-import { adminModule } from "@/modules/admin";
-import { catalogModule } from "@/modules/catalog";
+import { adminApp } from "@/modules/admin";
+import {
+	productCategoriesApp,
+	productMacroCategoriesApp,
+	storeCategoriesApp,
+	storeMacroCategoriesApp,
+} from "@/modules/catalog";
 import { customerApp } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
-import { sellerApp, sellerGuards, sellerModule } from "@/modules/seller";
-import { stripeWebhookRoutes } from "@/modules/webhooks";
+import { sellerApp, sellerGuards } from "@/modules/seller";
+import { webhooksApp } from "@/modules/webhooks";
 import { betterAuth } from "@/plugins/better-auth";
 import { cronJobs } from "@/plugins/cron";
 import { errorHandler } from "@/plugins/error-handler";
@@ -159,22 +164,37 @@ const app = new Elysia()
 					...honoPaths(registrationApp, "/register", ["publicRoute"]),
 					...honoPaths(locationsApp, "/locations", ["auth", "publicRoute"]),
 					...honoPaths(sellerApp, "/seller", sellerGuards),
+					...honoPaths(adminApp, "/admin", ["admin"]),
+					...honoPaths(productMacroCategoriesApp, "/product-macro-categories", [
+						"publicRoute",
+					]),
+					...honoPaths(productCategoriesApp, "/product-categories", [
+						"publicRoute",
+					]),
+					...honoPaths(storeMacroCategoriesApp, "/store-macro-categories", [
+						"publicRoute",
+					]),
+					...honoPaths(storeCategoriesApp, "/store-categories", [
+						"publicRoute",
+					]),
+					...honoPaths(webhooksApp, "/webhooks", ["publicRoute"]),
 				},
 			},
 		}),
 	)
-	.use(stripeWebhookRoutes)
 	.use(betterAuth)
-	.use(adminModule)
-	.use(catalogModule)
-	.use(sellerModule)
 	// Moduli migrati a Hono: sempre sull'app radice (il mount toglie il prefisso).
 	.mount("/me", meApp.fetch)
 	.mount("/customer", customerApp.fetch)
 	.mount("/register", registrationApp.fetch)
 	.mount("/locations", locationsApp.fetch)
-	// Seller in parte: le route ancora in `sellerModule` vincono sul mount.
 	.mount("/seller", sellerApp.fetch)
+	.mount("/admin", adminApp.fetch)
+	.mount("/product-macro-categories", productMacroCategoriesApp.fetch)
+	.mount("/product-categories", productCategoriesApp.fetch)
+	.mount("/store-macro-categories", storeMacroCategoriesApp.fetch)
+	.mount("/store-categories", storeCategoriesApp.fetch)
+	.mount("/webhooks", webhooksApp.fetch)
 	.use(cronJobs)
 	.use(health);
 

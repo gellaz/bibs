@@ -1,6 +1,4 @@
-import { Elysia } from "elysia";
-import { ServiceError } from "@/lib/errors";
-import { betterAuth } from "@/plugins/better-auth";
+import { moduleApp } from "@/http/app";
 import { adminBillingRoutes } from "./routes/billing";
 import { categoryCharacteristicsRoutes } from "./routes/category-characteristics";
 import { categoryImportsRoutes } from "./routes/category-imports";
@@ -17,38 +15,28 @@ import { storeCategoriesWriteRoutes } from "./routes/store-categories";
 import { storeMacroCategoriesWriteRoutes } from "./routes/store-macro-categories";
 import { storesRoutes } from "./routes/stores";
 
-export const adminModule = new Elysia({ prefix: "/admin", tags: ["Admin"] })
-	.use(betterAuth)
-	.guard(
-		{
-			auth: true,
-			detail: {
-				security: [{ bearerAuth: [] }],
-			},
-		},
-		(app) =>
-			app
-				.resolve(async ({ user }) => {
-					if (user.role !== "admin")
-						throw new ServiceError(
-							403,
-							"Accesso riservato agli amministratori",
-						);
-					return {};
-				})
-				.use(productMacroCategoriesWriteRoutes)
-				.use(productCategoriesWriteRoutes)
-				.use(categoryCharacteristicsRoutes)
-				.use(configurationsRoutes)
-				.use(storeMacroCategoriesWriteRoutes)
-				.use(storeCategoriesWriteRoutes)
-				.use(holidayDefinitionsRoutes)
-				.use(categoryImportsRoutes)
-				.use(productCharacteristicsRoutes)
-				.use(characteristicImportsRoutes)
-				.use(sellersRoutes)
-				.use(storesRoutes)
-				.use(sellerChangesRoutes)
-				.use(requestsRoutes)
-				.use(adminBillingRoutes),
-	);
+/**
+ * Sub-app Hono del modulo, montata su /admin in `src/index.ts`: configurazioni,
+ * tassonomia, caratteristiche, festività e import CSV (U8 del piano Hono);
+ * venditori, modifiche del profilo, negozi, richieste e billing (U9).
+ * Ogni route ha `requireAdmin` dopo i suoi `v(...)`.
+ */
+export const adminApp = moduleApp()
+	.route("/", productMacroCategoriesWriteRoutes)
+	.route("/", productCategoriesWriteRoutes)
+	.route("/", categoryCharacteristicsRoutes)
+	.route("/", configurationsRoutes)
+	.route("/", storeMacroCategoriesWriteRoutes)
+	.route("/", storeCategoriesWriteRoutes)
+	.route("/", holidayDefinitionsRoutes)
+	.route("/", categoryImportsRoutes)
+	.route("/", productCharacteristicsRoutes)
+	.route("/", characteristicImportsRoutes)
+	.route("/", sellersRoutes)
+	.route("/", storesRoutes)
+	.route("/", sellerChangesRoutes)
+	.route("/", requestsRoutes)
+	.route("/", adminBillingRoutes);
+
+/** Tipo per il client `hc` dei frontend (`hc<AdminApp>(`${API_URL}/admin`)`). */
+export type AdminApp = typeof adminApp;

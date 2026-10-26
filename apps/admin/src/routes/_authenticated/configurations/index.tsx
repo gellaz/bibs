@@ -7,7 +7,7 @@ import {
 	configurationGroups,
 	configurationSections,
 } from "@/features/configurations/sections";
-import { api } from "@/lib/api";
+import { adminApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_authenticated/configurations/")({
@@ -18,9 +18,9 @@ function ConfigurationsPage() {
 	const { data: counts } = useQuery({
 		queryKey: ["admin-configurations-counts"],
 		queryFn: async () => {
-			const response = await api().admin.configurations.counts.get();
-			if (response.error) return null;
-			return response.data?.data ?? null;
+			const response = await adminApi.configurations.counts.$get();
+			if (!response.ok) return null;
+			return (await response.json()).data;
 		},
 	});
 

@@ -169,16 +169,20 @@ per PR, con lo stesso comportamento HTTP. Stato, decisioni (D1–D15), baseline 
 verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
-`locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
-immagini, caratteristiche, stock; U7: ordini, promozioni, checkout negozio,
-billing); `customer/` (U3).
+`locations/` e `registration/` (U2+U4); `seller/` (U5: prodotti, brand,
+immagini, caratteristiche, stock; U6: negozi, immagini dei negozi, chiusure,
+impostazioni, team, onboarding, profilo, dashboard; U7: ordini, promozioni,
+checkout negozio, billing; l'app seller non usa più Eden); `customer/` (U3);
+catalogo pubblico e `admin/` (U8: configurazioni, tassonomia, caratteristiche,
+festività, import CSV; U9: venditori, modifiche del profilo, negozi, richieste,
+billing; l'app admin non usa più Eden); `webhooks/` (U10).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
   `.mount("/me", meApp.fetch)`. Il mount toglie il prefisso e non legge il body;
   una route Elysia vince sempre sul mount, quindi un modulo può migrare in parte
-  (`.mount("/seller", sellerApp.fetch)` accanto a `sellerModule`, che tiene le route
-  non ancora migrate). Finché c'è Elysia restano suoi il
+  (`/seller` fra U5 e U7: `.mount("/seller", sellerApp.fetch)` accanto al modulo
+  Elysia che teneva le route non ancora migrate). Finché c'è Elysia restano suoi il
   preflight e gli header CORS, `X-Request-Id`, la riga di log di logixlysia e la
   sovrascrittura di `x-forwarded-for`; tutto il resto lo fa la sub-app (prove in
   `apps/api/tests/http/mount.test.ts`).
@@ -199,7 +203,9 @@ billing); `customer/` (U3).
   non rilegge la sessione); `toErrorResponse` (una sola mappatura errore →
   risposta, usata anche dal plugin Elysia); `doc(...)` + generatore OpenAPI (i path
   delle sub-app si uniscono al documento di Elysia: `/openapi/json` è uguale alla
-  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi).
+  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi;
+  `doc({ path })` documenta una route registrata senza lo slash finale col path di
+  Elysia, es. `GET /seller/settings/`).
 - **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
   i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
   modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
@@ -207,15 +213,23 @@ billing); `customer/` (U3).
   mount dichiara le guardie del modulo: `honoPaths(adminApp, "/admin", ["admin"])`
   in `src/index.ts`, o una funzione del path quando cambiano da route a route
   (`sellerGuards`: `requireSellerRole` su profilo e onboarding, `requireSeller` sul
-  resto). Le guardie di ruolo (`requireCustomer`, `requireSeller`) leggono la
-  sessione da sé (401 per l'anonimo), quindi non serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
-  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
+  resto). Le guardie di ruolo (`requireCustomer`, `requireSeller`,
+  `requireSellerRole`) leggono la sessione da sé (401 per l'anonimo), quindi non
+  serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
+  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`),
+  `requireSellerRole` vuole solo il ruolo seller (403 «Accesso riservato ai
+  venditori»). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
   ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
   guardia del modulo, o `publicRoute` in un modulo che dichiara `"publicRoute"`
   (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
   /admin; vale anche per due registrazioni dello stesso path e per `.all()`), se
   un `v()` sta dopo l'auth o se i `v()` non sono nell'ordine di Elysia: params →
-  query → body.
+  query → body. Le guardie di ruolo (`requireAdmin`) leggono la sessione da sole
+  (401, poi 403): in una route basta lei, l'ordine fra guardie non conta.
+- **Catalogo: quattro path radice, quattro mount.** `/product-categories`,
+  `/product-macro-categories`, `/store-categories`, `/store-macro-categories` sono
+  quattro sub-app con la route `/`, montate ognuna sul suo path; per i FE un solo
+  tipo `CatalogApp` e un client `catalogApi = hc<WithErrors<CatalogApp>>(API_URL)`.
 - **Rate limit.** `rateLimit({ name, limits })` (`src/plugins/rate-limit.ts`) è un
   middleware Hono: va dopo i `v()` e dopo la guardia o `publicRoute` (un input non
   valido non consuma budget; la chiave `email` è quella del body validato). Sotto
@@ -235,11 +249,18 @@ billing); `customer/` (U3).
     in Elysia); `t.String` con `minLength`/`maxLength` →
     `zString({ minLength, maxLength, pattern, description })` (TypeBox conta le
     unità UTF-16, `z.string().min/max` i code point: «😀» vale 2 per TypeBox, 1
-    per Zod), anche con un formato (`zString({ format: "uri", maxLength })`, non
-    `zFormat(…).max()`); `t.Date` → `zDate`; `t.Nullable(x)` →
-    `x.nullable()`, `Type.Union([x, Type.Null()])` dei form condivisi →
-    `z.union([x, z.null()])` (niente `nullable: true` in /openapi); unione di
-    letterali → `z.enum`, ma di letterali numerici (le
+    per Zod), anche con un formato (`zString({ format: "uri", maxLength })`:
+    lunghezze, pattern e formato nell'ordine di TypeBox; `utf16Length` per uno
+    schema scritto a mano); `t.String({ format })` → `zFormat(f)`, mai i formati
+    di Zod: `FORMATS` (`lib/zod/formats.ts`) copia il FormatRegistry dell'app
+    composta, dove `@elysiajs/openapi` sovrascrive `email`, `uuid` e `date` di
+    Elysia (`tests/http/formats.test.ts`); `t.Date` → `zDate`; `t.Nullable(x)` →
+    `x.nullable()`, ma `Type.Union([x, Type.Null()])` → `z.union([x, z.null()])`
+    (solo il t.Nullable scrive `nullable: true` in /openapi); `uniqueItems` →
+    `.refine` con la regola `uniqueItems` più `.meta({ uniqueItems: true })`; un
+    `format` con `pattern` → `zFormat(f).regex(p).meta({ format: f })` (il
+    `.regex()` toglie il formato dal JSON Schema); unione di letterali → `z.enum`,
+    ma di letterali numerici (le
     aliquote IVA `"22"`, `"10"`, …) → `z.union` di `z.literal` (`z.enum` riordina le
     chiavi numeriche in /openapi); `t.Union` di oggetti →
     `z.union`, mai `z.discriminatedUnion`;
@@ -258,7 +279,7 @@ billing); `customer/` (U3).
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da
   `src/types.ts` (`MeApp`, `CustomerApp`, `LocationsApp`, `RegistrationApp`,
-  `SellerApp`); ogni app crea in `src/lib/api.ts` il client del
+  `SellerApp`, `AdminApp`, `CatalogApp`); ogni app crea in `src/lib/api.ts` il client del
   sotto-albero (`meApi = hc<WithErrors<MeApp>>(`${API_URL}/me`, { init })`) e chiama
   `await unwrapJson(await meApi.avatar.$delete(), fallback)` (`@bibs/ui/lib/api-client`:
   stesso `ApiError(message, status)` di `unwrap`). `hc` non converte le date: arrivano

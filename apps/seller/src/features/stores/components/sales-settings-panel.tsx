@@ -1,10 +1,11 @@
 import { toast } from "@bibs/ui/components/sonner";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { FormSection } from "@/components/form-section";
 import { SaveBar } from "@/components/save-bar";
 import { OnlinePaymentsBox } from "@/features/online-payments/components/online-payments-box";
-import { api, unwrap } from "@/lib/api";
+import { sellerApi } from "@/lib/api";
 import { m } from "@/paraglide/messages";
 import {
 	storeOrderTypesKey,
@@ -65,11 +66,14 @@ export function SalesSettingsPanel({
 	const save = useMutation({
 		mutationFn: async () => {
 			if (typesDirty && typesDraft) {
-				const next = unwrap(
-					await api()
-						.seller.stores({ storeId })
-						["order-types"].patch({ orderTypes: typesDraft }),
-					m.store_order_types_error(),
+				const next = (
+					await unwrapJson(
+						await sellerApi.stores[":storeId"]["order-types"].$patch({
+							param: { storeId },
+							json: { orderTypes: typesDraft },
+						}),
+						m.store_order_types_error(),
+					)
 				).data;
 				qc.setQueryData(storeOrderTypesKey(storeId), next);
 				setTypesDraft(null);
@@ -81,9 +85,14 @@ export function SalesSettingsPanel({
 			if (lowStockDirty && parsedLowStock !== null)
 				patch.lowStockThreshold = parsedLowStock;
 			if (Object.keys(patch).length > 0) {
-				const store = unwrap(
-					await api().seller.stores({ storeId }).patch(patch),
-					m.store_update_error(),
+				const store = (
+					await unwrapJson(
+						await sellerApi.stores[":storeId"].$patch({
+							param: { storeId },
+							json: patch,
+						}),
+						m.store_update_error(),
+					)
 				).data;
 				setSaved({
 					reservationHours: store.reservationHours,

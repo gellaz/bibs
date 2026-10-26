@@ -21,10 +21,12 @@ import {
 	withErrors,
 } from "@/lib/zod/responses";
 import { zDate, zInteger } from "@/lib/zod/t";
+import { adminApp } from "@/modules/admin";
 import { customerApp } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
+import { sellerApp, sellerGuards } from "@/modules/seller";
 import { type Case, cases } from "./parity-cases";
 
 // D11 del piano Hono: il generatore nel repo produce per le route Hono lo
@@ -202,6 +204,17 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 		expect(paths["/me/avatar"]).toEqual(expected["/me/avatar"]);
 	});
 
+	// /seller è ancora in parte Elysia (U7): ogni path della sub-app è quello
+	// della baseline, compreso `GET /seller/settings/` (`doc({ path })`, U6).
+	it("/seller: ogni path della sub-app identico a baseline/openapi.json", async () => {
+		const { paths: expected } = await baseline();
+		const paths = honoPaths(sellerApp, "/seller", sellerGuards);
+		expect(paths["/seller/settings/"]).toBeDefined();
+		expect(paths["/seller/settings"]).toBeUndefined();
+		for (const path of Object.keys(paths))
+			expect(paths[path]).toEqual(expected[path]);
+	});
+
 	it("le 25 operazioni di /customer identiche a baseline/openapi.json", async () => {
 		const { paths: baselinePaths } = await baseline();
 		const paths = honoPaths(customerApp, "/customer", [
@@ -219,9 +232,12 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 			expect(paths[path]).toEqual(baselinePaths[path]);
 	});
 
+	// /admin dalla U9 è tutto Hono, compreso `GET /admin/requests/`
+	// (`doc({ path })`): ogni path della baseline sotto /admin.
 	const modules = [
 		["/locations", locationsApp, ["auth", "publicRoute"]],
 		["/register", registrationApp, ["publicRoute"]],
+		["/admin", adminApp, ["admin"]],
 	] as const;
 	for (const [prefix, app, guards] of modules) {
 		it(`${prefix}: ogni path identico a baseline/openapi.json`, async () => {

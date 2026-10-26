@@ -71,13 +71,17 @@ Reading the results:
   replay of the baseline line still checks the 422).
 - Module batch files with bodies, captured on the commit before each module moved:
   `hono-batch-me.jsonl` (U1), `hono-batch-locations.jsonl` and `hono-batch-registration.jsonl`
-  (U2+U4). The registration file logs in with `customer1@test.com` through `/register/sign-in` and
+  (U2+U4), `hono-batch-customer.jsonl` (U3), `hono-batch-seller-products.jsonl` (U5),
+  `hono-batch-seller-stores.jsonl` (U6), `hono-batch-seller-orders.jsonl` (U7),
+  `hono-batch-admin-1.jsonl` (U8),
+  `hono-batch-admin-2.jsonl` (U9), `hono-batch-webhooks.jsonl` (U10).
+  The registration file logs in with `customer1@test.com` through `/register/sign-in` and
   expects a 409 `EMAIL_PENDING_VERIFICATION` for `collaudo.hono.u4@test.com`, a customer created once
   by a registration on the dev DB and left unverified (each replay re-sends its link to Mailpit).
   The 409 holds for 7 days from that user's creation (2026-10-25): after that the API deletes the
   stale account and registers it again (200, the step fails). Before replaying later, check the user
   or drop that line; never point it at a seed user.
-  U5 added `hono-batch-seller-products.jsonl`, U7 `hono-batch-seller-orders.jsonl` (204 steps: orders,
+  `hono-batch-seller-orders.jsonl` (U7, 204 steps: orders,
   discounts, store checkout, billing; logins of `customer1@test.com`, `seller96@test.com`,
   `seller@dev.bibs`, `employee1@test.com`; only reads and answers that come before any write). The dev
   DB is shared: the browser checks of other units create and cancel orders on Bottega Dev, so the U7
@@ -88,6 +92,23 @@ Reading the results:
   To capture a batch on the base commit without a checkout, export the base tree with
   `git archive <sha> | tar -x -C <dir>`, symlink `node_modules` (root, `apps/api`, `packages/*`) from a
   worktree and run the CLI from `<dir>/apps/api`.
+  `hono-batch-admin-2.jsonl` (U9, captured on `a2a7e044`) reads the dev DB as it was on 2026-10-26:
+  seller and store counts, the first rows of the lists and the decided VAT change
+  `c1392aa5-…` (its approve/reject answer 400 «non più in attesa» without writing). Its two 409 steps
+  send a stale `expectedUpdatedAt` to a pending (`seller146@test.com`) and an active seller: the
+  compare-and-set UPDATE matches no row, so nothing is written. A new seller, store or subscription
+  in the dev DB shifts counts and first rows: replay it on the base commit too before reading a
+  failure as a regression.
+- `hono-batch-seller-products.jsonl` (U5) and `hono-batch-seller-stores.jsonl` (U6) log in with
+  seed users and expect full bodies of dev-DB data: a test entity created by another unit's
+  browser check moves them (on 2026-10-26 a product «Collaudo Hono U3» in `seller@dev.bibs`'s
+  store made 7/113 seller-products steps fail, on list lengths and totals only; 113/113 again once it was deleted). The U6 file keeps
+  only the clock-free part of the bodies (no `openStatus` of the stores, no `expiresAt` of the
+  reservation preview, no holiday `nextDate`, only `success` for the dashboard) and signs out
+  (`POST /auth/api/sign-out`) after each user, so a replay leaves no session behind. Its last 10
+  lines come from U6's review round 1, captured on `e85d6094`: invitations to emails that only bare
+  Elysia accepts (`a@b.c`, …) and a 501-UTF-16-unit `websiteUrl`, anonymous and as
+  `employee1@test.com`: all 422, so nothing reaches a handler even on a regression.
 - Trap the snapshot already shows: unauthenticated GETs with a missing required query answer **422
   before 401** (`/seller/orders`, `/seller/orders/counts`, `/seller/dashboard`,
   `/seller/products/status-counts`, ...): Elysia validates the query before the `auth` macro resolves.
