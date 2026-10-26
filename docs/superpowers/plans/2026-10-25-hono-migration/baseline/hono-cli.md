@@ -13,6 +13,8 @@ Same rules as before: run the CLI file with Bun from `apps/api`, with the env of
 ```bash
 cd apps/api
 HONO="bun node_modules/@hono/cli/dist/cli.js"     # or: bun --env-file=<env> node_modules/@hono/cli/dist/cli.js
+# zsh does not split "$HONO" into words: there, use a function instead
+# hono() { bun --env-file=<env> node_modules/@hono/cli/dist/cli.js "$@"; }   and call `hono …`
 ENTRY=../../docs/superpowers/plans/2026-10-25-hono-migration/tools/hono-entry.ts
 BASE=../../docs/superpowers/plans/2026-10-25-hono-migration/baseline
 
@@ -40,10 +42,14 @@ expectations 66/66. Snapshot as sets: only the rows of the registered deltas (th
 `/<module>/auth` copies and `ALL /auth`, `ALL /auth/*`, `OPTIONS /`, `OPTIONS /*`, the trailing
 slash of `/seller/settings/` and `/admin/requests/`) and the dev-DB UUID lines.
 
+U11 fix round 1 (2026-10-26, same env): the same numbers on every batch file and on the snapshot
+expectations (1,164 steps, 0 failed), `routes` 207 rows, the snapshot as sets unchanged.
+
 **`hono diff` still does not work** (`hono diff --base origin/feat/hono-migration`, tried on U11):
 `SNAPSHOT_FAILED`. It takes no entry file and bundles `src/index.ts` on both sides: `bun` and
 `hono/jsx/jsx-runtime` do not resolve (see above), and the base side is the old app, whose packages
-are no longer installed. Between two Hono commits it would still fail on the first two points, unless
+are no longer installed. Between two Hono commits it still fails on the first two points (tried in U11 fix round 1 with
+`--base HEAD`: both sides are Hono, `SNAPSHOT_FAILED` on `hono/jsx/jsx-runtime` and `bun`), unless
 the default entry became a bundle-safe Hono export. Use the batch files and the sorted snapshot diff.
 
 ## Until U11: the CLI on the old app
