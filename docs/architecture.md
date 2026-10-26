@@ -170,7 +170,9 @@ verifica di ogni PR stanno nel piano
 [`superpowers/plans/2026-10-25-hono-migration.md`](superpowers/plans/2026-10-25-hono-migration.md)
 (note, baseline e strumenti nella cartella accanto). Moduli già su Hono: `me/` (U1),
 `locations/` e `registration/` (U2+U4); `seller/` in parte (U5: prodotti, brand,
-immagini, caratteristiche, stock).
+immagini, caratteristiche, stock; U6: negozi, immagini dei negozi, chiusure,
+impostazioni, team, onboarding, profilo, dashboard; restano a Elysia ordini,
+promozioni, checkout e billing).
 
 - **Strangler.** Ogni modulo migrato è una sub-app Hono con route relative
   (`/avatar`), montata sull'app Elysia radice in `src/index.ts` con
@@ -198,7 +200,9 @@ immagini, caratteristiche, stock).
   non rilegge la sessione); `toErrorResponse` (una sola mappatura errore →
   risposta, usata anche dal plugin Elysia); `doc(...)` + generatore OpenAPI (i path
   delle sub-app si uniscono al documento di Elysia: `/openapi/json` è uguale alla
-  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi).
+  baseline a chiavi ordinate, cambia solo l'ordine dei path e delle chiavi;
+  `doc({ path })` documenta una route registrata senza lo slash finale col path di
+  Elysia, es. `GET /seller/settings/`).
 - **Route: auth per route, chiusa per default.** L'auth sta in ogni route **dopo**
   i suoi `v(...)` (il 422 arriva prima del 401 come oggi), mai come `app.use` di
   modulo. Ogni middleware di auth si crea con `guard(m, tag)` (`requireAuth` è
@@ -208,7 +212,9 @@ immagini, caratteristiche, stock).
   (`sellerGuards`: `requireSellerRole` su profilo e onboarding, `requireSeller` sul
   resto). Le guardie di ruolo leggono la sessione da sé (401 per l'anonimo), quindi
   non serve `requireAuth` davanti; `requireSeller` mette in `c.var.seller` il
-  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
+  risultato di `resolveSellerAccess` (al posto di `withSeller(ctx)`),
+  `requireSellerRole` vuole solo il ruolo seller (403 «Accesso riservato ai
+  venditori»). `routes.ts` (`assertRoutes`, chiamato da `honoPaths()` a
   ogni avvio) ferma l'API se prima del primo handler di una route non c'è una
   guardia del modulo, o `publicRoute` in un modulo che dichiara `"publicRoute"`
   (es. catalogo `["publicRoute"]`; `requireAuth` da solo non basta su
@@ -225,12 +231,17 @@ immagini, caratteristiche, stock).
   Elysia erano scritti nella route stanno in `lib/zod/<modulo>.ts`
   (`registration.ts`, `locations.ts`), senza effetti all'import, così li usano
   anche i casi di parità. I tipi propri di
-  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zDate`, `zFile`,
-  `zFiles`, `zFormat`); per il resto Zod normale, con `title`/`error`/`description`
-  in `.meta()`. Regole per scrivere un gemello:
+  Elysia hanno un costruttore in `lib/zod/t.ts` (`zInteger`, `zInt`, `zDate`,
+  `zFile`, `zFiles`, `zFormat`); per il resto Zod normale, con
+  `title`/`error`/`description` in `.meta()`. Regole per scrivere un gemello:
   - `t.Integer` di Elysia → `zInteger`; `Type.Integer` di `@sinclair/typebox` (i
-    form condivisi) → `z.int()`; `t.Date` → `zDate`; `t.Nullable(x)` →
-    `x.nullable()`; unione di letterali → `z.enum`, ma di letterali numerici (le
+    form condivisi) → `zInt` (non `z.int()`, che ha i limiti dei safe integer);
+    `t.Date` → `zDate`; `t.Nullable(x)` → `x.nullable()`, ma
+    `Type.Union([x, Type.Null()])` → `z.union([x, z.null()])` (solo il t.Nullable
+    scrive `nullable: true` in /openapi); `uniqueItems` → `.refine` con la regola
+    `uniqueItems` più `.meta({ uniqueItems: true })`; un `format` con `pattern` →
+    `zFormat(f).regex(p).meta({ format: f })` (il `.regex()` toglie il formato dal
+    JSON Schema); unione di letterali → `z.enum`, ma di letterali numerici (le
     aliquote IVA `"22"`, `"10"`, …) → `z.union` di `z.literal` (`z.enum` riordina le
     chiavi numeriche in /openapi); `t.Union` di oggetti →
     `z.union`, mai `z.discriminatedUnion`;
@@ -242,7 +253,8 @@ immagini, caratteristiche, stock).
     query, default annidati, chiavi multipart `a.b`/`a[0]`): nel piano, Trappole.
 - **Test delle sub-app.** `apps/api/tests/helpers/hono-app.ts`: `testRequest`,
   `signIn(email, role)` (utente e sessione better-auth veri sul DB di test) e
-  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB). I log
+  `withVars(app, { user, … })` (variabili già risolte, per i test senza DB; anche
+  una funzione della richiesta, per i test che leggono l'utente da un header). I log
   degli errori di una sub-app hanno il path visto dalla sub-app (`/avatar`) fino a
   U11. `file-type` è una dipendenza diretta dell'API (magic byte dei file).
 - **Client `hc` per sotto-albero.** L'API esporta un tipo per sub-app da

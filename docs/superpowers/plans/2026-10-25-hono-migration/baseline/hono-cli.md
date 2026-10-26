@@ -71,12 +71,20 @@ Reading the results:
   replay of the baseline line still checks the 422).
 - Module batch files with bodies, captured on the commit before each module moved:
   `hono-batch-me.jsonl` (U1), `hono-batch-locations.jsonl` and `hono-batch-registration.jsonl`
-  (U2+U4). The registration file logs in with `customer1@test.com` through `/register/sign-in` and
+  (U2+U4), `hono-batch-seller-products.jsonl` (U5), `hono-batch-seller-stores.jsonl` (U6).
+  The registration file logs in with `customer1@test.com` through `/register/sign-in` and
   expects a 409 `EMAIL_PENDING_VERIFICATION` for `collaudo.hono.u4@test.com`, a customer created once
   by a registration on the dev DB and left unverified (each replay re-sends its link to Mailpit).
   The 409 holds for 7 days from that user's creation (2026-10-25): after that the API deletes the
   stale account and registers it again (200, the step fails). Before replaying later, check the user
   or drop that line; never point it at a seed user.
+- `hono-batch-seller-products.jsonl` (U5) and `hono-batch-seller-stores.jsonl` (U6) log in with
+  seed users and expect full bodies of dev-DB data: a test entity created by another unit's
+  browser check moves them (on 2026-10-26 a product «Collaudo Hono U3» in `seller@dev.bibs`'s
+  store made 7/113 seller-products steps fail, on list lengths and totals only). The U6 file keeps
+  only the clock-free part of the bodies (no `openStatus` of the stores, no `expiresAt` of the
+  reservation preview, no holiday `nextDate`, only `success` for the dashboard) and signs out
+  (`POST /auth/api/sign-out`) after each user, so a replay leaves no session behind.
 - Trap the snapshot already shows: unauthenticated GETs with a missing required query answer **422
   before 401** (`/seller/orders`, `/seller/orders/counts`, `/seller/dashboard`,
   `/seller/products/status-counts`, ...): Elysia validates the query before the `auth` macro resolves.
