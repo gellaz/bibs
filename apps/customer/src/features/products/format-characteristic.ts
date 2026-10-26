@@ -21,12 +21,9 @@ export function formatCharacteristicValue(
 	c: ProductCharacteristicView,
 	labels: CharacteristicLabels,
 ): string | null {
+	// Ogni ramo controlla il tipo: un valore inatteso (anche un `Date`) non
+	// diventa mai una riga.
 	const value: unknown = c.value;
-	// Difesa, non il fix: se un fetch avesse revivificato una data, il testo
-	// originale è perso. Meglio nessuna riga che una data sbagliata. Il fix è
-	// apiNoDates in fetchProductDetail.
-	if (value instanceof Date) return null;
-
 	switch (c.dataType) {
 		case "boolean":
 			if (typeof value !== "boolean") return null;

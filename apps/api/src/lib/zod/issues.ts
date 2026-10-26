@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { ValidationRule } from "@/lib/validation-rule";
 import { isAnyOf, nodeAt, unwrap } from "./mirror";
+import { integerCheck } from "./t";
 
 // Dalle issue di Zod alla regola di `validation-rule.ts` e all'errore che
 // TypeBox (quindi Elysia) avrebbe dato per primo: i 422 restano identici al
@@ -24,18 +25,17 @@ export function ruleParams(issue: Issue): RuleParams | undefined {
 
 const isDecode = (issue: Issue) => !!ruleParams(issue)?.decode;
 
-// `Type.Integer` (gemello `z.int()`): un non numero è «deve essere un numero
+// `Type.Integer` (gemello `zInt()`): un non numero è «deve essere un numero
 // intero», ma Zod dice solo `expected: "number"`.
 function isInt(node: z.ZodType | undefined) {
 	if (!node) return false;
 	const def = unwrap(node).node._zod.def as Record<string, any>;
-	const formats = [def, ...(def.checks ?? []).map((c: any) => c._zod.def)];
-	return def.type === "number" && formats.some((f) => f.format === "safeint");
+	return def.type === "number" && !!def.checks?.includes(integerCheck);
 }
 
 /**
  * La regola violata, come `validationRule` sull'errore TypeBox equivalente;
- * `node` è lo schema che ha prodotto l'issue (per `z.int()`).
+ * `node` è lo schema che ha prodotto l'issue (per `zInt()`).
  */
 export function issueRule(issue: Issue, node?: z.ZodType): ValidationRule {
 	const custom = ruleParams(issue);

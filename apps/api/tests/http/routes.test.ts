@@ -2,11 +2,12 @@ import { describe, expect, it } from "bun:test";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
-import { requireAuth, requireSeller } from "@/http/auth";
+import { requireAuth, requireCustomer, requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
 import { assertRoutes, guard, publicRoute, routeProblems } from "@/http/routes";
 import { v } from "@/http/validator";
 import { ServiceError } from "@/lib/errors";
+import { customerApp } from "@/modules/customer";
 import { meApp } from "@/modules/me";
 import { sellerApp, sellerGuards } from "@/modules/seller";
 import { withVars } from "../helpers/hono-app";
@@ -37,6 +38,12 @@ describe("routeProblems()", () => {
 	it("publicRoute dichiara una route pubblica", () => {
 		const app = moduleApp().get("/p", publicRoute, v("query", Query), ok);
 		expect(routeProblems(app, ["publicRoute"])).toEqual([]);
+	});
+
+	it("il modulo customer/ è a posto: 8 route pubbliche, 17 con requireCustomer", () => {
+		expect(routeProblems(customerApp, ["customer", "publicRoute"])).toEqual([]);
+		expect(routeProblems(customerApp, ["customer"])).toHaveLength(8);
+		expect(routeProblems(customerApp, ["publicRoute"])).toHaveLength(17);
 	});
 
 	it("publicRoute vale solo se il modulo la dichiara", () => {
@@ -161,6 +168,18 @@ describe("requireAuth con l'utente già messo a monte (harness dei test)", () =>
 		const res = await withVars(app, { user: { id: "u1" } }).request("/who");
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({ id: "u1" });
+	});
+
+	it("requireCustomer non rilegge sessione né profilo", async () => {
+		const app = moduleApp().get("/who", requireCustomer, (c) =>
+			c.json({ id: c.var.user.id, profile: c.var.customerProfile.id }),
+		);
+		const res = await withVars(app, {
+			user: { id: "u1" },
+			customerProfile: { id: "cp1" },
+		}).request("/who");
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({ id: "u1", profile: "cp1" });
 	});
 });
 

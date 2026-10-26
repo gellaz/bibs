@@ -16,7 +16,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/lib/zod/responses";
-import { zInteger } from "@/lib/zod/t";
+import { zInteger, zString } from "@/lib/zod/t";
 import { ensureStoreAccess } from "../context";
 import {
 	cancelSellerOrder,
@@ -34,7 +34,7 @@ const tags = ["Seller - Orders"];
 const OrderParams = z.object({
 	orderId: z.string().meta({ description: "ID dell'ordine" }),
 });
-const pickupCode = z.string().max(20).meta({ description: "Codice di ritiro" });
+const pickupCode = zString({ maxLength: 20, description: "Codice di ritiro" });
 
 const OrdersPageRes = okPageRes(SellerOrderWithRelationsSchema);
 const SellerOrderRes = okRes(SellerOrderWithRelationsSchema);

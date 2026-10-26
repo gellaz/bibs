@@ -21,6 +21,7 @@ import {
 	withErrors,
 } from "@/lib/zod/responses";
 import { zDate, zInteger } from "@/lib/zod/t";
+import { customerApp } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
@@ -139,6 +140,42 @@ describe("OpenAPI — gemelli Zod contro TypeBox", () => {
 					.meta({ description: "x" }),
 			},
 		],
+		// U3: Zod compatta un'unione di tipi semplici in `type: [...]`
+		// (`value` delle caratteristiche nella scheda prodotto).
+		[
+			"unione di tipi semplici",
+			{
+				200: t.Object({
+					v: t.Union([t.String(), t.Number(), t.Boolean()], {
+						description: "d",
+					}),
+					n: t.Union([t.String(), t.Number()]),
+				}),
+			},
+			{
+				200: z.object({
+					v: z
+						.union([z.string(), z.number(), z.boolean()])
+						.meta({ description: "d" }),
+					n: z.union([z.string(), z.number()]),
+				}),
+			},
+		],
+		// U3: `z.enum(["22", "10"])` esce in ordine crescente (chiavi numeriche
+		// di un oggetto JS); l'ordine di TypeBox lo tiene un'unione di letterali.
+		[
+			"letterali numerici nell'ordine dello schema",
+			{
+				200: t.Object({
+					vat: t.Union([t.Literal("22"), t.Literal("10"), t.Literal("0")]),
+				}),
+			},
+			{
+				200: z.object({
+					vat: z.union([z.literal("22"), z.literal("10"), z.literal("0")]),
+				}),
+			},
+		],
 	];
 	for (const [name, tb, zod] of responses) {
 		it(`response: ${name}`, async () => {
@@ -163,6 +200,23 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 		const paths = honoPaths(meApp, "/me", ["auth"]);
 		expect(Object.keys(paths)).toEqual(["/me/avatar"]);
 		expect(paths["/me/avatar"]).toEqual(expected["/me/avatar"]);
+	});
+
+	it("le 25 operazioni di /customer identiche a baseline/openapi.json", async () => {
+		const { paths: baselinePaths } = await baseline();
+		const paths = honoPaths(customerApp, "/customer", [
+			"customer",
+			"publicRoute",
+		]);
+		const expected = Object.keys(baselinePaths).filter((p) =>
+			p.startsWith("/customer/"),
+		);
+		expect(Object.keys(paths).sort()).toEqual(expected.sort());
+		expect(
+			Object.values(paths).reduce((n, ops) => n + Object.keys(ops).length, 0),
+		).toBe(25);
+		for (const path of expected)
+			expect(paths[path]).toEqual(baselinePaths[path]);
 	});
 
 	const modules = [

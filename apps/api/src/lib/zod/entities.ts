@@ -1,8 +1,11 @@
 import { z } from "zod";
-import { zDate, zInteger } from "./t";
+import { OpenStatusSchema } from "./holidays";
+import { zDate, zInteger, zString } from "./t";
 
 // Gemelli Zod di `lib/schemas/entities.ts` (D3 del piano Hono), nello stesso
 // ordine e con gli stessi nomi; ogni unità aggiunge quelli delle sue route.
+// `t.Integer` e `t.Date` di Elysia → `zInteger` e `zDate`, `t.String` con
+// `minLength`/`maxLength` → `zString`, `t.Nullable` → `.nullable()`.
 // Un'unione di letterali numerici (aliquote IVA) è `z.union` di `z.literal`:
 // `z.enum` riordina le chiavi numeriche e cambierebbe l'ordine in /openapi.
 
@@ -16,6 +19,67 @@ const PointXY = z.object({
 	x: z.number().meta(d("Longitudine")),
 	y: z.number().meta(d("Latitudine")),
 });
+
+// ────────────────────────────────────────────
+// Reusable body field groups (for route input schemas)
+// ────────────────────────────────────────────
+
+export const LocationField = z
+	.object({
+		x: z.number().min(-180).max(180).meta(d("Longitudine")),
+		y: z.number().min(-90).max(90).meta(d("Latitudine")),
+	})
+	.meta(d("Coordinate geografiche (PostGIS point)"))
+	.optional();
+
+/** Required address fields for create operations. */
+export const AddressFieldsRequired = {
+	addressLine1: zString({
+		minLength: 1,
+		maxLength: 200,
+		...d("Indirizzo (riga 1)"),
+	}),
+	addressLine2: zString({
+		maxLength: 200,
+		...d("Indirizzo (riga 2)"),
+	}).optional(),
+	municipalityId: zString({ minLength: 1, ...d("ID del comune") }),
+	zipCode: z
+		.string()
+		.regex(/^\d{5}$/)
+		.meta(d("CAP italiano (5 cifre)")),
+	country: zString({
+		minLength: 2,
+		maxLength: 2,
+		...d("Codice paese ISO 3166-1 alpha-2 (default: IT)"),
+	}).optional(),
+	location: LocationField,
+};
+
+/** Optional address fields for update/patch operations. */
+export const AddressFieldsOptional = {
+	addressLine1: zString({
+		minLength: 1,
+		maxLength: 200,
+		...d("Indirizzo (riga 1)"),
+	}).optional(),
+	addressLine2: zString({
+		maxLength: 200,
+		...d("Indirizzo (riga 2)"),
+	}).optional(),
+	municipalityId: zString({ minLength: 1, ...d("ID del comune") }).optional(),
+	zipCode: z
+		.string()
+		.regex(/^\d{5}$/)
+		.meta(d("CAP italiano (5 cifre)"))
+		.optional(),
+	country: zString({
+		minLength: 2,
+		maxLength: 2,
+		...d("Codice paese"),
+	}).optional(),
+	location: LocationField,
+};
 
 // ────────────────────────────────────────────
 // Entity schemas
@@ -84,15 +148,15 @@ export const ProductCategoryWithMacroSchema = z.object({
 
 export const MunicipalityCompactSchema = z
 	.object({
-		id: z.string().meta({ description: "Identificatore univoco del comune" }),
-		name: z.string().meta({ description: "Nome del comune" }),
-		provinceAcronym: z
-			.string()
-			.min(2)
-			.max(2)
-			.meta({ description: "Sigla provincia (2 lettere)" }),
+		id: z.string().meta(d("Identificatore univoco del comune")),
+		name: z.string().meta(d("Nome del comune")),
+		provinceAcronym: zString({
+			minLength: 2,
+			maxLength: 2,
+			...d("Sigla provincia (2 lettere)"),
+		}),
 	})
-	.meta({ description: "Comune in formato compatto per liste precaricate" });
+	.meta(d("Comune in formato compatto per liste precaricate"));
 
 export const GeocodeSuggestionSchema = z
 	.object({
@@ -546,6 +610,42 @@ export const CustomerProfileSchema = z.object({
 	createdAt: zDate(),
 });
 
+export const CustomerAddressSchema = z.object({
+	id: z.string(),
+	label: z.string().meta(d("Etichetta (es. 'Casa', 'Ufficio')")).nullable(),
+	recipientName: z.string().meta(d("Nome del destinatario")).nullable(),
+	phone: z.string().meta(d("Numero di telefono")).nullable(),
+	addressLine1: z.string().meta(d("Indirizzo (riga 1)")),
+	addressLine2: z.string().meta(d("Indirizzo (riga 2)")).nullable(),
+	municipalityId: z.string().meta(d("ID del comune")),
+	municipality: MunicipalityCompactSchema,
+	zipCode: z.string().meta(d("CAP")),
+	country: z.string().meta(d("Codice paese ISO 3166-1 alpha-2")),
+	location: PointXY.nullable(),
+	isDefault: z.boolean().meta(d("Se è l'indirizzo predefinito")),
+	customerProfileId: z.string(),
+	createdAt: zDate(),
+	updatedAt: zDate(),
+});
+
+export const PointTransactionSchema = z.object({
+	id: z.string(),
+	customerProfileId: z.string(),
+	orderId: z.string().meta(d("ID ordine associato, se applicabile")).nullable(),
+	amount: z
+		.number()
+		.meta(
+			d(
+				"Quantità di punti con segno: positiva per earned e refunded, negativa per redeemed. La somma dei movimenti è il saldo.",
+			),
+		),
+	type: z
+		.enum(["earned", "redeemed", "refunded"])
+		.meta(d("Tipo di transazione")),
+	description: z.string().meta(d("Descrizione della transazione")).nullable(),
+	createdAt: zDate(),
+});
+
 // ────────────────────────────────────────────
 // Location schemas
 // ────────────────────────────────────────────
@@ -584,4 +684,408 @@ export const MunicipalitySchema = z.object({
 	provinceId: z.string(),
 	createdAt: zDate(),
 	updatedAt: zDate(),
+});
+
+// Store discovery card (customer public search)
+export const StoreCardSchema = z.object({
+	id: z.string(),
+	name: z.string().meta(d("Nome del negozio")),
+	category: z.object({ id: z.string(), name: z.string() }).nullable(),
+	municipality: MunicipalityCompactSchema,
+	addressLine1: z.string().meta(d("Indirizzo (riga 1)")),
+	distance: z
+		.number()
+		.min(0)
+		.meta(
+			d(
+				"Distanza in metri dalla posizione utente (null senza geo o senza posizione del negozio)",
+			),
+		)
+		.nullable(),
+	image: z
+		.object({ url: z.string().meta(d("URL immagine principale")) })
+		.nullable(),
+	openStatus: OpenStatusSchema,
+});
+
+export const StoreMapPinSchema = z.object({
+	id: z.string(),
+	name: z.string().meta(d("Nome del negozio")),
+	coordinates: z.object({
+		lat: z.number().meta(d("Latitudine")),
+		lng: z.number().meta(d("Longitudine")),
+	}),
+	category: z.object({ id: z.string(), name: z.string() }).nullable(),
+	municipality: MunicipalityCompactSchema,
+	distance: z
+		.number()
+		.min(0)
+		.meta(d("Distanza in metri dalla posizione utente (null senza geo)"))
+		.nullable(),
+	image: z
+		.object({ url: z.string().meta(d("URL immagine principale")) })
+		.nullable(),
+	openStatus: OpenStatusSchema,
+});
+
+export const StoreMapSchema = z.object({
+	pins: z.array(StoreMapPinSchema),
+	total: zInteger({
+		description:
+			"Negozi che corrispondono ai filtri, con o senza posizione: lo stesso numero della lista",
+	}),
+	mappable: zInteger({
+		description: "Quanti di quei negozi hanno una posizione sulla mappa",
+	}),
+	truncated: z
+		.boolean()
+		.meta(d("true quando i negozi mappabili superano il tetto di 500 pin")),
+});
+
+// Weekly opening hours (response shape), dayOfWeek 0=Lun..6=Dom
+const StoreOpeningHoursSchema = z.array(
+	z.object({
+		dayOfWeek: zInteger({
+			minimum: 0,
+			maximum: 6,
+			description: "0=Lun..6=Dom",
+		}),
+		slots: z.array(
+			z.object({
+				open: z.string().meta(d("Apertura HH:mm")),
+				close: z.string().meta(d("Chiusura HH:mm")),
+			}),
+		),
+	}),
+);
+
+// Store detail (customer public store page — #2a)
+export const StoreDetailSchema = z.object({
+	id: z.string(),
+	name: z.string().meta(d("Nome del negozio")),
+	description: z.string().meta(d("Descrizione del negozio")).nullable(),
+	category: z.object({ id: z.string(), name: z.string() }).nullable(),
+	municipality: MunicipalityCompactSchema,
+	addressLine1: z.string().meta(d("Indirizzo (riga 1)")),
+	addressLine2: z.string().meta(d("Indirizzo (riga 2)")).nullable(),
+	zipCode: z.string().meta(d("CAP")),
+	coordinates: z
+		.object({
+			lat: z.number().meta(d("Latitudine")),
+			lng: z.number().meta(d("Longitudine")),
+		})
+		.nullable(),
+	images: z
+		.array(
+			z.object({
+				id: z.string(),
+				url: z.string().meta(d("URL immagine")),
+			}),
+		)
+		.meta(d("Immagini del negozio ordinate per posizione")),
+	phoneNumbers: z
+		.array(
+			z.object({
+				id: z.string(),
+				label: z.string().meta(d("Etichetta (es. Negozio)")).nullable(),
+				number: z.string().meta(d("Numero di telefono")),
+			}),
+		)
+		.meta(d("Telefoni ordinati per posizione")),
+	websiteUrl: z.string().meta(d("Sito web")).nullable(),
+	openingHours: StoreOpeningHoursSchema.nullable(),
+	openStatus: OpenStatusSchema,
+});
+
+const ProductImageCard = (description?: string) =>
+	z.object({
+		id: z.string(),
+		url: z.string().meta(d("URL dell'immagine")),
+		position: description
+			? z.number().min(0).meta(d(description))
+			: z.number().min(0),
+	});
+
+// Store product card (customer store catalog — #2b).
+export const StoreProductCardSchema = z.object({
+	id: z.string(),
+	storeProductId: z
+		.string()
+		.meta(d("ID della riga store_products, da usare per ordinare")),
+	stock: zInteger({
+		minimum: 0,
+		description: "Disponibilità del prodotto in questo negozio",
+	}),
+	name: z.string().meta(d("Nome del prodotto")),
+	description: z.string().meta(d("Descrizione del prodotto")).nullable(),
+	price: z.string().meta(d("Prezzo in formato decimale")),
+	images: z
+		.array(ProductImageCard("Posizione di ordinamento"))
+		.meta(d("Immagini del prodotto ordinate per posizione")),
+	discountedPrice: z
+		.string()
+		.meta(d("Prezzo scontato, se promo attiva"))
+		.nullable(),
+	discountPercent: zInteger({ minimum: 1, maximum: 99 }).nullable(),
+});
+
+// Product search card (customer /products).
+export const ProductCardSchema = z.object({
+	id: z.string(),
+	name: z.string().meta(d("Nome del prodotto")),
+	description: z.string().meta(d("Descrizione del prodotto")).nullable(),
+	price: z.string().meta(d("Prezzo di listino in formato decimale")),
+	storeProductId: z
+		.string()
+		.meta(d("ID della riga store_products del negozio agganciato")),
+	stock: zInteger({
+		minimum: 0,
+		description: "Disponibilità nel negozio agganciato",
+	}),
+	store: z
+		.object({
+			id: z.string(),
+			name: z.string().meta(d("Nome del negozio")),
+			municipality: MunicipalityCompactSchema,
+		})
+		.meta(d("Il negozio più vicino che ha il prodotto fra quelli filtrati")),
+	distance: z
+		.number()
+		.min(0)
+		.meta(d("Distanza in metri dall'origine (null senza origine)"))
+		.nullable(),
+	otherStoreCount: zInteger({
+		minimum: 0,
+		description:
+			"Altri negozi che soddisfano i filtri, oltre a quello agganciato",
+	}),
+	rank: z
+		.number()
+		.min(0)
+		.meta(d("Punteggio di rilevanza full-text (0 senza query testuale)")),
+	images: z
+		.array(ProductImageCard("Posizione di ordinamento"))
+		.meta(d("Immagini del prodotto ordinate per posizione")),
+	discountedPrice: z
+		.string()
+		.meta(d("Prezzo scontato, se promo attiva"))
+		.nullable(),
+	discountPercent: zInteger({ minimum: 1, maximum: 99 }).nullable(),
+});
+
+// Scheda prodotto customer. Un valore di testo può somigliare a una data
+// ("05/03/2027"): con `hc` resta testo (Eden lo idratava in `Date`).
+export const CustomerProductCharacteristicSchema = z.object({
+	characteristicId: z.string().meta(d("ID della caratteristica")),
+	name: z.string().meta(d("Nome della caratteristica")),
+	dataType: CharacteristicDataTypeSchema,
+	unit: z
+		.string()
+		.meta(d("Unità di misura, solo per il tipo number"))
+		.nullable(),
+	value: z
+		.union([z.string(), z.number(), z.boolean()])
+		.meta(
+			d(
+				"Testo, numero o sì/no secondo il tipo; per le liste chiuse, l'etichetta dell'opzione",
+			),
+		),
+});
+
+export const CustomerProductDetailSchema = z.object({
+	id: z.string(),
+	name: z.string().meta(d("Nome del prodotto")),
+	description: z.string().meta(d("Descrizione del prodotto")).nullable(),
+	price: z.string().meta(d("Prezzo di listino in formato decimale")),
+	discountedPrice: z
+		.string()
+		.meta(d("Prezzo scontato, se promo attiva"))
+		.nullable(),
+	discountPercent: zInteger({ minimum: 1, maximum: 99 }).nullable(),
+	brandName: z.string().meta(d("Marca del prodotto")).nullable(),
+	category: z
+		.object({
+			id: z.string(),
+			name: z.string().meta(d("Sotto-categoria")),
+			macroCategory: z.object({
+				id: z.string(),
+				name: z.string().meta(d("Macro-categoria")),
+			}),
+		})
+		.nullable(),
+	images: z
+		.array(ProductImageCard())
+		.meta(d("Immagini del prodotto ordinate per posizione")),
+	offer: z
+		.object({
+			storeProductId: z
+				.string()
+				.meta(d("ID della riga store_products, da usare per il carrello")),
+			stock: zInteger({
+				minimum: 0,
+				description: "Disponibilità nel negozio agganciato",
+			}),
+			distance: z
+				.number()
+				.min(0)
+				.meta(d("Distanza in metri dall'origine (null senza origine)"))
+				.nullable(),
+			store: z.object({
+				id: z.string(),
+				name: z.string().meta(d("Nome del negozio")),
+				municipality: MunicipalityCompactSchema,
+			}),
+		})
+		.meta(
+			d(
+				"Il negozio agganciato: quello richiesto se ce l'ha, altrimenti il più vicino, altrimenti il primo per nome",
+			),
+		),
+	otherStoreCount: zInteger({
+		minimum: 0,
+		description: "Altri negozi visibili che lo hanno disponibile",
+	}),
+	requestedStoreUnavailable: z
+		.boolean()
+		.meta(
+			d(
+				"Il negozio richiesto non ha il prodotto disponibile: ne è stato agganciato un altro",
+			),
+		),
+	characteristics: z
+		.array(CustomerProductCharacteristicSchema)
+		.meta(
+			d(
+				"Solo le caratteristiche valorizzate, nell'ordine della matrice della sotto-categoria",
+			),
+		),
+});
+
+const ProductCategoryFacetSchema = z.object({
+	id: z.string(),
+	name: z.string().meta(d("Nome della categoria")),
+	productCount: zInteger({
+		minimum: 0,
+		description: "Prodotti in questa categoria",
+	}),
+});
+
+export const ProductFacetsSchema = z.object({
+	total: zInteger({
+		minimum: 0,
+		description:
+			"Prodotti che corrispondono a testo, geografia, prezzo e offerta",
+	}),
+	openNowTotal: zInteger({
+		minimum: 0,
+		description: "Quanti di quei prodotti restano accendendo «Aperti ora»",
+	}),
+	onSaleTotal: zInteger({
+		minimum: 0,
+		description: "Quanti di quei prodotti restano accendendo «Solo in offerta»",
+	}),
+	macros: z
+		.array(
+			z.object({
+				id: z.string(),
+				name: z.string().meta(d("Nome della macro categoria")),
+				productCount: zInteger({ minimum: 0 }),
+				categories: z.array(ProductCategoryFacetSchema),
+			}),
+		)
+		.meta(d("Macro categorie con almeno un prodotto, in ordine alfabetico")),
+});
+
+// Carrello customer: nessun campo data (createdAt/updatedAt restano in tabella).
+export const CartItemSchema = z.object({
+	id: z.string().meta(d("ID della riga di carrello")),
+	storeProductId: z
+		.string()
+		.meta(d("ID della riga store_products, da usare per ordinare")),
+	quantity: zInteger({ minimum: 1, description: "Quantità nel carrello" }),
+	product: z.object({
+		id: z.string(),
+		name: z.string().meta(d("Nome del prodotto")),
+		imageUrl: z
+			.string()
+			.meta(d("URL della prima immagine del prodotto"))
+			.nullable(),
+	}),
+	unitPrice: z.string().meta(d("Prezzo di listino in formato decimale")),
+	discountedPrice: z
+		.string()
+		.meta(d("Prezzo scontato, se promo attiva"))
+		.nullable(),
+	discountPercent: zInteger({ minimum: 1, maximum: 99 }).nullable(),
+	lineTotal: z
+		.string()
+		.meta(d("Totale di riga: prezzo effettivo per quantità")),
+	availableStock: zInteger({
+		minimum: 0,
+		description: "Disponibilità residua nel negozio",
+	}),
+	issue: z
+		.enum(["ok", "insufficient_stock", "unavailable"])
+		.meta(
+			d(
+				"Stato della riga: ok, disponibilità insufficiente, oppure non più acquistabile (negozio non visibile o prodotto non attivo)",
+			),
+		),
+});
+
+export const CartStoreGroupSchema = z.object({
+	store: z.object({
+		id: z.string(),
+		name: z.string().meta(d("Nome del negozio")),
+		municipality: z.object({
+			name: z.string().meta(d("Comune del negozio")),
+			provinceAcronym: z.string().meta(d("Sigla della provincia")),
+		}),
+		orderTypes: z
+			.array(z.enum(["reserve_pickup", "pay_pickup"]))
+			.meta(d("Tipi d'ordine offerti al checkout per questo negozio")),
+	}),
+	items: z.array(CartItemSchema),
+	subtotal: z
+		.string()
+		.meta(d("Subtotale del negozio, escluse le righe non più acquistabili")),
+});
+
+export const CartSchema = z.object({
+	groups: z
+		.array(CartStoreGroupSchema)
+		.meta(d("Righe raggruppate per negozio, ordinate per nome")),
+	itemCount: zInteger({
+		minimum: 0,
+		description: "Somma delle quantità, righe problematiche incluse",
+	}),
+	total: z
+		.string()
+		.meta(d("Totale del carrello, escluse le righe non acquistabili")),
+});
+
+export const CartItemMutationSchema = z.object({
+	id: z.string().meta(d("ID della riga di carrello")),
+	quantity: zInteger({ minimum: 1, description: "Quantità risultante" }),
+});
+
+export const ReservationDeadlineSchema = z.object({
+	hours: zInteger({
+		description: "Ore entro cui ritirare una prenotazione nel negozio",
+	}),
+	expiresAt: zDate({
+		description: "Scadenza di una prenotazione fatta adesso",
+	}),
+	clock: z
+		.enum(["opening", "calendar"])
+		.meta(
+			d(
+				"opening = contate le ore di apertura; calendar = negozio senza orari, ore di calendario",
+			),
+		),
+});
+
+export const StoreReservationDeadlineSchema = z.object({
+	storeId: z.string().meta(d("ID del negozio")),
+	...ReservationDeadlineSchema.shape,
 });

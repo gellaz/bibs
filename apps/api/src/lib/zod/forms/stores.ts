@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zFormat, zInt } from "../t";
+import { zFormat, zInt, zString } from "../t";
 import { OpeningHoursSchema } from "./opening-hours";
 
 // Gemelli Zod di `lib/schemas/forms/stores.ts` (D3 del piano Hono), stessi
@@ -7,19 +7,20 @@ import { OpeningHoursSchema } from "./opening-hours";
 // posto del file TypeBox (`@bibs/api/schemas`).
 
 const PhoneNumber = z.object({
-	label: z
-		.string()
-		.max(50)
-		.meta({ description: "Etichetta (es. 'Principale')" })
-		.optional(),
-	number: z.string().min(5).max(30).meta({
+	label: zString({
+		maxLength: 50,
+		description: "Etichetta (es. 'Principale')",
+	}).optional(),
+	number: zString({
+		minLength: 5,
+		maxLength: 30,
 		description: "Numero di telefono",
 		error: "Il numero è obbligatorio (minimo 5 caratteri)",
 	}),
-	position: zInt({
-		minimum: 0,
-		description: "Posizione di ordinamento",
-	}).optional(),
+	position: zInt()
+		.min(0)
+		.meta({ description: "Posizione di ordinamento" })
+		.optional(),
 });
 
 // Obbligatoria alla creazione: senza coordinate il negozio non compare nelle
@@ -36,50 +37,52 @@ const StoreLocation = z
 	});
 
 export const CreateStoreBody = z.object({
-	name: z.string().min(1).max(100).meta({
+	name: zString({
+		minLength: 1,
+		maxLength: 100,
 		description: "Nome del negozio",
 		error: "Il nome è obbligatorio",
 	}),
-	description: z
-		.string()
-		.max(1000)
-		.meta({ description: "Descrizione del negozio" })
-		.optional(),
-	addressLine1: z.string().min(1).max(200).meta({
+	description: zString({
+		maxLength: 1000,
+		description: "Descrizione del negozio",
+	}).optional(),
+	addressLine1: zString({
+		minLength: 1,
+		maxLength: 200,
 		description: "Indirizzo (riga 1)",
 		error: "L'indirizzo è obbligatorio",
 	}),
-	addressLine2: z
-		.string()
-		.max(200)
-		.meta({ description: "Indirizzo (riga 2)" })
-		.optional(),
-	municipalityId: z.string().min(1).meta({
+	addressLine2: zString({
+		maxLength: 200,
+		description: "Indirizzo (riga 2)",
+	}).optional(),
+	municipalityId: zString({
+		minLength: 1,
 		description: "ID del comune del negozio",
 		error: "Il comune è obbligatorio",
 	}),
-	zipCode: z
-		.string()
-		.regex(/^\d{5}$/)
-		.meta({
-			description: "CAP italiano (5 cifre)",
-			error: "Il CAP deve essere di 5 cifre",
-		}),
+	zipCode: zString({
+		pattern: "^\\d{5}$",
+		description: "CAP italiano (5 cifre)",
+		error: "Il CAP deve essere di 5 cifre",
+	}),
 	location: StoreLocation,
-	country: z
-		.string()
-		.min(2)
-		.max(2)
-		.meta({
-			description: "Codice paese ISO 3166-1 alpha-2 (default: IT)",
-		})
-		.optional(),
+	country: zString({
+		minLength: 2,
+		maxLength: 2,
+		description: "Codice paese ISO 3166-1 alpha-2 (default: IT)",
+	}).optional(),
 	categoryId: z
 		.string()
 		.meta({ description: "ID categoria negozio" })
 		.optional(),
 	// `Type.Union([X, Type.Null()])`, non `t.Nullable`: niente `nullable: true`
 	// in /openapi, quindi `z.union` e non `.nullable()`.
+	// ponytail: il formato `uri` non passa da `zString`, quindi `.max(500)`
+	// conta i code point e non le unità UTF-16 di TypeBox: cambia il 422 solo
+	// per un URL di circa 500 caratteri con emoji; da sistemare se `zString`
+	// impara i formati.
 	websiteUrl: z
 		.union([
 			zFormat("uri")

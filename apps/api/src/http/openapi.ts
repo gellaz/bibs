@@ -1,6 +1,6 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { z } from "zod";
-import { elysiaJson } from "@/lib/zod/t";
+import { elysiaJson, integerCheck } from "@/lib/zod/t";
 import { assertRoutes, DOC, type ModuleGuards } from "./routes";
 import { VALIDATES, type Validates } from "./validator";
 
@@ -35,7 +35,6 @@ export function doc(meta: RouteDoc): MiddlewareHandler {
 
 // ── Zod → JSON Schema come lo scrive TypeBox ────────────────────────────────
 
-const MAX_SAFE = Number.MAX_SAFE_INTEGER;
 const defOf = (schema: z.ZodType) => schema._zod.def as Json;
 
 function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
@@ -72,9 +71,9 @@ function overrideNode(ctx: { zodSchema: unknown; jsonSchema: Json }) {
 		delete json.type;
 		json.anyOf = values.map((value) => ({ const: value, type: typeof value }));
 	}
-	// z.int() aggiunge i limiti dei safe integer, che Type.Integer non ha.
-	if (json.minimum === -MAX_SAFE) delete json.minimum;
-	if (json.maximum === MAX_SAFE) delete json.maximum;
+	// zInt(): Zod lo vede come `number`, TypeBox scrive `integer`.
+	if (def.type === "number" && def.checks?.includes(integerCheck))
+		json.type = "integer";
 }
 
 // Dopo gli override Zod compatta `anyOf: [{type: a}, {type: b}]` in

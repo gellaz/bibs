@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { PaginationQuery } from "./pagination";
-import { zDate, zInteger } from "./t";
+import { zDate, zInteger, zString } from "./t";
 
 // Gemelli Zod di `lib/schemas/discount.ts` (D3 del piano Hono), stessi nomi e
 // stesso ordine. `DiscountCreateBody` e `DiscountListQuery` vengono da
-// `tests/http/parity-cases.ts` (U1), dove restano i loro casi di parità.
+// `tests/http/parity-cases.ts` (U1, `zString` da U3), dove restano i loro
+// casi di parità.
 
 export const DiscountStatusSchema = z
 	.enum(["active", "paused", "archived"])
@@ -43,11 +44,11 @@ export const DiscountListItemSchema = DiscountSchema.extend({
 });
 
 export const DiscountCreateBody = z.object({
-	title: z
-		.string()
-		.min(1)
-		.max(80)
-		.meta({ description: "Titolo della promozione" }),
+	title: zString({
+		minLength: 1,
+		maxLength: 80,
+		description: "Titolo della promozione",
+	}),
 	percent: zInteger({ minimum: 1, maximum: 99 }),
 	startsAt: zDate(),
 	endsAt: zDate().nullable().optional(),
@@ -59,7 +60,7 @@ export const DiscountCreateBody = z.object({
 });
 
 export const DiscountUpdateBody = z.object({
-	title: z.string().min(1).max(80).optional(),
+	title: zString({ minLength: 1, maxLength: 80 }).optional(),
 	percent: zInteger({ minimum: 1, maximum: 99 }).optional(),
 	startsAt: zDate().optional(),
 	endsAt: zDate().nullable().optional(),
@@ -71,7 +72,7 @@ export const DiscountProductsBody = z.object({
 
 export const DiscountListQuery = PaginationQuery.extend({
 	state: DiscountOperationalStateSchema.optional(),
-	search: z.string().max(80).optional(),
+	search: zString({ maxLength: 80 }).optional(),
 });
 
 export const DiscountProductRowSchema = z.object({

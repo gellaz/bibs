@@ -50,10 +50,18 @@ import {
 import { CreateStoreBody } from "@/lib/zod/forms/stores";
 import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/zod/locations";
 import { PaginationQuery } from "@/lib/zod/pagination";
-import { OrderListQuery } from "@/lib/zod/queries";
+import { OrderListQuery, ProductSearchQuery } from "@/lib/zod/queries";
 import { RegisterBody, SignInBody } from "@/lib/zod/registration";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/zod/stock";
-import { zDate, zFile, zFiles, zFormat, zInteger } from "@/lib/zod/t";
+import {
+	zDate,
+	zFile,
+	zFiles,
+	zFormat,
+	zInt,
+	zInteger,
+	zString,
+} from "@/lib/zod/t";
 import { errorHandler } from "@/plugins/error-handler";
 import { normalize } from "@/plugins/normalize";
 
@@ -217,75 +225,22 @@ const TbMunicipalitiesQuery = t.Composite([
 
 // `DiscountCreateBody` e `DiscountListQuery` sono in `lib/zod/discount.ts` da U7.
 
-// Gemello di `ProductSearchQuery` (`lib/queries.ts`), descrizioni comprese.
-const d = (description: string) => ({ description });
-const ProductSearchQuery = PaginationQuery.extend({
-	q: z.string().meta(d("Testo di ricerca (full-text italiano)")).optional(),
-	categoryId: z.string().meta(d("Filtra per ID categoria prodotto")).optional(),
-	macroCategoryId: z
-		.string()
-		.meta(
-			d(
-				"Filtra per ID macro categoria prodotto. Ignorato se `categoryId` è presente: la categoria è già dentro la sua macro.",
-			),
-		)
-		.optional(),
-	lat: z
-		.number()
-		.min(-90)
-		.max(90)
-		.meta(d("Latitudine del punto di ricerca"))
-		.optional(),
-	lng: z
-		.number()
-		.min(-180)
-		.max(180)
-		.meta(d("Longitudine del punto di ricerca"))
-		.optional(),
-	radius: z
-		.number()
-		.gt(0)
-		.max(100)
-		.meta(d("Raggio in km (opzionale, nessun limite di default; max 100)"))
-		.optional(),
-	openNow: z
-		.boolean()
-		.meta(
-			d(
-				"Solo i prodotti disponibili in un negozio aperto in questo momento (fuso Europe/Rome). Restringe anche quale negozio viene agganciato al risultato.",
-			),
-		)
-		.optional(),
-	onSale: z
-		.boolean()
-		.meta(d("Solo i prodotti con uno sconto attivo in questo momento"))
-		.optional(),
-	minPrice: z
-		.number()
-		.min(0)
-		.meta(d("Prezzo minimo in €, sul prezzo scontato"))
-		.optional(),
-	maxPrice: z
-		.number()
-		.min(0)
-		.meta(d("Prezzo massimo in €, sul prezzo scontato"))
-		.optional(),
-});
+// Gemello di `ProductSearchQuery`: `lib/zod/queries.ts` (U3).
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 
-// `OpeningHoursSchema` (`Type.Integer` di TypeBox è `zInt`, il `t.Integer` di
-// Elysia è `zInteger`) e `CreateStoreBody` sono in `lib/zod/forms/` da U7.
+// `OpeningHoursSchema` (`Type.Integer` di TypeBox è `zInt()`, il `t.Integer`
+// di Elysia è `zInteger`) e `CreateStoreBody` sono in `lib/zod/forms/` da U7.
 const OpeningHours = OpeningHoursSchema;
 
 // Gemelli delle unioni alla radice: `z.union`, non `z.discriminatedUnion`
 // (che sceglie il ramo dal discriminante e dà errori che TypeBox non dà).
 // `StockBulkAdjustBody` è in `lib/zod/stock.ts` da U5.
-const holidayName = z
-	.string()
-	.min(1)
-	.max(100)
-	.meta({ description: "Nome festività" });
+const holidayName = zString({
+	minLength: 1,
+	maxLength: 100,
+	description: "Nome festività",
+});
 const CreateHolidayDefinitionBody = z.union([
 	z.object({
 		type: z.literal("fixed"),
@@ -419,6 +374,34 @@ const formWithFile = [
 		meta: z.object({ a: z.string() }),
 		tags: z.array(z.string()),
 		file: zFile(),
+	}),
+] as const;
+const name200 = [
+	t.Object({ name: t.String({ maxLength: 200 }) }),
+	z.object({ name: zString({ maxLength: 200 }) }),
+] as const;
+const country2 = [
+	t.Object({
+		country: t.String({ minLength: 2, maxLength: 2, title: "Codice" }),
+	}),
+	z.object({
+		country: zString({ minLength: 2, maxLength: 2, title: "Codice" }),
+	}),
+] as const;
+const phone = [
+	t.Object({
+		phone: t.String({
+			maxLength: 5,
+			pattern: "^(.{2,})?$",
+			description: "Telefono",
+		}),
+	}),
+	z.object({
+		phone: zString({
+			maxLength: 5,
+			pattern: "^(.{2,})?$",
+			description: "Telefono",
+		}),
 	}),
 ] as const;
 const png = () => new File([PNG], "a.png", { type: "image/png" });
@@ -1624,7 +1607,7 @@ export const cases: Case[] = [
 	body(
 		"Type.Integer: una stringa è «deve essere un numero intero»",
 		t.Object({ n: Type.Integer({ minimum: 0 }) }),
-		z.object({ n: z.int().min(0) }),
+		z.object({ n: zInt().min(0) }),
 		{ n: "1" },
 		422,
 		fail("n: deve essere un numero intero"),
@@ -1749,6 +1732,107 @@ export const cases: Case[] = [
 		fail("l: al massimo 1 elemento"),
 	),
 
+	// t.String conta le unità UTF-16, `z.string().min/max` i code point:
+	// `zString` (giro di correzione di U3).
+	body(
+		"zString: maxLength in unità UTF-16 (101 emoji = 202)",
+		...name200,
+		{ name: "😀".repeat(101) },
+		422,
+		fail("Nome: al massimo 200 caratteri"),
+	),
+	body(
+		"zString: 100 emoji = 200 unità, al limite",
+		...name200,
+		{ name: "😀".repeat(100) },
+		200,
+		{ ok: { name: "😀".repeat(100) } },
+	),
+	body(
+		"zString: un emoji rispetta minLength 2 e maxLength 2",
+		...country2,
+		{ country: "😀" },
+		200,
+		{ ok: { country: "😀" } },
+	),
+	body(
+		"zString: minLength con title",
+		...country2,
+		{ country: "a" },
+		422,
+		fail("Codice: almeno 2 caratteri"),
+	),
+	body(
+		"zString: maxLength prima di pattern",
+		...phone,
+		{ phone: "😀😀😀" },
+		422,
+		fail("Telefono: al massimo 5 caratteri"),
+	),
+	body(
+		"zString: pattern",
+		...phone,
+		{ phone: "a" },
+		422,
+		fail("Telefono: formato non valido"),
+	),
+	body(
+		"zString: nullable, regola del ramo non nullo",
+		t.Object({ note: t.Nullable(t.String({ maxLength: 3 })) }),
+		z.object({ note: zString({ maxLength: 3 }).nullable() }),
+		{ note: "😀😀" },
+		422,
+		fail("Note: al massimo 3 caratteri"),
+	),
+	query(
+		"zString in query: maxLength in unità UTF-16",
+		t.Object({ storeIds: t.String({ maxLength: 4 }) }),
+		z.object({ storeIds: zString({ maxLength: 4 }) }),
+		`?storeIds=${encodeURIComponent("😀😀😀")}`,
+		422,
+		fail("Negozi: al massimo 4 caratteri"),
+	),
+
+	// Numeri non finiti (`1e400` nel JSON è Infinity).
+	{
+		name: "t.Integer: 1e400 è «numero intero»",
+		target: "json",
+		tb: quantity199[0],
+		zod: quantity199[1],
+		req: { raw: '{"quantity":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Quantità: deve essere un numero intero"),
+	},
+	{
+		name: "t.Integer: -1e400 è «numero intero»",
+		target: "json",
+		tb: quantity199[0],
+		zod: quantity199[1],
+		req: { raw: '{"quantity":-1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Quantità: deve essere un numero intero"),
+	},
+	{
+		name: "t.Number: 1e400 nel body",
+		target: "json",
+		tb: t.Object({ price: t.Number() }),
+		zod: z.object({ price: z.number() }),
+		req: { raw: '{"price":1e400}', contentType: "application/json" },
+		status: 422,
+		body: fail("Prezzo: deve essere un numero"),
+	},
+	query(
+		"t.Number in query: 1e400",
+		t.Object({ price: t.Number() }),
+		z.object({ price: z.number() }),
+		"?price=1e400",
+		422,
+		fail("Valore non valido: deve essere un numero"),
+	),
+
+	// Interi oltre ±2^53: TypeBox controlla `Number.isInteger`, `z.int()` di
+	// Zod anche i limiti dei safe integer (422 «al massimo 9007199254740991»).
+	...bigIntegers(),
 	// U5: gemelli dei form e dei body seller condivisi (prodotti, stock). Gli
 	// schemi in linea nelle route li copre il batch catturato su Elysia
 	// (`baseline/hono-batch-seller-products.jsonl`).
@@ -2127,6 +2211,22 @@ export const cases: Case[] = [
 			},
 		},
 	),
+	// zString: TypeBox conta le unità UTF-16 (501 emoji sono 1002 > 1000).
+	body(
+		"negozio: descrizione di emoji oltre il limite (zString)",
+		TbCreateStoreBody,
+		CreateStoreBody,
+		{
+			name: "Bottega",
+			description: "😀".repeat(501),
+			addressLine1: "Via Roma 1",
+			municipalityId: "m1",
+			zipCode: "40100",
+			location: { x: 11, y: 44 },
+		},
+		422,
+		fail("Descrizione: al massimo 1000 caratteri"),
+	),
 	// `Type.Union([X, Type.Null()])` (non t.Nullable): l'errore del ramo non
 	// nullo sta sul campo, come per t.Nullable.
 	body(
@@ -2246,3 +2346,159 @@ export const cases: Case[] = [
 		},
 	},
 ];
+
+function bigIntegers(): Case[] {
+	const page = [
+		t.Object({ page: t.Integer({ minimum: 1 }) }),
+		z.object({ page: zInteger({ minimum: 1 }) }),
+	] as const;
+	const typeboxQuantity = [
+		t.Object({ quantity: Type.Integer({ minimum: 1, maximum: 99 }) }),
+		z.object({ quantity: zInt().min(1).max(99) }),
+	] as const;
+	const json = (
+		name: string,
+		[tb, zod]: readonly [TSchema, z.ZodType],
+		raw: string,
+		status: number,
+		expected: unknown,
+	): Case => ({
+		name,
+		target: "json",
+		tb,
+		zod,
+		req: { raw, contentType: "application/json" },
+		status,
+		body: expected,
+	});
+	const max99 = "Quantità: deve essere al massimo 99";
+	const min1 = "Quantità: deve essere almeno 1";
+	return [
+		query("t.Integer in query: 1e20", ...page, "?page=1e20", 200, {
+			ok: { page: 1e20 },
+		}),
+		query(
+			"t.Integer in query: 2^53+1",
+			...page,
+			"?page=9007199254740993",
+			200,
+			{
+				ok: { page: 9007199254740992 },
+			},
+		),
+		query(
+			"t.Integer in query: 20 cifre",
+			...page,
+			"?page=99999999999999999999",
+			200,
+			{ ok: { page: 1e20 } },
+		),
+		query(
+			"t.Integer in query: -1e20",
+			...page,
+			"?page=-99999999999999999999",
+			422,
+			fail("Valore non valido: deve essere almeno 1"),
+		),
+		query(
+			"t.Integer in query: 1e20 oltre il massimo",
+			...quantity199,
+			"?quantity=1e20",
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		query(
+			"t.Integer in query: 2^53+1 oltre il massimo",
+			...quantity199,
+			"?quantity=9007199254740993",
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		query(
+			"t.Integer in query: -1e20 sotto il minimo",
+			...quantity199,
+			"?quantity=-1e20",
+			422,
+			fail("Valore non valido: deve essere almeno 1"),
+		),
+		json("t.Integer: 1e20 nel body", page, '{"page":1e20}', 200, {
+			ok: { page: 1e20 },
+		}),
+		json("t.Integer: 2^53+1 nel body", page, '{"page":9007199254740993}', 200, {
+			ok: { page: 9007199254740992 },
+		}),
+		json(
+			"t.Integer: 20 cifre in stringa nel body",
+			page,
+			'{"page":"99999999999999999999"}',
+			200,
+			{ ok: { page: 1e20 } },
+		),
+		json(
+			"t.Integer: 1e20 oltre il massimo",
+			quantity199,
+			'{"quantity":1e20}',
+			422,
+			fail(max99),
+		),
+		json(
+			"t.Integer: -1e20 sotto il minimo",
+			quantity199,
+			'{"quantity":-1e20}',
+			422,
+			fail(min1),
+		),
+		json(
+			"t.Integer: 2^53 oltre il massimo",
+			quantity199,
+			'{"quantity":9007199254740992}',
+			422,
+			fail(max99),
+		),
+		json(
+			"t.Integer: 20 cifre in stringa oltre il massimo",
+			quantity199,
+			'{"quantity":"99999999999999999999"}',
+			422,
+			fail("Valore non valido: deve essere al massimo 99"),
+		),
+		json(
+			"Type.Integer: 1e20 oltre il massimo",
+			typeboxQuantity,
+			'{"quantity":1e20}',
+			422,
+			fail(max99),
+		),
+		json(
+			"Type.Integer: -1e20 sotto il minimo",
+			typeboxQuantity,
+			'{"quantity":-1e20}',
+			422,
+			fail(min1),
+		),
+		json(
+			"Type.Integer: 2^53+1 oltre il massimo",
+			typeboxQuantity,
+			'{"quantity":9007199254740993}',
+			422,
+			fail(max99),
+		),
+		json(
+			"Type.Integer: 20 cifre in stringa",
+			typeboxQuantity,
+			'{"quantity":"99999999999999999999"}',
+			422,
+			fail("Quantità: deve essere un numero intero"),
+		),
+		json(
+			"Type.Integer: 1e20 senza massimo",
+			[
+				t.Object({ n: Type.Integer({ minimum: 0 }) }),
+				z.object({ n: zInt().min(0) }),
+			],
+			'{"n":1e20}',
+			200,
+			{ ok: { n: 1e20 } },
+		),
+	];
+}
