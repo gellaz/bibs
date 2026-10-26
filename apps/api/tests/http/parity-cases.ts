@@ -1,6 +1,9 @@
 import { CloneType, Type } from "@sinclair/typebox";
 import { Elysia, type TSchema, t } from "elysia";
 import { z } from "zod";
+// Come `src/index.ts`: al load sovrascrive email, uuid e date nel FormatRegistry
+// di TypeBox. Senza, il lato Elysia avrebbe i formati di Elysia nudo.
+import "@elysiajs/openapi";
 import "@/lib/schemas/forms/formats";
 import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
@@ -523,6 +526,27 @@ export const cases: Case[] = [
 		fail("x: identificativo non valido"),
 	),
 	body(
+		"vm: email che solo Elysia nudo accetta (TLD di una lettera)",
+		...fmt("email", zFormat("email")),
+		{ x: "a@b.c" },
+		422,
+		fail("x: indirizzo email non valido"),
+	),
+	body(
+		"vm: uuid fuori da RFC 9562",
+		...fmt("uuid", zFormat("uuid")),
+		{ x: "11111111-1111-1111-1111-111111111111" },
+		422,
+		fail("x: identificativo non valido"),
+	),
+	body(
+		"vm: uuid v4 maiuscolo",
+		...fmt("uuid", zFormat("uuid")),
+		{ x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" },
+		200,
+		{ ok: { x: "3F1C2A4E-8B5D-4C6E-9F7A-1B2C3D4E5F60" } },
+	),
+	body(
 		"vm: calendar-date",
 		...fmt("calendar-date", zFormat("calendar-date")),
 		{ x: "2024-02-31" },
@@ -571,6 +595,14 @@ export const cases: Case[] = [
 		t.Object({ startsAt: t.Date() }),
 		z.object({ startsAt: zDate() }),
 		{ startsAt: "nope" },
+		422,
+		fail("Inizio: data non valida"),
+	),
+	body(
+		"vm: t.Date con l'offset senza segno (il «+» di una query)",
+		t.Object({ startsAt: t.Date() }),
+		z.object({ startsAt: zDate() }),
+		{ startsAt: "2026-01-01T12:00:00 01:00" },
 		422,
 		fail("Inizio: data non valida"),
 	),
@@ -678,6 +710,14 @@ export const cases: Case[] = [
 		TbRegister,
 		Register,
 		{ email: "nope", password: "12345678" },
+		422,
+		fail("Email: indirizzo email non valido"),
+	),
+	body(
+		"reg: email che solo Elysia nudo accetta",
+		TbRegister,
+		Register,
+		{ email: "mario#rossi@test.it", password: "12345678" },
 		422,
 		fail("Email: indirizzo email non valido"),
 	),
@@ -1023,6 +1063,35 @@ export const cases: Case[] = [
 		{ title: "x", percent: 5, startsAt: "05/03/2027" },
 		200,
 		{ ok: { title: "x", percent: 5, startsAt: "2027-05-03T00:00:00.000Z" } },
+	),
+	// Offset senza segno: Elysia nudo lo accettava come `date`, l'app composta
+	// (formato `date` di @elysiajs/openapi) no. Giro di correzioni 2 di U7.
+	...[
+		"2026-01-01T12:00:00 01:00",
+		"2026-01-01T12:00 01:00",
+		"2026-01-01T12:00:00.000 01:00",
+	].map((startsAt) =>
+		body(
+			`disc: inizio ${startsAt} (offset senza segno)`,
+			TbDiscountCreateBody,
+			DiscountCreateBody,
+			{ title: "x", percent: 5, startsAt },
+			422,
+			fail("Inizio: data non valida"),
+		),
+	),
+	body(
+		"disc: fine con l'offset senza segno",
+		TbDiscountCreateBody,
+		DiscountCreateBody,
+		{
+			title: "x",
+			percent: 5,
+			startsAt: "2026-01-01",
+			endsAt: "2026-01-01T12:00:00 01:00",
+		},
+		422,
+		fail("Fine: data non valida"),
 	),
 	query(
 		"q-page-0",
@@ -2094,6 +2163,22 @@ export const cases: Case[] = [
 		fail("Titolo: campo obbligatorio"),
 	),
 	body(
+		"promozioni: PATCH fine con l'offset senza segno (DiscountUpdateBody)",
+		TbDiscountUpdateBody,
+		DiscountUpdateBody,
+		{ endsAt: "2026-01-01T12:00:00 01:00" },
+		422,
+		fail("Fine: data non valida"),
+	),
+	body(
+		"promozioni: PATCH inizio con l'offset senza segno (DiscountUpdateBody)",
+		TbDiscountUpdateBody,
+		DiscountUpdateBody,
+		{ startsAt: "2026-01-01T12:00 01:00" },
+		422,
+		fail("Inizio: data non valida"),
+	),
+	body(
 		"promozioni: prodotti vuoti (DiscountProductsBody)",
 		TbDiscountProductsBody,
 		DiscountProductsBody,
@@ -2336,6 +2421,21 @@ export const cases: Case[] = [
 			},
 			422,
 			fail("openingHours: deve essere un numero intero"),
+		),
+	),
+	// Lo stesso con l'unione sul campo stesso (nessun form la usa ancora): guardia
+	// per il merge con U6, che qui dava «numero» (`collapse()` di issues.ts).
+	...[
+		["testo", "1"],
+		["booleano", true],
+	].map(([what, n]) =>
+		body(
+			`vm: intero o null alla radice, ${what}`,
+			t.Object({ n: Type.Union([Type.Integer(), Type.Null()]) }),
+			z.object({ n: z.union([zInt(), z.null()]) }),
+			{ n },
+			422,
+			fail("n: deve essere un numero intero"),
 		),
 	),
 	// maxLength prima del formato, in unità UTF-16: 14 + 244 × 2 = 502.
