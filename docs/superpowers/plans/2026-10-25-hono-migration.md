@@ -25,7 +25,7 @@ Questo file è lo stato durevole della migrazione: chi riprende legge la tabella
 | U4 | `registration/` — **stessa PR di U2** | U2 (rate limit) | fatto | #302 |
 | U5 | seller 1: contesto seller + products, brands, images, product-characteristics, stock | U1 | fatto | #303 |
 | U6 | seller 2: stores, store-images, settings, closures, employees, onboarding, profile, dashboard | U5 | fatto | #307 |
-| U7 | seller 3: orders, discounts, checkout, billing | U5 | fatto | — |
+| U7 | seller 3: orders, discounts, checkout, billing | U5 | fatto | #309 |
 | U8 | catalogo pubblico + admin 1: configurations, categorie, macro-categorie, caratteristiche, category-characteristics, holiday-definitions, import | U1 | fatto | #305 |
 | U9 | admin 2: sellers, seller-changes, stores, requests, billing | U8 | fatto | #308 |
 | U10 | `webhooks/` (Stripe) | U1 | fatto | #306 |
@@ -617,7 +617,7 @@ Test FE con il finto client Eden da riscrivere nella forma `hc` (stesse asserzio
 
 ### U7 — seller 3: ordini, promozioni, checkout, billing
 
-**Stato:** fatto · **PR:** — · **Branch:** `feat/hono-u7-seller-3` (nome dato dall'orchestratore al posto di `refactor/hono-seller-orders`)
+**Stato:** fatto · **PR:** #309 · **Branch:** `feat/hono-u7-seller-3` (nome dato dall'orchestratore al posto di `refactor/hono-seller-orders`)
 
 27 endpoint: orders (9), discounts (10, body con date in ingresso `lib/schemas/discount.ts:50-64`), checkout (4), billing (4, oggi `ok(data) as any` a `seller/routes/billing.ts:85`: con `send()` il tipo arriva al FE). Toglie il modulo seller Elysia (e le sue copie `/seller/auth`).
 
@@ -678,7 +678,7 @@ Test FE con il finto client Eden da riscrivere nella forma `hc` (stesse asserzio
   - Hono CLI: batch della baseline 66/66; `-me` 18/18, `-locations` 35/35, `-registration` 31/31, `-customer` 140/140, `-seller-products` 113/113, `-seller-orders` 204/204 (sul base 204/204); snapshot rigenerato 116 righe, uguale al giro 1; header e corpi con `app.handle`, base `e85d6094` contro branch, 204/204 identici;
   - typecheck, wall time di `tsc --noEmit`, 2 run col carico 6,3–7,3: api 8,58 / 9,03 s (1,32× la baseline), admin 10,61 / 9,03 (1,03×), customer 8,97 / 9,74 (1,09×), seller 14,13 / 13,68 (1,40×), tutti sotto 2×. Nessun ripiego di D10.
 
-- [x] **Spedizione** (orchestratore, 2026-10-26, PR —). Merge di `origin/feat/hono-migration` (`f04e21fc`: U8 #305, U10 #306, U9 #308, U6 #307) nel branch con un merge commit (`17bcaa06`, niente rebase). Conflitti risolti come chiedeva «Da fare alla spedizione»:
+- [x] **Spedizione** (orchestratore, 2026-10-26, PR #309). Merge di `origin/feat/hono-migration` (`f04e21fc`: U8 #305, U10 #306, U9 #308, U6 #307) nel branch con un merge commit (`17bcaa06`, niente rebase). Conflitti risolti come chiedeva «Da fare alla spedizione»:
   - `modules/seller/index.ts`: `sellerApp` con tutte le 17 sub-app (le 5 di U5, poi billing, checkout, ordini e promozioni di U7, poi le 8 di U6: il checkout resta prima delle route `/stores/:storeId/…`); `sellerModule` (Elysia) tolto insieme a `.use(sellerModule)` di `src/index.ts`, e con lui le copie `ALL /seller/auth`, `ALL /seller/auth/*` (delta 1); via `withSeller`/`SellerResolvedContext` da `context.ts` (`withSellerAuth`/`SellerAuthContext` li aveva già tolti U6); `requireOwner` resta (lo usano billing, checkout, promozioni, negozi, chiusure, impostazioni, team). In Elysia restano solo `/health`, `/ready`, `/openapi*`, il CORS e il mount di better-auth: U11 può partire.
   - `lib/zod/issues.ts`: `collapse()` di U7 (Trappole «Gemelli»). `lib/zod/t.ts`: un solo `zString` con `format`, costruito su `utf16Length` di U6 (che resta per il `websiteUrl` scritto a mano del PATCH negozio), controlli nell'ordine di TypeBox (lunghezze, pattern, formato). `lib/zod/forms/stores.ts` di U7 (`zString({ format: "uri", maxLength: 500 })`, CAP con `zString({ pattern })`), `forms/opening-hours.ts` di U6 (equivalenti); `UserSummarySchema` una volta sola. Prova che i due gemelli di `websiteUrl` si equivalgono: contro Elysia su 9 valori (URL di 244 emoji, testo di 501 caratteri non URI, vuoto, spazi, …) 18/18 identici, quindi il PATCH di U6 resta com'è.
   - `tests/http/parity-cases.ts`: i casi di entrambe (U6, U8, U9 dal base più i blocchi di U7 che mancavano), i 5 casi dei formati e l'import di `@elysiajs/openapi` una volta sola; `DiscountCreateBody`/`DiscountListQuery` da `lib/zod/discount.ts`.
