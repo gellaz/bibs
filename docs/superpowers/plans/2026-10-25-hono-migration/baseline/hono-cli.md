@@ -2,36 +2,46 @@
 
 ## Since U11 (2026-10-26): the root app is Hono
 
-`apps/api/src/app.ts` exports the root Hono app with no import side effects (server, cron and
-`ensureBucket()` live in `src/index.ts`). The CLI still needs [`../tools/hono-entry.ts`](../tools/hono-entry.ts),
-now three lines: it imports `src/app.ts` at runtime and re-exports it, because the CLI bundles its
-entry with esbuild and imports it from a `data:` URL, where `import … from "bun"` (`src/lib/s3.ts`) does
-not resolve, and it forces `jsxImportSource: "hono/jsx"` on `@bibs/emails`' react-email templates.
-Same rules as before: run the CLI file with Bun from `apps/api`, with the env of `apps/api`
-(`.env`/`.env.local`, or `bun --env-file=<file>`), infra up (`bun run infra:up`).
+`apps/api/src/app.ts` exports the root Hono app (named `app` and, for the CLI, as the default export)
+with no import side effects: server, cron and `ensureBucket()` live in `src/index.ts`. **The CLI runs
+directly on `src/app.ts`** (since the U11 ship, 2026-10-26) with two externals:
+
+- `-e bun`: `src/lib/s3.ts` imports `S3Client` from `bun`; the CLI bundles the entry with esbuild and
+  imports the bundle from a `data:` URL, and only Bun (the CLI file run with `bun`) resolves that import
+  there;
+- `-e @bibs/emails`: the CLI's esbuild forces `jsxImportSource: "hono/jsx"`, which would compile the
+  react-email templates for the wrong runtime; as an external the package is loaded by Bun as it is.
+
+Same rules as before: run the CLI file with Bun from `apps/api` (`bunx hono` runs it on Node, where
+`bun` does not resolve), with the env of `apps/api` (`.env`/`.env.local`, or `bun --env-file=<file>`),
+infra up (`bun run infra:up`). `tools/hono-entry.ts` (a runtime re-export of the app) is gone: it was
+only there because the CLI could not bundle `src/app.ts` without the two externals.
 
 ```bash
 cd apps/api
-HONO="bun node_modules/@hono/cli/dist/cli.js"     # or: bun --env-file=<env> node_modules/@hono/cli/dist/cli.js
-# zsh does not split "$HONO" into words: there, use a function instead
-# hono() { bun --env-file=<env> node_modules/@hono/cli/dist/cli.js "$@"; }   and call `hono …`
-ENTRY=../../docs/superpowers/plans/2026-10-25-hono-migration/tools/hono-entry.ts
+# zsh does not split "$HONO" into words: use a function
+hono() { bun node_modules/@hono/cli/dist/cli.js "$@"; }   # or: bun --env-file=<env> node_modules/...
+APP="src/app.ts -e bun -e @bibs/emails"                    # in zsh: ${=APP}, or write it out
 BASE=../../docs/superpowers/plans/2026-10-25-hono-migration/baseline
 
-$HONO routes $ENTRY                    # 207 rows: 183 routes + @ERROR/@NOT_FOUND of the root and the 11 sub-apps
-$HONO request /health $ENTRY           # one request, in process
+hono routes src/app.ts -e bun -e @bibs/emails             # 207 rows: 183 routes + @ERROR/@NOT_FOUND of the root and the 11 sub-apps
+hono request /health src/app.ts -e bun -e @bibs/emails    # one request, in process
 
 # every baseline batch file (bodies captured before each module moved) — each must print failed: 0
 for f in $BASE/hono-batch-*.jsonl; do
-  echo "$(basename $f) $($HONO batch $f $ENTRY --compact 2>/dev/null | grep '^{"ok"' | jq -c .data.summary)"
+  echo "$(basename $f) $(hono batch $f src/app.ts -e bun -e @bibs/emails --compact 2>/dev/null | grep -o '{"ok".*' | tail -1 | jq -c .data.summary)"
 done
 grep '"expect"' $BASE/hono-snapshot.jsonl > /tmp/hono-expect.jsonl
-$HONO batch /tmp/hono-expect.jsonl $ENTRY --compact 2>/dev/null | grep '^{"ok"' | jq -e '.data.summary.failed == 0'
+hono batch /tmp/hono-expect.jsonl src/app.ts -e bun -e @bibs/emails --compact 2>/dev/null | grep -o '{"ok".*' | tail -1 | jq -e '.data.summary.failed == 0'
 
 # snapshot diff: compare as sorted sets (the route order follows src/app.ts, not the old table)
-$HONO snapshot --status-only $ENTRY 2>/dev/null | grep '^{"\(path\|method\)"' | sort > /tmp/hono-snapshot.sorted
+hono snapshot --status-only src/app.ts -e bun -e @bibs/emails 2>/dev/null | grep '^{"\(path\|method\)"' | sort > /tmp/hono-snapshot.sorted
 sort $BASE/hono-snapshot.jsonl | diff - /tmp/hono-snapshot.sorted
 ```
+
+`grep -o '{"ok".*' | tail -1` and not `grep '^{"ok"'`: a step whose error is logged with a stack (the
+webhook signature steps) prints the bundle's `data:` URL into the output, and the summary can end up
+on the same line.
 
 U11 results (2026-10-26, `@hono/cli` 1.0.0-rc.8, env with the compose defaults of `compose.yml` and a
 placeholder `STRIPE_WEBHOOK_SECRET`): every batch file passes on the base commit (`c4d4ba5b`, old
@@ -45,12 +55,18 @@ slash of `/seller/settings/` and `/admin/requests/`) and the dev-DB UUID lines.
 U11 fix round 1 (2026-10-26, same env): the same numbers on every batch file and on the snapshot
 expectations (1,164 steps, 0 failed), `routes` 207 rows, the snapshot as sets unchanged.
 
-**`hono diff` still does not work** (`hono diff --base origin/feat/hono-migration`, tried on U11):
-`SNAPSHOT_FAILED`. It takes no entry file and bundles `src/index.ts` on both sides: `bun` and
-`hono/jsx/jsx-runtime` do not resolve (see above), and the base side is the old app, whose packages
-are no longer installed. Between two Hono commits it still fails on the first two points (tried in U11 fix round 1 with
-`--base HEAD`: both sides are Hono, `SNAPSHOT_FAILED` on `hono/jsx/jsx-runtime` and `bun`), unless
-the default entry became a bundle-safe Hono export. Use the batch files and the sorted snapshot diff.
+U11 ship (2026-10-26, same env): the same 1,164 steps, 0 failed, three ways — through the old
+`tools/hono-entry.ts`, through a scratch entry that statically re-exported the app, and directly on
+`src/app.ts` with the commands above; `routes` 207 rows; snapshot as sets (184 rows, 66 with `expect`)
+unchanged.
+
+**`hono diff` does not work for this repo, and cannot without a CLI change** (`hono diff --base
+origin/feat/hono-migration`, tried again at the U11 ship: `SNAPSHOT_FAILED`). It takes neither an
+entry file nor `-e`: it runs `hono snapshot` on the default entry (`src/index.ts`, `.tsx`, `.js`,
+`.jsx`) in two temporary worktrees. Here `src/index.ts` is the server (cron, `ensureBucket()`,
+`Bun.serve`), not a default-exported app, and without `-e` the bundle fails on `bun` and
+`hono/jsx/jsx-runtime` (and, against a base before U11, on the old framework's packages, no longer
+installed). Use the batch files and the sorted snapshot diff above.
 
 ## Until U11: the CLI on the old app
 
@@ -65,7 +81,7 @@ identical.
 
 ### How it loaded
 
-Entry: [`../tools/hono-entry.ts`](../tools/hono-entry.ts). It takes the real app from
+Entry: `tools/hono-entry.ts` (deleted at the U11 ship, see above; in the git history). It took the real app from
 [`../tools/load-app.ts`](../tools/load-app.ts) (no listen, no cron, `ensureBucket()` stubbed) and puts
 it behind `new Hono()`: every Elysia route is registered on Hono with a handler that forwards the
 untouched request to the same `app.fetch`, and a `hono/mount` middleware on `/*` stays as the fallback

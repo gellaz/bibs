@@ -94,3 +94,7 @@ export const app = rootApp()
 	.all("/auth/*", authHandler);
 
 for (const [prefix, sub] of MODULES) app.route(prefix, sub);
+
+// Per la Hono CLI, che legge l'export di default:
+// `hono request /health src/app.ts -e bun -e @bibs/emails`.
+export default app;
