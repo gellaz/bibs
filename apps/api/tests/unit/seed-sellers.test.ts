@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { generateSellersSeedData } from "@/db/seed/fixtures/sellers";
-import { isValidDocumentNumber } from "@/lib/schemas/forms/identity-document";
+import { isValidDocumentNumber } from "@/schemas/forms/identity-document";
 
 describe("generateSellersSeedData", () => {
 	const data = generateSellersSeedData();

@@ -32,7 +32,7 @@ export function formatPriceEur(value: string | number): string {
  * Scorporo IVA *indicativo* per la sola visualizzazione (float). Da un prezzo
  * LORDO (IVA inclusa) e un'aliquota intera, ritorna netto (imponibile) e IVA.
  * NON è la fonte fiscale: il calcolo autoritativo è server-side in
- * apps/api/src/lib/vat.ts (centesimi, half-up) e può differire di un centesimo.
+ * apps/api/src/domain/pricing/vat.ts (centesimi, half-up) e può differire di un centesimo.
  * Usalo solo per anteprime UI. Ritorna NaN se il lordo non è finito.
  */
 export function scorporoDisplay(

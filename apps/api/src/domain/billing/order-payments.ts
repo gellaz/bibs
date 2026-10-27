@@ -5,11 +5,11 @@ import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { store } from "@/db/schemas/store";
+import { storePayoutSplit } from "@/domain/billing/platform-fee";
 import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
 import { toCents } from "@/lib/money";
-import { storePayoutSplit } from "@/lib/platform-fee";
 
 /** Stati in cui il cliente può ancora (ri)tentare il pagamento. */
 const PAYABLE: readonly Stripe.PaymentIntent.Status[] = [

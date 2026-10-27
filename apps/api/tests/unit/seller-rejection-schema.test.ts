@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { RejectSellerBody } from "@/lib/schemas/forms";
+import { RejectSellerBody } from "@/schemas/forms";
 
 describe("RejectSellerBody", () => {
 	it("rifiuta motivo vuoto, di soli spazi o troppo lungo", () => {

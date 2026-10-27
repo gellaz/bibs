@@ -29,11 +29,13 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { store as storeTable } from "@/db/schemas/store";
 import {
+	getAccessibleStoreIdsFor,
+	getEmployeeAssignedStoreIds,
+} from "@/domain/sellers/access";
+import {
 	ensureProductAccess,
 	ensureStoreAccess,
-	getAccessibleStoreIdsFor,
 } from "@/modules/seller/context";
-import { getEmployeeAssignedStoreIds } from "@/modules/seller/services/access";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestEmployee,

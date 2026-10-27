@@ -31,7 +31,7 @@ import { paymentMethod } from "@/db/schemas/payment-method";
 import { product as productTable, storeProduct } from "@/db/schemas/product";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
-import { reservationDeadline } from "@/lib/holidays";
+import { reservationDeadline } from "@/domain/holidays";
 import { checkoutRoutes } from "@/modules/customer/routes/checkout";
 import {
 	createCheckout,

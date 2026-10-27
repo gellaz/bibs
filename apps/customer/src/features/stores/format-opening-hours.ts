@@ -46,7 +46,7 @@ export function formatWeeklyHours(
 /**
  * Il negozio ha dichiarato almeno una fascia? `[]` e `slots: []` valgono quanto
  * `null`. Gemella del predicato che decide `status: "unknown"` lato API
- * (`apps/api/src/lib/holidays/open-status.ts`): badge e rail stanno sulla
+ * (`apps/api/src/domain/holidays/open-status.ts`): badge e rail stanno sulla
  * stessa schermata, quindi devono rispondere alla stessa domanda.
  */
 export function hasDeclaredHours(

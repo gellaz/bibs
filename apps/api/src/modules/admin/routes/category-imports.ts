@@ -6,9 +6,9 @@ import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { CsvImportResultSchema } from "@/lib/schemas/entities";
-import { okRes, withConflictErrors } from "@/lib/schemas/responses";
-import { zFile } from "@/lib/schemas/t";
+import { CsvImportResultSchema } from "@/schemas/entities";
+import { okRes, withConflictErrors } from "@/schemas/responses";
+import { zFile } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
 	importProductCategoriesFromCsv,

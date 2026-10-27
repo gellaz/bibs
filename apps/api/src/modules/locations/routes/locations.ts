@@ -16,19 +16,19 @@ import {
 	MunicipalitySchema,
 	ProvinceSchema,
 	RegionSchema,
-} from "@/lib/schemas/entities";
+} from "@/schemas/entities";
 import {
 	GeocodeQuery,
 	MunicipalitiesQuery,
 	ProvincesQuery,
-} from "@/lib/schemas/locations";
+} from "@/schemas/locations";
 import {
 	okPageRes,
 	okRes,
 	ServiceUnavailableError,
 	TooManyRequestsError,
 	withErrors,
-} from "@/lib/schemas/responses";
+} from "@/schemas/responses";
 import { geocodeAddress } from "../services/geocode";
 import {
 	listAllMunicipalities,

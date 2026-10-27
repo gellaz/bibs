@@ -2,61 +2,6 @@ import { z } from "zod";
 import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
 import {
-	DiscountCreateBody,
-	DiscountListQuery,
-	DiscountProductsBody,
-	DiscountUpdateBody,
-} from "@/lib/schemas/discount";
-import {
-	BulkDeleteBody,
-	BulkStatusBody,
-	ProductStatusBody,
-} from "@/lib/schemas/entities";
-import {
-	AcceptInviteBody,
-	CompanyBody,
-	DocumentBody,
-	PersonalInfoBody,
-	TeamInviteBody,
-} from "@/lib/schemas/forms/onboarding";
-import { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
-import {
-	CharacteristicValuesField,
-	CreateProductBody,
-} from "@/lib/schemas/forms/products";
-import {
-	CompanySettingsBody,
-	VatChangeBody,
-} from "@/lib/schemas/forms/settings";
-import { CreateStoreBody } from "@/lib/schemas/forms/stores";
-import {
-	CreateHolidayDefinitionBody,
-	PutClosuresBody,
-	UpdateHolidayDefinitionBody,
-} from "@/lib/schemas/holidays";
-import { GeocodeQuery, MunicipalitiesQuery } from "@/lib/schemas/locations";
-import { PaginationQuery } from "@/lib/schemas/pagination";
-import {
-	CategoryListQuery,
-	CharacteristicListQuery,
-	OrderListQuery,
-	ProductCategoryListQuery,
-	ProductSearchQuery,
-	SellerListQuery,
-	StoreListQuery,
-} from "@/lib/schemas/queries";
-import { RegisterBody, SignInBody } from "@/lib/schemas/registration";
-import { StockAdjustBody, StockBulkAdjustBody } from "@/lib/schemas/stock";
-import {
-	zDate,
-	zFile,
-	zFiles,
-	zFormat,
-	zInt,
-	zInteger,
-	zString,
-} from "@/lib/schemas/t";
-import {
 	SubscriptionsQuery,
 	UpdatePricingBody,
 } from "@/modules/admin/routes/billing";
@@ -77,6 +22,58 @@ import {
 	RejectSellerRouteBody,
 	VerifySellerBody,
 } from "@/modules/admin/routes/sellers";
+import {
+	DiscountCreateBody,
+	DiscountListQuery,
+	DiscountProductsBody,
+	DiscountUpdateBody,
+} from "@/schemas/discount";
+import {
+	BulkDeleteBody,
+	BulkStatusBody,
+	ProductStatusBody,
+} from "@/schemas/entities";
+import {
+	AcceptInviteBody,
+	CompanyBody,
+	DocumentBody,
+	PersonalInfoBody,
+	TeamInviteBody,
+} from "@/schemas/forms/onboarding";
+import { OpeningHoursSchema } from "@/schemas/forms/opening-hours";
+import {
+	CharacteristicValuesField,
+	CreateProductBody,
+} from "@/schemas/forms/products";
+import { CompanySettingsBody, VatChangeBody } from "@/schemas/forms/settings";
+import { CreateStoreBody } from "@/schemas/forms/stores";
+import {
+	CreateHolidayDefinitionBody,
+	PutClosuresBody,
+	UpdateHolidayDefinitionBody,
+} from "@/schemas/holidays";
+import { GeocodeQuery, MunicipalitiesQuery } from "@/schemas/locations";
+import { PaginationQuery } from "@/schemas/pagination";
+import {
+	CategoryListQuery,
+	CharacteristicListQuery,
+	OrderListQuery,
+	ProductCategoryListQuery,
+	ProductSearchQuery,
+	SellerListQuery,
+	StoreListQuery,
+} from "@/schemas/queries";
+import { RegisterBody, SignInBody } from "@/schemas/registration";
+import { StockAdjustBody, StockBulkAdjustBody } from "@/schemas/stock";
+import {
+	zDate,
+	zFile,
+	zFiles,
+	zFormat,
+	zInt,
+	zInteger,
+	zString,
+} from "@/schemas/t";
 
 // I casi del validatore (`v()`, schemi Zod): per ogni caso lo status e il
 // corpo attesi, scritti per esteso, e quelli che l'API dava prima di Hono

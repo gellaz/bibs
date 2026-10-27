@@ -10,16 +10,16 @@ import {
 	AddressFieldsOptional,
 	AddressFieldsRequired,
 	CustomerAddressSchema,
-} from "@/lib/schemas/entities";
-import { PaginationQuery } from "@/lib/schemas/pagination";
+} from "@/schemas/entities";
+import { PaginationQuery } from "@/schemas/pagination";
 import {
 	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
-import { zString } from "@/lib/schemas/t";
+} from "@/schemas/responses";
+import { zString } from "@/schemas/t";
 import { customerSecurity } from "../context";
 import {
 	createAddress,

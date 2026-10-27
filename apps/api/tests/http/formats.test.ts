@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
-import { FORMATS, type FormatName } from "@/lib/schemas/formats";
+import { FORMATS, type FormatName } from "@/schemas/formats";
 
 // I formati del kit Zod contro quelli che l'app composta controllava prima di
 // Hono (il FormatRegistry dopo l'import del plugin OpenAPI di allora, che

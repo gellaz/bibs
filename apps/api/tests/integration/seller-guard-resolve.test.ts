@@ -28,8 +28,8 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
+import { resolveSellerAccess } from "@/domain/sellers/access";
 import { ServiceError } from "@/lib/errors";
-import { resolveSellerAccess } from "@/modules/seller/context";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestEmployee, createTestSeller } from "../helpers/fixtures";
 

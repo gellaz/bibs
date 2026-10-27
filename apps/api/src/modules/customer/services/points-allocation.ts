@@ -1,5 +1,5 @@
+import { isBelowOnlineMinimum } from "@/domain/billing/online-charge";
 import { config } from "@/lib/config";
-import { isBelowOnlineMinimum } from "@/lib/online-charge";
 
 /**
  * Quanti punti usare in un checkout e come dividerli tra i suoi ordini «Paga e

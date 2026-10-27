@@ -6,10 +6,10 @@ import { ok, okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { ProductMacroCategorySchema } from "@/lib/schemas/entities";
-import { VatRateSchema } from "@/lib/schemas/forms/products";
-import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas/responses";
-import { zString } from "@/lib/schemas/t";
+import { ProductMacroCategorySchema } from "@/schemas/entities";
+import { VatRateSchema } from "@/schemas/forms/products";
+import { OkMessage, okRes, withConflictErrors } from "@/schemas/responses";
+import { zString } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
 	createProductMacroCategory,

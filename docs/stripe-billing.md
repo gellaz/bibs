@@ -322,7 +322,7 @@ configurazione `merchant`: con separate charges & transfers (PR F) bibs è merch
 of record e al conto serve solo ricevere i trasferimenti. `payment_methods`
 (`stripe_account_id`, `charges_enabled`, `payouts_enabled`, `details_submitted`) è
 la **fonte** dello stato, mappata da `accountStateFromV2`
-(`apps/api/src/lib/connect-status.ts`): `charges_enabled` = `stripe_transfers`
+(`apps/api/src/domain/billing/connect-status.ts`): `charges_enabled` = `stripe_transfers`
 attivo (può ricevere i trasferimenti di bibs), `payouts_enabled` = `payouts`
 attivo, `details_submitted` = nessun requisito in attesa del seller (quindi
 `in_review` = tocca a Stripe, `incomplete` = tocca al seller). `GET
@@ -361,7 +361,7 @@ sblocca. Il banner nel layout non fa polling. Al ritorno da Stripe (`/payments/r
 
 `pay_pickup` («Paga e ritira») nelle «Tipologie d'acquisto» del negozio è
 attivabile solo con `chargesEnabled`; resta comunque **non offerto ai clienti**
-finché `ONLINE_PAYMENT_LIVE` (`apps/api/src/lib/order-types.ts`) è `false` — la PR F
+finché `ONLINE_PAYMENT_LIVE` (`apps/api/src/domain/orders/order-types.ts`) è `false` — la PR F
 lo porta a `true` insieme al PaymentIntent.
 
 ### Prerequisito una tantum

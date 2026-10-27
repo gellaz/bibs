@@ -3,14 +3,14 @@ import Stripe from "stripe";
 import { db } from "@/db";
 import { paymentMethod } from "@/db/schemas/payment-method";
 import { sellerProfile } from "@/db/schemas/seller";
-import { env } from "@/infra/env";
-import { logger } from "@/infra/logger";
-import { stripe } from "@/infra/stripe";
 import {
 	accountStateFromV2,
 	type ConnectStatus,
 	connectStatus,
-} from "@/lib/connect-status";
+} from "@/domain/billing/connect-status";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

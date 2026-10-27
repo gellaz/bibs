@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { OrderType } from "@/db/schemas/order";
 
 /** Tipi d'ordine che un negozio può offrire al checkout (colonna stores.order_types). */
 export const storeOrderTypes = ["reserve_pickup", "pay_pickup"] as const;
@@ -37,3 +38,6 @@ export const sellerVatChangeBlockedSql = sql<boolean>`(
   SELECT sp.vat_change_blocked FROM seller_profiles sp
   WHERE sp.id = stores.seller_profile_id
 )`.as("seller_vat_change_blocked");
+
+/** Tipi pagati online: nascono `pending` e si confermano solo a incasso. */
+export const PAY_TYPES: readonly OrderType[] = ["pay_pickup", "pay_deliver"];

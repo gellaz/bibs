@@ -11,22 +11,27 @@ import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
-import { config } from "@/lib/config";
-import { isUniqueViolation, ServiceError } from "@/lib/errors";
-import { fromCents, toCents } from "@/lib/money";
-import { refundStockAndPoints } from "@/lib/order-helpers";
-import { assertTransition } from "@/lib/order-state-machine";
-import { parsePagination } from "@/lib/pagination";
-import { generatePickupCode } from "@/lib/pickup-code";
-import { platformFeeCents } from "@/lib/platform-fee";
+import { refundOrderPayment } from "@/domain/billing/order-payments";
+import { platformFeeCents } from "@/domain/billing/platform-fee";
+import { refundStockAndPoints } from "@/domain/orders/order-helpers";
+import { assertCancellable } from "@/domain/orders/order-state-machine";
+import { PAY_TYPES } from "@/domain/orders/order-types";
+import { generatePickupCode } from "@/domain/orders/pickup-code";
+import { getBestActiveDiscount } from "@/domain/pricing/discount-pricing";
+import {
+	apportionDiscount,
+	buildCastelletto,
+	scorporo,
+} from "@/domain/pricing/vat";
 import {
 	resolveOpenStatuses,
 	resolveReservationDeadlines,
-} from "@/lib/store-open-status";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
-import { apportionDiscount, buildCastelletto, scorporo } from "@/lib/vat";
-import { refundOrderPayment } from "@/modules/billing/services/order-payments";
-import { getBestActiveDiscount } from "@/modules/seller/services/discount-pricing";
+} from "@/domain/stores/store-open-status";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
+import { config } from "@/lib/config";
+import { isUniqueViolation, ServiceError } from "@/lib/errors";
+import { fromCents, toCents } from "@/lib/money";
+import { parsePagination } from "@/lib/pagination";
 
 export type OrderTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -196,23 +201,6 @@ export interface CreateOrderParams extends PlaceOrderParams {
  */
 const PICKUP_TYPES: readonly OrderType[] = ["pay_pickup", "reserve_pickup"];
 const OPEN_STATUSES = ["pending", "confirmed", "ready_for_pickup"] as const;
-
-/** Tipi pagati online: nascono `pending` e si confermano solo a incasso. */
-export const PAY_TYPES: readonly OrderType[] = ["pay_pickup", "pay_deliver"];
-
-/**
- * Un pay_* in attesa di pagamento non si annulla a mano: il PaymentIntent copre
- * tutti i negozi del checkout, e l'ordine si annulla da solo allo scadere della
- * finestra di pagamento. Poi valgono le transizioni della macchina a stati.
- */
-export function assertCancellable(o: { status: string; type: string }) {
-	if (o.status === "pending" && PAY_TYPES.includes(o.type as OrderType))
-		throw new ServiceError(
-			409,
-			"L'ordine è in attesa di pagamento: se non viene pagato si annulla da solo entro 30 minuti",
-		);
-	assertTransition(o.status as OrderStatus, "cancelled", o.type as OrderType);
-}
 
 /**
  * Codice libero tra gli ordini aperti del negozio. Il pre-controllo copre il

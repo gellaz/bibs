@@ -4,7 +4,7 @@ import {
 	buildCastelletto,
 	scorporo,
 	VAT_RATES,
-} from "@/lib/vat";
+} from "@/domain/pricing/vat";
 
 describe("VAT_RATES", () => {
 	it("lists the five Italian rates as strings, default-first", () => {

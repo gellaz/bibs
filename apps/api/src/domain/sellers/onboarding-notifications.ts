@@ -11,7 +11,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { sendEmail } from "@/infra/email";
 import { env } from "@/infra/env";
 import { logger } from "@/infra/logger";
-import type { SellerRejectionFixStep } from "@/lib/schemas/forms";
+import type { SellerRejectionFixStep } from "@/schemas/forms";
 
 /**
  * Email della candidatura al venditore (titolare del seller_profile).

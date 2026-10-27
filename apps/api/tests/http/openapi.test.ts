@@ -5,20 +5,20 @@ import { z } from "zod";
 import { app } from "@/app";
 import { doc, generatePaths, honoPaths, operations } from "@/http/openapi";
 import { v } from "@/http/validator";
-import { DiscountSchema } from "@/lib/schemas/discount";
-import {
-	OkMessage,
-	okPageRes,
-	withConflictErrors,
-	withErrors,
-} from "@/lib/schemas/responses";
-import { zDate, zInteger } from "@/lib/schemas/t";
 import { adminApp } from "@/modules/admin";
 import { customerApp } from "@/modules/customer";
 import { locationsApp } from "@/modules/locations";
 import { meApp } from "@/modules/me";
 import { registrationApp } from "@/modules/registration";
 import { sellerApp, sellerGuards } from "@/modules/seller";
+import { DiscountSchema } from "@/schemas/discount";
+import {
+	OkMessage,
+	okPageRes,
+	withConflictErrors,
+	withErrors,
+} from "@/schemas/responses";
+import { zDate, zInteger } from "@/schemas/t";
 import { cases } from "./parity-cases";
 
 // D11 del piano Hono: il generatore nel repo produce per le route Hono lo

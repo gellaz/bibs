@@ -29,7 +29,7 @@ Stripe entra in entrambi, ma in modo diverso:
 
 Ogni negozio sceglie quali tipologie offrire (colonna `stores.order_types`); la regola
 unica su cosa vede il cliente è `offeredOrderTypes` in
-[`apps/api/src/lib/order-types.ts`](../apps/api/src/lib/order-types.ts).
+[`apps/api/src/domain/orders/order-types.ts`](../apps/api/src/domain/orders/order-types.ts).
 
 | Tipo (`order.type`) | Etichetta in app | Pagamento | Stato oggi |
 |---|---|---|---|
@@ -253,7 +253,7 @@ Come gira nel codice:
 - `orders.points_discount` fissa lo sconto in euro alla creazione; `orders.total` resta
   quanto paga il cliente. La commissione si calcola sul lordo (`total + points_discount`).
 - La quota del negozio (lordo − commissione) parte in **due trasferimenti**
-  (`storePayoutSplit` in `apps/api/src/lib/platform-fee.ts`). Stripe non lascia trasferire,
+  (`storePayoutSplit` in `apps/api/src/domain/billing/platform-fee.ts`). Stripe non lascia trasferire,
   legato a un pagamento, più di quanto è stato pagato:
 
   | Trasferimento | Importo nell'esempio | Da dove esce | Id sull'ordine |
@@ -322,16 +322,16 @@ riprova»): l'app mostra un avviso e riporta al carrello, e l'anteprima viene ri
 
 | Cosa | File |
 |---|---|
-| Tipologie offerte al checkout | `apps/api/src/lib/order-types.ts` |
-| Commissione | `apps/api/src/lib/config.ts`, `apps/api/src/lib/platform-fee.ts` |
+| Tipologie offerte al checkout | `apps/api/src/domain/orders/order-types.ts` |
+| Commissione | `apps/api/src/lib/config.ts`, `apps/api/src/domain/billing/platform-fee.ts` |
 | Checkout (un ordine per negozio, un PaymentIntent) | `apps/api/src/modules/customer/services/checkout.ts` |
-| Ripartizione dei punti tra gli ordini | `apps/api/src/lib/points-allocation.ts` |
-| Minimo online 0,50 € (regola condivisa da punti, anteprima e conferma) | `apps/api/src/lib/online-charge.ts` |
+| Ripartizione dei punti tra gli ordini | `apps/api/src/modules/customer/services/points-allocation.ts` |
+| Minimo online 0,50 € (regola condivisa da punti, anteprima e conferma) | `apps/api/src/domain/billing/online-charge.ts` |
 | Anteprima del checkout | `apps/api/src/modules/customer/services/checkout.ts` (`previewCheckout`) |
 | Creazione ordine, totale, punti, IVA | `apps/api/src/modules/customer/services/orders.ts` |
-| PaymentIntent, trasferimenti, rimborsi, storni | `apps/api/src/modules/billing/services/order-payments.ts` |
+| PaymentIntent, trasferimenti, rimborsi, storni | `apps/api/src/domain/billing/order-payments.ts` |
 | Scadenze (30 min pagamento, prenotazione sulle ore del negozio + 15 min) | `apps/api/src/jobs/expire-unpaid-orders.ts`, `expire-reservations.ts` |
 | Ritentativo dei trasferimenti ai negozi | `apps/api/src/jobs/retry-store-transfers.ts` |
-| Stati e transizioni d'ordine | `apps/api/src/lib/order-state-machine.ts` |
-| Conto Connect del seller | `apps/api/src/modules/billing/services/connect-account.ts`, `apps/api/src/lib/connect-status.ts` |
+| Stati e transizioni d'ordine | `apps/api/src/domain/orders/order-state-machine.ts` |
+| Conto Connect del seller | `apps/api/src/domain/billing/connect-account.ts`, `apps/api/src/domain/billing/connect-status.ts` |
 | Abbonamenti e webhook | `apps/api/src/modules/webhooks/`, [stripe-billing.md](stripe-billing.md) |

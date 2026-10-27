@@ -2,14 +2,14 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
-import { ServiceError } from "@/lib/errors";
+import { getDefaultPaymentMethod } from "@/domain/billing/connect-account";
 import {
 	offeredOrderTypes,
 	type StoreOrderType,
 	storeOrderTypes,
-} from "@/lib/order-types";
-import { resolveReservationDeadlines } from "@/lib/store-open-status";
-import { getDefaultPaymentMethod } from "@/modules/billing/services/connect-account";
+} from "@/domain/orders/order-types";
+import { resolveReservationDeadlines } from "@/domain/stores/store-open-status";
+import { ServiceError } from "@/lib/errors";
 
 interface StoreRef {
 	sellerProfileId: string;

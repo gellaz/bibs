@@ -10,18 +10,18 @@ import {
 	store as storeTable,
 } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import type { CustomClosure } from "@/domain/holidays";
+import { validateOpeningHours } from "@/domain/stores/opening-hours";
+import { resolveOpenStatuses } from "@/domain/stores/store-open-status";
 import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import type { CustomClosure } from "@/lib/holidays";
+import { parsePagination } from "@/lib/pagination";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/lib/municipality";
-import { validateOpeningHours } from "@/lib/opening-hours";
-import { parsePagination } from "@/lib/pagination";
-import type { OpeningHoursSchema } from "@/lib/schemas/forms/opening-hours";
-import { resolveOpenStatuses } from "@/lib/store-open-status";
+} from "@/modules/seller/services/municipality";
+import type { OpeningHoursSchema } from "@/schemas/forms/opening-hours";
 
 type OpeningHours = z.infer<typeof OpeningHoursSchema>;
 

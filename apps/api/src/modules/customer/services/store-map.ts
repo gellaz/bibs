@@ -8,8 +8,11 @@ import type {
 	CustomClosure,
 	OpeningHoursDay,
 	OpenStatus,
-} from "@/lib/holidays";
-import { openNowCondition, resolveOpenStatuses } from "@/lib/store-open-status";
+} from "@/domain/holidays";
+import {
+	openNowCondition,
+	resolveOpenStatuses,
+} from "@/domain/stores/store-open-status";
 import type { StoreFilterParams } from "./store-search-conditions";
 import { storeFilterConditions } from "./store-search-conditions";
 

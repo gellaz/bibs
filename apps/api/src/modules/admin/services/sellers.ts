@@ -16,6 +16,12 @@ import { user } from "@/db/schemas/auth";
 import { organization, type VatStatus } from "@/db/schemas/organization";
 import { type OnboardingStatus, sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
+import { deleteDocumentImage } from "@/domain/sellers/documents";
+import {
+	notifySellerApproved,
+	notifySellerChangeDecided,
+	notifySellerRejected,
+} from "@/domain/sellers/onboarding-notifications";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
@@ -24,13 +30,7 @@ import {
 	type RejectSellerBody,
 	type SellerRejectionFixStep,
 	VatChangeBody,
-} from "@/lib/schemas/forms";
-import {
-	notifySellerApproved,
-	notifySellerChangeDecided,
-	notifySellerRejected,
-} from "@/modules/seller/services/onboarding-notifications";
-import { deleteDocumentImage } from "@/modules/seller/services/settings";
+} from "@/schemas/forms";
 
 /** Statuses visible to admins (past onboarding steps). */
 const REVIEWABLE_STATUSES: OnboardingStatus[] = [

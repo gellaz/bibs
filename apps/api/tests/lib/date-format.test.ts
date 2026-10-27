@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 // Deliberately no API app import: this is the seller form's path, which
 // validates the shared schemas on their own, without the API app.
-import { DocumentBody, PersonalInfoBody } from "@/lib/schemas/forms";
+import { DocumentBody, PersonalInfoBody } from "@/schemas/forms";
 
 const PERSONAL = {
 	firstName: "Mario",

@@ -6,8 +6,8 @@ import { okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { OkMessage, okRes, withErrors } from "@/lib/schemas/responses";
-import { zFile } from "@/lib/schemas/t";
+import { OkMessage, okRes, withErrors } from "@/schemas/responses";
+import { zFile } from "@/schemas/t";
 import { deleteUserAvatar, uploadUserAvatar } from "../services/avatar";
 
 export const AvatarResponse = okRes(

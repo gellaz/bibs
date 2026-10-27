@@ -5,9 +5,9 @@ import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { PointTransactionSchema } from "@/lib/schemas/entities";
-import { PaginationQuery } from "@/lib/schemas/pagination";
-import { okRes, withErrors } from "@/lib/schemas/responses";
+import { PointTransactionSchema } from "@/schemas/entities";
+import { PaginationQuery } from "@/schemas/pagination";
+import { okRes, withErrors } from "@/schemas/responses";
 import { customerSecurity } from "../context";
 import { getPointsHistory } from "../services/points";
 

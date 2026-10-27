@@ -24,7 +24,7 @@ mock.module("@/db", () => ({
 
 import { holidayDefinition } from "@/db/schemas/holiday-definition";
 import { storeHolidayOptout } from "@/db/schemas/store-holiday-optout";
-import { addDaysYMD, dowFromYMD } from "@/lib/holidays";
+import { addDaysYMD, dowFromYMD } from "@/domain/holidays";
 import { searchStores } from "@/modules/customer/services/store-discovery";
 import { getStoreFacets } from "@/modules/customer/services/store-facets";
 import { getStoreMapPins } from "@/modules/customer/services/store-map";

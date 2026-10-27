@@ -2,12 +2,12 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
-import { logger } from "@/infra/logger";
-import { stripe } from "@/infra/stripe";
 import {
 	settleCheckoutPayment,
 	transferStorePayouts,
-} from "@/modules/billing/services/order-payments";
+} from "@/domain/billing/order-payments";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 
 /**
  * Rete dietro al webhook: un PR2 pagato con un trasferimento al negozio

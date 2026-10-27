@@ -65,6 +65,28 @@ After making code changes, always run `bun run typecheck` to verify there are no
 
 ## Architecture
 
+### Source layout — `src/`
+
+| Folder | What it holds |
+|---|---|
+| `http/` (+ `middleware/`) | The HTTP kit: validation, responses, guards, errors, OpenAPI, middleware, `/health` and `/openapi` |
+| `infra/` | Adapters to external systems: env, logger, S3, Stripe, email, better-auth, geocoding |
+| `domain/<area>/` | Business rules used by more than one module or by the jobs: `billing`, `orders`, `pricing`, `stores`, `holidays`, `catalog`, `sellers` |
+| `jobs/` | The background jobs and `scheduler.ts` |
+| `schemas/` | Zod schemas; `forms/` is exported as `@bibs/api/schemas` |
+| `lib/` | Generic utilities with no business meaning: `config`, `errors`, `like`, `list-by-name-paged`, `money`, `pagination` |
+| `modules/<role>/` | HTTP only, one per role: `index.ts`, `routes/`, the role's own `services/`, `context.ts` |
+| `db/`, `scripts/` | Drizzle (schema, migrations, seed) and command-line scripts |
+
+Where a new file goes: used by one module → inside that module; used by several modules or by the jobs and it is a
+business rule → `domain/<area>/`; generic → `lib/`; talks to an external system → `infra/`; only about the HTTP request
+→ `http/`.
+
+Who may import what, enforced by `tests/unit/architecture.test.ts`: **A.** a module never imports another module;
+**B.** outside `modules/` nothing imports `modules/`, except `app.ts`, `types.ts`, `db/seed/` and `scripts/`; **C.**
+`lib/` imports only `lib/` and `db/`. Never give an API file a path that exists in `apps/<fe>/src/` (`env.ts`,
+`lib/<name>`, `routes/`, …): the frontends' `@/` alias would shadow it.
+
 ### App — `src/app.ts`
 
 The root Hono app, with no side effects at import (tests, tools and the Hono CLI import it):
@@ -126,9 +148,9 @@ The HTTP kit the routes use lives in `src/http/`: `moduleApp()` (`app.ts`), `v()
 
 Test data can be seeded separately via `bun run db:seed` (see `src/db/seed/`).
 
-### Schemas — `src/lib/schemas/`
+### Schemas — `src/schemas/`
 
-Zod schemas, imported from their own file (no barrel): `@/lib/schemas/entities`, `@/lib/schemas/responses`, …
+Zod schemas, imported from their own file (no barrel): `@/schemas/entities`, `@/schemas/responses`, …
 
 - **`t.ts`** — constructors for the API's own rules: `zString` (lengths in UTF-16 units, pattern, format), `zInteger`
   (an integer or a string holding one) and `zInt()` (a number only, used by the shared forms), both checked with
@@ -200,7 +222,7 @@ Utilities for safe monetary arithmetic:
 
 All monetary calculations use cents internally to avoid floating-point errors.
 
-### Order State Machine — `src/lib/order-state-machine.ts`
+### Order State Machine — `src/domain/orders/order-state-machine.ts`
 
 Defines valid status transitions per order type using typed keys (
 `Partial<Record<OrderStatus, Partial<Record<OrderStatus, readonly OrderType[]>>>>`):
@@ -212,7 +234,7 @@ Defines valid status transitions per order type using typed keys (
 
 `assertTransition(from, to, orderType)` throws `ServiceError(400)` if the transition is invalid.
 
-### Order Helpers — `src/lib/order-helpers.ts`
+### Order Helpers — `src/domain/orders/order-helpers.ts`
 
 Shared helper `refundStockAndPoints(tx, order)` for restocking items and refunding loyalty points within an existing DB
 transaction. Used by cancellation, expiry, and pickup-expired flows to avoid code duplication.
@@ -221,7 +243,7 @@ transaction. Used by cancellation, expiry, and pickup-expired flows to avoid cod
 
 Each store picks how long a `reserve_pickup` reservation lasts: `stores.reservation_hours` (1–72, default 24) **opening
 hours**. `insertOrder` computes the deadline once, at confirmation, with the pure `reservationDeadline()`
-(`src/lib/holidays/reservation-deadline.ts`) fed by `resolveReservationDeadlines()` (`src/lib/store-open-status.ts`):
+(`src/domain/holidays/reservation-deadline.ts`) fed by `resolveReservationDeadlines()` (`src/domain/stores/store-open-status.ts`):
 it walks the store's slots in Europe/Rome time, skipping closures and holidays (opt-outs respected). A store without
 declared hours, or with no opening within 60 days, falls back to calendar hours. The deadline is stored in
 `orders.reservation_expires_at` and never recomputed.
@@ -232,14 +254,14 @@ allow `config.reservationGraceMinutes` (15) past the deadline (`reservationGrace
 at closing time, and a customer served at 19:01 must not lose a 19:00 reservation. Customers always see the real deadline.
 
 On expiry, the order status is set to `expired`, stock and points are refunded via the shared `refundStockAndPoints()`
-helper. `expireSingleReservation(orderId)` is also exported for one-off use; both paths transactionally re-check the
+helper. `expireSingleReservation(orderId)` (`src/domain/orders/reservation-expiry.ts`) serves one-off use; both paths transactionally re-check the
 status, so concurrent runs are idempotent.
 
 ### Pagination — `src/lib/pagination.ts`
 
 Reusable pagination utilities:
 
-- `PaginationQuery` (`src/lib/schemas/pagination.ts`) — Zod schema for the `page` and `limit` query params
+- `PaginationQuery` (`src/schemas/pagination.ts`) — Zod schema for the `page` and `limit` query params
   (`v("query", PaginationQuery)`, or spread its fields into the route's query schema)
 - `parsePagination(query)` (`src/lib/pagination.ts`) — returns `{ page, limit, offset }` from parsed query params
 
@@ -307,7 +329,7 @@ domain map:
       also kept in sync by `POST /webhooks/stripe/connect` (`account.updated`). Owner-only; not exposed to employees.
     - `GET /settings` returns profile + organization + `onlinePayments` status (owner-only, `null` for employees) +
       pending change requests.
-  - Access resolved from seller (owner) or employee role by `resolveSellerAccess` (`context.ts`)
+  - Access resolved from seller (owner) or employee role by `resolveSellerAccess` (`src/domain/sellers/access.ts`)
     into `c.var.seller`. Ownership checks in `context.ts` (`ensureProductOwnership`,
     `requireOwner`). Store IDs are lazy-loaded via `c.var.seller.getStoreIds()`.
 - `customer/` (`/customer`) — geo search (PostGIS), profile, addresses, orders (4 types: direct,
@@ -328,9 +350,9 @@ domain map:
   required on Bun), same `stripe_events` idempotency table and dispatcher for both
   routes, per-event handlers in `services/handlers/`. Dev setup and event flow:
   [docs/stripe-billing.md](../../docs/stripe-billing.md).
-- `billing/` — internal services only (Stripe customer management + Connect account
-  onboarding/refresh in `services/connect-account.ts`, Accounts v2 `recipient`); no routes of its own (mounted
-  under `seller/settings`).
+- Billing is not a module: Stripe customer management, Connect account onboarding/refresh (Accounts v2
+  `recipient`) and order payments live in `src/domain/billing/` (`stripe-customer.ts`, `connect-account.ts`,
+  `order-payments.ts`), used by `seller/settings`, checkout, the webhooks and the jobs.
 
 **Guards and route context.** Authentication is per route, never per module: each route lists its guard after its
 validators, and the guard puts what it resolved in `c.var`, typed by its Env (`src/http/auth.ts`):
@@ -356,7 +378,7 @@ search) is extracted into `services/` sub-folders under each module. Services us
 operations and atomic SQL expressions (`SET stock = stock - $n WHERE stock >= $n`) to prevent race conditions.
 
 All list endpoints accept `page` and `limit` query parameters for pagination (defaults in `src/lib/config.ts`). Use
-`PaginationQuery` from `src/lib/schemas/pagination.ts` for the query schema and `parsePagination()` for offset
+`PaginationQuery` from `src/schemas/pagination.ts` for the query schema and `parsePagination()` for offset
 calculation.
 
 ### Database — `src/db/`
@@ -531,8 +553,8 @@ This is the step-by-step process. `src/modules/seller/routes/brands.ts` is a com
 
 ### 1. Define the Zod schemas
 
-Shared entity schemas go in `src/lib/schemas/entities.ts`; route-only inputs at the top of the route file (or in
-`src/lib/schemas/<module>.ts` when tests reuse them). Use the constructors of `src/lib/schemas/t.ts` for strings with
+Shared entity schemas go in `src/schemas/entities.ts`; route-only inputs at the top of the route file (or in
+`src/schemas/<module>.ts` when tests reuse them). Use the constructors of `src/schemas/t.ts` for strings with
 lengths, integers, dates, formats and files:
 
 ```ts
@@ -583,10 +605,10 @@ import {send} from "@/http/send";
 import {v} from "@/http/validator";
 import {logger} from "@/infra/logger";
 import {ok, okPage} from "@/http/responses";
-import {MyEntitySchema} from "@/lib/schemas/entities";
-import {PaginationQuery} from "@/lib/schemas/pagination";
-import {okPageRes, okRes, withErrors} from "@/lib/schemas/responses";
-import {zString} from "@/lib/schemas/t";
+import {MyEntitySchema} from "@/schemas/entities";
+import {PaginationQuery} from "@/schemas/pagination";
+import {okPageRes, okRes, withErrors} from "@/schemas/responses";
+import {zString} from "@/schemas/t";
 import {adminDetail} from "../context";
 import {createMyEntity, listMyEntities} from "../services/my-entities";
 
@@ -730,7 +752,7 @@ Postgres constraint violations (`23505` → 409, `23503` → 409 or 400, `23514`
 
 Validation errors (422) are translated centrally by `src/http/validation-message.ts`, with the rules and labels of
 `src/http/validation-message.ts`, from the first Zod issue — the one the API has always reported first
-(`src/lib/schemas/issues.ts`): `«Etichetta: regola»` (e.g. «Quantità (riga 2): deve essere un numero intero»). Don't
+(`src/schemas/issues.ts`): `«Etichetta: regola»` (e.g. «Quantità (riga 2): deve essere un numero intero»). Don't
 add an `error` meta to schemas just to translate them; use it only for a message more specific than the generic
 rule. A new input field
 gets its Italian label in `FIELD_LABELS` (fields not listed fall back to the technical path); a `title` on the schema wins, for names whose meaning changes between routes (e.g. geocode `limit`). The log carries
@@ -771,7 +793,7 @@ const total = fromCents(totalCents); // "19.98"
 
 ### Pagination
 
-All list endpoints must support pagination using `PaginationQuery` (`src/lib/schemas/pagination.ts`) for the query
+All list endpoints must support pagination using `PaginationQuery` (`src/schemas/pagination.ts`) for the query
 schema and `parsePagination()` for offset calculation.
 
 ### Logging

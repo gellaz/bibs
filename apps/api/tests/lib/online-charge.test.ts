@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { isBelowOnlineMinimum } from "@/lib/online-charge";
+import { isBelowOnlineMinimum } from "@/domain/billing/online-charge";
 
 describe("isBelowOnlineMinimum", () => {
 	it("0 €: niente da incassare, permesso", () => {

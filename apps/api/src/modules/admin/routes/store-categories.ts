@@ -6,14 +6,14 @@ import { ok, okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { StoreCategorySchema } from "@/lib/schemas/entities";
+import { StoreCategorySchema } from "@/schemas/entities";
 import {
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
-import { zString } from "@/lib/schemas/t";
+} from "@/schemas/responses";
+import { zString } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
 	createStoreCategory,

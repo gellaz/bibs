@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
 import { send } from "@/http/send";
-import { okRes } from "@/lib/schemas/responses";
-import { zDate, zInteger } from "@/lib/schemas/t";
+import { okRes } from "@/schemas/responses";
+import { zDate, zInteger } from "@/schemas/t";
 
 // `send()` fa quello che la `response` delle route faceva prima di Hono (D4
 // del piano Hono): toglie i campi fuori schema a ogni profondità, i Date

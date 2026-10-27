@@ -7,7 +7,7 @@ import {
 	toCharacteristicDisplayValue,
 	toCharacteristicOutputValue,
 	validateCharacteristicValues,
-} from "@/lib/characteristic-values";
+} from "@/domain/catalog/characteristic-values";
 
 const peso: CharacteristicDefinition = {
 	id: "c-peso",

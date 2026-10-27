@@ -5,9 +5,9 @@ import { okPage } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { StoreCategoryWithMacroSchema } from "@/lib/schemas/entities";
-import { CategoryListQuery } from "@/lib/schemas/queries";
-import { okPageRes, withErrors } from "@/lib/schemas/responses";
+import { StoreCategoryWithMacroSchema } from "@/schemas/entities";
+import { CategoryListQuery } from "@/schemas/queries";
+import { okPageRes, withErrors } from "@/schemas/responses";
 import { listStoreCategories } from "../services/store-categories";
 
 const StoreCategoryListQuery = CategoryListQuery.extend({

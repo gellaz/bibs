@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { computeEaster } from "@/lib/holidays/easter";
+import { computeEaster } from "@/domain/holidays/easter";
 
 describe("computeEaster (Gregorian Computus)", () => {
 	const cases: Array<[number, number, number]> = [

@@ -9,7 +9,7 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
-import { IDENTITY_DOCUMENT_TYPES } from "../../lib/schemas/forms/identity-document";
+import { IDENTITY_DOCUMENT_TYPES } from "../../schemas/forms/identity-document";
 import { user } from "./auth";
 import { storeEmployee } from "./employee";
 import { employeeInvitation } from "./employee-invitation";

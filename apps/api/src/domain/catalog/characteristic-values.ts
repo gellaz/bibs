@@ -2,7 +2,7 @@ import type { CharacteristicDataType } from "@/db/schemas/product-characteristic
 
 /**
  * Validazione dei valori delle caratteristiche di prodotto. Logica pura, come
- * lib/vat.ts: le definizioni (la matrice della sotto-categoria, con tipo e
+ * domain/pricing/vat.ts: le definizioni (la matrice della sotto-categoria, con tipo e
  * opzioni) arrivano già caricate, e il risultato dice cosa scrivere, cosa
  * cancellare e cosa rifiutare. Il database ha comunque il suo CHECK sulla
  * colonna giusta: qui si produce il messaggio che il venditore legge.

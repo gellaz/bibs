@@ -13,13 +13,13 @@ import {
 } from "@/db/schemas/location";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store as storeTable } from "@/db/schemas/store";
+import { getSellerStoreIds } from "@/domain/sellers/access";
 import { sendEmail } from "@/infra/email";
 import { env } from "@/infra/env";
 import { logger } from "@/infra/logger";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
-import { userSummaryWith } from "@/lib/user-summary";
-import { getSellerStoreIds } from "../context";
+import { userSummaryWith } from "@/modules/seller/services/user-summary";
 
 /** Invitation token validity: 7 days */
 const INVITATION_EXPIRY_DAYS = 7;

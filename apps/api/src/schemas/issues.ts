@@ -287,7 +287,7 @@ function collapse(issues: Issue[], checked: Checked) {
 
 const NO_VALUE = Symbol("no-value");
 
-/** Lo schema e il valore che si controlla davvero (`lib/schemas/mirror.ts`). */
+/** Lo schema e il valore che si controlla davvero (`schemas/mirror.ts`). */
 export interface Checked {
 	schema: z.ZodType;
 	value: unknown;

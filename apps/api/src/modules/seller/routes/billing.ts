@@ -6,8 +6,8 @@ import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { okRes, withErrors } from "@/lib/schemas/responses";
-import { zDate, zInteger } from "@/lib/schemas/t";
+import { okRes, withErrors } from "@/schemas/responses";
+import { zDate, zInteger } from "@/schemas/t";
 import { requireOwner } from "../context";
 import {
 	createPortalSession,

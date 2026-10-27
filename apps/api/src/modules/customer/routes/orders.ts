@@ -6,15 +6,15 @@ import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { CustomerOrderWithRelationsSchema } from "@/lib/schemas/composed";
-import { OrderSchema } from "@/lib/schemas/entities";
-import { OrderListQuery } from "@/lib/schemas/queries";
+import { CustomerOrderWithRelationsSchema } from "@/schemas/composed";
+import { OrderSchema } from "@/schemas/entities";
+import { OrderListQuery } from "@/schemas/queries";
 import {
 	okPageRes,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
+} from "@/schemas/responses";
 import { customerSecurity } from "../context";
 import {
 	cancelOrder,

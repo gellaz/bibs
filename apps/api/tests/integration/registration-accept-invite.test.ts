@@ -195,7 +195,7 @@ describe("acceptInvite storeEmployeeStores propagation", () => {
 
 		// …and the dormant row grants nothing: only the live store is accessible.
 		const { getEmployeeAssignedStoreIds } = await import(
-			"@/modules/seller/services/access"
+			"@/domain/sellers/access"
 		);
 		const accessible = await getEmployeeAssignedStoreIds(
 			employeeUser.id,

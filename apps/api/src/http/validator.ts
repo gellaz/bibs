@@ -3,14 +3,14 @@ import type { Context, MiddlewareHandler } from "hono";
 import { getQueryParams } from "hono/utils/url";
 import { z } from "zod";
 import { deepTrim } from "@/http/deep-trim";
-import { firstIssue } from "@/lib/schemas/issues";
-import { coercedKeys, mirrorValue } from "@/lib/schemas/mirror";
+import { firstIssue } from "@/schemas/issues";
+import { coercedKeys, mirrorValue } from "@/schemas/mirror";
 import {
 	fileExtensions,
 	matchesFileType,
 	zBooleanString,
 	zNumeric,
-} from "@/lib/schemas/t";
+} from "@/schemas/t";
 import { InvalidFileTypeError, RequestValidationError } from "./errors";
 import { zodValidationMessage } from "./validation-message";
 
@@ -18,7 +18,7 @@ import { zodValidationMessage } from "./validation-message";
 // di prima (D2, D4, D5 del piano Hono). In ordine: lettura del body come
 // prima (per Content-Type, non per target), trim profondo tranne le chiavi
 // password (`deep-trim.ts`), default della radice e pulizia di prima
-// (`lib/schemas/mirror.ts`), coercizione di query e params, default
+// (`schemas/mirror.ts`), coercizione di query e params, default
 // dello schema, campi sconosciuti tolti a ogni profondità (`z.object`),
 // controllo, decodifica, magic byte dei file. Primo errore → 422 italiano.
 // In una route i v() vanno params → query → body e prima dell'auth
@@ -221,7 +221,7 @@ export async function validate<S extends z.ZodType>(
 ): Promise<z.output<S>> {
 	const isBody = target === "json" || target === "form";
 	// Il valore che si controlla, come prima: body trimmato, default della radice e
-	// pulizia di exact-mirror (`lib/schemas/mirror.ts`); i params li controlla com'è.
+	// pulizia di exact-mirror (`schemas/mirror.ts`); i params li controlla com'è.
 	const on = isBody ? "body" : "query";
 	const value =
 		target === "param"

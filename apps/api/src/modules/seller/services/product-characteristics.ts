@@ -10,7 +10,7 @@ import {
 import {
 	assertValueLossConfirmed,
 	type Executor,
-} from "@/lib/characteristic-impact";
+} from "@/domain/catalog/characteristic-impact";
 import {
 	type CharacteristicDefinition,
 	type CharacteristicValueInput,
@@ -18,7 +18,7 @@ import {
 	missingRequired,
 	toCharacteristicOutputValue,
 	validateCharacteristicValues,
-} from "@/lib/characteristic-values";
+} from "@/domain/catalog/characteristic-values";
 import { ServiceError } from "@/lib/errors";
 
 export interface FormCharacteristic extends CharacteristicDefinition {

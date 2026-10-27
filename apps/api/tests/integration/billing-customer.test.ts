@@ -37,7 +37,7 @@ mock.module("@/infra/stripe", () => ({
 
 import { eq } from "drizzle-orm";
 import { sellerProfile } from "@/db/schemas/seller";
-import { getOrCreateStripeCustomer } from "@/modules/billing/services/customer";
+import { getOrCreateStripeCustomer } from "@/domain/billing/stripe-customer";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestSeller } from "../helpers/fixtures";
 

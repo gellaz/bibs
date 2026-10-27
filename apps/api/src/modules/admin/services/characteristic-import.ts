@@ -13,7 +13,7 @@ import {
 	countValuesByCharacteristic,
 	countValuesByOption,
 	sumCounts,
-} from "@/lib/characteristic-impact";
+} from "@/domain/catalog/characteristic-impact";
 import { ServiceError } from "@/lib/errors";
 import { parseCsv } from "@/lib/utils/csv";
 

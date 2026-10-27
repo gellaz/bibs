@@ -6,14 +6,14 @@ import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { SellerProfileSchema } from "@/lib/schemas/entities";
+import { SellerProfileSchema } from "@/schemas/entities";
 import {
 	CompanyBody,
 	DocumentBody,
 	PersonalInfoBody,
-} from "@/lib/schemas/forms/onboarding";
-import { okRes, withConflictErrors, withErrors } from "@/lib/schemas/responses";
-import { zFile } from "@/lib/schemas/t";
+} from "@/schemas/forms/onboarding";
+import { okRes, withConflictErrors, withErrors } from "@/schemas/responses";
+import { zFile } from "@/schemas/t";
 import {
 	getOnboardingStatus,
 	goBack,

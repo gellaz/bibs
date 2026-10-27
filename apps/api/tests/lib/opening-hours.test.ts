@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { validateOpeningHours } from "@/lib/opening-hours";
+import { validateOpeningHours } from "@/domain/stores/opening-hours";
 
 describe("validateOpeningHours", () => {
 	it("accepts a valid week (sorted and unsorted slots)", () => {

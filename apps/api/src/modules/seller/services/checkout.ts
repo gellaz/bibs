@@ -4,12 +4,12 @@ import { db } from "@/db";
 import { pendingStoreCreation } from "@/db/schemas/pending-store-creation";
 import { pricingConfig } from "@/db/schemas/pricing-config";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { getOrCreateStripeCustomer } from "@/domain/billing/stripe-customer";
+import { validateOpeningHours } from "@/domain/stores/opening-hours";
 import { env } from "@/infra/env";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import { validateOpeningHours } from "@/lib/opening-hours";
-import type { CreateStoreBody } from "@/lib/schemas/forms";
-import { getOrCreateStripeCustomer } from "@/modules/billing/services/customer";
+import type { CreateStoreBody } from "@/schemas/forms";
 
 type CreateStoreInput = z.infer<typeof CreateStoreBody>;
 

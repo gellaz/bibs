@@ -99,7 +99,7 @@ import {
 	createOnboardingLink,
 	refreshConnectAccount,
 	syncOnlinePayments,
-} from "@/modules/billing/services/connect-account";
+} from "@/domain/billing/connect-account";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestSeller } from "../helpers/fixtures";
 

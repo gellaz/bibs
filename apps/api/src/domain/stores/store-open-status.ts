@@ -9,7 +9,7 @@ import type {
 	OpeningHoursDay,
 	OpenStatus,
 	ReservationClock,
-} from "@/lib/holidays";
+} from "@/domain/holidays";
 import {
 	addDaysYMD,
 	dowFromYMD,
@@ -18,7 +18,7 @@ import {
 	resolveOccurrences,
 	resolveStoreClosedDates,
 	ymdToYear,
-} from "@/lib/holidays";
+} from "@/domain/holidays";
 
 /** Data e ora correnti a Roma: "YYYY-MM-DD" + "HH:mm". */
 function romeNow(now: Date): { date: string; time: string } {

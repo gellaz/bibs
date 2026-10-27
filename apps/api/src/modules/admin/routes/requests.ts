@@ -8,9 +8,9 @@ import { v } from "@/http/validator";
 import {
 	AdminChangeDetailSchema,
 	AdminRequestRowSchema,
-} from "@/lib/schemas/composed";
-import { PaginationQuery } from "@/lib/schemas/pagination";
-import { okPageRes, okRes, withErrors } from "@/lib/schemas/responses";
+} from "@/schemas/composed";
+import { PaginationQuery } from "@/schemas/pagination";
+import { okPageRes, okRes, withErrors } from "@/schemas/responses";
 import { adminDetail } from "../context";
 import {
 	countRequests,

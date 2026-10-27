@@ -6,19 +6,19 @@ import { ok, okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { StoreProductSchema } from "@/lib/schemas/entities";
+import { StoreProductSchema } from "@/schemas/entities";
 import {
 	OkMessage,
 	okRes,
 	withConflictErrors,
 	withErrors,
-} from "@/lib/schemas/responses";
+} from "@/schemas/responses";
 import {
 	StockAdjustBody,
 	StockBulkAdjustBody,
 	StockBulkAdjustResult,
-} from "@/lib/schemas/stock";
-import { zInteger } from "@/lib/schemas/t";
+} from "@/schemas/stock";
+import { zInteger } from "@/schemas/t";
 import { ensureStoreAccess } from "../context";
 import {
 	adjustStock,

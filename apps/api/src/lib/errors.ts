@@ -17,7 +17,7 @@ export const ERROR_CODES = {
 
 // Codici extra per status 409 — emessi dalle sottoclassi dedicate
 // (EmailAlreadyRegisteredError, PendingVerificationError) e dichiarati
-// nello schema ConflictError di apps/api/src/lib/schemas/responses.ts.
+// nello schema ConflictError di apps/api/src/schemas/responses.ts.
 export const EXTRA_ERROR_CODES = [
 	"EMAIL_ALREADY_REGISTERED",
 	"EMAIL_PENDING_VERIFICATION",

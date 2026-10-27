@@ -353,9 +353,9 @@ change and the `hc` clients still typecheck from root. Drizzle schema changes:
 When adding a route under `apps/api/src/`, follow the existing pattern (a compact reference:
 `src/modules/seller/routes/brands.ts`; step by step in [apps/api/AGENTS.md](apps/api/AGENTS.md#how-to-add-a-new-endpoint)):
 
-1. **Zod schemas** in `apps/api/src/lib/schemas/` (shared) or at the top of the route file, with an Italian
+1. **Zod schemas** in `apps/api/src/schemas/` (shared) or at the top of the route file, with an Italian
    `description` (`.meta({ description })` or the constructor option). Use the constructors of
-   `lib/schemas/t.ts` (`zString`, `zInteger`, `zInt`, `zDate`, `zFormat`, `zFile`, `zFiles`) instead of
+   `schemas/t.ts` (`zString`, `zInteger`, `zInt`, `zDate`, `zFormat`, `zFile`, `zFiles`) instead of
    `z.string().min()/.max()`, `z.int()` or Zod's formats: they keep the API's rules (lengths in UTF-16 units,
    integers without safe-int limits, the API's formats) and its OpenAPI shape.
 2. **One sub-app per module.** A route file exports a *chained* `new Hono().get(…).post(…)` (a route added in
@@ -375,7 +375,7 @@ When adding a route under `apps/api/src/`, follow the existing pattern (a compac
    `customerProfile`, `seller`).
 5. **Response** with `send(c, Schema, ok(data))` (or `okPage(data, pagination)`, `okMessage("…")` from
    `src/http/responses.ts`), where `Schema` is `okRes(X)` / `okPageRes(X)` / `OkMessage`
-   (`src/lib/schemas/responses.ts`), the same schema listed in `doc({ response: withErrors({ 200: Schema }) })`
+   (`src/schemas/responses.ts`), the same schema listed in `doc({ response: withErrors({ 200: Schema }) })`
    (`withConflictErrors` when a 409 is possible). `send()` drops fields outside the schema (internal columns
    never leak), writes `Date` as ISO strings and turns an off-schema payload into a 500; it is also what
    types the `hc` response. Never `c.json()` for a success body.

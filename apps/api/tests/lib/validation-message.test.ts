@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
 import { v } from "@/http/validator";
-import type { FormatName } from "@/lib/schemas/formats";
-import { zDate, zFormat, zInteger, zString } from "@/lib/schemas/t";
+import type { FormatName } from "@/schemas/formats";
+import { zDate, zFormat, zInteger, zString } from "@/schemas/t";
 
 // Il messaggio del 422 passa davvero dal validatore (`v()`): i dettagli
 // dell'errore (tipo, path, rami di zInteger/nullable) sono quelli che produce

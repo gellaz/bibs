@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { offeredOrderTypes, type StoreOrderType } from "@/lib/order-types";
+import {
+	offeredOrderTypes,
+	type StoreOrderType,
+} from "@/domain/orders/order-types";
 
 const both: StoreOrderType[] = ["reserve_pickup", "pay_pickup"];
 

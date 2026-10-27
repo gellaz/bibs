@@ -6,9 +6,9 @@ import { ok, okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
-import { StoreMacroCategorySchema } from "@/lib/schemas/entities";
-import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas/responses";
-import { zString } from "@/lib/schemas/t";
+import { StoreMacroCategorySchema } from "@/schemas/entities";
+import { OkMessage, okRes, withConflictErrors } from "@/schemas/responses";
+import { zString } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
 	createStoreMacroCategory,

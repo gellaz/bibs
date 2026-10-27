@@ -4,9 +4,9 @@ import { okPage } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { ProductMacroCategorySchema } from "@/lib/schemas/entities";
-import { CategoryListQuery } from "@/lib/schemas/queries";
-import { okPageRes, withErrors } from "@/lib/schemas/responses";
+import { ProductMacroCategorySchema } from "@/schemas/entities";
+import { CategoryListQuery } from "@/schemas/queries";
+import { okPageRes, withErrors } from "@/schemas/responses";
 import { listProductMacroCategories } from "../services/product-macro-categories";
 
 const ProductMacroCategoryListResponse = okPageRes(ProductMacroCategorySchema);

@@ -3,9 +3,9 @@ import { db } from "@/db";
 import { holidayDefinition } from "@/db/schemas/holiday-definition";
 import { store as storeTable } from "@/db/schemas/store";
 import { storeHolidayOptout } from "@/db/schemas/store-holiday-optout";
+import type { CustomClosure, HolidayDef } from "@/domain/holidays";
+import { resolveOccurrences } from "@/domain/holidays";
 import { ServiceError } from "@/lib/errors";
-import type { CustomClosure, HolidayDef } from "@/lib/holidays";
-import { resolveOccurrences } from "@/lib/holidays";
 
 async function loadOwnedStore(storeId: string, sellerProfileId: string) {
 	const s = await db.query.store.findFirst({

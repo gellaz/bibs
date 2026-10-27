@@ -6,8 +6,8 @@ import {
 	RegisterCustomerResult,
 	RegisterSellerResult,
 	SignInResult,
-} from "@/lib/schemas/composed";
-import { okRes } from "@/lib/schemas/responses";
+} from "@/schemas/composed";
+import { okRes } from "@/schemas/responses";
 
 // The registration/sign-in handlers return RAW database rows (no joined
 // municipalities, plus columns like updatedAt / documentImageKey / stripeCustomerId).

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { zString } from "../t";
 
-// Aliquote IVA accettate (vedi VAT_RATES in @/lib/vat). Stringhe percentuali;
+// Aliquote IVA accettate (vedi VAT_RATES in @/domain/pricing/vat). Stringhe percentuali;
 // `z.union` di letterali per tenere l'ordine in /openapi. Il default lo mette
 // l'API anche in PATCH, come prima: si usa con `.optional()`.
 export const VatRateSchema = z

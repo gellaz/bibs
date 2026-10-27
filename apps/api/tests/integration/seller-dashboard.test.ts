@@ -26,7 +26,7 @@ import { user as userTable } from "@/db/schemas/auth";
 import type { OrderStatus } from "@/db/schemas/order";
 import { order } from "@/db/schemas/order";
 import { store as storeTable } from "@/db/schemas/store";
-import { resolveSellerAccess } from "@/modules/seller/context";
+import { resolveSellerAccess } from "@/domain/sellers/access";
 import { dashboardRoutes } from "@/modules/seller/routes/dashboard";
 import { getSellerDashboard } from "@/modules/seller/services/dashboard";
 import { truncateAll } from "../helpers/cleanup";

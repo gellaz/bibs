@@ -43,9 +43,9 @@ mock.module("@/infra/stripe", () => ({
 import { eq } from "drizzle-orm";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
+import { storePayoutSplit } from "@/domain/billing/platform-fee";
 import { retryStoreTransfers } from "@/jobs/retry-store-transfers";
 import { toCents } from "@/lib/money";
-import { storePayoutSplit } from "@/lib/platform-fee";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,

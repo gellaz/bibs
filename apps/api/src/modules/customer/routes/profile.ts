@@ -3,8 +3,8 @@ import { requireCustomer } from "@/http/auth";
 import { doc } from "@/http/openapi";
 import { ok } from "@/http/responses";
 import { send } from "@/http/send";
-import { CustomerProfileSchema } from "@/lib/schemas/entities";
-import { okRes, withErrors } from "@/lib/schemas/responses";
+import { CustomerProfileSchema } from "@/schemas/entities";
+import { okRes, withErrors } from "@/schemas/responses";
 import { customerSecurity } from "../context";
 
 const ProfileResponse = okRes(CustomerProfileSchema);

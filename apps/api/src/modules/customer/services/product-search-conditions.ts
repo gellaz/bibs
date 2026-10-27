@@ -2,11 +2,11 @@ import { sql } from "drizzle-orm";
 import { productCategory } from "@/db/schemas/category";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
 import {
 	bestActiveDiscountPercent,
 	effectivePriceExpr,
-} from "@/modules/seller/services/discount-pricing";
+} from "@/domain/pricing/discount-pricing";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
 
 export interface ProductFilterParams {
 	q?: string;

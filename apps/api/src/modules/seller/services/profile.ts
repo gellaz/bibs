@@ -5,7 +5,7 @@ import { ServiceError } from "@/lib/errors";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/lib/municipality";
+} from "@/modules/seller/services/municipality";
 
 // ── Helpers ─────────────────────────────────
 

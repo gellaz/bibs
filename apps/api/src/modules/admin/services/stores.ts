@@ -23,7 +23,7 @@ import {
 } from "@/db/schemas/store-subscription";
 import { containsPattern } from "@/lib/like";
 import { parsePagination } from "@/lib/pagination";
-import type { AdminStoreStatus } from "@/lib/schemas/queries";
+import type { AdminStoreStatus } from "@/schemas/queries";
 
 const alive = isNull(store.deletedAt);
 const subIs = (...statuses: StoreSubscriptionStatus[]) =>

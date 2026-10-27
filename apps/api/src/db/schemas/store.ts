@@ -10,8 +10,11 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
+import {
+	type StoreOrderType,
+	storeOrderTypes,
+} from "@/domain/orders/order-types";
 import { config } from "@/lib/config";
-import { type StoreOrderType, storeOrderTypes } from "@/lib/order-types";
 import { municipality } from "./location";
 import { storeProduct } from "./product";
 import { sellerProfile } from "./seller";

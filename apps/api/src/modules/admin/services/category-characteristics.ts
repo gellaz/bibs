@@ -17,7 +17,7 @@ import {
 	productCharacteristicValue,
 } from "@/db/schemas/product-characteristic";
 import { productMacroCategory } from "@/db/schemas/product-macro-category";
-import { assertImpactConfirmed } from "@/lib/characteristic-impact";
+import { assertImpactConfirmed } from "@/domain/catalog/characteristic-impact";
 import { ServiceError } from "@/lib/errors";
 import {
 	type ListByNameParams,

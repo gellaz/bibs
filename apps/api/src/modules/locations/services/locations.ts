@@ -1,8 +1,8 @@
 import { asc, count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { municipality, province } from "@/db/schemas/location";
-import { COUNTRIES } from "@/lib/countries";
 import { parsePagination } from "@/lib/pagination";
+import { COUNTRIES } from "@/modules/locations/services/countries";
 
 export function listCountries() {
 	return COUNTRIES;

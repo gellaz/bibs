@@ -5,7 +5,7 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
 import { parsePagination } from "@/lib/pagination";
-import type { DocumentChangeBody } from "@/lib/schemas/forms";
+import type { DocumentChangeBody } from "@/schemas/forms";
 
 export type RequestType = "all" | "candidature" | "vat" | "document";
 

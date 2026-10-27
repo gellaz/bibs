@@ -2,8 +2,8 @@ import { sql } from "drizzle-orm";
 import { municipality } from "@/db/schemas/location";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
+import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
 import { containsPattern } from "@/lib/like";
-import { publiclyVisibleStore } from "@/lib/store-visibility";
 
 export interface StoreFilterParams {
 	q?: string;

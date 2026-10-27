@@ -8,7 +8,7 @@ import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
 import { ServiceError } from "@/lib/errors";
-import { zFile, zInteger } from "@/lib/schemas/t";
+import { zFile, zInteger } from "@/schemas/t";
 
 // La mappatura errore → risposta (`toErrorResponse`, D7 del piano Hono) come
 // la applicano le app Hono (`moduleApp()` e l'app radice). Fino a U11 lo
