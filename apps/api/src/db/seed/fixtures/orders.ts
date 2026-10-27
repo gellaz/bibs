@@ -6,7 +6,7 @@ import { order } from "@/db/schemas/order";
 import { product, storeProduct } from "@/db/schemas/product";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
-import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
+import { expireSingleReservation } from "@/jobs/expire-reservations";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";

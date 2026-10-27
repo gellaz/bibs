@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
-import { cancelUnpaidOrder } from "@/lib/jobs/expire-unpaid-orders";
+import { cancelUnpaidOrder } from "@/jobs/expire-unpaid-orders";
 import { logger } from "@/lib/logger";
 import { settleCheckoutPayment } from "@/modules/billing/services/order-payments";
 

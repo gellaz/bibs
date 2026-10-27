@@ -47,7 +47,8 @@ after any API change.
 - **`src/plugins/`** — plain Hono middleware and route groups: `request-log.ts` (log line per request),
   `cors.ts` (`hono/cors`), `better-auth.ts` (`x-forwarded-for` from the socket IP, better-auth
   handler), `openapi.ts` (`/openapi`, `/openapi/json`), `health.ts` (`/health`, `/ready`), `rate-limit.ts`
-  (per-route `rateLimit()`), `cron.ts` (the five jobs below).
+  (per-route `rateLimit()`).
+- **`src/jobs/`** — the five background jobs below and `scheduler.ts`, which starts them.
 - **`src/http/`** — the kit every route uses: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()` (`send.ts`),
   `doc()` and the OpenAPI generator (`openapi.ts`), the auth guards (`auth.ts`), `guard()`, `publicRoute` and
   `assertRoutes` (`routes.ts`), the error mapping (`errors.ts`), the 422 messages (`validation-message.ts`).
@@ -143,7 +144,7 @@ Each module under `src/modules/` is a Hono sub-app (`index.ts`, `routes/`, `serv
 | `webhooks/` | — | Stripe webhook receiver at `/webhooks/stripe` (signature-verified, idempotent — see [stripe-billing.md](stripe-billing.md)) |
 | `billing/` | — | internal services only (Stripe customer management shared by seller checkout); no routes |
 
-Background jobs (`src/plugins/cron.ts`, `croner`, started only by `src/index.ts`):
+Background jobs (`src/jobs/`, scheduled by `src/jobs/scheduler.ts` with `croner`, started only by `src/index.ts`):
 
 - **Reservation expiry** (`expireReservations`) — runs every minute
 - **Unpaid order expiry** (`expireUnpaidOrders`) — runs every minute (cancels pay-and-pickup / pay-and-deliver

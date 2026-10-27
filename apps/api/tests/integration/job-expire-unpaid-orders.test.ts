@@ -51,7 +51,7 @@ import { eq } from "drizzle-orm";
 import { checkout } from "@/db/schemas/checkout";
 import { order, orderItem } from "@/db/schemas/order";
 import { storeProduct } from "@/db/schemas/product";
-import { expireUnpaidOrders } from "@/lib/jobs/expire-unpaid-orders";
+import { expireUnpaidOrders } from "@/jobs/expire-unpaid-orders";
 import { truncateAll } from "../helpers/cleanup";
 import {
 	createTestCustomer,

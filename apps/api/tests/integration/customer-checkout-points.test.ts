@@ -58,7 +58,7 @@ import { cartItem } from "@/db/schemas/cart";
 import { customerProfile } from "@/db/schemas/customer";
 import { order } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
-import { expireUnpaidOrders } from "@/lib/jobs/expire-unpaid-orders";
+import { expireUnpaidOrders } from "@/jobs/expire-unpaid-orders";
 import {
 	createCheckout,
 	parseStoresParam,

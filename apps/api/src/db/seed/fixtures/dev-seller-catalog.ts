@@ -11,7 +11,7 @@ import { productImage } from "@/db/schemas/product-image";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeCategory } from "@/db/schemas/store-category";
-import { expireSingleReservation } from "@/lib/jobs/expire-reservations";
+import { expireSingleReservation } from "@/jobs/expire-reservations";
 import { publiclyVisibleStore } from "@/lib/store-visibility";
 import { cancelOrder, createOrder } from "@/modules/customer/services/orders";
 import { transitionOrder } from "@/modules/seller/services/orders";

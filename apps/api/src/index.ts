@@ -1,8 +1,8 @@
 import { app } from "@/app";
 import { db } from "@/db";
+import { startCronJobs } from "@/jobs/scheduler";
 import { env } from "@/lib/env";
 import { ensureBucket } from "@/lib/s3";
-import { startCronJobs } from "@/plugins/cron";
 
 // The server entry: the only module with side effects (S3, listen, cron,
 // signals). The app itself lives in `src/app.ts`.

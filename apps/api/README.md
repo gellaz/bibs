@@ -95,7 +95,7 @@ VAT snapshot) → atomic stock decrement (`SET stock = stock - N WHERE stock >= 
 on race) → points deduction. Cancellation refunds stock and points; completion awards
 points on the final total.
 
-`reserve_pickup` orders expire after 48 h: a cron (`src/plugins/cron.ts`) runs
+`reserve_pickup` orders expire after 48 h: a cron (`src/jobs/scheduler.ts`) runs
 `expireReservations()` **every minute** — single source of truth, resilient to
 restarts; worst-case latency between configured expiry and the status flip is ~60 s.
 
