@@ -177,10 +177,10 @@ are listed with `ponytail:` notes in `src/http/validator.ts`.
 
 ### Tests of the HTTP layer
 
-`apps/api/tests/http/` checks the kit against the behaviour the API had before the move to Hono: the validator
+`apps/api/tests/unit/http/` checks the kit against the behaviour the API had before the move to Hono: the validator
 (status and 422 body, byte for byte, on the cases of `parity-cases.ts`), the OpenAPI generator, the formats,
 `send()` and the root app (CORS, preflight, `X-Request-Id`, 404s, `/health`, `/openapi`, the log line). The expected
-values are the **golden files** in `tests/http/golden/*.json`, captured from the previous framework before it was
+values are the **golden files** in `tests/unit/http/golden/*.json`, captured from the previous framework before it was
 removed: they are never regenerated and their values never change; an accepted difference goes in the test's
 expectation with its number in the migration plan's delta register. Each module also has a **strip test** (an
 unknown nested field in the body or query never reaches the service; an extra field returned by the service never
@@ -302,7 +302,7 @@ and the tools are in
 
 ## Testing
 
-- **API** (`apps/api/tests/`): `unit/`, `lib/`, `modules/`, `plugins/`, `http/` run with
+- **API** (`apps/api/tests/`): `unit/` and `integration/`, each with the same folders as `src/`. `unit/` runs with
   `bun run test:unit`; `integration/` runs real Postgres/PostGIS via **testcontainers**
   (`bun run test:integration`, 180 s timeout). Stripe and email sending are mocked with
   `mock.module(...)`; the database is never mocked. Shared fixtures and the

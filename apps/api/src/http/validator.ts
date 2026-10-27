@@ -30,7 +30,7 @@ import { zodValidationMessage } from "./validation-message";
 // `a.b`/`a[0]` e fusione JSON + file non portate, pulizia dei valori oggetto di
 // un t.Record e primo errore di un'unione di oggetti annidata (mirror.ts,
 // issues.ts). Chi aggiunge uno schema così estende `coerce()`/`readFormData()`/
-// mirror.ts/issues.ts e mette i casi in tests/http/parity-cases.ts.
+// mirror.ts/issues.ts e mette i casi in tests/unit/http/parity-cases.ts.
 
 export type Target = "json" | "form" | "query" | "param";
 

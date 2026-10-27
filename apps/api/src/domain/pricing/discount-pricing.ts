@@ -125,7 +125,7 @@ export async function getBestActiveDiscounts(
  * Gemello SQL di `getBestActiveDiscounts()`, per i casi in cui lo sconto deve
  * entrare in un `WHERE` invece di annotare righe già estratte: filtrare dopo
  * la query darebbe un `total` e una paginazione che non corrispondono ai
- * risultati. `tests/integration/discount-pricing-parity.test.ts` tiene le due
+ * risultati. `tests/integration/domain/pricing/discount-pricing-parity.test.ts` tiene le due
  * strade allineate.
  *
  * `productRef` è il riferimento **letterale** alla colonna del prodotto nella

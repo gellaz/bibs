@@ -699,7 +699,7 @@ export the module's type from `src/types.ts` for the frontends. A new OpenAPI ta
   `signIn(email, role)` (a real better-auth user and session on the test DB).
 - The module's **strip test**: an unknown field, nested too, in the body or query never reaches the service, and an
   extra field returned by the service never leaves the response (e.g.
-  `tests/modules/locations-registration-strip.test.ts`).
+  `tests/unit/http/locations-registration-strip.test.ts`).
 
 ### Checklist
 
@@ -844,12 +844,15 @@ Optional:
 
 Tests use **Bun's built-in test runner**:
 
-- **Unit tests** (`tests/unit/`, `tests/lib/`) — test core lib modules (errors, money, order state machine, pagination)
-- **Route-level tests** (`tests/modules/`, `tests/plugins/`) — sub-apps and middleware through `app.request()` or the
+Both `tests/unit/` and `tests/integration/` mirror `src/` (`unit/domain/orders/`, `integration/modules/seller/`, …): a test
+goes in the folder of the source file it exercises.
+
+- **Unit tests** (`tests/unit/`) — pure logic (`lib/`, `domain/`, `schemas/`, `infra/`) and `tests/unit/architecture.test.ts`
+- **Route-level tests** (`tests/unit/modules/`, `tests/unit/http/middleware/`) — sub-apps and middleware through `app.request()` or the
   helpers of `tests/helpers/hono-app.ts` (`testRequest`, `withVars`, `withResolve`, `signIn`), including each
   module's strip test
-- **HTTP kit tests** (`tests/http/`) — the validator, `send()`, the OpenAPI generator, the formats and the root app
-  (CORS, `X-Request-Id`, 404s, log line), compared with the golden files in `tests/http/golden/`: the answers of the
+- **HTTP kit tests** (`tests/unit/http/`) — the validator, `send()`, the OpenAPI generator, the formats and the root app
+  (CORS, `X-Request-Id`, 404s, log line), compared with the golden files in `tests/unit/http/golden/`: the answers of the
   previous framework, captured before it was removed (Hono migration, U11). They are never regenerated and their
   values never change; an accepted difference goes in the test's expectation, with its number in the plan's delta
   register

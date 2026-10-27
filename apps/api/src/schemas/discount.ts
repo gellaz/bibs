@@ -4,7 +4,7 @@ import { zDate, zInteger, zString } from "./t";
 
 // Gemelli Zod di `lib/schemas/discount.ts` (D3 del piano Hono), stessi nomi e
 // stesso ordine. `DiscountCreateBody` e `DiscountListQuery` vengono da
-// `tests/http/parity-cases.ts` (U1, `zString` da U3), dove restano i loro
+// `tests/unit/http/parity-cases.ts` (U1, `zString` da U3), dove restano i loro
 // casi di parità.
 
 export const DiscountStatusSchema = z

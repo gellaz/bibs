@@ -2,7 +2,7 @@ import { z } from "zod";
 import { zFormat, zString } from "./t";
 
 // Body di /register (fino a U4 scritti nella route): qui, senza effetti
-// all'import, perché li usano anche i casi di parità (`tests/http/parity-cases.ts`).
+// all'import, perché li usano anche i casi di parità (`tests/unit/http/parity-cases.ts`).
 
 export const RegisterBody = z.object({
 	email: zFormat("email").meta({ description: "Indirizzo email" }),

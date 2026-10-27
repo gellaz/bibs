@@ -1,6 +1,6 @@
 // I formati di stringa che l'app composta di prima controllava, copiati così
 // come sono: gli schemi Zod accettano e rifiutano le stesse stringhe (D5 del
-// piano Hono; esiti in `tests/http/golden/formats.json`). `uri` e
+// piano Hono; esiti in `tests/unit/http/golden/formats.json`). `uri` e
 // `date-time` vengono dal framework
 // di prima (1.4.30), regex da ajv-formats; `email`, `uuid` e `date` dallo Zod
 // 4.4.3 che il suo plugin OpenAPI (1.4.16) registrava al load. Provenienza e

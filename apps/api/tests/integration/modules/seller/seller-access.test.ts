@@ -1,0 +1,270 @@
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	mock,
+} from "bun:test";
+
+// ── Module mocks (hoisted before imports) ─────────────────────────────────────
+
+import {
+	getTestDb,
+	setupTestContainer,
+	teardownTestContainer,
+} from "../../../helpers/test-db";
+
+mock.module("@/db", () => ({
+	db: new Proxy({} as any, {
+		get(_, prop) {
+			return (getTestDb() as any)[prop];
+		},
+	}),
+}));
+
+// ── Imports (resolved after mocks) ────────────────────────────────────────────
+
+import { eq } from "drizzle-orm";
+import { store as storeTable } from "@/db/schemas/store";
+import {
+	getAccessibleStoreIdsFor,
+	getEmployeeAssignedStoreIds,
+} from "@/domain/sellers/access";
+import {
+	ensureProductAccess,
+	ensureStoreAccess,
+} from "@/modules/seller/context";
+import { truncateAll } from "../../../helpers/cleanup";
+import {
+	createTestEmployee,
+	createTestProduct,
+	createTestSeller,
+	createTestStore,
+	createTestStoreProduct,
+} from "../../../helpers/fixtures";
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+
+beforeAll(async () => {
+	await setupTestContainer();
+}, 120_000);
+
+afterAll(async () => {
+	await teardownTestContainer();
+});
+
+beforeEach(async () => {
+	await truncateAll(getTestDb());
+});
+
+// ── getEmployeeAssignedStoreIds ────────────────────────────────────────────────
+
+describe("getEmployeeAssignedStoreIds", () => {
+	it("returns the store ids the employee is assigned to", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const storeA = await createTestStore(db, profile.id, { name: "A" });
+		const storeB = await createTestStore(db, profile.id, { name: "B" });
+
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [storeA.id, storeB.id],
+		});
+
+		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
+		expect(ids.sort()).toEqual([storeA.id, storeB.id].sort());
+	});
+
+	it("returns empty array if employee has no assignments", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+
+		const { userId: empUserId } = await createTestEmployee(db, profile.id);
+
+		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
+		expect(ids).toEqual([]);
+	});
+
+	it("excludes assignments where employee status is not active", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const storeA = await createTestStore(db, profile.id);
+
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [storeA.id],
+			status: "banned",
+		});
+
+		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
+		expect(ids).toEqual([]);
+	});
+
+	it("excludes assignments whose store is soft-deleted", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id, { name: "Live" });
+		const dead = await createTestStore(db, profile.id, { name: "Dead" });
+
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [live.id, dead.id],
+		});
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		const ids = await getEmployeeAssignedStoreIds(empUserId, profile.id);
+		expect(ids).toEqual([live.id]);
+	});
+});
+
+// ── getAccessibleStoreIdsFor ──────────────────────────────────────────────────
+
+describe("getAccessibleStoreIdsFor", () => {
+	it("owner: returns all non-deleted seller stores", async () => {
+		const db = getTestDb();
+		const { user, profile } = await createTestSeller(db);
+		const s1 = await createTestStore(db, profile.id, { name: "Roma" });
+		const s2 = await createTestStore(db, profile.id, { name: "Milano" });
+
+		const ids = await getAccessibleStoreIdsFor({
+			userId: user.id,
+			sellerProfileId: profile.id,
+			isOwner: true,
+		});
+		expect(ids.sort()).toEqual([s1.id, s2.id].sort());
+	});
+
+	it("employee: returns only assigned stores", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const sA = await createTestStore(db, profile.id, { name: "A" });
+		await createTestStore(db, profile.id, { name: "B-not-assigned" });
+
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [sA.id],
+		});
+
+		const ids = await getAccessibleStoreIdsFor({
+			userId: empUserId,
+			sellerProfileId: profile.id,
+			isOwner: false,
+		});
+		expect(ids).toEqual([sA.id]);
+	});
+
+	it("employee: excludes soft-deleted stores, like the owner path does", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const live = await createTestStore(db, profile.id, { name: "Live" });
+		const dead = await createTestStore(db, profile.id, { name: "Dead" });
+
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [live.id, dead.id],
+		});
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		const ids = await getAccessibleStoreIdsFor({
+			userId: empUserId,
+			sellerProfileId: profile.id,
+			isOwner: false,
+		});
+		expect(ids).toEqual([live.id]);
+	});
+});
+
+// ── ensureStoreAccess ─────────────────────────────────────────────────────────
+
+describe("ensureStoreAccess", () => {
+	it("owner: no-throw when store belongs to seller", async () => {
+		const db = getTestDb();
+		const { user, profile } = await createTestSeller(db);
+		const s = await createTestStore(db, profile.id);
+		await expect(
+			ensureStoreAccess(s.id, {
+				userId: user.id,
+				sellerProfileId: profile.id,
+				isOwner: true,
+			}),
+		).resolves.toBeUndefined();
+	});
+
+	it("owner: throws 404 when store belongs to a different seller", async () => {
+		const db = getTestDb();
+		const a = await createTestSeller(db);
+		const b = await createTestSeller(db, { email: "other@test.com" });
+		const sB = await createTestStore(db, b.profile.id);
+		await expect(
+			ensureStoreAccess(sB.id, {
+				userId: a.user.id,
+				sellerProfileId: a.profile.id,
+				isOwner: true,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("employee: throws 403 when store not assigned", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const sNotAssigned = await createTestStore(db, profile.id);
+		const { userId: empUserId } = await createTestEmployee(db, profile.id);
+		await expect(
+			ensureStoreAccess(sNotAssigned.id, {
+				userId: empUserId,
+				sellerProfileId: profile.id,
+				isOwner: false,
+			}),
+		).rejects.toMatchObject({ status: 403 });
+	});
+
+	it("employee: throws 403 on an assigned store that is soft-deleted", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const dead = await createTestStore(db, profile.id);
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [dead.id],
+		});
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		// The owner already gets a 404 here (ensureStoreOwnership filters
+		// deletedAt); the employee must not keep write access the owner lost.
+		await expect(
+			ensureStoreAccess(dead.id, {
+				userId: empUserId,
+				sellerProfileId: profile.id,
+				isOwner: false,
+			}),
+		).rejects.toMatchObject({ status: 403 });
+	});
+
+	it("employee: throws 403 on a product stocked only in a soft-deleted store", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const dead = await createTestStore(db, profile.id);
+		const prod = await createTestProduct(db, profile.id);
+		await createTestStoreProduct(db, dead.id, prod.id);
+
+		const { userId: empUserId } = await createTestEmployee(db, profile.id, {
+			storeIds: [dead.id],
+		});
+		await db
+			.update(storeTable)
+			.set({ deletedAt: new Date() })
+			.where(eq(storeTable.id, dead.id));
+
+		await expect(
+			ensureProductAccess(prod.id, {
+				userId: empUserId,
+				sellerProfileId: profile.id,
+				isOwner: false,
+			}),
+		).rejects.toMatchObject({ status: 403 });
+	});
+});
