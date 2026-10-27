@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import pino from "pino";
+import {
+	formatDuration,
+	formatRequestLine,
+} from "@/http/middleware/request-log";
 import { pinoOptions } from "@/lib/logger";
-import { formatDuration, formatRequestLine } from "@/plugins/request-log";
 
 describe("pinoOptions", () => {
 	it("pins messageKey and errorKey so a derived logger keeps them", () => {

@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
+import { ok, okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
-import { ok, okMessage } from "@/lib/responses";
 import { StoreProductSchema } from "@/lib/schemas/entities";
 import {
 	OkMessage,

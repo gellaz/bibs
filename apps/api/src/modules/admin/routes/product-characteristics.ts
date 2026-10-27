@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireAdmin } from "@/http/auth";
 import { doc } from "@/http/openapi";
+import { ok, okMessage, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/lib/logger";
-import { ok, okMessage, okPage } from "@/lib/responses";
 import {
 	AdminProductCharacteristicSchema,
 	CharacteristicDataTypeSchema,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { consume, type RateLimitStore } from "@/plugins/rate-limit";
+import { consume, type RateLimitStore } from "@/http/middleware/rate-limit";
 
 describe("consume — fixed-window rate limit", () => {
 	it("allows requests up to the max within the window", () => {

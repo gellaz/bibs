@@ -2,11 +2,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
+import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { config } from "@/lib/config";
 import { logger } from "@/lib/logger";
-import { ok, okPage } from "@/lib/responses";
 import { StoreWithPhonesSchema } from "@/lib/schemas/composed";
 import {
 	AddressFieldsOptional,

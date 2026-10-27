@@ -26,4 +26,4 @@ export type ValidationRule =
 	| { kind: "uniqueItems" }
 	| { kind: "invalid" };
 
-export { issueRule } from "./schemas/issues";
+export { issueRule } from "../lib/schemas/issues";

@@ -98,13 +98,13 @@ mock.module("@/modules/registration/services", () => ({
 
 // ── Test app ──────────────────────────────────────────────────────────────────
 
+import { __clearRateLimitStores } from "@/http/middleware/rate-limit";
 import {
 	EmailAlreadyRegisteredError,
 	PendingVerificationError,
 	ServiceError,
 } from "@/lib/errors";
 import { registrationApp } from "@/modules/registration";
-import { __clearRateLimitStores } from "@/plugins/rate-limit";
 import { testRequest } from "../helpers/hono-app";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

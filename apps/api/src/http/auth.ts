@@ -25,7 +25,7 @@ interface SessionContext {
 
 /**
  * La sessione better-auth in `c.var` (la macro `auth: true` di
- * `plugins/better-auth.ts`): stessa sessione, stesso 401. La leggono tutte le
+ * `middleware/better-auth.ts`): stessa sessione, stesso 401. La leggono tutte le
  * guardie, anche quelle di ruolo, così l'ordine fra guardie non conta. Se un
  * middleware a monte ha già messo l'utente (i test,
  * `tests/helpers/hono-app.ts`) non la rilegge: solo il codice può scrivere

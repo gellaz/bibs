@@ -367,14 +367,14 @@ When adding a route under `apps/api/src/`, follow the existing pattern (a compac
 3. **Handler order in every route:** `doc(…)` → `v("param", …)` → `v("query", …)` → `v("json" | "form", …)` →
    guard → handler. Guards come from `src/http/auth.ts` (`requireAuth`, `requireCustomer`, `requireSeller`,
    `requireSellerRole`, `requireAdmin`); a public route takes `publicRoute`; a rate limit (`rateLimit()`,
-   `src/plugins/rate-limit.ts`) goes after the guard. Validation runs before auth (422 before 401): never
+   `src/http/middleware/rate-limit.ts`) goes after the guard. Validation runs before auth (422 before 401): never
    `app.use(requireX)` on a module. `assertRoutes` stops the API at boot when a route lacks its module's
    guard, has a `v()` after the guard, or has the `v()` out of order.
 4. **Input** from `c.req.valid(target)` (validated, query and params coerced, bodies trimmed except password
    fields, unknown fields stripped at any depth); what the guard resolved is in `c.var` (`user`, `session`,
    `customerProfile`, `seller`).
 5. **Response** with `send(c, Schema, ok(data))` (or `okPage(data, pagination)`, `okMessage("…")` from
-   `src/lib/responses.ts`), where `Schema` is `okRes(X)` / `okPageRes(X)` / `OkMessage`
+   `src/http/responses.ts`), where `Schema` is `okRes(X)` / `okPageRes(X)` / `OkMessage`
    (`src/lib/schemas/responses.ts`), the same schema listed in `doc({ response: withErrors({ 200: Schema }) })`
    (`withConflictErrors` when a 409 is possible). `send()` drops fields outside the schema (internal columns
    never leak), writes `Date` as ISO strings and turns an off-schema payload into a 500; it is also what
@@ -383,7 +383,7 @@ When adding a route under `apps/api/src/`, follow the existing pattern (a compac
    no custom codes). The app's `onError` (`toErrorResponse`, `src/http/errors.ts`) builds the envelope, maps
    pg unique violations (`23505`) to 409 and logs: don't try/catch for envelope shaping.
 7. **OpenAPI:** `doc({ response, detail })` with an Italian `summary` and `description`, `tags` (a new tag is
-   declared in `src/plugins/openapi.ts`) and `security: [{ bearerAuth: [] }]` on authenticated routes; check
+   declared in `src/http/openapi-routes.ts`) and `security: [{ bearerAuth: [] }]` on authenticated routes; check
    `/openapi`.
 8. **Strip test:** every module has one proving that an unknown (nested) field in the body or query never
    reaches the service and that an extra field returned by the service never leaves the response (e.g.

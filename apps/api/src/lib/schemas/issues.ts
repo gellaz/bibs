@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { ValidationRule } from "@/lib/validation-rule";
+import type { ValidationRule } from "@/http/validation-rule";
 import { isAnyOf, nodeAt, unwrap } from "./mirror";
 import { integerCheck } from "./t";
 

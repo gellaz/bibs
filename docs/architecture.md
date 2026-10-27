@@ -44,10 +44,10 @@ after any API change.
   from the `MODULES` table (prefix, sub-app, guards) with `app.route(prefix, subApp)`.
 - **`src/index.ts`** — the server only: cron jobs, S3 bucket check, `Bun.serve({ fetch: app.fetch })`, graceful
   shutdown.
-- **`src/plugins/`** — plain Hono middleware and route groups: `request-log.ts` (log line per request),
-  `cors.ts` (`hono/cors`), `better-auth.ts` (`x-forwarded-for` from the socket IP, better-auth
-  handler), `openapi.ts` (`/openapi`, `/openapi/json`), `health.ts` (`/health`, `/ready`), `rate-limit.ts`
-  (per-route `rateLimit()`).
+- **`src/http/middleware/`** — plain Hono middleware: `request-log.ts` (log line per request), `cors.ts`
+  (`hono/cors`), `better-auth.ts` (`x-forwarded-for` from the socket IP, better-auth handler), `rate-limit.ts`
+  (per-route `rateLimit()`). The route groups `openapi-routes.ts` (`/openapi`, `/openapi/json`) and `health.ts`
+  (`/health`, `/ready`) live in `src/http/`.
 - **`src/jobs/`** — the five background jobs below and `scheduler.ts`, which starts them.
 - **`src/http/`** — the kit every route uses: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()` (`send.ts`),
   `doc()` and the OpenAPI generator (`openapi.ts`), the auth guards (`auth.ts`), `guard()`, `publicRoute` and
@@ -82,10 +82,10 @@ A request goes through the root app in this order:
 9. a thrown error reaches the `onError` of the module (or of the root): `toErrorResponse` (`src/http/errors.ts`)
    builds the envelope and logs it; a path no route matches gets the JSON 404.
 
-Every route returns the same envelope. There are two layers of helpers in `src/lib/responses.ts` (runtime) and
+Every route returns the same envelope. There are two layers of helpers in `src/http/responses.ts` (runtime) and
 `src/lib/schemas/responses.ts` (Zod schemas for `send()` and OpenAPI):
 
-- `ok(data)` / `okPage(data, pagination)` / `okMessage(message)` (`src/lib/responses.ts`) — runtime envelope
+- `ok(data)` / `okPage(data, pagination)` / `okMessage(message)` (`src/http/responses.ts`) — runtime envelope
   builders
 - `okRes(schema)` / `okPageRes(schema)` / `OkMessage` / `withErrors()` / `withConflictErrors()`
   (`src/lib/schemas/responses.ts`) — schemas used by `send()` and `doc()` so the response and OpenAPI agree

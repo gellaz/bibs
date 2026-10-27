@@ -62,7 +62,7 @@ async function statuses(fetchHandler: (request: Request, server: any) => any) {
 describe("better-auth: rate limit sull'IP del socket", () => {
 	it("controllo negativo: senza il middleware x-forwarded-for falsificati non si fermano", async () => {
 		const { Hono } = await import("hono");
-		const { authHandler } = await import("@/plugins/better-auth");
+		const { authHandler } = await import("@/http/middleware/better-auth");
 		const bare = new Hono().all("/auth/*", authHandler);
 		expect(await statuses(bare.fetch)).toEqual([200, 200, 200, 200, 200, 200]);
 	});

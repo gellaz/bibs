@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { moduleApp } from "@/http/app";
+import { ok } from "@/http/responses";
 import { send } from "@/http/send";
-import { ok } from "@/lib/responses";
 import {
 	RegisterCustomerResult,
 	RegisterSellerResult,

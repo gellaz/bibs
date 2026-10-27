@@ -165,7 +165,7 @@ Error semantics and the global handler are described in
 ## Logging, health, shutdown
 
 Structured logging via Pino (sensitive-field redaction) plus one line per request
-(`src/plugins/request-log.ts`). Logs are written to `logs/app.log` (single file, no rotation) and to
+(`src/http/middleware/request-log.ts`). Logs are written to `logs/app.log` (single file, no rotation) and to
 stdout. `GET /health` always returns `{ status: "ok" }` (200) if the process is
 alive; `GET /ready` performs DB + S3 connectivity checks and returns 503 if either is
 unreachable. On SIGTERM/SIGINT the server drains, closes the pool, exits.

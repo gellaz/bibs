@@ -2,8 +2,8 @@ import { describe, expect, it } from "bun:test";
 import { z } from "zod";
 import { rootApp } from "@/app";
 import { moduleApp } from "@/http/app";
+import { clientIp, rateLimit } from "@/http/middleware/rate-limit";
 import { v } from "@/http/validator";
-import { clientIp, rateLimit } from "@/plugins/rate-limit";
 
 // Tests simulate being behind a trusted proxy so X-Forwarded-For is honoured.
 function ipApp() {

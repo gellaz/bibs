@@ -2,9 +2,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
+import { ok } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { ok } from "@/lib/responses";
 import {
 	PutClosuresBody,
 	SellerClosuresResponse,

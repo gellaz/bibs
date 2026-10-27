@@ -1,8 +1,8 @@
 import { createMiddleware } from "hono/factory";
+import { errorBody } from "@/http/responses";
 import { json } from "@/http/send";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
-import { errorBody } from "@/lib/responses";
 
 export interface RateLimitBucket {
 	count: number;

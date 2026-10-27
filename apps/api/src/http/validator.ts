@@ -2,7 +2,7 @@ import { fileTypeFromBlob } from "file-type";
 import type { Context, MiddlewareHandler } from "hono";
 import { getQueryParams } from "hono/utils/url";
 import { z } from "zod";
-import { deepTrim } from "@/lib/deep-trim";
+import { deepTrim } from "@/http/deep-trim";
 import { firstIssue } from "@/lib/schemas/issues";
 import { coercedKeys, mirrorValue } from "@/lib/schemas/mirror";
 import {
@@ -17,7 +17,7 @@ import { zodValidationMessage } from "./validation-message";
 // `v(target, schema)`: il validatore delle route Hono, con le regole dell'API
 // di prima (D2, D4, D5 del piano Hono). In ordine: lettura del body come
 // prima (per Content-Type, non per target), trim profondo tranne le chiavi
-// password (`lib/deep-trim.ts`), default della radice e pulizia di prima
+// password (`deep-trim.ts`), default della radice e pulizia di prima
 // (`lib/schemas/mirror.ts`), coercizione di query e params, default
 // dello schema, campi sconosciuti tolti a ogni profondità (`z.object`),
 // controllo, decodifica, magic byte dei file. Primo errore → 422 italiano.

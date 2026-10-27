@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { APIError } from "better-auth";
-import { apiErrorToServiceError } from "@/lib/auth-errors";
+import { apiErrorToServiceError } from "@/http/auth-errors";
 import { ServiceError } from "@/lib/errors";
 
 // better-auth's auth.api.* calls (signInEmail / signUpEmail / sendVerificationEmail)
