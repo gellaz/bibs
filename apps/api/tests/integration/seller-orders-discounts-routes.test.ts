@@ -20,7 +20,7 @@ mock.module("@/db", () => ({
 		},
 	}),
 }));
-mock.module("@/lib/email", () => ({ sendEmail: async () => {} }));
+mock.module("@/infra/email", () => ({ sendEmail: async () => {} }));
 
 import { eq } from "drizzle-orm";
 import { discount, discountProduct } from "@/db/schemas/discount";

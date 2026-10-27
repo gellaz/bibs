@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { photonProvider } from "@/infra/geocoding/photon";
 import { ServiceError } from "@/lib/errors";
-import { photonProvider } from "@/lib/geocoding/photon";
 
 const originalFetch = globalThis.fetch;
 

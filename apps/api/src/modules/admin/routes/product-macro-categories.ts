@@ -5,7 +5,7 @@ import { doc } from "@/http/openapi";
 import { ok, okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { ProductMacroCategorySchema } from "@/lib/schemas/entities";
 import { VatRateSchema } from "@/lib/schemas/forms/products";
 import { OkMessage, okRes, withConflictErrors } from "@/lib/schemas/responses";

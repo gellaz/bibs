@@ -2,9 +2,9 @@ import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { product } from "@/db/schemas/product";
 import { productImage } from "@/db/schemas/product-image";
+import { publicUrl, s3 } from "@/infra/s3";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
-import { publicUrl, s3 } from "@/lib/s3";
 import { ensureProductAccess } from "../context";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];

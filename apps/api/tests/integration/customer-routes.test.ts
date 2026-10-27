@@ -20,7 +20,7 @@ mock.module("@/db", () => ({
 		},
 	}),
 }));
-mock.module("@/lib/email", () => ({ sendEmail: async () => {} }));
+mock.module("@/infra/email", () => ({ sendEmail: async () => {} }));
 
 import { customerAddress } from "@/db/schemas/address";
 import { customerProfile } from "@/db/schemas/customer";

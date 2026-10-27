@@ -2,8 +2,8 @@ import { APIError } from "better-auth";
 import { apiErrorToServiceError } from "@/http/auth-errors";
 import { errorBody } from "@/http/responses";
 import { invalidFileTypeMessage } from "@/http/validation-message";
+import { logger as standaloneLogger } from "@/infra/logger";
 import { PendingVerificationError, ServiceError } from "@/lib/errors";
-import { logger as standaloneLogger } from "@/lib/logger";
 
 // Una sola mappatura errore → risposta (D7 del piano Hono), senza framework:
 // la usa l'`onError` delle app Hono (`http/app.ts`). Gli errori di

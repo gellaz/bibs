@@ -3,9 +3,9 @@ import type Stripe from "stripe";
 import { db } from "@/db";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
-import { stripe } from "@/lib/stripe";
 
 /**
  * Ramo di `checkout.session.completed` per le sessioni create da

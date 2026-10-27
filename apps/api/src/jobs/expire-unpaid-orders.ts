@@ -2,9 +2,9 @@ import { and, eq, inArray, isNotNull, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 import { refundStockAndPoints } from "@/lib/order-helpers";
-import { stripe } from "@/lib/stripe";
 import { settleCheckoutPayment } from "@/modules/billing/services/order-payments";
 
 /**

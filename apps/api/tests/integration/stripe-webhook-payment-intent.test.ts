@@ -30,14 +30,14 @@ const transfersCreate = mock(async (p: any, _o?: any) => ({
 }));
 const refundsCreate = mock(async (_p: any, _o?: any) => ({ id: "re_LATE" }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		webhooks: { constructEventAsync },
 		transfers: { create: transfersCreate },
 		refunds: { create: refundsCreate },
 	},
 }));
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
 		STRIPE_WEBHOOK_SECRET: "whsec_PLATFORM",

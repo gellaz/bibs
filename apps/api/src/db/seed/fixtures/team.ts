@@ -8,7 +8,7 @@ import {
 } from "@/db/schemas/employee-invitation";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 import { firstNames, lastNames, pick } from "./utils";
 
 // ── Designated sellers ────────────────────────────────────

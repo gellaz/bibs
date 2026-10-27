@@ -3,8 +3,8 @@ import { db } from "@/db";
 import { pricingConfig } from "@/db/schemas/pricing-config";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
-import { logger } from "@/lib/logger";
-import { stripe } from "@/lib/stripe";
+import { logger } from "@/infra/logger";
+import { stripe } from "@/infra/stripe";
 
 export async function runAutoCancelSuspended(): Promise<{ canceled: number }> {
 	const cfg = await db.query.pricingConfig.findFirst({

@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { env } from "@/lib/env";
+import { env } from "@/infra/env";
 
 let instance: Stripe | undefined;
 
@@ -20,8 +20,8 @@ function client(): Stripe {
 
 /**
  * Lazy Stripe singleton. Constructing the client at module load coupled every
- * importer to `env.STRIPE_SECRET_KEY` being present the instant `@/lib/stripe`
- * is evaluated. Because bun's `mock.module("@/lib/env", …)` is process-global,
+ * importer to `env.STRIPE_SECRET_KEY` being present the instant `@/infra/stripe`
+ * is evaluated. Because bun's `mock.module("@/infra/env", …)` is process-global,
  * a test supplying a partial env (no STRIPE_SECRET_KEY) would make this module
  * re-evaluate and throw "Neither apiKey nor config.authenticator provided" as
  * an order-dependent "unhandled error between tests" (green locally, red on CI).

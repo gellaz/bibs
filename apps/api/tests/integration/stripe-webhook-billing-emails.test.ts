@@ -23,13 +23,13 @@ mock.module("@/db", () => ({
 
 let currentEvent: any = null;
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		webhooks: { constructEventAsync: async () => currentEvent },
 	},
 }));
 
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		NODE_ENV: "test",
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
@@ -42,7 +42,7 @@ mock.module("@/lib/env", () => ({
 const sendEmail = mock(
 	async (_params: { to: string; subject: string; html: string }) => {},
 );
-mock.module("@/lib/email", () => ({ sendEmail }));
+mock.module("@/infra/email", () => ({ sendEmail }));
 
 import { eq } from "drizzle-orm";
 import { store } from "@/db/schemas/store";

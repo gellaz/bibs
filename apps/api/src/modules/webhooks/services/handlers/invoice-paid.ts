@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { storeSubscription } from "@/db/schemas/store-subscription";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 
 export async function handleInvoicePaid(event: Stripe.Event): Promise<void> {
 	const invoice = event.data.object as Stripe.Invoice;

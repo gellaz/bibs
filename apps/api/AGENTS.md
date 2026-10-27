@@ -18,7 +18,7 @@ API ran on Elysia until October 2026; the move to Hono (decisions, accepted delt
 
 Check routes with **Hono CLI** (devDependency `@hono/cli` 1.0 rc) instead of curl or a dev server: it loads the real
 app, `src/app.ts` (no side effects at import), and calls it in process. Run the CLI file with Bun from `apps/api`,
-with two externals: `-e bun` (`src/lib/s3.ts` imports from `bun`) and `-e @bibs/emails` (the CLI would compile the
+with two externals: `-e bun` (`src/infra/s3.ts` imports from `bun`) and `-e @bibs/emails` (the CLI would compile the
 react-email templates with Hono's JSX):
 
 ```bash
@@ -148,7 +148,7 @@ Zod schemas, imported from their own file (no barrel): `@/lib/schemas/entities`,
 - Every schema carries an Italian description (`.meta({ description })` or the constructor option); a `title` or
   `error` in the meta changes the 422 message.
 
-### Environment — `src/lib/env.ts`
+### Environment — `src/infra/env.ts`
 
 Validates all environment variables at startup with Zod. If any required variable is missing, the server exits
 immediately with a clear error listing the missing variables. Always import `env` from this module instead of using
@@ -159,7 +159,7 @@ Required: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `S3_ENDPOINT`
 Optional (defaults in `env.ts`): `PORT` (default `3000`), `ALLOWED_ORIGINS`, `NODE_ENV` (default `development`), and the
 rest of the schema (Stripe webhook secrets, email, app URLs, geocoding).
 
-### Email — `src/lib/email.ts`
+### Email — `src/infra/email.ts`
 
 Email sending via **Resend** in production, Mailpit in development:
 
@@ -177,7 +177,7 @@ Email sending via **Resend** in production, Mailpit in development:
 409, 422, 500, 503) and derived `ErrorCode` strings. `responses.ts` provides runtime response helpers (`ok()`,
 `okPage()`, `okMessage()`, `errorBody()`) that match the schemas.
 
-### Logging — `src/lib/logger.ts`
+### Logging — `src/infra/logger.ts`
 
 **Pino**, plus the per-request line of `src/http/middleware/request-log.ts`:
 
@@ -243,7 +243,7 @@ Reusable pagination utilities:
   (`v("query", PaginationQuery)`, or spread its fields into the route's query schema)
 - `parsePagination(query)` (`src/lib/pagination.ts`) — returns `{ page, limit, offset }` from parsed query params
 
-### Auth & Permissions — `src/lib/auth.ts`, `src/lib/permissions.ts`
+### Auth & Permissions — `src/infra/auth.ts`, `src/infra/permissions.ts`
 
 Configures better-auth with:
 
@@ -260,7 +260,7 @@ Configures better-auth with:
 - Custom endpoints in `registration/` return both `customerProfile` and `sellerProfile`, allowing users to have dual
   roles
 
-**Four roles**: **admin**, **seller**, **employee**, **customer**. Permissions defined in `src/lib/permissions.ts` using
+**Four roles**: **admin**, **seller**, **employee**, **customer**. Permissions defined in `src/infra/permissions.ts` using
 better-auth's access-control system.
 
 The `OpenAPI` export provides lazy-cached helpers (`getPaths`, `components`) that re-prefix better-auth's OpenAPI paths
@@ -278,7 +278,7 @@ domain map:
 - `registration/` (`/register`) — customer/seller sign-up, unified sign-in (returns
   user + both profiles when present), employee-invite acceptance. Seller sign-up
   starts the onboarding ladder at `pending_email`. (Password reset is better-auth's
-  native flow, configured in `src/lib/auth.ts` — not a custom route here.)
+  native flow, configured in `src/infra/auth.ts` — not a custom route here.)
 - `admin/` (`/admin`) — guarded by `user.role === "admin"`: category CRUD + CSV bulk
   imports, seller verification, profile-change review (`GET
   /admin/sellers/changes/pending`, `PATCH /admin/sellers/changes/:changeId/approve`,
@@ -510,7 +510,7 @@ calculation.
   preventing the seller from receiving new orders until the admin approves or rejects.
 - Migrations output to `src/db/migrations/` (configured in `drizzle.config.ts`).
 
-### S3 storage — `src/lib/s3.ts`
+### S3 storage — `src/infra/s3.ts`
 
 Bun's native S3Client configured for SeaweedFS (local S3-compatible storage). Used for product image upload/delete via
 `/seller/products/:productId/images` endpoints.
@@ -581,7 +581,7 @@ import {requireAdmin} from "@/http/auth";
 import {doc} from "@/http/openapi";
 import {send} from "@/http/send";
 import {v} from "@/http/validator";
-import {logger} from "@/lib/logger";
+import {logger} from "@/infra/logger";
 import {ok, okPage} from "@/http/responses";
 import {MyEntitySchema} from "@/lib/schemas/entities";
 import {PaginationQuery} from "@/lib/schemas/pagination";
@@ -645,7 +645,7 @@ Key patterns:
   (`/products/lookup` before `/products/:productId`).
 - **Multipart**: `v("form", Schema)` with `zFile()` / `zFiles()`; an object or array inside a multipart body travels
   as a JSON string.
-- Log important actions with `logger` (`src/lib/logger.ts`).
+- Log important actions with `logger` (`src/infra/logger.ts`).
 
 ### 4. Register the routes in the module index
 
@@ -782,7 +782,7 @@ Log important actions (create, update, delete, auth events) in route handlers:
 logger.info({userId: c.var.user.id, action: 'entity_created'}, 'Description');
 ```
 
-Use `logger` from `src/lib/logger.ts` everywhere: route handlers, services, cron jobs, startup.
+Use `logger` from `src/infra/logger.ts` everywhere: route handlers, services, cron jobs, startup.
 
 ## Infrastructure
 
@@ -792,7 +792,7 @@ Use `logger` from `src/lib/logger.ts` everywhere: route handlers, services, cron
 - **bibs-seaweedfs** — SeaweedFS S3-compatible storage for product images
 - **bibs-mailpit** — Mailpit dev email catcher (SMTP 1025, web UI + API 8025)
 
-Environment variables in `.env` (see `.env.example`). Validated at startup by `src/lib/env.ts`.
+Environment variables in `.env` (see `.env.example`). Validated at startup by `src/infra/env.ts`.
 
 Required:
 

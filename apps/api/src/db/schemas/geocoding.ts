@@ -10,7 +10,7 @@ import {
 import {
 	type GeocodeHit,
 	geocodingProviderNames,
-} from "@/lib/geocoding/provider";
+} from "@/infra/geocoding/provider";
 
 /**
  * Cache delle risposte del geocoder. La chiave include la cella di bias: senza

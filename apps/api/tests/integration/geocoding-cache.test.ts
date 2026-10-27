@@ -28,8 +28,12 @@ mock.module("@/db", () => ({
 
 import { count } from "drizzle-orm";
 import { geocodingLookup } from "@/db/schemas/geocoding";
-import { LOOKUP_TTL_MS, readLookup, writeLookup } from "@/lib/geocoding/cache";
-import type { GeocodeHit } from "@/lib/geocoding/provider";
+import {
+	LOOKUP_TTL_MS,
+	readLookup,
+	writeLookup,
+} from "@/infra/geocoding/cache";
+import type { GeocodeHit } from "@/infra/geocoding/provider";
 import { truncateAll } from "../helpers/cleanup";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────

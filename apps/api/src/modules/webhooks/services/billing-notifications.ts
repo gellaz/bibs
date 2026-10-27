@@ -7,9 +7,9 @@ import {
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { store } from "@/db/schemas/store";
-import { sendEmail } from "@/lib/email";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { sendEmail } from "@/infra/email";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
 
 /**
  * Email di billing al titolare del negozio (mai ai dipendenti: il destinatario

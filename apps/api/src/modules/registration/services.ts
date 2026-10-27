@@ -11,8 +11,8 @@ import {
 } from "@/db/schemas/employee-invitation";
 import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
-import { auth } from "@/lib/auth";
-import { env } from "@/lib/env";
+import { auth } from "@/infra/auth";
+import { env } from "@/infra/env";
 import {
 	EmailAlreadyRegisteredError,
 	PendingVerificationError,

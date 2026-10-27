@@ -2,7 +2,7 @@ import { type Context, Hono } from "hono";
 import { doc } from "@/http/openapi";
 import { publicRoute } from "@/http/routes";
 import { json } from "@/http/send";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { handleStripeWebhook } from "../services/dispatcher";
 
 // Corpi fuori dall'inviluppo standard (`{ error }`, `{ received }`), come li

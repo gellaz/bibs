@@ -20,7 +20,7 @@ mock.module("@/db", () => ({
 		},
 	}),
 }));
-mock.module("@/lib/email", () => ({ sendEmail: async () => {} }));
+mock.module("@/infra/email", () => ({ sendEmail: async () => {} }));
 
 import { testClient } from "hono/testing";
 import { truncateAll } from "../helpers/cleanup";

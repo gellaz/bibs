@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { db } from "@/db";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { notifyStoreCanceled } from "../billing-notifications";
 
 export async function handleSubscriptionDeleted(

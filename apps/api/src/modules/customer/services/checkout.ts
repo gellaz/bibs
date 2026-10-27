@@ -5,9 +5,9 @@ import { checkout } from "@/db/schemas/checkout";
 import { order } from "@/db/schemas/order";
 import { product, storeProduct } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
+import { logger } from "@/infra/logger";
 import { config } from "@/lib/config";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
 import { fromCents, toCents } from "@/lib/money";
 import { isBelowOnlineMinimum } from "@/lib/online-charge";
 import {

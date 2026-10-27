@@ -5,7 +5,7 @@ import { doc } from "@/http/openapi";
 import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { SellerProfileWithUserSchema } from "@/lib/schemas/composed";
 import { SellerProfileSchema } from "@/lib/schemas/entities";
 import { RejectSellerBody } from "@/lib/schemas/forms/seller-rejection";

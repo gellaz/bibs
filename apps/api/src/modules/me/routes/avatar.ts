@@ -5,7 +5,7 @@ import { doc } from "@/http/openapi";
 import { okMessage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { OkMessage, okRes, withErrors } from "@/lib/schemas/responses";
 import { zFile } from "@/lib/schemas/t";
 import { deleteUserAvatar, uploadUserAvatar } from "../services/avatar";

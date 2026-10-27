@@ -13,7 +13,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-mock.module("@/lib/email", () => ({ sendEmail: async () => {} }));
+mock.module("@/infra/email", () => ({ sendEmail: async () => {} }));
 
 // U11 del piano Hono: la difesa contro l'aggiramento del rate limit di
 // better-auth. Su un `Bun.serve` vero `socketIpAsForwardedFor` sovrascrive

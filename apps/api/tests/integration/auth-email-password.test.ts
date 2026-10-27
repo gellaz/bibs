@@ -24,7 +24,7 @@ mock.module("@/db", () => ({
 
 const sentEmails: { to: string; subject: string; html: string }[] = [];
 
-mock.module("@/lib/email", () => ({
+mock.module("@/infra/email", () => ({
 	sendEmail: async (email: { to: string; subject: string; html: string }) => {
 		sentEmails.push(email);
 	},
@@ -83,7 +83,7 @@ async function waitForEmail(to: string) {
 
 describe("better-auth email/password against the migrated schema", () => {
 	it("signUpEmail writes the user and credential account rows", async () => {
-		const { auth } = await import("@/lib/auth");
+		const { auth } = await import("@/infra/auth");
 		const db = getTestDb();
 		const email = "signup@test.com";
 
@@ -116,7 +116,7 @@ describe("better-auth email/password against the migrated schema", () => {
 	});
 
 	it("blocks sign-in until the email is verified, then opens a session", async () => {
-		const { auth } = await import("@/lib/auth");
+		const { auth } = await import("@/infra/auth");
 		const db = getTestDb();
 		const email = "signin@test.com";
 		const password = "password123";
@@ -149,7 +149,7 @@ describe("better-auth email/password against the migrated schema", () => {
 	});
 
 	it("greets neutrally, never with the email local-part, until firstName is set", async () => {
-		const { auth } = await import("@/lib/auth");
+		const { auth } = await import("@/infra/auth");
 		const db = getTestDb();
 		const email = "mario.rossi@test.com";
 

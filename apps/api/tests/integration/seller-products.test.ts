@@ -25,7 +25,7 @@ mock.module("@/db", () => ({
 }));
 
 // S3 is only used by deleteProduct cleanup (best-effort)
-mock.module("@/lib/s3", () => ({
+mock.module("@/infra/s3", () => ({
 	s3: { delete: mock(async () => {}) },
 }));
 

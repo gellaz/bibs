@@ -1,6 +1,6 @@
 /**
  * Bun test preload — runs before any test file is loaded.
- * Sets the env vars required by @/lib/env so tests don't call process.exit(1).
+ * Sets the env vars required by @/infra/env so tests don't call process.exit(1).
  * Uses fake but structurally-valid values; no real services are contacted.
  */
 process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test";

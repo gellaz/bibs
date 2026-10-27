@@ -42,7 +42,7 @@ const createReversal = mock(async (_id: string, _p: any, _o?: any) => ({
 }));
 const refundsCreate = mock(async (_p: any, _o?: any) => ({ id: "re_1" }));
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		paymentIntents: {
 			create: paymentIntentsCreate,

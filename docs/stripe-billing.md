@@ -289,7 +289,7 @@ step 1 leaves orphan Stripe objects pointing at users that no longer exist.
 ## Automated tests
 
 Integration tests cover checkout-session creation and every webhook handler with the
-**Stripe SDK fully mocked** (`mock.module("@/lib/stripe", …)`) and a **real Postgres**
+**Stripe SDK fully mocked** (`mock.module("@/infra/stripe", …)`) and a **real Postgres**
 via testcontainers:
 
 ```bash

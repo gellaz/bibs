@@ -7,8 +7,8 @@ import { ok, okPage } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { env } from "@/lib/env";
-import { logger } from "@/lib/logger";
+import { env } from "@/infra/env";
+import { logger } from "@/infra/logger";
 import {
 	CountrySchema,
 	GeocodeSuggestionSchema,

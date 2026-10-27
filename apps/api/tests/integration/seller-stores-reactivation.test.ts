@@ -50,7 +50,7 @@ const subCancel = mock(async (_id: string) => ({
 
 let currentEvent: any = null;
 
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		customers: { create: async () => ({ id: "cus_FAKE" }) },
 		checkout: { sessions: { create: sessionCreate, list: sessionList } },
@@ -59,7 +59,7 @@ mock.module("@/lib/stripe", () => ({
 	},
 }));
 
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		NODE_ENV: "test",
 		STRIPE_SECRET_KEY: "sk_test_FAKE",

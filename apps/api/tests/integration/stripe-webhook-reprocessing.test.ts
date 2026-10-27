@@ -29,13 +29,13 @@ let currentEvent: { id: string; type: string; data: { object: unknown } } = {
 	data: { object: {} },
 };
 const constructEvent = mock(async () => currentEvent);
-mock.module("@/lib/stripe", () => ({
+mock.module("@/infra/stripe", () => ({
 	stripe: {
 		webhooks: { constructEventAsync: constructEvent },
 	},
 }));
 
-mock.module("@/lib/env", () => ({
+mock.module("@/infra/env", () => ({
 	env: {
 		STRIPE_SECRET_KEY: "sk_test_FAKE",
 		STRIPE_WEBHOOK_SECRET: "whsec_FAKE",

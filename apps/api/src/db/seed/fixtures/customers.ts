@@ -4,7 +4,7 @@ import { customerAddress } from "@/db/schemas/address";
 import { user } from "@/db/schemas/auth";
 import { customerProfile } from "@/db/schemas/customer";
 import { pointTransaction } from "@/db/schemas/points";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 import {
 	BOLOGNA_DISTRICTS,
 	firstNames,

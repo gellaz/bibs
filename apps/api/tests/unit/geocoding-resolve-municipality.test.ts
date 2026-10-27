@@ -3,7 +3,7 @@ import {
 	buildMunicipalityIndex,
 	type MunicipalityIndexEntry,
 	resolveMunicipality,
-} from "@/lib/geocoding/resolve-municipality";
+} from "@/infra/geocoding/resolve-municipality";
 
 const ROWS: MunicipalityIndexEntry[] = [
 	{

@@ -6,7 +6,7 @@ import { organization } from "@/db/schemas/organization";
 import type { OnboardingStatus } from "@/db/schemas/seller";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
-import { auth } from "@/lib/auth";
+import { auth } from "@/infra/auth";
 import type { IdentityDocumentType } from "@/lib/schemas/forms/identity-document";
 import {
 	type AnyMunicipalityHandle,

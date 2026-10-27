@@ -6,8 +6,8 @@ import {
 	PutBucketPolicyCommand,
 } from "@aws-sdk/client-s3";
 import { S3Client } from "bun";
-import { env } from "@/lib/env";
-import { isConnectionError, retry } from "@/lib/retry";
+import { env } from "@/infra/env";
+import { isConnectionError, retry } from "@/infra/retry";
 
 const endpoint = env.S3_ENDPOINT;
 const bucket = env.S3_BUCKET;
@@ -35,7 +35,7 @@ const awsS3 = new AwsS3Client({
  * Runs once at startup, before the server begins listening, so a failure here
  * is fatal — it reports what to do instead of surfacing a raw socket trace.
  * Connection failures are retried to absorb a container that is running but
- * has not bound its port yet; see @/lib/retry.
+ * has not bound its port yet; see @/infra/retry.
  */
 export async function ensureBucket() {
 	try {

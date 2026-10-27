@@ -22,11 +22,11 @@ mock.module("@/db", () => ({
 		},
 	}),
 }));
-mock.module("@/lib/email", () => ({ sendEmail: async () => {} }));
+mock.module("@/infra/email", () => ({ sendEmail: async () => {} }));
 
 const s3WriteMock = mock(async (_key: string, _data: unknown) => {});
 const s3DeleteMock = mock(async (_key: string) => {});
-mock.module("@/lib/s3", () => ({
+mock.module("@/infra/s3", () => ({
 	s3: { write: s3WriteMock, delete: s3DeleteMock },
 	publicUrl: (key: string) => `http://localhost:9000/bibs-test/${key}`,
 	ensureBucket: async () => {},

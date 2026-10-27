@@ -5,8 +5,8 @@ import { doc } from "@/http/openapi";
 import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
+import { logger } from "@/infra/logger";
 import { config } from "@/lib/config";
-import { logger } from "@/lib/logger";
 import { StoreWithPhonesSchema } from "@/lib/schemas/composed";
 import {
 	AddressFieldsOptional,

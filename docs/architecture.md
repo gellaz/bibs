@@ -109,7 +109,7 @@ of every `moduleApp()`:
 
 [better-auth](https://www.better-auth.com) with the admin plugin, cookie sessions
 (HTTP-only) plus bearer-token support. Four roles: **admin**, **seller**, **employee**,
-**customer** (`src/lib/permissions.ts`). A user can hold both a customer and a seller
+**customer** (`src/infra/permissions.ts`). A user can hold both a customer and a seller
 profile.
 
 Authentication is per route and closed by default. Each route carries one guard from
@@ -319,5 +319,5 @@ suites.
   setup.
 - **Templates**: `packages/emails` (react-email 6). Preview server:
   `bun run dev:emails` → <http://localhost:3004>.
-- **Sending**: `apps/api/src/lib/email.ts` — POSTs to Mailpit in dev and falls back to
+- **Sending**: `apps/api/src/infra/email.ts` — POSTs to Mailpit in dev and falls back to
   logging the payload if Mailpit is down, so the API never crashes over email.

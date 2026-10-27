@@ -27,7 +27,7 @@ mock.module("@/db", () => ({
 import type {
 	GeocodeHit,
 	GeocodeSearchOptions,
-} from "@/lib/geocoding/provider";
+} from "@/infra/geocoding/provider";
 
 /** Provider finto: registra ogni chiamata e restituisce hit a comando. */
 const calls: { q: string; opts: GeocodeSearchOptions }[] = [];
@@ -36,7 +36,7 @@ let nextHits: GeocodeHit[] = [];
 let queue: GeocodeHit[][] = [];
 let failNext = false;
 
-mock.module("@/lib/geocoding", () => ({
+mock.module("@/infra/geocoding", () => ({
 	getGeocodingProvider: () => ({
 		name: "photon",
 		async search(q: string, opts: GeocodeSearchOptions) {
@@ -56,9 +56,9 @@ mock.module("@/lib/geocoding", () => ({
 
 // ── Imports (resolved after mocks) ────────────────────────────────────────────
 
+import { LOOKUP_TTL_MS, writeLookup } from "@/infra/geocoding/cache";
+import { resetMunicipalityIndex } from "@/infra/geocoding/municipality-index";
 import { ServiceError } from "@/lib/errors";
-import { LOOKUP_TTL_MS, writeLookup } from "@/lib/geocoding/cache";
-import { resetMunicipalityIndex } from "@/lib/geocoding/municipality-index";
 import { geocodeAddress } from "@/modules/locations/services/geocode";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestMunicipality } from "../helpers/fixtures";

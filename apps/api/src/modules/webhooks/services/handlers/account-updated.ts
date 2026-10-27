@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { logger } from "@/lib/logger";
+import { logger } from "@/infra/logger";
 import { refreshConnectAccount } from "@/modules/billing/services/connect-account";
 
 /**

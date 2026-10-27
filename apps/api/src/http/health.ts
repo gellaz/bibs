@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { doc } from "@/http/openapi";
 import { publicRoute } from "@/http/routes";
 import { json } from "@/http/send";
-import { checkBucket } from "@/lib/s3";
+import { checkBucket } from "@/infra/s3";
 
 export const healthRoutes = new Hono()
 	.get(

@@ -7,9 +7,9 @@ import {
 	type StoreSubscriptionStatus,
 	storeSubscription,
 } from "@/db/schemas/store-subscription";
-import { env } from "@/lib/env";
+import { env } from "@/infra/env";
+import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import { stripe } from "@/lib/stripe";
 
 export interface BillingSubscriptionRow {
 	storeId: string;

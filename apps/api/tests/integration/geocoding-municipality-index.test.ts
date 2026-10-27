@@ -29,8 +29,8 @@ mock.module("@/db", () => ({
 import {
 	loadMunicipalityIndex,
 	resetMunicipalityIndex,
-} from "@/lib/geocoding/municipality-index";
-import { resolveMunicipality } from "@/lib/geocoding/resolve-municipality";
+} from "@/infra/geocoding/municipality-index";
+import { resolveMunicipality } from "@/infra/geocoding/resolve-municipality";
 import { truncateAll } from "../helpers/cleanup";
 import { createTestMunicipality } from "../helpers/fixtures";
 

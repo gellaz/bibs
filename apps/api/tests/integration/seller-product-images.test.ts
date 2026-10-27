@@ -22,7 +22,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-mock.module("@/lib/s3", () => ({
+mock.module("@/infra/s3", () => ({
 	s3: {
 		write: mock(async () => {}),
 		delete: mock(async () => {}),
