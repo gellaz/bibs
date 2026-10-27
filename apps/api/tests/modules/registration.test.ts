@@ -90,7 +90,7 @@ const mockSignIn = mock(async (_body: { email: string; password: string }) => ({
 	token: "mock-token-signin",
 }));
 
-mock.module("@/modules/registration/services", () => ({
+mock.module("@/modules/registration/services/registration", () => ({
 	registerCustomer: mockRegisterCustomer,
 	registerSeller: mockRegisterSeller,
 	signIn: mockSignIn,

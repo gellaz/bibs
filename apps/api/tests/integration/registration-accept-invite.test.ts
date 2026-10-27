@@ -43,7 +43,7 @@ import { createTestSeller, createTestStore } from "../helpers/fixtures";
  * `tests/modules/registration.test.ts`, which mocks the registration services
  * at the route level, so it lives here against a migrated database.
  *
- * `@/modules/registration/services` MUST be imported dynamically inside each
+ * `@/modules/registration/services/registration` MUST be imported dynamically inside each
  * test: it imports `@/lib/auth`, and `betterAuth({ database: drizzleAdapter(db)
  * })` captures `db` eagerly at module evaluation. A static import is evaluated
  * before `mock.module("@/db")` takes effect, so the adapter would bind to the
@@ -64,7 +64,9 @@ beforeEach(async () => {
 
 describe("acceptInvite storeEmployeeStores propagation", () => {
 	it("inserts store_employee_stores rows for assigned stores", async () => {
-		const { acceptInvite } = await import("@/modules/registration/services");
+		const { acceptInvite } = await import(
+			"@/modules/registration/services/registration"
+		);
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const sA = await createTestStore(db, profile.id);
@@ -115,7 +117,9 @@ describe("acceptInvite storeEmployeeStores propagation", () => {
 	// store is already gone from the invitation rows. A SOFT-deleted store is a
 	// different case on purpose — see the next test.
 	it("does not assign a store hard-deleted between invite and accept", async () => {
-		const { acceptInvite } = await import("@/modules/registration/services");
+		const { acceptInvite } = await import(
+			"@/modules/registration/services/registration"
+		);
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const sA = await createTestStore(db, profile.id);
@@ -155,7 +159,9 @@ describe("acceptInvite storeEmployeeStores propagation", () => {
 	// getEmployeeAssignedStoreIds, so the row is inert until a restore.
 	// docs/superpowers/specs/2026-09-09-employee-store-assignment-lifecycle-design.md
 	it("still assigns a store soft-deleted between invite and accept", async () => {
-		const { acceptInvite } = await import("@/modules/registration/services");
+		const { acceptInvite } = await import(
+			"@/modules/registration/services/registration"
+		);
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const sA = await createTestStore(db, profile.id);
@@ -230,7 +236,9 @@ describe("acceptInvite rollback", () => {
 	});
 
 	it("deletes the signed-up user and leaves the invite usable", async () => {
-		const { acceptInvite } = await import("@/modules/registration/services");
+		const { acceptInvite } = await import(
+			"@/modules/registration/services/registration"
+		);
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const store = await createTestStore(db, profile.id);

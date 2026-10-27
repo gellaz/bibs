@@ -37,7 +37,7 @@ type MatrixRow = {
 /**
  * Parser CSV minimale ma corretto sui campi quotati (RFC 4180).
  *
- * Copia quasi verbatim di `@/lib/utils/csv` (duplicata solo perché questo
+ * Copia quasi verbatim di `@/lib/csv` (duplicata solo perché questo
  * script gira senza l'alias `@/`, vedi sopra). Le semantiche coincidono oggi,
  * incluso il `trim()` dei campi: se cambia una delle due, verifica l'altra —
  * altrimenti questo gate di validazione e l'importer reale possono

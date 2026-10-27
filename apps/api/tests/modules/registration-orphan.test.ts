@@ -1,6 +1,6 @@
 import { describe, expect, it, mock } from "bun:test";
 import type { Logger } from "pino";
-import { provisionOrRollback } from "@/modules/registration/services";
+import { provisionOrRollback } from "@/modules/registration/services/registration";
 
 // signUpEmail commits the user+account row before the role/profile transaction
 // runs. provisionOrRollback guarantees that a failed transaction rolls that user
