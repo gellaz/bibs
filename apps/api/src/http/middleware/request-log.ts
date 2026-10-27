@@ -1,11 +1,13 @@
 import { createMiddleware } from "hono/factory";
-import { logRequestToFile } from "@/infra/logger";
+import { env } from "@/infra/env";
+import { logRequest } from "@/infra/logger";
 
 // La riga per richiesta di prima della migrazione (il plugin di log 6.10.3 con
 // `customLogFormat: "{now} {level} {duration} {method} {pathname} {status}
 // {ip}"`, `{ip}` vuoto), stessi testi e stessi colori: su console.info,
 // console.warn o console.error secondo lo status, colorata solo su un
-// terminale. Più la riga JSON in `logs/app.log`. Attesi in
+// terminale. Più la riga JSON: in `logs/app.log`, o da sola su stdout in
+// produzione. Attesi in
 // `tests/unit/http/golden/app-*.json` e `tests/unit/infra/logger.test.ts`. Formato e colori
 // del plugin di prima (MIT): `THIRD_PARTY_NOTICES.md`.
 
@@ -132,6 +134,7 @@ export const requestLog = createMiddleware(async (c, next) => {
 	const { level, line } = formatRequestLine(entry, {
 		notFoundAtRoot: rootNotFound.has(c.req.raw),
 	});
-	console[SINK[level]](line);
-	logRequestToFile(SINK[level], entry);
+	// In production the JSON line alone, on stdout: the platform reads it.
+	if (env.NODE_ENV !== "production") console[SINK[level]](line);
+	logRequest(SINK[level], entry);
 });

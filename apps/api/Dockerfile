@@ -38,11 +38,10 @@ RUN NODE_ENV=production bun run --cwd apps/api build
 FROM oven/bun:1.4-slim
 WORKDIR /app/apps/api
 
-# Non-root user. lib/logger.ts creates ./logs at import time (pino file
-# transport), and the WORKDIR is root-owned: pre-create it writable, or the
-# API crashes on boot with EACCES.
-RUN groupadd -r bibs && useradd -r -g bibs -s /sbin/nologin bibs \
-	&& mkdir -p logs && chown bibs:bibs logs
+# Non-root user. In production the API logs only to stdout (no ./logs), so the
+# root-owned WORKDIR needs nothing writable: a file log would crash the boot
+# with EACCES, and the CI smoke would catch it.
+RUN groupadd -r bibs && useradd -r -g bibs -s /sbin/nologin bibs
 
 # Dependencies, in the same layout as the build stage. bun's isolated linker
 # makes apps/api/node_modules a tree of symlinks into the root store

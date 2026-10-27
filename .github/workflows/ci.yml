@@ -126,6 +126,11 @@ jobs:
           done
           echo "API did not become ready" >&2
           exit 1
+      # In production every request is one JSON line on the container's stdout.
+      - name: Request log on stdout
+        run: |
+          docker logs api > api-stdout.log 2>/dev/null
+          grep -q '"type":"request"' api-stdout.log
       # bun build inlines NODE_ENV: a bundle built without it stays
       # "development" (log-only emails, credentialed localhost CORS) even with
       # NODE_ENV=production at runtime.
@@ -135,6 +140,17 @@ jobs:
             echo "Image is not a production build: localhost origin allowed" >&2
             exit 1
           fi
+      # SIGTERM: requests and running jobs finish, the pool closes, exit 0
+      # within docker stop's grace period (a SIGKILL would be 137).
+      - name: Graceful stop
+        run: |
+          docker stop -t 10 api
+          test "$(docker inspect -f '{{.State.ExitCode}}' api)" = 0
+      # Boot, requests and shutdown included: every stdout line is pino JSON.
+      - name: Stdout is JSON only
+        run: |
+          docker logs api > api-stdout.log 2>/dev/null
+          jq -e . api-stdout.log > /dev/null
       - name: API logs
         if: failure()
         run: docker logs api || true

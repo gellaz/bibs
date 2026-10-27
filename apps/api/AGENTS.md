@@ -108,8 +108,11 @@ The root Hono app, with no side effects at import (tests, tools and the Hono CLI
 
 The only module with side effects: `startCronJobs()`, then `ensureBucket()` (creates the S3 bucket if missing), then
 `Bun.serve({ port: env.PORT, fetch: app.fetch, … })`. Bun passes the server to `fetch` as `c.env`, which is how
-`socketIpAsForwardedFor` and `rateLimit` read the socket IP. On `SIGTERM`/`SIGINT` it stops the server and closes the
-database pool.
+`socketIpAsForwardedFor` and `rateLimit` read the socket IP. On `SIGTERM`/`SIGINT` it runs `gracefulShutdown()`
+(`src/shutdown.ts`): stops accepting requests, stops the scheduler (`stopCronJobs`), waits for the requests and jobs
+in flight (at most 8 s), then closes the database pool (at most 1 s more, since `pool.end()` also waits for
+checked-out clients) and exits 0 — under the 10 s of `docker stop`. The CI's Docker job checks the exit code and
+that every stdout line is JSON.
 
 ### Middleware — `src/http/middleware/`
 
@@ -117,7 +120,7 @@ Plain Hono middleware (1–4, 7) and the two route groups in `src/http/` (5–6)
 
 1. **`request-log.ts`** — `requestLog`: one line per request on stdout (time, level, duration, method, path, status;
    `INFO`/`WARNING`/`ERROR` by status, colours only on a terminal) and a JSON line in `logs/app.log` (single file,
-   no rotation).
+   no rotation). In production only the JSON line, on stdout.
 2. **`cors.ts`** — `cors`: `hono/cors` for the React frontends, with credentials. Localhost is accepted automatically
    in development and test, `ALLOWED_ORIGINS` in production (`isOriginAllowed`, same file). Every `OPTIONS` is answered as a 204
    preflight before any route.
@@ -140,7 +143,15 @@ Plain Hono middleware (1–4, 7) and the two route groups in `src/http/` (5–6)
 `scheduler.ts` — `startCronJobs()` with `croner`, called only by `src/index.ts` (tests, tools and the CLI never
 schedule a tick). The five jobs live next to it, one file each: `expireReservations` and `expireUnpaidOrders` every
 minute, `retryStoreTransfers` hourly at :30, `expirePendingStoreCreations` hourly, `autoCancelSuspendedStores` daily
-at 03:00 (server local time).
+at 03:00, all in `Europe/Rome` time.
+
+Each tick runs inside `runExclusive(lockKey, run)` (`lock.ts`): a Postgres advisory lock per job (keys 9101–9105),
+so with several API replicas one job runs on one replica at a time, and croner's `protect` skips a tick while the
+previous one still runs. The lock prevents overlaps, not re-runs: a replica whose tick fires right after another
+replica finished runs the job again. **Every job must stay idempotent**: re-check the state in a transaction
+(compare-and-set) before acting, and give Stripe calls that create money movements an idempotency key
+(`domain/billing/order-payments.ts` does). A cancel (`paymentIntents.cancel`, `subscriptions.cancel`) is safe
+without one because the state check runs first.
 
 The HTTP kit the routes use lives in `src/http/`: `moduleApp()` (`app.ts`), `v()` (`validator.ts`), `send()`
 (`send.ts`), `doc()` and the OpenAPI generator (`openapi.ts`), the guards (`auth.ts`), `guard()`, `publicRoute` and
@@ -207,6 +218,8 @@ Email sending via **Resend** in production, Mailpit in development:
   `durationMs`) in `logs/app.log` (single file, no rotation)
 - **`logger`** — the Pino logger for every context (route handlers, services, cron jobs, startup, timers); writes to
   both stdout and the log file
+- **Production** (`NODE_ENV=production`) — no `logs/` and no text line: stdout carries only Pino JSON, the request
+  line included, for the platform to collect
 - **Redaction** — automatically redacts `password`, `token`, `apiKey`, `secret`, `authorization` fields
 - **Log level** — `debug` in development, `info` in production (based on `NODE_ENV`)
 
