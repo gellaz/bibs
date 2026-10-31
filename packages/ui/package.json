@@ -15,7 +15,7 @@
 		"@tanstack/react-query-devtools": "catalog:",
 		"@tanstack/react-table": "catalog:",
 		"class-variance-authority": "^0.7.1",
-		"cn": "^0.5.0",
+		"cn": "^0.5.1",
 		"date-fns": "^4.4.0",
 		"hono": "catalog:",
 		"lucide-react": "catalog:",

@@ -24,7 +24,7 @@
 		"better-auth": "catalog:",
 		"croner": "^6.0.7",
 		"drizzle-orm": "^0.45.4",
-		"file-type": "^22.1.1",
+		"file-type": "^22.3.0",
 		"hono": "catalog:",
 		"pg": "catalog:",
 		"pino": "^10.4.0",
