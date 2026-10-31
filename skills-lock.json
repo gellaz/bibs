@@ -59,7 +59,7 @@
 			"source": "Leonxlnx/taste-skill",
 			"sourceType": "github",
 			"skillPath": "skills/taste-skill/SKILL.md",
-			"computedHash": "69021ac7e671c0c0d85d65b570003cef360b1c296323fa28c042884e146478ca"
+			"computedHash": "6ac8ba6089dcbc303744a507a4587113c5d845ca2f658b3ce2b0b5eab108fb0d"
 		},
 		"email-and-password-best-practices": {
 			"source": "better-auth/skills",

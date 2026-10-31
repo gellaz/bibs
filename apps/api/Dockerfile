@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.25
+# syntax=docker/dockerfile:1.28
 
 # ---------- Build stage ----------
 # Installs the API's workspace graph only (`--filter`: @bibs/api and the
