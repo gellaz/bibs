@@ -27,7 +27,7 @@ services:
     # SeaweedFS replaces MinIO, which no longer ships community images. `mini`
     # runs master, volume, filer, S3 gateway and admin UI in one process — dev
     # only, production runs the components separately.
-    image: chrislusf/seaweedfs:4.48
+    image: chrislusf/seaweedfs:4.51
     container_name: bibs-seaweedfs
     command:
       - mini
@@ -53,7 +53,7 @@ services:
       start_period: 5s
 
   bibs-mailpit:
-    image: axllent/mailpit:v1.32.0
+    image: axllent/mailpit:v1.33.0
     container_name: bibs-mailpit
     ports:
       - "8025:8025" # web UI + REST API
