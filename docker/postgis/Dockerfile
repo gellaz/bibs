@@ -19,7 +19,9 @@ RUN apt-get update \
   ca-certificates \
   \
   postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR=$POSTGIS_VERSION \
-  postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts \
+  # Pinned like the library (upstream leaves it floating): unpinned, apt pulls
+  # the newest scripts (3.7.0) onto the 3.6.4 library and CREATE EXTENSION fails.
+  postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts=$POSTGIS_VERSION \
   && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /docker-entrypoint-initdb.d
