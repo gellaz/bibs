@@ -206,7 +206,13 @@ describe("admin requests", () => {
 			documentType: "identity_card",
 			documentNumber: "CA12345AB",
 			documentExpiry: "2030-05-05",
-			issuedMunicipality: { name: "Vecchio", provinceAcronym: "AA" },
+			// Il servizio dà il comune compatto con l'id; la route lo toglie
+			// (admin-sellers-strip.test.ts).
+			issuedMunicipality: {
+				id: current.id,
+				name: "Vecchio",
+				provinceAcronym: "AA",
+			},
 			imageUrl: "https://cdn.test/old.jpg",
 		});
 		expect(d.document?.requested.documentType).toBe("passport");

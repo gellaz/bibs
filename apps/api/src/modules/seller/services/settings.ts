@@ -11,11 +11,11 @@ import {
 import { getEmployeeAssignedStoreIds } from "@/domain/sellers/access";
 import { deleteDocumentImage } from "@/domain/sellers/documents";
 import { ServiceError } from "@/lib/errors";
-import { notifyAdminsNewRequest } from "@/modules/seller/services/admin-notifications";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/modules/seller/services/municipality";
+} from "@/lib/municipality";
+import { notifyAdminsNewRequest } from "@/modules/seller/services/admin-notifications";
 import type { IdentityDocumentType } from "@/schemas/forms/identity-document";
 import { checkDocument } from "./document-check";
 import { fetchSellerProfileCompact } from "./profile";

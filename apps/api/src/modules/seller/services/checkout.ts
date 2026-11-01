@@ -10,6 +10,7 @@ import { env } from "@/infra/env";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
 import type { CreateStoreBody } from "@/schemas/forms";
+import { loadOwnedSubscription } from "./stores";
 
 type CreateStoreInput = z.infer<typeof CreateStoreBody>;
 
@@ -185,14 +186,7 @@ export async function createReactivationCheckoutSession(params: {
 	sellerProfileId: string;
 	storeId: string;
 }): Promise<{ checkoutUrl: string }> {
-	const sub = await db.query.storeSubscription.findFirst({
-		where: eq(storeSubscription.storeId, params.storeId),
-		with: { store: { columns: { sellerProfileId: true } } },
-	});
-	if (!sub) throw new ServiceError(404, "Abbonamento non trovato");
-	if (sub.store.sellerProfileId !== params.sellerProfileId) {
-		throw new ServiceError(403, "Non sei il titolare di questo negozio");
-	}
+	const sub = await loadOwnedSubscription(params);
 	if (sub.status !== "canceled") {
 		throw new ServiceError(409, "Negozio non cancellato");
 	}

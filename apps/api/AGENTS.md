@@ -74,7 +74,7 @@ After making code changes, always run `bun run typecheck` to verify there are no
 | `domain/<area>/` | Business rules used by more than one module or by the jobs: `billing`, `orders`, `pricing`, `stores`, `holidays`, `catalog`, `sellers` |
 | `jobs/` | The background jobs and `scheduler.ts` |
 | `schemas/` | Zod schemas; `forms/` is exported as `@bibs/api/schemas` |
-| `lib/` | Generic utilities with no business meaning: `config`, `errors`, `like`, `list-by-name-paged`, `money`, `pagination` |
+| `lib/` | Generic utilities with no business meaning: `config`, `errors`, `like`, `list-by-name-paged`, `money`, `municipality` (the compact `{ id, name, provinceAcronym }` shape), `pagination` |
 | `modules/<role>/` | HTTP only, one per role: `index.ts`, `routes/`, the role's own `services/`, `context.ts` |
 | `db/`, `scripts/` | Drizzle (schema, migrations, seed) and command-line scripts |
 
@@ -84,8 +84,8 @@ business rule → `domain/<area>/`; generic → `lib/`; talks to an external sys
 
 Who may import what, enforced by `tests/unit/architecture.test.ts`: **A.** a module never imports another module;
 **B.** outside `modules/` nothing imports `modules/`, except `app.ts`, `types.ts`, `db/seed/` and `scripts/`; **C.**
-`lib/` imports only `lib/` and `db/`. Never give an API file a path that exists in `apps/<fe>/src/` (`env.ts`,
-`lib/<name>`, `routes/`, …): the frontends' `@/` alias would shadow it.
+`lib/` imports only `lib/` and `db/`. Never give an API file a path that exists in `apps/<fe>/src/`
+(`lib/<name>`, `routes/`, …): the frontends' `@/` alias would shadow it.
 
 ### App — `src/app.ts`
 
@@ -250,7 +250,9 @@ Defines valid status transitions per order type using typed keys (
 ### Order Helpers — `src/domain/orders/order-helpers.ts`
 
 Shared helper `refundStockAndPoints(tx, order)` for restocking items and refunding loyalty points within an existing DB
-transaction. Used by cancellation, expiry, and pickup-expired flows to avoid code duplication.
+transaction. Used by cancellation, expiry, and pickup-expired flows to avoid code duplication. `cancelLoadedOrder(tx,
+order)` is the one cancellation (state machine, CAS, PR2 refund, stock and points) behind both the customer's and the
+seller's cancel: each caller only loads the order and checks it is theirs.
 
 ### Reservation Expiry — `src/jobs/expire-reservations.ts`
 

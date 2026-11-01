@@ -13,7 +13,7 @@ export const municipalityCompactWith = {
 	with: { province: { columns: { acronym: true } } },
 } as const;
 
-type RawMunicipalityCompact = {
+export type RawMunicipalityCompact = {
 	id: string;
 	name: string;
 	province: { acronym: string };

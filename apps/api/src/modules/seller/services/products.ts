@@ -28,11 +28,11 @@ import type { VatRate } from "@/domain/pricing/vat";
 import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
 import { s3 } from "@/infra/s3";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
-import { parsePagination } from "@/lib/pagination";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/modules/seller/services/municipality";
+} from "@/lib/municipality";
+import { parsePagination } from "@/lib/pagination";
 import { recordProductAudit, recordProductAuditBatch } from "./product-audit";
 import {
 	listProductCharacteristicValues,

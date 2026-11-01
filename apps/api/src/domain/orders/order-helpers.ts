@@ -1,9 +1,14 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { db } from "@/db";
 import { customerProfile } from "@/db/schemas/customer";
+import { order } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
+import { refundOrderPayment } from "@/domain/billing/order-payments";
+import { assertCancellable } from "@/domain/orders/order-state-machine";
 import { config } from "@/lib/config";
+import { ServiceError } from "@/lib/errors";
 
 /**
  * Refunds stock and loyalty points for a cancelled/expired order.
@@ -44,6 +49,41 @@ export async function refundStockAndPoints(
 			description: `Refunded ${order.pointsSpent} points`,
 		});
 	}
+}
+
+/**
+ * Annullamento di un ordine già letto (con le righe) e autorizzato dal
+ * chiamante, cliente o negozio: stesse regole della macchina a stati (da
+ * `pending` o `confirmed`; un pay_* `pending` non si annulla, 409). CAS sullo
+ * stato prima del rimborso, così due annullamenti concorrenti non rimborsano
+ * due volte. Da `confirmed`, un PR2 rimborsa il pagamento e storna il
+ * trasferimento nella stessa tx; poi tornano stock e punti.
+ */
+export async function cancelLoadedOrder(
+	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+	existing: typeof order.$inferSelect & {
+		items: { storeProductId: string | null; quantity: number }[];
+	},
+) {
+	assertCancellable(existing);
+
+	const [updated] = await tx
+		.update(order)
+		.set({ status: "cancelled" })
+		.where(and(eq(order.id, existing.id), eq(order.status, existing.status)))
+		.returning();
+	if (!updated) throw new ServiceError(409, "L'ordine è già stato aggiornato");
+
+	// `updated` (la riga appena letta dal CAS), non `existing` (letta prima):
+	// un trasferimento può essere partito tra le due letture (settleCheckoutPayment
+	// concorrente), e senza lo storno rimborsiamo il cliente senza recuperare i
+	// soldi dal negozio.
+	if (existing.type === "pay_pickup" && existing.status === "confirmed")
+		await refundOrderPayment(tx, updated);
+
+	await refundStockAndPoints(tx, existing);
+
+	return updated;
 }
 
 /**

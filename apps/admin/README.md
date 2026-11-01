@@ -30,9 +30,7 @@ bun run dev:admin    # http://localhost:3003
 ## Environment
 
 No env file is needed to boot: `VITE_API_URL` defaults to `http://localhost:3000`.
-To override it (or the optional `VITE_APP_TITLE` / `SERVER_URL`), copy `.env.example`
-to `.env.local`. The `BETTER_AUTH_*` lines in `.env.example` belong to the API's
-`.env` — the admin app does not read them.
+To override it, copy `.env.example` to `.env.local`.
 
 ## Routes & i18n
 

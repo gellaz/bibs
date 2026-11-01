@@ -4,6 +4,11 @@ import { db } from "@/db";
 import { sellerProfile } from "@/db/schemas/seller";
 import { sellerProfileChange } from "@/db/schemas/seller-profile-change";
 import { ServiceError } from "@/lib/errors";
+import {
+	municipalityCompactWith,
+	type RawMunicipalityCompact,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { parsePagination } from "@/lib/pagination";
 import type { DocumentChangeBody } from "@/schemas/forms";
 
@@ -12,11 +17,6 @@ export type RequestType = "all" | "candidature" | "vat" | "document";
 type DocumentChangeData = z.infer<typeof DocumentChangeBody> & {
 	documentImageUrl?: string;
 };
-
-const municipalityWith = {
-	columns: { name: true },
-	with: { province: { columns: { acronym: true } } },
-} as const;
 
 const candidates = () =>
 	db.query.sellerProfile.findMany({
@@ -32,7 +32,7 @@ const pendingChanges = () =>
 				with: {
 					user: true,
 					organization: true,
-					documentIssuedMunicipality: municipalityWith,
+					documentIssuedMunicipality: municipalityCompactWith,
 				},
 			},
 		},
@@ -132,7 +132,7 @@ export async function getChangeDetail(changeId: string) {
 				with: {
 					user: true,
 					organization: true,
-					documentIssuedMunicipality: municipalityWith,
+					documentIssuedMunicipality: municipalityCompactWith,
 				},
 			},
 		},
@@ -167,11 +167,11 @@ export async function getChangeDetail(changeId: string) {
 	const req = change.changeData as DocumentChangeData;
 	const requestedMunicipality = await db.query.municipality.findFirst({
 		where: (m, { eq }) => eq(m.id, req.documentIssuedMunicipalityId),
-		...municipalityWith,
+		...municipalityCompactWith,
 	});
-	const toMunicipality = (
-		m: { name: string; province: { acronym: string } } | null | undefined,
-	) => (m ? { name: m.name, provinceAcronym: m.province.acronym } : null);
+	// L'id non esce: lo schema di `issuedMunicipality` ha solo nome e sigla.
+	const toMunicipality = (m: RawMunicipalityCompact | null | undefined) =>
+		m ? toMunicipalityCompact(m) : null;
 
 	return {
 		...base,

@@ -32,9 +32,18 @@ mock.module("@/infra/s3", () => ({
 
 import { eq } from "drizzle-orm";
 import { productImage } from "@/db/schemas/product-image";
+import { s3 } from "@/infra/s3";
+import { config } from "@/lib/config";
 import { uploadProductImages } from "@/modules/seller/services/images";
+import { uploadStoreImages } from "@/modules/seller/services/store-images";
 import { truncateAll } from "../../../helpers/cleanup";
-import { createTestProduct, createTestSeller } from "../../../helpers/fixtures";
+import {
+	createTestProduct,
+	createTestProductImage,
+	createTestSeller,
+	createTestStore,
+	createTestStoreImage,
+} from "../../../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -114,5 +123,56 @@ describe("uploadProductImages — position assignment", () => {
 		const positions = all.map((r) => r.position).sort((a, b) => a - b);
 		// 4 images total with no duplicate positions: 0,1,2,3.
 		expect(positions).toEqual([0, 1, 2, 3]);
+	});
+});
+
+// Il flusso è uno solo (image-upload.ts): il tetto e il suo messaggio
+// dipendono da chi lo chiama.
+describe("tetto delle foto, prima di toccare S3", () => {
+	it("prodotto: 400 con il tetto dei prodotti", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const product = await createTestProduct(db, seller.profile.id);
+		for (let i = 0; i < config.maxImagesPerProduct; i++)
+			await createTestProductImage(db, product.id, { position: i });
+		(s3.write as ReturnType<typeof mock>).mockClear();
+
+		await expect(
+			uploadProductImages({
+				productId: product.id,
+				sellerProfileId: seller.profile.id,
+				userId: seller.user.id,
+				isOwner: true,
+				files: [makeFile()],
+			}),
+		).rejects.toMatchObject({
+			status: 400,
+			message:
+				"Massimo 10 immagini per prodotto (attuali: 10, in caricamento: 1)",
+		});
+		expect(s3.write).not.toHaveBeenCalled();
+	});
+
+	it("negozio: 400 con il tetto dei negozi", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		for (let i = 0; i < config.maxImagesPerStore - 1; i++)
+			await createTestStoreImage(db, store.id, { position: i });
+		(s3.write as ReturnType<typeof mock>).mockClear();
+
+		await expect(
+			uploadStoreImages({
+				storeId: store.id,
+				sellerProfileId: seller.profile.id,
+				userId: seller.user.id,
+				isOwner: true,
+				files: [makeFile("a.jpg"), makeFile("b.jpg")],
+			}),
+		).rejects.toMatchObject({
+			status: 400,
+			message: "Massimo 8 immagini per negozio (attuali: 7, in caricamento: 2)",
+		});
+		expect(s3.write).not.toHaveBeenCalled();
 	});
 });

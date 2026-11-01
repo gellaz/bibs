@@ -3,7 +3,7 @@ import { db } from "@/db";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/modules/seller/services/municipality";
+} from "@/lib/municipality";
 
 // ── Helpers ─────────────────────────────────
 
