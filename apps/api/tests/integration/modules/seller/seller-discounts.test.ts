@@ -6,6 +6,7 @@ import {
 	expect,
 	it,
 	mock,
+	spyOn,
 } from "bun:test";
 import {
 	getTestDb,
@@ -21,6 +22,8 @@ mock.module("@/db", () => ({
 	}),
 }));
 
+import { eq } from "drizzle-orm";
+import { discount } from "@/db/schemas/discount";
 import { getBestActiveDiscount } from "@/domain/pricing/discount-pricing";
 import {
 	addProductsToDiscount,
@@ -290,6 +293,40 @@ describe("pauseDiscount", () => {
 		await expect(
 			pauseDiscount({ discountId: d.id, sellerProfileId: sellerB.profile.id }),
 		).rejects.toMatchObject({ status: 404 });
+	});
+
+	it("returns 409 and keeps it archived when archived after the read", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const d = await createTestDiscount(db, seller.profile.id, {
+			status: "paused",
+		});
+
+		// «Archivia» from another tab lands between the read and the write.
+		const discounts = db.query.discount;
+		const realFindFirst = discounts.findFirst.bind(discounts);
+		const read = spyOn(discounts, "findFirst").mockImplementationOnce((async (
+			config: any,
+		) => {
+			const row = await realFindFirst(config);
+			await db
+				.update(discount)
+				.set({ status: "archived" })
+				.where(eq(discount.id, d.id));
+			return row;
+		}) as any);
+
+		await expect(
+			pauseDiscount({ discountId: d.id, sellerProfileId: seller.profile.id }),
+		).rejects.toMatchObject({ status: 409 });
+		expect(read).toHaveBeenCalledTimes(1);
+		read.mockRestore();
+
+		const [row] = await db
+			.select({ status: discount.status })
+			.from(discount)
+			.where(eq(discount.id, d.id));
+		expect(row.status).toBe("archived");
 	});
 });
 

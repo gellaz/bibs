@@ -264,7 +264,12 @@ export async function acceptInvite(
 		await db
 			.update(employeeInvitation)
 			.set({ status: "expired" })
-			.where(eq(employeeInvitation.id, invitation.id));
+			.where(
+				and(
+					eq(employeeInvitation.id, invitation.id),
+					eq(employeeInvitation.status, "pending"),
+				),
+			);
 		throw new ServiceError(400, "L'invito è scaduto");
 	}
 
@@ -289,6 +294,22 @@ export async function acceptInvite(
 		newUser.id,
 		() =>
 			db.transaction(async (tx) => {
+				// CAS first: an invite cancelled while the account was being created
+				// must not produce an employee (provisionOrRollback drops the user).
+				const [claimed] = await tx
+					.update(employeeInvitation)
+					.set({ status: "accepted" })
+					.where(
+						and(
+							eq(employeeInvitation.id, invitation.id),
+							eq(employeeInvitation.status, "pending"),
+						),
+					)
+					.returning({ id: employeeInvitation.id });
+				if (!claimed) {
+					throw new ServiceError(404, "Invito non trovato o già utilizzato");
+				}
+
 				await tx
 					.update(user)
 					.set({ role: "employee", emailVerified: true })
@@ -321,11 +342,6 @@ export async function acceptInvite(
 						})),
 					);
 				}
-
-				await tx
-					.update(employeeInvitation)
-					.set({ status: "accepted" })
-					.where(eq(employeeInvitation.id, invitation.id));
 			}),
 		deleteUserById,
 		logger,

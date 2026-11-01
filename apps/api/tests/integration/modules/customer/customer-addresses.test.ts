@@ -266,6 +266,44 @@ describe("updateAddress", () => {
 			}),
 		).rejects.toMatchObject({ status: 404 });
 	});
+
+	it("keeps the previous default when promoting an address that no longer exists", async () => {
+		const db = getTestDb();
+		const customer = await createTestCustomer(db);
+		const mun = await createTestMunicipality(db);
+		const home = await createAddress({
+			customerProfileId: customer.profile.id,
+			addressLine1: "Via Casa",
+			municipalityId: mun.id,
+			zipCode: "00100",
+			isDefault: true,
+		});
+		// The edit dialog is open in another tab while this address gets deleted.
+		const office = await createAddress({
+			customerProfileId: customer.profile.id,
+			addressLine1: "Via Ufficio",
+			municipalityId: mun.id,
+			zipCode: "00101",
+		});
+		await deleteAddress({
+			addressId: office.id,
+			customerProfileId: customer.profile.id,
+		});
+
+		await expect(
+			updateAddress({
+				addressId: office.id,
+				customerProfileId: customer.profile.id,
+				isDefault: true,
+			}),
+		).rejects.toMatchObject({ status: 404 });
+
+		const [homeRow] = await db
+			.select()
+			.from(customerAddress)
+			.where(eq(customerAddress.id, home.id));
+		expect(homeRow.isDefault).toBe(true);
+	});
 });
 
 // ── deleteAddress ─────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import {
 	expect,
 	it,
 	mock,
+	spyOn,
 } from "bun:test";
 
 import {
@@ -28,6 +29,7 @@ mock.module("@/infra/s3", () => ({
 
 import { eq } from "drizzle-orm";
 import { product } from "@/db/schemas/product";
+import { s3 } from "@/infra/s3";
 import {
 	bulkDeletePermanent,
 	bulkUpdateProductStatus,
@@ -35,6 +37,7 @@ import {
 import { truncateAll } from "../../../helpers/cleanup";
 import {
 	createTestProduct,
+	createTestProductImage,
 	createTestSeller,
 	createTestStore,
 	createTestStoreProduct,
@@ -231,5 +234,59 @@ describe("bulkDeletePermanent", () => {
 			expect.arrayContaining([pActive.id]),
 		);
 		expect(remaining.find((p) => p.id === pTrash.id)).toBeUndefined();
+	});
+
+	it("keeps a product restored between the trash check and the DELETE", async () => {
+		const db = getTestDb();
+		const seller = await createTestSeller(db);
+		const store = await createTestStore(db, seller.profile.id);
+		const pGone = await createTestProduct(db, seller.profile.id, {
+			name: "P-gone",
+			status: "trashed",
+		});
+		const pBack = await createTestProduct(db, seller.profile.id, {
+			name: "P-back",
+			status: "trashed",
+		});
+		await createTestStoreProduct(db, store.id, pGone.id);
+		await createTestStoreProduct(db, store.id, pBack.id);
+		const imgGone = await createTestProductImage(db, pGone.id);
+		await createTestProductImage(db, pBack.id);
+
+		// An employee restores P-back right after the trash check: the images
+		// lookup is the only query between that read and the DELETE.
+		const realSelect = db.select.bind(db);
+		const select = spyOn(db, "select")
+			.mockImplementationOnce(realSelect)
+			.mockImplementationOnce(((fields: any) => ({
+				from: (table: any) => ({
+					where: async (cond: any) => {
+						await db
+							.update(product)
+							.set({ status: "active" })
+							.where(eq(product.id, pBack.id));
+						return realSelect(fields).from(table).where(cond);
+					},
+				}),
+			})) as any);
+		const s3Delete = s3.delete as ReturnType<typeof mock>;
+		s3Delete.mockClear();
+
+		const result = await bulkDeletePermanent({
+			sellerProfileId: seller.profile.id,
+			accessibleStoreIds: [store.id],
+			productIds: [pGone.id, pBack.id],
+		});
+		expect(select).toHaveBeenCalledTimes(2);
+		select.mockRestore();
+
+		expect(result.succeeded).toEqual([pGone.id]);
+		expect(result.failed).toEqual([
+			{ productId: pBack.id, reason: "not_in_trash" },
+		]);
+		const remaining = await db.select({ id: product.id }).from(product);
+		expect(remaining).toEqual([{ id: pBack.id }]);
+		// Only the deleted product's photos leave S3.
+		expect(s3Delete.mock.calls).toEqual([[imgGone.key]]);
 	});
 });

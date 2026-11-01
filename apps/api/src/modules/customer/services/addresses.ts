@@ -162,10 +162,10 @@ export async function updateAddress(params: UpdateAddressParams) {
 			)
 			.returning();
 
+		// Dentro la transazione: il 404 annulla anche l'azzeramento del predefinito.
+		if (!result) throw new ServiceError(404, "Indirizzo non trovato");
 		return result;
 	});
-
-	if (!updated) throw new ServiceError(404, "Indirizzo non trovato");
 
 	const addr = await db.query.customerAddress.findFirst({
 		where: eq(customerAddress.id, updated.id),
