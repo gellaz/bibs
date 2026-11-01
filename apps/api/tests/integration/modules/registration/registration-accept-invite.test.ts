@@ -7,6 +7,7 @@ import {
 	expect,
 	it,
 	mock,
+	spyOn,
 } from "bun:test";
 
 import {
@@ -285,5 +286,58 @@ describe("acceptInvite rollback", () => {
 			.from(employeeInvitation)
 			.where(eq(employeeInvitation.id, inv.id));
 		expect(accepted.status).toBe("accepted");
+	});
+});
+
+describe("acceptInvite cancelled meanwhile", () => {
+	it("404s and drops the new user when the owner cancels during sign-up", async () => {
+		const { acceptInvite } = await import(
+			"@/modules/registration/services/registration"
+		);
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+		const inv = await inviteEmployee(profile.id, "employee@test.com", [
+			store.id,
+		]);
+
+		// The owner cancels after acceptInvite has read the invite as pending,
+		// while the account is being created.
+		const invitations = db.query.employeeInvitation;
+		const realFindFirst = invitations.findFirst.bind(invitations);
+		const read = spyOn(invitations, "findFirst").mockImplementationOnce((async (
+			config: any,
+		) => {
+			const row = await realFindFirst(config);
+			await db
+				.update(employeeInvitation)
+				.set({ status: "expired" })
+				.where(eq(employeeInvitation.id, inv.id));
+			return row;
+		}) as any);
+
+		await expect(
+			acceptInvite({ token: inv.invitationToken, password: "password123" }),
+		).rejects.toMatchObject({ status: 404 });
+		expect(read).toHaveBeenCalledTimes(1);
+		read.mockRestore();
+
+		expect(
+			await db
+				.select({ id: userTable.id })
+				.from(userTable)
+				.where(eq(userTable.email, "employee@test.com")),
+		).toEqual([]);
+		expect(
+			await db
+				.select({ id: storeEmployee.id })
+				.from(storeEmployee)
+				.where(eq(storeEmployee.sellerProfileId, profile.id)),
+		).toEqual([]);
+		const [row] = await db
+			.select({ status: employeeInvitation.status })
+			.from(employeeInvitation)
+			.where(eq(employeeInvitation.id, inv.id));
+		expect(row.status).toBe("expired");
 	});
 });

@@ -274,11 +274,18 @@ export async function cancelInvitation(
 
 	if (!invitation) throw new ServiceError(404, "Invito non trovato");
 
+	// CAS: an invite accepted after the read above must not be reported as cancelled.
 	const [updated] = await db
 		.update(employeeInvitation)
 		.set({ status: "expired" })
-		.where(eq(employeeInvitation.id, invitationId))
+		.where(
+			and(
+				eq(employeeInvitation.id, invitationId),
+				eq(employeeInvitation.status, "pending"),
+			),
+		)
 		.returning();
+	if (!updated) throw new ServiceError(404, "Invito non trovato");
 
 	return {
 		...updated,
