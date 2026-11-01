@@ -180,12 +180,13 @@ export function invalidFileTypeMessage(property: string): string {
 type Def = z.core.$ZodTypeDef & Record<string, any>;
 const defOf = (schema: z.ZodType) => schema._zod.def as Def;
 
-// Optional e default sono lo stesso campo, come prima: i loro metadati valgono.
+// Optional, default e nullable sono lo stesso campo: i loro metadati valgono
+// (nullable come nei form del seller, che leggono lo schema dell'issue).
 function sameNode(schema: z.ZodType): z.ZodType[] {
 	const chain = [schema];
 	for (let s = schema; ; ) {
 		const def = defOf(s);
-		if (def.type !== "optional" && def.type !== "default") return chain;
+		if (!["optional", "default", "nullable"].includes(def.type)) return chain;
 		s = def.innerType;
 		chain.push(s);
 	}

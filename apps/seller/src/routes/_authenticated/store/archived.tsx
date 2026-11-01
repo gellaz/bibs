@@ -71,7 +71,7 @@ function ArchivedPage() {
 			const r = await sellerApi.stores.archived.$get({
 				query: { page: 1, limit: 50 },
 			});
-			return (await unwrapJson(r, m.common_error())).data;
+			return unwrapJson(r, m.common_error());
 		},
 		enabled: isOwner,
 	});

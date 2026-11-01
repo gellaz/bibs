@@ -22,7 +22,10 @@ mock.module("@/db", () => ({
 }));
 
 import { storeSubscription } from "@/db/schemas/store-subscription";
-import { getBillingOverview } from "@/modules/admin/services/billing";
+import {
+	getBillingOverview,
+	listAllSubscriptions,
+} from "@/modules/admin/services/billing";
 import { truncateAll } from "../../../helpers/cleanup";
 import { createTestSeller, createTestStore } from "../../../helpers/fixtures";
 
@@ -91,5 +94,29 @@ describe("getBillingOverview", () => {
 		expect(o.pastDueCount).toBe(1);
 		expect(o.suspendedCount).toBe(1);
 		expect(o.cancelingCount).toBe(1);
+	});
+});
+
+describe("listAllSubscriptions", () => {
+	it("pagina come le altre liste: default 20, page e limit, total filtrato", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+		await seedSubs(profile.id, [
+			{ status: "active", fee: 2900 },
+			{ status: "active", fee: 2900 },
+			{ status: "suspended", fee: 2900 },
+		]);
+
+		const all = await listAllSubscriptions({});
+		expect(all.data).toHaveLength(3);
+		expect(all.pagination).toEqual({ page: 1, limit: 20, total: 3 });
+
+		const second = await listAllSubscriptions({ page: 2, limit: 2 });
+		expect(second.data).toHaveLength(1);
+		expect(second.pagination).toEqual({ page: 2, limit: 2, total: 3 });
+
+		const active = await listAllSubscriptions({ status: "active" });
+		expect(active.pagination.total).toBe(2);
 	});
 });

@@ -12,6 +12,7 @@ import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
+import { parsePagination } from "@/lib/pagination";
 
 export async function getBillingOverview() {
 	const rows = await db
@@ -131,16 +132,15 @@ export async function updatePricing(params: UpdatePricingParams) {
 }
 
 interface ListAllSubsParams {
-	page: number;
-	limit: number;
+	page?: number;
+	limit?: number;
 	status?: StoreSubscriptionStatus;
 	sellerEmail?: string;
 	storeName?: string;
 }
 
 export async function listAllSubscriptions(params: ListAllSubsParams) {
-	const limit = Math.min(params.limit, 100);
-	const offset = (params.page - 1) * limit;
+	const { page, limit, offset } = parsePagination(params);
 
 	const conditions = [];
 	if (params.status)
@@ -185,10 +185,6 @@ export async function listAllSubscriptions(params: ListAllSubsParams) {
 
 	return {
 		data,
-		pagination: {
-			page: params.page,
-			limit,
-			total: totalRow[0]?.count ?? 0,
-		},
+		pagination: { page, limit, total: totalRow[0]?.count ?? 0 },
 	};
 }

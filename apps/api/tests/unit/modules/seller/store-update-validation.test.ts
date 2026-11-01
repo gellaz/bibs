@@ -75,3 +75,22 @@ describe("PATCH /stores — websiteUrl maxLength in unità UTF-16", () => {
 		);
 	});
 });
+
+// Il body del PATCH è quello della creazione reso facoltativo: stessi limiti e
+// stessi messaggi (audit 2026-10-11, A1).
+describe("PATCH /stores — regole della creazione", () => {
+	it.each([
+		[{ name: "x".repeat(101) }, "Nome: al massimo 100 caratteri"],
+		[{ name: "" }, "Il nome è obbligatorio"],
+		[{ zipCode: "123" }, "Il CAP deve essere di 5 cifre"],
+	])("%j → 422 «%s»", async (body, message) => {
+		const res = await patchStore(body);
+		expect(res.status).toBe(422);
+		expect((await res.json()).message).toBe(message);
+	});
+
+	it("categoryId: null passa (toglie la categoria)", async () => {
+		const res = await patchStore({ categoryId: null });
+		expect(res.status).not.toBe(422);
+	});
+});

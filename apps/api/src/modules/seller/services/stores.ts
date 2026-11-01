@@ -353,13 +353,12 @@ export async function reactivateStoreSubscription(
 
 interface ListArchivedParams {
 	sellerProfileId: string;
-	page: number;
-	limit: number;
+	page?: number;
+	limit?: number;
 }
 
 export async function listArchivedStores(params: ListArchivedParams) {
-	const limit = Math.min(params.limit, 100);
-	const offset = (params.page - 1) * limit;
+	const { page, limit, offset } = parsePagination(params);
 
 	const baseWhere = and(
 		eq(storeTable.sellerProfileId, params.sellerProfileId),
@@ -413,6 +412,6 @@ export async function listArchivedStores(params: ListArchivedParams) {
 
 	return {
 		data: mappedData,
-		pagination: { page: params.page, limit, total },
+		pagination: { page, limit, total },
 	};
 }

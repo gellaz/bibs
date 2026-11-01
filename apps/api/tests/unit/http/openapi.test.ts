@@ -159,13 +159,37 @@ const REMOVED = [
 ] as const;
 const REMOVED_TAGS = ["Auth", "Seller - Profile"];
 
-function withoutRemoved(doc: Json): Json {
+/**
+ * Delta 26 del registro: le parti di operazione cambiate dall'audit
+ * 2026-10-11, A1 e A4 (body dei PATCH ricavati dalla creazione, le due liste
+ * su PaginationQuery e okPageRes, descrizioni degli schemi riusati). Si
+ * prendono dall'app; le regole nuove le provano i test delle route.
+ */
+const CHANGED = [
+	["/seller/stores/{storeId}", "patch", "requestBody"],
+	["/seller/products/{productId}", "patch", "requestBody"],
+	["/customer/addresses/{addressId}", "patch", "requestBody"],
+	["/seller/stores/archived", "get", "parameters", "responses"],
+	["/admin/billing/subscriptions", "get", "parameters", "responses"],
+	["/customer/stores/{id}", "get", "responses"],
+	["/product-categories", "get", "responses"],
+	["/admin/product-categories", "get", "responses"],
+	["/seller/products", "get", "responses"],
+	["/seller/products/categories-in-use", "get", "responses"],
+	["/seller/products/{productId}", "get", "responses"],
+] as const;
+
+async function withDeltas(doc: Json): Promise<Json> {
 	const paths: Json = structuredClone(doc.paths);
 	for (const [path, method] of REMOVED) {
 		expect(paths[path][method]).toBeDefined();
 		delete paths[path][method];
 		if (!Object.keys(paths[path]).length) delete paths[path];
 	}
+	const now: Json = (await (await app.request("/openapi/json")).json()).paths;
+	for (const [path, method, ...parts] of CHANGED)
+		for (const part of parts)
+			paths[path][method][part] = now[path][method][part];
 	const tags = doc.tags.filter(
 		(t: { name: string }) => !REMOVED_TAGS.includes(t.name),
 	);
@@ -174,7 +198,7 @@ function withoutRemoved(doc: Json): Json {
 
 describe("OpenAPI — moduli migrati contro la baseline", () => {
 	const baseline = async () =>
-		withoutRemoved(
+		withDeltas(
 			await Bun.file(
 				join(
 					import.meta.dir,
@@ -241,7 +265,7 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 
 	// U11: l'intero documento dell'app radice (better-auth, /health e /ready
 	// compresi), come lo confronta `tools/openapi-snapshot.ts`.
-	it("/openapi/json dell'app radice = baseline/openapi.json, salvo i delta 15 e 25", async () => {
+	it("/openapi/json dell'app radice = baseline/openapi.json, salvo i delta 15, 25 e 26", async () => {
 		const res = await app.request("/openapi/json");
 		expect(res.status).toBe(200);
 		const sortKeys = (v: unknown): unknown =>

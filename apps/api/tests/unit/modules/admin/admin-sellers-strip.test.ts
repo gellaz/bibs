@@ -169,7 +169,7 @@ mock.module("@/modules/admin/services/billing", () => ({
 					stripeSubscriptionId: "sub_segreto",
 				},
 			],
-			pagination: { page: 1, limit: 25, total: 1, offset: 0 },
+			pagination: { page: 1, limit: 20, total: 1, offset: 0 },
 		};
 	},
 }));
@@ -265,15 +265,7 @@ describe("admin 2 su Hono: strip in ingresso", () => {
 		expect(calls).toEqual([
 			[{ page: 1, limit: 5, sortBy: "createdAt", sortOrder: "desc" }],
 			[{ page: 1, limit: 20, type: "vat" }],
-			[
-				{
-					page: 1,
-					limit: 25,
-					status: "active",
-					sellerEmail: undefined,
-					storeName: undefined,
-				},
-			],
+			[{ page: 1, limit: 20, status: "active" }],
 		]);
 	});
 });
@@ -314,11 +306,11 @@ describe("admin 2 su Hono: strip in uscita", () => {
 	});
 
 	it("abbonamenti: id Stripe fuori dalle righe, offset fuori dalla paginazione", async () => {
-		const { data } = await (
+		const { data, pagination } = await (
 			await admin.request("/billing/subscriptions")
 		).json();
-		expect(data.data[0]).not.toHaveProperty("stripeSubscriptionId");
-		expect(data.data[0].currentPeriodEnd).toBe(iso);
-		expect(data.pagination).toEqual({ page: 1, limit: 25, total: 1 });
+		expect(data[0]).not.toHaveProperty("stripeSubscriptionId");
+		expect(data[0].currentPeriodEnd).toBe(iso);
+		expect(pagination).toEqual({ page: 1, limit: 20, total: 1 });
 	});
 });

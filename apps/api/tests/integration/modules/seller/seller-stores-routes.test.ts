@@ -316,7 +316,8 @@ describe("negozi", () => {
 				{
 					reservationHours: "48",
 					lowStockThreshold: 3,
-					phoneNumbers: [{ number: "051999999", position: "2" }],
+					// Posizione numerica come alla creazione: una stringa ora è 422 (delta 26).
+					phoneNumbers: [{ number: "051999999", position: 2 }],
 					openingHours: null,
 				},
 				o.cookie,
@@ -428,7 +429,8 @@ describe("negozi", () => {
 		expect(archived.status).toBe(200);
 		expect(await archived.json()).toEqual({
 			success: true,
-			data: { data: [], pagination: { page: 1, limit: 25, total: 0 } },
+			data: [],
+			pagination: { page: 1, limit: 20, total: 0 },
 		});
 
 		const cancel = await call(
