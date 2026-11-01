@@ -7,7 +7,10 @@ export const registerFormSchema = z
 			.string()
 			.min(1, { error: () => m.auth_email_required() })
 			.email({ error: () => m.auth_email_invalid() }),
-		password: z.string().min(8, { error: () => m.auth_password_min() }),
+		password: z
+			.string()
+			.min(8, { error: () => m.auth_password_min() })
+			.max(128, { error: () => m.auth_reset_password_too_long() }),
 		confirmPassword: z
 			.string()
 			.min(1, { error: () => m.auth_confirm_password_required() }),

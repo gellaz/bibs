@@ -2,7 +2,6 @@ import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { type ZodType, z } from "zod";
 import { loginFormSchema } from "@/features/auth/schemas/login";
 import { registerFormSchema } from "@/features/auth/schemas/register";
-import { businessInfoSchema } from "@/features/profile/components/business-info-card";
 import { discountFormSchema } from "@/features/promotions/components/discount-form";
 import { getLocale, overwriteGetLocale } from "@/paraglide/runtime";
 import { zodResolver } from "./zod-resolver";
@@ -39,15 +38,6 @@ const discount = {
 	noEndDate: true,
 };
 
-const company = {
-	businessName: "Bottega Srl",
-	legalForm: "SRL",
-	addressLine1: "Via Roma 1",
-	zipCode: "40100",
-	municipalityId: "m1",
-	country: "IT",
-};
-
 // Gli schemi importano il resolver da `zod-resolver.ts`, che registra l'error
 // map: nessuna registrazione esplicita qui, come nell'app.
 describe("default zod messages in the seller forms", () => {
@@ -82,36 +72,10 @@ describe("default zod messages in the seller forms", () => {
 			messages("en", discountFormSchema, { ...discount, percent: "1.5" }),
 		).toEqual({ percent: "Must be a whole number" });
 	});
-
-	it("profile: country of the wrong length", () => {
-		expect(
-			messages("it", businessInfoSchema, { ...company, country: "I" }),
-		).toEqual({ country: "Almeno 2 caratteri" });
-		expect(
-			messages("en", businessInfoSchema, { ...company, country: "ITA" }),
-		).toEqual({ country: "At most 2 characters" });
-	});
-
-	it("profile: a missing field is required", () => {
-		const { country: _, ...withoutCountry } = company;
-		expect(messages("it", businessInfoSchema, withoutCountry)).toEqual({
-			country: "Campo obbligatorio",
-		});
-	});
 });
 
 describe("messages written on the schemas win", () => {
-	it("keeps the profile and auth messages", () => {
-		expect(
-			messages("it", businessInfoSchema, {
-				...company,
-				businessName: "",
-				zipCode: "12a",
-			}),
-		).toEqual({
-			businessName: "Ragione sociale obbligatoria",
-			zipCode: "CAP deve essere 5 cifre",
-		});
+	it("keeps the auth messages", () => {
 		expect(
 			messages("en", loginFormSchema, { email: "a@b", password: "" }),
 		).toEqual({ email: "Invalid email", password: "Password is required" });

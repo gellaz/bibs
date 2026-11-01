@@ -1,5 +1,6 @@
 import {
 	CompanyBody,
+	CompanySettingsBody,
 	CreateStoreBody,
 	DocumentBody,
 	PersonalInfoBody,
@@ -209,6 +210,37 @@ describe("nel resolver dei form", () => {
 			phone: e.phoneNumbers?.[0]?.number?.message,
 		};
 	};
+
+	it("profilo, dati aziendali: lunghezza massima, vuoto e paese", async () => {
+		const resolve = async (locale: "it" | "en") => {
+			overwriteGetLocale(() => locale);
+			const { errors } = await schemaResolver(CompanySettingsBody)(
+				{
+					businessName: "a".repeat(201),
+					legalForm: "",
+					addressLine1: "Via Roma 1",
+					zipCode: "40100",
+					municipalityId: "m1",
+					country: "I",
+				},
+				undefined,
+				{ fields: {}, shouldUseNativeValidation: false },
+			);
+			return Object.fromEntries(
+				Object.entries(errors).map(([k, e]) => [k, e?.message]),
+			);
+		};
+		expect(await resolve("it")).toEqual({
+			businessName: "Al massimo 200 caratteri",
+			legalForm: "La forma giuridica è obbligatoria",
+			country: "Almeno 2 caratteri",
+		});
+		expect(await resolve("en")).toEqual({
+			businessName: "At most 200 characters",
+			legalForm: "Legal form is required",
+			country: "At least 2 characters",
+		});
+	});
 
 	it("lo stesso schema segue la lingua al momento della validazione", async () => {
 		expect(await resolve("it")).toEqual({

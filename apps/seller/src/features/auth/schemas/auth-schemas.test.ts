@@ -59,6 +59,20 @@ describe("registerFormSchema", () => {
 		).toEqual(["Le password non corrispondono"]);
 	});
 
+	it("password oltre i 128 caratteri dell'API", () => {
+		overwriteGetLocale(() => "it");
+		const long = "a".repeat(129);
+		expect(
+			messages(
+				registerFormSchema.safeParse({
+					email: "a@b.it",
+					password: long,
+					confirmPassword: long,
+				}),
+			),
+		).toEqual(["La password può avere al massimo 128 caratteri"]);
+	});
+
 	it("follows the current language", () => {
 		overwriteGetLocale(() => "en");
 		expect(

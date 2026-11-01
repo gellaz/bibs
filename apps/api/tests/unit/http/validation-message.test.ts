@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
+import { schemaErrorApplies } from "@/http/validation-rule";
 import { v } from "@/http/validator";
 import type { FormatName } from "@/schemas/formats";
 import { zDate, zFormat, zInteger, zString } from "@/schemas/t";
@@ -233,6 +234,22 @@ describe("validationMessage — messaggi già scritti e ripieghi", () => {
 		).toBe("Il nome è obbligatorio");
 	});
 
+	it("non sulla lunghezza massima: etichetta e regola (delta 24)", async () => {
+		const schema = z.object({
+			name: zString({
+				minLength: 1,
+				maxLength: 200,
+				error: "Il nome è obbligatorio",
+			}),
+		});
+		expect(await bodyMessage(schema, { name: "a".repeat(201) })).toBe(
+			"Nome: al massimo 200 caratteri",
+		);
+		expect(await bodyMessage(schema, { name: "" })).toBe(
+			"Il nome è obbligatorio",
+		);
+	});
+
 	it("body che non è un oggetto: richiesta non valida", async () => {
 		expect(await bodyMessage(z.array(z.string()), { a: 1 })).toBe(
 			"Richiesta non valida",
@@ -245,5 +262,15 @@ describe("validationMessage — messaggi già scritti e ripieghi", () => {
 				step: 3,
 			}),
 		).toBe("step: valore non valido");
+	});
+});
+
+describe("schemaErrorApplies — regola condivisa col seller", () => {
+	it("l'`error` dello schema vale su tutto tranne la lunghezza massima", () => {
+		expect(schemaErrorApplies({ kind: "maxLength", limit: 200 })).toBe(false);
+		expect(schemaErrorApplies({ kind: "required" })).toBe(true);
+		expect(schemaErrorApplies({ kind: "minLength", limit: 8 })).toBe(true);
+		expect(schemaErrorApplies({ kind: "pattern" })).toBe(true);
+		expect(schemaErrorApplies({ kind: "maxItems", limit: 10 })).toBe(true);
 	});
 });

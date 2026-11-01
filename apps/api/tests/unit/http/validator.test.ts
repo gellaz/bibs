@@ -5,7 +5,9 @@ import { cases, fail, honoApp, request } from "./parity-cases";
 // Il validatore Hono sui casi di `parity-cases.ts`: stesso status e stesso
 // corpo dell'API di prima, al byte per gli errori. Le risposte di prima sono
 // in `golden/validator.json`, catturate dal framework di prima (1.4.30) prima
-// di toglierlo (U11): fino ad allora il test glielo chiedeva dal vivo.
+// di toglierlo (U11): fino ad allora il test glielo chiedeva dal vivo. I casi
+// con `before` sono i delta accettati dopo (registro del piano Hono): il golden
+// resta com'era e deve dare `before`.
 
 // Letto a runtime, non importato: tsc non deve tipizzare il JSON.
 const before: Record<string, { status: number; body: string }> = await Bun.file(
@@ -25,9 +27,10 @@ describe("v() — stesso esito dell'API di prima", () => {
 			});
 			expect({ status: e.status, body: JSON.parse(e.body) }).toEqual({
 				status: c.status,
-				body: expected,
+				body: c.before ?? expected,
 			});
-			if (c.status !== 200) expect(hText).toBe(e.body);
+			// Un delta accettato (`before`) cambia il corpo: niente confronto al byte.
+			if (c.status !== 200 && !c.before) expect(hText).toBe(e.body);
 		});
 	}
 });
