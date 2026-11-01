@@ -9,6 +9,7 @@ import {
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { createdAt, id } from "../columns";
 import { user } from "./auth";
 import { sellerProfile } from "./seller";
 
@@ -26,9 +27,7 @@ export type ChangeStatus = (typeof changeStatuses)[number];
 export const sellerProfileChange = pgTable(
 	"seller_profile_changes",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -42,9 +41,7 @@ export const sellerProfileChange = pgTable(
 		}),
 		reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 		rejectionReason: text("rejection_reason"),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(t) => [
 		index("seller_profile_change_seller_id_idx").on(t.sellerProfileId),

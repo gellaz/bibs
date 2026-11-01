@@ -1,12 +1,6 @@
 import { relations, sql } from "drizzle-orm";
-import {
-	check,
-	index,
-	pgTable,
-	text,
-	timestamp,
-	varchar,
-} from "drizzle-orm/pg-core";
+import { check, index, pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { municipality } from "./location";
 import { sellerProfile } from "./seller";
 
@@ -16,9 +10,7 @@ export type VatStatus = (typeof vatStatuses)[number];
 export const organization = pgTable(
 	"organizations",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" })
@@ -35,13 +27,7 @@ export const organization = pgTable(
 		vatStatus: varchar("vat_status", { enum: vatStatuses })
 			.default("pending")
 			.notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(t) => [
 		index("organization_municipality_id_idx").on(t.municipalityId),

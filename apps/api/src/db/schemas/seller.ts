@@ -6,10 +6,10 @@ import {
 	index,
 	pgTable,
 	text,
-	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
 import { IDENTITY_DOCUMENT_TYPES } from "../../schemas/forms/identity-document";
+import { id, timestamps } from "../columns";
 import { user } from "./auth";
 import { storeEmployee } from "./employee";
 import { employeeInvitation } from "./employee-invitation";
@@ -31,9 +31,7 @@ export type OnboardingStatus = (typeof onboardingStatuses)[number];
 export const sellerProfile = pgTable(
 	"seller_profiles",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		userId: text("user_id")
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" })
@@ -73,13 +71,7 @@ export const sellerProfile = pgTable(
 		rejectionReason: text("rejection_reason"),
 		stripeCustomerId: text("stripe_customer_id").unique(),
 
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		index("seller_profile_onboarding_status_idx").on(table.onboardingStatus),

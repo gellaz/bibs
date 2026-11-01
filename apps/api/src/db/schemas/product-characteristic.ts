@@ -8,9 +8,9 @@ import {
 	pgTable,
 	primaryKey,
 	text,
-	timestamp,
 	unique,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { productCategory } from "./category";
 import { product } from "./product";
 
@@ -25,19 +25,11 @@ export type CharacteristicDataType = (typeof CHARACTERISTIC_DATA_TYPES)[number];
 export const productCharacteristic = pgTable(
 	"product_characteristics",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		name: text("name").notNull().unique(),
 		dataType: text("data_type", { enum: CHARACTERISTIC_DATA_TYPES }).notNull(),
 		unit: text("unit"),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		check(
@@ -61,9 +53,7 @@ export const productCharacteristic = pgTable(
 export const productCharacteristicOption = pgTable(
 	"product_characteristic_options",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		characteristicId: text("characteristic_id")
 			.notNull()
 			.references(() => productCharacteristic.id, { onDelete: "cascade" }),

@@ -4,17 +4,15 @@ import {
 	index,
 	pgTable,
 	text,
-	timestamp,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { sellerProfile } from "./seller";
 
 export const paymentMethod = pgTable(
 	"payment_methods",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -31,13 +29,7 @@ export const paymentMethod = pgTable(
 		payoutsEnabled: boolean("payouts_enabled").default(false).notNull(),
 		detailsSubmitted: boolean("details_submitted").default(false).notNull(),
 		isDefault: boolean("is_default").default(true).notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		index("payment_method_seller_profile_id_idx").on(table.sellerProfileId),

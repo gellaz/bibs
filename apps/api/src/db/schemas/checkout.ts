@@ -1,12 +1,6 @@
 import { relations, sql } from "drizzle-orm";
-import {
-	check,
-	index,
-	numeric,
-	pgTable,
-	text,
-	timestamp,
-} from "drizzle-orm/pg-core";
+import { check, index, numeric, pgTable, text } from "drizzle-orm/pg-core";
+import { createdAt, id } from "../columns";
 import { customerProfile } from "./customer";
 import { order } from "./order";
 
@@ -18,9 +12,7 @@ import { order } from "./order";
 export const checkout = pgTable(
 	"checkouts",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		customerProfileId: text("customer_profile_id")
 			.notNull()
 			.references(() => customerProfile.id, { onDelete: "cascade" }),
@@ -32,9 +24,7 @@ export const checkout = pgTable(
 		amountDueOnline: numeric("amount_due_online", { precision: 10, scale: 2 })
 			.default("0")
 			.notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(t) => [
 		index("checkout_customer_profile_id_idx").on(t.customerProfileId),
