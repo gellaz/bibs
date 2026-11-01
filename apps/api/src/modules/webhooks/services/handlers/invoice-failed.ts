@@ -2,6 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { getSubscriptionIdFromInvoice } from "@/domain/billing/invoice";
 import { logger } from "@/infra/logger";
 import { notifyPaymentFailed } from "../billing-notifications";
 
@@ -45,11 +46,4 @@ export async function handleInvoiceFailed(event: Stripe.Event): Promise<void> {
 			currency: invoice.currency ?? existing.currency,
 		});
 	}
-}
-
-function getSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
-	// Stripe v22: subscription ID lives at invoice.parent.subscription_details.subscription
-	const fromParent = invoice.parent?.subscription_details?.subscription;
-	if (fromParent && typeof fromParent === "string") return fromParent;
-	return null;
 }

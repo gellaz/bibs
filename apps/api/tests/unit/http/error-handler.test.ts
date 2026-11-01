@@ -1,9 +1,11 @@
 import { describe, expect, it, spyOn } from "bun:test";
 import { APIError } from "better-auth";
 import { requestId } from "hono/request-id";
+import Stripe from "stripe";
 import { z } from "zod";
 import { rootApp } from "@/app";
 import { moduleApp } from "@/http/app";
+import { toErrorResponse } from "@/http/errors";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
@@ -98,6 +100,11 @@ const app = moduleApp()
 	.get("/api-error-internal", () => {
 		throw new APIError("INTERNAL_SERVER_ERROR", {
 			message: "leaky internal detail",
+		});
+	})
+	.get("/stripe-down", () => {
+		throw new Stripe.errors.StripeConnectionError({
+			message: "An error occurred with our connection to Stripe.",
 		});
 	})
 	.get("/ok", (c) => c.json({ success: true, data: "ok" }));
@@ -247,6 +254,41 @@ describe("errorHandler — better-auth APIError", () => {
 		const body = await json(res);
 		expect(body.error).toBe("INTERNAL_ERROR");
 		expect(body.message).not.toBe("leaky internal detail");
+	});
+});
+
+describe("errorHandler — Stripe errors", () => {
+	it("maps an unhandled StripeError to 502 without leaking Stripe's message", async () => {
+		const res = await app.request(new Request("http://localhost/stripe-down"));
+		expect(res.status).toBe(502);
+		expect(await json(res)).toEqual({
+			success: false,
+			error: "BAD_GATEWAY",
+			message:
+				"Il servizio di pagamento non risponde. Riprova tra qualche minuto.",
+		});
+	});
+
+	it("logs it as an error with Stripe's type and code", () => {
+		const logged: unknown[][] = [];
+		const log = {
+			warn: () => {},
+			error: (...args: unknown[]) => logged.push(args),
+		} as never;
+		const err = new Stripe.errors.StripeInvalidRequestError({
+			message: "No such customer: 'cus_x'",
+			code: "resource_missing",
+		});
+
+		toErrorResponse(err, { method: "GET", path: "/x" }, log);
+
+		expect(logged).toHaveLength(1);
+		expect(logged[0]?.[0]).toMatchObject({
+			errorCode: "BAD_GATEWAY",
+			errorMessage: "No such customer: 'cus_x'",
+			stripeType: "StripeInvalidRequestError",
+			stripeCode: "resource_missing",
+		});
 	});
 });
 
