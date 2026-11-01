@@ -69,8 +69,8 @@ export const ordersRoutes = new Hono()
 			const query = c.req.valid("query");
 			await ensureStoreAccess(query.storeId, c.var.seller.accessCtx);
 			const result = await listSellerOrders({
-				storeIds: [query.storeId],
 				...query,
+				storeIds: [query.storeId],
 			});
 			return send(c, OrdersPageRes, okPage(result.data, result.pagination));
 		},

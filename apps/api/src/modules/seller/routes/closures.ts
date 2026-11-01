@@ -57,9 +57,9 @@ export const closuresRoutes = new Hono()
 			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await putStoreClosures({
+				...c.req.valid("json"),
 				storeId: c.req.valid("param").storeId,
 				sellerProfileId: sp.id,
-				...c.req.valid("json"),
 			});
 			return send(c, ClosuresRes, ok(data));
 		},

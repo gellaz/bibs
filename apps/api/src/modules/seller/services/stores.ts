@@ -12,6 +12,7 @@ import {
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import type { CustomClosure } from "@/domain/holidays";
 import { validateOpeningHours } from "@/domain/stores/opening-hours";
+import { archiveStore, hasOpenOrders } from "@/domain/stores/store-archive";
 import { resolveOpenStatuses } from "@/domain/stores/store-open-status";
 import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
@@ -238,10 +239,8 @@ async function finalizeGoneSubscription(
 				cancelReason: "seller_canceled",
 			})
 			.where(eq(storeSubscription.id, sub.id));
-		await tx
-			.update(storeTable)
-			.set({ deletedAt: now })
-			.where(and(eq(storeTable.id, sub.storeId), isNull(storeTable.deletedAt)));
+		// Con ordini aperti lo archivia poi il job archiveEndedStores.
+		await archiveStore(tx, sub.storeId);
 	});
 	return { status: "canceled", effectiveAt: now };
 }
@@ -285,6 +284,12 @@ export async function cancelStoreSubscription(
 			return { status: "canceling", effectiveAt: sub.currentPeriodEnd };
 		}
 		case "suspended": {
+			// Archivia subito: con ordini aperti il titolare deve prima chiuderli.
+			if (await hasOpenOrders(sub.storeId))
+				throw new ServiceError(
+					409,
+					"Il negozio ha ordini ancora aperti: completali o annullali prima di archiviarlo",
+				);
 			// Immediate cancel — DB-first here (unlike the branch above): write the
 			// reason BEFORE the Stripe call so the resulting subscription.deleted
 			// webhook, which defaults a missing reason to 'payment_failed_auto'

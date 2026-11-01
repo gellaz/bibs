@@ -1,5 +1,6 @@
 import { Cron } from "croner";
 import { logger } from "@/infra/logger";
+import { archiveEndedStores } from "@/jobs/archive-ended-stores";
 import { runAutoCancelSuspended } from "@/jobs/auto-cancel-suspended-stores";
 import { runExpirePending } from "@/jobs/expire-pending-store-creations";
 import { expireReservations } from "@/jobs/expire-reservations";
@@ -11,7 +12,7 @@ interface Job {
 	name: string;
 	/** Cron pattern, ora di Roma. */
 	pattern: string;
-	/** Chiave dell'advisory lock (`runExclusive`): 9101–9105, riservate ai job. */
+	/** Chiave dell'advisory lock (`runExclusive`): 9101–9106, riservate ai job. */
 	lockKey: number;
 	run: () => Promise<void>;
 }
@@ -90,6 +91,28 @@ const jobs: Job[] = [
 		},
 	},
 	{
+		name: "archiveEndedStores",
+		// Hourly at :15, away from autoCancelSuspendedStores at 03:00: it flips the
+		// subscription to canceled before calling Stripe and back if Stripe fails.
+		pattern: "15 * * * *",
+		lockKey: 9106,
+		async run() {
+			try {
+				const count = await archiveEndedStores();
+				if (count > 0)
+					logger.info(
+						{ count },
+						"Negozi con abbonamento chiuso archiviati via cron",
+					);
+			} catch (error) {
+				logger.error(
+					{ err: error },
+					"Errore durante l'archiviazione dei negozi con abbonamento chiuso",
+				);
+			}
+		},
+	},
+	{
 		name: "expirePendingStoreCreations",
 		// Hourly
 		pattern: "0 * * * *",
@@ -114,7 +137,7 @@ const jobs: Job[] = [
 ];
 
 /**
- * Starts the five jobs: only the server entry (`src/index.ts`) calls it, so
+ * Starts the six jobs: only the server entry (`src/index.ts`) calls it, so
  * tests, tools and the Hono CLI never schedule a tick. Rome time, like the
  * reservation deadlines; `protect` skips a tick while the previous one still
  * runs, and `runExclusive` skips it while another replica runs the same job.

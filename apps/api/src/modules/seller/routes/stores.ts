@@ -166,9 +166,9 @@ export const storesRoutes = new Hono()
 			requireOwner(isOwner);
 
 			const data = await updateStore({
+				...c.req.valid("json"),
 				storeId: c.req.valid("param").storeId,
 				sellerProfileId: sp.id,
-				...c.req.valid("json"),
 			});
 			return send(c, StoreRes, ok(data));
 		},
@@ -251,10 +251,10 @@ export const storesRoutes = new Hono()
 	.delete(
 		"/stores/:storeId",
 		doc({
-			response: withErrors({ 200: CancelRes }),
+			response: withConflictErrors({ 200: CancelRes }),
 			detail: detail(
 				"Cancella subscription negozio",
-				"Cancel at period end per active/past_due (idempotente su canceling). Cancel immediato per suspended.",
+				"Cancel at period end per active/past_due (idempotente su canceling). Cancel immediato per suspended, 409 se il negozio ha ordini aperti.",
 			),
 		}),
 		v("param", storeId),

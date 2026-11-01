@@ -316,7 +316,7 @@ describe("negozi", () => {
 				{
 					reservationHours: "48",
 					lowStockThreshold: 3,
-					// Posizione numerica come alla creazione: una stringa ora è 422 (delta 26).
+					// Posizione numerica come alla creazione: una stringa ora è 422 (delta 27).
 					phoneNumbers: [{ number: "051999999", position: 2 }],
 					openingHours: null,
 				},

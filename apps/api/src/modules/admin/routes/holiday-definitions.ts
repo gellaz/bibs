@@ -114,8 +114,8 @@ export const holidayDefinitionsRoutes = new Hono()
 		requireAdmin,
 		async (c) => {
 			const data = await updateHolidayDefinition({
-				id: c.req.valid("param").holidayId,
 				...c.req.valid("json"),
+				id: c.req.valid("param").holidayId,
 			});
 			logger.info(
 				{

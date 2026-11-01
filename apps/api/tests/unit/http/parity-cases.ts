@@ -165,7 +165,7 @@ const MunicipalitiesQuery = PaginationQuery.extend({
 		.meta({ description: "Filtra per ID provincia" })
 		.optional(),
 });
-// GET /admin/billing/subscriptions ora usa PaginationQuery (delta 26): stesso
+// GET /admin/billing/subscriptions ora usa PaginationQuery (delta 27): stesso
 // discorso, il caso resta sullo schema di prima.
 const SubscriptionsQuery = z.object({
 	page: zInteger({ minimum: 1 }).optional(),

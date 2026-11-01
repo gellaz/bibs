@@ -28,6 +28,9 @@ const transitions: Partial<
 	},
 };
 
+/** Ordini ancora aperti (prenotazioni comprese): gli stati da cui c'è ancora una transizione. */
+export const OPEN_ORDER_STATUSES = Object.keys(transitions) as OrderStatus[];
+
 // Arriva così nel toast di seller e customer: in italiano, con lo stato
 // attuale (spesso è cambiato nel frattempo).
 const STATUS_LABELS: Record<OrderStatus, string> = {
