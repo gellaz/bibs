@@ -15,6 +15,7 @@ import {
 	storeOrderTypes,
 } from "@/domain/orders/order-types";
 import { config } from "@/lib/config";
+import { createdAt, id, timestamps } from "../columns";
 import { municipality } from "./location";
 import { storeProduct } from "./product";
 import { sellerProfile } from "./seller";
@@ -26,9 +27,7 @@ import { storeSubscription } from "./store-subscription";
 export const store = pgTable(
 	"stores",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -72,13 +71,7 @@ export const store = pgTable(
 			.notNull()
 			.default(config.reservationHours.default),
 		deletedAt: timestamp("deleted_at", { withTimezone: true }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(t) => [
 		index("store_location_idx").using("gist", t.location),
@@ -110,18 +103,14 @@ export const store = pgTable(
 export const storePhoneNumber = pgTable(
 	"store_phone_numbers",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		storeId: text("store_id")
 			.notNull()
 			.references(() => store.id, { onDelete: "cascade" }),
 		label: text("label"),
 		number: text("number").notNull(),
 		position: integer("position").notNull().default(0),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(t) => [index("store_phone_number_store_id_idx").on(t.storeId)],
 );

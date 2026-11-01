@@ -7,6 +7,7 @@ import {
 	text,
 	timestamp,
 } from "drizzle-orm/pg-core";
+import { id } from "../columns";
 import { user } from "./auth";
 import { product } from "./product";
 
@@ -25,9 +26,7 @@ export type ProductAuditAction = (typeof productAuditActions)[number];
 export const productAuditLog = pgTable(
 	"product_audit_log",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		productId: text("product_id")
 			.notNull()
 			.references(() => product.id, { onDelete: "cascade" }),

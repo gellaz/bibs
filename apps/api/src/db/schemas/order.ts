@@ -12,6 +12,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import type { CastellettoLine } from "@/domain/pricing/vat";
+import { id, timestamps } from "../columns";
 import { customerAddress } from "./address";
 import { checkout } from "./checkout";
 import { customerProfile } from "./customer";
@@ -53,9 +54,7 @@ export interface ShippingAddressSnapshot {
 export const order = pgTable(
 	"orders",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		customerProfileId: text("customer_profile_id")
 			.notNull()
 			.references(() => customerProfile.id, { onDelete: "cascade" }),
@@ -110,13 +109,7 @@ export const order = pgTable(
 		stripeTransferId: text("stripe_transfer_id"),
 		stripePointsTransferId: text("stripe_points_transfer_id"),
 		stripeRefundId: text("stripe_refund_id"),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		index("order_customer_created_at_idx").on(
@@ -199,9 +192,7 @@ export const orderRelations = relations(order, ({ one, many }) => ({
 export const orderItem = pgTable(
 	"order_items",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		orderId: text("order_id")
 			.notNull()
 			.references(() => order.id, { onDelete: "cascade" }),

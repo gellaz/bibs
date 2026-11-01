@@ -1,31 +1,18 @@
 import { relations, sql } from "drizzle-orm";
-import {
-	index,
-	pgTable,
-	text,
-	timestamp,
-	uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { product } from "./product";
 import { sellerProfile } from "./seller";
 
 export const brand = pgTable(
 	"brands",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
 		name: text("name").notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		uniqueIndex("brands_seller_name_unique").on(

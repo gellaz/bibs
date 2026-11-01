@@ -8,6 +8,7 @@ import {
 	text,
 	timestamp,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { product } from "./product";
 import { sellerProfile } from "./seller";
 
@@ -17,9 +18,7 @@ export type DiscountStatus = (typeof discountStatuses)[number];
 export const discount = pgTable(
 	"discounts",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -30,13 +29,7 @@ export const discount = pgTable(
 		status: text("status", { enum: discountStatuses })
 			.default("active")
 			.notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		index("discount_seller_profile_id_idx").on(table.sellerProfileId),

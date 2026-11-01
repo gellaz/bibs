@@ -5,19 +5,17 @@ import {
 	index,
 	pgTable,
 	text,
-	timestamp,
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { customerProfile } from "./customer";
 import { municipality } from "./location";
 
 export const customerAddress = pgTable(
 	"customer_addresses",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		label: text("label"),
 		recipientName: text("recipient_name"),
 		phone: text("phone"),
@@ -33,13 +31,7 @@ export const customerAddress = pgTable(
 		customerProfileId: text("customer_profile_id")
 			.notNull()
 			.references(() => customerProfile.id, { onDelete: "cascade" }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(t) => [
 		index("customer_address_location_idx").using("gist", t.location),

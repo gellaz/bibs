@@ -4,18 +4,16 @@ import {
 	integer,
 	pgTable,
 	text,
-	timestamp,
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { createdAt, id } from "../columns";
 import { user } from "./auth";
 
 export const pricingConfig = pgTable(
 	"pricing_config",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		storeMonthlyFeeCents: integer("store_monthly_fee_cents").notNull(),
 		currency: varchar("currency", { length: 3 }).notNull().default("EUR"),
 		stripePriceId: text("stripe_price_id").notNull(),
@@ -29,9 +27,7 @@ export const pricingConfig = pgTable(
 			.notNull()
 			.default(24),
 		isActive: boolean("is_active").notNull().default(true),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 		createdByUserId: text("created_by_user_id").references(() => user.id, {
 			onDelete: "set null",
 		}),
