@@ -761,7 +761,8 @@ return {error: "not found"};
 
 The `onError` of the root app and of every `moduleApp()` (`errorResponse`, `src/http/app.ts`) hands the error to
 `toErrorResponse` (`src/http/errors.ts`), which converts `ServiceError` to the standard response envelope, maps the
-Postgres constraint violations (`23505` → 409, `23503` → 409 or 400, `23514` → 400) and logs.
+Postgres constraint violations (`23505` → 409, `23503` → 409 or 400, `23514` → 400), turns a `StripeError` no service
+handled into a 502 «riprova» (Stripe's message only in the log) and logs.
 
 Validation errors (422) are translated centrally by `src/http/validation-message.ts`, with the rules and labels of
 `src/http/validation-message.ts`, from the first Zod issue — the one the API has always reported first

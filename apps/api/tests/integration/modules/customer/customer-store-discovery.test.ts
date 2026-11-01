@@ -446,7 +446,7 @@ describe("searchStores — open status", () => {
 			name: "SempreAperto",
 			openingHours: Array.from({ length: 7 }, (_, i) => ({
 				dayOfWeek: i,
-				slots: [{ open: "00:00", close: "23:59" }],
+				slots: [{ open: "00:00", close: "24:00" }],
 			})),
 		});
 
@@ -538,7 +538,7 @@ describe("searchStores — pagination", () => {
 /** Orari che coprono ogni momento della settimana: aperto, comunque vada. */
 const ALWAYS_OPEN = Array.from({ length: 7 }, (_, i) => ({
 	dayOfWeek: i,
-	slots: [{ open: "00:00", close: "23:59" }],
+	slots: [{ open: "00:00", close: "24:00" }],
 }));
 
 /** Data di oggi a Roma + il giorno della settimana nella forma 0=Lun..6=Dom. */
@@ -574,7 +574,7 @@ describe("searchStores — openNow filter", () => {
 			openingHours: [
 				{
 					dayOfWeek: (dow + 1) % 7,
-					slots: [{ open: "00:00", close: "23:59" }],
+					slots: [{ open: "00:00", close: "24:00" }],
 				},
 			],
 		});
@@ -662,7 +662,7 @@ describe("searchStores — openNow filter", () => {
 			openingHours: [
 				{
 					dayOfWeek: (dow + 1) % 7,
-					slots: [{ open: "00:00", close: "23:59" }],
+					slots: [{ open: "00:00", close: "24:00" }],
 				},
 			],
 		});

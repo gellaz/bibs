@@ -121,9 +121,6 @@ describe("uploadUserAvatar", () => {
 
 		await uploadUserAvatar({ userId: user.id, file: makeTestImageFile() });
 
-		// best-effort cleanup: give the microtask queue a tick
-		await new Promise((r) => setTimeout(r, 50));
-
 		expect(s3DeleteMock).toHaveBeenCalledWith(oldKey);
 	});
 
@@ -136,8 +133,6 @@ describe("uploadUserAvatar", () => {
 			.where(eq(userTable.id, user.id));
 
 		await uploadUserAvatar({ userId: user.id, file: makeTestImageFile() });
-		// best-effort cleanup: give the microtask queue a tick
-		await new Promise((r) => setTimeout(r, 50));
 
 		expect(s3DeleteMock).not.toHaveBeenCalled();
 	});

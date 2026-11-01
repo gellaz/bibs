@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { getSubscriptionIdFromInvoice } from "@/domain/billing/invoice";
 import { logger } from "@/infra/logger";
 
 export async function handleInvoicePaid(event: Stripe.Event): Promise<void> {
@@ -48,11 +49,4 @@ export async function handleInvoicePaid(event: Stripe.Event): Promise<void> {
 		.update(storeSubscription)
 		.set(update)
 		.where(eq(storeSubscription.id, existing.id));
-}
-
-function getSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | null {
-	// Stripe v22: subscription ID lives at invoice.parent.subscription_details.subscription
-	const fromParent = invoice.parent?.subscription_details?.subscription;
-	if (fromParent && typeof fromParent === "string") return fromParent;
-	return null;
 }

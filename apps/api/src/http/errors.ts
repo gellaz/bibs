@@ -1,4 +1,5 @@
 import { APIError } from "better-auth";
+import Stripe from "stripe";
 import { apiErrorToServiceError } from "@/http/auth-errors";
 import { errorBody } from "@/http/responses";
 import { invalidFileTypeMessage } from "@/http/validation-message";
@@ -232,6 +233,30 @@ export function toErrorResponse(
 		return {
 			status: 404,
 			body: errorBody("NOT_FOUND", "Risorsa non trovata"),
+		};
+	}
+
+	// Stripe giù o che rifiuta una chiamata non gestita dal servizio: 502
+	// «riprova» come i rami già gestiti, senza il messaggio di Stripe.
+	if (error instanceof Stripe.errors.StripeError) {
+		log.error(
+			{
+				errorCode: "BAD_GATEWAY",
+				errorMessage: error.message,
+				stripeType: error.type,
+				stripeCode: error.code,
+				stripeRequestId: error.requestId,
+				path,
+				method,
+			},
+			"Stripe error",
+		);
+		return {
+			status: 502,
+			body: errorBody(
+				"BAD_GATEWAY",
+				"Il servizio di pagamento non risponde. Riprova tra qualche minuto.",
+			),
 		};
 	}
 
