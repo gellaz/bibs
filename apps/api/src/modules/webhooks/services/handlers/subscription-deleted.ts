@@ -1,10 +1,10 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
-import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { notifyStoreCanceled } from "@/domain/billing/billing-notifications";
+import { archiveStore } from "@/domain/stores/store-archive";
 import { logger } from "@/infra/logger";
-import { notifyStoreCanceled } from "../billing-notifications";
 
 export async function handleSubscriptionDeleted(
 	event: Stripe.Event,
@@ -28,7 +28,8 @@ export async function handleSubscriptionDeleted(
 	// The guard is the store's deletedAt (CAS), NOT the previous subscription
 	// status: the auto-cancel job pre-flips the row to 'canceled' before calling
 	// Stripe, so on its (main) path the status is already 'canceled' here even
-	// though the seller has not been told anything yet.
+	// though the seller has not been told anything yet. A store with open orders
+	// is not archived here: the archiveEndedStores job does it, email included.
 	const archived = await db.transaction(async (tx) => {
 		await tx
 			.update(storeSubscription)
@@ -39,12 +40,7 @@ export async function handleSubscriptionDeleted(
 			})
 			.where(eq(storeSubscription.id, existing.id));
 
-		const rows = await tx
-			.update(store)
-			.set({ deletedAt: new Date() })
-			.where(and(eq(store.id, existing.storeId), isNull(store.deletedAt)))
-			.returning({ id: store.id });
-		return rows.length > 0;
+		return archiveStore(tx, existing.storeId);
 	});
 
 	if (archived) {

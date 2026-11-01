@@ -15,6 +15,7 @@ describe("startCronJobs", () => {
 		try {
 			const byName = new Map(crons.map((c) => [c.name, c]));
 			expect([...byName.keys()].sort()).toEqual([
+				"archiveEndedStores",
 				"autoCancelSuspendedStores",
 				"expirePendingStoreCreations",
 				"expireReservations",

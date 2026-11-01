@@ -54,7 +54,7 @@ local-dev gotcha; setup below fixes it.
 | `past_due` | a renewal failed; Stripe is retrying (dunning) | `invoice.payment_failed` |
 | `canceling` | seller asked to cancel at period end (reversible) | `customer.subscription.updated` |
 | `suspended` | dunning exhausted; store inaccessible to the seller | `customer.subscription.updated` (status `unpaid`) |
-| `canceled` | store soft-deleted/archived; the owner can reactivate it with a new subscription | `customer.subscription.deleted` (back to `active` via `checkout.session.completed` with `reactivateStoreId`) |
+| `canceled` | store soft-deleted/archived (with open orders: hidden from customers, archived by the hourly `archiveEndedStores` job once they are closed); the owner can reactivate it with a new subscription | `customer.subscription.deleted` (back to `active` via `checkout.session.completed` with `reactivateStoreId`) |
 
 Note: only a `canceled` store (soft-deleted via `deletedAt`) disappears from customer
 search. A `suspended` store is not filtered out by the customer search service — it
@@ -212,9 +212,11 @@ the bottom; Italian UI: "Zona di pericolo").
 The dialog calls `DELETE /seller/stores/:storeId`. For `active` or `past_due`
 subscriptions this sets `cancel_at_period_end` → status `canceling` (reversible via
 `POST /seller/stores/:storeId/reactivate` before period end). For `suspended`
-subscriptions the cancel is immediate. At period end Stripe fires
-`customer.subscription.deleted` → status `canceled`, store soft-deleted (archived,
-read-only).
+subscriptions the cancel is immediate, or a 409 while the store has open orders. At
+period end Stripe fires `customer.subscription.deleted` → status `canceled`, store
+soft-deleted (archived: it moves to `/store/archived` and its orders leave the seller's
+lists until it is reactivated). With open orders the store is not archived yet: it is hidden from
+customers, the owner closes the orders, and the hourly `archiveEndedStores` job archives it.
 
 ### Billing emails (dunning)
 
@@ -227,7 +229,7 @@ land in Mailpit (<http://localhost:8025>).
 |---|---|---|
 | «Pagamento non riuscito» (amount + link to `/billing`) | `invoice.payment_failed` | CAS `active\|canceling → past_due`; Stripe's retries while `past_due` send nothing |
 | «Negozio sospeso» (link to `/billing`) | `customer.subscription.updated` → `unpaid` | first `suspended` (`suspendedAt` was null) |
-| «Negozio cancellato» (link to `/store/archived`) | `customer.subscription.deleted` | CAS on `store.deletedAt IS NULL`: the delivery that archives the store. Not the previous status — the auto-cancel job pre-flips the row to `canceled` before calling Stripe. Copy differs for `seller_canceled` vs payment failure |
+| «Negozio cancellato» (link to `/store/archived`) | `customer.subscription.deleted`, or the `archiveEndedStores` job when the store still had open orders | CAS on `store.deletedAt IS NULL` (and no open orders): whoever archives the store. Not the previous status — the auto-cancel job pre-flips the row to `canceled` before calling Stripe. Copy differs for `seller_canceled` vs payment failure |
 
 ### Reactivating a `canceled` store
 

@@ -172,15 +172,28 @@ function withoutRemoved(doc: Json): Json {
 	return { ...doc, tags, paths };
 }
 
+/** Delta 26 del registro: la cancellazione immediata di un negozio con ordini aperti è un 409. */
+function withCancelConflict(doc: Json): Json {
+	const paths: Json = structuredClone(doc.paths);
+	const cancel = paths["/seller/stores/{storeId}"].delete;
+	cancel.description =
+		"Cancel at period end per active/past_due (idempotente su canceling). Cancel immediato per suspended, 409 se il negozio ha ordini aperti.";
+	cancel.responses["409"] =
+		paths["/seller/stores/{storeId}/reactivate"].post.responses["409"];
+	return { ...doc, paths };
+}
+
 describe("OpenAPI — moduli migrati contro la baseline", () => {
 	const baseline = async () =>
-		withoutRemoved(
-			await Bun.file(
-				join(
-					import.meta.dir,
-					"../../../../../docs/superpowers/plans/2026-10-25-hono-migration/baseline/openapi.json",
-				),
-			).json(),
+		withCancelConflict(
+			withoutRemoved(
+				await Bun.file(
+					join(
+						import.meta.dir,
+						"../../../../../docs/superpowers/plans/2026-10-25-hono-migration/baseline/openapi.json",
+					),
+				).json(),
+			),
 		);
 
 	it("POST e DELETE /me/avatar identici a baseline/openapi.json", async () => {
@@ -241,7 +254,7 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 
 	// U11: l'intero documento dell'app radice (better-auth, /health e /ready
 	// compresi), come lo confronta `tools/openapi-snapshot.ts`.
-	it("/openapi/json dell'app radice = baseline/openapi.json, salvo i delta 15 e 25", async () => {
+	it("/openapi/json dell'app radice = baseline/openapi.json, salvo i delta 15, 25 e 26", async () => {
 		const res = await app.request("/openapi/json");
 		expect(res.status).toBe(200);
 		const sortKeys = (v: unknown): unknown =>

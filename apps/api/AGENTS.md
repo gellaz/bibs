@@ -141,11 +141,17 @@ Plain Hono middleware (1–4, 7) and the two route groups in `src/http/` (5–6)
 ### Jobs — `src/jobs/`
 
 `scheduler.ts` — `startCronJobs()` with `croner`, called only by `src/index.ts` (tests, tools and the CLI never
-schedule a tick). The five jobs live next to it, one file each: `expireReservations` and `expireUnpaidOrders` every
-minute, `retryStoreTransfers` hourly at :30, `expirePendingStoreCreations` hourly, `autoCancelSuspendedStores` daily
-at 03:00, all in `Europe/Rome` time.
+schedule a tick). The six jobs live next to it, one file each: `expireReservations` and `expireUnpaidOrders` every
+minute, `archiveEndedStores` hourly at :15, `retryStoreTransfers` hourly at :30, `expirePendingStoreCreations` hourly,
+`autoCancelSuspendedStores` daily at 03:00, all in `Europe/Rome` time.
 
-Each tick runs inside `runExclusive(lockKey, run)` (`lock.ts`): a Postgres advisory lock per job (keys 9101–9105),
+A store is never archived (`stores.deleted_at`) while it has open orders (`OPEN_ORDER_STATUSES`, the states with a
+transition left): every archive goes through `archiveStore()` / `archivableStore()` (`src/domain/stores/store-archive.ts`),
+with the condition in the same UPDATE. A store whose subscription ends with open orders stays live, invisible to
+customers (`publiclyVisibleStore`), so the owner can still close them; `archiveEndedStores` archives it, with the
+«archiviato» email, once they are all closed. The owner's immediate cancel of a `suspended` store answers 409 instead.
+
+Each tick runs inside `runExclusive(lockKey, run)` (`lock.ts`): a Postgres advisory lock per job (keys 9101–9106),
 so with several API replicas one job runs on one replica at a time, and croner's `protect` skips a tick while the
 previous one still runs. The lock prevents overlaps, not re-runs: a replica whose tick fires right after another
 replica finished runs the job again. **Every job must stay idempotent**: re-check the state in a transaction

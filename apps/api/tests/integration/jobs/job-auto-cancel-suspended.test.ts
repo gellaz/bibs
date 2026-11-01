@@ -28,12 +28,17 @@ mock.module("@/infra/stripe", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import { order } from "@/db/schemas/order";
 import { pricingConfig } from "@/db/schemas/pricing-config";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { runAutoCancelSuspended } from "@/jobs/auto-cancel-suspended-stores";
 import { truncateAll } from "../../helpers/cleanup";
-import { createTestSeller, createTestStore } from "../../helpers/fixtures";
+import {
+	createTestCustomer,
+	createTestSeller,
+	createTestStore,
+} from "../../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -179,6 +184,32 @@ describe("runAutoCancelSuspended", () => {
 		const second = await runAutoCancelSuspended();
 		expect(second.canceled).toBe(0);
 		expect(subCancel).not.toHaveBeenCalled();
+	});
+
+	it("resource_missing with an open order: the store is not archived yet", async () => {
+		const { storeId } = await seedSuspendedSub("sub_GONE_BUSY");
+		const customer = await createTestCustomer(getTestDb());
+		await getTestDb().insert(order).values({
+			customerProfileId: customer.profile.id,
+			storeId,
+			type: "pay_pickup",
+			status: "ready_for_pickup",
+			total: "30.00",
+		});
+		subCancel.mockImplementationOnce(async () => {
+			throw Object.assign(new Error("No such subscription"), {
+				code: "resource_missing",
+			});
+		});
+
+		await runAutoCancelSuspended();
+		expect(await readStatus("sub_GONE_BUSY")).toBe("canceled");
+		// Rimandato: lo archivia archiveEndedStores quando l'ordine si chiude.
+		const [storeRow] = await getTestDb()
+			.select()
+			.from(store)
+			.where(eq(store.id, storeId));
+		expect(storeRow.deletedAt).toBeNull();
 	});
 
 	it("transient Stripe error reverts canceled → suspended so the next run retries", async () => {
