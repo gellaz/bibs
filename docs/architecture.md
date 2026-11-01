@@ -248,7 +248,6 @@ The three apps share one architecture; if you know one, you know all three:
 - **Paraglide JS** for i18n: strings in `messages/{it,en}.json`, generated
   `src/paraglide/` — user-facing copy is never hard-coded.
 - **Tailwind CSS v4** + **`@bibs/ui`** components (imported via the `~/` alias).
-- **T3Env** (`src/env.ts`) for typed environment variables.
 
 Path aliases (identical in all three apps): `@/*` → `./src/*` (the tsconfig adds
 `../api/src/*` as a secondary target for type resolution — write runtime imports

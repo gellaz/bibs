@@ -84,8 +84,8 @@ business rule → `domain/<area>/`; generic → `lib/`; talks to an external sys
 
 Who may import what, enforced by `tests/unit/architecture.test.ts`: **A.** a module never imports another module;
 **B.** outside `modules/` nothing imports `modules/`, except `app.ts`, `types.ts`, `db/seed/` and `scripts/`; **C.**
-`lib/` imports only `lib/` and `db/`. Never give an API file a path that exists in `apps/<fe>/src/` (`env.ts`,
-`lib/<name>`, `routes/`, …): the frontends' `@/` alias would shadow it.
+`lib/` imports only `lib/` and `db/`. Never give an API file a path that exists in `apps/<fe>/src/`
+(`lib/<name>`, `routes/`, …): the frontends' `@/` alias would shadow it.
 
 ### App — `src/app.ts`
 

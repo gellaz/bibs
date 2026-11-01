@@ -102,14 +102,12 @@ All three frontend apps (`admin`, `customer`, `seller`) share the same tech stac
 - **Paraglide JS** — i18n with localized routing (messages in `messages/`, output in `src/paraglide/`)
 - **Tailwind CSS v4** — via `@tailwindcss/vite` plugin
 - **@bibs/ui** — shared UI components from `packages/ui`, aliased as `~/` in imports
-- **T3Env** (`@t3-oss/env-core`) — type-safe env variables in `src/env.ts`
 - **Vite** — build tool with `vite-tsconfig-paths`
 
 Key files in each frontend app:
 
 - `src/lib/api.ts` — the `hc` clients, one per API sub-tree (`meApi`, `sellerApi`, `adminApi`, `customerApi`, `catalogApi`, …)
 - `src/lib/auth-client.ts` — better-auth React client with admin plugin
-- `src/env.ts` — typed environment variables (validated with Zod)
 - `src/routes/__root.tsx` — root layout
 - `src/routes/_authenticated.tsx` — auth-guarded layout
 - `src/routes/login.tsx` — login page
