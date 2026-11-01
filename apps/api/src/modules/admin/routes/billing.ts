@@ -2,10 +2,16 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireAdmin } from "@/http/auth";
 import { doc } from "@/http/openapi";
-import { ok } from "@/http/responses";
+import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { okRes, withConflictErrors, withErrors } from "@/schemas/responses";
+import { PaginationQuery } from "@/schemas/pagination";
+import {
+	okPageRes,
+	okRes,
+	withConflictErrors,
+	withErrors,
+} from "@/schemas/responses";
 import { zDate, zInteger, zString } from "@/schemas/t";
 import { adminDetail } from "../context";
 import {
@@ -41,15 +47,6 @@ const SubRowSchema = z.object({
 	cancelReason: z.string().nullable(),
 });
 
-const SubsPageSchema = z.object({
-	data: z.array(SubRowSchema),
-	pagination: z.object({
-		page: zInteger(),
-		limit: zInteger(),
-		total: zInteger(),
-	}),
-});
-
 const OverviewSchema = z.object({
 	mrrCents: zInteger(),
 	atRiskCents: zInteger({
@@ -79,7 +76,7 @@ const OverviewResponse = okRes(OverviewSchema);
 const PricingResponse = okRes(PricingSchema);
 const PricingHistoryResponse = okRes(z.array(PricingSchema));
 const UpdatePricingResponse = okRes(z.object({ newPriceId: z.string() }));
-const SubscriptionsResponse = okRes(SubsPageSchema);
+const SubscriptionsResponse = okPageRes(SubRowSchema);
 
 export const UpdatePricingBody = z.object({
 	storeMonthlyFeeCents: zInteger({ minimum: 100 }),
@@ -93,9 +90,7 @@ export const UpdatePricingBody = z.object({
 	}),
 });
 
-export const SubscriptionsQuery = z.object({
-	page: zInteger({ minimum: 1 }).optional(),
-	limit: zInteger({ minimum: 1, maximum: 100 }).optional(),
+const SubscriptionsQuery = PaginationQuery.extend({
 	status: StatusUnion.optional(),
 	sellerEmail: z.string().optional(),
 	storeName: z.string().optional(),
@@ -170,14 +165,11 @@ export const adminBillingRoutes = new Hono()
 		v("query", SubscriptionsQuery),
 		requireAdmin,
 		async (c) => {
-			const query = c.req.valid("query");
-			const data = await listAllSubscriptions({
-				page: query.page ?? 1,
-				limit: query.limit ?? 25,
-				status: query.status,
-				sellerEmail: query.sellerEmail,
-				storeName: query.storeName,
-			});
-			return send(c, SubscriptionsResponse, ok(data));
+			const result = await listAllSubscriptions(c.req.valid("query"));
+			return send(
+				c,
+				SubscriptionsResponse,
+				okPage(result.data, result.pagination),
+			);
 		},
 	);

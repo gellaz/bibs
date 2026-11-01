@@ -80,4 +80,29 @@ describe("listArchivedStores", () => {
 		// Drives the «Riattiva» button in the seller archive.
 		expect(result.data[0].subscriptionStatus).toBe("canceled");
 	});
+
+	it("pagina come le altre liste: default 20, page e limit", async () => {
+		const { profile } = await createTestSeller(getTestDb(), {
+			email: "a@b.it",
+		});
+		for (let i = 0; i < 3; i++) {
+			const s = await createTestStore(getTestDb(), profile.id);
+			await getTestDb()
+				.update(store)
+				.set({ deletedAt: new Date() })
+				.where(eq(store.id, s.id));
+		}
+
+		const all = await listArchivedStores({ sellerProfileId: profile.id });
+		expect(all.data).toHaveLength(3);
+		expect(all.pagination).toEqual({ page: 1, limit: 20, total: 3 });
+
+		const second = await listArchivedStores({
+			sellerProfileId: profile.id,
+			page: 2,
+			limit: 2,
+		});
+		expect(second.data).toHaveLength(1);
+		expect(second.pagination).toEqual({ page: 2, limit: 2, total: 3 });
+	});
 });

@@ -23,11 +23,7 @@ import {
 	ProductStatusBody,
 	ProductStatusCounts,
 } from "@/schemas/entities";
-import {
-	CharacteristicValuesField,
-	CreateProductBody,
-	VatRateSchema,
-} from "@/schemas/forms/products";
+import { CreateProductBody, VatRateSchema } from "@/schemas/forms/products";
 import { PaginationQuery } from "@/schemas/pagination";
 import {
 	okPageRes,
@@ -141,54 +137,34 @@ const ProductParams = z.object({
 	productId: z.string().meta(d("ID del prodotto")),
 });
 
-const UpdateProductBody = z.object({
-	productCategoryId: z
-		.union([z.string(), z.null()])
-		.meta(d("ID della sotto-categoria del prodotto. null per rimuoverla."))
-		.optional(),
-	name: zString({
-		minLength: 1,
-		maxLength: 200,
-		description: "Nome del prodotto",
-	}).optional(),
-	description: zString({
-		maxLength: 2000,
-		description: "Descrizione del prodotto",
-	}).optional(),
-	price: z
-		.string()
-		.regex(/^\d+\.\d{2}$/)
-		.meta(d("Prezzo (formato decimale, es. '9.99')"))
-		.optional(),
-	vatRate: VatRateSchema.optional(),
-	imageOrder: z
-		.array(z.string())
-		.meta(
-			d(
-				"IDs delle immagini esistenti nell'ordine desiderato. La prima diventa l'immagine di default.",
-			),
-		)
-		.optional(),
-	ean: z
-		.union([z.string().regex(/^$|^(\d{8}|\d{13})$/), z.null()])
-		.meta(d("Codice EAN (null o stringa vuota per cancellarlo)"))
-		.optional(),
-	brandId: z
-		.union([z.string(), z.null()])
-		.meta(d("ID brand esistente (null per rimuovere)"))
-		.optional(),
-	brandName: zString({
-		minLength: 1,
-		maxLength: 120,
-		description: "Nome brand da creare (ignorato se brandId valorizzato)",
-	}).optional(),
-	characteristicValues: CharacteristicValuesField.optional(),
-	confirmAffected: zInteger({
-		minimum: 0,
-		description:
-			"Solo al cambio di sotto-categoria: quanti valori già salvati, fuori dalla nuova matrice, l'interfaccia ha mostrato nella conferma. Se se ne perdono di più, 409 e nulla cambia. Assente vale 0.",
-	}).optional(),
-});
+// I campi della creazione con le stesse regole e gli stessi messaggi, tutti
+// facoltativi; EAN e brand si tolgono con null.
+const UpdateProductBody = CreateProductBody.omit({ storeId: true })
+	.partial()
+	.extend({
+		// Senza il default della creazione: un PATCH senza aliquota non la
+		// rimette a 22 (Zod applica `.default()` anche sotto `.optional()`).
+		vatRate: VatRateSchema.removeDefault().optional(),
+		ean: CreateProductBody.shape.ean.unwrap().nullable().optional(),
+		brandId: z
+			.string()
+			.meta(d("ID brand esistente (null per rimuovere)"))
+			.nullable()
+			.optional(),
+		imageOrder: z
+			.array(z.string())
+			.meta(
+				d(
+					"IDs delle immagini esistenti nell'ordine desiderato. La prima diventa l'immagine di default.",
+				),
+			)
+			.optional(),
+		confirmAffected: zInteger({
+			minimum: 0,
+			description:
+				"Solo al cambio di sotto-categoria: quanti valori già salvati, fuori dalla nuova matrice, l'interfaccia ha mostrato nella conferma. Se se ne perdono di più, 409 e nulla cambia. Assente vale 0.",
+		}).optional(),
+	});
 
 const ImportBody = z.object({
 	file: zFile({

@@ -8,12 +8,11 @@ import { v } from "@/http/validator";
 import { config } from "@/lib/config";
 import { StoreWithPhonesSchema } from "@/schemas/composed";
 import {
-	AddressFieldsOptional,
 	MunicipalityCompactSchema,
 	ReservationDeadlineSchema,
 	StoreOrderTypesSchema,
 } from "@/schemas/entities";
-import { OpeningHoursSchema } from "@/schemas/forms/opening-hours";
+import { CreateStoreBody } from "@/schemas/forms/stores";
 import { PaginationQuery } from "@/schemas/pagination";
 import {
 	okPageRes,
@@ -21,7 +20,7 @@ import {
 	withConflictErrors,
 	withErrors,
 } from "@/schemas/responses";
-import { utf16Length, zDate, zFormat, zInteger, zString } from "@/schemas/t";
+import { zDate, zInteger } from "@/schemas/t";
 import { ensureStoreAccess, requireOwner } from "../context";
 import {
 	getStoreOrderTypes,
@@ -66,23 +65,14 @@ const reservationHours = (description: string) =>
 		description,
 	});
 
-const UpdateStoreBody = z.object({
-	name: zString({
-		minLength: 1,
-		maxLength: 100,
-		description: "Nome del negozio",
-	}).optional(),
-	description: zString({
-		maxLength: 1000,
-		description: "Descrizione",
-	}).optional(),
-	...AddressFieldsOptional,
+// I campi della creazione con le stesse regole e gli stessi messaggi, tutti
+// facoltativi, più quelli che si cambiano solo in modifica.
+const UpdateStoreBody = CreateStoreBody.partial().extend({
 	categoryId: z
 		.string()
-		.meta({ description: "ID categoria negozio" })
+		.meta({ description: "ID categoria negozio. null per rimuoverla" })
 		.nullable()
 		.optional(),
-	openingHours: OpeningHoursSchema.nullable().optional(),
 	reservationHours: reservationHours(
 		"Ore di apertura entro cui il cliente ritira una prenotazione (Prenota e paga in negozio)",
 	).optional(),
@@ -92,33 +82,6 @@ const UpdateStoreBody = z.object({
 		description:
 			"Soglia di scorta bassa: sotto questo stock (escluso) un prodotto attivo è segnalato nella home. 0 spegne l'avviso",
 	}).optional(),
-	// `.max()` per /openapi, `utf16Length` per contare le unità UTF-16 come prima (vedi forms/stores.ts).
-	websiteUrl: zFormat("uri")
-		.max(500)
-		.check(utf16Length({ maxLength: 500 }))
-		.meta({ description: "URL del sito web. null per rimuoverlo" })
-		.nullable()
-		.optional(),
-	phoneNumbers: z
-		.array(
-			z.object({
-				label: zString({
-					maxLength: 50,
-					description: "Etichetta (es. 'Principale')",
-				}).optional(),
-				number: zString({
-					minLength: 5,
-					maxLength: 30,
-					description: "Numero di telefono",
-				}),
-				position: zInteger({
-					minimum: 0,
-					description: "Posizione di ordinamento",
-				}).optional(),
-			}),
-		)
-		.meta({ description: "Numeri di telefono del negozio" })
-		.optional(),
 });
 
 const OrderTypesBody = z.object({
@@ -134,11 +97,6 @@ const OrderTypesBody = z.object({
 		}),
 });
 
-const ArchivedQuery = z.object({
-	page: zInteger({ minimum: 1 }).optional(),
-	limit: zInteger({ minimum: 1, maximum: 100 }).optional(),
-});
-
 const StoreRes = okRes(StoreWithPhonesSchema);
 const StorePage = okPageRes(StoreWithPhonesSchema);
 const DeadlineRes = okRes(ReservationDeadlineSchema);
@@ -150,16 +108,7 @@ const CancelRes = okRes(
 	}),
 );
 const ReactivateRes = okRes(z.object({ status: z.literal("active") }));
-const ArchivedRes = okRes(
-	z.object({
-		data: z.array(ArchivedStoreSchema),
-		pagination: z.object({
-			page: zInteger(),
-			limit: zInteger(),
-			total: zInteger(),
-		}),
-	}),
-);
+const ArchivedPage = okPageRes(ArchivedStoreSchema);
 
 const detail = (summary: string, description: string) => ({
 	summary,
@@ -346,23 +295,21 @@ export const storesRoutes = new Hono()
 	.get(
 		"/stores/archived",
 		doc({
-			response: withErrors({ 200: ArchivedRes }),
+			response: withErrors({ 200: ArchivedPage }),
 			detail: detail(
 				"Lista negozi archiviati del seller",
 				"Negozi con deletedAt impostato. Include canceledAt e cancelReason via join su store_subscriptions.",
 			),
 		}),
-		v("query", ArchivedQuery),
+		v("query", PaginationQuery),
 		requireSeller,
 		async (c) => {
 			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
-			const query = c.req.valid("query");
-			const data = await listArchivedStores({
+			const result = await listArchivedStores({
+				...c.req.valid("query"),
 				sellerProfileId: sp.id,
-				page: query.page ?? 1,
-				limit: query.limit ?? 25,
 			});
-			return send(c, ArchivedRes, ok(data));
+			return send(c, ArchivedPage, okPage(result.data, result.pagination));
 		},
 	);

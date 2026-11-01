@@ -1,10 +1,7 @@
 import { z } from "zod";
 import { moduleApp } from "@/http/app";
 import { type Target, v } from "@/http/validator";
-import {
-	SubscriptionsQuery,
-	UpdatePricingBody,
-} from "@/modules/admin/routes/billing";
+import { UpdatePricingBody } from "@/modules/admin/routes/billing";
 import {
 	RemoveCategoryCharacteristicBody,
 	SetCategoryCharacteristicBody,
@@ -167,6 +164,17 @@ const MunicipalitiesQuery = PaginationQuery.extend({
 		.string()
 		.meta({ description: "Filtra per ID provincia" })
 		.optional(),
+});
+// GET /admin/billing/subscriptions ora usa PaginationQuery (delta 27): stesso
+// discorso, il caso resta sullo schema di prima.
+const SubscriptionsQuery = z.object({
+	page: zInteger({ minimum: 1 }).optional(),
+	limit: zInteger({ minimum: 1, maximum: 100 }).optional(),
+	status: z
+		.enum(["active", "past_due", "canceling", "suspended", "canceled"])
+		.optional(),
+	sellerEmail: z.string().optional(),
+	storeName: z.string().optional(),
 });
 
 // ── i casi ──────────────────────────────────────────────────────────────────

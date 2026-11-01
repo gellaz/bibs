@@ -57,29 +57,9 @@ export const AddressFieldsRequired = {
 };
 
 /** Optional address fields for update/patch operations. */
-export const AddressFieldsOptional = {
-	addressLine1: zString({
-		minLength: 1,
-		maxLength: 200,
-		...d("Indirizzo (riga 1)"),
-	}).optional(),
-	addressLine2: zString({
-		maxLength: 200,
-		...d("Indirizzo (riga 2)"),
-	}).optional(),
-	municipalityId: zString({ minLength: 1, ...d("ID del comune") }).optional(),
-	zipCode: z
-		.string()
-		.regex(/^\d{5}$/)
-		.meta(d("CAP italiano (5 cifre)"))
-		.optional(),
-	country: zString({
-		minLength: 2,
-		maxLength: 2,
-		...d("Codice paese"),
-	}).optional(),
-	location: LocationField,
-};
+export const AddressFieldsOptional = z
+	.object(AddressFieldsRequired)
+	.partial().shape;
 
 // ────────────────────────────────────────────
 // Entity schemas
@@ -147,12 +127,7 @@ export const ProductCategorySchema = z.object({
 	updatedAt: zDate(),
 });
 
-export const ProductCategoryWithMacroSchema = z.object({
-	id: z.string(),
-	macroCategoryId: z.string(),
-	name: z.string().meta(d("Nome della sotto-categoria prodotto")),
-	createdAt: zDate(),
-	updatedAt: zDate(),
+export const ProductCategoryWithMacroSchema = ProductCategorySchema.extend({
 	macroCategory: ProductMacroCategorySchema,
 });
 
@@ -313,6 +288,26 @@ export const OnlinePaymentsSchema = z.object({
 	payoutsEnabled: z.boolean(),
 });
 
+// Orari settimanali in risposta (dayOfWeek 0=Lun..6=Dom): senza le regole
+// dell'input (OpeningHoursSchema), che valgono solo in scrittura.
+const StoreOpeningHoursSchema = z
+	.array(
+		z.object({
+			dayOfWeek: zInteger({
+				minimum: 0,
+				maximum: 6,
+				description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
+			}),
+			slots: z.array(
+				z.object({
+					open: z.string().meta(d("Orario apertura (HH:mm)")),
+					close: z.string().meta(d("Orario chiusura (HH:mm)")),
+				}),
+			),
+		}),
+	)
+	.meta(d("Orari di apertura del negozio"));
+
 export const StoreSchema = z.object({
 	id: z.string(),
 	sellerProfileId: z.string(),
@@ -326,24 +321,7 @@ export const StoreSchema = z.object({
 	country: z.string().meta(d("Codice paese ISO 3166-1 alpha-2")),
 	location: PointXY.nullable(),
 	categoryId: z.string().meta(d("ID categoria negozio")).nullable(),
-	openingHours: z
-		.array(
-			z.object({
-				dayOfWeek: zInteger({
-					minimum: 0,
-					maximum: 6,
-					description: "Giorno della settimana (0=Lunedì, 6=Domenica)",
-				}),
-				slots: z.array(
-					z.object({
-						open: z.string().meta(d("Orario apertura (HH:mm)")),
-						close: z.string().meta(d("Orario chiusura (HH:mm)")),
-					}),
-				),
-			}),
-		)
-		.meta(d("Orari di apertura del negozio"))
-		.nullable(),
+	openingHours: StoreOpeningHoursSchema.nullable(),
 	websiteUrl: z.string().meta(d("URL del sito web")).nullable(),
 	createdAt: zDate(),
 	updatedAt: zDate(),
@@ -912,23 +890,6 @@ export const StoreMapSchema = z.object({
 		.boolean()
 		.meta(d("true quando i negozi mappabili superano il tetto di 500 pin")),
 });
-
-// Weekly opening hours (response shape), dayOfWeek 0=Lun..6=Dom
-const StoreOpeningHoursSchema = z.array(
-	z.object({
-		dayOfWeek: zInteger({
-			minimum: 0,
-			maximum: 6,
-			description: "0=Lun..6=Dom",
-		}),
-		slots: z.array(
-			z.object({
-				open: z.string().meta(d("Apertura HH:mm")),
-				close: z.string().meta(d("Chiusura HH:mm")),
-			}),
-		),
-	}),
-);
 
 // Store detail (customer public store page — #2a)
 export const StoreDetailSchema = z.object({

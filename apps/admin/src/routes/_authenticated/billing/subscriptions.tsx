@@ -51,7 +51,7 @@ function SubscriptionsPage() {
 					...(storeName ? { storeName } : {}),
 				},
 			});
-			return (await unwrapJson(r, m.billing_subs_load_error())).data;
+			return unwrapJson(r, m.billing_subs_load_error());
 		},
 		placeholderData: keepPreviousData,
 	});
