@@ -72,7 +72,7 @@ per the [Hard Rules](#hard-rules) — requires explicit user confirmation first.
 GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request and every push to `main`. The jobs run in parallel:
 
 - **Lint (Biome)** — `bun run lint`
-- **Typecheck** — `bun run typecheck` across all workspaces (the `pretypecheck` hook in each frontend compiles Paraglide messages first, so a fresh clone typechecks without running `vite dev`)
+- **Typecheck** — `bun run typecheck` across all workspaces (the `pretypecheck` hook in each frontend compiles Paraglide messages first, so a fresh clone typechecks without running `vite dev`), then `db:generate` in `apps/api`, which fails if the Drizzle schema has changes without a committed migration
 - **API tests (unit + integration)** — `bun run test` (also runs the emails and frontend suites); integration tests spin up Postgres/PostGIS via testcontainers, no GitHub Actions `services:` needed
 - **Build (admin/customer/seller)** — `vite build` per frontend, then fails on an uncommitted `routeTree.gen.ts`
 - **Docker image (api)** — builds `apps/api/Dockerfile`, runs `db:migrate` from the image and boots it against the compose Postgres/SeaweedFS until `/ready` is 200
