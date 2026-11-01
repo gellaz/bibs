@@ -6,10 +6,10 @@ import {
 	numeric,
 	pgTable,
 	text,
-	timestamp,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { DEFAULT_VAT_RATE, VAT_RATES } from "@/domain/pricing/vat";
+import { id, timestamps } from "../columns";
 import { brand } from "./brand";
 import { productCategory } from "./category";
 import { productCharacteristicValue } from "./product-characteristic";
@@ -23,9 +23,7 @@ export type ProductStatus = (typeof productStatuses)[number];
 export const product = pgTable(
 	"products",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -46,13 +44,7 @@ export const product = pgTable(
 		status: text("status", { enum: productStatuses })
 			.default("active")
 			.notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		index("product_seller_profile_id_idx").on(table.sellerProfileId),
@@ -111,9 +103,7 @@ export const productRelations = relations(product, ({ one, many }) => ({
 export const storeProduct = pgTable(
 	"store_products",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		productId: text("product_id")
 			.notNull()
 			.references(() => product.id, { onDelete: "cascade" }),

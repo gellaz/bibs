@@ -25,8 +25,8 @@ export interface CharacteristicOptionInput {
 }
 
 /**
- * Le regole di forma di una caratteristica, le stesse dell'import CSV e con
- * gli stessi messaggi: unità solo per i numeri, opzioni solo (e almeno una)
+ * Le regole di forma di una caratteristica, usate dal form e dall'import CSV:
+ * unità solo per i numeri, opzioni solo (e almeno una)
  * per le liste chiuse, nessuna opzione ripetuta. Le opzioni vuote si scartano.
  */
 export function normalizeDefinition(p: {

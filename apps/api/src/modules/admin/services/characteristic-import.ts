@@ -16,24 +16,10 @@ import {
 } from "@/domain/catalog/characteristic-impact";
 import { parseCsv } from "@/lib/csv";
 import { ServiceError } from "@/lib/errors";
+import type { ImportError } from "./category-import";
+import { normalizeDefinition } from "./product-characteristics";
 
 const CHARACTERISTIC_HEADERS = ["name", "data_type", "unit", "options"];
-
-function assertHeaders(actual: string[], expected: string[]) {
-	for (const h of expected) {
-		if (!actual.includes(h)) {
-			throw new ServiceError(
-				400,
-				`Colonna CSV mancante: "${h}". Colonne attese: ${expected.join(", ")}.`,
-			);
-		}
-	}
-}
-
-interface ImportError {
-	row: number;
-	message: string;
-}
 
 export interface CharacteristicImportResult {
 	created: number;
@@ -75,12 +61,7 @@ interface PlannedUpdate extends ParsedRow {
 export async function importCharacteristicsFromCsv(
 	csvText: string,
 ): Promise<CharacteristicImportResult> {
-	const { headers, rows } = parseCsv(csvText);
-	assertHeaders(headers, CHARACTERISTIC_HEADERS);
-
-	if (rows.length === 0) {
-		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
-	}
+	const { headers, rows } = parseCsv(csvText, CHARACTERISTIC_HEADERS);
 
 	const nameIdx = headers.indexOf("name");
 	const dataTypeIdx = headers.indexOf("data_type");
@@ -117,34 +98,17 @@ export async function importCharacteristicsFromCsv(
 		}
 		const dataType = dataTypeRaw as CharacteristicDataType;
 
-		if (unitRaw && dataType !== "number") {
-			errors.push({
-				row: rowNum,
-				message: `L'unità di misura ha senso solo per il tipo "number"`,
+		// Le regole del form: qui un loro errore diventa un errore di riga.
+		let definition: ReturnType<typeof normalizeDefinition>;
+		try {
+			definition = normalizeDefinition({
+				dataType,
+				unit: unitRaw,
+				options: optionsRaw.split("|").map((value) => ({ value })),
 			});
-			continue;
-		}
-
-		if (optionsRaw && dataType !== "enum") {
-			errors.push({
-				row: rowNum,
-				message: `Le opzioni hanno senso solo per il tipo "enum"`,
-			});
-			continue;
-		}
-
-		const options = optionsRaw
-			? optionsRaw
-					.split("|")
-					.map((option) => option.trim())
-					.filter((option) => option.length > 0)
-			: [];
-
-		if (dataType === "enum" && options.length === 0) {
-			errors.push({
-				row: rowNum,
-				message: `Il tipo "enum" richiede almeno un'opzione`,
-			});
+		} catch (err) {
+			if (!(err instanceof ServiceError)) throw err;
+			errors.push({ row: rowNum, message: err.message });
 			continue;
 		}
 
@@ -152,8 +116,8 @@ export async function importCharacteristicsFromCsv(
 			rowNum,
 			name,
 			dataType,
-			unit: unitRaw || null,
-			options,
+			unit: definition.unit,
+			options: definition.options.map((o) => o.value),
 		});
 	}
 
@@ -421,12 +385,7 @@ function pairKey(a: string, b: string): string {
 export async function importCategoryCharacteristicsFromCsv(
 	csvText: string,
 ): Promise<CategoryCharacteristicImportResult> {
-	const { headers, rows } = parseCsv(csvText);
-	assertHeaders(headers, MATRIX_HEADERS);
-
-	if (rows.length === 0) {
-		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
-	}
+	const { headers, rows } = parseCsv(csvText, MATRIX_HEADERS);
 
 	const macroIdx = headers.indexOf("macro_category");
 	const subIdx = headers.indexOf("subcategory");

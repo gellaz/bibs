@@ -9,6 +9,7 @@ import {
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { createdAt, id } from "../columns";
 import { sellerProfile } from "./seller";
 import { store } from "./store";
 
@@ -18,9 +19,7 @@ export type InvitationStatus = (typeof invitationStatuses)[number];
 export const employeeInvitation = pgTable(
 	"employee_invitations",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -32,9 +31,7 @@ export const employeeInvitation = pgTable(
 			.default("pending")
 			.notNull(),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(table) => [
 		index("employee_invitation_seller_profile_id_idx").on(

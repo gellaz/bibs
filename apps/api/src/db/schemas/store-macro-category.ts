@@ -1,19 +1,12 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { storeCategory } from "./store-category";
 
 export const storeMacroCategory = pgTable("store_macro_categories", {
-	id: text("id")
-		.primaryKey()
-		.$defaultFn(() => crypto.randomUUID()),
+	id: id(),
 	name: text("name").notNull().unique(),
-	createdAt: timestamp("created_at", { withTimezone: true })
-		.defaultNow()
-		.notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true })
-		.defaultNow()
-		.$onUpdate(() => new Date())
-		.notNull(),
+	...timestamps,
 });
 
 export const storeMacroCategoryRelations = relations(

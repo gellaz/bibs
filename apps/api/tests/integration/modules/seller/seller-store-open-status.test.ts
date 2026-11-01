@@ -44,13 +44,13 @@ describe("listStores openStatus", () => {
 		const db = getTestDb();
 		const { profile } = await createTestSeller(db);
 		const store = await createTestStore(db, profile.id);
-		// Open every day 00:00-23:59 so the store is unambiguously open now.
+		// Open every day 00:00-24:00 so the store is unambiguously open now.
 		await db
 			.update(storeTable)
 			.set({
 				openingHours: Array.from({ length: 7 }, (_, i) => ({
 					dayOfWeek: i,
-					slots: [{ open: "00:00", close: "23:59" }],
+					slots: [{ open: "00:00", close: "24:00" }],
 				})),
 			})
 			.where(eq(storeTable.id, store.id));

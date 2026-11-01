@@ -9,6 +9,11 @@ function client(): Stripe {
 		instance = new Stripe(env.STRIPE_SECRET_KEY, {
 			apiVersion: "2026-08-26.dahlia",
 			typescript: true,
+			// Le chiamate girano dentro transazioni del DB: il default (80 s × 3
+			// tentativi) terrebbe righe e connessioni per minuti. Il ritentativo è
+			// sicuro: le POST hanno una chiave di idempotenza (nostra o dell'SDK).
+			timeout: 10_000,
+			maxNetworkRetries: 1,
 			appInfo: {
 				name: "bibs",
 				url: "https://bibs.app",

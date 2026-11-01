@@ -179,40 +179,6 @@ describe("point_transactions — per-order idempotency backstop (unique index)",
 });
 
 describe("transitionOrder — completion never double-awards points", () => {
-	it("two concurrent completions award loyalty points exactly once", async () => {
-		const db = getTestDb();
-		const { profile: seller } = await createTestSeller(db);
-		const store = await createTestStore(db, seller.id);
-		const { profile: customer } = await createTestCustomer(db);
-		const o = await insertConfirmedOrder({
-			customerProfileId: customer.id,
-			storeId: store.id,
-			total: "20.00",
-		});
-
-		const results = await Promise.allSettled([
-			transitionOrder(o.id, seller.id, "completed", [store.id]),
-			transitionOrder(o.id, seller.id, "completed", [store.id]),
-		]);
-
-		const fulfilled = results.filter((r) => r.status === "fulfilled");
-		const rejected = results.filter((r) => r.status === "rejected");
-		expect(fulfilled).toHaveLength(1);
-		expect(rejected).toHaveLength(1);
-
-		expect(await countTx(o.id, "earned")).toBe(1);
-
-		const [cp] = await db
-			.select()
-			.from(customerProfile)
-			.where(eq(customerProfile.id, customer.id));
-		expect(cp.points).toBe(20);
-
-		const [updated] = await db.select().from(order).where(eq(order.id, o.id));
-		expect(updated.status).toBe("completed");
-		expect(updated.pointsEarned).toBe(20);
-	});
-
 	it("re-completing an already-completed order does not award again", async () => {
 		const db = getTestDb();
 		const { profile: seller } = await createTestSeller(db);

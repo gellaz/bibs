@@ -1,40 +1,25 @@
 import { relations } from "drizzle-orm";
-import { index, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 
 export const region = pgTable("regions", {
-	id: text("id")
-		.primaryKey()
-		.$defaultFn(() => crypto.randomUUID()),
+	id: id(),
 	name: text("name").notNull().unique(),
 	istatCode: varchar("istat_code", { length: 2 }).notNull().unique(),
-	createdAt: timestamp("created_at", { withTimezone: true })
-		.defaultNow()
-		.notNull(),
-	updatedAt: timestamp("updated_at", { withTimezone: true })
-		.defaultNow()
-		.$onUpdate(() => new Date())
-		.notNull(),
+	...timestamps,
 });
 
 export const province = pgTable(
 	"provinces",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		name: text("name").notNull().unique(),
 		acronym: varchar("acronym", { length: 2 }).notNull().unique(),
 		istatCode: varchar("istat_code", { length: 3 }).notNull().unique(),
 		regionId: text("region_id")
 			.notNull()
 			.references(() => region.id, { onDelete: "cascade" }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(t) => [index("province_region_id_idx").on(t.regionId)],
 );
@@ -42,21 +27,13 @@ export const province = pgTable(
 export const municipality = pgTable(
 	"municipalities",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		name: text("name").notNull(),
 		istatCode: varchar("istat_code", { length: 6 }).notNull().unique(),
 		provinceId: text("province_id")
 			.notNull()
 			.references(() => province.id, { onDelete: "cascade" }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(t) => [index("municipality_province_id_idx").on(t.provinceId)],
 );

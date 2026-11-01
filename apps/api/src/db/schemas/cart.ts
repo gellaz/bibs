@@ -5,9 +5,9 @@ import {
 	integer,
 	pgTable,
 	text,
-	timestamp,
 	uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { customerProfile } from "./customer";
 import { storeProduct } from "./product";
 
@@ -17,9 +17,7 @@ export const MAX_CART_ITEM_QUANTITY = 99;
 export const cartItem = pgTable(
 	"cart_items",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		customerProfileId: text("customer_profile_id")
 			.notNull()
 			.references(() => customerProfile.id, { onDelete: "cascade" }),
@@ -31,13 +29,7 @@ export const cartItem = pgTable(
 			.notNull()
 			.references(() => storeProduct.id, { onDelete: "cascade" }),
 		quantity: integer("quantity").notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		// Una riga per (cliente, prodotto-in-negozio): il secondo "aggiungi" somma.

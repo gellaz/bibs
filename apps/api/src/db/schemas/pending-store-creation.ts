@@ -9,6 +9,7 @@ import {
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { createdAt, id } from "../columns";
 import { sellerProfile } from "./seller";
 
 export const pendingStoreCreationStatuses = [
@@ -23,9 +24,7 @@ export type PendingStoreCreationStatus =
 export const pendingStoreCreation = pgTable(
 	"pending_store_creations",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -39,9 +38,7 @@ export const pendingStoreCreation = pgTable(
 			.default("open"),
 		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 		consumedAt: timestamp("consumed_at", { withTimezone: true }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(t) => [
 		uniqueIndex("pending_store_creation_one_open_idx")
