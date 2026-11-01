@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { holidayDefinition } from "@/db/schemas/holiday-definition";
 import { store as storeTable } from "@/db/schemas/store";
@@ -6,18 +6,7 @@ import { storeHolidayOptout } from "@/db/schemas/store-holiday-optout";
 import type { CustomClosure, HolidayDef } from "@/domain/holidays";
 import { resolveOccurrences } from "@/domain/holidays";
 import { ServiceError } from "@/lib/errors";
-
-async function loadOwnedStore(storeId: string, sellerProfileId: string) {
-	const s = await db.query.store.findFirst({
-		where: and(
-			eq(storeTable.id, storeId),
-			eq(storeTable.sellerProfileId, sellerProfileId),
-			isNull(storeTable.deletedAt),
-		),
-	});
-	if (!s) throw new ServiceError(404, "Negozio non trovato");
-	return s;
-}
+import { ensureStoreOwnership } from "../context";
 
 /** First occurrence today-or-later (Europe/Rome), looking up to 3 years out. */
 function nextOccurrence(def: HolidayDef): string | null {
@@ -65,7 +54,7 @@ export async function getStoreClosures(
 	storeId: string,
 	sellerProfileId: string,
 ) {
-	const storeRow = await loadOwnedStore(storeId, sellerProfileId);
+	const storeRow = await ensureStoreOwnership(storeId, sellerProfileId);
 	return buildClosuresState(storeRow);
 }
 
@@ -76,7 +65,7 @@ export async function putStoreClosures(params: {
 	customClosures: CustomClosure[];
 }) {
 	const { storeId, sellerProfileId, optOutIds, customClosures } = params;
-	await loadOwnedStore(storeId, sellerProfileId);
+	await ensureStoreOwnership(storeId, sellerProfileId);
 
 	for (const c of customClosures) {
 		if (c.endDate && c.endDate < c.startDate) {

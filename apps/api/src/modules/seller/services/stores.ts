@@ -258,7 +258,7 @@ interface ReactivateResult {
 	status: "active";
 }
 
-async function loadOwnedSubscription(params: SubParams) {
+export async function loadOwnedSubscription(params: SubParams) {
 	const sub = await db.query.storeSubscription.findFirst({
 		where: eq(storeSubscription.storeId, params.storeId),
 		with: { store: { columns: { sellerProfileId: true } } },
