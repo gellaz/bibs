@@ -141,14 +141,47 @@ describe("OpenAPI — gemelli Zod contro l'OpenAPI di prima", () => {
 	}
 });
 
+/**
+ * Delta 25 del registro: le operazioni che nessuna app chiamava (audit
+ * 2026-10-11, n. 14) e i due tag rimasti senza operazioni. La baseline resta
+ * com'era: qui si toglie quello che non c'è più.
+ */
+const REMOVED = [
+	["/register/sign-in", "post"],
+	["/seller/stores", "post"],
+	["/seller/profile", "get"],
+	["/seller/products/{productId}", "delete"],
+	["/seller/discounts/{discountId}/products/{productId}", "delete"],
+	["/seller/brands", "post"],
+	["/locations/regions", "get"],
+	["/locations/provinces", "get"],
+	["/locations/municipalities", "get"],
+] as const;
+const REMOVED_TAGS = ["Auth", "Seller - Profile"];
+
+function withoutRemoved(doc: Json): Json {
+	const paths: Json = structuredClone(doc.paths);
+	for (const [path, method] of REMOVED) {
+		expect(paths[path][method]).toBeDefined();
+		delete paths[path][method];
+		if (!Object.keys(paths[path]).length) delete paths[path];
+	}
+	const tags = doc.tags.filter(
+		(t: { name: string }) => !REMOVED_TAGS.includes(t.name),
+	);
+	return { ...doc, tags, paths };
+}
+
 describe("OpenAPI — moduli migrati contro la baseline", () => {
-	const baseline = () =>
-		Bun.file(
-			join(
-				import.meta.dir,
-				"../../../../../docs/superpowers/plans/2026-10-25-hono-migration/baseline/openapi.json",
-			),
-		).json();
+	const baseline = async () =>
+		withoutRemoved(
+			await Bun.file(
+				join(
+					import.meta.dir,
+					"../../../../../docs/superpowers/plans/2026-10-25-hono-migration/baseline/openapi.json",
+				),
+			).json(),
+		);
 
 	it("POST e DELETE /me/avatar identici a baseline/openapi.json", async () => {
 		const { paths: expected } = await baseline();
@@ -208,7 +241,7 @@ describe("OpenAPI — moduli migrati contro la baseline", () => {
 
 	// U11: l'intero documento dell'app radice (better-auth, /health e /ready
 	// compresi), come lo confronta `tools/openapi-snapshot.ts`.
-	it("/openapi/json dell'app radice = baseline/openapi.json, salvo il delta 15", async () => {
+	it("/openapi/json dell'app radice = baseline/openapi.json, salvo i delta 15 e 25", async () => {
 		const res = await app.request("/openapi/json");
 		expect(res.status).toBe(200);
 		const sortKeys = (v: unknown): unknown =>

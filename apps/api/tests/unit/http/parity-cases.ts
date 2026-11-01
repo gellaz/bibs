@@ -52,7 +52,7 @@ import {
 	PutClosuresBody,
 	UpdateHolidayDefinitionBody,
 } from "@/schemas/holidays";
-import { GeocodeQuery, MunicipalitiesQuery } from "@/schemas/locations";
+import { GeocodeQuery } from "@/schemas/locations";
 import { PaginationQuery } from "@/schemas/pagination";
 import {
 	CategoryListQuery,
@@ -63,7 +63,7 @@ import {
 	SellerListQuery,
 	StoreListQuery,
 } from "@/schemas/queries";
-import { RegisterBody, SignInBody } from "@/schemas/registration";
+import { RegisterBody } from "@/schemas/registration";
 import { StockAdjustBody, StockBulkAdjustBody } from "@/schemas/stock";
 import {
 	zDate,
@@ -155,6 +155,19 @@ export function honoApp(c: Case) {
 
 // POST /register/customer
 const Register = RegisterBody;
+
+// Schemi di route tolte (audit 2026-10-11 n. 14, delta 25): i casi provano
+// `v()`, che resta, e il golden non cambia.
+const SignInBody = z.object({
+	email: zFormat("email").meta({ description: "Indirizzo email" }),
+	password: z.string().meta({ description: "Password" }),
+});
+const MunicipalitiesQuery = PaginationQuery.extend({
+	provinceId: z
+		.string()
+		.meta({ description: "Filtra per ID provincia" })
+		.optional(),
+});
 
 // ── i casi ──────────────────────────────────────────────────────────────────
 

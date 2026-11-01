@@ -22,10 +22,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-import {
-	findOrCreateBrandByName,
-	listBrands,
-} from "@/modules/seller/services/brands";
+import { listBrands } from "@/modules/seller/services/brands";
 import { truncateAll } from "../../../helpers/cleanup";
 import { createTestBrand, createTestSeller } from "../../../helpers/fixtures";
 
@@ -39,76 +36,6 @@ afterAll(async () => {
 
 beforeEach(async () => {
 	await truncateAll(getTestDb());
-});
-
-describe("findOrCreateBrandByName", () => {
-	it("creates a new brand when none exists", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-
-		const result = await findOrCreateBrandByName({
-			sellerProfileId: seller.profile.id,
-			name: "Nike",
-		});
-
-		expect(result.name).toBe("Nike");
-		expect(result.sellerProfileId).toBe(seller.profile.id);
-		expect(result.id).toBeTruthy();
-	});
-
-	it("returns the existing brand on case-insensitive match", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-		const existing = await createTestBrand(db, seller.profile.id, "Nike");
-
-		const result = await findOrCreateBrandByName({
-			sellerProfileId: seller.profile.id,
-			name: "NIKE",
-		});
-
-		expect(result.id).toBe(existing.id);
-		expect(result.name).toBe("Nike");
-	});
-
-	it("scopes per seller — same name across sellers creates separate brands", async () => {
-		const db = getTestDb();
-		const sellerA = await createTestSeller(db, { email: "a@test.com" });
-		const sellerB = await createTestSeller(db, { email: "b@test.com" });
-
-		const a = await findOrCreateBrandByName({
-			sellerProfileId: sellerA.profile.id,
-			name: "Nike",
-		});
-		const b = await findOrCreateBrandByName({
-			sellerProfileId: sellerB.profile.id,
-			name: "Nike",
-		});
-
-		expect(a.id).not.toBe(b.id);
-	});
-
-	it("is race-safe — concurrent calls produce a single brand", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-
-		const [r1, r2, r3] = await Promise.all([
-			findOrCreateBrandByName({
-				sellerProfileId: seller.profile.id,
-				name: "Adidas",
-			}),
-			findOrCreateBrandByName({
-				sellerProfileId: seller.profile.id,
-				name: "adidas",
-			}),
-			findOrCreateBrandByName({
-				sellerProfileId: seller.profile.id,
-				name: "ADIDAS",
-			}),
-		]);
-
-		expect(r1.id).toBe(r2.id);
-		expect(r2.id).toBe(r3.id);
-	});
 });
 
 describe("listBrands", () => {

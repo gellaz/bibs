@@ -6,7 +6,6 @@ import {
 	expect,
 	it,
 	mock,
-	spyOn,
 } from "bun:test";
 
 import {
@@ -28,11 +27,9 @@ mock.module("@/infra/s3", () => ({
 }));
 
 import { eq } from "drizzle-orm";
-import { product as productTable } from "@/db/schemas/product";
 import { productAuditLog } from "@/db/schemas/product-audit-log";
 import { ServiceError } from "@/lib/errors";
 import {
-	deleteProduct,
 	getProductStatusCounts,
 	listProducts,
 	updateProductStatus,
@@ -163,78 +160,6 @@ describe("updateProductStatus", () => {
 				status: "disabled",
 			}),
 		).rejects.toBeInstanceOf(ServiceError);
-	});
-});
-
-describe("deleteProduct (permanent)", () => {
-	it("succeeds when product is in trash", async () => {
-		const { db, seller, store, product } = await makeAccessibleProduct({
-			status: "trashed",
-		});
-
-		const deleted = await deleteProduct({
-			productId: product.id,
-			sellerProfileId: seller.profile.id,
-			accessibleStoreIds: [store.id],
-		});
-		expect(deleted.id).toBe(product.id);
-
-		const remaining = await db.query.product.findFirst({
-			where: eq(productTable.id, product.id),
-		});
-		expect(remaining).toBeUndefined();
-	});
-
-	it("returns 409 when product is not in trash", async () => {
-		const { seller, store, product } = await makeAccessibleProduct({
-			status: "active",
-		});
-
-		await expect(
-			deleteProduct({
-				productId: product.id,
-				sellerProfileId: seller.profile.id,
-				accessibleStoreIds: [store.id],
-			}),
-		).rejects.toMatchObject({
-			status: 409,
-		});
-	});
-
-	it("keeps a product restored after the trash check", async () => {
-		const { db, seller, store, product } = await makeAccessibleProduct({
-			status: "trashed",
-		});
-
-		// An employee restores it between the read and the DELETE.
-		const products = db.query.product;
-		const realFindFirst = products.findFirst.bind(products);
-		const read = spyOn(products, "findFirst").mockImplementationOnce((async (
-			config: any,
-		) => {
-			const row = await realFindFirst(config);
-			await db
-				.update(productTable)
-				.set({ status: "active" })
-				.where(eq(productTable.id, product.id));
-			return row;
-		}) as any);
-
-		await expect(
-			deleteProduct({
-				productId: product.id,
-				sellerProfileId: seller.profile.id,
-				accessibleStoreIds: [store.id],
-			}),
-		).rejects.toMatchObject({ status: 404 });
-		expect(read).toHaveBeenCalledTimes(1);
-		read.mockRestore();
-
-		const [row] = await db
-			.select({ status: productTable.status })
-			.from(productTable)
-			.where(eq(productTable.id, product.id));
-		expect(row.status).toBe("active");
 	});
 });
 

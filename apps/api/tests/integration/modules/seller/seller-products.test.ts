@@ -24,7 +24,7 @@ mock.module("@/db", () => ({
 	}),
 }));
 
-// S3 is only used by deleteProduct cleanup (best-effort)
+// S3: the products service imports it for the permanent-delete cleanup
 mock.module("@/infra/s3", () => ({
 	s3: { delete: mock(async () => {}) },
 }));
@@ -39,11 +39,9 @@ import {
 } from "@/db/schemas/product";
 import { store } from "@/db/schemas/store";
 import type { StoreSubscriptionStatus } from "@/db/schemas/store-subscription";
-import { ServiceError } from "@/lib/errors";
 import { importProductsFromCsv } from "@/modules/seller/services/product-import";
 import {
 	createProduct,
-	deleteProduct,
 	getProduct,
 	listProducts,
 	lookupProductByEan,
@@ -482,49 +480,6 @@ describe("updateProduct", () => {
 		});
 
 		expect(result).toBeNull();
-	});
-});
-
-// ── deleteProduct ─────────────────────────────────────────────────────────────
-
-describe("deleteProduct", () => {
-	it("deletes an owned product when status is trashed", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-		const s = await createTestStore(db, seller.profile.id);
-		const p = await createTestProduct(db, seller.profile.id, {
-			status: "trashed",
-		});
-		await createTestStoreProduct(db, s.id, p.id);
-
-		const deleted = await deleteProduct({
-			productId: p.id,
-			sellerProfileId: seller.profile.id,
-			accessibleStoreIds: [s.id],
-		});
-
-		expect(deleted.id).toBe(p.id);
-
-		const result = await listProducts({
-			sellerProfileId: seller.profile.id,
-			storeId: s.id,
-		});
-		expect(result.data).toHaveLength(0);
-	});
-
-	it("throws ServiceError 404 when product does not belong to seller", async () => {
-		const db = getTestDb();
-		const owner = await createTestSeller(db, { email: "owner@test.com" });
-		const other = await createTestSeller(db, { email: "other@test.com" });
-		const p = await createTestProduct(db, owner.profile.id);
-
-		await expect(
-			deleteProduct({
-				productId: p.id,
-				sellerProfileId: other.profile.id,
-				accessibleStoreIds: [],
-			}),
-		).rejects.toBeInstanceOf(ServiceError);
 	});
 });
 

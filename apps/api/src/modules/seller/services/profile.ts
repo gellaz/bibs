@@ -1,7 +1,5 @@
-import { eq, type SQL } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { db } from "@/db";
-import { sellerProfile } from "@/db/schemas/seller";
-import { ServiceError } from "@/lib/errors";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
@@ -35,38 +33,4 @@ export async function fetchSellerProfileCompact(where: SQL | undefined) {
 			? toMunicipalityCompact(documentIssuedMunicipality)
 			: null,
 	};
-}
-
-// ── Public API ───────────────────────────────
-
-/**
- * Fetches the seller profile for a given user ID.
- * Does not check onboarding status — used for onboarding flow.
- */
-export async function getSellerProfile(userId: string) {
-	const profile = await fetchSellerProfileCompact(
-		eq(sellerProfile.userId, userId),
-	);
-
-	if (!profile) {
-		throw new ServiceError(404, "Profilo venditore non trovato");
-	}
-
-	return profile;
-}
-
-/**
- * Fetches the seller profile with organization for a given user ID.
- */
-export async function getSellerProfileWithOrg(userId: string) {
-	const profile = await db.query.sellerProfile.findFirst({
-		where: eq(sellerProfile.userId, userId),
-		with: { organization: true },
-	});
-
-	if (!profile) {
-		throw new ServiceError(404, "Profilo venditore non trovato");
-	}
-
-	return profile;
 }

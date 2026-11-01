@@ -136,7 +136,7 @@ Plain Hono middleware (1–4, 7) and the two route groups in `src/http/` (5–6)
 6. **`health.ts`** — `GET /health` (liveness probe, always 200) and `GET /ready` (readiness probe: DB + S3, 503 if
    either fails).
 7. **`rate-limit.ts`** — `rateLimit({ name, limits })`, a per-route middleware with in-memory buckets keyed by IP or
-   by the body's `email` (registration, sign-in, geocoding); it goes after the route's `v()` and guard.
+   by the body's `email` (registration, geocoding); it goes after the route's `v()` and guard.
 
 ### Jobs — `src/jobs/`
 
@@ -292,8 +292,8 @@ Configures better-auth with:
 
 - **Cookie-based sessions** — HTTP-only cookies for security
 - **Bearer tokens** — Also returned in responses for `Authorization: Bearer <token>`
-- Custom endpoints in `registration/` return both `customerProfile` and `sellerProfile`, allowing users to have dual
-  roles
+- Login is better-auth's own `POST /auth/api/sign-in/email`; the custom sign-up endpoints in `registration/` create the
+  role's profile
 
 **Four roles**: **admin**, **seller**, **employee**, **customer**. Permissions defined in `src/infra/permissions.ts` using
 better-auth's access-control system.
@@ -310,9 +310,8 @@ per concern, with paths relative to the module prefix; `services/` holds the log
 tracked here — the OpenAPI spec at `/openapi` is the authoritative route list. The
 domain map:
 
-- `registration/` (`/register`) — customer/seller sign-up, unified sign-in (returns
-  user + both profiles when present), employee-invite acceptance. Seller sign-up
-  starts the onboarding ladder at `pending_email`. (Password reset is better-auth's
+- `registration/` (`/register`) — customer/seller sign-up, employee-invite
+  acceptance. Seller sign-up starts the onboarding ladder at `pending_email`. (Password reset is better-auth's
   native flow, configured in `src/infra/auth.ts` — not a custom route here.)
 - `admin/` (`/admin`) — guarded by `user.role === "admin"`: category CRUD + CSV bulk
   imports, seller verification, profile-change review (`GET
@@ -322,7 +321,7 @@ domain map:
   `GET /admin/requests/changes/:changeId`), holiday
   definitions, pricing configuration.
 - `seller/` (`/seller`) — two guard levels: **seller role only** (`requireSellerRole`)
-  for profile + onboarding routes, accessible to any authenticated seller regardless of
+  for the onboarding routes, accessible to any authenticated seller regardless of
   onboarding status; **full** (`requireSeller`, requires `active` status + ownership
   checks) for everything else (`sellerGuards` in `index.ts`). Route files map 1:1 to concerns under `routes/`:
   stores, store-images, images (product), opening hours live in stores, closures,
@@ -349,10 +348,10 @@ domain map:
   reserve_pickup, pay_pickup, pay_deliver), loyalty points. Search is public, others require auth.
 - `me/` (`/me`) — cross-role endpoints for any authenticated user (avatar today).
   Role-independent endpoints belong here, never duplicated in per-role modules.
-- `locations/` (`/locations`) — public Italian regions/provinces/municipalities. No auth required:
-  - `GET /locations/regions` — all Italian regions
-  - `GET /locations/provinces` — provinces (optional `regionId` filter)
-  - `GET /locations/municipalities` — paginated municipalities (optional `provinceId` filter)
+- `locations/` (`/locations`) — geo data:
+  - `GET /locations/countries` — countries with their Italian name (public)
+  - `GET /locations/municipalities/all` — every Italian municipality, compact and cacheable (public)
+  - `GET /locations/geocode` — address suggestions (login, then rate limit)
 - `catalog/` — public taxonomy listings (no auth): `GET /product-macro-categories`,
   `/product-categories`, `/store-macro-categories`, `/store-categories`. The writes
   live in `admin/`; the shared paged-by-name query is `src/lib/list-by-name-paged.ts`.

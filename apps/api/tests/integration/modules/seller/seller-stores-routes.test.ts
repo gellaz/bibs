@@ -48,8 +48,8 @@ import {
 import { signIn, testRequest } from "../../../helpers/hono-app";
 
 // Le route di U6 (negozi, immagini dei negozi, chiusure, impostazioni, team,
-// onboarding, profilo; la dashboard ha il suo test) con sessioni better-auth
-// vere: le due guardie (ruolo seller per profilo e onboarding, contesto
+// onboarding; la dashboard ha il suo test) con sessioni better-auth
+// vere: le due guardie (ruolo seller per l'onboarding, contesto
 // seller per il resto) dopo la validazione, scritture, multipart, strip in
 // ingresso e in uscita. Nato contro `sellerModule` (il modulo di prima della
 // migrazione a Hono, commit 2da62a0e, verde): da allora cambia solo `call()`.
@@ -160,9 +160,9 @@ const COMPANY = {
 
 const hours = [{ dayOfWeek: 0, slots: [{ open: "09:00", close: "13:00" }] }];
 
-describe("guardia di ruolo: profilo e onboarding", () => {
+describe("guardia di ruolo: onboarding", () => {
 	it("anonimo: 401, ma 422 se il body non è valido (validazione prima)", async () => {
-		const res = await call("/profile");
+		const res = await call("/onboarding/status");
 		expect(res.status).toBe(401);
 		expect(await res.json()).toEqual(
 			fail("UNAUTHORIZED", "Devi accedere per continuare"),
@@ -176,7 +176,7 @@ describe("guardia di ruolo: profilo e onboarding", () => {
 
 	it("cliente e dipendente: 403 dopo la validazione", async () => {
 		const customer = await signIn(email("customer"), "customer");
-		const res = await call("/profile", as(customer.cookie));
+		const res = await call("/onboarding/status", as(customer.cookie));
 		expect(res.status).toBe(403);
 		expect(await res.json()).toEqual(
 			fail("FORBIDDEN", "Accesso riservato ai venditori"),
@@ -196,7 +196,7 @@ describe("guardia di ruolo: profilo e onboarding", () => {
 		);
 	});
 
-	it("venditore in onboarding: profilo e stato sì, le route operative no", async () => {
+	it("venditore in onboarding: stato sì, le route operative no", async () => {
 		const o = await owner("pending_personal");
 		const status = await call("/onboarding/status", as(o.cookie));
 		expect(status.status).toBe(200);
@@ -209,8 +209,6 @@ describe("guardia di ruolo: profilo e onboarding", () => {
 				createdAt: ISO,
 			}),
 		});
-		const profile = await call("/profile", as(o.cookie));
-		expect(profile.status).toBe(200);
 		const stores = await call("/stores", as(o.cookie));
 		expect(stores.status).toBe(403);
 		expect(await stores.json()).toEqual(
@@ -305,40 +303,10 @@ describe("onboarding", () => {
 });
 
 describe("negozi", () => {
-	it("crea, legge, modifica: intero come stringa, telefoni e orari", async () => {
+	it("modifica e legge: intero come stringa, telefoni e orari", async () => {
 		const o = await owner();
-		const m = await createTestMunicipality(getTestDb());
-		const created = await call(
-			"/stores",
-			json(
-				"POST",
-				{
-					name: "  Bottega U6  ",
-					addressLine1: "Via Roma 1",
-					municipalityId: m.id,
-					zipCode: "40100",
-					location: { x: 11.34, y: 44.49 },
-					openingHours: hours,
-					phoneNumbers: [{ number: "051123456", label: "Principale" }],
-					websiteUrl: null,
-				},
-				o.cookie,
-			),
-		);
-		expect(created.status).toBe(200);
-		const store = ((await created.json()) as any).data;
-		expect(store).toMatchObject({
-			name: "Bottega U6",
-			sellerProfileId: o.profileId,
-			municipality: { id: m.id },
-			location: { x: 11.34, y: 44.49 },
+		const store = await createTestStore(getTestDb(), o.profileId, {
 			openingHours: hours,
-			phoneNumbers: [{ number: "051123456", label: "Principale", position: 0 }],
-			images: [],
-			category: null,
-			reservationHours: 24,
-			lowStockThreshold: expect.any(Number),
-			createdAt: ISO,
 		});
 
 		const patched = await call(
@@ -732,10 +700,9 @@ describe("team", () => {
 describe("strip: campi sconosciuti in ingresso e in uscita", () => {
 	afterEach(() => mock.restore());
 
-	it("body: un sellerProfileId in più non sposta il negozio né lo crea per un altro", async () => {
+	it("body: un sellerProfileId in più non sposta il negozio", async () => {
 		const a = await owner();
 		const b = await owner();
-		const m = await createTestMunicipality(getTestDb());
 		const s = await createTestStore(getTestDb(), a.profileId);
 
 		const patched = await call(
@@ -764,25 +731,6 @@ describe("strip: campi sconosciuti in ingresso e in uscita", () => {
 		const data = ((await patched.json()) as any).data;
 		expect(data.phoneNumbers[0]).not.toHaveProperty("extra");
 		expect(data.location).toEqual({ x: 1, y: 2 });
-
-		const created = await call(
-			"/stores",
-			json(
-				"POST",
-				{
-					name: "Nuovo",
-					addressLine1: "Via Roma 1",
-					municipalityId: m.id,
-					zipCode: "40100",
-					location: { x: 11, y: 44 },
-					sellerProfileId: b.profileId,
-				},
-				a.cookie,
-			),
-		);
-		expect(((await created.json()) as any).data.sellerProfileId).toBe(
-			a.profileId,
-		);
 	});
 
 	it("query: un sellerProfileId in più non apre il team di un altro venditore", async () => {

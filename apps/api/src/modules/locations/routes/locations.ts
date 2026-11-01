@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "@/http/auth";
 import { rateLimit } from "@/http/middleware/rate-limit";
 import { doc } from "@/http/openapi";
-import { ok, okPage } from "@/http/responses";
+import { ok } from "@/http/responses";
 import { publicRoute } from "@/http/routes";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
@@ -13,37 +13,20 @@ import {
 	CountrySchema,
 	GeocodeSuggestionSchema,
 	MunicipalityCompactSchema,
-	MunicipalitySchema,
-	ProvinceSchema,
-	RegionSchema,
 } from "@/schemas/entities";
+import { GeocodeQuery } from "@/schemas/locations";
 import {
-	GeocodeQuery,
-	MunicipalitiesQuery,
-	ProvincesQuery,
-} from "@/schemas/locations";
-import {
-	okPageRes,
 	okRes,
 	ServiceUnavailableError,
 	TooManyRequestsError,
 	withErrors,
 } from "@/schemas/responses";
 import { geocodeAddress } from "../services/geocode";
-import {
-	listAllMunicipalities,
-	listCountries,
-	listMunicipalities,
-	listProvinces,
-	listRegions,
-} from "../services/locations";
+import { listAllMunicipalities, listCountries } from "../services/locations";
 
 const MINUTE = 60_000;
 
 export const CountriesResponse = okRes(z.array(CountrySchema));
-export const RegionsResponse = okRes(z.array(RegionSchema));
-export const ProvincesResponse = okRes(z.array(ProvinceSchema));
-export const MunicipalitiesResponse = okPageRes(MunicipalitySchema);
 export const MunicipalitiesAllResponse = okRes(
 	z.array(MunicipalityCompactSchema),
 );
@@ -65,57 +48,6 @@ export const locationsRoutes = new Hono()
 		}),
 		publicRoute,
 		(c) => send(c, CountriesResponse, ok([...listCountries()])),
-	)
-	.get(
-		"/regions",
-		doc({
-			response: withErrors({ 200: RegionsResponse }),
-			detail: {
-				summary: "Lista regioni",
-				description: "Restituisce la lista di tutte le regioni italiane.",
-				tags: ["Locations"],
-			},
-		}),
-		publicRoute,
-		async (c) => send(c, RegionsResponse, ok(await listRegions())),
-	)
-	.get(
-		"/provinces",
-		doc({
-			response: withErrors({ 200: ProvincesResponse }),
-			detail: {
-				summary: "Lista province",
-				description:
-					"Restituisce la lista delle province, con filtro opzionale per regione.",
-				tags: ["Locations"],
-			},
-		}),
-		v("query", ProvincesQuery),
-		publicRoute,
-		async (c) =>
-			send(c, ProvincesResponse, ok(await listProvinces(c.req.valid("query")))),
-	)
-	.get(
-		"/municipalities",
-		doc({
-			response: withErrors({ 200: MunicipalitiesResponse }),
-			detail: {
-				summary: "Lista comuni",
-				description:
-					"Restituisce la lista paginata dei comuni, con filtro opzionale per provincia.",
-				tags: ["Locations"],
-			},
-		}),
-		v("query", MunicipalitiesQuery),
-		publicRoute,
-		async (c) => {
-			const result = await listMunicipalities(c.req.valid("query"));
-			return send(
-				c,
-				MunicipalitiesResponse,
-				okPage(result.data, result.pagination),
-			);
-		},
 	)
 	.get(
 		"/municipalities/all",

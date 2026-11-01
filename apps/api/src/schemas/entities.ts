@@ -843,33 +843,6 @@ export const CountrySchema = z.object({
 	label: z.string().meta({ description: "Nome del paese in italiano" }),
 });
 
-export const RegionSchema = z.object({
-	id: z.string(),
-	name: z.string().meta({ description: "Nome della regione" }),
-	istatCode: z.string().meta({ description: "Codice ISTAT della regione" }),
-	createdAt: zDate(),
-	updatedAt: zDate(),
-});
-
-export const ProvinceSchema = z.object({
-	id: z.string(),
-	name: z.string().meta({ description: "Nome della provincia" }),
-	acronym: z.string().meta({ description: "Sigla della provincia" }),
-	istatCode: z.string().meta({ description: "Codice ISTAT della provincia" }),
-	regionId: z.string(),
-	createdAt: zDate(),
-	updatedAt: zDate(),
-});
-
-export const MunicipalitySchema = z.object({
-	id: z.string(),
-	name: z.string().meta({ description: "Nome del comune" }),
-	istatCode: z.string().meta({ description: "Codice ISTAT del comune" }),
-	provinceId: z.string(),
-	createdAt: zDate(),
-	updatedAt: zDate(),
-});
-
 export const SellerProfileChangeSchema = z.object({
 	id: z.string(),
 	sellerProfileId: z.string(),

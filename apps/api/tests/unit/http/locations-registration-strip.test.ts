@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { __clearRateLimitStores } from "@/http/middleware/rate-limit";
 import { locationsApp } from "@/modules/locations";
+import * as geocode from "@/modules/locations/services/geocode";
 import * as locations from "@/modules/locations/services/locations";
 import { registrationApp } from "@/modules/registration";
 import * as registration from "@/modules/registration/services/registration";
-import { testRequest } from "../../helpers/hono-app";
+import { testRequest, withVars } from "../../helpers/hono-app";
 
 // Trappola `normalize` (D4 del piano Hono) sulle route vere di /locations e
 // /register: un campo sconosciuto, anche annidato, nella query o nel body non
@@ -24,77 +25,57 @@ afterEach(() => {
 	__clearRateLimitStores();
 });
 
-const at = new Date("2026-01-02T03:04:05.000Z");
-
 describe("/locations: strip in ingresso e in uscita", () => {
-	it("GET /provinces: query senza campi ignoti, righe senza colonne interne", async () => {
-		const spy = track(spyOn(locations, "listProvinces")).mockResolvedValue([
+	it("GET /geocode: query senza campi ignoti, suggerimenti senza extra", async () => {
+		const spy = track(spyOn(geocode, "geocodeAddress")).mockResolvedValue([
 			{
-				id: "p1",
-				name: "Milano",
-				acronym: "MI",
-				istatCode: "015",
-				regionId: "r1",
-				createdAt: at,
-				updatedAt: at,
-				internal: "segreto",
+				label: "Via Roma 1, Milano (MI)",
+				addressLine1: "Via Roma 1",
+				zipCode: "20121",
+				location: { x: 9.19, y: 45.46, z: 0 },
+				municipality: null,
+				municipalityCandidates: [],
+				providerRef: "osm:1",
+				raw: { internal: "segreto" },
 			} as never,
 		]);
 		const res = await testRequest(
-			locationsApp,
-			"/provinces?regionId=r1&extra=1&nested%5Ba%5D=1",
+			withVars(locationsApp, { user: { id: "u1" } }),
+			"/geocode?q=Via%20Roma&extra=1&nested%5Ba%5D=1",
 		);
 		expect(res.status).toBe(200);
-		expect(spy).toHaveBeenCalledWith({ regionId: "r1" });
+		expect(spy).toHaveBeenCalledWith({ q: "Via Roma", limit: 5 });
 		expect(await res.json()).toEqual({
 			success: true,
 			data: [
 				{
-					id: "p1",
-					name: "Milano",
-					acronym: "MI",
-					istatCode: "015",
-					regionId: "r1",
-					createdAt: at.toISOString(),
-					updatedAt: at.toISOString(),
+					label: "Via Roma 1, Milano (MI)",
+					addressLine1: "Via Roma 1",
+					zipCode: "20121",
+					location: { x: 9.19, y: 45.46 },
+					municipality: null,
+					municipalityCandidates: [],
+					providerRef: "osm:1",
 				},
 			],
 		});
 	});
 
-	it("GET /municipalities: paginazione senza campi ignoti, pagina senza extra", async () => {
-		const spy = track(spyOn(locations, "listMunicipalities")).mockResolvedValue(
+	it("GET /municipalities/all: righe senza colonne interne", async () => {
+		track(spyOn(locations, "listAllMunicipalities")).mockResolvedValue([
 			{
-				data: [
-					{
-						id: "m1",
-						name: "Milano",
-						istatCode: "015146",
-						provinceId: "p1",
-						createdAt: at,
-						updatedAt: at,
-						location: "POINT(9 45)",
-					},
-				],
-				pagination: { page: 1, limit: 3, total: 1, pages: 1 },
+				id: "m1",
+				name: "Milano",
+				provinceAcronym: "MI",
+				istatCode: "015146",
 			} as never,
-		);
-		const res = await testRequest(
-			locationsApp,
-			"/municipalities?limit=3&provinceId=p1&sort=name",
-		);
-		expect(res.status).toBe(200);
-		expect(spy).toHaveBeenCalledWith({ page: 1, limit: 3, provinceId: "p1" });
-		const body = await res.json();
-		expect(Object.keys(body.data[0]).sort()).toEqual([
-			"createdAt",
-			"id",
-			"istatCode",
-			"name",
-			"provinceId",
-			"updatedAt",
 		]);
-		expect(body.pagination).toEqual({ page: 1, limit: 3, total: 1 });
+		const res = await testRequest(locationsApp, "/municipalities/all");
+		expect(res.status).toBe(200);
+		expect(await res.json()).toEqual({
+			success: true,
+			data: [{ id: "m1", name: "Milano", provinceAcronym: "MI" }],
+		});
 	});
 });
 
