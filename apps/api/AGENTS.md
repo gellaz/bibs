@@ -250,7 +250,9 @@ Defines valid status transitions per order type using typed keys (
 ### Order Helpers — `src/domain/orders/order-helpers.ts`
 
 Shared helper `refundStockAndPoints(tx, order)` for restocking items and refunding loyalty points within an existing DB
-transaction. Used by cancellation, expiry, and pickup-expired flows to avoid code duplication.
+transaction. Used by cancellation, expiry, and pickup-expired flows to avoid code duplication. `cancelLoadedOrder(tx,
+order)` is the one cancellation (state machine, CAS, PR2 refund, stock and points) behind both the customer's and the
+seller's cancel: each caller only loads the order and checks it is theirs.
 
 ### Reservation Expiry — `src/jobs/expire-reservations.ts`
 

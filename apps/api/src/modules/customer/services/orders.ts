@@ -11,10 +11,8 @@ import { order, orderItem } from "@/db/schemas/order";
 import { pointTransaction } from "@/db/schemas/points";
 import { storeProduct } from "@/db/schemas/product";
 import { store as storeTable } from "@/db/schemas/store";
-import { refundOrderPayment } from "@/domain/billing/order-payments";
 import { platformFeeCents } from "@/domain/billing/platform-fee";
-import { refundStockAndPoints } from "@/domain/orders/order-helpers";
-import { assertCancellable } from "@/domain/orders/order-state-machine";
+import { cancelLoadedOrder } from "@/domain/orders/order-helpers";
 import { PAY_TYPES } from "@/domain/orders/order-types";
 import { generatePickupCode } from "@/domain/orders/pickup-code";
 import { getBestActiveDiscount } from "@/domain/pricing/discount-pricing";
@@ -668,27 +666,6 @@ export async function cancelOrder(params: {
 
 		if (!existing) throw new ServiceError(404, "Ordine non trovato");
 
-		assertCancellable(existing);
-
-		// Compare-and-swap before refunding, so two concurrent cancels can't both
-		// refund the spent points.
-		const [updated] = await tx
-			.update(order)
-			.set({ status: "cancelled" })
-			.where(and(eq(order.id, existing.id), eq(order.status, existing.status)))
-			.returning();
-		if (!updated)
-			throw new ServiceError(409, "L'ordine è già stato aggiornato");
-
-		// `updated` (la riga appena letta dal CAS), non `existing` (letta prima):
-		// un trasferimento può essere partito tra le due letture (settleCheckoutPayment
-		// concorrente), e senza lo storno rimborsiamo il cliente senza recuperare i
-		// soldi dal negozio.
-		if (existing.type === "pay_pickup" && existing.status === "confirmed")
-			await refundOrderPayment(tx, updated);
-
-		await refundStockAndPoints(tx, existing);
-
-		return updated;
+		return cancelLoadedOrder(tx, existing);
 	});
 }

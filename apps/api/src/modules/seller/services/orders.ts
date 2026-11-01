@@ -2,15 +2,8 @@ import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import type { OrderStatus, OrderType } from "@/db/schemas/order";
 import { order, orderStatuses } from "@/db/schemas/order";
-import { refundOrderPayment } from "@/domain/billing/order-payments";
-import {
-	awardPoints,
-	refundStockAndPoints,
-} from "@/domain/orders/order-helpers";
-import {
-	assertCancellable,
-	assertTransition,
-} from "@/domain/orders/order-state-machine";
+import { awardPoints, cancelLoadedOrder } from "@/domain/orders/order-helpers";
+import { assertTransition } from "@/domain/orders/order-state-machine";
 import { PAY_TYPES } from "@/domain/orders/order-types";
 import { normalizePickupCode } from "@/domain/orders/pickup-code";
 import {
@@ -259,14 +252,7 @@ export async function completePickupByCode(params: {
 	]);
 }
 
-/**
- * Annullamento dal negozio: stesse regole della macchina a stati del cliente
- * (da `pending` o `confirmed`), con rimborso di stock e punti nella stessa tx.
- * CAS sullo stato prima del rimborso, così un annullamento concorrente (cliente
- * o seller) non rimborsa due volte. Da `confirmed`: con un PR2 rimborsa il
- * pagamento e storna il trasferimento nella stessa tx. Un PR2 `pending` non si
- * annulla (409).
- */
+/** Annullamento dal negozio, con le regole di {@link cancelLoadedOrder}. */
 export async function cancelSellerOrder(params: {
 	orderId: string;
 	storeIds: string[];
@@ -281,26 +267,7 @@ export async function cancelSellerOrder(params: {
 		if (!existing || !storeIds.includes(existing.storeId))
 			throw new ServiceError(404, "Ordine non trovato");
 
-		assertCancellable(existing);
-
-		const [updated] = await tx
-			.update(order)
-			.set({ status: "cancelled" })
-			.where(and(eq(order.id, existing.id), eq(order.status, existing.status)))
-			.returning();
-		if (!updated)
-			throw new ServiceError(409, "L'ordine è già stato aggiornato");
-
-		// `updated` (la riga appena letta dal CAS), non `existing` (letta prima):
-		// un trasferimento può essere partito tra le due letture (settleCheckoutPayment
-		// concorrente), e senza lo storno rimborsiamo il cliente senza recuperare i
-		// soldi dal negozio.
-		if (existing.type === "pay_pickup" && existing.status === "confirmed")
-			await refundOrderPayment(tx, updated);
-
-		await refundStockAndPoints(tx, existing);
-
-		return updated;
+		return cancelLoadedOrder(tx, existing);
 	});
 }
 
