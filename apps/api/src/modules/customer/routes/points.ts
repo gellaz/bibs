@@ -40,9 +40,9 @@ export const pointsRoutes = new Hono().get(
 	async (c) => {
 		const cp = c.var.customerProfile;
 		const data = await getPointsHistory({
+			...c.req.valid("query"),
 			customerProfileId: cp.id,
 			balance: cp.points,
-			...c.req.valid("query"),
 		});
 		return send(c, PointsResponse, ok(data));
 	},

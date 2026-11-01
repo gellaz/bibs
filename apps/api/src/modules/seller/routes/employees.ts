@@ -91,8 +91,8 @@ export const employeesRoutes = new Hono()
 		async (c) => {
 			const { sellerProfile: sp } = c.var.seller;
 			const result = await listEmployees({
-				sellerProfileId: sp.id,
 				...c.req.valid("query"),
+				sellerProfileId: sp.id,
 			});
 			return send(c, EmployeesListResponse, {
 				...okPage(result.data, result.pagination),

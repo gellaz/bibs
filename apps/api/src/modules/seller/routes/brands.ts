@@ -47,8 +47,8 @@ export const brandsRoutes = new Hono().get(
 	async (c) => {
 		const { sellerProfile: sp } = c.var.seller;
 		const result = await listBrands({
-			sellerProfileId: sp.id,
 			...c.req.valid("query"),
+			sellerProfileId: sp.id,
 		});
 		return send(c, BrandPage, okPage(result.data, result.pagination));
 	},
