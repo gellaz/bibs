@@ -2,38 +2,21 @@ import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { customerAddress } from "@/db/schemas/address";
 import { ServiceError } from "@/lib/errors";
+import {
+	municipalityCompactWith,
+	type RawMunicipalityCompact,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { parsePagination } from "@/lib/pagination";
 
-function reshapeAddress<
-	T extends {
-		municipality: {
-			id: string;
-			name: string;
-			province: { acronym: string };
-		};
-	},
->(
-	addr: T,
-): Omit<T, "municipality"> & {
-	municipality: { id: string; name: string; provinceAcronym: string };
-} {
-	const { municipality, ...rest } = addr;
-	return {
-		...rest,
-		municipality: {
-			id: municipality.id,
-			name: municipality.name,
-			provinceAcronym: municipality.province.acronym,
-		},
-	};
+function reshapeAddress<T extends { municipality: RawMunicipalityCompact }>({
+	municipality,
+	...rest
+}: T) {
+	return { ...rest, municipality: toMunicipalityCompact(municipality) };
 }
 
-const municipalityWith = {
-	municipality: {
-		columns: { id: true as const, name: true as const },
-		with: { province: { columns: { acronym: true as const } } },
-	},
-} as const;
+const municipalityWith = { municipality: municipalityCompactWith } as const;
 
 interface ListAddressesParams {
 	customerProfileId: string;

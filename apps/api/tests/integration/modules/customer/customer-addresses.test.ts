@@ -124,6 +124,11 @@ describe("createAddress", () => {
 
 		expect(created.label).toBe("Casa");
 		expect(created.isDefault).toBe(false);
+		expect(created.municipality).toEqual({
+			id: mun.id,
+			name: mun.name,
+			provinceAcronym: "TT",
+		});
 	});
 
 	it("unsets previous default when creating a new isDefault address", async () => {

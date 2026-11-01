@@ -565,6 +565,34 @@ describe("getSellerDetail", () => {
 		expect(detail.organization).not.toBeNull();
 	});
 
+	it("comuni in forma compatta, `null` quelli che mancano", async () => {
+		const db = getTestDb();
+		const seller = await createSellerAtStatus("m@test.com", "pending_review");
+		const bo = await createTestMunicipality(db, {
+			municipalityName: "Bologna",
+			provinceName: "Bologna",
+			provinceAcronym: "BO",
+		});
+		await db
+			.update(sellerProfile)
+			.set({ residenceMunicipalityId: bo.id })
+			.where(eq(sellerProfile.id, seller.profile.id));
+
+		const detail = await getSellerDetail(seller.profile.id);
+
+		expect(detail.residenceMunicipality).toEqual({
+			id: bo.id,
+			name: "Bologna",
+			provinceAcronym: "BO",
+		});
+		expect(detail.documentIssuedMunicipality).toBeNull();
+		expect(detail.organization?.municipality).toEqual({
+			id: expect.any(String),
+			name: expect.any(String),
+			provinceAcronym: "TT",
+		});
+	});
+
 	it("throws ServiceError 404 when seller does not exist", async () => {
 		await expect(getSellerDetail(crypto.randomUUID())).rejects.toBeInstanceOf(
 			ServiceError,

@@ -24,7 +24,11 @@ mock.module("@/db", () => ({
 import { eq } from "drizzle-orm";
 import { customerAddress } from "@/db/schemas/address";
 import { order } from "@/db/schemas/order";
-import { createOrder } from "@/modules/customer/services/orders";
+import {
+	createOrder,
+	getCustomerOrder,
+	listCustomerOrders,
+} from "@/modules/customer/services/orders";
 import { truncateAll } from "../../../helpers/cleanup";
 import {
 	createTestCustomer,
@@ -96,6 +100,28 @@ describe("createOrder — snapshot dell'indirizzo", () => {
 			provinceAcronym: "BO",
 			country: "IT",
 		});
+	});
+
+	it("dettaglio e lista: negozio e indirizzo con il comune compatto", async () => {
+		const { address, created } = await seedDeliveryOrder();
+		const owner = { customerProfileId: created.customerProfileId };
+
+		const detail = await getCustomerOrder({ ...owner, orderId: created.id });
+		expect(detail.shippingAddress?.municipality).toEqual({
+			id: address.municipalityId,
+			name: "Bologna",
+			provinceAcronym: "BO",
+		});
+		expect(detail.store.municipality).toEqual({
+			id: expect.any(String),
+			name: expect.any(String),
+			provinceAcronym: "TT",
+		});
+		const [listed] = (await listCustomerOrders(owner)).data;
+		expect(listed.shippingAddress?.municipality).toEqual(
+			detail.shippingAddress?.municipality,
+		);
+		expect(listed.store.municipality).toEqual(detail.store.municipality);
 	});
 
 	it("l'ordine conserva lo snapshot quando l'indirizzo viene cancellato", async () => {

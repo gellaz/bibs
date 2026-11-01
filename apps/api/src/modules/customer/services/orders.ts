@@ -29,6 +29,10 @@ import { publiclyVisibleStore } from "@/domain/stores/store-visibility";
 import { config } from "@/lib/config";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { fromCents, toCents } from "@/lib/money";
+import {
+	municipalityCompactWith,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { parsePagination } from "@/lib/pagination";
 
 export type OrderTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -62,18 +66,12 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 					// PostGIS: drizzle non legge la geometria in una relazione annidata.
 					columns: { location: false },
 					with: {
-						municipality: {
-							columns: { id: true, name: true },
-							with: { province: { columns: { acronym: true } } },
-						},
+						municipality: municipalityCompactWith,
 					},
 				},
 				shippingAddress: {
 					with: {
-						municipality: {
-							columns: { id: true, name: true },
-							with: { province: { columns: { acronym: true } } },
-						},
+						municipality: municipalityCompactWith,
 					},
 				},
 			},
@@ -88,24 +86,13 @@ export async function listCustomerOrders(params: ListCustomerOrdersParams) {
 		...rest,
 		store: {
 			...store,
-			municipality: {
-				id: store.municipality.id,
-				name: store.municipality.name,
-				provinceAcronym: store.municipality.province.acronym,
-			},
+			municipality: toMunicipalityCompact(store.municipality),
 		},
 		shippingAddress: shippingAddress
-			? (() => {
-					const { municipality, ...addrRest } = shippingAddress;
-					return {
-						...addrRest,
-						municipality: {
-							id: municipality.id,
-							name: municipality.name,
-							provinceAcronym: municipality.province.acronym,
-						},
-					};
-				})()
+			? {
+					...shippingAddress,
+					municipality: toMunicipalityCompact(shippingAddress.municipality),
+				}
 			: null,
 	}));
 
@@ -131,18 +118,12 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 				// PostGIS: drizzle non legge la geometria in una relazione annidata.
 				columns: { location: false },
 				with: {
-					municipality: {
-						columns: { id: true, name: true },
-						with: { province: { columns: { acronym: true } } },
-					},
+					municipality: municipalityCompactWith,
 				},
 			},
 			shippingAddress: {
 				with: {
-					municipality: {
-						columns: { id: true, name: true },
-						with: { province: { columns: { acronym: true } } },
-					},
+					municipality: municipalityCompactWith,
 				},
 			},
 		},
@@ -156,24 +137,13 @@ export async function getCustomerOrder(params: GetCustomerOrderParams) {
 		store: {
 			...store,
 			openStatus: openStatuses.get(store.id) ?? null,
-			municipality: {
-				id: store.municipality.id,
-				name: store.municipality.name,
-				provinceAcronym: store.municipality.province.acronym,
-			},
+			municipality: toMunicipalityCompact(store.municipality),
 		},
 		shippingAddress: shippingAddress
-			? (() => {
-					const { municipality, ...addrRest } = shippingAddress;
-					return {
-						...addrRest,
-						municipality: {
-							id: municipality.id,
-							name: municipality.name,
-							provinceAcronym: municipality.province.acronym,
-						},
-					};
-				})()
+			? {
+					...shippingAddress,
+					municipality: toMunicipalityCompact(shippingAddress.municipality),
+				}
 			: null,
 	};
 }

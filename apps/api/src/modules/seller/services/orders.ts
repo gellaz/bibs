@@ -12,11 +12,11 @@ import {
 } from "@/domain/orders/reservation-expiry";
 import { ServiceError } from "@/lib/errors";
 import { toCents } from "@/lib/money";
-import { parsePagination } from "@/lib/pagination";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/modules/seller/services/municipality";
+} from "@/lib/municipality";
+import { parsePagination } from "@/lib/pagination";
 import { userSummaryWith } from "@/modules/seller/services/user-summary";
 
 /**

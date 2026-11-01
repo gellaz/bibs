@@ -74,7 +74,7 @@ After making code changes, always run `bun run typecheck` to verify there are no
 | `domain/<area>/` | Business rules used by more than one module or by the jobs: `billing`, `orders`, `pricing`, `stores`, `holidays`, `catalog`, `sellers` |
 | `jobs/` | The background jobs and `scheduler.ts` |
 | `schemas/` | Zod schemas; `forms/` is exported as `@bibs/api/schemas` |
-| `lib/` | Generic utilities with no business meaning: `config`, `errors`, `like`, `list-by-name-paged`, `money`, `pagination` |
+| `lib/` | Generic utilities with no business meaning: `config`, `errors`, `like`, `list-by-name-paged`, `money`, `municipality` (the compact `{ id, name, provinceAcronym }` shape), `pagination` |
 | `modules/<role>/` | HTTP only, one per role: `index.ts`, `routes/`, the role's own `services/`, `context.ts` |
 | `db/`, `scripts/` | Drizzle (schema, migrations, seed) and command-line scripts |
 
