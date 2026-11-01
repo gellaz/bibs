@@ -93,9 +93,9 @@ export const settingsRoutes = new Hono()
 			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await updatePersonalSettings({
+				...c.req.valid("json"),
 				sellerProfileId: sp.id,
 				userId: c.var.user.id,
-				...c.req.valid("json"),
 			});
 
 			logger.info(
@@ -121,8 +121,8 @@ export const settingsRoutes = new Hono()
 			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const data = await updateCompanySettings({
-				sellerProfileId: sp.id,
 				...c.req.valid("json"),
+				sellerProfileId: sp.id,
 			});
 
 			logger.info(
@@ -148,7 +148,7 @@ export const settingsRoutes = new Hono()
 			const { sellerProfile: sp, isOwner } = c.var.seller;
 			requireOwner(isOwner);
 			const body = c.req.valid("json");
-			const data = await requestVatChange({ sellerProfileId: sp.id, ...body });
+			const data = await requestVatChange({ ...body, sellerProfileId: sp.id });
 
 			logger.info(
 				{

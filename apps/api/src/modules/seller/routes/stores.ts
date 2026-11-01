@@ -217,9 +217,9 @@ export const storesRoutes = new Hono()
 			requireOwner(isOwner);
 
 			const data = await updateStore({
+				...c.req.valid("json"),
 				storeId: c.req.valid("param").storeId,
 				sellerProfileId: sp.id,
-				...c.req.valid("json"),
 			});
 			return send(c, StoreRes, ok(data));
 		},

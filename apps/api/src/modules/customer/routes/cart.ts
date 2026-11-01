@@ -75,7 +75,7 @@ export const cartRoutes = new Hono()
 		async (c) => {
 			const cp = c.var.customerProfile;
 			const body = c.req.valid("json");
-			const data = await addCartItem({ customerProfileId: cp.id, ...body });
+			const data = await addCartItem({ ...body, customerProfileId: cp.id });
 
 			logger.info(
 				{
@@ -118,9 +118,9 @@ export const cartRoutes = new Hono()
 		requireCustomer,
 		async (c) => {
 			const data = await setCartItemQuantity({
+				...c.req.valid("json"),
 				cartItemId: c.req.valid("param").id,
 				customerProfileId: c.var.customerProfile.id,
-				...c.req.valid("json"),
 			});
 			return send(c, MutationResponse, ok(data));
 		},

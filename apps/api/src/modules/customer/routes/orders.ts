@@ -46,8 +46,8 @@ export const ordersRoutes = new Hono()
 		requireCustomer,
 		async (c) => {
 			const result = await listCustomerOrders({
-				customerProfileId: c.var.customerProfile.id,
 				...c.req.valid("query"),
+				customerProfileId: c.var.customerProfile.id,
 			});
 			return send(c, OrderPage, okPage(result.data, result.pagination));
 		},
