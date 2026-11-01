@@ -28,16 +28,13 @@ mock.module("@/db", () => ({
 
 import { eq } from "drizzle-orm";
 import { store as storeTable } from "@/db/schemas/store";
-import {
-	createStore,
-	listStores,
-	updateStore,
-} from "@/modules/seller/services/stores";
+import { listStores, updateStore } from "@/modules/seller/services/stores";
 import { truncateAll } from "../../../helpers/cleanup";
 import {
 	createTestMunicipality,
 	createTestSeller,
 	createTestStore,
+	createTestStorePhoneNumber,
 } from "../../../helpers/fixtures";
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -76,26 +73,17 @@ describe("listStores", () => {
 		const sellerA = await createTestSeller(db, { email: "a@test.com" });
 		const sellerB = await createTestSeller(db, { email: "b@test.com" });
 
-		await createStore({
-			sellerProfileId: sellerA.profile.id,
+		await createTestStore(db, sellerA.profile.id, {
 			name: "A1",
-			addressLine1: "Via A",
 			municipalityId,
-			zipCode: "20100",
 		});
-		await createStore({
-			sellerProfileId: sellerA.profile.id,
+		await createTestStore(db, sellerA.profile.id, {
 			name: "A2",
-			addressLine1: "Via A2",
 			municipalityId,
-			zipCode: "20101",
 		});
-		await createStore({
-			sellerProfileId: sellerB.profile.id,
+		await createTestStore(db, sellerB.profile.id, {
 			name: "B1",
-			addressLine1: "Via B",
 			municipalityId,
-			zipCode: "00100",
 		});
 
 		const result = await listStores({ sellerProfileId: sellerA.profile.id });
@@ -136,19 +124,13 @@ describe("listStores", () => {
 	it("excludes soft-deleted stores", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		const s1 = await createStore({
-			sellerProfileId: seller.profile.id,
+		const s1 = await createTestStore(db, seller.profile.id, {
 			name: "Keep",
-			addressLine1: "Via",
 			municipalityId,
-			zipCode: "00100",
 		});
-		await createStore({
-			sellerProfileId: seller.profile.id,
+		await createTestStore(db, seller.profile.id, {
 			name: "Delete",
-			addressLine1: "Via",
 			municipalityId,
-			zipCode: "00101",
 		});
 
 		const result0 = await listStores({ sellerProfileId: seller.profile.id });
@@ -167,57 +149,15 @@ describe("listStores", () => {
 	});
 });
 
-// ── createStore ───────────────────────────────────────────────────────────────
-
-describe("createStore", () => {
-	it("creates a store with phone numbers", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-
-		const created = await createStore({
-			sellerProfileId: seller.profile.id,
-			name: "Negozio",
-			addressLine1: "Via Dante 1",
-			municipalityId,
-			zipCode: "20121",
-			phoneNumbers: [
-				{ label: "Principale", number: "0212345678" },
-				{ number: "3331234567" },
-			],
-		});
-
-		expect(created.name).toBe("Negozio");
-		expect(created.phoneNumbers).toHaveLength(2);
-	});
-
-	it("creates a store without optional fields", async () => {
-		const db = getTestDb();
-		const seller = await createTestSeller(db);
-
-		const created = await createStore({
-			sellerProfileId: seller.profile.id,
-			name: "Basic",
-			addressLine1: "Via 1",
-			municipalityId,
-			zipCode: "00100",
-		});
-
-		expect(created.phoneNumbers).toEqual([]);
-	});
-});
-
 // ── updateStore ───────────────────────────────────────────────────────────────
 
 describe("updateStore", () => {
 	it("updates name and address", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		const created = await createStore({
-			sellerProfileId: seller.profile.id,
+		const created = await createTestStore(db, seller.profile.id, {
 			name: "Old",
-			addressLine1: "Via Vecchia",
 			municipalityId,
-			zipCode: "00100",
 		});
 
 		const updated = await updateStore({
@@ -234,12 +174,9 @@ describe("updateStore", () => {
 	it("low stock threshold: default 5, updatable on its own", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		const created = await createStore({
-			sellerProfileId: seller.profile.id,
+		const created = await createTestStore(db, seller.profile.id, {
 			name: "Soglia",
-			addressLine1: "Via Roma",
 			municipalityId,
-			zipCode: "00100",
 		});
 		expect(created.lowStockThreshold).toBe(5);
 
@@ -255,12 +192,9 @@ describe("updateStore", () => {
 	it("moves the store pin", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		const created = await createStore({
-			sellerProfileId: seller.profile.id,
+		const created = await createTestStore(db, seller.profile.id, {
 			name: "Pin",
-			addressLine1: "Via Vecchia",
 			municipalityId,
-			zipCode: "00100",
 		});
 
 		const updated = await updateStore({
@@ -275,14 +209,12 @@ describe("updateStore", () => {
 	it("replaces phone numbers when phoneNumbers is provided", async () => {
 		const db = getTestDb();
 		const seller = await createTestSeller(db);
-		const created = await createStore({
-			sellerProfileId: seller.profile.id,
+		const created = await createTestStore(db, seller.profile.id, {
 			name: "S",
-			addressLine1: "Via",
 			municipalityId,
-			zipCode: "00100",
-			phoneNumbers: [{ number: "111111111" }, { number: "222222222" }],
 		});
+		await createTestStorePhoneNumber(db, created.id, { number: "111111111" });
+		await createTestStorePhoneNumber(db, created.id, { number: "222222222" });
 
 		const updated = await updateStore({
 			storeId: created.id,
@@ -298,12 +230,9 @@ describe("updateStore", () => {
 		const db = getTestDb();
 		const owner = await createTestSeller(db, { email: "owner@test.com" });
 		const other = await createTestSeller(db, { email: "other@test.com" });
-		const created = await createStore({
-			sellerProfileId: owner.profile.id,
+		const created = await createTestStore(db, owner.profile.id, {
 			name: "S",
-			addressLine1: "Via",
 			municipalityId,
-			zipCode: "00100",
 		});
 
 		await expect(

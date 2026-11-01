@@ -75,25 +75,9 @@ const mockRegisterSeller = mock(
 	}),
 );
 
-const mockSignIn = mock(async (_body: { email: string; password: string }) => ({
-	user: mockCustomerUser,
-	profiles: {
-		customer: {
-			id: "prof-1",
-			userId: mockCustomerUser.id,
-			points: 0,
-			createdAt: now,
-		},
-		seller: null,
-	},
-	organization: null,
-	token: "mock-token-signin",
-}));
-
 mock.module("@/modules/registration/services/registration", () => ({
 	registerCustomer: mockRegisterCustomer,
 	registerSeller: mockRegisterSeller,
-	signIn: mockSignIn,
 }));
 
 // ── Test app ──────────────────────────────────────────────────────────────────
@@ -274,51 +258,6 @@ describe("POST /register/seller — success", () => {
 			password: "password123",
 		});
 		expect(res.status).toBe(409);
-	});
-});
-
-// ── Tests: POST /register/sign-in ────────────────────────────────────────────
-
-describe("POST /register/sign-in — validation", () => {
-	it("rejects invalid email format → 422", async () => {
-		const res = await post("/register/sign-in", {
-			email: "not-an-email",
-			password: "password123",
-		});
-		expect(res.status).toBe(422);
-	});
-
-	it("rejects missing password → 422", async () => {
-		const res = await post("/register/sign-in", { email: "mario@example.it" });
-		expect(res.status).toBe(422);
-	});
-});
-
-describe("POST /register/sign-in — success", () => {
-	it("returns 200 with user and profiles on valid credentials", async () => {
-		const res = await post("/register/sign-in", {
-			email: "mario@example.it",
-			password: "password123",
-		});
-		expect(res.status).toBe(200);
-		const body = await json(res);
-		expect(body.success).toBe(true);
-		const data = body.data as Record<string, unknown>;
-		expect(data.user).toBeDefined();
-		expect(data.profiles).toBeDefined();
-	});
-
-	it("returns 401 when service throws ServiceError(401)", async () => {
-		mockSignIn.mockImplementationOnce(async () => {
-			throw new ServiceError(401, "Invalid credentials");
-		});
-		const res = await post("/register/sign-in", {
-			email: "mario@example.it",
-			password: "wrong",
-		});
-		expect(res.status).toBe(401);
-		const body = await json(res);
-		expect(body.error).toBe("UNAUTHORIZED");
 	});
 });
 

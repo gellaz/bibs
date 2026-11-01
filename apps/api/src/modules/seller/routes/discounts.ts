@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
-import { ok, okMessage, okPage } from "@/http/responses";
+import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
@@ -19,7 +19,6 @@ import {
 } from "@/schemas/discount";
 import { PaginationQuery } from "@/schemas/pagination";
 import {
-	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
@@ -300,30 +299,5 @@ export const discountsRoutes = new Hono()
 				productIds: c.req.valid("json").productIds,
 			});
 			return send(c, RemoveRes, ok(out));
-		},
-	)
-	.delete(
-		"/discounts/:discountId/products/:productId",
-		doc({
-			response: withErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Rimuovi singolo prodotto",
-				description: "Rimuove un solo prodotto dalla promozione.",
-				tags,
-				security,
-			},
-		}),
-		v("param", z.object({ discountId: z.string(), productId: z.string() })),
-		requireSeller,
-		async (c) => {
-			const { sellerProfile: sp, isOwner } = c.var.seller;
-			requireOwner(isOwner);
-			const params = c.req.valid("param");
-			await removeProductsFromDiscount({
-				discountId: params.discountId,
-				sellerProfileId: sp.id,
-				productIds: [params.productId],
-			});
-			return send(c, OkMessage, okMessage("Prodotto rimosso dalla promozione"));
 		},
 	);

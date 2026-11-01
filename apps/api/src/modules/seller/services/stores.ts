@@ -86,64 +86,6 @@ export async function listStores(params: ListStoresParams) {
 	return { data: dataWithStatus, pagination: { page, limit, total } };
 }
 
-interface CreateStoreParams {
-	sellerProfileId: string;
-	name: string;
-	description?: string;
-	addressLine1: string;
-	addressLine2?: string;
-	municipalityId: string;
-	zipCode: string;
-	country?: string;
-	location?: { x: number; y: number };
-	categoryId?: string;
-	openingHours?: OpeningHours | null;
-	websiteUrl?: string | null;
-	phoneNumbers?: Array<{ label?: string; number: string; position?: number }>;
-}
-
-export async function createStore(params: CreateStoreParams) {
-	const { phoneNumbers, ...storeData } = params;
-
-	if (Array.isArray(storeData.openingHours)) {
-		const hoursError = validateOpeningHours(storeData.openingHours);
-		if (hoursError) throw new ServiceError(400, hoursError);
-	}
-
-	return db.transaction(async (tx) => {
-		const [created] = await tx.insert(storeTable).values(storeData).returning();
-
-		if (phoneNumbers && phoneNumbers.length > 0) {
-			const phoneValues = phoneNumbers.map((p, idx) => ({
-				storeId: created.id,
-				label: p.label,
-				number: p.number,
-				position: p.position ?? idx,
-			}));
-
-			await tx.insert(storePhoneNumberTable).values(phoneValues);
-		}
-
-		const raw = await tx.query.store.findFirst({
-			where: eq(storeTable.id, created.id),
-			with: {
-				phoneNumbers: true,
-				category: true,
-				images: true,
-				municipality: municipalityCompactWith,
-			},
-		});
-
-		if (!raw)
-			throw new ServiceError(500, "Impossibile recuperare il negozio creato");
-		const { municipality, ...rest } = raw;
-		return {
-			...rest,
-			municipality: toMunicipalityCompact(municipality),
-		};
-	});
-}
-
 interface UpdateStoreParams {
 	storeId: string;
 	sellerProfileId: string;

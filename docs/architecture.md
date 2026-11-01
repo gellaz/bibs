@@ -138,12 +138,12 @@ Each module under `src/modules/` is a Hono sub-app (`index.ts`, `routes/`, `serv
 
 | Module | Prefix | Owns |
 |---|---|---|
-| `registration/` | `/register` | customer/seller sign-up, unified sign-in, employee-invite acceptance (password reset is better-auth's native flow) |
+| `registration/` | `/register` | customer/seller sign-up, employee-invite acceptance (login and password reset are better-auth's native flows) |
 | `admin/` | `/admin` | category CRUD + bulk imports, seller verification, profile-change review, holiday definitions, pricing configuration |
 | `seller/` | `/seller` | onboarding stepper; stores, images, opening hours, closures; products, brands, stock (incl. CSV import); discounts; orders; employees + invitations; profile/settings change requests; billing + Stripe checkout |
 | `customer/` | `/customer` | geo search (PostGIS), profile, addresses, orders, loyalty points |
 | `me/` | `/me` | cross-role endpoints for any authenticated user (avatar today) — anything role-independent goes here, never duplicated per role |
-| `locations/` | `/locations` | Italian regions / provinces / municipalities (public) |
+| `locations/` | `/locations` | countries and Italian municipalities (public), address geocoding (login) |
 | `catalog/` | — | public taxonomy listings (`/product-macro-categories`, `/product-categories`, `/store-macro-categories`, `/store-categories`: four sub-apps, one `CatalogApp` type and one `catalogApi` client for the frontends); writes in `admin/` |
 | `webhooks/` | — | Stripe webhook receiver at `/webhooks/stripe` (signature-verified, idempotent — see [stripe-billing.md](stripe-billing.md)) |
 
@@ -289,7 +289,7 @@ Gotchas:
 - **Auth goes through `authClient`**, not `hc`: better-auth's routes are mounted as a handler and aren't part of
   any sub-app type.
 - The login flow uses better-auth's native `/auth/api/sign-in/email` via
-  `authClient.signIn.email(...)` — not the custom `/register/sign-in` wrapper.
+  `authClient.signIn.email(...)`.
 
 ## History: from Elysia to Hono
 

@@ -315,20 +315,11 @@ describe("promozioni", () => {
 			data: { removed: 1 },
 		});
 
-		const single = await call(
-			`/discounts/${d.id}/products/${present.id}`,
-			as(o.cookie, "DELETE"),
-		);
-		expect(await single.json()).toEqual({
-			success: true,
-			data: null,
-			message: "Prodotto rimosso dalla promozione",
-		});
 		const left = await getTestDb()
 			.select()
 			.from(discountProduct)
 			.where(eq(discountProduct.discountId, d.id));
-		expect(left).toHaveLength(0);
+		expect(left.map((row) => row.productId)).toEqual([present.id]);
 	});
 
 	it("422 e 404 con sessione", async () => {

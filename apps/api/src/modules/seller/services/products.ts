@@ -800,53 +800,6 @@ export async function updateProduct(params: UpdateProductParams) {
 	});
 }
 
-// ── deleteProduct ─────────────────────────────────────────────────────────────
-
-interface DeleteProductParams {
-	productId: string;
-	sellerProfileId: string;
-	accessibleStoreIds: string[];
-}
-
-export async function deleteProduct(params: DeleteProductParams) {
-	const { productId, sellerProfileId, accessibleStoreIds } = params;
-
-	const check = await loadAccessibleProduct(
-		productId,
-		sellerProfileId,
-		accessibleStoreIds,
-	);
-
-	if (check.status !== "trashed") {
-		throw new ServiceError(409, "Sposta prima il prodotto nel cestino");
-	}
-
-	// Fetch images to clean up S3 before cascade-deleting the product
-	const images = await db.query.productImage.findMany({
-		where: eq(productImage.productId, productId),
-		columns: { key: true },
-	});
-
-	const [deleted] = await db
-		.delete(product)
-		.where(
-			and(
-				eq(product.id, productId),
-				eq(product.sellerProfileId, sellerProfileId),
-				// Re-checked here: a product restored after the read above stays.
-				eq(product.status, "trashed"),
-			),
-		)
-		.returning();
-
-	if (!deleted) throw new ServiceError(404, "Prodotto non trovato");
-
-	// Clean up S3 files (best-effort, product already deleted from DB)
-	await Promise.allSettled(images.map((img) => s3.delete(img.key)));
-
-	return deleted;
-}
-
 // ── lookupProductByEan ────────────────────────────────────────────────────────
 
 interface LookupProductByEanParams {

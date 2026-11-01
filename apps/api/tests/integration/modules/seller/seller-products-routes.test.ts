@@ -305,32 +305,6 @@ describe("prodotti", () => {
 			json("PATCH", { status: "trashed" }, o.cookie),
 		);
 		expect((await trashed.json()).data.status).toBe("trashed");
-
-		const deleted = await call(`/products/${data.id}`, {
-			method: "DELETE",
-			headers: { cookie: o.cookie },
-		});
-		expect(deleted.status).toBe(200);
-		expect(await deleted.json()).toEqual({
-			success: true,
-			data: null,
-			message: "Prodotto eliminato",
-		});
-	});
-
-	it("409 se si elimina un prodotto fuori dal cestino", async () => {
-		const o = await owner();
-		const store = await createTestStore(getTestDb(), o.profileId);
-		const p = await createTestProduct(getTestDb(), o.profileId);
-		await createTestStoreProduct(getTestDb(), store.id, p.id);
-		const res = await call(`/products/${p.id}`, {
-			method: "DELETE",
-			headers: { cookie: o.cookie },
-		});
-		expect(res.status).toBe(409);
-		expect(await res.json()).toEqual(
-			fail("CONFLICT", "Sposta prima il prodotto nel cestino"),
-		);
 	});
 
 	it("operazioni in blocco: stato ed eliminazione definitiva", async () => {
@@ -629,32 +603,23 @@ describe("stock", () => {
 });
 
 describe("brand e caratteristiche", () => {
-	it("crea con trim, ritrova lo stesso brand, lista paginata", async () => {
+	it("lista paginata con filtro", async () => {
 		const o = await owner();
-		const first = await call(
-			"/brands",
-			json("POST", { name: "  Acme  " }, o.cookie),
-		);
-		const brand = (await first.json()).data;
-		expect(brand).toEqual({
-			id: expect.any(String),
-			sellerProfileId: o.profileId,
-			name: "Acme",
-			createdAt: ISO,
-			updatedAt: ISO,
-		});
-		const again = await call(
-			"/brands",
-			json("POST", { name: "acme" }, o.cookie),
-		);
-		expect((await again.json()).data.id).toBe(brand.id);
-
+		const brand = await createTestBrand(getTestDb(), o.profileId, "Acme");
 		const list = await call("/brands?q=ac&limit=5", {
 			headers: { cookie: o.cookie },
 		});
 		expect(await list.json()).toEqual({
 			success: true,
-			data: [{ ...brand, updatedAt: ISO }],
+			data: [
+				{
+					id: brand.id,
+					sellerProfileId: o.profileId,
+					name: "Acme",
+					createdAt: ISO,
+					updatedAt: ISO,
+				},
+			],
 			pagination: { page: 1, limit: 5, total: 1 },
 		});
 	});

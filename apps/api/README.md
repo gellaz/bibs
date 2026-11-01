@@ -74,7 +74,7 @@ are documented in [docs/architecture.md](../../docs/architecture.md); how to add
 endpoint in [AGENTS.md](AGENTS.md#how-to-add-a-new-endpoint); the authoritative route
 list is the OpenAPI spec at `http://localhost:3000/openapi`.
 
-In one line each: `registration` (sign-up/sign-in/password-reset/invites), `admin`
+In one line each: `registration` (sign-up/password-reset/invites), `admin`
 (taxonomies, seller verification, change review, holidays, pricing), `seller`
 (onboarding, stores, catalog, stock, discounts, orders, team, settings,
 billing/checkout), `customer` (geo search, addresses, orders, points), `me`
@@ -106,8 +106,8 @@ it, orders store the VAT breakdown. Pure logic in `src/domain/pricing/vat.ts`.
 
 Four roles via better-auth's admin plugin: **admin**, **seller**, **employee**,
 **customer**. Sessions are HTTP-only cookies (bearer token also supported). Custom
-unified endpoints under `/register/*` (sign-up creates the right profile; sign-in
-returns user + both profiles); better-auth's own endpoints live under `/auth/api/*`.
+sign-up endpoints under `/register/*` create the right profile; login and the rest of
+better-auth's endpoints live under `/auth/api/*`.
 Every route carries its auth guard (`requireAuth`, `requireCustomer`, `requireSeller`,
 `requireAdmin`, … in `src/http/auth.ts`) or is marked `publicRoute`.
 
@@ -139,8 +139,8 @@ Store subscriptions are seeded in a realistic state mix (active / past_due / can
 ```bash
 curl http://localhost:3000/health
 
-# Sign in (returns bearer token in response body; session cookie also set)
-curl -X POST http://localhost:3000/register/sign-in \
+# Sign in with better-auth (returns bearer token in response body; session cookie also set)
+curl -X POST http://localhost:3000/auth/api/sign-in/email \
   -H "Content-Type: application/json" \
   -d '{"email": "customer1@test.com", "password": "password123"}'
 

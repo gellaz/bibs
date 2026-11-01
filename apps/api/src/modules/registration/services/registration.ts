@@ -9,7 +9,6 @@ import {
 	employeeInvitation,
 	employeeInvitationStores,
 } from "@/db/schemas/employee-invitation";
-import { organization } from "@/db/schemas/organization";
 import { sellerProfile } from "@/db/schemas/seller";
 import { auth } from "@/infra/auth";
 import { env } from "@/infra/env";
@@ -177,7 +176,7 @@ async function registerUser<T>(params: RegisterUserParams<T>) {
 
 	// Re-read the row instead of returning signUpEmail's better-auth User (whose
 	// fields are optional and don't match UserSchema): the committed DB row is the
-	// canonical, fully-populated shape — same pattern signIn uses.
+	// canonical, fully-populated shape.
 	const userRecord = await db.query.user.findFirst({
 		where: eq(user.id, newUser.id),
 	});
@@ -348,56 +347,4 @@ export async function acceptInvite(
 	);
 
 	return { message: "Account creato con successo. Ora puoi accedere." };
-}
-
-interface SignInParams {
-	email: string;
-	password: string;
-}
-
-export async function signIn(params: SignInParams) {
-	const { email, password } = params;
-
-	// auth.api.signInEmail throws an APIError on invalid credentials (401) or an
-	// unverified email (403). It never resolves with a falsy user, so there is no
-	// guard here: the global error handler maps the APIError to the right 4xx.
-	const result = await auth.api.signInEmail({
-		body: { email, password },
-	});
-
-	const userRecord = await db.query.user.findFirst({
-		where: eq(user.id, result.user.id),
-	});
-
-	if (!userRecord) {
-		throw new ServiceError(404, "Utente non trovato");
-	}
-
-	const [customerProf, sellerProf] = await Promise.all([
-		db.query.customerProfile.findFirst({
-			where: eq(customerProfile.userId, userRecord.id),
-		}),
-		db.query.sellerProfile.findFirst({
-			where: eq(sellerProfile.userId, userRecord.id),
-		}),
-	]);
-
-	// If seller, also fetch organization
-	let org = null;
-	if (sellerProf) {
-		org =
-			(await db.query.organization.findFirst({
-				where: eq(organization.sellerProfileId, sellerProf.id),
-			})) ?? null;
-	}
-
-	return {
-		user: userRecord,
-		profiles: {
-			customer: customerProf || null,
-			seller: sellerProf || null,
-		},
-		organization: org,
-		token: result.token,
-	};
 }

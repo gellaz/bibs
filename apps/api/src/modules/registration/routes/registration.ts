@@ -10,22 +10,19 @@ import { ServiceError } from "@/lib/errors";
 import {
 	RegisterCustomerResult,
 	RegisterSellerResult,
-	SignInResult,
 } from "@/schemas/composed";
 import { AcceptInviteBody } from "@/schemas/forms/onboarding";
-import { RegisterBody, SignInBody } from "@/schemas/registration";
+import { RegisterBody } from "@/schemas/registration";
 import {
 	OkMessage,
 	okRes,
 	TooManyRequestsError,
 	withConflictErrors,
-	withErrors,
 } from "@/schemas/responses";
 import {
 	acceptInvite,
 	registerCustomer,
 	registerSeller,
-	signIn,
 } from "../services/registration";
 
 const MINUTE = 60_000;
@@ -33,7 +30,6 @@ const HOUR = 60 * MINUTE;
 
 export const RegisterCustomerResponse = okRes(RegisterCustomerResult);
 export const RegisterSellerResponse = okRes(RegisterSellerResult);
-export const SignInResponse = okRes(SignInResult);
 
 export const registrationRoutes = new Hono()
 	.post(
@@ -155,46 +151,5 @@ export const registrationRoutes = new Hono()
 			);
 
 			return send(c, OkMessage, okMessage(result.message));
-		},
-	)
-	.post(
-		"/sign-in",
-		doc({
-			response: withErrors({
-				200: SignInResponse,
-				429: TooManyRequestsError,
-			}),
-			detail: {
-				summary: "Login",
-				description:
-					"Autentica un utente e restituisce i dati utente, entrambi i profili (customer e seller se esistenti) e token di sessione. Il campo 'role' indica il ruolo primario.",
-				tags: ["Auth"],
-			},
-		}),
-		v("json", SignInBody),
-		publicRoute,
-		rateLimit({
-			name: "sign-in",
-			limits: [
-				{ by: "ip", window: 15 * MINUTE, max: 30 },
-				{ by: "email", window: 15 * MINUTE, max: 10 },
-			],
-		}),
-		async (c) => {
-			const data = await signIn(c.req.valid("json"));
-
-			logger.info(
-				{
-					userId: data.user.id,
-					email: data.user.email,
-					role: data.user.role,
-					hasCustomerProfile: !!data.profiles.customer,
-					hasSellerProfile: !!data.profiles.seller,
-					action: "user_sign_in",
-				},
-				"Utente autenticato",
-			);
-
-			return send(c, SignInResponse, ok(data));
 		},
 	);

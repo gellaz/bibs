@@ -57,14 +57,13 @@ export const SellerProfileWithUserSchema = SellerProfileSchema.extend({
 	organization: OrganizationSchema.nullable(),
 });
 
-// ── Auth: registration / sign-in success payloads ──────────
+// ── Auth: registration success payloads ──────────
 // These endpoints return RAW DB rows: seller profiles without the joined
-// municipality objects, and organizations without the joined municipality.
+// municipality objects.
 const RawSellerProfileSchema = SellerProfileSchema.omit({
 	residenceMunicipality: true,
 	documentIssuedMunicipality: true,
 });
-const RawOrganizationSchema = OrganizationSchema.omit({ municipality: true });
 
 // `token` may be absent/null when email verification is required (no session).
 const AuthToken = z.string().nullable().optional();
@@ -78,16 +77,6 @@ export const RegisterCustomerResult = z.object({
 export const RegisterSellerResult = z.object({
 	user: UserSchema,
 	profile: RawSellerProfileSchema,
-	token: AuthToken,
-});
-
-export const SignInResult = z.object({
-	user: UserSchema,
-	profiles: z.object({
-		customer: CustomerProfileSchema.nullable(),
-		seller: RawSellerProfileSchema.nullable(),
-	}),
-	organization: RawOrganizationSchema.nullable(),
 	token: AuthToken,
 });
 

@@ -281,7 +281,7 @@ describe("app radice — modulo /seller", () => {
 		["DELETE", "/seller/stores/s1", 401],
 		["DELETE", "/seller/stores/s1/images/i1", 401],
 		["GET", "/seller/settings", 401],
-		["GET", "/seller/profile", 401],
+		["GET", "/seller/onboarding/status", 401],
 		["GET", "/seller/employees/e1/stores", 401],
 		["GET", "/seller/stores/checkout/p1", 401],
 		["POST", "/seller/stores/s1/reactivation-checkout", 401],

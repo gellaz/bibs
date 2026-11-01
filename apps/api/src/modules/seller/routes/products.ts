@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { requireSeller } from "@/http/auth";
 import { doc } from "@/http/openapi";
-import { ok, okMessage, okPage } from "@/http/responses";
+import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
 import { logger } from "@/infra/logger";
@@ -30,7 +30,6 @@ import {
 } from "@/schemas/forms/products";
 import { PaginationQuery } from "@/schemas/pagination";
 import {
-	OkMessage,
 	okPageRes,
 	okRes,
 	withConflictErrors,
@@ -43,7 +42,6 @@ import {
 	bulkDeletePermanent,
 	bulkUpdateProductStatus,
 	createProduct,
-	deleteProduct,
 	getProduct,
 	getProductStatusCounts,
 	listCategoriesInUse,
@@ -592,41 +590,5 @@ export const productsRoutes = new Hono()
 			);
 
 			return send(c, BulkDeleteRes, ok(result));
-		},
-	)
-	.delete(
-		"/products/:productId",
-		doc({
-			response: withConflictErrors({ 200: OkMessage }),
-			detail: {
-				summary: "Elimina prodotto definitivamente",
-				description:
-					"Elimina fisicamente un prodotto e tutti i dati associati (immagini, stock, classificazioni). Richiede che il prodotto sia in cestino (status='trashed'); altrimenti restituisce 409. Per nascondere un prodotto senza eliminarlo, usa PATCH /:id/status con status='disabled' o 'trashed'.",
-				tags,
-				security,
-			},
-		}),
-		v("param", ProductParams),
-		requireSeller,
-		async (c) => {
-			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
-			const deleted = await deleteProduct({
-				productId: c.req.valid("param").productId,
-				sellerProfileId: sp.id,
-				accessibleStoreIds: await getAccessibleStoreIds(),
-			});
-
-			logger.warn(
-				{
-					userId: c.var.user.id,
-					sellerProfileId: sp.id,
-					productId: deleted.id,
-					productName: deleted.name,
-					action: "product_deleted",
-				},
-				"Prodotto eliminato",
-			);
-
-			return send(c, OkMessage, okMessage("Prodotto eliminato"));
 		},
 	);

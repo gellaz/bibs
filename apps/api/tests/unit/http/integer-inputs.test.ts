@@ -73,9 +73,9 @@ describe("integer inputs reject fractions with 422", () => {
 			() => json("POST", "/products/p/stores", { storeIds: ["s"], stock: 2.5 }),
 		],
 		[
-			"POST /stores phone position",
+			"POST /stores/checkout phone position",
 			() =>
-				json("POST", "/stores", {
+				json("POST", "/stores/checkout", {
 					...STORE_BODY,
 					phoneNumbers: [{ number: "0512345678", position: 0.5 }],
 				}),

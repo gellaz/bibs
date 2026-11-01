@@ -199,13 +199,11 @@ describe("guardie seller", () => {
 	it("la guardia sbagliata per il path è un errore, nei due sensi", () => {
 		const app = moduleApp()
 			.get("/products", requireSellerRole, ok)
-			.get("/profile", requireSeller, ok)
 			.patch("/onboarding/company", requireSeller, ok)
 			.get("/onboarding/status", requireSellerRole, ok)
 			.get("/brands", requireAuth, ok);
 		expect(routeProblems(app, sellerGuards)).toEqual([
 			"GET /products: manca la guardia del modulo (seller)",
-			"GET /profile: manca la guardia del modulo (sellerRole)",
 			"PATCH /onboarding/company: manca la guardia del modulo (sellerRole)",
 			"GET /brands: manca la guardia del modulo (seller)",
 		]);

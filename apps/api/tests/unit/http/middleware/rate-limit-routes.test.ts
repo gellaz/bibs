@@ -86,7 +86,7 @@ describe("rateLimit — email keyed", () => {
 	});
 });
 
-describe("rateLimit — stacked ip + email rules (the real /sign-in shape)", () => {
+describe("rateLimit — stacked ip + email rules (the /register shape)", () => {
 	function signInApp() {
 		return moduleApp().post(
 			"/limited",

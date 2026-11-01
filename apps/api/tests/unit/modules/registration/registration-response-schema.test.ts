@@ -5,11 +5,10 @@ import { send } from "@/http/send";
 import {
 	RegisterCustomerResult,
 	RegisterSellerResult,
-	SignInResult,
 } from "@/schemas/composed";
 import { okRes } from "@/schemas/responses";
 
-// The registration/sign-in handlers return RAW database rows (no joined
+// The registration handlers return RAW database rows (no joined
 // municipalities, plus columns like updatedAt / documentImageKey / stripeCustomerId).
 // These tests feed representative raw rows through the new response schemas using
 // the real response pipeline (`send()`, as in the Hono routes), proving the
@@ -71,21 +70,6 @@ const rawSellerProfile = {
 	updatedAt: now,
 };
 
-const rawOrganization = {
-	id: "o1",
-	sellerProfileId: "s1",
-	businessName: "Acme",
-	vatNumber: "IT12345678901",
-	legalForm: "SRL",
-	addressLine1: "Via Roma 1",
-	country: "IT",
-	municipalityId: "m1",
-	zipCode: "00100",
-	vatStatus: "pending" as const,
-	createdAt: now,
-	updatedAt: now,
-};
-
 const app = moduleApp()
 	.post("/customer", (c) =>
 		send(
@@ -101,18 +85,6 @@ const app = moduleApp()
 			ok({
 				user: { ...rawUser, role: "seller" },
 				profile: rawSellerProfile,
-				token: "tok",
-			}),
-		),
-	)
-	.post("/sign-in", (c) =>
-		send(
-			c,
-			okRes(SignInResult),
-			ok({
-				user: rawUser,
-				profiles: { customer: rawCustomerProfile, seller: rawSellerProfile },
-				organization: rawOrganization,
 				token: "tok",
 			}),
 		),
@@ -148,14 +120,5 @@ describe("registration response schemas accept the raw DB rows", () => {
 		expect("updatedAt" in body.data.profile).toBe(false);
 		expect("firstName" in body.data.user).toBe(false);
 		expect("birthDate" in body.data.user).toBe(false);
-	});
-
-	it("validates the /sign-in payload with raw seller profile + organization (200)", async () => {
-		const res = await post("/sign-in");
-		expect(res.status).toBe(200);
-		const body = (await res.json()) as {
-			data: { organization: { businessName: string } | null };
-		};
-		expect(body.data.organization?.businessName).toBe("Acme");
 	});
 });

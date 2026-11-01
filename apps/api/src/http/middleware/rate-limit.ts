@@ -111,7 +111,7 @@ function emailKey(body: unknown): string {
  * dopo l'auth, come il `beforeHandle` di prima: un input non valido non
  * consuma budget e la chiave `email` è quella del body validato (trimmato).
  * better-auth's own rate limiter does not cover our server-side `auth.api.*`
- * calls, so we guard the registration / sign-in routes here. Each call gets its
+ * calls, so we guard the registration routes here. Each call gets its
  * own in-memory store, so limits reset on restart and are not shared across
  * instances (acceptable for the current single-instance dev stage; swap the
  * store for Redis to scale out).

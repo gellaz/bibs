@@ -12,8 +12,3 @@ export const RegisterBody = z.object({
 		description: "Password (minimo 8, massimo 128 caratteri)",
 	}),
 });
-
-export const SignInBody = z.object({
-	email: zFormat("email").meta({ description: "Indirizzo email" }),
-	password: z.string().meta({ description: "Password" }),
-});

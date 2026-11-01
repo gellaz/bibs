@@ -10,7 +10,6 @@ const info = {
 };
 
 const tags = [
-	{ name: "Auth", description: "Autenticazione e sessione utente" },
 	{ name: "Registration", description: "Registrazione clienti e venditori" },
 	{
 		name: "Product Categories",
@@ -41,10 +40,6 @@ const tags = [
 	{
 		name: "Seller - Employees",
 		description: "Gestione dipendenti del venditore",
-	},
-	{
-		name: "Seller - Profile",
-		description: "Profilo venditore e gestione partita IVA",
 	},
 	{ name: "Customer - Search", description: "Ricerca prodotti (pubblica)" },
 	{

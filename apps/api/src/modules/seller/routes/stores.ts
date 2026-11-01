@@ -5,7 +5,6 @@ import { doc } from "@/http/openapi";
 import { ok, okPage } from "@/http/responses";
 import { send } from "@/http/send";
 import { v } from "@/http/validator";
-import { logger } from "@/infra/logger";
 import { config } from "@/lib/config";
 import { StoreWithPhonesSchema } from "@/schemas/composed";
 import {
@@ -15,7 +14,6 @@ import {
 	StoreOrderTypesSchema,
 } from "@/schemas/entities";
 import { OpeningHoursSchema } from "@/schemas/forms/opening-hours";
-import { CreateStoreBody } from "@/schemas/forms/stores";
 import { PaginationQuery } from "@/schemas/pagination";
 import {
 	okPageRes,
@@ -32,7 +30,6 @@ import {
 } from "../services/order-types";
 import {
 	cancelStoreSubscription,
-	createStore,
 	listArchivedStores,
 	listStores,
 	reactivateStoreSubscription,
@@ -201,40 +198,6 @@ export const storesRoutes = new Hono()
 				limit: query.limit,
 			});
 			return send(c, StorePage, okPage(result.data, result.pagination));
-		},
-	)
-	.post(
-		"/stores",
-		doc({
-			response: withErrors({ 200: StoreRes }),
-			detail: detail(
-				"Crea negozio",
-				"Crea un nuovo negozio per il venditore. Solo il proprietario può creare negozi.",
-			),
-		}),
-		v("json", CreateStoreBody),
-		requireSeller,
-		async (c) => {
-			const { sellerProfile: sp, isOwner } = c.var.seller;
-			requireOwner(isOwner);
-
-			const data = await createStore({
-				sellerProfileId: sp.id,
-				...c.req.valid("json"),
-			});
-
-			logger.info(
-				{
-					userId: c.var.user.id,
-					sellerProfileId: sp.id,
-					storeId: data.id,
-					storeName: data.name,
-					action: "store_created",
-				},
-				"Nuovo negozio creato",
-			);
-
-			return send(c, StoreRes, ok(data));
 		},
 	)
 	.patch(
