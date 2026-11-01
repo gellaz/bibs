@@ -101,6 +101,8 @@ export interface Case {
 	status: number;
 	/** Corpo atteso: `{ ok: … }` (echo dell'input validato) o l'inviluppo. */
 	body: unknown;
+	/** Delta accettato: il corpo che dava l'API di prima (il golden), se diverso. */
+	before?: unknown;
 }
 
 export const fail = (message: string) => ({
@@ -2281,13 +2283,17 @@ export const cases: Case[] = [
 		200,
 		{ ok: { q: "😀😀", limit: 5 } },
 	),
-	body(
-		"prodotti: nome di 101 emoji = 202 unità UTF-16 (CreateProductBody)",
-		CreateProductBody,
-		{ name: "😀".repeat(101), price: "1.00", storeId: "s" },
-		422,
-		fail("Il nome è obbligatorio"),
-	),
+	// Delta 24: sulla lunghezza massima l'`error` dello schema non vale più.
+	{
+		...body(
+			"prodotti: nome di 101 emoji = 202 unità UTF-16 (CreateProductBody)",
+			CreateProductBody,
+			{ name: "😀".repeat(101), price: "1.00", storeId: "s" },
+			422,
+			fail("Nome: al massimo 200 caratteri"),
+		),
+		before: fail("Il nome è obbligatorio"),
+	},
 	body(
 		"prodotti: valore di 1001 emoji = 2002 unità UTF-16",
 		z.object({ characteristicValues: CharacteristicValuesField.optional() }),
@@ -2473,13 +2479,17 @@ export const cases: Case[] = [
 		422,
 		fail("Indica il motivo del rifiuto"),
 	),
-	body(
-		"U9 rifiuto: motivo di 251 emoji (unità UTF-16)",
-		RejectSellerRouteBody,
-		{ reason: "😀".repeat(251), fixStep: null, expectedUpdatedAt: stale },
-		422,
-		fail("Indica il motivo del rifiuto"),
-	),
+	// Delta 24, come sopra.
+	{
+		...body(
+			"U9 rifiuto: motivo di 251 emoji (unità UTF-16)",
+			RejectSellerRouteBody,
+			{ reason: "😀".repeat(251), fixStep: null, expectedUpdatedAt: stale },
+			422,
+			fail("Motivo: al massimo 500 caratteri"),
+		),
+		before: fail("Indica il motivo del rifiuto"),
+	},
 	body(
 		"U9 rifiuto: step non ammesso",
 		RejectSellerRouteBody,

@@ -26,4 +26,13 @@ export type ValidationRule =
 	| { kind: "uniqueItems" }
 	| { kind: "invalid" };
 
+/**
+ * Se l'`error` scritto nei metadati dello schema vale per la regola violata.
+ * Non sulla lunghezza massima: gli `error` sono scritti per il campo vuoto o il
+ * formato («Il nome è obbligatorio»), su un testo troppo lungo direbbero il
+ * falso. La usano i 422 dell'API e i form del seller.
+ */
+export const schemaErrorApplies = (rule: ValidationRule) =>
+	rule.kind !== "maxLength";
+
 export { issueRule } from "../schemas/issues";

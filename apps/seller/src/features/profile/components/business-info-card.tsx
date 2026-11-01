@@ -1,3 +1,4 @@
+import { CompanySettingsBody } from "@bibs/api/schemas";
 import { Button } from "@bibs/ui/components/button";
 import {
 	Card,
@@ -14,37 +15,19 @@ import { unwrapJson } from "@bibs/ui/lib/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Controller, type SubmitHandler, useForm } from "react-hook-form";
-import { z } from "zod";
+import type { z } from "zod";
 import {
 	municipalityComboboxLabels,
 	useMunicipalities,
 } from "@/hooks/use-municipalities";
 import { useSellerSettings } from "@/hooks/use-seller-settings";
 import { sellerApi } from "@/lib/api";
-import { zodResolver } from "@/lib/zod-resolver";
+import { schemaResolver } from "@/lib/schema-errors";
 import { m } from "@/paraglide/messages";
 import { PendingVatChange } from "./pending-vat-change";
 import { VatChangeDialog } from "./vat-change-dialog";
 
-export const businessInfoSchema = z.object({
-	businessName: z
-		.string()
-		.min(1, { error: () => m.profile_business_name_required() }),
-	legalForm: z
-		.string()
-		.min(1, { error: () => m.profile_business_legal_form_required() }),
-	addressLine1: z
-		.string()
-		.min(1, { error: () => m.profile_business_address_required() }),
-	zipCode: z
-		.string()
-		.regex(/^\d{5}$/, { error: () => m.profile_business_zip_invalid() }),
-	municipalityId: z
-		.string()
-		.min(1, { error: () => m.profile_business_municipality_required() }),
-	country: z.string().min(2).max(2),
-});
-type Form = z.infer<typeof businessInfoSchema>;
+type Form = z.infer<typeof CompanySettingsBody>;
 
 interface Props {
 	readOnly: boolean;
@@ -63,7 +46,7 @@ export function BusinessInfoCard({ readOnly }: Props) {
 	} = useMunicipalities();
 
 	const { register, handleSubmit, reset, control, formState } = useForm<Form>({
-		resolver: zodResolver(businessInfoSchema),
+		resolver: schemaResolver(CompanySettingsBody),
 	});
 
 	useEffect(() => {
