@@ -92,6 +92,9 @@
 		"enabled": true,
 		"rules": {
 			"preset": "recommended",
+			"correctness": {
+				"useHookAtTopLevel": "error"
+			},
 			"style": {
 				"noNonNullAssertion": "off",
 				"useFilenamingConvention": {
