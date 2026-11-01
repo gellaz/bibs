@@ -77,18 +77,18 @@ describe("enum CHECK constraints", () => {
 		// no throw = pass
 	});
 
-	it("rejects a value outside the enum domain at the DB level", async () => {
+	it("rejects an unknown type through the amount-sign CHECK", async () => {
 		const customerProfileId = await seedCustomer();
-		// Deliberately bypass the TS enum to prove the DB-level CHECK rejects
-		// out-of-domain values.
+		// Deliberately bypass the TS enum. Postgres runs CHECKs in name order and
+		// `point_transaction_amount_sign` admits only the three known types, so it
+		// fires before `point_transaction_type_valid` for any amount.
 		const bogusType = "bogus" as unknown as "earned";
-		// Wrap in an async fn so a real Promise (not the Drizzle query builder
-		// thenable) reaches expect().rejects.
-		const insertBogus = async () =>
+		await expectConstraintViolation(
 			getTestDb()
 				.insert(pointTransaction)
-				.values({ customerProfileId, amount: 10, type: bogusType });
-		await expect(insertBogus()).rejects.toThrow();
+				.values({ customerProfileId, amount: 10, type: bogusType }),
+			"point_transaction_amount_sign",
+		);
 	});
 
 	it("seller_profile_changes rifiuta change_type 'payment'", async () => {

@@ -42,6 +42,13 @@ jobs:
       # pretypecheck hooks compile Paraglide messages before tsc in each frontend.
       # TODO: add `bunx @inlang/cli validate` if message-quality gates become useful.
       - run: bun run typecheck
+      # The tests apply the committed SQL, so an index, CHECK or onDelete added to
+      # the Drizzle schema without its migration stays green. db:generate reads
+      # only the schema files (no database); the timeout covers its rename prompt.
+      - name: Migrations match the Drizzle schema
+        working-directory: apps/api
+        timeout-minutes: 2
+        run: bun run db:generate && test -z "$(git status --porcelain src/db/migrations)"
 
   api-test:
     name: API tests (unit + integration)

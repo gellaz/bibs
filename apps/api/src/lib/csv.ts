@@ -5,13 +5,18 @@ import { ServiceError } from "@/lib/errors";
  * (RFC 4180): le virgolette possono contenere newline, virgole e `""` escapate.
  * Comportamenti preservati dai consumer (product-import, category-import):
  * header lowercased, campi trimmati, righe vuote saltate, input vuoto → 400.
+ * Con `required` controlla anche le colonne obbligatorie e che ci sia almeno
+ * una riga di dati (400): sono i controlli comuni a tutti gli import.
  *
  * `apps/api/src/db/seed/data/validate-characteristics.ts` ne tiene una copia
  * quasi verbatim (deve girare senza l'alias `@/`): se cambi le semantiche qui
  * — incluso il `trim()` dei campi — aggiorna anche quella, o il gate di
  * validazione dei CSV di seed diverge silenziosamente da questo importer.
  */
-export function parseCsv(text: string): {
+export function parseCsv(
+	text: string,
+	required?: string[],
+): {
 	headers: string[];
 	rows: string[][];
 } {
@@ -83,5 +88,17 @@ export function parseCsv(text: string): {
 
 	const headers = records[0].map((h) => h.toLowerCase());
 	const rows = records.slice(1);
+	if (required) {
+		const missing = required.find((h) => !headers.includes(h));
+		if (missing) {
+			throw new ServiceError(
+				400,
+				`Colonna CSV mancante: "${missing}". Colonne attese: ${required.join(", ")}.`,
+			);
+		}
+		if (rows.length === 0) {
+			throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
+		}
+	}
 	return { headers, rows };
 }
