@@ -7,7 +7,11 @@ import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { auth } from "@/infra/auth";
-import { daysAgo, getSeedMunicipalityIds } from "./utils";
+import {
+	daysAgo,
+	getMunicipalityIdByIstat,
+	SEED_MUNICIPALITIES,
+} from "./utils";
 
 const DEV_EMAIL = "seller@dev.bibs";
 const DEV_PASSWORD = "password123";
@@ -39,9 +43,7 @@ export async function seedDevSeller() {
 
 	console.log(`  👤 Seeding dev seller ${DEV_EMAIL}...`);
 
-	// Resolve municipality IDs (only need Milano)
-	const municipalityIds = await getSeedMunicipalityIds();
-	const milanoId = municipalityIds.milano;
+	const milanoId = await getMunicipalityIdByIstat(SEED_MUNICIPALITIES.milano);
 
 	// Phase 1: auth user
 	const { user: u } = await auth.api.signUpEmail({

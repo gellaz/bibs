@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { type Issue, issueRule, ruleParams } from "@/schemas/issues";
 import { nodeAt } from "@/schemas/mirror";
-import type { ValidationRule } from "./validation-rule";
+import { schemaErrorApplies, type ValidationRule } from "./validation-rule";
 
 // Etichette italiane per i campi di input che arrivano dai form, sull'ultimo
 // segmento del path. I campi assenti restano col path tecnico: utile al debug
@@ -173,8 +173,9 @@ export function invalidFileTypeMessage(property: string): string {
 
 // Il messaggio italiano del 422 per un'issue di Zod, con le stesse regole di
 // sopra (ex `lib/validation-message.ts`) usate prima (D6 del piano Hono):
-// `error` dello schema, poi «Richiesta non valida» per la radice, poi
-// «Etichetta: regola» (etichetta da `title`, dal dizionario o dal path).
+// `error` dello schema (non sulla lunghezza massima, delta 24), poi «Richiesta
+// non valida» per la radice, poi «Etichetta: regola» (etichetta da `title`,
+// dal dizionario o dal path).
 
 type Def = z.core.$ZodTypeDef & Record<string, any>;
 const defOf = (schema: z.ZodType) => schema._zod.def as Def;
@@ -204,8 +205,10 @@ export function issueMeta(root: z.ZodType, path: PropertyKey[]) {
 
 export function zodValidationMessage(issue: Issue, root: z.ZodType): string {
 	const meta = issueMeta(root, issue.path);
-	if (typeof meta.error === "string") return meta.error;
-	const rule = ruleText(issueRule(issue, nodeAt(root, issue.path)));
+	const violated = issueRule(issue, nodeAt(root, issue.path));
+	if (typeof meta.error === "string" && schemaErrorApplies(violated))
+		return meta.error;
+	const rule = ruleText(violated);
 	// Errore della decodifica (coercizione, t.Integer, t.Date): il
 	// nome del campo è perso, resta la regola.
 	if (ruleParams(issue)?.decode)

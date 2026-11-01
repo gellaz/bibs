@@ -30,8 +30,7 @@ bun run dev:customer    # http://localhost:3001
 ## Environment
 
 No env file is needed to boot: `VITE_API_URL` defaults to `http://localhost:3000`.
-To override it (or the optional `VITE_APP_TITLE` / `SERVER_URL`), copy `.env.example`
-to `.env.local`.
+To override it, copy `.env.example` to `.env.local`.
 
 ## Routes & i18n
 

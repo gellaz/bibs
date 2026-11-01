@@ -207,16 +207,6 @@ export const SEED_MUNICIPALITY_PHONE_PREFIX: Record<
 	venezia: "041",
 };
 
-/** ISTAT → handle, per risalire al comune partendo da una riga di `stores`. */
-export const ISTAT_TO_SEED_HANDLE: Record<string, SeedMunicipalityHandle> =
-	Object.fromEntries(
-		(
-			Object.entries(SEED_MUNICIPALITIES) as Array<
-				[SeedMunicipalityHandle, string]
-			>
-		).map(([handle, istat]) => [istat, handle]),
-	) as Record<string, SeedMunicipalityHandle>;
-
 /**
  * Coordinate approssimative per comune seed, usate per popolare `location` nei negozi.
  */
