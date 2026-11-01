@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { sellerProfile } from "@/db/schemas/seller";
 import { store } from "@/db/schemas/store";
@@ -10,23 +10,11 @@ import {
 } from "@/domain/orders/order-types";
 import { resolveReservationDeadlines } from "@/domain/stores/store-open-status";
 import { ServiceError } from "@/lib/errors";
+import { ensureStoreOwnership } from "../context";
 
 interface StoreRef {
 	sellerProfileId: string;
 	storeId: string;
-}
-
-async function ownStore({ sellerProfileId, storeId }: StoreRef) {
-	const found = await db.query.store.findFirst({
-		where: and(
-			eq(store.id, storeId),
-			eq(store.sellerProfileId, sellerProfileId),
-			isNull(store.deletedAt),
-		),
-		columns: { id: true, orderTypes: true, openingHours: true, closures: true },
-	});
-	if (!found) throw new ServiceError(404, "Negozio non trovato");
-	return found;
 }
 
 async function isVatChangeBlocked(sellerProfileId: string) {
@@ -55,7 +43,7 @@ function view(
 
 export async function getStoreOrderTypes(ref: StoreRef) {
 	const [s, pm, blocked] = await Promise.all([
-		ownStore(ref),
+		ensureStoreOwnership(ref.storeId, ref.sellerProfileId),
 		getDefaultPaymentMethod(ref.sellerProfileId),
 		isVatChangeBlocked(ref.sellerProfileId),
 	]);
@@ -66,7 +54,7 @@ export async function updateStoreOrderTypes(
 	ref: StoreRef & { orderTypes: StoreOrderType[] },
 ) {
 	const [s, pm, blocked] = await Promise.all([
-		ownStore(ref),
+		ensureStoreOwnership(ref.storeId, ref.sellerProfileId),
 		getDefaultPaymentMethod(ref.sellerProfileId),
 		isVatChangeBlocked(ref.sellerProfileId),
 	]);
@@ -99,7 +87,7 @@ export async function updateStoreOrderTypes(
 export async function previewReservationDeadline(
 	ref: StoreRef & { hours: number },
 ) {
-	const s = await ownStore(ref);
+	const s = await ensureStoreOwnership(ref.storeId, ref.sellerProfileId);
 	const deadlines = await resolveReservationDeadlines(
 		[{ ...s, reservationHours: ref.hours }],
 		new Date(),

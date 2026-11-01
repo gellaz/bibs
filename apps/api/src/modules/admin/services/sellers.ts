@@ -24,6 +24,11 @@ import {
 } from "@/domain/sellers/onboarding-notifications";
 import { isUniqueViolation, ServiceError } from "@/lib/errors";
 import { containsPattern } from "@/lib/like";
+import {
+	municipalityCompactWith,
+	type RawMunicipalityCompact,
+	toMunicipalityCompact,
+} from "@/lib/municipality";
 import { parsePagination } from "@/lib/pagination";
 import {
 	DocumentChangeBody,
@@ -38,6 +43,57 @@ const REVIEWABLE_STATUSES: OnboardingStatus[] = [
 	"active",
 	"rejected",
 ];
+
+const profileMunicipalitiesWith = {
+	residenceMunicipality: municipalityCompactWith,
+	documentIssuedMunicipality: municipalityCompactWith,
+} as const;
+
+/** Profilo con utente, organizzazione e comuni, come lo vede l'admin. */
+const sellerDetailWith = {
+	user: true,
+	organization: { with: { municipality: municipalityCompactWith } },
+	...profileMunicipalitiesWith,
+} as const;
+
+type ProfileMunicipalities = {
+	residenceMunicipality: RawMunicipalityCompact | null;
+	documentIssuedMunicipality: RawMunicipalityCompact | null;
+};
+
+/** I comuni del profilo in forma compatta (`null` se mancano). */
+function reshapeProfile<T extends ProfileMunicipalities>({
+	residenceMunicipality,
+	documentIssuedMunicipality,
+	...rest
+}: T) {
+	return {
+		...rest,
+		residenceMunicipality: residenceMunicipality
+			? toMunicipalityCompact(residenceMunicipality)
+			: null,
+		documentIssuedMunicipality: documentIssuedMunicipality
+			? toMunicipalityCompact(documentIssuedMunicipality)
+			: null,
+	};
+}
+
+/** In più l'organizzazione, con il suo comune compatto. */
+function reshapeSellerDetail<
+	T extends ProfileMunicipalities,
+	O extends { municipality: RawMunicipalityCompact },
+>({ organization: org, ...rest }: T & { organization: O | null }) {
+	const profile = reshapeProfile(rest);
+	if (!org) return { ...profile, organization: null };
+	const { municipality, ...orgRest } = org;
+	return {
+		...profile,
+		organization: {
+			...orgRest,
+			municipality: toMunicipalityCompact(municipality),
+		},
+	};
+}
 
 interface ListSellersParams {
 	page?: number;
@@ -95,25 +151,7 @@ export async function listSellers(params: ListSellersParams) {
 	const [rawData, [{ total }]] = await Promise.all([
 		db.query.sellerProfile.findMany({
 			where,
-			with: {
-				user: true,
-				organization: {
-					with: {
-						municipality: {
-							columns: { id: true, name: true },
-							with: { province: { columns: { acronym: true } } },
-						},
-					},
-				},
-				residenceMunicipality: {
-					columns: { id: true, name: true },
-					with: { province: { columns: { acronym: true } } },
-				},
-				documentIssuedMunicipality: {
-					columns: { id: true, name: true },
-					with: { province: { columns: { acronym: true } } },
-				},
-			},
+			with: sellerDetailWith,
 			limit,
 			offset,
 			orderBy: sortDir(sortCol),
@@ -121,83 +159,18 @@ export async function listSellers(params: ListSellersParams) {
 		db.select({ total: count() }).from(sellerProfile).where(where),
 	]);
 
-	const data = rawData.map((profile) => {
-		const {
-			organization: org,
-			residenceMunicipality,
-			documentIssuedMunicipality,
-			...rest
-		} = profile;
-		const profileWithMunicipalities = {
-			...rest,
-			residenceMunicipality: residenceMunicipality
-				? {
-						id: residenceMunicipality.id,
-						name: residenceMunicipality.name,
-						provinceAcronym: residenceMunicipality.province.acronym,
-					}
-				: null,
-			documentIssuedMunicipality: documentIssuedMunicipality
-				? {
-						id: documentIssuedMunicipality.id,
-						name: documentIssuedMunicipality.name,
-						provinceAcronym: documentIssuedMunicipality.province.acronym,
-					}
-				: null,
-		};
-		if (!org) return { ...profileWithMunicipalities, organization: null };
-		const { municipality, ...orgRest } = org;
-		return {
-			...profileWithMunicipalities,
-			organization: {
-				...orgRest,
-				municipality: {
-					id: municipality.id,
-					name: municipality.name,
-					provinceAcronym: municipality.province.acronym,
-				},
-			},
-		};
-	});
-
-	return { data, pagination: { page, limit, total } };
+	return {
+		data: rawData.map(reshapeSellerDetail),
+		pagination: { page, limit, total },
+	};
 }
 
 async function fetchProfileWithMunicipalities(sellerId: string) {
 	const raw = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerId),
-		with: {
-			residenceMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-			documentIssuedMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-		},
+		with: profileMunicipalitiesWith,
 	});
-
-	if (!raw) return null;
-
-	const { residenceMunicipality, documentIssuedMunicipality, ...rest } = raw;
-	return {
-		...rest,
-		residenceMunicipality: residenceMunicipality
-			? {
-					id: residenceMunicipality.id,
-					name: residenceMunicipality.name,
-					provinceAcronym: residenceMunicipality.province.acronym,
-				}
-			: null,
-		documentIssuedMunicipality: documentIssuedMunicipality
-			? {
-					id: documentIssuedMunicipality.id,
-					name: documentIssuedMunicipality.name,
-					provinceAcronym: documentIssuedMunicipality.province.acronym,
-				}
-			: null,
-	};
+	return raw ? reshapeProfile(raw) : null;
 }
 
 interface ReviewOutcome {
@@ -352,65 +325,11 @@ export async function countSellersByStatus(): Promise<SellerStatusCounts> {
 export async function getSellerDetail(sellerId: string) {
 	const raw = await db.query.sellerProfile.findFirst({
 		where: eq(sellerProfile.id, sellerId),
-		with: {
-			user: true,
-			organization: {
-				with: {
-					municipality: {
-						columns: { id: true, name: true },
-						with: { province: { columns: { acronym: true } } },
-					},
-				},
-			},
-			residenceMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-			documentIssuedMunicipality: {
-				columns: { id: true, name: true },
-				with: { province: { columns: { acronym: true } } },
-			},
-		},
+		with: sellerDetailWith,
 	});
 
 	if (!raw) throw new ServiceError(404, "Profilo venditore non trovato");
-
-	const {
-		organization: org,
-		residenceMunicipality,
-		documentIssuedMunicipality,
-		...rest
-	} = raw;
-	const profileWithMunicipalities = {
-		...rest,
-		residenceMunicipality: residenceMunicipality
-			? {
-					id: residenceMunicipality.id,
-					name: residenceMunicipality.name,
-					provinceAcronym: residenceMunicipality.province.acronym,
-				}
-			: null,
-		documentIssuedMunicipality: documentIssuedMunicipality
-			? {
-					id: documentIssuedMunicipality.id,
-					name: documentIssuedMunicipality.name,
-					provinceAcronym: documentIssuedMunicipality.province.acronym,
-				}
-			: null,
-	};
-	if (!org) return { ...profileWithMunicipalities, organization: null };
-	const { municipality, ...orgRest } = org;
-	return {
-		...profileWithMunicipalities,
-		organization: {
-			...orgRest,
-			municipality: {
-				id: municipality.id,
-				name: municipality.name,
-				provinceAcronym: municipality.province.acronym,
-			},
-		},
-	};
+	return reshapeSellerDetail(raw);
 }
 
 // ── Change requests ─────────────────────────
@@ -426,29 +345,7 @@ export async function listPendingChanges(params: ListPendingChangesParams) {
 	const [rawData, [{ total }]] = await Promise.all([
 		db.query.sellerProfileChange.findMany({
 			where: eq(sellerProfileChange.status, "pending"),
-			with: {
-				sellerProfile: {
-					with: {
-						user: true,
-						organization: {
-							with: {
-								municipality: {
-									columns: { id: true, name: true },
-									with: { province: { columns: { acronym: true } } },
-								},
-							},
-						},
-						residenceMunicipality: {
-							columns: { id: true, name: true },
-							with: { province: { columns: { acronym: true } } },
-						},
-						documentIssuedMunicipality: {
-							columns: { id: true, name: true },
-							with: { province: { columns: { acronym: true } } },
-						},
-					},
-				},
-			},
+			with: { sellerProfile: { with: sellerDetailWith } },
 			limit,
 			offset,
 			orderBy: (t, { asc }) => [asc(t.createdAt)],
@@ -459,52 +356,10 @@ export async function listPendingChanges(params: ListPendingChangesParams) {
 			.where(eq(sellerProfileChange.status, "pending")),
 	]);
 
-	const data = rawData.map((change) => {
-		const { sellerProfile: sp, ...changeRest } = change;
-		const {
-			organization: org,
-			residenceMunicipality,
-			documentIssuedMunicipality,
-			...spRest
-		} = sp;
-		const spWithMunicipalities = {
-			...spRest,
-			residenceMunicipality: residenceMunicipality
-				? {
-						id: residenceMunicipality.id,
-						name: residenceMunicipality.name,
-						provinceAcronym: residenceMunicipality.province.acronym,
-					}
-				: null,
-			documentIssuedMunicipality: documentIssuedMunicipality
-				? {
-						id: documentIssuedMunicipality.id,
-						name: documentIssuedMunicipality.name,
-						provinceAcronym: documentIssuedMunicipality.province.acronym,
-					}
-				: null,
-		};
-		if (!org)
-			return {
-				...changeRest,
-				sellerProfile: { ...spWithMunicipalities, organization: null },
-			};
-		const { municipality, ...orgRest } = org;
-		return {
-			...changeRest,
-			sellerProfile: {
-				...spWithMunicipalities,
-				organization: {
-					...orgRest,
-					municipality: {
-						id: municipality.id,
-						name: municipality.name,
-						provinceAcronym: municipality.province.acronym,
-					},
-				},
-			},
-		};
-	});
+	const data = rawData.map(({ sellerProfile: sp, ...change }) => ({
+		...change,
+		sellerProfile: reshapeSellerDetail(sp),
+	}));
 
 	return { data, pagination: { page, limit, total } };
 }

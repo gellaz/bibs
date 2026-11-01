@@ -16,11 +16,11 @@ import { resolveOpenStatuses } from "@/domain/stores/store-open-status";
 import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
 import { ServiceError } from "@/lib/errors";
-import { parsePagination } from "@/lib/pagination";
 import {
 	municipalityCompactWith,
 	toMunicipalityCompact,
-} from "@/modules/seller/services/municipality";
+} from "@/lib/municipality";
+import { parsePagination } from "@/lib/pagination";
 import type { OpeningHoursSchema } from "@/schemas/forms/opening-hours";
 
 type OpeningHours = z.infer<typeof OpeningHoursSchema>;
@@ -258,7 +258,7 @@ interface ReactivateResult {
 	status: "active";
 }
 
-async function loadOwnedSubscription(params: SubParams) {
+export async function loadOwnedSubscription(params: SubParams) {
 	const sub = await db.query.storeSubscription.findFirst({
 		where: eq(storeSubscription.storeId, params.storeId),
 		with: { store: { columns: { sellerProfileId: true } } },
