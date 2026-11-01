@@ -6,6 +6,7 @@ import {
 	expect,
 	it,
 	mock,
+	spyOn,
 } from "bun:test";
 
 import {
@@ -36,6 +37,7 @@ import {
 } from "@/db/schemas/employee-invitation";
 import { store as storeTable } from "@/db/schemas/store";
 import {
+	cancelInvitation,
 	getEmployeeStores,
 	inviteEmployee,
 	listEmployeeInvitations,
@@ -425,5 +427,52 @@ describe("resendInvitation", () => {
 		await expect(resendInvitation(profile.id, inv.id)).rejects.toMatchObject({
 			status: 502,
 		});
+	});
+});
+
+describe("cancelInvitation", () => {
+	it("cancels a pending invitation", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+		const inv = await inviteEmployee(profile.id, "bye@test.com", [store.id]);
+
+		const result = await cancelInvitation(profile.id, inv.id);
+
+		expect(result.status).toBe("expired");
+		expect(result.storeIds).toEqual([store.id]);
+	});
+
+	it("404s and keeps the invite accepted when it is accepted after the read", async () => {
+		const db = getTestDb();
+		const { profile } = await createTestSeller(db);
+		const store = await createTestStore(db, profile.id);
+		const inv = await inviteEmployee(profile.id, "race@test.com", [store.id]);
+
+		// The invitee accepts between the owner's read and the write.
+		const invitations = db.query.employeeInvitation;
+		const realFindFirst = invitations.findFirst.bind(invitations);
+		const read = spyOn(invitations, "findFirst").mockImplementationOnce((async (
+			config: any,
+		) => {
+			const row = await realFindFirst(config);
+			await db
+				.update(employeeInvitation)
+				.set({ status: "accepted" })
+				.where(eq(employeeInvitation.id, inv.id));
+			return row;
+		}) as any);
+
+		await expect(cancelInvitation(profile.id, inv.id)).rejects.toMatchObject({
+			status: 404,
+		});
+		expect(read).toHaveBeenCalledTimes(1);
+		read.mockRestore();
+
+		const [row] = await db
+			.select({ status: employeeInvitation.status })
+			.from(employeeInvitation)
+			.where(eq(employeeInvitation.id, inv.id));
+		expect(row.status).toBe("accepted");
 	});
 });

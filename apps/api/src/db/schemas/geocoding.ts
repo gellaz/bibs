@@ -11,6 +11,7 @@ import {
 	type GeocodeHit,
 	geocodingProviderNames,
 } from "@/infra/geocoding/provider";
+import { id } from "../columns";
 
 /**
  * Cache delle risposte del geocoder. La chiave include la cella di bias: senza
@@ -32,9 +33,7 @@ const providerCheckValues = geocodingProviderNames
 export const geocodingLookup = pgTable(
 	"geocoding_lookups",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		provider: text("provider", { enum: geocodingProviderNames }).notNull(),
 		/** Query normalizzata: lowercase, spazi collassati. */
 		query: text("query").notNull(),

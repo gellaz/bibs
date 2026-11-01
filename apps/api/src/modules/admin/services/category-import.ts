@@ -6,7 +6,7 @@ import { storeMacroCategory } from "@/db/schemas/store-macro-category";
 import { parseCsv } from "@/lib/csv";
 import { ServiceError } from "@/lib/errors";
 
-interface ImportError {
+export interface ImportError {
 	row: number;
 	message: string;
 }
@@ -21,17 +21,6 @@ export interface CategoryImportResult {
 const PRODUCT_HEADERS = ["macro_category", "subcategory"];
 const STORE_HEADERS = ["macro_category", "name"];
 
-function assertHeaders(actual: string[], expected: string[]) {
-	for (const h of expected) {
-		if (!actual.includes(h)) {
-			throw new ServiceError(
-				400,
-				`Colonna CSV mancante: "${h}". Colonne attese: ${expected.join(", ")}.`,
-			);
-		}
-	}
-}
-
 // ────────────────────────────────────────────
 // Product categories (macro + sub)
 // ────────────────────────────────────────────
@@ -39,12 +28,7 @@ function assertHeaders(actual: string[], expected: string[]) {
 export async function importProductCategoriesFromCsv(
 	csvText: string,
 ): Promise<CategoryImportResult> {
-	const { headers, rows } = parseCsv(csvText);
-	assertHeaders(headers, PRODUCT_HEADERS);
-
-	if (rows.length === 0) {
-		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
-	}
+	const { headers, rows } = parseCsv(csvText, PRODUCT_HEADERS);
 
 	const macroIdx = headers.indexOf("macro_category");
 	const subIdx = headers.indexOf("subcategory");
@@ -184,12 +168,7 @@ export async function importProductCategoriesFromCsv(
 export async function importStoreCategoriesFromCsv(
 	csvText: string,
 ): Promise<CategoryImportResult> {
-	const { headers, rows } = parseCsv(csvText);
-	assertHeaders(headers, STORE_HEADERS);
-
-	if (rows.length === 0) {
-		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
-	}
+	const { headers, rows } = parseCsv(csvText, STORE_HEADERS);
 
 	const macroIdx = headers.indexOf("macro_category");
 	const nameIdx = headers.indexOf("name");

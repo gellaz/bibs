@@ -159,6 +159,24 @@ describe("importCharacteristicsFromCsv", () => {
 		expect(result.failed).toBe(1);
 	});
 
+	it("reports a repeated option as a row error and imports the other rows", async () => {
+		const result = await importCharacteristicsFromCsv(
+			[
+				"name,data_type,unit,options",
+				"Colore,enum,,Rosso|Blu",
+				"Trama,enum,,Liscia|Rigata|Liscia",
+				"Peso,number,kg,",
+			].join("\n"),
+		);
+
+		expect(result.created).toBe(2);
+		expect(result.errors).toEqual([
+			{ row: 3, message: 'Opzione ripetuta: "Liscia"' },
+		]);
+		const rows = await getTestDb().select().from(productCharacteristic);
+		expect(rows.map((r) => r.name).sort()).toEqual(["Colore", "Peso"]);
+	});
+
 	it("refuses removing an option still referenced by a product value", async () => {
 		const db = getTestDb();
 		await importCharacteristicsFromCsv(

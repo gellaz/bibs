@@ -38,7 +38,10 @@ function buildRegisterSchema() {
 				.string()
 				.min(1, m.auth_register_email_required())
 				.email(m.auth_register_email_invalid()),
-			password: z.string().min(8, m.auth_register_password_too_short()),
+			password: z
+				.string()
+				.min(8, m.auth_register_password_too_short())
+				.max(128, m.auth_reset_password_too_long()),
 			confirmPassword: z.string().min(1, m.auth_register_confirm_required()),
 		})
 		.refine((data) => data.password === data.confirmPassword, {

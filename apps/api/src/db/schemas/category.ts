@@ -1,25 +1,18 @@
 import { relations } from "drizzle-orm";
-import { index, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { index, pgTable, text, unique } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { productCategoryCharacteristic } from "./product-characteristic";
 import { productMacroCategory } from "./product-macro-category";
 
 export const productCategory = pgTable(
 	"product_categories",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		macroCategoryId: text("macro_category_id")
 			.notNull()
 			.references(() => productMacroCategory.id, { onDelete: "restrict" }),
 		name: text("name").notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		unique("product_categories_macro_name_unique").on(

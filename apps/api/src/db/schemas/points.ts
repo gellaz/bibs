@@ -5,10 +5,10 @@ import {
 	integer,
 	pgTable,
 	text,
-	timestamp,
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { createdAt, id } from "../columns";
 import { customerProfile } from "./customer";
 import { order } from "./order";
 
@@ -22,9 +22,7 @@ export type PointTransactionType = (typeof pointTransactionTypes)[number];
 export const pointTransaction = pgTable(
 	"point_transactions",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		customerProfileId: text("customer_profile_id")
 			.notNull()
 			.references(() => customerProfile.id, { onDelete: "cascade" }),
@@ -34,9 +32,7 @@ export const pointTransaction = pgTable(
 		amount: integer("amount").notNull(),
 		type: varchar("type", { enum: pointTransactionTypes }).notNull(),
 		description: text("description"),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(table) => [
 		index("point_transaction_customer_profile_id_idx").on(

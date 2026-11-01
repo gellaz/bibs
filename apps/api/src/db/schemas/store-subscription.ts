@@ -9,6 +9,7 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { store } from "./store";
 
 export const storeSubscriptionStatuses = [
@@ -24,9 +25,7 @@ export type StoreSubscriptionStatus =
 export const storeSubscription = pgTable(
 	"store_subscriptions",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		storeId: text("store_id")
 			.notNull()
 			.unique()
@@ -44,13 +43,7 @@ export const storeSubscription = pgTable(
 		cancelReason: text("cancel_reason"),
 		suspendedAt: timestamp("suspended_at", { withTimezone: true }),
 		canceledAt: timestamp("canceled_at", { withTimezone: true }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(t) => [
 		index("store_subscription_status_idx").on(t.status),

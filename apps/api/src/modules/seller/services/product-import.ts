@@ -61,20 +61,7 @@ export async function importProductsFromCsv(
 ): Promise<ImportResult> {
 	const { sellerProfileId, storeId, csvText } = params;
 
-	const { headers, rows } = parseCsv(csvText);
-
-	for (const expected of EXPECTED_HEADERS) {
-		if (!headers.includes(expected)) {
-			throw new ServiceError(
-				400,
-				`Colonna CSV mancante: "${expected}". Colonne attese: ${EXPECTED_HEADERS.join(", ")}.`,
-			);
-		}
-	}
-
-	if (rows.length === 0) {
-		throw new ServiceError(400, "Il file CSV non contiene righe di dati.");
-	}
+	const { headers, rows } = parseCsv(csvText, EXPECTED_HEADERS);
 
 	if (rows.length > config.maxProductsPerImport) {
 		throw new ServiceError(

@@ -833,6 +833,8 @@ export async function deleteProduct(params: DeleteProductParams) {
 			and(
 				eq(product.id, productId),
 				eq(product.sellerProfileId, sellerProfileId),
+				// Re-checked here: a product restored after the read above stays.
+				eq(product.status, "trashed"),
 			),
 		)
 		.returning();
@@ -1163,16 +1165,27 @@ export async function bulkDeletePermanent(
 
 	// Fetch S3 keys before delete
 	const images = await db
-		.select({ key: productImage.key })
+		.select({ key: productImage.key, productId: productImage.productId })
 		.from(productImage)
 		.where(inArray(productImage.productId, toDelete));
 
-	await db.transaction(async (tx) => {
-		await tx.delete(product).where(inArray(product.id, toDelete));
-	});
+	// Re-checks the trash: a product restored after the read above stays.
+	const deleted = await db
+		.delete(product)
+		.where(and(inArray(product.id, toDelete), eq(product.status, "trashed")))
+		.returning({ id: product.id });
+	const deletedIds = new Set(deleted.map((d) => d.id));
+	for (const id of toDelete) {
+		if (!deletedIds.has(id))
+			failed.push({ productId: id, reason: "not_in_trash" });
+	}
 
-	// Best-effort S3 cleanup outside transaction
-	await Promise.allSettled(images.map((img) => s3.delete(img.key)));
+	// Best-effort S3 cleanup, only for the products actually deleted
+	await Promise.allSettled(
+		images
+			.filter((img) => deletedIds.has(img.productId))
+			.map((img) => s3.delete(img.key)),
+	);
 
-	return { succeeded: toDelete, failed };
+	return { succeeded: toDelete.filter((id) => deletedIds.has(id)), failed };
 }

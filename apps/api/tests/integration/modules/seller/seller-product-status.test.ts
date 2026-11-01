@@ -6,6 +6,7 @@ import {
 	expect,
 	it,
 	mock,
+	spyOn,
 } from "bun:test";
 
 import {
@@ -198,6 +199,42 @@ describe("deleteProduct (permanent)", () => {
 		).rejects.toMatchObject({
 			status: 409,
 		});
+	});
+
+	it("keeps a product restored after the trash check", async () => {
+		const { db, seller, store, product } = await makeAccessibleProduct({
+			status: "trashed",
+		});
+
+		// An employee restores it between the read and the DELETE.
+		const products = db.query.product;
+		const realFindFirst = products.findFirst.bind(products);
+		const read = spyOn(products, "findFirst").mockImplementationOnce((async (
+			config: any,
+		) => {
+			const row = await realFindFirst(config);
+			await db
+				.update(productTable)
+				.set({ status: "active" })
+				.where(eq(productTable.id, product.id));
+			return row;
+		}) as any);
+
+		await expect(
+			deleteProduct({
+				productId: product.id,
+				sellerProfileId: seller.profile.id,
+				accessibleStoreIds: [store.id],
+			}),
+		).rejects.toMatchObject({ status: 404 });
+		expect(read).toHaveBeenCalledTimes(1);
+		read.mockRestore();
+
+		const [row] = await db
+			.select({ status: productTable.status })
+			.from(productTable)
+			.where(eq(productTable.id, product.id));
+		expect(row.status).toBe("active");
 	});
 });
 

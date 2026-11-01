@@ -1,4 +1,4 @@
-import { issueRule } from "@bibs/api/validation-rule";
+import { issueRule, schemaErrorApplies } from "@bibs/api/validation-rule";
 import type { FieldValues } from "react-hook-form";
 import { type core, z } from "zod";
 import { m } from "@/paraglide/messages";
@@ -52,24 +52,21 @@ const SCHEMA_ERRORS: Record<string, () => string> = {
  * Il messaggio di un'issue. L'`error` dello schema che l'ha data (nei
  * metadati) vince, come nei 422 dell'API: tradotto se ha una voce, altrimenti
  * così com'è in italiano e con la regola tradotta nelle altre lingue (meglio
- * generico che in italiano). Tranne sulla lunghezza massima: gli `error` sono
- * scritti per il campo vuoto o il formato («Il nome è obbligatorio»), e su un
- * testo troppo lungo direbbero il falso.
+ * generico che in italiano). Tranne sulla lunghezza massima, come nell'API
+ * (`schemaErrorApplies`).
  */
 export function schemaErrorMessage(issue: core.$ZodRawIssue): string {
 	const custom = issue.schema && z.globalRegistry.get(issue.schema)?.error;
-	const tooLong = issue.code === "too_big" && issue.origin === "string";
-	if (typeof custom === "string" && !tooLong) {
+	const rule = issueRule(
+		issue as Parameters<typeof issueRule>[0],
+		issue.schema as z.ZodType | undefined,
+	);
+	if (typeof custom === "string" && schemaErrorApplies(rule)) {
 		const translated = SCHEMA_ERRORS[custom];
 		if (translated) return translated();
 		if (getLocale() === "it") return custom;
 	}
-	return ruleMessage(
-		issueRule(
-			issue as Parameters<typeof issueRule>[0],
-			issue.schema as z.ZodType | undefined,
-		),
-	);
+	return ruleMessage(rule);
 }
 
 /**

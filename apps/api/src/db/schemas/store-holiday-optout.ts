@@ -1,12 +1,7 @@
 // apps/api/src/db/schemas/store-holiday-optout.ts
 import { relations } from "drizzle-orm";
-import {
-	index,
-	pgTable,
-	primaryKey,
-	text,
-	timestamp,
-} from "drizzle-orm/pg-core";
+import { index, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { createdAt } from "../columns";
 import { holidayDefinition } from "./holiday-definition";
 import { store } from "./store";
 
@@ -19,9 +14,7 @@ export const storeHolidayOptout = pgTable(
 		holidayDefinitionId: text("holiday_definition_id")
 			.notNull()
 			.references(() => holidayDefinition.id, { onDelete: "cascade" }),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
+		createdAt: createdAt(),
 	},
 	(t) => [
 		primaryKey({ columns: [t.storeId, t.holidayDefinitionId] }),

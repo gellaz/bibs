@@ -135,11 +135,20 @@ export async function pauseDiscount(params: SimpleByIdParams) {
 		);
 	}
 	const nextStatus = existing.status === "active" ? "paused" : "active";
+	// CAS on the status read above: a promo archived in the meantime stays archived.
 	const [out] = await db
 		.update(discount)
 		.set({ status: nextStatus })
-		.where(eq(discount.id, params.discountId))
+		.where(
+			and(
+				eq(discount.id, params.discountId),
+				eq(discount.status, existing.status),
+			),
+		)
 		.returning();
+	if (!out) {
+		throw new ServiceError(409, "La promozione è cambiata, ricarica la pagina");
+	}
 	return out;
 }
 

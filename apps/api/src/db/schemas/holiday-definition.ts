@@ -7,18 +7,16 @@ import {
 	integer,
 	pgTable,
 	text,
-	timestamp,
 	unique,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { user } from "./auth";
 import { storeHolidayOptout } from "./store-holiday-optout";
 
 export const holidayDefinition = pgTable(
 	"holiday_definitions",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		name: text("name").notNull(),
 		type: text("type", {
 			enum: ["fixed", "easter_relative", "one_off"] as const,
@@ -28,13 +26,7 @@ export const holidayDefinition = pgTable(
 		easterOffsetDays: integer("easter_offset_days"),
 		oneOffDate: date("one_off_date"),
 		isActive: boolean("is_active").notNull().default(true),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 		createdByUserId: text("created_by_user_id").references(() => user.id, {
 			onDelete: "set null",
 		}),

@@ -9,7 +9,8 @@ import {
 import { Input } from "@bibs/ui/components/input";
 import { Label } from "@bibs/ui/components/label";
 import { BrandMark } from "@bibs/ui/custom/brand-mark";
-import type { ErrorBody } from "@bibs/ui/lib/api-client";
+import { unwrapJson } from "@bibs/ui/lib/api-client";
+import { ApiError } from "@bibs/ui/lib/api-error";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircleIcon } from "lucide-react";
 import { useState } from "react";
@@ -39,6 +40,11 @@ function AcceptInvitePage() {
 			return;
 		}
 
+		if (password.length > 128) {
+			setApiError(m.auth_reset_password_too_long());
+			return;
+		}
+
 		if (password !== confirmPassword) {
 			setApiError(m.auth_invite_password_mismatch());
 			return;
@@ -49,21 +55,12 @@ function AcceptInvitePage() {
 			const response = await registerApi["accept-invite"].$post({
 				json: { token, password, confirmPassword },
 			});
-
-			if (!response.ok) {
-				// The API error envelope is always an object { success, error, message };
-				// surface the server's message (e.g. expired token, password mismatch)
-				// instead of always collapsing to the generic fallback.
-				const value: Partial<ErrorBody> = await response
-					.json()
-					.catch(() => ({}));
-				setApiError(value.message ?? m.auth_invite_create_error());
-				return;
-			}
-
+			await unwrapJson(response, m.auth_invite_create_error());
 			setSuccess(true);
-		} catch {
-			setApiError(m.auth_invite_network_error());
+		} catch (err) {
+			setApiError(
+				err instanceof ApiError ? err.message : m.auth_invite_network_error(),
+			);
 		} finally {
 			setIsSubmitting(false);
 		}

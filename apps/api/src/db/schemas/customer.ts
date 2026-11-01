@@ -1,26 +1,19 @@
 import { relations, sql } from "drizzle-orm";
-import { check, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { check, integer, pgTable, text } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { customerAddress } from "./address";
 import { user } from "./auth";
 
 export const customerProfile = pgTable(
 	"customer_profiles",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		userId: text("user_id")
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" })
 			.unique(),
 		points: integer("points").default(0).notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [check("customer_points_non_negative", sql`${table.points} >= 0`)],
 );

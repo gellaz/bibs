@@ -5,10 +5,10 @@ import {
 	pgTable,
 	primaryKey,
 	text,
-	timestamp,
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { id, timestamps } from "../columns";
 import { user } from "./auth";
 import { sellerProfile } from "./seller";
 import { store } from "./store";
@@ -19,9 +19,7 @@ export type EmployeeStatus = (typeof employeeStatuses)[number];
 export const storeEmployee = pgTable(
 	"store_employees",
 	{
-		id: text("id")
-			.primaryKey()
-			.$defaultFn(() => crypto.randomUUID()),
+		id: id(),
 		sellerProfileId: text("seller_profile_id")
 			.notNull()
 			.references(() => sellerProfile.id, { onDelete: "cascade" }),
@@ -31,13 +29,7 @@ export const storeEmployee = pgTable(
 		status: varchar("status", { enum: employeeStatuses })
 			.default("active")
 			.notNull(),
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.defaultNow()
-			.notNull(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date())
-			.notNull(),
+		...timestamps,
 	},
 	(table) => [
 		index("store_employee_seller_profile_id_idx").on(table.sellerProfileId),

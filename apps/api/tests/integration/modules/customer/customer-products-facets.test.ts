@@ -50,7 +50,7 @@ beforeEach(async () => {
 const ROME = { lat: 41.9028, lng: 12.4964 };
 const ALWAYS_OPEN = Array.from({ length: 7 }, (_, i) => ({
 	dayOfWeek: i,
-	slots: [{ open: "00:00", close: "23:59" }],
+	slots: [{ open: "00:00", close: "24:00" }],
 }));
 
 async function visibleStore(
