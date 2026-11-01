@@ -139,9 +139,9 @@ export const checkoutRoutes = new Hono()
 		async (c) => {
 			const cp = c.var.customerProfile;
 			const data = await createCheckout({
+				...c.req.valid("json"),
 				customerProfileId: cp.id,
 				customerPoints: cp.points,
-				...c.req.valid("json"),
 			});
 			logger.info(
 				{

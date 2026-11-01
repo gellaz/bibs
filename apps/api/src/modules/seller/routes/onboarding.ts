@@ -66,8 +66,8 @@ export const onboardingRoutes = new Hono()
 		async (c) => {
 			const user = c.var.user;
 			const data = await updatePersonalInfo({
-				userId: user.id,
 				...c.req.valid("json"),
+				userId: user.id,
 			});
 
 			logger.info(
@@ -131,7 +131,7 @@ export const onboardingRoutes = new Hono()
 		async (c) => {
 			const user = c.var.user;
 			const body = c.req.valid("json");
-			const data = await updateCompany({ userId: user.id, ...body });
+			const data = await updateCompany({ ...body, userId: user.id });
 
 			logger.info(
 				{

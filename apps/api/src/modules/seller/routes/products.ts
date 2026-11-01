@@ -384,7 +384,7 @@ export const productsRoutes = new Hono()
 			const { sellerProfile: sp, accessCtx } = c.var.seller;
 			const body = c.req.valid("json");
 			await ensureStoreAccess(body.storeId, accessCtx);
-			const data = await createProduct({ sellerProfileId: sp.id, ...body });
+			const data = await createProduct({ ...body, sellerProfileId: sp.id });
 
 			logger.info(
 				{
@@ -422,10 +422,10 @@ export const productsRoutes = new Hono()
 		async (c) => {
 			const { sellerProfile: sp, getAccessibleStoreIds } = c.var.seller;
 			const data = await updateProduct({
+				...c.req.valid("json"),
 				productId: c.req.valid("param").productId,
 				sellerProfileId: sp.id,
 				accessibleStoreIds: await getAccessibleStoreIds(),
-				...c.req.valid("json"),
 			});
 
 			if (!data) throw new ServiceError(404, "Prodotto non trovato");

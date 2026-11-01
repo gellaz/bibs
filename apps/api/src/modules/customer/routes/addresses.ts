@@ -61,8 +61,8 @@ export const addressesRoutes = new Hono()
 		requireCustomer,
 		async (c) => {
 			const result = await listAddresses({
-				customerProfileId: c.var.customerProfile.id,
 				...c.req.valid("query"),
+				customerProfileId: c.var.customerProfile.id,
 			});
 			return send(c, AddressPage, okPage(result.data, result.pagination));
 		},
@@ -102,8 +102,8 @@ export const addressesRoutes = new Hono()
 		async (c) => {
 			const cp = c.var.customerProfile;
 			const data = await createAddress({
-				customerProfileId: cp.id,
 				...c.req.valid("json"),
+				customerProfileId: cp.id,
 			});
 
 			logger.info(
@@ -153,9 +153,9 @@ export const addressesRoutes = new Hono()
 		requireCustomer,
 		async (c) => {
 			const data = await updateAddress({
+				...c.req.valid("json"),
 				addressId: c.req.valid("param").addressId,
 				customerProfileId: c.var.customerProfile.id,
-				...c.req.valid("json"),
 			});
 			return send(c, AddressResponse, ok(data));
 		},
