@@ -307,6 +307,28 @@ describe("prodotti", () => {
 		expect((await trashed.json()).data.status).toBe("trashed");
 	});
 
+	it("PATCH senza aliquota: l'IVA salvata resta", async () => {
+		const o = await owner();
+		const store = await createTestStore(getTestDb(), o.profileId);
+		const created = await call(
+			"/products",
+			json(
+				"POST",
+				{ name: "Pane", price: "2.50", vatRate: "10", storeId: store.id },
+				o.cookie,
+			),
+		);
+		const { data } = await created.json();
+		const patched = await call(
+			`/products/${data.id}`,
+			json("PATCH", { name: "Pane nero" }, o.cookie),
+		);
+		expect((await patched.json()).data).toMatchObject({
+			name: "Pane nero",
+			vatRate: "10",
+		});
+	});
+
 	it("operazioni in blocco: stato ed eliminazione definitiva", async () => {
 		const o = await owner();
 		const db = getTestDb();

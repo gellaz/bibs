@@ -23,7 +23,7 @@ import {
 	ProductStatusBody,
 	ProductStatusCounts,
 } from "@/schemas/entities";
-import { CreateProductBody } from "@/schemas/forms/products";
+import { CreateProductBody, VatRateSchema } from "@/schemas/forms/products";
 import { PaginationQuery } from "@/schemas/pagination";
 import {
 	okPageRes,
@@ -142,6 +142,9 @@ const ProductParams = z.object({
 const UpdateProductBody = CreateProductBody.omit({ storeId: true })
 	.partial()
 	.extend({
+		// Senza il default della creazione: un PATCH senza aliquota non la
+		// rimette a 22 (Zod applica `.default()` anche sotto `.optional()`).
+		vatRate: VatRateSchema.removeDefault().optional(),
 		ean: CreateProductBody.shape.ean.unwrap().nullable().optional(),
 		brandId: z
 			.string()
