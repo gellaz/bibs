@@ -1,8 +1,8 @@
-import { and, eq, isNotNull, isNull, lte } from "drizzle-orm";
+import { and, eq, isNotNull, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { pricingConfig } from "@/db/schemas/pricing-config";
-import { store } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { archiveStore } from "@/domain/stores/store-archive";
 import { logger } from "@/infra/logger";
 import { stripe } from "@/infra/stripe";
 
@@ -67,12 +67,10 @@ export async function runAutoCancelSuspended(): Promise<{ canceled: number }> {
 			// gone. The subscription.deleted webhook may have already fired (and
 			// soft-deleted the store) or — if the sub was removed out-of-band — may
 			// never arrive, so finalize the store soft-delete here too rather than
-			// depend on it. The row already sits at 'canceled' from the CAS above.
+			// depend on it (with open orders, archiveEndedStores does it later). The
+			// row already sits at 'canceled' from the CAS above.
 			if ((err as { code?: string }).code === "resource_missing") {
-				await db
-					.update(store)
-					.set({ deletedAt: new Date() })
-					.where(and(eq(store.id, sub.storeId), isNull(store.deletedAt)));
+				await archiveStore(db, sub.storeId);
 				canceled++;
 				logger.warn(
 					{ err, stripeSubscriptionId: sub.stripeSubscriptionId },

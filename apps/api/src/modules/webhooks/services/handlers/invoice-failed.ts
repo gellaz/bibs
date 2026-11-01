@@ -2,9 +2,9 @@ import { and, eq, inArray } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { storeSubscription } from "@/db/schemas/store-subscription";
+import { notifyPaymentFailed } from "@/domain/billing/billing-notifications";
 import { getSubscriptionIdFromInvoice } from "@/domain/billing/invoice";
 import { logger } from "@/infra/logger";
-import { notifyPaymentFailed } from "../billing-notifications";
 
 export async function handleInvoiceFailed(event: Stripe.Event): Promise<void> {
 	const invoice = event.data.object as Stripe.Invoice;

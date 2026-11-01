@@ -31,6 +31,7 @@ mock.module("@/infra/stripe", () => ({
 }));
 
 import { eq } from "drizzle-orm";
+import { order } from "@/db/schemas/order";
 import { store as storeTable } from "@/db/schemas/store";
 import { storeSubscription } from "@/db/schemas/store-subscription";
 import { ServiceError } from "@/lib/errors";
@@ -39,7 +40,11 @@ import {
 	reactivateStoreSubscription,
 } from "@/modules/seller/services/stores";
 import { truncateAll } from "../../../helpers/cleanup";
-import { createTestSeller, createTestStore } from "../../../helpers/fixtures";
+import {
+	createTestCustomer,
+	createTestSeller,
+	createTestStore,
+} from "../../../helpers/fixtures";
 
 beforeAll(async () => {
 	await setupTestContainer();
@@ -78,6 +83,17 @@ async function seedSub(
 	return { sellerProfileId: profile.id, storeId: storeRow.id, sub };
 }
 
+async function seedOpenOrder(storeId: string) {
+	const customer = await createTestCustomer(getTestDb());
+	await getTestDb().insert(order).values({
+		customerProfileId: customer.profile.id,
+		storeId,
+		type: "reserve_pickup",
+		status: "confirmed",
+		total: "10.00",
+	});
+}
+
 describe("cancelStoreSubscription", () => {
 	it("active → calls subscriptions.update(cancel_at_period_end=true), sets cancelReason", async () => {
 		const { sellerProfileId, storeId, sub } = await seedSub("active");
@@ -106,6 +122,32 @@ describe("cancelStoreSubscription", () => {
 		const result = await cancelStoreSubscription({ sellerProfileId, storeId });
 		expect(result.status).toBe("canceled");
 		expect(subCancel).toHaveBeenCalledWith("sub_suspended");
+	});
+
+	it("suspended con un ordine aperto → 409, niente scritture né Stripe", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("suspended");
+		await seedOpenOrder(storeId);
+
+		const err = await cancelStoreSubscription({
+			sellerProfileId,
+			storeId,
+		}).catch((e) => e);
+		expect(err).toBeInstanceOf(ServiceError);
+		expect(err.status).toBe(409);
+		expect(err.message).toBe(
+			"Il negozio ha ordini ancora aperti: completali o annullali prima di archiviarlo",
+		);
+		expect(subCancel).not.toHaveBeenCalled();
+		const [r] = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, sub.id));
+		expect(r).toMatchObject({ status: "suspended", cancelReason: null });
+		const [st] = await getTestDb()
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, storeId));
+		expect(st.deletedAt).toBeNull();
 	});
 
 	it("canceling → idempotent", async () => {
@@ -272,6 +314,23 @@ describe("abbonamento sparito da Stripe", () => {
 			await expectClosedLocally(storeId, sub.id);
 		},
 	);
+
+	it("active → Stripe resource_missing con un ordine aperto → abbonamento chiuso, negozio non ancora archiviato", async () => {
+		const { sellerProfileId, storeId, sub } = await seedSub("active");
+		await seedOpenOrder(storeId);
+		subUpdate.mockRejectedValueOnce(missing());
+		await cancelStoreSubscription({ sellerProfileId, storeId });
+		const [r] = await getTestDb()
+			.select()
+			.from(storeSubscription)
+			.where(eq(storeSubscription.id, sub.id));
+		expect(r.status).toBe("canceled");
+		const [st] = await getTestDb()
+			.select()
+			.from(storeTable)
+			.where(eq(storeTable.id, storeId));
+		expect(st.deletedAt).toBeNull();
+	});
 
 	it("suspended → Stripe resource_missing → chiuso in locale, cancelReason resta seller_canceled", async () => {
 		const { sellerProfileId, storeId, sub } = await seedSub("suspended");
