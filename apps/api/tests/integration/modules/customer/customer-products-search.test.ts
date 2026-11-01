@@ -538,10 +538,10 @@ describe("searchProducts — testo, categoria, paginazione", () => {
 	});
 });
 
-/** Sette giorni su sette, 00:00–23:59: aperto sempre, senza dipendere dall'orologio. */
+/** Sette giorni su sette, 00:00–24:00: aperto sempre, senza dipendere dall'orologio. */
 const ALWAYS_OPEN = Array.from({ length: 7 }, (_, i) => ({
 	dayOfWeek: i,
-	slots: [{ open: "00:00", close: "23:59" }],
+	slots: [{ open: "00:00", close: "24:00" }],
 }));
 
 describe("searchProducts — filtro offerta e prezzo", () => {
