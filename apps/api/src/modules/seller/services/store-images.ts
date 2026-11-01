@@ -1,28 +1,12 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { store } from "@/db/schemas/store";
 import { storeImage } from "@/db/schemas/store-image";
-import { publicUrl, s3 } from "@/infra/s3";
+import { s3 } from "@/infra/s3";
 import { config } from "@/lib/config";
 import { ServiceError } from "@/lib/errors";
 import { ensureStoreAccess } from "../context";
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-async function countImages(storeId: string, executor: typeof db | Tx = db) {
-	const [{ current }] = await executor
-		.select({ current: count() })
-		.from(storeImage)
-		.where(eq(storeImage.storeId, storeId));
-	return current;
-}
-
-function tooMany(current: number, uploading: number) {
-	return new ServiceError(
-		400,
-		`Massimo ${config.maxImagesPerStore} immagini per negozio (attuali: ${current}, in caricamento: ${uploading})`,
-	);
-}
+import { uploadImages } from "./image-upload";
 
 interface UploadStoreImagesParams {
 	storeId: string;
@@ -37,59 +21,28 @@ export async function uploadStoreImages(params: UploadStoreImagesParams) {
 	const { storeId, sellerProfileId, userId, isOwner, files, position } = params;
 	await ensureStoreAccess(storeId, { userId, sellerProfileId, isOwner });
 
-	// Pre-check before touching S3; the authoritative check runs again under a
-	// lock in the insert transaction.
-	const current = await countImages(storeId);
-	if (current + files.length > config.maxImagesPerStore)
-		throw tooMany(current, files.length);
-
-	// 1. Upload all files to S3 first
-	const uploaded: { key: string; url: string; index: number }[] = [];
-	try {
-		await Promise.all(
-			files.map(async (file, index) => {
-				const ext = file.name?.split(".").pop() ?? "jpg";
-				const key = `stores/${storeId}/${crypto.randomUUID()}.${ext}`;
-				await s3.write(key, file);
-				uploaded.push({ key, url: publicUrl(key), index });
-			}),
-		);
-	} catch (err) {
-		// Cleanup any files that were already uploaded
-		await Promise.allSettled(uploaded.map((u) => s3.delete(u.key)));
-		throw err;
-	}
-
-	// 2. Count and insert under a lock on the store: two concurrent uploads
-	// both passing the pre-check would otherwise overshoot the cap.
-	try {
-		return await db.transaction(async (tx) => {
-			await tx
-				.select({ id: store.id })
-				.from(store)
-				.where(eq(store.id, storeId))
-				.for("update");
-			const locked = await countImages(storeId, tx);
-			if (locked + files.length > config.maxImagesPerStore)
-				throw tooMany(locked, files.length);
-
-			return tx
-				.insert(storeImage)
-				.values(
-					uploaded.map(({ key, url, index }) => ({
-						storeId,
-						key,
-						url,
-						position: position ?? locked + index,
-					})),
-				)
-				.returning();
-		});
-	} catch (err) {
-		// Cap exceeded or insert failed — cleanup S3 files (best-effort)
-		await Promise.allSettled(uploaded.map((u) => s3.delete(u.key)));
-		throw err;
-	}
+	return uploadImages(
+		{
+			folder: `stores/${storeId}`,
+			max: config.maxImagesPerStore,
+			noun: "negozio",
+			count: (executor) =>
+				executor.$count(storeImage, eq(storeImage.storeId, storeId)),
+			lock: (tx) =>
+				tx
+					.select({ id: store.id })
+					.from(store)
+					.where(eq(store.id, storeId))
+					.for("update"),
+			insert: (tx, rows) =>
+				tx
+					.insert(storeImage)
+					.values(rows.map((row) => ({ storeId, ...row })))
+					.returning(),
+		},
+		files,
+		position,
+	);
 }
 
 interface DeleteStoreImageParams {
