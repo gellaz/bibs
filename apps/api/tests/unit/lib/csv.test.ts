@@ -71,6 +71,34 @@ describe("parseCsv", () => {
 	});
 });
 
+describe("parseCsv — required columns", () => {
+	it("rejects a missing required column, naming it (400)", () => {
+		expect(() => parseCsv("NAME,unit\nfoo,g", ["name", "price"])).toThrow(
+			new ServiceError(
+				400,
+				'Colonna CSV mancante: "price". Colonne attese: name, price.',
+			),
+		);
+	});
+
+	it("rejects a file with only the header row (400)", () => {
+		expect(() => parseCsv("name,price\n\n", ["name", "price"])).toThrow(
+			new ServiceError(400, "Il file CSV non contiene righe di dati."),
+		);
+	});
+
+	it("passes with every required column, extra ones allowed", () => {
+		expect(parseCsv("Price,name,ean\n1.00,foo,", ["name", "price"])).toEqual({
+			headers: ["price", "name", "ean"],
+			rows: [["1.00", "foo", ""]],
+		});
+	});
+
+	it("without required columns, a header-only file is not an error", () => {
+		expect(parseCsv("name,price").rows).toEqual([]);
+	});
+});
+
 describe("parseCsv — lenient stray quotes (quote-mode only at field start)", () => {
 	it("treats a quote mid-field as a literal character", () => {
 		const { rows } = parseCsv('name,price\nMonitor 27",199.00\nO"Brien,5.00');
