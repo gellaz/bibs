@@ -182,6 +182,11 @@ describe("POST /register/customer — success", () => {
 			password: "password123",
 		});
 		expect(mockRegisterCustomer).toHaveBeenCalledTimes(1);
+		// Il secondo argomento è il logger della richiesta.
+		expect(mockRegisterCustomer).toHaveBeenCalledWith(
+			{ email: "mario@example.it", password: "password123" },
+			expect.anything(),
+		);
 	});
 
 	it("response contains user email and token", async () => {
